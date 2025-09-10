@@ -58,7 +58,20 @@ interface ChatProgressProps {
   onResume?: () => void;
   showDetailedView?: boolean;
   queryId?: string;
-  events?: any[];
+  events?: Array<{
+    id: string;
+    type: string;
+    message: string;
+    timestamp: Date;
+    data?: Record<string, unknown>;
+  }>;
+  agents?: Array<{
+    id: string;
+    type: string;
+    status: string;
+    lastUpdate?: Date;
+    data?: any;
+  }>;
 }
 
 export function ChatProgress({
@@ -74,7 +87,25 @@ export function ChatProgress({
   onPause,
   onResume,
   showDetailedView = false,
+  agents = [],
 }: ChatProgressProps) {
+  
+  // Convert Google ADK agents to AgentProgress format
+  const convertedAgents: AgentProgress[] = agents.map(agent => ({
+    id: agent.id,
+    type: agent.type as AgentType,
+    status: agent.status === 'started' ? 'active' as const : 
+            agent.status === 'completed' ? 'completed' as const : 
+            agent.status === 'progress' ? 'active' as const : 'waiting' as const,
+    progress: agent.status === 'completed' ? 100 : 
+              agent.status === 'active' || agent.status === 'progress' ? 50 : 0,
+    currentTask: agent.data?.currentTask || `${agent.type} processing`,
+    startTime: agent.lastUpdate,
+    confidence: agent.data?.confidence
+  }));
+  
+  // Use converted agents if available, fallback to agentsProgress
+  const displayAgents = convertedAgents.length > 0 ? convertedAgents : agentsProgress;
   const [expandedAgents, setExpandedAgents] = useState<Set<string>>(new Set());
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -150,9 +181,9 @@ export function ChatProgress({
     setExpandedAgents(newExpanded);
   };
 
-  const completedAgents = agentsProgress.filter(a => a.status === 'completed').length;
-  const activeAgents = agentsProgress.filter(a => a.status === 'active').length;
-  const failedAgents = agentsProgress.filter(a => a.status === 'failed').length;
+  const completedAgents = displayAgents.filter(a => a.status === 'completed').length;
+  const activeAgents = displayAgents.filter(a => a.status === 'active').length;
+  const failedAgents = displayAgents.filter(a => a.status === 'failed').length;
 
   if (!isVisible && !isProcessing) {
     return null;
@@ -243,10 +274,10 @@ export function ChatProgress({
           </div>
 
           {/* Agent Summary */}
-          {agentsProgress.length > 0 && (
+          {displayAgents.length > 0 && (
             <div className="flex items-center justify-between text-xs text-text-secondary">
               <div className="flex items-center space-x-4">
-                <span>{completedAgents}/{agentsProgress.length} agents completed</span>
+                <span>{completedAgents}/{displayAgents.length} agents completed</span>
                 {activeAgents > 0 && (
                   <Badge variant="secondary" className="text-xs">
                     {activeAgents} active
@@ -264,12 +295,12 @@ export function ChatProgress({
           <Separator />
 
           {/* Agents Progress */}
-          {agentsProgress.length > 0 && (
+          {displayAgents.length > 0 && (
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-text-secondary">AI Agents</h4>
               
               <div className="space-y-2">
-                {agentsProgress.map((agent) => {
+                {displayAgents.map((agent) => {
                   const IconComponent = getAgentIcon(agent.type);
                   const isExpanded = expandedAgents.has(agent.id);
                   
@@ -362,7 +393,7 @@ export function ChatProgress({
           )}
 
           {/* Processing Message */}
-          {isProcessing && agentsProgress.length === 0 && (
+          {isProcessing && displayAgents.length === 0 && (
             <div className="flex items-center justify-center p-8 text-center">
               <div className="space-y-2">
                 <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />

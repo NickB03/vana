@@ -1,0 +1,795 @@
+/**
+ * End-to-End Workflow Integration Tests
+ * Tests complete user journeys from start to finish
+ */
+
+import { renderHook, act, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { useSSEClient } from '../../hooks/useSSEClient';
+import { apiClient } from '../../src/lib/api-client';
+import { authService } from '../../src/lib/auth';
+
+// Mock React components for testing
+const MockChatInterface = ({ onSubmit }: { onSubmit: (query: string) => void }) => {
+  const [query, setQuery] = React.useState('');
+  
+  return (
+    <div>
+      <input
+        data-testid="query-input"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Enter your research query"
+      />
+      <button
+        data-testid="submit-button"
+        onClick={() => onSubmit(query)}
+        disabled={!query.trim()}
+      >
+        Start Research
+      </button>
+    </div>
+  );
+};
+
+const MockResultDisplay = ({ results }: { results: any[] }) => {
+  return (
+    <div data-testid="results-container">
+      {results.map((result, index) => (
+        <div key={index} data-testid={`result-${index}`}>
+          <div data-testid="result-type">{result.type}</div>
+          <div data-testid="result-content">{result.content}</div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+describe('End-to-End Workflow Integration Tests', () => {
+  let cleanup: (() => void)[] = [];
+
+  beforeEach(() => {
+    global.EventSource.reset();
+    // Setup development auth
+    authService.createDevSession();
+  });
+
+  afterEach(async () => {
+    cleanup.forEach(fn => fn());
+    cleanup = [];
+    jest.clearAllMocks();
+    fetch.mockClear();
+    await authService.logout();
+  });
+
+  describe('Complete Research Workflow', () => {
+    it('should complete full research workflow from query to results', async () => {
+      const sessionId = 'workflow-test-session';
+      const query = 'What are the latest developments in AI research?';
+      
+      // Mock API responses in sequence
+      fetch
+        // 1. Create ADK session
+        .mockResolvedValueOnce(testUtils.mockApiResponse({
+          id: sessionId,
+          status: 'active',
+          created_at: new Date().toISOString()
+        }))
+        // 2. Start research query
+        .mockResolvedValueOnce(testUtils.mockApiResponse({
+          session_id: sessionId,
+          status: 'processing',
+          message: 'Research initiated successfully'
+        }));
+
+      // Setup SSE client
+      const { result: sseResult } = renderHook(() => 
+        useSSEClient({ sessionId })
+      );
+
+      await waitFor(() => {
+        expect(global.EventSource.instances.length).toBe(1);
+      });
+
+      // 1. User submits query
+      const session = await apiClient.createAdkSession();
+      expect(session.session_id).toBe(sessionId);
+
+      const researchResult = await apiClient.startAdkResearch(query, sessionId);
+      expect(researchResult.status).toBe('processing');
+
+      // 2. Simulate complete agent workflow via SSE events
+      const eventSource = global.EventSource.getLatest();
+
+      // Connection established
+      act(() => {
+        eventSource.onmessage(testUtils.createMessageEvent({
+          type: 'connection',
+          status: 'connected',
+          sessionId,
+          timestamp: new Date().toISOString()
+        }));
+      });
+
+      await waitFor(() => {
+        expect(sseResult.current.isConnected).toBe(true);
+      });
+
+      // Query received
+      act(() => {
+        eventSource.onmessage(testUtils.createMessageEvent({
+          type: 'query_received',
+          queryId: 'query-123',
+          timestamp: new Date().toISOString(),
+          estimatedDuration: 180,
+          priority: 'medium'
+        }));
+      });
+
+      // Processing started
+      act(() => {
+        eventSource.onmessage(testUtils.createMessageEvent({
+          type: 'processing_started',
+          queryId: 'query-123',
+          timestamp: new Date().toISOString(),
+          totalAgents: 8,
+          phase: 'planning'
+        }));
+      });
+
+      // Agents execute in sequence
+      const agentTypes = [
+        'team_leader',
+        'plan_generator',
+        'section_planner',
+        'section_researcher',
+        'enhanced_search',
+        'research_evaluator',
+        'escalation_checker',
+        'report_writer'
+      ];
+
+      for (let i = 0; i < agentTypes.length; i++) {
+        const agentType = agentTypes[i];
+        const agentId = `${agentType}-001`;
+
+        // Agent started
+        act(() => {
+          eventSource.onmessage(testUtils.createMessageEvent({
+            type: 'agent_started',
+            queryId: 'query-123',
+            agentId,
+            agentType,
+            timestamp: new Date().toISOString(),
+            estimatedDuration: 30,
+            task: `Executing ${agentType} task`
+          }));
+        });
+
+        // Agent progress (optional for some agents)
+        if (i % 2 === 0) {
+          act(() => {
+            eventSource.onmessage(testUtils.createMessageEvent({
+              type: 'agent_progress',
+              queryId: 'query-123',
+              agentId,
+              progress: 50,
+              timestamp: new Date().toISOString(),
+              currentTask: `Processing ${agentType} data`
+            }));
+          });
+        }
+
+        // Agent completed
+        act(() => {
+          eventSource.onmessage(testUtils.createMessageEvent({
+            type: 'agent_completed',
+            queryId: 'query-123',
+            agentId,
+            timestamp: new Date().toISOString(),
+            success: true,
+            processingTimeMs: 25000 + (i * 2000),
+            confidence: 0.85 + (i * 0.01),
+            resultSummary: `${agentType} completed successfully`,
+            tokensUsed: 500 + (i * 100)
+          }));
+        });
+      }
+
+      // Partial results during processing
+      act(() => {
+        eventSource.onmessage(testUtils.createMessageEvent({
+          type: 'partial_result',
+          queryId: 'query-123',
+          timestamp: new Date().toISOString(),
+          content: 'Recent advances in transformer architectures...',
+          section: 'Technical Developments',
+          agentId: 'section_researcher-001',
+          confidence: 0.88,
+          sources: [
+            {
+              url: 'https://arxiv.org/abs/2023.12345',
+              title: 'Advanced Transformer Models',
+              relevance: 0.95
+            }
+          ]
+        }));
+      });
+
+      // Quality check
+      act(() => {
+        eventSource.onmessage(testUtils.createMessageEvent({
+          type: 'quality_check',
+          queryId: 'query-123',
+          timestamp: new Date().toISOString(),
+          qualityScore: 0.91,
+          phase: 'completeness_check',
+          findings: [
+            {
+              type: 'improvement',
+              message: 'Consider adding more recent sources',
+              severity: 'low'
+            }
+          ],
+          recommendedActions: ['Add 2023 publications']
+        }));
+      });
+
+      // Final result generated
+      act(() => {
+        eventSource.onmessage(testUtils.createMessageEvent({
+          type: 'result_generated',
+          queryId: 'query-123',
+          resultId: 'result-456',
+          timestamp: new Date().toISOString(),
+          wordCount: 3200,
+          readingTimeMinutes: 15,
+          qualityScore: 0.93,
+          sectionsCount: 7,
+          citationsCount: 32,
+          summary: 'Comprehensive analysis of recent AI research developments'
+        }));
+      });
+
+      // Processing complete
+      act(() => {
+        eventSource.onmessage(testUtils.createMessageEvent({
+          type: 'processing_complete',
+          queryId: 'query-123',
+          resultId: 'result-456',
+          timestamp: new Date().toISOString(),
+          totalDurationMs: 240000,
+          agentsCompleted: 8,
+          agentsTotal: 8,
+          finalQualityScore: 0.93,
+          tokensTotal: 8500,
+          costEstimate: 0.42
+        }));
+      });
+
+      // Verify complete workflow
+      await waitFor(() => {
+        const events = sseResult.current.events;
+        expect(events).toHaveLength(19); // All events received
+        
+        const completionEvent = events.find(e => e.type === 'processing_complete');
+        expect(completionEvent).toBeDefined();
+        expect(completionEvent.agentsCompleted).toBe(8);
+        expect(completionEvent.finalQualityScore).toBe(0.93);
+      });
+
+      cleanup.push(() => sseResult.current.disconnect());
+    }, 30000);
+  });
+
+  describe('User Interface Workflow', () => {
+    it('should handle complete UI workflow with real interactions', async () => {
+      const user = userEvent.setup();
+      const sessionId = 'ui-workflow-session';
+      const results: any[] = [];
+      
+      // Mock query submission handler
+      const handleQuerySubmit = jest.fn(async (query: string) => {
+        fetch.mockResolvedValueOnce(testUtils.mockApiResponse({
+          session_id: sessionId,
+          status: 'processing',
+          message: 'Research started'
+        }));
+        
+        await apiClient.startAdkResearch(query, sessionId);
+      });
+
+      // Render chat interface
+      render(
+        <div>
+          <MockChatInterface onSubmit={handleQuerySubmit} />
+          <MockResultDisplay results={results} />
+        </div>
+      );
+
+      // 1. User types query
+      const queryInput = screen.getByTestId('query-input');
+      const submitButton = screen.getByTestId('submit-button');
+      
+      expect(submitButton).toBeDisabled();
+      
+      await user.type(queryInput, 'Analyze recent climate change research');
+      
+      expect(queryInput).toHaveValue('Analyze recent climate change research');
+      expect(submitButton).toBeEnabled();
+
+      // 2. User submits query
+      await user.click(submitButton);
+      
+      expect(handleQuerySubmit).toHaveBeenCalledWith('Analyze recent climate change research');
+
+      // 3. Verify API was called
+      await waitFor(() => {
+        expect(fetch).toHaveBeenCalledWith(
+          'http://localhost:8000/api/run_sse',
+          expect.objectContaining({
+            method: 'POST',
+            body: JSON.stringify({
+              query: 'Analyze recent climate change research',
+              session_id: sessionId,
+              type: 'research',
+              priority: 'medium',
+              max_duration: 300,
+              output_format: 'structured'
+            })
+          })
+        );
+      });
+    });
+
+    it('should handle user cancellation workflow', async () => {
+      const sessionId = 'cancellation-test-session';
+      
+      // Setup SSE client
+      const { result: sseResult } = renderHook(() => 
+        useSSEClient({ sessionId })
+      );
+
+      await waitFor(() => {
+        expect(global.EventSource.instances.length).toBe(1);
+      });
+
+      const eventSource = global.EventSource.getLatest();
+
+      // Start processing
+      act(() => {
+        eventSource.onmessage(testUtils.createMessageEvent({
+          type: 'processing_started',
+          queryId: 'query-123',
+          timestamp: new Date().toISOString(),
+          totalAgents: 8,
+          phase: 'research'
+        }));
+      });
+
+      // Some agents start
+      act(() => {
+        eventSource.onmessage(testUtils.createMessageEvent({
+          type: 'agent_started',
+          queryId: 'query-123',
+          agentId: 'section_researcher-001',
+          agentType: 'section_researcher',
+          timestamp: new Date().toISOString(),
+          estimatedDuration: 60,
+          task: 'Research task'
+        }));
+      });
+
+      // User cancels
+      fetch.mockResolvedValueOnce(testUtils.mockApiResponse({}));
+      
+      await apiClient.post('/api/queries/query-123/cancel');
+
+      // Simulate cancellation event
+      act(() => {
+        eventSource.onmessage(testUtils.createMessageEvent({
+          type: 'user_cancelled',
+          queryId: 'query-123',
+          timestamp: new Date().toISOString(),
+          cancelledBy: 'dev-user',
+          reason: 'User requested cancellation',
+          partialResultsAvailable: true,
+          agentsStopped: 3,
+          processingTimeMs: 45000
+        }));
+      });
+
+      await waitFor(() => {
+        const cancelEvent = sseResult.current.events.find(e => e.type === 'user_cancelled');
+        expect(cancelEvent).toBeDefined();
+        expect(cancelEvent.agentsStopped).toBe(3);
+      });
+
+      cleanup.push(() => sseResult.current.disconnect());
+    });
+  });
+
+  describe('Error Recovery Workflow', () => {
+    it('should handle and recover from mid-workflow errors', async () => {
+      const sessionId = 'error-recovery-session';
+      
+      const { result: sseResult } = renderHook(() => 
+        useSSEClient({ sessionId })
+      );
+
+      await waitFor(() => {
+        expect(global.EventSource.instances.length).toBe(1);
+      });
+
+      const eventSource = global.EventSource.getLatest();
+
+      // Start normal processing
+      act(() => {
+        eventSource.onmessage(testUtils.createMessageEvent({
+          type: 'processing_started',
+          queryId: 'query-123',
+          timestamp: new Date().toISOString(),
+          totalAgents: 8,
+          phase: 'research'
+        }));
+      });
+
+      // Some agents complete successfully
+      act(() => {
+        eventSource.onmessage(testUtils.createMessageEvent({
+          type: 'agent_completed',
+          queryId: 'query-123',
+          agentId: 'team_leader-001',
+          timestamp: new Date().toISOString(),
+          success: true,
+          processingTimeMs: 15000,
+          confidence: 0.95,
+          resultSummary: 'Planning completed',
+          tokensUsed: 300
+        }));
+      });
+
+      // Error occurs
+      act(() => {
+        eventSource.onmessage(testUtils.createMessageEvent({
+          type: 'error',
+          queryId: 'query-123',
+          timestamp: new Date().toISOString(),
+          errorType: 'agent_error',
+          message: 'Agent timeout occurred',
+          errorCode: 'AGENT_TIMEOUT',
+          agentId: 'section_researcher-001',
+          recoverable: true,
+          suggestedAction: 'Retry with different parameters',
+          retryAfter: 30
+        }));
+      });
+
+      await waitFor(() => {
+        expect(sseResult.current.error).toBe('Agent timeout occurred');
+      });
+
+      // System recovers and continues
+      act(() => {
+        eventSource.onmessage(testUtils.createMessageEvent({
+          type: 'agent_started',
+          queryId: 'query-123',
+          agentId: 'section_researcher-002', // New agent instance
+          agentType: 'section_researcher',
+          timestamp: new Date().toISOString(),
+          estimatedDuration: 45,
+          task: 'Retry research task'
+        }));
+      });
+
+      // Eventually completes
+      act(() => {
+        eventSource.onmessage(testUtils.createMessageEvent({
+          type: 'processing_complete',
+          queryId: 'query-123',
+          resultId: 'result-456',
+          timestamp: new Date().toISOString(),
+          totalDurationMs: 300000,
+          agentsCompleted: 8,
+          agentsTotal: 8,
+          finalQualityScore: 0.89, // Slightly lower due to error
+          tokensTotal: 7200,
+          costEstimate: 0.38
+        }));
+      });
+
+      await waitFor(() => {
+        const completionEvent = sseResult.current.events.find(e => e.type === 'processing_complete');
+        expect(completionEvent).toBeDefined();
+        expect(completionEvent.agentsCompleted).toBe(8);
+        
+        // Error should be cleared after successful completion
+        expect(sseResult.current.error).toBeNull();
+      });
+
+      cleanup.push(() => sseResult.current.disconnect());
+    });
+  });
+
+  describe('Multi-Session Workflow', () => {
+    it('should handle multiple concurrent sessions', async () => {
+      const session1Id = 'multi-session-1';
+      const session2Id = 'multi-session-2';
+      
+      // Setup two SSE clients
+      const { result: sse1 } = renderHook(() => 
+        useSSEClient({ sessionId: session1Id })
+      );
+      
+      const { result: sse2 } = renderHook(() => 
+        useSSEClient({ sessionId: session2Id })
+      );
+
+      await waitFor(() => {
+        expect(global.EventSource.instances.length).toBe(2);
+      });
+
+      // Simulate events for both sessions
+      const eventSource1 = global.EventSource.instances[0];
+      const eventSource2 = global.EventSource.instances[1];
+
+      // Session 1 starts processing
+      act(() => {
+        eventSource1.onmessage(testUtils.createMessageEvent({
+          type: 'processing_started',
+          queryId: 'query-session1',
+          timestamp: new Date().toISOString(),
+          totalAgents: 8,
+          phase: 'planning'
+        }));
+      });
+
+      // Session 2 starts processing
+      act(() => {
+        eventSource2.onmessage(testUtils.createMessageEvent({
+          type: 'processing_started',
+          queryId: 'query-session2',
+          timestamp: new Date().toISOString(),
+          totalAgents: 8,
+          phase: 'research'
+        }));
+      });
+
+      await waitFor(() => {
+        expect(sse1.current.events).toHaveLength(1);
+        expect(sse2.current.events).toHaveLength(1);
+      });
+
+      // Verify events are isolated to their sessions
+      expect(sse1.current.events[0].queryId).toBe('query-session1');
+      expect(sse2.current.events[0].queryId).toBe('query-session2');
+
+      cleanup.push(() => {
+        sse1.current.disconnect();
+        sse2.current.disconnect();
+      });
+    });
+  });
+
+  describe('Performance and Load Testing', () => {
+    it('should handle high-frequency events without performance degradation', async () => {
+      const sessionId = 'performance-test-session';
+      
+      const { result: sseResult } = renderHook(() => 
+        useSSEClient({ sessionId })
+      );
+
+      await waitFor(() => {
+        expect(global.EventSource.instances.length).toBe(1);
+      });
+
+      const eventSource = global.EventSource.getLatest();
+      const startTime = performance.now();
+
+      // Send 200 rapid events
+      for (let i = 0; i < 200; i++) {
+        act(() => {
+          eventSource.onmessage(testUtils.createMessageEvent({
+            type: 'agent_progress',
+            queryId: 'query-123',
+            agentId: `agent-${i % 8}`,
+            progress: i % 100,
+            timestamp: new Date(Date.now() + i).toISOString(),
+            currentTask: `Processing item ${i}`
+          }));
+        });
+      }
+
+      const endTime = performance.now();
+      const processingTime = endTime - startTime;
+
+      // Should process events quickly (< 1s for 200 events)
+      expect(processingTime).toBeLessThan(1000);
+
+      // Should maintain event history limit
+      await waitFor(() => {
+        expect(sseResult.current.events.length).toBe(50); // Max history
+      });
+
+      cleanup.push(() => sseResult.current.disconnect());
+    });
+
+    it('should maintain memory efficiency during long sessions', async () => {
+      const sessionId = 'memory-test-session';
+      
+      const { result: sseResult } = renderHook(() => 
+        useSSEClient({ sessionId })
+      );
+
+      await waitFor(() => {
+        expect(global.EventSource.instances.length).toBe(1);
+      });
+
+      const initialMemory = performance.memory?.usedJSHeapSize || 0;
+      const eventSource = global.EventSource.getLatest();
+
+      // Simulate long session with many events
+      for (let batch = 0; batch < 10; batch++) {
+        for (let i = 0; i < 100; i++) {
+          act(() => {
+            eventSource.onmessage(testUtils.createMessageEvent({
+              type: 'heartbeat',
+              timestamp: new Date(Date.now() + (batch * 100) + i).toISOString(),
+              connectionId: 'test-connection',
+              activeQueries: 1,
+              serverLoad: 0.3
+            }));
+          });
+        }
+
+        // Periodically check memory doesn't grow excessively
+        if (batch % 3 === 0) {
+          const currentMemory = performance.memory?.usedJSHeapSize || 0;
+          const memoryIncrease = currentMemory - initialMemory;
+          expect(memoryIncrease).toBeLessThan(50 * 1024 * 1024); // < 50MB
+        }
+      }
+
+      cleanup.push(() => sseResult.current.disconnect());
+    });
+  });
+
+  describe('Real-World Scenarios', () => {
+    it('should handle typical research workflow timing', async () => {
+      const sessionId = 'realistic-timing-session';
+      
+      const { result: sseResult } = renderHook(() => 
+        useSSEClient({ sessionId })
+      );
+
+      await waitFor(() => {
+        expect(global.EventSource.instances.length).toBe(1);
+      });
+
+      const eventSource = global.EventSource.getLatest();
+      const startTime = Date.now();
+
+      // Simulate realistic timing for research workflow
+      const events = [
+        { delay: 0, type: 'query_received', data: { queryId: 'query-123' }},
+        { delay: 500, type: 'processing_started', data: { queryId: 'query-123', totalAgents: 8 }},
+        { delay: 2000, type: 'agent_started', data: { queryId: 'query-123', agentId: 'team_leader-001', agentType: 'team_leader' }},
+        { delay: 8000, type: 'agent_completed', data: { queryId: 'query-123', agentId: 'team_leader-001', success: true }},
+        { delay: 9000, type: 'agent_started', data: { queryId: 'query-123', agentId: 'section_researcher-001', agentType: 'section_researcher' }},
+        { delay: 45000, type: 'partial_result', data: { queryId: 'query-123', content: 'Partial findings...' }},
+        { delay: 120000, type: 'result_generated', data: { queryId: 'query-123', resultId: 'result-456' }},
+        { delay: 125000, type: 'processing_complete', data: { queryId: 'query-123', agentsCompleted: 8 }}
+      ];
+
+      // Schedule events with realistic delays
+      events.forEach(({ delay, type, data }) => {
+        setTimeout(() => {
+          act(() => {
+            eventSource.onmessage(testUtils.createMessageEvent({
+              type,
+              timestamp: new Date(startTime + delay).toISOString(),
+              ...data
+            }));
+          });
+        }, delay);
+      });
+
+      // Fast-forward through the timeline
+      for (let time = 0; time <= 125000; time += 5000) {
+        act(() => {
+          jest.advanceTimersByTime(5000);
+        });
+      }
+
+      await waitFor(() => {
+        const completionEvent = sseResult.current.events.find(e => e.type === 'processing_complete');
+        expect(completionEvent).toBeDefined();
+      });
+
+      cleanup.push(() => sseResult.current.disconnect());
+    });
+
+    it('should handle network instability gracefully', async () => {
+      const sessionId = 'network-instability-session';
+      
+      const { result: sseResult } = renderHook(() => 
+        useSSEClient({ 
+          sessionId, 
+          autoReconnect: true,
+          maxRetries: 3,
+          retryDelay: 1000 
+        })
+      );
+
+      await waitFor(() => {
+        expect(global.EventSource.instances.length).toBe(1);
+      });
+
+      let eventSource = global.EventSource.getLatest();
+
+      // Start processing normally
+      act(() => {
+        eventSource.onmessage(testUtils.createMessageEvent({
+          type: 'processing_started',
+          queryId: 'query-123',
+          timestamp: new Date().toISOString(),
+          totalAgents: 8,
+          phase: 'research'
+        }));
+      });
+
+      await waitFor(() => {
+        expect(sseResult.current.events).toHaveLength(1);
+      });
+
+      // Network interruption
+      act(() => {
+        eventSource.onerror(new Event('error'));
+      });
+
+      await waitFor(() => {
+        expect(sseResult.current.connectionStatus).toBe('reconnecting');
+      });
+
+      // Fast-forward to reconnection
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+
+      await waitFor(() => {
+        expect(global.EventSource.instances.length).toBe(2);
+      });
+
+      // Continue processing after reconnection
+      eventSource = global.EventSource.getLatest();
+      act(() => {
+        eventSource.onmessage(testUtils.createMessageEvent({
+          type: 'connection',
+          status: 'connected',
+          sessionId,
+          timestamp: new Date().toISOString()
+        }));
+      });
+
+      act(() => {
+        eventSource.onmessage(testUtils.createMessageEvent({
+          type: 'processing_complete',
+          queryId: 'query-123',
+          resultId: 'result-456',
+          timestamp: new Date().toISOString(),
+          agentsCompleted: 8,
+          agentsTotal: 8
+        }));
+      });
+
+      await waitFor(() => {
+        const completionEvent = sseResult.current.events.find(e => e.type === 'processing_complete');
+        expect(completionEvent).toBeDefined();
+        expect(sseResult.current.isConnected).toBe(true);
+      });
+
+      cleanup.push(() => sseResult.current.disconnect());
+    });
+  });
+});

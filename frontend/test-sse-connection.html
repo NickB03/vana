@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Google ADK SSE Connection</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .connected { background-color: #d4edda; color: #155724; }
+        .connecting { background-color: #fff3cd; color: #856404; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .disconnected { background-color: #f1f3f4; color: #5f6368; }
+        .event {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 10px;
+            margin: 5px 0;
+            font-family: monospace;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .controls { margin: 20px 0; }
+        .info { background: #d1ecf1; padding: 10px; border-radius: 4px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 Google ADK SSE Connection Test</h1>
+        
+        <div class="info">
+            <strong>Testing:</strong> Real-time connection to Google ADK backend at <code>http://localhost:8000/agent_network_sse/{session_id}</code>
+        </div>
+        
+        <div class="controls">
+            <button id="createSession">1. Create ADK Session</button>
+            <button id="connectSSE" disabled>2. Connect SSE</button>
+            <button id="startResearch" disabled>3. Start Research</button>
+            <button id="disconnect" disabled>Disconnect</button>
+            <button id="clearEvents">Clear Events</button>
+        </div>
+        
+        <div id="status" class="status disconnected">Disconnected</div>
+        
+        <div>
+            <strong>Session ID:</strong> <span id="sessionId">None</span><br>
+            <strong>Connection URL:</strong> <span id="connectionUrl">None</span><br>
+            <strong>Events Received:</strong> <span id="eventCount">0</span>
+        </div>
+        
+        <h3>📡 Real-time Events</h3>
+        <div id="events" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
+            <em>No events yet. Create a session and connect to see real-time updates.</em>
+        </div>
+    </div>
+
+    <script>
+        let eventSource = null;
+        let sessionId = null;
+        let eventCount = 0;
+        
+        const statusEl = document.getElementById('status');
+        const sessionIdEl = document.getElementById('sessionId');
+        const connectionUrlEl = document.getElementById('connectionUrl');
+        const eventCountEl = document.getElementById('eventCount');
+        const eventsEl = document.getElementById('events');
+        
+        const createSessionBtn = document.getElementById('createSession');
+        const connectBtn = document.getElementById('connectSSE');
+        const startResearchBtn = document.getElementById('startResearch');
+        const disconnectBtn = document.getElementById('disconnect');
+        const clearEventsBtn = document.getElementById('clearEvents');
+        
+        function updateStatus(status, message) {
+            statusEl.className = `status ${status}`;
+            statusEl.textContent = message;
+        }
+        
+        function addEvent(event) {
+            eventCount++;
+            eventCountEl.textContent = eventCount;
+            
+            const eventDiv = document.createElement('div');
+            eventDiv.className = 'event';
+            eventDiv.innerHTML = `
+                <strong>${new Date().toLocaleTimeString()}</strong> - ${event.type || 'unknown'}<br>
+                <pre>${JSON.stringify(event, null, 2)}</pre>
+            `;
+            
+            eventsEl.appendChild(eventDiv);
+            eventsEl.scrollTop = eventsEl.scrollHeight;
+            
+            if (eventsEl.children.length > 50) {
+                eventsEl.removeChild(eventsEl.firstChild);
+            }
+        }
+        
+        // Step 1: Create Google ADK Session
+        createSessionBtn.addEventListener('click', async () => {
+            try {
+                updateStatus('connecting', 'Creating Google ADK session...');
+                
+                const response = await fetch('http://localhost:8000/apps/vana/users/current/sessions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const session = await response.json();
+                sessionId = session.session_id || session.id;
+                
+                sessionIdEl.textContent = sessionId;
+                connectionUrlEl.textContent = `http://localhost:8000/agent_network_sse/${sessionId}`;
+                
+                updateStatus('connected', 'Google ADK session created successfully');
+                addEvent({ type: 'session_created', sessionId, timestamp: new Date().toISOString() });
+                
+                createSessionBtn.disabled = true;
+                connectBtn.disabled = false;
+                
+            } catch (error) {
+                updateStatus('error', `Failed to create session: ${error.message}`);
+                addEvent({ type: 'error', message: error.message, timestamp: new Date().toISOString() });
+            }
+        });
+        
+        // Step 2: Connect to SSE
+        connectBtn.addEventListener('click', () => {
+            if (!sessionId) {
+                updateStatus('error', 'No session ID. Create a session first.');
+                return;
+            }
+            
+            try {
+                updateStatus('connecting', 'Connecting to Google ADK SSE...');
+                
+                const sseUrl = `http://localhost:8000/agent_network_sse/${sessionId}`;
+                eventSource = new EventSource(sseUrl, { withCredentials: true });
+                
+                eventSource.onopen = () => {
+                    updateStatus('connected', 'Connected to Google ADK SSE stream');
+                    addEvent({ type: 'sse_connected', url: sseUrl, timestamp: new Date().toISOString() });
+                    
+                    connectBtn.disabled = true;
+                    startResearchBtn.disabled = false;
+                    disconnectBtn.disabled = false;
+                };
+                
+                eventSource.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        addEvent(data);
+                        
+                        // Handle specific event types
+                        if (data.type === 'connection' && data.status === 'connected') {
+                            updateStatus('connected', 'Google ADK SSE connection established');
+                        }
+                    } catch (e) {
+                        addEvent({ type: 'raw_message', data: event.data, timestamp: new Date().toISOString() });
+                    }
+                };
+                
+                eventSource.onerror = (error) => {
+                    updateStatus('error', 'SSE connection error occurred');
+                    addEvent({ type: 'sse_error', error: error.toString(), timestamp: new Date().toISOString() });
+                    
+                    // Reset buttons on error
+                    connectBtn.disabled = false;
+                    startResearchBtn.disabled = true;
+                    disconnectBtn.disabled = true;
+                };
+                
+            } catch (error) {
+                updateStatus('error', `Failed to connect: ${error.message}`);
+                addEvent({ type: 'error', message: error.message, timestamp: new Date().toISOString() });
+            }
+        });
+        
+        // Step 3: Start Research (to test agent events)
+        startResearchBtn.addEventListener('click', async () => {
+            try {
+                updateStatus('connecting', 'Starting research via Google ADK...');
+                
+                const response = await fetch('http://localhost:8000/api/run_sse', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: 'Test research query for SSE connection',
+                        session_id: sessionId,
+                        type: 'research',
+                        priority: 'medium'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                addEvent({ type: 'research_started', result, timestamp: new Date().toISOString() });
+                
+                updateStatus('connected', 'Research started - watch for agent events');
+                startResearchBtn.disabled = true;
+                
+            } catch (error) {
+                updateStatus('error', `Failed to start research: ${error.message}`);
+                addEvent({ type: 'error', message: error.message, timestamp: new Date().toISOString() });
+            }
+        });
+        
+        // Disconnect
+        disconnectBtn.addEventListener('click', () => {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+            
+            updateStatus('disconnected', 'Disconnected from SSE');
+            addEvent({ type: 'disconnected', timestamp: new Date().toISOString() });
+            
+            connectBtn.disabled = false;
+            startResearchBtn.disabled = true;
+            disconnectBtn.disabled = true;
+        });
+        
+        // Clear events
+        clearEventsBtn.addEventListener('click', () => {
+            eventsEl.innerHTML = '<em>Events cleared.</em>';
+            eventCount = 0;
+            eventCountEl.textContent = eventCount;
+        });
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (eventSource) {
+                eventSource.close();
+            }
+        });
+    </script>
+</body>
+</html>

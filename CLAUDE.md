@@ -2,6 +2,33 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🚨 CRITICAL: PORT MANAGEMENT RULE
+
+**ABSOLUTE RULE: NEVER CHANGE DESIGNATED PORTS**
+
+### **Designated Ports:**
+- **Frontend (Next.js)**: `3000` - NEVER change
+- **Backend (FastAPI)**: `8000` - NEVER change
+
+### **When Ports Are Occupied:**
+1. **KILL the process using the port**
+2. **LAUNCH service on the designated port**  
+3. **NEVER adapt to alternative ports**
+
+**Enforcement Commands:**
+```bash
+# Kill port 3000 and start frontend
+kill -9 $(lsof -ti:3000) 2>/dev/null || true && npm run dev
+
+# Kill port 8000 and start backend  
+kill -9 $(lsof -ti:8000) 2>/dev/null || true && make dev-backend
+
+# Use utility script
+npm run clear-ports
+```
+
+**Violating this rule leads to configuration errors and test failures.**
+
 ## 🚨 CRITICAL: CONCURRENT EXECUTION & FILE MANAGEMENT
 
 **ABSOLUTE RULES**:

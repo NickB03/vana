@@ -1,539 +1,555 @@
 /**
- * SSE Client Hook
- * 
- * This hook provides a robust Server-Sent Events client with automatic
- * reconnection, exponential backoff, and comprehensive event handling
- * for the Vana research platform's real-time updates.
- * 
- * Based on contracts/sse-events.yaml specifications
+ * SSE Client Hook for Google ADK Agent Network
+ * Provides real-time streaming integration with the Google ADK backend
  */
 
-import { useEffect, useRef, useCallback, useState } from 'react';
-import {
-  SSEConfig,
-  SSEConnectionStatus,
-  SSEEventHandlers,
-  SSEEvent,
-  ConnectionEstablishedEvent,
-  HeartbeatEvent,
-  ConnectionErrorEvent,
-  QueryReceivedEvent,
-  ProcessingStartedEvent,
-  AgentStartedEvent,
-  AgentProgressEvent,
-  AgentCompletedEvent,
-  PartialResultEvent,
-  QualityCheckEvent,
-  ResultGeneratedEvent,
-  ProcessingCompleteEvent,
-  ErrorOccurredEvent,
-  TimeoutWarningEvent,
-  UserCancelledEvent,
-} from '../types/chat';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { apiClient } from '../src/lib/api-client';
+import { authService } from '../src/lib/auth';
 
-// =============================================================================
-// CONFIGURATION
-// =============================================================================
+// ===== SSE EVENT TYPES =====
 
-const DEFAULT_SSE_CONFIG: SSEConfig = {
-  url: 'http://localhost:8000/api/run_sse',
-  reconnect: true,
-  maxRetries: 10,
-  retryDelay: 1000,
-  heartbeatTimeout: 45000, // 45 seconds (server sends every 30)
-};
-
-// =============================================================================
-// HOOK INTERFACE
-// =============================================================================
-
-export interface UseSSEClientOptions {
-  config?: Partial<SSEConfig>;
-  handlers?: SSEEventHandlers;
-  autoConnect?: boolean;
-  token?: string;
+export interface SSEEvent<T = any> {
+  event: string;
+  data: T;
+  id?: string;
+  retry?: number;
 }
 
-export interface UseSSEClientReturn {
-  connectionStatus: SSEConnectionStatus;
-  connect: (queryContent?: string) => void;
-  disconnect: () => void;
-  reconnect: () => void;
+export interface ConnectionEvent {
+  type: 'connection';
+  status: 'connected' | 'disconnected';
+  sessionId: string;
+  timestamp: string;
+  authenticated?: boolean;
+  userId?: string;
+}
+
+export interface HeartbeatEvent {
+  type: 'heartbeat';
+  timestamp: string;
+}
+
+export interface AgentEvent {
+  type: 'agent_started' | 'agent_completed' | 'agent_progress';
+  sessionId: string;
+  agentId: string;
+  agentType: string;
+  timestamp: string;
+  data?: any;
+}
+
+export interface ResultEvent {
+  type: 'partial_result' | 'result_generated' | 'processing_complete';
+  sessionId: string;
+  content?: string;
+  resultId?: string;
+  timestamp: string;
+  data?: any;
+}
+
+export interface ErrorEvent {
+  type: 'error';
+  sessionId: string;
+  message: string;
+  errorCode?: string;
+  timestamp: string;
+  recoverable?: boolean;
+}
+
+export type SSEEventData = ConnectionEvent | HeartbeatEvent | AgentEvent | ResultEvent | ErrorEvent;
+
+// ===== CONNECTION RESILIENCE TYPES =====
+
+export interface ConnectionMetrics {
+  uptime: number;
+  totalConnections: number;
+  reconnectionCount: number;
+  averageLatency: number;
+  eventProcessingTime: number;
+  errorRate: number;
+  connectionQuality: 'excellent' | 'good' | 'fair' | 'poor';
+}
+
+export interface CircuitBreakerState {
+  state: 'closed' | 'open' | 'half-open';
+  failureCount: number;
+  lastFailureTime: number;
+  nextAttemptTime: number;
+}
+
+export interface ConnectionDiagnostics {
+  latency: number[];
+  packetsLost: number;
+  networkType: string;
+  effectiveBandwidth: number;
+  jitter: number;
+}
+
+// ===== SSE CLIENT HOOK =====
+
+export interface SSEClientOptions {
+  sessionId: string;
+  autoReconnect?: boolean;
+  maxRetries?: number;
+  initialRetryDelay?: number;
+  maxRetryDelay?: number;
+  heartbeatTimeout?: number;
+  heartbeatInterval?: number;
+  connectionTimeout?: number;
+  eventQueueSize?: number;
+  enableCircuitBreaker?: boolean;
+  enableMetrics?: boolean;
+  enableDiagnostics?: boolean;
+  jitterFactor?: number;
+}
+
+export interface SSEClientState {
   isConnected: boolean;
-  lastEvent: SSEEvent | null;
-  lastError: string | null;
+  isReconnecting: boolean;
+  connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'error' | 'circuit-open';
+  lastHeartbeat: Date | null;
+  events: SSEEventData[];
+  error: string | null;
   retryCount: number;
-  connectionId: string | null;
+  connectionStartTime: Date | null;
+  metrics: ConnectionMetrics;
+  circuitBreaker: CircuitBreakerState;
+  diagnostics: ConnectionDiagnostics;
+  eventQueueOverflow: boolean;
 }
 
-// =============================================================================
-// EXPONENTIAL BACKOFF UTILITY
-// =============================================================================
-
-class ExponentialBackoff {
-  private attempt = 0;
-  private readonly initialDelay: number;
-  private readonly maxDelay: number;
-  private readonly multiplier: number;
-  private readonly maxAttempts: number;
-
-  constructor(
-    initialDelay = 1000,
-    maxDelay = 30000,
-    multiplier = 2,
-    maxAttempts = 10
-  ) {
-    this.initialDelay = initialDelay;
-    this.maxDelay = maxDelay;
-    this.multiplier = multiplier;
-    this.maxAttempts = maxAttempts;
-  }
-
-  next(): number | null {
-    if (this.attempt >= this.maxAttempts) {
-      return null;
-    }
-
-    const delay = Math.min(
-      this.initialDelay * Math.pow(this.multiplier, this.attempt),
-      this.maxDelay
-    );
-
-    this.attempt++;
-    return delay;
-  }
-
-  reset(): void {
-    this.attempt = 0;
-  }
-
-  get currentAttempt(): number {
-    return this.attempt;
-  }
-}
-
-// =============================================================================
-// SSE CLIENT HOOK
-// =============================================================================
-
-export function useSSEClient(options: UseSSEClientOptions = {}): UseSSEClientReturn {
+export function useSSEClient(options: SSEClientOptions) {
   const {
-    config: userConfig = {},
-    handlers = {},
-    autoConnect = false,
-    token,
+    sessionId,
+    autoReconnect = true,
+    maxRetries = 10,
+    initialRetryDelay = 1000,
+    maxRetryDelay = 30000,
+    heartbeatTimeout = 35000, // 35 seconds (backend sends every 30s)
+    heartbeatInterval = 30000, // 30 seconds heartbeat interval
+    connectionTimeout = 10000, // 10 seconds connection timeout
+    eventQueueSize = 100, // Maximum events to keep in memory
+    enableCircuitBreaker = true,
+    enableMetrics = true,
+    enableDiagnostics = false,
+    jitterFactor = 0.1, // 10% jitter for backoff
   } = options;
 
-  const config = { ...DEFAULT_SSE_CONFIG, ...userConfig };
-  
   // State
-  const [connectionStatus, setConnectionStatus] = useState<SSEConnectionStatus>('disconnected');
-  const [lastEvent, setLastEvent] = useState<SSEEvent | null>(null);
-  const [lastError, setLastError] = useState<string | null>(null);
-  const [connectionId, setConnectionId] = useState<string | null>(null);
+  const [state, setState] = useState<SSEClientState>({
+    isConnected: false,
+    isReconnecting: false,
+    connectionStatus: 'disconnected',
+    lastHeartbeat: null,
+    events: [],
+    error: null,
+    retryCount: 0,
+    connectionStartTime: null,
+    metrics: {
+      uptime: 0,
+      totalConnections: 0,
+      reconnectionCount: 0,
+      averageLatency: 0,
+      eventProcessingTime: 0,
+      errorRate: 0,
+      connectionQuality: 'excellent'
+    },
+    circuitBreaker: {
+      state: 'closed',
+      failureCount: 0,
+      lastFailureTime: 0,
+      nextAttemptTime: 0
+    },
+    diagnostics: {
+      latency: [],
+      packetsLost: 0,
+      networkType: 'unknown',
+      effectiveBandwidth: 0,
+      jitter: 0
+    },
+    eventQueueOverflow: false
+  });
 
-  // Refs for persistent data
+  // Refs
   const eventSourceRef = useRef<EventSource | null>(null);
-  const backoffRef = useRef<ExponentialBackoff>(
-    new ExponentialBackoff(config.retryDelay, 30000, 2, config.maxRetries)
-  );
   const heartbeatTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const queryContentRef = useRef<string | null>(null);
+  const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isManualDisconnectRef = useRef(false);
+  const metricsIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const eventTimestampsRef = useRef<number[]>([]);
+  const latencyMeasurementsRef = useRef<{ start: number; end?: number }[]>([]);
 
-  // =============================================================================
-  // EVENT HANDLERS
-  // =============================================================================
+  // Event handlers
+  const eventHandlersRef = useRef<{
+    onConnection?: (event: ConnectionEvent) => void;
+    onHeartbeat?: (event: HeartbeatEvent) => void;
+    onAgent?: (event: AgentEvent) => void;
+    onResult?: (event: ResultEvent) => void;
+    onError?: (event: ErrorEvent) => void;
+    onRawEvent?: (event: MessageEvent) => void;
+  }>({});
 
-  const handleConnectionEstablished = useCallback((data: ConnectionEstablishedEvent) => {
-    console.log('[SSE] Connection established:', data);
-    setConnectionStatus('connected');
-    setConnectionId(data.connectionId);
-    setLastError(null);
-    backoffRef.current.reset();
+  // Update state helper
+  const updateState = useCallback((updates: Partial<SSEClientState>) => {
+    setState(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  // Add event to history with memory management
+  const addEvent = useCallback((event: SSEEventData) => {
+    const eventProcessingStart = performance.now();
     
-    // Set up heartbeat monitoring
-    if (heartbeatTimeoutRef.current) {
-      clearTimeout(heartbeatTimeoutRef.current);
-    }
-    
-    heartbeatTimeoutRef.current = setTimeout(() => {
-      console.warn('[SSE] Heartbeat timeout - connection may be stale');
-      setConnectionStatus('reconnecting');
-      reconnect();
-    }, config.heartbeatTimeout);
-
-    handlers.onConnectionEstablished?.({ event: 'connection_established', data });
-  }, [handlers.onConnectionEstablished, config.heartbeatTimeout]);
-
-  const handleHeartbeat = useCallback((data: HeartbeatEvent) => {
-    // Reset heartbeat timeout on each heartbeat
-    if (heartbeatTimeoutRef.current) {
-      clearTimeout(heartbeatTimeoutRef.current);
-    }
-    
-    heartbeatTimeoutRef.current = setTimeout(() => {
-      console.warn('[SSE] Heartbeat timeout - connection may be stale');
-      setConnectionStatus('reconnecting');
-      reconnect();
-    }, config.heartbeatTimeout);
-
-    handlers.onHeartbeat?.({ event: 'heartbeat', data });
-  }, [handlers.onHeartbeat, config.heartbeatTimeout]);
-
-  const handleConnectionError = useCallback((data: ConnectionErrorEvent) => {
-    console.error('[SSE] Connection error:', data);
-    setLastError(data.message);
-    setConnectionStatus('error');
-    
-    if (data.reconnectAllowed && config.reconnect) {
-      const delay = data.retryAfter * 1000 || backoffRef.current.next();
-      if (delay) {
-        setTimeout(() => reconnect(), delay);
+    setState(prev => {
+      const maxEvents = eventQueueSize;
+      const newEvents = [...prev.events, event];
+      
+      // Check for queue overflow
+      let eventQueueOverflow = false;
+      if (newEvents.length > maxEvents) {
+        eventQueueOverflow = true;
+        newEvents.splice(0, newEvents.length - maxEvents);
       }
-    }
+      
+      // Update metrics
+      const eventProcessingTime = performance.now() - eventProcessingStart;
+      const updatedMetrics = {
+        ...prev.metrics,
+        eventProcessingTime: (prev.metrics.eventProcessingTime + eventProcessingTime) / 2
+      };
+      
+      return {
+        ...prev,
+        events: newEvents,
+        eventQueueOverflow,
+        metrics: updatedMetrics
+      };
+    });
+  }, [eventQueueSize]);
 
-    handlers.onConnectionError?.({ event: 'connection_error', data });
-  }, [handlers.onConnectionError, config.reconnect]);
-
-  // Research event handlers
-  const handleQueryReceived = useCallback((data: QueryReceivedEvent) => {
-    handlers.onQueryReceived?.({ event: 'query_received', data });
-  }, [handlers.onQueryReceived]);
-
-  const handleProcessingStarted = useCallback((data: ProcessingStartedEvent) => {
-    handlers.onProcessingStarted?.({ event: 'processing_started', data });
-  }, [handlers.onProcessingStarted]);
-
-  const handleAgentStarted = useCallback((data: AgentStartedEvent) => {
-    handlers.onAgentStarted?.({ event: 'agent_started', data });
-  }, [handlers.onAgentStarted]);
-
-  const handleAgentProgress = useCallback((data: AgentProgressEvent) => {
-    handlers.onAgentProgress?.({ event: 'agent_progress', data });
-  }, [handlers.onAgentProgress]);
-
-  const handleAgentCompleted = useCallback((data: AgentCompletedEvent) => {
-    handlers.onAgentCompleted?.({ event: 'agent_completed', data });
-  }, [handlers.onAgentCompleted]);
-
-  const handlePartialResult = useCallback((data: PartialResultEvent) => {
-    handlers.onPartialResult?.({ event: 'partial_result', data });
-  }, [handlers.onPartialResult]);
-
-  const handleQualityCheck = useCallback((data: QualityCheckEvent) => {
-    handlers.onQualityCheck?.({ event: 'quality_check', data });
-  }, [handlers.onQualityCheck]);
-
-  const handleResultGenerated = useCallback((data: ResultGeneratedEvent) => {
-    handlers.onResultGenerated?.({ event: 'result_generated', data });
-  }, [handlers.onResultGenerated]);
-
-  const handleProcessingComplete = useCallback((data: ProcessingCompleteEvent) => {
-    handlers.onProcessingComplete?.({ event: 'processing_complete', data });
-  }, [handlers.onProcessingComplete]);
-
-  const handleErrorOccurred = useCallback((data: ErrorOccurredEvent) => {
-    console.error('[SSE] Processing error:', data);
-    setLastError(data.message);
-    handlers.onErrorOccurred?.({ event: 'error_occurred', data });
-  }, [handlers.onErrorOccurred]);
-
-  const handleTimeoutWarning = useCallback((data: TimeoutWarningEvent) => {
-    console.warn('[SSE] Timeout warning:', data);
-    handlers.onTimeoutWarning?.({ event: 'timeout_warning', data });
-  }, [handlers.onTimeoutWarning]);
-
-  const handleUserCancelled = useCallback((data: UserCancelledEvent) => {
-    handlers.onUserCancelled?.({ event: 'user_cancelled', data });
-  }, [handlers.onUserCancelled]);
-
-  // =============================================================================
-  // CONNECTION MANAGEMENT
-  // =============================================================================
-
-  const disconnect = useCallback(() => {
-    console.log('[SSE] Disconnecting...');
-    
-    // Clear all timeouts
+  // Clear heartbeat timeout
+  const clearHeartbeatTimeout = useCallback(() => {
     if (heartbeatTimeoutRef.current) {
       clearTimeout(heartbeatTimeoutRef.current);
       heartbeatTimeoutRef.current = null;
     }
-    
+  }, []);
+
+  // Clear all timeouts
+  const clearAllTimeouts = useCallback(() => {
+    clearHeartbeatTimeout();
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+    if (connectionTimeoutRef.current) {
+      clearTimeout(connectionTimeoutRef.current);
+      connectionTimeoutRef.current = null;
+    }
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
+    if (metricsIntervalRef.current) {
+      clearInterval(metricsIntervalRef.current);
+      metricsIntervalRef.current = null;
+    }
+  }, []);
 
-    // Close EventSource
+  // Set heartbeat timeout
+  const setHeartbeatTimeout = useCallback(() => {
+    clearHeartbeatTimeout();
+    heartbeatTimeoutRef.current = setTimeout(() => {
+      console.warn('SSE heartbeat timeout - connection may be lost');
+      updateState({ 
+        error: 'Connection heartbeat timeout',
+        connectionStatus: 'error'
+      });
+    }, heartbeatTimeout);
+  }, [heartbeatTimeout, clearHeartbeatTimeout, updateState]);
+
+  // Parse SSE event
+  const parseSSEEvent = useCallback((event: MessageEvent): SSEEventData | null => {
+    try {
+      const data = JSON.parse(event.data);
+      
+      // Add sessionId if not present
+      if (!data.sessionId && sessionId) {
+        data.sessionId = sessionId;
+      }
+
+      return data as SSEEventData;
+    } catch (error) {
+      console.error('Failed to parse SSE event:', error, event.data);
+      return null;
+    }
+  }, [sessionId]);
+
+  // Handle SSE events
+  const handleEvent = useCallback((event: MessageEvent) => {
+    // Call raw event handler if provided
+    eventHandlersRef.current.onRawEvent?.(event);
+
+    const parsedEvent = parseSSEEvent(event);
+    if (!parsedEvent) return;
+
+    // Add to event history
+    addEvent(parsedEvent);
+
+    // Handle specific event types
+    switch (parsedEvent.type) {
+      case 'connection':
+        eventHandlersRef.current.onConnection?.(parsedEvent);
+        if (parsedEvent.status === 'connected') {
+          updateState({ 
+            isConnected: true, 
+            connectionStatus: 'connected',
+            error: null,
+            retryCount: 0
+          });
+          setHeartbeatTimeout();
+        }
+        break;
+
+      case 'heartbeat':
+        eventHandlersRef.current.onHeartbeat?.(parsedEvent);
+        updateState({ lastHeartbeat: new Date() });
+        setHeartbeatTimeout();
+        break;
+
+      case 'agent_started':
+      case 'agent_completed':
+      case 'agent_progress':
+        eventHandlersRef.current.onAgent?.(parsedEvent);
+        break;
+
+      case 'partial_result':
+      case 'result_generated':
+      case 'processing_complete':
+        eventHandlersRef.current.onResult?.(parsedEvent);
+        break;
+
+      case 'error':
+        eventHandlersRef.current.onError?.(parsedEvent);
+        updateState({ error: parsedEvent.message });
+        break;
+
+      default:
+        console.log('Unknown SSE event type:', parsedEvent.type, parsedEvent);
+    }
+  }, [parseSSEEvent, addEvent, updateState, setHeartbeatTimeout]);
+
+  // Connect to SSE endpoint
+  const connect = useCallback(() => {
+    if (eventSourceRef.current) {
+      return; // Already connected or connecting
+    }
+
+    isManualDisconnectRef.current = false;
+    updateState({ 
+      connectionStatus: 'connecting', 
+      error: null 
+    });
+
+    try {
+      console.log('Connecting to Google ADK SSE endpoint for session:', sessionId);
+      
+      // Use the new authenticated EventSource method
+      const eventSource = apiClient.createAuthenticatedEventSource(sessionId);
+
+      eventSource.onopen = () => {
+        console.log('SSE connection opened');
+        clearHeartbeatTimeout();
+      };
+
+      eventSource.onmessage = handleEvent;
+
+      eventSource.onerror = (error) => {
+        console.error('Google ADK SSE connection error:', error);
+        
+        if (!isManualDisconnectRef.current) {
+          updateState({ 
+            isConnected: false,
+            connectionStatus: 'error',
+            error: 'Connection error occurred'
+          });
+
+          // Auto-reconnect if enabled
+          if (autoReconnect && state.retryCount < maxRetries) {
+            const delay = initialRetryDelay * Math.pow(2, state.retryCount); // Exponential backoff
+            console.log(`Reconnecting to Google ADK in ${delay}ms (attempt ${state.retryCount + 1}/${maxRetries})`);
+            
+            updateState({ 
+              isReconnecting: true, 
+              connectionStatus: 'reconnecting',
+              retryCount: state.retryCount + 1 
+            });
+
+            reconnectTimeoutRef.current = setTimeout(() => {
+              disconnect();
+              connect();
+            }, delay);
+          }
+        }
+      };
+
+      eventSourceRef.current = eventSource;
+    } catch (error) {
+      console.error('Failed to create SSE connection:', error);
+      updateState({ 
+        connectionStatus: 'error',
+        error: 'Failed to establish connection'
+      });
+    }
+  }, [sessionId, handleEvent, autoReconnect, maxRetries, initialRetryDelay, state.retryCount, updateState, clearHeartbeatTimeout]);
+
+  // Disconnect from SSE endpoint
+  const disconnect = useCallback(() => {
+    isManualDisconnectRef.current = true;
+
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
       eventSourceRef.current = null;
     }
 
-    setConnectionStatus('disconnected');
-    setConnectionId(null);
-    backoffRef.current.reset();
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
+    clearHeartbeatTimeout();
+
+    updateState({
+      isConnected: false,
+      isReconnecting: false,
+      connectionStatus: 'disconnected',
+      error: null,
+      retryCount: 0,
+    });
+  }, [clearHeartbeatTimeout, updateState]);
+
+  // Register event handlers
+  const on = useCallback((
+    eventType: keyof typeof eventHandlersRef.current,
+    handler: any
+  ) => {
+    eventHandlersRef.current[eventType] = handler;
   }, []);
 
-  const connect = useCallback((queryContent?: string) => {
-    // Store query content for reconnections
-    if (queryContent !== undefined) {
-      queryContentRef.current = queryContent;
-    }
+  // Remove event handlers
+  const off = useCallback((eventType: keyof typeof eventHandlersRef.current) => {
+    delete eventHandlersRef.current[eventType];
+  }, []);
 
-    // Don't connect if already connected
-    if (connectionStatus === 'connected' || connectionStatus === 'connecting') {
-      return;
-    }
+  // Clear event history
+  const clearEvents = useCallback(() => {
+    setState(prev => ({ ...prev, events: [] }));
+  }, []);
 
-    console.log('[SSE] Connecting to:', config.url);
-    setConnectionStatus('connecting');
-    setLastError(null);
-
-    try {
-      // Build URL with query parameters
-      const url = new URL(config.url);
-      if (queryContentRef.current) {
-        url.searchParams.set('query', queryContentRef.current);
-      }
-
-      // Create EventSource with auth headers if available
-      const eventSource = new EventSource(url.toString());
-      eventSourceRef.current = eventSource;
-
-      // Set up event listeners
-      eventSource.onopen = () => {
-        console.log('[SSE] Connection opened');
-      };
-
-      eventSource.onerror = (event) => {
-        console.error('[SSE] Connection error:', event);
-        
-        if (eventSource.readyState === EventSource.CLOSED) {
-          setConnectionStatus('disconnected');
-          
-          if (config.reconnect) {
-            const delay = backoffRef.current.next();
-            if (delay) {
-              console.log(`[SSE] Reconnecting in ${delay}ms...`);
-              setConnectionStatus('reconnecting');
-              reconnectTimeoutRef.current = setTimeout(() => {
-                connect();
-              }, delay);
-            } else {
-              console.error('[SSE] Max reconnection attempts reached');
-              setConnectionStatus('error');
-              setLastError('Maximum reconnection attempts exceeded');
-            }
-          }
-        }
-      };
-
-      // Message handler for all SSE events
-      eventSource.onmessage = (event) => {
-        try {
-          const eventData: SSEEvent = JSON.parse(event.data);
-          setLastEvent(eventData);
-
-          // Route to specific handlers based on event type
-          switch (eventData.event) {
-            case 'connection_established':
-              handleConnectionEstablished(eventData.data);
-              break;
-            case 'heartbeat':
-              handleHeartbeat(eventData.data);
-              break;
-            case 'connection_error':
-              handleConnectionError(eventData.data);
-              break;
-            case 'query_received':
-              handleQueryReceived(eventData.data);
-              break;
-            case 'processing_started':
-              handleProcessingStarted(eventData.data);
-              break;
-            case 'agent_started':
-              handleAgentStarted(eventData.data);
-              break;
-            case 'agent_progress':
-              handleAgentProgress(eventData.data);
-              break;
-            case 'agent_completed':
-              handleAgentCompleted(eventData.data);
-              break;
-            case 'partial_result':
-              handlePartialResult(eventData.data);
-              break;
-            case 'quality_check':
-              handleQualityCheck(eventData.data);
-              break;
-            case 'result_generated':
-              handleResultGenerated(eventData.data);
-              break;
-            case 'processing_complete':
-              handleProcessingComplete(eventData.data);
-              break;
-            case 'error_occurred':
-              handleErrorOccurred(eventData.data);
-              break;
-            case 'timeout_warning':
-              handleTimeoutWarning(eventData.data);
-              break;
-            case 'user_cancelled':
-              handleUserCancelled(eventData.data);
-              break;
-            default:
-              console.warn('[SSE] Unhandled event type:', eventData.event);
-          }
-        } catch (error) {
-          console.error('[SSE] Failed to parse event data:', error);
-        }
-      };
-
-    } catch (error) {
-      console.error('[SSE] Failed to create EventSource:', error);
-      setConnectionStatus('error');
-      setLastError(error instanceof Error ? error.message : 'Connection failed');
-    }
-  }, [
-    config.url,
-    config.reconnect,
-    connectionStatus,
-    handleConnectionEstablished,
-    handleHeartbeat,
-    handleConnectionError,
-    handleQueryReceived,
-    handleProcessingStarted,
-    handleAgentStarted,
-    handleAgentProgress,
-    handleAgentCompleted,
-    handlePartialResult,
-    handleQualityCheck,
-    handleResultGenerated,
-    handleProcessingComplete,
-    handleErrorOccurred,
-    handleTimeoutWarning,
-    handleUserCancelled,
-  ]);
-
+  // Reconnect manually
   const reconnect = useCallback(() => {
-    console.log('[SSE] Reconnecting...');
     disconnect();
-    setTimeout(() => connect(), 100); // Brief delay before reconnection
+    setTimeout(connect, 100);
   }, [disconnect, connect]);
 
-  // =============================================================================
-  // EFFECTS
-  // =============================================================================
-
-  // Auto-connect on mount if enabled
+  // Initialize connection on mount
   useEffect(() => {
-    if (autoConnect) {
+    if (sessionId) {
       connect();
     }
 
-    // Cleanup on unmount
     return () => {
       disconnect();
     };
-  }, [autoConnect, connect, disconnect]);
-
-  // Handle visibility changes to manage connection
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // Page is hidden - pause heartbeat monitoring
-        if (heartbeatTimeoutRef.current) {
-          clearTimeout(heartbeatTimeoutRef.current);
-          heartbeatTimeoutRef.current = null;
-        }
-      } else {
-        // Page is visible - resume heartbeat monitoring if connected
-        if (connectionStatus === 'connected') {
-          heartbeatTimeoutRef.current = setTimeout(() => {
-            console.warn('[SSE] Heartbeat timeout after visibility change');
-            reconnect();
-          }, config.heartbeatTimeout);
-        }
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [connectionStatus, config.heartbeatTimeout, reconnect]);
-
-  // =============================================================================
-  // RETURN INTERFACE
-  // =============================================================================
+  }, [sessionId]); // Only reconnect when sessionId changes
 
   return {
-    connectionStatus,
+    // State
+    ...state,
+    
+    // Methods
     connect,
     disconnect,
     reconnect,
-    isConnected: connectionStatus === 'connected',
-    lastEvent,
-    lastError,
-    retryCount: backoffRef.current.currentAttempt,
-    connectionId,
+    on,
+    off,
+    clearEvents,
+    
+    // Utilities
+    isHealthy: state.isConnected && !state.error,
+    timeSinceLastHeartbeat: state.lastHeartbeat 
+      ? Date.now() - state.lastHeartbeat.getTime() 
+      : null,
   };
 }
 
-// =============================================================================
-// UTILITY HOOKS
-// =============================================================================
+// ===== CONVENIENCE HOOKS =====
 
 /**
- * Hook for simplified research query submission with SSE
+ * Hook for monitoring agent network events
  */
-export function useResearchQuery() {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [currentAgent, setCurrentAgent] = useState<string | null>(null);
-  const [partialResults, setPartialResults] = useState<string[]>([]);
+export function useAgentNetwork(sessionId: string) {
+  const sse = useSSEClient({ sessionId });
+  const [agents, setAgents] = useState<Map<string, any>>(new Map());
 
-  const sseClient = useSSEClient({
-    handlers: {
-      onProcessingStarted: () => {
-        setIsProcessing(true);
-        setProgress(0);
-        setPartialResults([]);
-      },
-      onAgentStarted: ({ data }) => {
-        setCurrentAgent(data.task);
-      },
-      onAgentProgress: ({ data }) => {
-        setProgress(data.progress);
-      },
-      onPartialResult: ({ data }) => {
-        setPartialResults(prev => [...prev, data.content]);
-      },
-      onProcessingComplete: () => {
-        setIsProcessing(false);
-        setProgress(100);
-        setCurrentAgent(null);
-      },
-      onErrorOccurred: () => {
-        setIsProcessing(false);
-        setCurrentAgent(null);
-      },
-    },
-  });
+  useEffect(() => {
+    const handleAgent = (event: AgentEvent) => {
+      setAgents(prev => {
+        const updated = new Map(prev);
+        const current = updated.get(event.agentId) || {};
+        
+        updated.set(event.agentId, {
+          ...current,
+          id: event.agentId,
+          type: event.agentType,
+          status: event.type.replace('agent_', ''),
+          lastUpdate: new Date(event.timestamp),
+          data: event.data,
+        });
+        
+        return updated;
+      });
+    };
 
-  const submitQuery = useCallback((query: string) => {
-    sseClient.connect(query);
-  }, [sseClient]);
+    sse.on('onAgent', handleAgent);
+    return () => sse.off('onAgent');
+  }, [sse]);
 
   return {
-    ...sseClient,
-    submitQuery,
-    isProcessing,
-    progress,
-    currentAgent,
-    partialResults,
+    ...sse,
+    agents: Array.from(agents.values()),
+    agentMap: agents,
   };
 }
+
+/**
+ * Hook for receiving research results
+ */
+export function useResearchResults(sessionId: string) {
+  const sse = useSSEClient({ sessionId });
+  const [results, setResults] = useState<any[]>([]);
+
+  useEffect(() => {
+    const handleResult = (event: ResultEvent) => {
+      setResults(prev => [...prev, {
+        id: event.resultId || `result-${Date.now()}`,
+        type: event.type,
+        content: event.content,
+        timestamp: new Date(event.timestamp),
+        data: event.data,
+      }]);
+    };
+
+    sse.on('onResult', handleResult);
+    return () => sse.off('onResult');
+  }, [sse]);
+
+  return {
+    ...sse,
+    results,
+    clearResults: () => setResults([]),
+  };
+}
+
+export default useSSEClient;

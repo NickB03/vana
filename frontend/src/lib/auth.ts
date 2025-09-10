@@ -61,6 +61,9 @@ export class AuthService {
   private constructor() {
     // Load existing auth from localStorage on initialization
     this.loadStoredAuth();
+    
+    // Set up automatic token refresh on 401 errors
+    this.setupTokenRefreshHandler();
   }
 
   static getInstance(): AuthService {
@@ -164,13 +167,18 @@ export class AuthService {
   }
 
   private isTokenExpired(token: AuthToken): boolean {
-    if (!token.expiresIn) return false;
+    if (!token.token) return true;
     
     try {
       const payload = JSON.parse(atob(token.token.split('.')[1]));
       const expiry = payload.exp * 1000; // Convert to milliseconds
-      return Date.now() >= expiry;
-    } catch {
+      const now = Date.now();
+      
+      // Add 5 minute buffer for token refresh
+      const bufferTime = 5 * 60 * 1000;
+      return now >= (expiry - bufferTime);
+    } catch (error) {
+      console.error('Failed to decode token:', error);
       return true; // If we can't decode, assume expired
     }
   }
@@ -181,23 +189,23 @@ export class AuthService {
     try {
       const response = await apiClient.login(credentials.email, credentials.password);
       
-      // Create auth token from response
+      // Transform Google ADK auth response to frontend format
       const token: AuthToken = {
-        token: response.token,
+        token: response.tokens.access_token,
         type: 'Bearer',
-        expiresIn: 3600, // Default 1 hour
-        refreshToken: response.refreshToken,
+        expiresIn: response.tokens.expires_in || 1800, // 30 minutes default
+        refreshToken: response.tokens.refresh_token,
       };
 
-      // Create user from response
+      // Transform Google ADK user response to frontend format
       const user: AuthUser = {
-        id: response.user.id,
+        id: response.user.id.toString(),
         email: response.user.email,
-        displayName: response.user.displayName,
+        displayName: this.getDisplayName(response.user),
         avatar: response.user.avatar,
-        isVerified: response.user.isVerified || false,
-        createdAt: new Date(response.user.createdAt),
-        lastLoginAt: new Date(),
+        isVerified: response.user.is_verified || false,
+        createdAt: new Date(response.user.created_at),
+        lastLoginAt: new Date(response.user.last_login || Date.now()),
       };
 
       // Store auth state
@@ -213,7 +221,7 @@ export class AuthService {
 
     } catch (error) {
       const errorMessage = isApiError(error) 
-        ? error.message 
+        ? this.transformApiError(error)
         : 'Login failed. Please check your credentials.';
       
       this.notifyListeners(errorMessage);
@@ -221,19 +229,81 @@ export class AuthService {
     }
   }
 
+  private getDisplayName(user: { first_name?: string; last_name?: string; username?: string; email?: string }): string {
+    if (user.first_name && user.last_name) {
+      return `${user.first_name} ${user.last_name}`;
+    }
+    if (user.first_name) {
+      return user.first_name;
+    }
+    if (user.username) {
+      return user.username;
+    }
+    return user.email.split('@')[0];
+  }
+
+  private transformApiError(error: any): string {
+    // Transform Google ADK error responses to user-friendly messages
+    if (error.status === 401) {
+      return 'Invalid email or password. Please try again.';
+    }
+    if (error.status === 409) {
+      return 'An account with this email already exists.';
+    }
+    if (error.status === 400 && (error.message?.includes('password') || error.details?.includes('password'))) {
+      return 'Password does not meet security requirements.';
+    }
+    if (error.status === 400 && error.message?.includes('invalid_grant')) {
+      return 'Invalid credentials. Please check your email and password.';
+    }
+    return error.message || 'An error occurred. Please try again.';
+  }
+
   async register(data: RegisterData): Promise<AuthUser> {
     try {
-      const response = await apiClient.post('/auth/register', data);
-      
-      // Auto-login after successful registration
-      return await this.login({
+      // Transform frontend register data to Google ADK format
+      const adkRegisterData = {
         email: data.email,
+        username: data.email.split('@')[0], // Use email prefix as username
         password: data.password,
-      });
+        first_name: data.displayName.split(' ')[0] || data.displayName,
+        last_name: data.displayName.split(' ').slice(1).join(' ') || undefined,
+      };
+      
+      const response = await apiClient.register(adkRegisterData);
+      
+      // Transform response and set auth state directly
+      const token: AuthToken = {
+        token: response.tokens.access_token,
+        type: 'Bearer',
+        expiresIn: response.tokens.expires_in || 1800,
+        refreshToken: response.tokens.refresh_token,
+      };
+
+      const user: AuthUser = {
+        id: response.user.id.toString(),
+        email: response.user.email,
+        displayName: this.getDisplayName(response.user),
+        avatar: response.user.avatar,
+        isVerified: response.user.is_verified || false,
+        createdAt: new Date(response.user.created_at),
+        lastLoginAt: new Date(),
+      };
+
+      // Store auth state
+      this.authToken = token;
+      this.currentUser = user;
+      this.storeAuth(token, user);
+      
+      // Set token in API client
+      apiClient.setAuthToken(token.token);
+      
+      this.notifyListeners();
+      return user;
 
     } catch (error) {
       const errorMessage = isApiError(error)
-        ? error.message
+        ? this.transformApiError(error)
         : 'Registration failed. Please try again.';
       
       this.notifyListeners(errorMessage);
@@ -243,8 +313,10 @@ export class AuthService {
 
   async logout(): Promise<void> {
     try {
-      // Try to logout on server
-      await apiClient.logout();
+      // Try to logout on Google ADK backend with refresh token
+      if (this.authToken?.refreshToken) {
+        await apiClient.logout(this.authToken.refreshToken);
+      }
     } catch (error) {
       // Don't throw on logout errors, just log them
       console.warn('Server logout failed:', error);
@@ -264,15 +336,14 @@ export class AuthService {
         throw new Error('No refresh token available');
       }
 
-      const response = await apiClient.post('/auth/refresh', {
-        refreshToken: this.authToken.refreshToken,
-      });
+      console.log('Refreshing authentication token...');
+      const response = await apiClient.refreshToken(this.authToken.refreshToken);
 
       const newToken: AuthToken = {
-        token: response.token,
+        token: response.access_token,
         type: 'Bearer',
-        expiresIn: response.expiresIn || 3600,
-        refreshToken: response.refreshToken || this.authToken.refreshToken,
+        expiresIn: response.expires_in || 1800,
+        refreshToken: response.refresh_token || this.authToken.refreshToken,
       };
 
       this.authToken = newToken;
@@ -283,8 +354,11 @@ export class AuthService {
       
       apiClient.setAuthToken(newToken.token);
       this.notifyListeners();
+      
+      console.log('Token refreshed successfully');
 
     } catch (error) {
+      console.error('Token refresh failed:', error);
       // If refresh fails, logout the user
       await this.logout();
       throw error;
@@ -297,16 +371,16 @@ export class AuthService {
     }
 
     try {
-      const response = await apiClient.get('/auth/me');
+      const response = await apiClient.getCurrentUser();
       
       const user: AuthUser = {
-        id: response.user.id,
-        email: response.user.email,
-        displayName: response.user.displayName,
-        avatar: response.user.avatar,
-        isVerified: response.user.isVerified || false,
-        createdAt: new Date(response.user.createdAt),
-        lastLoginAt: new Date(response.user.lastLoginAt),
+        id: response.id.toString(),
+        email: response.email,
+        displayName: this.getDisplayName(response),
+        avatar: response.avatar,
+        isVerified: response.is_verified || false,
+        createdAt: new Date(response.created_at),
+        lastLoginAt: new Date(response.last_login || Date.now()),
       };
 
       this.currentUser = user;
@@ -384,6 +458,70 @@ export class AuthService {
   isDevMode(): boolean {
     return process.env.NEXT_PUBLIC_AUTH_REQUIRE_SSE_AUTH === 'false' ||
            process.env.NODE_ENV === 'development';
+  }
+
+  // ===== AUTOMATIC TOKEN REFRESH =====
+
+  private setupTokenRefreshHandler() {
+    if (typeof window === 'undefined') return;
+
+    // Listen for token expiration events from API client
+    window.addEventListener('auth:token_expired', async (event: CustomEvent) => {
+      if (!this.authToken?.refreshToken) {
+        // No refresh token available, logout user
+        await this.logout();
+        return;
+      }
+
+      try {
+        await this.refreshToken();
+        console.log('Token automatically refreshed');
+      } catch (error) {
+        console.error('Automatic token refresh failed:', error);
+        await this.logout();
+      }
+    });
+  }
+
+  /**
+   * Validate current authentication state
+   */
+  async validateCurrentAuth(): Promise<boolean> {
+    if (!this.isAuthenticated()) {
+      return false;
+    }
+
+    try {
+      // Test the current token
+      const isValid = await apiClient.validateAuth();
+      if (!isValid) {
+        // Token is invalid, try to refresh
+        if (this.authToken?.refreshToken) {
+          await this.refreshToken();
+          return true;
+        } else {
+          // No refresh token, logout
+          await this.logout();
+          return false;
+        }
+      }
+      return true;
+    } catch (error) {
+      console.error('Auth validation failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Ensure user is authenticated before API calls
+   */
+  async ensureAuthenticated(): Promise<boolean> {
+    if (this.isDevMode() && !this.isAuthenticated()) {
+      this.createDevSession();
+      return true;
+    }
+
+    return this.validateCurrentAuth();
   }
 }
 

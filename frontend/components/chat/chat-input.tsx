@@ -17,7 +17,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { QueryType, QueryParameters, CreateResearchQueryRequest } from '../../src/types/chat';
+import { QueryType, CreateResearchQueryRequest } from '../../src/types/chat';
 
 interface ChatInputProps {
   onSubmit: (request: CreateResearchQueryRequest) => void;
@@ -150,8 +150,9 @@ export function ChatInput({
     return colors[type];
   };
 
-  // Temporarily allow submission when disconnected for testing
+  // Allow submission when disconnected for testing, but show status
   const isSubmitDisabled = !message.trim() || disabled || isProcessing;
+  const isOffline = connectionStatus === 'disconnected' || connectionStatus === 'error';
 
   return (
     <div className="w-full max-w-4xl mx-auto p-4 space-y-4">

@@ -1,0 +1,703 @@
+/**
+ * Error Handling Integration Tests
+ * Tests all error scenarios, recovery mechanisms, and error boundaries
+ */
+
+import { renderHook, act, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import { useSSEClient } from '../../hooks/useSSEClient';
+import { apiClient, ApiError } from '../../src/lib/api-client';
+import { authService } from '../../src/lib/auth';
+
+describe('Error Handling Integration Tests', () => {
+  const sessionId = 'error-test-session';
+  let cleanup: (() => void)[] = [];
+
+  afterEach(() => {
+    cleanup.forEach(fn => fn());
+    cleanup = [];
+    jest.clearAllMocks();
+    fetch.mockClear();
+    global.EventSource.reset();
+  });
+
+  describe('API Error Scenarios', () => {
+    it('should handle 400 Bad Request errors', async () => {
+      fetch.mockResolvedValueOnce(
+        testUtils.mockApiError(400, 'Invalid request parameters')
+      );
+
+      await expect(apiClient.startAdkResearch('', sessionId))
+        .rejects
+        .toThrow(ApiError);
+
+      try {
+        await apiClient.startAdkResearch('', sessionId);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        expect((error as ApiError).status).toBe(400);
+        expect((error as ApiError).message).toBe('Invalid request parameters');
+      }
+    });
+
+    it('should handle 401 Unauthorized errors and trigger auth refresh', async () => {
+      // Mock 401 response
+      fetch.mockResolvedValueOnce(
+        testUtils.mockApiError(401, 'Token expired')
+      );
+
+      const authRefreshSpy = jest.spyOn(window, 'dispatchEvent');
+
+      try {
+        await apiClient.getCurrentUser();
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        expect((error as ApiError).status).toBe(401);
+      }
+
+      // Verify that auth refresh event was triggered
+      expect(authRefreshSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'auth:token_expired'
+        })
+      );
+
+      authRefreshSpy.mockRestore();
+    });
+
+    it('should handle 403 Forbidden errors', async () => {
+      fetch.mockResolvedValueOnce(
+        testUtils.mockApiError(403, 'Insufficient permissions')
+      );
+
+      await expect(apiClient.getCurrentUser())
+        .rejects
+        .toThrow(ApiError);
+    });
+
+    it('should handle 404 Not Found errors', async () => {
+      fetch.mockResolvedValueOnce(
+        testUtils.mockApiError(404, 'Session not found')
+      );
+
+      await expect(apiClient.getAdkSession('nonexistent-session'))
+        .rejects
+        .toThrow(ApiError);
+    });
+
+    it('should handle 429 Rate Limit errors', async () => {
+      fetch.mockResolvedValueOnce(
+        testUtils.mockApiError(429, 'Rate limit exceeded', {
+          headers: new Map([['Retry-After', '60']])
+        })
+      );
+
+      await expect(apiClient.startAdkResearch('test query', sessionId))
+        .rejects
+        .toThrow(ApiError);
+    });
+
+    it('should handle 500 Internal Server Error', async () => {
+      fetch.mockResolvedValueOnce(
+        testUtils.mockApiError(500, 'Internal server error')
+      );
+
+      await expect(apiClient.healthCheck())
+        .rejects
+        .toThrow(ApiError);
+    });
+
+    it('should handle 503 Service Unavailable', async () => {
+      fetch.mockResolvedValueOnce(
+        testUtils.mockApiError(503, 'Service temporarily unavailable')
+      );
+
+      await expect(apiClient.createAdkSession())
+        .rejects
+        .toThrow(ApiError);
+    });
+
+    it('should handle malformed JSON responses', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.reject(new SyntaxError('Unexpected token')),
+        text: () => Promise.resolve('invalid json {')
+      });
+
+      await expect(apiClient.healthCheck())
+        .rejects
+        .toThrow();
+    });
+
+    it('should handle empty responses', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 204,
+        headers: new Map([['content-length', '0']]),
+        json: () => Promise.resolve({})
+      });
+
+      const result = await apiClient.healthCheck();
+      expect(result).toEqual({});
+    });
+  });
+
+  describe('Network Error Scenarios', () => {
+    it('should handle network connectivity loss', async () => {
+      fetch.mockRejectedValueOnce(new Error('ECONNREFUSED'));
+
+      const isConnected = await apiClient.checkConnection();
+      expect(isConnected).toBe(false);
+    });
+
+    it('should handle DNS resolution failures', async () => {
+      fetch.mockRejectedValueOnce(new Error('ENOTFOUND'));
+
+      await expect(apiClient.healthCheck())
+        .rejects
+        .toThrow('Network request failed');
+    });
+
+    it('should handle timeout scenarios', async () => {
+      // Mock a slow response that times out
+      fetch.mockImplementationOnce(() => 
+        new Promise((resolve) => {
+          setTimeout(() => resolve(testUtils.mockApiResponse({})), 35000);
+        })
+      );
+
+      await expect(apiClient.healthCheck())
+        .rejects
+        .toThrow('Request timeout');
+    }, 35000);
+
+    it('should handle aborted requests', async () => {
+      const controller = apiClient.createAbortController();
+      
+      // Start request and immediately abort
+      const requestPromise = fetch('http://localhost:8000/health', {
+        signal: controller.signal
+      });
+      
+      controller.abort();
+
+      await expect(requestPromise)
+        .rejects
+        .toThrow();
+    });
+
+    it('should handle intermittent connectivity', async () => {
+      let callCount = 0;
+      fetch.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.reject(new Error('ECONNRESET'));
+        }
+        return Promise.resolve(testUtils.mockApiResponse({
+          status: 'healthy'
+        }));
+      });
+
+      // First call should fail
+      await expect(apiClient.checkConnection()).resolves.toBe(false);
+      
+      // Second call should succeed
+      await expect(apiClient.checkConnection()).resolves.toBe(true);
+    });
+  });
+
+  describe('SSE Connection Error Handling', () => {
+    it('should handle SSE connection failures', async () => {
+      const { result } = renderHook(() => 
+        useSSEClient({ 
+          sessionId, 
+          autoReconnect: false 
+        })
+      );
+
+      await waitFor(() => {
+        expect(global.EventSource.instances.length).toBe(1);
+      });
+
+      // Simulate connection error
+      act(() => {
+        const eventSource = global.EventSource.getLatest();
+        if (eventSource.onerror) {
+          eventSource.onerror(new Event('error'));
+        }
+      });
+
+      await waitFor(() => {
+        expect(result.current.connectionStatus).toBe('error');
+        expect(result.current.error).toBeTruthy();
+      });
+
+      cleanup.push(() => result.current.disconnect());
+    });
+
+    it('should handle SSE connection interruptions', async () => {
+      const { result } = renderHook(() => 
+        useSSEClient({ sessionId })
+      );
+
+      await waitFor(() => {
+        expect(global.EventSource.instances.length).toBe(1);
+      });
+
+      // Simulate connection established
+      act(() => {
+        const eventSource = global.EventSource.getLatest();
+        if (eventSource.onopen) {
+          eventSource.onopen(new Event('open'));
+        }
+        if (eventSource.onmessage) {
+          eventSource.onmessage(testUtils.createMessageEvent({
+            type: 'connection',
+            status: 'connected',
+            sessionId,
+            timestamp: new Date().toISOString()
+          }));
+        }
+      });
+
+      await waitFor(() => {
+        expect(result.current.isConnected).toBe(true);
+      });
+
+      // Simulate connection interruption
+      act(() => {
+        const eventSource = global.EventSource.getLatest();
+        if (eventSource.onerror) {
+          eventSource.onerror(new Event('error'));
+        }
+      });
+
+      await waitFor(() => {
+        expect(result.current.connectionStatus).toBe('error');
+      });
+
+      cleanup.push(() => result.current.disconnect());
+    });
+
+    it('should handle malformed SSE events', async () => {
+      const { result } = renderHook(() => useSSEClient({ sessionId }));
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      await waitFor(() => {
+        expect(global.EventSource.instances.length).toBe(1);
+      });
+
+      // Send malformed event
+      act(() => {
+        const eventSource = global.EventSource.getLatest();
+        if (eventSource.onmessage) {
+          const malformedEvent = new MessageEvent('message', {
+            data: 'not json at all'
+          });
+          eventSource.onmessage(malformedEvent);
+        }
+      });
+
+      await waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith(
+          'Failed to parse SSE event:',
+          expect.any(Error),
+          'not json at all'
+        );
+      });
+
+      // Connection should still be functional
+      expect(result.current.connectionStatus).not.toBe('error');
+
+      consoleSpy.mockRestore();
+      cleanup.push(() => result.current.disconnect());
+    });
+
+    it('should handle heartbeat timeout', async () => {
+      const { result } = renderHook(() => 
+        useSSEClient({ 
+          sessionId,
+          heartbeatTimeout: 100 // Very short timeout for testing
+        })
+      );
+
+      await waitFor(() => {
+        expect(global.EventSource.instances.length).toBe(1);
+      });
+
+      // Establish connection but don't send heartbeats
+      act(() => {
+        const eventSource = global.EventSource.getLatest();
+        if (eventSource.onmessage) {
+          eventSource.onmessage(testUtils.createMessageEvent({
+            type: 'connection',
+            status: 'connected',
+            sessionId,
+            timestamp: new Date().toISOString()
+          }));
+        }
+      });
+
+      await waitFor(() => {
+        expect(result.current.isConnected).toBe(true);
+      });
+
+      // Wait for heartbeat timeout
+      await waitFor(() => {
+        expect(result.current.connectionStatus).toBe('error');
+        expect(result.current.error).toContain('heartbeat timeout');
+      }, { timeout: 200 });
+
+      cleanup.push(() => result.current.disconnect());
+    });
+  });
+
+  describe('Authentication Error Handling', () => {
+    afterEach(async () => {
+      await authService.logout();
+    });
+
+    it('should handle invalid login credentials', async () => {
+      fetch.mockResolvedValueOnce(
+        testUtils.mockApiError(401, 'Invalid credentials')
+      );
+
+      await expect(
+        authService.login({
+          email: 'invalid@example.com',
+          password: 'wrongpassword'
+        })
+      ).rejects.toThrow();
+    });
+
+    it('should handle token refresh failures', async () => {
+      // Setup authenticated state with refresh token
+      authService.createDevSession();
+      
+      // Mock refresh failure
+      fetch.mockResolvedValueOnce(
+        testUtils.mockApiError(401, 'Refresh token invalid')
+      );
+
+      await expect(authService.refreshToken())
+        .rejects
+        .toThrow();
+
+      // User should be logged out after refresh failure
+      expect(authService.isAuthenticated()).toBe(false);
+    });
+
+    it('should handle account suspension', async () => {
+      fetch.mockResolvedValueOnce(
+        testUtils.mockApiError(403, 'Account suspended')
+      );
+
+      await expect(
+        authService.login({
+          email: 'suspended@example.com',
+          password: 'password'
+        })
+      ).rejects.toThrow();
+    });
+
+    it('should handle password policy violations', async () => {
+      fetch.mockResolvedValueOnce(
+        testUtils.mockApiError(400, 'Password does not meet requirements', {
+          details: { password: ['Too short', 'Must contain uppercase'] }
+        })
+      );
+
+      await expect(
+        authService.register({
+          email: 'test@example.com',
+          password: 'weak',
+          displayName: 'Test User'
+        })
+      ).rejects.toThrow();
+    });
+
+    it('should handle automatic token refresh on API calls', async () => {
+      // Setup expired token
+      authService.createDevSession();
+      const authState = authService.getAuthState();
+      
+      // Mock 401 on first call, then successful refresh, then successful retry
+      fetch
+        .mockResolvedValueOnce(testUtils.mockApiError(401, 'Token expired'))
+        .mockResolvedValueOnce(testUtils.mockApiResponse({
+          access_token: 'new-token',
+          refresh_token: 'new-refresh',
+          token_type: 'Bearer',
+          expires_in: 1800
+        }))
+        .mockResolvedValueOnce(testUtils.mockApiResponse({
+          id: 'user-123',
+          email: 'test@example.com'
+        }));
+
+      // This should trigger automatic refresh
+      const user = await apiClient.getCurrentUser();
+      
+      expect(user.id).toBe('user-123');
+      expect(fetch).toHaveBeenCalledTimes(3); // Original call, refresh, retry
+    });
+  });
+
+  describe('Concurrent Error Scenarios', () => {
+    it('should handle multiple simultaneous API failures', async () => {
+      // Mock all requests to fail
+      fetch.mockResolvedValue(testUtils.mockApiError(500, 'Server error'));
+
+      const requests = [
+        apiClient.checkConnection(),
+        apiClient.checkConnection(),
+        apiClient.checkConnection(),
+        apiClient.checkConnection(),
+        apiClient.checkConnection()
+      ];
+
+      const results = await Promise.allSettled(requests);
+      
+      expect(results).toHaveLength(5);
+      results.forEach(result => {
+        expect(result.status).toBe('rejected');
+      });
+    });
+
+    it('should handle mixed success/failure scenarios', async () => {
+      let callCount = 0;
+      fetch.mockImplementation(() => {
+        callCount++;
+        if (callCount % 2 === 0) {
+          return Promise.resolve(testUtils.mockApiError(500, 'Server error'));
+        }
+        return Promise.resolve(testUtils.mockApiResponse({ status: 'healthy' }));
+      });
+
+      const requests = Array(6).fill(null).map(() => apiClient.checkConnection());
+      const results = await Promise.allSettled(requests);
+
+      const successes = results.filter(r => r.status === 'fulfilled').length;
+      const failures = results.filter(r => r.status === 'rejected').length;
+
+      expect(successes).toBe(3);
+      expect(failures).toBe(3);
+    });
+  });
+
+  describe('Recovery Mechanisms', () => {
+    it('should retry failed requests automatically', async () => {
+      const { result } = renderHook(() => 
+        useSSEClient({ 
+          sessionId,
+          maxRetries: 2,
+          retryDelay: 100
+        })
+      );
+
+      await waitFor(() => {
+        expect(global.EventSource.instances.length).toBe(1);
+      });
+
+      // Simulate connection failure
+      act(() => {
+        const eventSource = global.EventSource.getLatest();
+        if (eventSource.onerror) {
+          eventSource.onerror(new Event('error'));
+        }
+      });
+
+      await waitFor(() => {
+        expect(result.current.connectionStatus).toBe('reconnecting');
+      });
+
+      // Should retry with exponential backoff
+      await waitFor(() => {
+        expect(result.current.retryCount).toBeGreaterThan(0);
+      });
+
+      cleanup.push(() => result.current.disconnect());
+    });
+
+    it('should stop retrying after max attempts', async () => {
+      const { result } = renderHook(() => 
+        useSSEClient({ 
+          sessionId,
+          maxRetries: 1,
+          retryDelay: 50
+        })
+      );
+
+      await waitFor(() => {
+        expect(global.EventSource.instances.length).toBe(1);
+      });
+
+      // Simulate repeated failures
+      const simulateFailure = () => {
+        act(() => {
+          const eventSource = global.EventSource.getLatest();
+          if (eventSource.onerror) {
+            eventSource.onerror(new Event('error'));
+          }
+        });
+      };
+
+      simulateFailure();
+      
+      await waitFor(() => {
+        expect(result.current.connectionStatus).toBe('reconnecting');
+      });
+
+      // Wait for retry attempt
+      await testUtils.waitFor(100);
+      simulateFailure();
+
+      await waitFor(() => {
+        expect(result.current.retryCount).toBe(1);
+        expect(result.current.connectionStatus).toBe('error');
+      });
+
+      cleanup.push(() => result.current.disconnect());
+    });
+
+    it('should handle graceful degradation', async () => {
+      // When SSE fails, should still allow regular API calls
+      fetch.mockResolvedValue(testUtils.mockApiResponse({
+        status: 'healthy'
+      }));
+
+      const { result } = renderHook(() => 
+        useSSEClient({ 
+          sessionId,
+          autoReconnect: false
+        })
+      );
+
+      await waitFor(() => {
+        expect(global.EventSource.instances.length).toBe(1);
+      });
+
+      // Simulate SSE failure
+      act(() => {
+        const eventSource = global.EventSource.getLatest();
+        if (eventSource.onerror) {
+          eventSource.onerror(new Event('error'));
+        }
+      });
+
+      await waitFor(() => {
+        expect(result.current.connectionStatus).toBe('error');
+      });
+
+      // API calls should still work
+      const isHealthy = await apiClient.checkConnection();
+      expect(isHealthy).toBe(true);
+
+      cleanup.push(() => result.current.disconnect());
+    });
+  });
+
+  describe('Error Boundaries and UI Resilience', () => {
+    it('should handle component errors gracefully', async () => {
+      const ErrorComponent = () => {
+        throw new Error('Test component error');
+      };
+
+      const ErrorBoundary = ({ children }: { children: React.ReactNode }) => {
+        try {
+          return <>{children}</>;
+        } catch (error) {
+          return <div>Error occurred: {(error as Error).message}</div>;
+        }
+      };
+
+      render(
+        <ErrorBoundary>
+          <ErrorComponent />
+        </ErrorBoundary>
+      );
+
+      expect(screen.getByText(/Error occurred/)).toBeInTheDocument();
+    });
+
+    it('should preserve user data during errors', async () => {
+      // Setup user session
+      authService.createDevSession();
+      const userBefore = authService.getAuthState().user;
+
+      // Simulate API error
+      fetch.mockResolvedValueOnce(testUtils.mockApiError(500, 'Server error'));
+
+      try {
+        await apiClient.getCurrentUser();
+      } catch (error) {
+        // Error expected
+      }
+
+      // User session should still be preserved
+      const userAfter = authService.getAuthState().user;
+      expect(userAfter).toEqual(userBefore);
+    });
+  });
+
+  describe('Error Reporting and Monitoring', () => {
+    it('should log errors with proper context', async () => {
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      fetch.mockRejectedValueOnce(new Error('Network failure'));
+
+      try {
+        await apiClient.healthCheck();
+      } catch (error) {
+        // Expected
+      }
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Network request failed')
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should provide actionable error messages', async () => {
+      fetch.mockResolvedValueOnce(
+        testUtils.mockApiError(429, 'Rate limit exceeded', {
+          headers: new Map([['Retry-After', '60']])
+        })
+      );
+
+      try {
+        await apiClient.startAdkResearch('test', sessionId);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        expect((error as ApiError).message).toBe('Rate limit exceeded');
+        expect((error as ApiError).status).toBe(429);
+      }
+    });
+
+    it('should handle error details for debugging', async () => {
+      const errorDetails = {
+        code: 'VALIDATION_ERROR',
+        field: 'query',
+        constraint: 'minLength'
+      };
+
+      fetch.mockResolvedValueOnce(
+        testUtils.mockApiError(400, 'Validation failed', {
+          json: () => Promise.resolve({
+            message: 'Validation failed',
+            details: errorDetails
+          })
+        })
+      );
+
+      try {
+        await apiClient.startAdkResearch('', sessionId);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        expect((error as ApiError).details).toEqual(errorDetails);
+      }
+    });
+  });
+});

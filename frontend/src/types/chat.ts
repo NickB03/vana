@@ -98,7 +98,7 @@ export interface QueryAttachment {
   contentType: string;
   size: number;                  // Bytes
   url: string;                   // Storage URL
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 export interface QueryParameters {
@@ -304,14 +304,14 @@ export interface ValidationError {
   field: string;
   code: string;
   message: string;
-  value?: any;
+  value?: unknown;
 }
 
 export interface ValidationWarning {
   field: string;
   code: string;
   message: string;
-  value?: any;
+  value?: unknown;
 }
 
 // ===== HELPER TYPES =====
@@ -335,7 +335,7 @@ export interface ApiResponse<T> {
   error?: {
     code: string;
     message: string;
-    details?: any;
+    details?: Record<string, unknown>;
   };
   timestamp: Date;
 }

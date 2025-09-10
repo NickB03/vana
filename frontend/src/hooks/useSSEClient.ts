@@ -83,7 +83,7 @@ export const useSSEClient = () => {
         eventSourceRef.current = null;
       };
 
-      eventSource.onmessage = (event) => {
+      eventSource.onmessage = (event: MessageEvent) => {
         console.log('SSE Message:', event.data);
       };
 

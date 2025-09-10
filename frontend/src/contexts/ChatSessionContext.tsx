@@ -1,7 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode, useRef } from 'react';
-import { useSSEClient } from '../hooks/useSSEClient';
+import { useSSEClient, useAgentNetwork, useResearchResults } from '../../hooks/useSSEClient';
+import { apiClient } from '../lib/api-client';
 import { 
   ChatSession, 
   ResearchQuery, 
@@ -12,6 +13,31 @@ import {
 } from '../types/chat';
 
 // ===== CONTEXT TYPES =====
+
+interface SendQueryOptions {
+  queryId?: string;
+  sessionId?: string;
+  appId?: string;
+  userId?: string;
+  type?: string;
+  parameters?: Record<string, string | number | boolean>;
+}
+
+interface AdkAgentEvent {
+  type: 'agent_started' | 'agent_completed' | 'agent_progress' | 'result_generated' | 'processing_complete' | 'error';
+  sessionId: string;
+  agentId?: string;
+  agentType?: string;
+  content?: string;
+  resultId?: string;
+  summary?: string;
+  qualityScore?: number;
+  wordCount?: number;
+  readingTimeMinutes?: number;
+  message?: string;
+  timestamp: string;
+  data?: any;
+}
 
 interface ChatSessionContextValue {
   // State
@@ -27,9 +53,11 @@ interface ChatSessionContextValue {
   submitQuery: (request: CreateResearchQueryRequest) => Promise<void>;
   cancelQuery: (queryId?: string) => Promise<void>;
   
-  // Real-time Updates
+  // Real-time Updates via Google ADK SSE
   connectionStatus: 'connected' | 'connecting' | 'disconnected' | 'reconnecting' | 'error';
-  // Simplified - no events array
+  events: any[];
+  agents: any[];
+  results: any[];
   
   // Utility Functions
   clearEvents: () => void;
@@ -143,180 +171,171 @@ export function ChatSessionProvider({
   const [state, dispatch] = useReducer(chatReducer, initialState);
   const initializedRef = useRef(false);
 
-  // Initialize simplified SSE connection
+  // Initialize Google ADK SSE connection
+  const sessionId = state.currentSession?.id || 'temp-session';
+  
   const {
-    connectionState,
     isConnected,
+    connectionStatus,
+    events,
     connect,
-    disconnect
-  } = useSSEClient();
+    disconnect,
+    reconnect,
+    clearEvents: clearSSEEvents,
+    on,
+    off
+  } = useSSEClient({ 
+    sessionId,
+    autoReconnect: true,
+    maxRetries: 5,
+    maxRetryDelay: 1000
+  });
   
-  // Add placeholder functions that don't exist in simple client
-  const reconnect = useCallback(() => {
-    disconnect();
-    setTimeout(() => connect(), 1000);
-  }, [disconnect, connect]);
+  // Use specialized hooks for agent monitoring
+  const { agents } = useAgentNetwork(sessionId);
+  const { results } = useResearchResults(sessionId);
   
-  const sendQuery = useCallback(async (query: string, options?: Record<string, any>) => {
-    console.log('Sending query to backend:', query, options);
+  const sendQuery = useCallback(async (query: string, options?: SendQueryOptions) => {
+    console.log('Sending query to Google ADK backend:', query, options);
     
     try {
-      // Send POST request to backend SSE endpoint
-      const response = await fetch('http://localhost:8000/run_sse', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'text/event-stream',
-        },
-        body: JSON.stringify({
-          app_name: options?.appId || 'vana',
-          new_message: {
-            parts: [{ text: query }],
-            role: 'user'
-          },
-          user_id: options?.userId || 'default-user',
-          session_id: options?.sessionId || 'default-session',
-          streaming: true
-        })
+      // Use the Google ADK API endpoint for research
+      const result = await apiClient.startAdkResearch(query, options?.sessionId || sessionId, {
+        type: options?.type || 'research',
+        priority: 'medium',
+        maxDuration: 300,
+        outputFormat: 'structured'
       });
       
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      console.log('Query sent successfully to backend');
-      return response;
+      console.log('Query sent successfully to Google ADK:', result);
+      return result;
     } catch (error) {
-      console.error('Failed to send query to backend:', error);
+      console.error('Failed to send query to Google ADK backend:', error);
       throw error;
     }
-  }, []);
+  }, [sessionId]);
 
-  // Simplified SSE handling
-  function handleSSEEvent(event: SSEEvent) {
-    console.log('Received SSE event:', event);
-    
-    switch (event.event) {
-      case 'query_received':
-        // Query was received and queued
-        break;
-        
-      case 'processing_started':
-        // Research processing began
-        dispatch({ type: 'SET_LOADING', payload: true });
-        break;
-        
-      case 'agent_started':
-        // Specific agent started working
-        break;
-        
-      case 'agent_completed':
-        // Specific agent finished
-        if (event.data.success && event.data.resultSummary) {
-          const response: AgentResponse = {
-            id: `${event.data.agentId}-${Date.now()}`,
-            queryId: event.data.queryId,
-            agentId: event.data.agentId,
-            agentType: event.data.agentId.includes('leader') ? 'team_leader' : 'section_researcher',
-            content: event.data.resultSummary,
-            status: 'completed',
-            confidence: event.data.confidence || 0.8,
-            sources: [],
-            createdAt: new Date(),
-            processingTimeMs: event.data.processingTimeMs || 0,
-            tokens: {
-              inputTokens: 0,
-              outputTokens: 0,
-              totalTokens: event.data.tokensUsed || 0,
-              cost: 0
-            },
-            metadata: {
-              model: 'gemini-2.0-flash-exp',
-              temperature: 0.7,
-              maxTokens: 4000
-            }
-          };
-          dispatch({ type: 'ADD_RESPONSE', payload: response });
-        }
-        break;
-        
-      case 'result_generated':
-        // Final result is ready
-        const result: ResearchResult = {
-          id: event.data.resultId,
-          queryId: event.data.queryId,
-          title: 'Research Result',
-          summary: event.data.summary || 'Research completed successfully',
-          content: {
-            sections: [],
-            keyFindings: [],
-            recommendations: [],
-            limitations: [],
-            methodology: 'Multi-agent research approach'
-          },
-          status: 'completed',
-          quality: {
-            overallScore: event.data.qualityScore || 0.85,
-            completeness: 0.9,
-            accuracy: 0.85,
-            relevance: 0.9,
-            sourceQuality: 0.8,
-            coherence: 0.85
-          },
-          citations: [],
-          generatedAt: new Date(),
-          wordCount: event.data.wordCount || 0,
-          readingTimeMinutes: event.data.readingTimeMinutes || 0,
-          format: {
-            structure: 'business',
-            includeCharts: false,
-            includeTables: false,
-            citationStyle: 'APA'
+  // Handle Google ADK events through SSE
+  useEffect(() => {
+    const handleAgentEvent = (event: any) => {
+      console.log('Received Google ADK agent event:', event);
+      
+      switch (event.type) {
+        case 'agent_started':
+          dispatch({ type: 'SET_LOADING', payload: true });
+          break;
+          
+        case 'agent_completed':
+          if (event.data && event.content) {
+            const response: AgentResponse = {
+              id: `${event.agentId}-${Date.now()}`,
+              queryId: state.currentQuery?.id || 'unknown',
+              agentId: event.agentId,
+              agentType: event.agentType || 'section_researcher',
+              content: event.content,
+              status: 'completed',
+              confidence: event.data?.confidence || 0.8,
+              sources: event.data?.sources || [],
+              createdAt: new Date(event.timestamp),
+              processingTimeMs: event.data?.processingTimeMs || 0,
+              tokens: {
+                inputTokens: 0,
+                outputTokens: 0,
+                totalTokens: event.data?.tokensUsed || 0,
+                cost: 0
+              },
+              metadata: {
+                model: 'gemini-2.5-pro',
+                temperature: 0.7,
+                maxTokens: 4000
+              }
+            };
+            dispatch({ type: 'ADD_RESPONSE', payload: response });
           }
-        };
-        dispatch({ type: 'ADD_RESULT', payload: result });
-        break;
-        
-      case 'processing_complete':
-        // All processing finished
-        dispatch({ type: 'SET_LOADING', payload: false });
-        break;
-        
-      case 'error_occurred':
-        // Error in processing
-        dispatch({ type: 'SET_ERROR', payload: event.data.message });
-        dispatch({ type: 'SET_LOADING', payload: false });
-        break;
-    }
-  }
+          break;
+          
+        case 'result_generated':
+          if (event.resultId && event.summary) {
+            const result: ResearchResult = {
+              id: event.resultId,
+              queryId: state.currentQuery?.id || 'unknown',
+              title: 'Research Result',
+              summary: event.summary,
+              content: {
+                sections: event.data?.sections || [],
+                keyFindings: event.data?.keyFindings || [],
+                recommendations: event.data?.recommendations || [],
+                limitations: event.data?.limitations || [],
+                methodology: 'Multi-agent research approach'
+              },
+              status: 'completed',
+              quality: {
+                overallScore: event.qualityScore || 0.85,
+                completeness: 0.9,
+                accuracy: 0.85,
+                relevance: 0.9,
+                sourceQuality: 0.8,
+                coherence: 0.85
+              },
+              citations: event.data?.citations || [],
+              generatedAt: new Date(event.timestamp),
+              wordCount: event.wordCount || 0,
+              readingTimeMinutes: event.readingTimeMinutes || 0,
+              format: {
+                structure: 'business',
+                includeCharts: false,
+                includeTables: false,
+                citationStyle: 'APA'
+              }
+            };
+            dispatch({ type: 'ADD_RESULT', payload: result });
+          }
+          break;
+          
+        case 'processing_complete':
+          dispatch({ type: 'SET_LOADING', payload: false });
+          break;
+          
+        case 'error':
+          dispatch({ type: 'SET_ERROR', payload: event.message || 'Processing error occurred' });
+          dispatch({ type: 'SET_LOADING', payload: false });
+          break;
+      }
+    };
+    
+    const handleResultEvent = (event: any) => {
+      console.log('Received Google ADK result event:', event);
+      // Handle result events from useResearchResults hook
+    };
+    
+    // Register event handlers
+    on('onAgent', handleAgentEvent);
+    on('onResult', handleResultEvent);
+    
+    return () => {
+      off('onAgent');
+      off('onResult');
+    };
+  }, [on, off, state.currentQuery?.id]);
 
-  // Session Management
+  // Session Management with Google ADK
   const createSession = useCallback(async (title?: string): Promise<ChatSession> => {
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
-      // Create session with backend first
-      const backendResponse = await fetch('http://localhost:8000/apps/vana/users/default-user/sessions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({})
-      });
+      console.log('Creating Google ADK session...');
       
-      if (!backendResponse.ok) {
-        throw new Error(`Failed to create backend session: ${backendResponse.statusText}`);
-      }
-      
-      const backendSession = await backendResponse.json();
+      // Create session via Google ADK API
+      const adkSession = await apiClient.createAdkSession('vana', 'current');
+      console.log('Google ADK session created:', adkSession);
       
       const session: ChatSession = {
-        id: backendSession.id, // Use backend session ID
+        id: adkSession.session_id,
         title: title || 'New Research Session',
-        userId: 'default-user',
-        createdAt: new Date(),
+        userId: 'current',
+        createdAt: new Date(adkSession.created_at),
         updatedAt: new Date(),
-        status: 'active',
+        status: adkSession.status === 'active' ? 'active' : 'archived',
         messageCount: 0,
         settings: {
           theme: 'system',
@@ -333,9 +352,36 @@ export function ChatSessionProvider({
       };
       
       dispatch({ type: 'ADD_SESSION', payload: session });
+      console.log('Session created and ready for SSE connection:', session.id);
       return session;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create session';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create Google ADK session';
+      console.error('Session creation failed:', errorMessage);
+      
+      // For development: Don't throw error, just set error state and continue
+      if (process.env.NODE_ENV === 'development') {
+        dispatch({ type: 'SET_ERROR', payload: `Backend unavailable: ${errorMessage}` });
+        console.warn('Development mode: Creating mock session due to backend unavailability');
+        // Return a mock session for development
+        const mockSession: ChatSession = {
+          id: `mock-session-${Date.now()}`,
+          title: title || 'Demo Session (Backend Offline)',
+          userId: 'demo-user',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          status: 'active',
+          messageCount: 0,
+          settings: {
+            theme: 'system',
+            autoScroll: true,
+            soundEnabled: false
+          }
+        };
+        dispatch({ type: 'ADD_SESSION', payload: mockSession });
+        dispatch({ type: 'SET_CURRENT_SESSION', payload: mockSession });
+        return mockSession;
+      }
+      
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
       throw error;
     } finally {
@@ -385,7 +431,7 @@ export function ChatSessionProvider({
     
     // Allow submission even if not fully connected - connection will be established during query
     // This prevents blocking the user when the connection is initializing
-    if (connectionState.status === 'error') {
+    if (connectionStatus === 'error') {
       console.warn('Connection in error state, attempting to reconnect...');
       reconnect();
       // Don't throw error, allow the query to proceed
@@ -428,7 +474,7 @@ export function ChatSessionProvider({
         queryId: query.id,
         sessionId: state.currentSession.id,
         type: request.type,
-        parameters: query.parameters
+        parameters: query.parameters as unknown as Record<string, string | number | boolean>
       });
 
     } catch (error) {
@@ -437,7 +483,7 @@ export function ChatSessionProvider({
       dispatch({ type: 'SET_LOADING', payload: false });
       throw error;
     }
-  }, [state.currentSession, connectionState.status, sendQuery]);
+  }, [state.currentSession, connectionStatus, sendQuery, reconnect]);
 
   const cancelQuery = useCallback(async (queryId?: string): Promise<void> => {
     try {
@@ -455,9 +501,9 @@ export function ChatSessionProvider({
   }, []);
 
   const clearEvents = useCallback(() => {
-    // clearSSEEvents(); // Not available in simple client
+    clearSSEEvents();
     dispatch({ type: 'CLEAR_EVENTS' });
-  }, []);  // No clearSSEEvents dependency
+  }, [clearSSEEvents]);
 
   // Auto-create initial session (only once)
   useEffect(() => {
@@ -471,13 +517,13 @@ export function ChatSessionProvider({
     }
   }, [state.currentSession, state.isLoading, initialSessionId, createSession, loadSession]);
 
-  // Auto-connect SSE if enabled
+  // Auto-connect Google ADK SSE when session is ready
   useEffect(() => {
-    if (autoConnect && connectionState.status === 'disconnected') {
-      console.log('Auto-connecting to SSE...');
+    if (autoConnect && state.currentSession && connectionStatus === 'disconnected') {
+      console.log('Auto-connecting to Google ADK SSE for session:', state.currentSession.id);
       connect();
     }
-  }, [autoConnect, connectionState.status, connect]);
+  }, [autoConnect, state.currentSession, connectionStatus, connect]);
 
   const value: ChatSessionContextValue = {
     state,
@@ -487,9 +533,10 @@ export function ChatSessionProvider({
     archiveSession,
     submitQuery,
     cancelQuery,
-    connectionStatus: connectionState.status,
-    // events: [], // Not available in simple client
-    // lastEvent: null, // Not available in simple client
+    connectionStatus: connectionStatus === 'circuit-open' ? 'error' : connectionStatus,
+    events,
+    agents,
+    results,
     clearEvents,
     reconnectSSE: reconnect,
     connectSSE: connect,
