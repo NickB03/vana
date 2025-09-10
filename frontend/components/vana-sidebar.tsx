@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Settings } from "lucide-react";
+import { SquarePen, Settings, Search } from "lucide-react";
 import {
   Sidebar,
   SidebarToggle,
@@ -27,9 +27,14 @@ export function VanaSidebar() {
         {/* New Chat - ChatGPT style */}
         <div className="mb-4">
           <SidebarNavLink href="#" onClick={(e) => { e.preventDefault(); console.log("New Chat"); }}>
-            <Plus size={24} className="flex-shrink-0 ml-3" />
+            <SquarePen size={24} className="flex-shrink-0 ml-3" />
             <SidebarNavText>New Chat</SidebarNavText>
           </SidebarNavLink>
+        </div>
+
+        {/* Chats Header */}
+        <div className="px-3 py-2 mb-2">
+          <h2 className="text-sm font-medium text-gray-400 tracking-wide">Chats</h2>
         </div>
 
         {/* Recent Section */}
@@ -56,6 +61,12 @@ export function VanaSidebar() {
 
         {/* Footer Section */}
         <SidebarFooter>
+          <SidebarNavItem title="Search chat">
+            <SidebarNavLink href="#" onClick={(e) => { e.preventDefault(); console.log("Search chat"); }}>
+              <Search size={20} className="flex-shrink-0" />
+              <SidebarNavText>Search chat</SidebarNavText>
+            </SidebarNavLink>
+          </SidebarNavItem>
           <SidebarNavItem title="Settings">
             <SidebarNavLink href="#" onClick={(e) => { e.preventDefault(); console.log("Settings"); }}>
               <Settings size={20} className="flex-shrink-0" />

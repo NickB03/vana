@@ -2,10 +2,8 @@
 
 import React, { useState, createContext, useContext } from 'react';
 import { 
-    ChevronLeft, 
-    ChevronRight, 
-    ChevronsLeft, 
-    ChevronsRight 
+    ArrowLeftFromLine,
+    ArrowRightFromLine
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -86,15 +84,9 @@ const SidebarToggle = React.forwardRef<HTMLButtonElement, React.HTMLAttributes<H
                 {...props}
             >
                 {isCollapsed ? (
-                    <div className="relative flex items-center justify-center h-full w-full">
-                        <ChevronsRight size={18} className="opacity-0 group-hover:opacity-100 transition-opacity absolute" />
-                        <ChevronRight size={16} className="group-hover:opacity-0 transition-opacity" />
-                    </div>
+                    <ArrowRightFromLine size={16} className="transition-opacity" />
                 ) : (
-                    <div className="relative flex items-center justify-center h-full w-full">
-                        <ChevronsLeft size={18} className="opacity-0 group-hover:opacity-100 transition-opacity absolute" />
-                        <ChevronLeft size={16} className="group-hover:opacity-0 transition-opacity" />
-                    </div>
+                    <ArrowLeftFromLine size={16} className="transition-opacity" />
                 )}
             </button>
         );

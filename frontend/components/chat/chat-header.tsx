@@ -10,7 +10,7 @@ export function ChatHeader() {
           Hi, I&apos;m Vana
         </h1>
         <p className="text-gray-600 dark:text-gray-400 text-lg">
-          What can I help you research today?
+          What can I help you research today? 
         </p>
       </div>
     </div>

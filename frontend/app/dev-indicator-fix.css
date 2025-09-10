@@ -1,0 +1,53 @@
+/* Enhanced Next.js Dev Indicator Position Override */
+/* This CSS provides comprehensive targeting for the Next.js 15.5.2 dev indicator */
+
+/* Primary targeting for Next.js dev indicator elements */
+[data-nextjs-dev-indicator] {
+  right: 20px !important;
+  left: unset !important;
+  bottom: 20px !important;
+}
+
+/* Target dev overlay elements */
+.__nextjs_dev__indicator__ {
+  right: 20px !important;
+  left: unset !important;
+  bottom: 20px !important;
+}
+
+/* Target Turbopack specific indicators */
+div[style*="position: fixed"][style*="z-index: 9000"] {
+  right: 20px !important;
+  left: unset !important;
+}
+
+/* General override for fixed positioned circular elements (likely indicators) */
+div[style*="position: fixed"][style*="width: 40px"][style*="height: 40px"],
+div[style*="position: fixed"][style*="border-radius: 50%"] {
+  right: 20px !important;
+  left: unset !important;
+}
+
+/* More aggressive targeting for any bottom-left fixed positioned elements */
+div[style*="position: fixed"][style*="bottom"][style*="left"]:not([class*="sidebar"]):not([class*="modal"]) {
+  right: 20px !important;
+  left: unset !important;
+}
+
+/* Target by common dev indicator styling patterns */
+div[style*="position: fixed"][style*="background"][style*="border-radius"][style*="cursor: pointer"] {
+  right: 20px !important;
+  left: unset !important;
+}
+
+/* Additional targeting for Next.js 15 specific structures */
+#__next div[style*="position: fixed"][style*="bottom: 10px"] {
+  right: 20px !important;
+  left: unset !important;
+}
+
+/* Force override any left positioning on likely dev indicator elements */
+body > div[style*="position: fixed"][style*="left: 10px"] {
+  right: 20px !important;
+  left: unset !important;
+}

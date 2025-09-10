@@ -4,9 +4,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: "/Users/nick/Development/vana/frontend"
   },
-  devIndicators: {
-    position: "bottom-right"
-  }
+  devIndicators: false
 };
 
 export default nextConfig;
