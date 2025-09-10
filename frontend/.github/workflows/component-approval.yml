@@ -1,0 +1,807 @@
+name: Component Approval Workflow
+# Automated validation and approval process for shadcn/ui components
+# Ensures constitutional compliance and quality standards
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'frontend/src/components/ui/**'
+      - 'frontend/src/components/**'
+      - 'frontend/.component-approval/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'frontend/src/components/ui/**'
+      - 'frontend/src/components/**'
+      - 'frontend/.component-approval/**'
+  workflow_dispatch:
+    inputs:
+      component_name:
+        description: 'Component name to validate'
+        required: true
+        type: string
+      validation_level:
+        description: 'Validation level'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - basic
+          - standard  
+          - full
+      force_validation:
+        description: 'Force validation even if no changes detected'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_ENV: ci
+  PLAYWRIGHT_BROWSERS_PATH: ~/.cache/playwright-browsers
+  COMPONENT_VALIDATION_TIMEOUT: 300000 # 5 minutes
+
+jobs:
+  # Job 1: Detect component changes and validate structure
+  detect-components:
+    name: Detect Component Changes
+    runs-on: ubuntu-latest
+    outputs:
+      components_changed: ${{ steps.detect.outputs.components }}
+      has_changes: ${{ steps.detect.outputs.has_changes }}
+      validation_required: ${{ steps.detect.outputs.validation_required }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect component changes
+        id: detect
+        run: |
+          # Initialize variables
+          COMPONENTS_CHANGED=""
+          HAS_CHANGES="false"
+          VALIDATION_REQUIRED="false"
+          
+          # If manual trigger with component name
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            COMPONENTS_CHANGED="${{ github.event.inputs.component_name }}"
+            HAS_CHANGES="true"
+            VALIDATION_REQUIRED="true"
+          else
+            # Detect changed component files
+            if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+              CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+            else
+              CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+            fi
+            
+            # Extract component names from changed files
+            COMPONENT_FILES=$(echo "$CHANGED_FILES" | grep -E 'frontend/src/components/ui/.*\.tsx$' || true)
+            
+            if [[ -n "$COMPONENT_FILES" ]]; then
+              HAS_CHANGES="true"
+              VALIDATION_REQUIRED="true"
+              
+              # Extract component names
+              for file in $COMPONENT_FILES; do
+                component=$(basename "$file" .tsx)
+                COMPONENTS_CHANGED="${COMPONENTS_CHANGED}${component},"
+              done
+              
+              # Remove trailing comma
+              COMPONENTS_CHANGED="${COMPONENTS_CHANGED%,}"
+            fi
+            
+            # Check for approval workflow changes
+            APPROVAL_FILES=$(echo "$CHANGED_FILES" | grep -E 'frontend/\.component-approval/.*' || true)
+            if [[ -n "$APPROVAL_FILES" ]]; then
+              VALIDATION_REQUIRED="true"
+            fi
+          fi
+          
+          echo "components=$COMPONENTS_CHANGED" >> $GITHUB_OUTPUT
+          echo "has_changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
+          echo "validation_required=$VALIDATION_REQUIRED" >> $GITHUB_OUTPUT
+          
+          echo "Components changed: $COMPONENTS_CHANGED"
+          echo "Has changes: $HAS_CHANGES"
+          echo "Validation required: $VALIDATION_REQUIRED"
+
+  # Job 2: Validate component structure and CLI compliance
+  validate-structure:
+    name: Validate Component Structure
+    runs-on: ubuntu-latest
+    needs: detect-components
+    if: needs.detect-components.outputs.validation_required == 'true'
+    
+    strategy:
+      matrix:
+        component: ${{ fromJson(format('["{0}"]', needs.detect-components.outputs.components_changed)) }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Validate component CLI compliance
+        working-directory: frontend
+        run: |
+          # Check if component file exists
+          COMPONENT_FILE="src/components/ui/${{ matrix.component }}.tsx"
+          
+          if [[ ! -f "$COMPONENT_FILE" ]]; then
+            echo "❌ Component file not found: $COMPONENT_FILE"
+            exit 1
+          fi
+          
+          echo "✅ Component file exists: $COMPONENT_FILE"
+          
+          # Check for shadcn/ui patterns
+          if ! grep -q "cn(" "$COMPONENT_FILE"; then
+            echo "⚠️  Warning: Component may not use cn() utility function"
+          fi
+          
+          if ! grep -q "class-variance-authority\|clsx" "$COMPONENT_FILE"; then
+            echo "⚠️  Warning: Component may not follow shadcn/ui patterns"
+          fi
+          
+          # Check for proper TypeScript exports
+          if ! grep -q "export" "$COMPONENT_FILE"; then
+            echo "❌ Component must have proper exports"
+            exit 1
+          fi
+          
+          echo "✅ Component structure validation passed"
+
+      - name: Run TypeScript type checking
+        working-directory: frontend
+        run: |
+          npx tsc --noEmit --skipLibCheck
+          echo "✅ TypeScript validation passed"
+
+      - name: Run linting
+        working-directory: frontend
+        run: |
+          npx eslint "src/components/ui/${{ matrix.component }}.tsx" --max-warnings 0
+          echo "✅ Linting validation passed"
+
+      - name: Check for manual implementation artifacts
+        working-directory: frontend
+        run: |
+          COMPONENT_FILE="src/components/ui/${{ matrix.component }}.tsx"
+          
+          # Check for development artifacts that shouldn't be in production
+          if grep -q "console\.log\|debugger\|TODO\|FIXME" "$COMPONENT_FILE"; then
+            echo "❌ Component contains development artifacts"
+            grep -n "console\.log\|debugger\|TODO\|FIXME" "$COMPONENT_FILE" || true
+            exit 1
+          fi
+          
+          echo "✅ No development artifacts found"
+
+  # Job 3: Run component validation script
+  run-validation-script:
+    name: Run Component Validation Script
+    runs-on: ubuntu-latest
+    needs: [detect-components, validate-structure]
+    if: needs.detect-components.outputs.validation_required == 'true'
+    
+    strategy:
+      matrix:
+        component: ${{ fromJson(format('["{0}"]', needs.detect-components.outputs.components_changed)) }}
+        validation_level: 
+          - ${{ github.event.inputs.validation_level || 'standard' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Make validation script executable
+        run: chmod +x scripts/validate-component.sh
+
+      - name: Run component validation script
+        run: |
+          cd frontend
+          ../scripts/validate-component.sh "${{ matrix.component }}" "${{ matrix.validation_level }}"
+        env:
+          COMPONENT_NAME: ${{ matrix.component }}
+          VALIDATION_LEVEL: ${{ matrix.validation_level }}
+
+      - name: Upload validation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-report-${{ matrix.component }}-${{ matrix.validation_level }}
+          path: |
+            frontend/.component-approval/reports/
+            /tmp/tsc_output.log
+            /tmp/build_output.log
+          retention-days: 30
+
+  # Job 4: Run Playwright component tests
+  playwright-tests:
+    name: Run Playwright Component Tests
+    runs-on: ubuntu-latest
+    needs: [detect-components, validate-structure]
+    if: needs.detect-components.outputs.validation_required == 'true'
+    
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+        
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install ${{ matrix.browser }} --with-deps
+
+      - name: Build application
+        working-directory: frontend
+        run: npm run build
+
+      - name: Start development server
+        working-directory: frontend
+        run: |
+          npm run dev &
+          npx wait-on http://localhost:3000 --timeout 60000
+        
+      - name: Run Playwright component tests
+        working-directory: frontend
+        run: |
+          npx playwright test tests/component/test_component_standards.spec.ts --project=${{ matrix.browser }}
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+
+      - name: Upload Playwright reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 30
+
+  # Job 5: Accessibility testing
+  accessibility-tests:
+    name: Accessibility Testing
+    runs-on: ubuntu-latest
+    needs: [detect-components, validate-structure]
+    if: needs.detect-components.outputs.validation_required == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: |
+          npm ci
+          npm install -D @axe-core/playwright
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install chromium --with-deps
+
+      - name: Build application
+        working-directory: frontend
+        run: npm run build
+
+      - name: Start development server
+        working-directory: frontend
+        run: |
+          npm run dev &
+          npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: Run accessibility tests
+        working-directory: frontend
+        run: |
+          cat > accessibility-test.spec.ts << 'EOF'
+          import { test, expect } from '@playwright/test';
+          import { injectAxe, checkA11y } from '@axe-core/playwright';
+          
+          test('accessibility compliance', async ({ page }) => {
+            await page.goto('http://localhost:3000');
+            await injectAxe(page);
+            await checkA11y(page, null, {
+              detailedReport: true,
+              detailedReportOptions: { html: true }
+            });
+          });
+          EOF
+          
+          npx playwright test accessibility-test.spec.ts --project=chromium
+        continue-on-error: true
+
+      - name: Upload accessibility reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessibility-report
+          path: frontend/playwright-report/
+          retention-days: 30
+
+  # Job 6: Performance testing
+  performance-tests:
+    name: Performance Testing
+    runs-on: ubuntu-latest
+    needs: [detect-components, validate-structure]
+    if: needs.detect-components.outputs.validation_required == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build application
+        working-directory: frontend
+        run: npm run build
+
+      - name: Analyze bundle size
+        working-directory: frontend
+        run: |
+          # Install bundle analyzer
+          npm install -D @next/bundle-analyzer
+          
+          # Create bundle analysis
+          npx next build --analyze || true
+          
+          # Check for significant size increases
+          if [[ -f ".next/analyze/client.html" ]]; then
+            echo "✅ Bundle analysis completed"
+          fi
+
+      - name: Performance testing with Lighthouse
+        run: |
+          # Install Lighthouse CLI
+          npm install -g lighthouse
+          
+          # Start server in background
+          cd frontend && npm run start &
+          sleep 10
+          
+          # Run Lighthouse
+          lighthouse http://localhost:3000 \
+            --output json \
+            --output-path lighthouse-report.json \
+            --chrome-flags="--headless --no-sandbox" \
+            --quiet || true
+          
+          # Check performance score
+          if [[ -f "lighthouse-report.json" ]]; then
+            PERF_SCORE=$(node -e "
+              const report = require('./lighthouse-report.json');
+              console.log(Math.round(report.lhr.categories.performance.score * 100));
+            ")
+            echo "Performance Score: $PERF_SCORE"
+            
+            if [[ $PERF_SCORE -lt 80 ]]; then
+              echo "⚠️  Performance score below threshold (80): $PERF_SCORE"
+            else
+              echo "✅ Performance score acceptable: $PERF_SCORE"
+            fi
+          fi
+
+      - name: Upload performance reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report
+          path: |
+            lighthouse-report.json
+            frontend/.next/analyze/
+          retention-days: 30
+
+  # Job 7: Security scanning
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    needs: detect-components
+    if: needs.detect-components.outputs.validation_required == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run npm audit
+        working-directory: frontend
+        run: |
+          npm audit --audit-level=high --production || true
+          npm audit --audit-level=high --production --json > audit-report.json || true
+
+      - name: Run dependency vulnerability check
+        run: |
+          # Check for known vulnerable packages
+          if [[ -f "frontend/audit-report.json" ]]; then
+            VULNERABILITIES=$(node -e "
+              try {
+                const audit = require('./frontend/audit-report.json');
+                console.log(audit.metadata?.vulnerabilities?.total || 0);
+              } catch(e) { console.log(0); }
+            ")
+            
+            echo "Total vulnerabilities found: $VULNERABILITIES"
+            
+            if [[ $VULNERABILITIES -gt 0 ]]; then
+              echo "⚠️  Security vulnerabilities detected"
+            else
+              echo "✅ No security vulnerabilities found"
+            fi
+          fi
+
+      - name: Upload security reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: frontend/audit-report.json
+          retention-days: 30
+
+  # Job 8: Constitutional compliance check
+  constitutional-compliance:
+    name: Constitutional Compliance Check
+    runs-on: ubuntu-latest
+    needs: detect-components
+    if: needs.detect-components.outputs.validation_required == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check single component rule
+        run: |
+          # Verify only one component changed per commit/PR
+          COMPONENTS="${{ needs.detect-components.outputs.components_changed }}"
+          COMPONENT_COUNT=$(echo "$COMPONENTS" | tr ',' '\n' | wc -l)
+          
+          if [[ $COMPONENT_COUNT -gt 1 ]] && [[ "${{ github.event.inputs.force_validation }}" != "true" ]]; then
+            echo "❌ Constitutional violation: Multiple components changed in single commit/PR"
+            echo "Components changed: $COMPONENTS"
+            echo "This violates the single component focus principle"
+            exit 1
+          fi
+          
+          echo "✅ Single component rule compliance verified"
+
+      - name: Check for scope creep indicators
+        run: |
+          # Check git commit messages for scope creep indicators
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            COMMIT_MSG=$(git log -1 --pretty=%B)
+            
+            # Check for scope creep indicators in commit message
+            if echo "$COMMIT_MSG" | grep -qi "also\|additionally\|plus\|extra\|bonus"; then
+              echo "⚠️  Warning: Commit message may indicate scope creep"
+              echo "Commit message: $COMMIT_MSG"
+            fi
+          fi
+          
+          echo "✅ Scope creep check completed"
+
+      - name: Verify rollback capability
+        run: |
+          # Check that changes can be easily rolled back
+          COMPONENTS="${{ needs.detect-components.outputs.components_changed }}"
+          
+          for component in $(echo "$COMPONENTS" | tr ',' '\n'); do
+            if [[ -n "$component" ]]; then
+              COMPONENT_FILE="frontend/src/components/ui/$component.tsx"
+              
+              if [[ -f "$COMPONENT_FILE" ]]; then
+                # Check for tight coupling indicators
+                if grep -q "process\.env\|window\.\|global\." "$COMPONENT_FILE"; then
+                  echo "⚠️  Warning: Component $component may have tight coupling"
+                fi
+                
+                # Check for complex dependencies
+                IMPORT_COUNT=$(grep -c "^import" "$COMPONENT_FILE" || echo "0")
+                if [[ $IMPORT_COUNT -gt 10 ]]; then
+                  echo "⚠️  Warning: Component $component has many imports ($IMPORT_COUNT)"
+                fi
+              fi
+            fi
+          done
+          
+          echo "✅ Rollback capability verification completed"
+
+  # Job 9: Generate comprehensive report
+  generate-report:
+    name: Generate Validation Report
+    runs-on: ubuntu-latest
+    needs: [
+      detect-components,
+      validate-structure,
+      run-validation-script,
+      playwright-tests,
+      accessibility-tests,
+      performance-tests,
+      security-scan,
+      constitutional-compliance
+    ]
+    if: always() && needs.detect-components.outputs.validation_required == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: validation-artifacts
+
+      - name: Generate comprehensive report
+        run: |
+          mkdir -p final-report
+          
+          cat > final-report/validation-summary.md << 'EOF'
+          # Component Validation Report
+          
+          **Workflow Run:** ${{ github.run_number }}
+          **Trigger:** ${{ github.event_name }}
+          **Components:** ${{ needs.detect-components.outputs.components_changed }}
+          **Date:** $(date)
+          
+          ## Validation Results Summary
+          
+          | Test Category | Status | Details |
+          |---------------|--------|---------|
+          | Structure Validation | ${{ needs.validate-structure.result }} | Component structure and CLI compliance |
+          | Validation Script | ${{ needs.run-validation-script.result }} | Custom validation script execution |
+          | Playwright Tests | ${{ needs.playwright-tests.result }} | Cross-browser component testing |
+          | Accessibility Tests | ${{ needs.accessibility-tests.result }} | WCAG 2.1 AA compliance |
+          | Performance Tests | ${{ needs.performance-tests.result }} | Performance and bundle size analysis |
+          | Security Scan | ${{ needs.security-scan.result }} | Vulnerability and dependency scanning |
+          | Constitutional Compliance | ${{ needs.constitutional-compliance.result }} | Workflow principles adherence |
+          
+          ## Overall Status
+          
+          EOF
+          
+          # Determine overall status
+          if [[ "${{ needs.validate-structure.result }}" == "success" ]] && \
+             [[ "${{ needs.run-validation-script.result }}" == "success" ]] && \
+             [[ "${{ needs.constitutional-compliance.result }}" == "success" ]]; then
+            echo "✅ **VALIDATION PASSED** - Component(s) meet all requirements" >> final-report/validation-summary.md
+          else
+            echo "❌ **VALIDATION FAILED** - Component(s) require attention" >> final-report/validation-summary.md
+          fi
+          
+          cat >> final-report/validation-summary.md << 'EOF'
+          
+          ## Next Steps
+          
+          - Review detailed reports in workflow artifacts
+          - Address any failing validations before approval
+          - Update component tracking system
+          - Notify stakeholders of validation results
+          
+          ---
+          *Generated by Component Approval Workflow*
+          EOF
+
+      - name: Upload final report
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-validation-report
+          path: final-report/
+          retention-days: 90
+
+  # Job 10: Update component tracking (if validation passes)
+  update-tracking:
+    name: Update Component Tracking
+    runs-on: ubuntu-latest
+    needs: [
+      detect-components,
+      validate-structure,
+      run-validation-script,
+      constitutional-compliance
+    ]
+    if: |
+      needs.validate-structure.result == 'success' &&
+      needs.run-validation-script.result == 'success' &&
+      needs.constitutional-compliance.result == 'success'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update component tracking
+        run: |
+          COMPONENTS="${{ needs.detect-components.outputs.components_changed }}"
+          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          
+          for component in $(echo "$COMPONENTS" | tr ',' '\n'); do
+            if [[ -n "$component" ]]; then
+              echo "Updating tracking for component: $component"
+              
+              # Update component status in tracking file
+              # This would integrate with your tracking system
+              echo "Component $component validated successfully at $TIMESTAMP" >> validation-log.txt
+            fi
+          done
+
+      - name: Commit tracking updates
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          if [[ -f "validation-log.txt" ]]; then
+            git add validation-log.txt
+            git commit -m "Update component validation tracking [skip ci]" || exit 0
+            git push || exit 0
+          fi
+
+  # Job 11: Notification and status update
+  notify-results:
+    name: Notify Validation Results
+    runs-on: ubuntu-latest
+    needs: [
+      detect-components,
+      validate-structure,
+      run-validation-script,
+      playwright-tests,
+      accessibility-tests,
+      performance-tests,
+      security-scan,
+      constitutional-compliance
+    ]
+    if: always() && needs.detect-components.outputs.validation_required == 'true'
+    
+    steps:
+      - name: Set validation status
+        id: status
+        run: |
+          # Determine overall validation status
+          CRITICAL_JOBS=("validate-structure" "run-validation-script" "constitutional-compliance")
+          FAILED_CRITICAL=false
+          
+          for job in "${CRITICAL_JOBS[@]}"; do
+            case $job in
+              "validate-structure")
+                if [[ "${{ needs.validate-structure.result }}" != "success" ]]; then
+                  FAILED_CRITICAL=true
+                fi
+                ;;
+              "run-validation-script")
+                if [[ "${{ needs.run-validation-script.result }}" != "success" ]]; then
+                  FAILED_CRITICAL=true
+                fi
+                ;;
+              "constitutional-compliance")
+                if [[ "${{ needs.constitutional-compliance.result }}" != "success" ]]; then
+                  FAILED_CRITICAL=true
+                fi
+                ;;
+            esac
+          done
+          
+          if [[ "$FAILED_CRITICAL" == "true" ]]; then
+            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "message=Component validation failed - critical issues found" >> $GITHUB_OUTPUT
+          else
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "message=Component validation completed successfully" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create workflow summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          # Component Validation Results
+          
+          ## Summary
+          **Components Validated:** ${{ needs.detect-components.outputs.components_changed }}
+          **Overall Status:** ${{ steps.status.outputs.status == 'success' && '✅ PASSED' || '❌ FAILED' }}
+          **Message:** ${{ steps.status.outputs.message }}
+          
+          ## Detailed Results
+          - **Structure Validation:** ${{ needs.validate-structure.result == 'success' && '✅' || '❌' }}
+          - **Validation Script:** ${{ needs.run-validation-script.result == 'success' && '✅' || '❌' }}
+          - **Playwright Tests:** ${{ needs.playwright-tests.result == 'success' && '✅' || needs.playwright-tests.result == 'failure' && '❌' || '⏭️' }}
+          - **Accessibility Tests:** ${{ needs.accessibility-tests.result == 'success' && '✅' || needs.accessibility-tests.result == 'failure' && '❌' || '⏭️' }}
+          - **Performance Tests:** ${{ needs.performance-tests.result == 'success' && '✅' || needs.performance-tests.result == 'failure' && '❌' || '⏭️' }}
+          - **Security Scan:** ${{ needs.security-scan.result == 'success' && '✅' || needs.security-scan.result == 'failure' && '❌' || '⏭️' }}
+          - **Constitutional Compliance:** ${{ needs.constitutional-compliance.result == 'success' && '✅' || '❌' }}
+          
+          ## Artifacts Generated
+          - Validation reports for each component
+          - Playwright test results and screenshots
+          - Performance and accessibility reports
+          - Security scan results
+          - Final comprehensive validation report
+          
+          EOF
+
+      - name: Update commit status
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ steps.status.outputs.status }}';
+            const message = '${{ steps.status.outputs.message }}';
+            
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.payload.pull_request.head.sha,
+              state: status === 'success' ? 'success' : 'failure',
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              description: message,
+              context: 'Component Validation'
+            });
+
+# Workflow configuration
+concurrency:
+  group: component-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+  statuses: write

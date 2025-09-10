@@ -3,22 +3,51 @@
 import React from 'react';
 import { ChatMessages } from './chat-messages';
 import { ChatInput } from './chat-input';
-import { ChatProvider } from '@/contexts/chat-context';
+import { ChatProgress } from './chat-progress';
+import { useChatSession } from '@/src/contexts/ChatSessionContext';
+import { CreateResearchQueryRequest } from '@/src/types/chat';
 
 export function ChatInterface() {
+  const { 
+    state, 
+    submitQuery, 
+    connectionStatus, 
+    events 
+  } = useChatSession();
+
+  const handleSubmitQuery = async (request: CreateResearchQueryRequest) => {
+    try {
+      await submitQuery(request);
+    } catch (error) {
+      console.error('Failed to submit query:', error);
+    }
+  };
+
   return (
-    <ChatProvider>
-      <div className="flex flex-col h-full w-full">
-        {/* Chat Messages Area */}
-        <div className="flex-1 overflow-hidden">
-          <ChatMessages />
-        </div>
-        
-        {/* Chat Input */}
-        <div className="border-t border-gray-200 dark:border-gray-800">
-          <ChatInput />
-        </div>
+    <div className="flex flex-col h-full w-full bg-chat-background text-text-primary">
+      {/* Chat Messages Area */}
+      <div className="flex-1 overflow-hidden">
+        <ChatMessages />
       </div>
-    </ChatProvider>
+      
+      {/* Progress Indicator */}
+      {state.isLoading && (
+        <ChatProgress 
+          isProcessing={state.isLoading}
+          connectionStatus={connectionStatus}
+          events={events}
+        />
+      )}
+      
+      {/* Chat Input */}
+      <div className="border-t border-chat-border bg-chat-surface minimal-transition">
+        <ChatInput 
+          onSubmit={handleSubmitQuery}
+          disabled={state.isLoading}
+          isProcessing={state.isLoading}
+          connectionStatus={connectionStatus}
+        />
+      </div>
+    </div>
   );
 }

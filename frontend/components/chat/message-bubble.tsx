@@ -34,10 +34,10 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
       {/* Message Content */}
       <div className={`flex-1 max-w-[80%] ${isUser ? 'text-right' : 'text-left'}`}>
-        <Card className={`p-4 ${
+        <Card className={`p-4 minimal-surface minimal-transition ${
           isUser 
-            ? 'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 ml-auto' 
-            : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800'
+            ? 'bg-chat-bubble-user text-primary-foreground border-primary/20 ml-auto' 
+            : 'bg-chat-bubble-assistant border-chat-border'
         }`}>
           <div className="prose prose-sm dark:prose-invert max-w-none">
             <p className="m-0 whitespace-pre-wrap">{message.content}</p>
@@ -45,7 +45,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         </Card>
         
         {/* Timestamp */}
-        <div className={`text-xs text-gray-500 mt-1 ${isUser ? 'text-right' : 'text-left'}`}>
+        <div className={`text-xs text-text-tertiary mt-1 ${isUser ? 'text-right' : 'text-left'}`}>
           {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
       </div>

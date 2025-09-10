@@ -48,7 +48,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
                 <aside
                     ref={ref}
                     className={cn(
-                        "relative bg-[#000000] text-gray-200 transition-all duration-300 ease-in-out flex flex-col cursor-pointer",
+                        "relative bg-sidebar-background text-sidebar-text border-r border-sidebar-border transition-all duration-300 ease-in-out flex flex-col cursor-pointer minimal-transition",
                         isCollapsed ? "w-20" : "w-64",
                         className
                     )}
@@ -77,7 +77,7 @@ const SidebarToggle = React.forwardRef<HTMLButtonElement, React.HTMLAttributes<H
                 ref={ref}
                 onClick={handleToggle}
                 className={cn(
-                    "absolute -right-3 top-6 z-10 h-7 w-7 flex items-center justify-center bg-gray-800 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors group",
+                    "absolute -right-3 top-6 z-10 h-7 w-7 flex items-center justify-center bg-surface border border-border rounded-full text-text-secondary hover:bg-surface-hover hover:text-text-primary minimal-transition group shadow-sm",
                     className
                 )}
                 aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -131,7 +131,7 @@ const SidebarNavItem = React.forwardRef<HTMLLIElement, SidebarNavItemProps>(
             <li ref={ref} className={cn("relative group", className)} {...props}>
                 {children}
                 {isCollapsed && (
-                    <div className="absolute left-full ml-4 px-2 py-1 bg-gray-900 text-white text-xs rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                    <div className="absolute left-full ml-4 px-2 py-1 bg-surface border border-border text-text-primary text-xs rounded-md shadow-dropdown opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
                         {title}
                     </div>
                 )}
@@ -145,7 +145,7 @@ SidebarNavItem.displayName = "SidebarNavItem";
 const SidebarNavLink = React.forwardRef<HTMLAnchorElement, React.AnchorHTMLAttributes<HTMLAnchorElement>>(
     ({ className, href, children, ...props }, ref) => {
         return (
-            <a ref={ref} href={href} className={cn("flex items-center p-2 text-sm rounded-lg hover:bg-gray-700/80 transition-colors overflow-hidden cursor-pointer", className)} {...props}>
+            <a ref={ref} href={href} className={cn("flex items-center p-2 text-sm rounded-lg hover:bg-sidebar-hover active:bg-sidebar-active minimal-transition overflow-hidden cursor-pointer", className)} {...props}>
                 {children}
             </a>
         );
@@ -161,7 +161,7 @@ const SidebarNavText = React.forwardRef<HTMLSpanElement, React.HTMLAttributes<HT
             <span
                 ref={ref}
                 className={cn(
-                    "ml-3 truncate transition-all duration-300",
+                    "ml-3 truncate transition-all duration-300 text-sidebar-text-secondary",
                     isCollapsed ? "max-w-0 opacity-0" : "max-w-full opacity-100",
                     className
                 )}

@@ -1,0 +1,541 @@
+sse-events-schema:
+  description: Server-Sent Events schema for real-time research updates
+  version: 1.0.0
+  
+events:
+  query_received:
+    description: Research query received and queued for processing
+    data:
+      type: object
+      required: [queryId, timestamp, estimatedDuration]
+      properties:
+        queryId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        estimatedDuration:
+          type: integer
+          description: Expected processing time in seconds
+        priority:
+          type: string
+          enum: [low, medium, high]
+    example: |
+      event: query_received
+      data: {"queryId": "123e4567-e89b-12d3-a456-426614174000", "timestamp": "2025-09-09T10:00:00Z", "estimatedDuration": 180, "priority": "medium"}
+
+  processing_started:
+    description: Research processing has begun
+    data:
+      type: object
+      required: [queryId, timestamp, totalAgents]
+      properties:
+        queryId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        totalAgents:
+          type: integer
+          minimum: 1
+          description: Number of agents participating
+        phase:
+          type: string
+          enum: [planning, research, evaluation, synthesis]
+          default: planning
+    example: |
+      event: processing_started
+      data: {"queryId": "123e4567-e89b-12d3-a456-426614174000", "timestamp": "2025-09-09T10:00:30Z", "totalAgents": 8, "phase": "planning"}
+
+  agent_started:
+    description: Specific agent has started processing
+    data:
+      type: object
+      required: [queryId, agentId, agentType, timestamp]
+      properties:
+        queryId:
+          type: string
+          format: uuid
+        agentId:
+          type: string
+        agentType:
+          type: string
+          enum: [team_leader, plan_generator, section_planner, section_researcher, enhanced_search, research_evaluator, escalation_checker, report_writer]
+        timestamp:
+          type: string
+          format: date-time
+        estimatedDuration:
+          type: integer
+          description: Expected agent processing time in seconds
+        task:
+          type: string
+          description: Human-readable description of agent task
+    example: |
+      event: agent_started
+      data: {"queryId": "123e4567-e89b-12d3-a456-426614174000", "agentId": "team_leader_001", "agentType": "team_leader", "timestamp": "2025-09-09T10:01:00Z", "estimatedDuration": 30, "task": "Analyzing query and creating research plan"}
+
+  agent_progress:
+    description: Progress update from a specific agent
+    data:
+      type: object
+      required: [queryId, agentId, progress, timestamp]
+      properties:
+        queryId:
+          type: string
+          format: uuid
+        agentId:
+          type: string
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Agent completion percentage
+        timestamp:
+          type: string
+          format: date-time
+        currentTask:
+          type: string
+          description: Current subtask being performed
+        partialResults:
+          type: string
+          description: Intermediate findings (optional)
+    example: |
+      event: agent_progress
+      data: {"queryId": "123e4567-e89b-12d3-a456-426614174000", "agentId": "enhanced_search_001", "progress": 65, "timestamp": "2025-09-09T10:03:30Z", "currentTask": "Analyzing search results from academic sources", "partialResults": "Found 12 relevant academic papers on the topic"}
+
+  agent_completed:
+    description: Specific agent has finished processing
+    data:
+      type: object
+      required: [queryId, agentId, timestamp, success]
+      properties:
+        queryId:
+          type: string
+          format: uuid
+        agentId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        success:
+          type: boolean
+        processingTimeMs:
+          type: integer
+          description: Actual processing time in milliseconds
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Agent confidence in results
+        resultSummary:
+          type: string
+          description: Brief summary of agent findings
+        tokensUsed:
+          type: integer
+          description: Total tokens consumed by agent
+    example: |
+      event: agent_completed
+      data: {"queryId": "123e4567-e89b-12d3-a456-426614174000", "agentId": "section_researcher_001", "timestamp": "2025-09-09T10:05:00Z", "success": true, "processingTimeMs": 45000, "confidence": 0.92, "resultSummary": "Completed research on market trends with 15 high-quality sources", "tokensUsed": 2847}
+
+  partial_result:
+    description: Intermediate research result available
+    data:
+      type: object
+      required: [queryId, timestamp, content, section]
+      properties:
+        queryId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        content:
+          type: string
+          description: Partial research content
+        section:
+          type: string
+          description: Section or topic of partial result
+        agentId:
+          type: string
+          description: Contributing agent
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        sources:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+                format: uri
+              title:
+                type: string
+              relevance:
+                type: number
+                minimum: 0
+                maximum: 1
+    example: |
+      event: partial_result
+      data: {"queryId": "123e4567-e89b-12d3-a456-426614174000", "timestamp": "2025-09-09T10:04:15Z", "content": "## Market Analysis\n\nThe current market shows strong growth trends in the AI research sector...", "section": "Market Analysis", "agentId": "section_researcher_002", "confidence": 0.88, "sources": [{"url": "https://example.com/report", "title": "AI Market Report 2025", "relevance": 0.95}]}
+
+  quality_check:
+    description: Research quality validation step
+    data:
+      type: object
+      required: [queryId, timestamp, qualityScore, phase]
+      properties:
+        queryId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        qualityScore:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Overall quality assessment
+        phase:
+          type: string
+          enum: [completeness_check, accuracy_validation, source_verification, coherence_review]
+        findings:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [warning, error, improvement]
+              message:
+                type: string
+              severity:
+                type: string
+                enum: [low, medium, high]
+        recommendedActions:
+          type: array
+          items:
+            type: string
+    example: |
+      event: quality_check
+      data: {"queryId": "123e4567-e89b-12d3-a456-426614174000", "timestamp": "2025-09-09T10:07:30Z", "qualityScore": 0.91, "phase": "accuracy_validation", "findings": [{"type": "improvement", "message": "Could benefit from more recent sources", "severity": "low"}], "recommendedActions": ["Add 2025 data sources", "Verify statistical claims"]}
+
+  result_generated:
+    description: Final research result has been generated
+    data:
+      type: object
+      required: [queryId, resultId, timestamp, wordCount]
+      properties:
+        queryId:
+          type: string
+          format: uuid
+        resultId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        wordCount:
+          type: integer
+          minimum: 0
+        readingTimeMinutes:
+          type: integer
+          minimum: 0
+        qualityScore:
+          type: number
+          minimum: 0
+          maximum: 1
+        sectionsCount:
+          type: integer
+          minimum: 1
+        citationsCount:
+          type: integer
+          minimum: 0
+        summary:
+          type: string
+          maxLength: 500
+          description: Executive summary of results
+    example: |
+      event: result_generated
+      data: {"queryId": "123e4567-e89b-12d3-a456-426614174000", "resultId": "456e7890-e12b-34c5-d678-901234567890", "timestamp": "2025-09-09T10:08:00Z", "wordCount": 2847, "readingTimeMinutes": 12, "qualityScore": 0.94, "sectionsCount": 6, "citationsCount": 23, "summary": "Comprehensive analysis of AI research market trends showing 34% growth rate with emerging opportunities in specialized domains."}
+
+  processing_complete:
+    description: All research processing has completed successfully
+    data:
+      type: object
+      required: [queryId, resultId, timestamp, totalDurationMs]
+      properties:
+        queryId:
+          type: string
+          format: uuid
+        resultId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        totalDurationMs:
+          type: integer
+          description: Total processing time in milliseconds
+        agentsCompleted:
+          type: integer
+          description: Number of agents that completed successfully
+        agentsTotal:
+          type: integer
+          description: Total number of agents used
+        finalQualityScore:
+          type: number
+          minimum: 0
+          maximum: 1
+        tokensTotal:
+          type: integer
+          description: Total tokens consumed across all agents
+        costEstimate:
+          type: number
+          description: Estimated cost in USD
+    example: |
+      event: processing_complete
+      data: {"queryId": "123e4567-e89b-12d3-a456-426614174000", "resultId": "456e7890-e12b-34c5-d678-901234567890", "timestamp": "2025-09-09T10:08:15Z", "totalDurationMs": 485000, "agentsCompleted": 8, "agentsTotal": 8, "finalQualityScore": 0.94, "tokensTotal": 18952, "costEstimate": 0.47}
+
+  error_occurred:
+    description: Error occurred during processing
+    data:
+      type: object
+      required: [queryId, timestamp, errorType, message]
+      properties:
+        queryId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        errorType:
+          type: string
+          enum: [agent_error, timeout_error, validation_error, system_error, quota_exceeded]
+        message:
+          type: string
+          description: Human-readable error message
+        errorCode:
+          type: string
+          description: Internal error code
+        agentId:
+          type: string
+          description: Agent that encountered the error (if applicable)
+        recoverable:
+          type: boolean
+          description: Whether the error can be retried
+        suggestedAction:
+          type: string
+          description: Recommended user action
+        retryAfter:
+          type: integer
+          description: Suggested retry delay in seconds
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional error context
+    example: |
+      event: error_occurred
+      data: {"queryId": "123e4567-e89b-12d3-a456-426614174000", "timestamp": "2025-09-09T10:06:45Z", "errorType": "agent_error", "message": "Enhanced search agent encountered rate limiting", "errorCode": "RATE_LIMIT_EXCEEDED", "agentId": "enhanced_search_001", "recoverable": true, "suggestedAction": "Wait 60 seconds and retry", "retryAfter": 60, "details": {"rateLimitReset": "2025-09-09T10:07:45Z", "requestsRemaining": 0}}
+
+  timeout_warning:
+    description: Processing is taking longer than expected
+    data:
+      type: object
+      required: [queryId, timestamp, currentDurationMs, estimatedRemainingMs]
+      properties:
+        queryId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        currentDurationMs:
+          type: integer
+          description: Time elapsed since processing started
+        estimatedRemainingMs:
+          type: integer
+          description: Estimated time remaining
+        reason:
+          type: string
+          description: Reason for extended processing time
+        agentsStillProcessing:
+          type: array
+          items:
+            type: object
+            properties:
+              agentId:
+                type: string
+              agentType:
+                type: string
+              currentTask:
+                type: string
+    example: |
+      event: timeout_warning
+      data: {"queryId": "123e4567-e89b-12d3-a456-426614174000", "timestamp": "2025-09-09T10:05:30Z", "currentDurationMs": 330000, "estimatedRemainingMs": 120000, "reason": "Complex query requiring additional research depth", "agentsStillProcessing": [{"agentId": "section_researcher_003", "agentType": "section_researcher", "currentTask": "Analyzing specialized academic sources"}]}
+
+  user_cancelled:
+    description: User cancelled the research operation
+    data:
+      type: object
+      required: [queryId, timestamp, cancelledBy]
+      properties:
+        queryId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        cancelledBy:
+          type: string
+          description: User identifier who cancelled
+        reason:
+          type: string
+          description: Reason for cancellation (if provided)
+        partialResultsAvailable:
+          type: boolean
+          description: Whether partial results can be retrieved
+        agentsStopped:
+          type: integer
+          description: Number of agents that were stopped
+        processingTimeMs:
+          type: integer
+          description: Time elapsed before cancellation
+    example: |
+      event: user_cancelled
+      data: {"queryId": "123e4567-e89b-12d3-a456-426614174000", "timestamp": "2025-09-09T10:04:00Z", "cancelledBy": "user_123", "reason": "Query refined", "partialResultsAvailable": true, "agentsStopped": 3, "processingTimeMs": 240000}
+
+connection_events:
+  connection_established:
+    description: SSE connection successfully established
+    data:
+      type: object
+      required: [connectionId, timestamp, serverVersion]
+      properties:
+        connectionId:
+          type: string
+          description: Unique connection identifier
+        timestamp:
+          type: string
+          format: date-time
+        serverVersion:
+          type: string
+        supportedEvents:
+          type: array
+          items:
+            type: string
+          description: List of supported event types
+        heartbeatInterval:
+          type: integer
+          description: Heartbeat interval in seconds
+    example: |
+      event: connection_established
+      data: {"connectionId": "conn_789", "timestamp": "2025-09-09T09:59:45Z", "serverVersion": "1.0.0", "supportedEvents": ["query_received", "processing_started", "agent_progress"], "heartbeatInterval": 30}
+
+  heartbeat:
+    description: Connection keepalive heartbeat
+    data:
+      type: object
+      required: [timestamp, connectionId]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        connectionId:
+          type: string
+        activeQueries:
+          type: integer
+          description: Number of currently active queries
+        serverLoad:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Current server load (0-1)
+    example: |
+      event: heartbeat
+      data: {"timestamp": "2025-09-09T10:10:00Z", "connectionId": "conn_789", "activeQueries": 2, "serverLoad": 0.34}
+
+  connection_error:
+    description: Connection-level error occurred
+    data:
+      type: object
+      required: [timestamp, errorType, message]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        errorType:
+          type: string
+          enum: [authentication_failed, rate_limit_exceeded, server_overload, protocol_error]
+        message:
+          type: string
+        reconnectAllowed:
+          type: boolean
+        retryAfter:
+          type: integer
+          description: Seconds to wait before reconnecting
+    example: |
+      event: connection_error
+      data: {"timestamp": "2025-09-09T10:15:00Z", "errorType": "rate_limit_exceeded", "message": "Too many concurrent connections", "reconnectAllowed": true, "retryAfter": 30}
+
+event_flow:
+  normal_flow:
+    - connection_established
+    - query_received
+    - processing_started
+    - agent_started (multiple)
+    - agent_progress (multiple)
+    - partial_result (optional, multiple)
+    - quality_check (multiple)
+    - agent_completed (multiple)
+    - result_generated
+    - processing_complete
+  
+  error_flow:
+    - connection_established
+    - query_received
+    - processing_started
+    - agent_started
+    - error_occurred
+    - processing_complete (with error status)
+  
+  timeout_flow:
+    - connection_established
+    - query_received
+    - processing_started
+    - timeout_warning
+    - processing_complete (with timeout status)
+  
+  cancellation_flow:
+    - connection_established
+    - query_received
+    - processing_started
+    - user_cancelled
+
+reconnection_strategy:
+  description: Client-side reconnection logic for handling connection failures
+  exponential_backoff:
+    initial_delay: 1000  # 1 second
+    max_delay: 30000     # 30 seconds
+    multiplier: 2
+    max_attempts: 10
+  
+  connection_states:
+    - CONNECTING: Initial connection attempt
+    - CONNECTED: Successfully connected and receiving events
+    - RECONNECTING: Connection lost, attempting to reconnect
+    - FAILED: All reconnection attempts exhausted
+    - CLOSED: Connection intentionally closed by user
+
+client_implementation_notes:
+  - Always implement exponential backoff for reconnections
+  - Store partial results during connection interruptions
+  - Handle duplicate events gracefully (events may be retransmitted)
+  - Implement proper cleanup on component unmount
+  - Use connection_established event to sync client state
+  - Monitor heartbeat events to detect stale connections
+  - Implement user-friendly error messages for each error type
+  - Provide visual indicators for each connection state

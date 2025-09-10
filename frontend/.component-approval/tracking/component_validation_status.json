@@ -1,0 +1,15 @@
+{
+  "component": "button",
+  "validation_date": "2025-09-10T01:46:24Z",
+  "test_level": "basic",
+  "overall_status": "passed",
+  "statistics": {
+    "total_tests": 4,
+    "passed_tests": 4,
+    "failed_tests": 0,
+    "warning_tests": 0,
+    "info_tests": 0
+  },
+  "report_file": "/Users/nick/Development/vana/frontend/.component-approval/reports/validation_button_20250909_204624.md",
+  "timestamp": "20250909_204624"
+}

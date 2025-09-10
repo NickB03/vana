@@ -1,0 +1,887 @@
+openapi: 3.0.3
+info:
+  title: Vana AI Research Platform API
+  description: API contracts for frontend development continuation
+  version: 1.0.0
+  contact:
+    name: Vana Development Team
+    
+servers:
+  - url: http://localhost:8000
+    description: Development server
+  - url: https://api.vana.ai
+    description: Production server
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Returns system health status
+      tags: [System]
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: System is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/run_sse:
+    post:
+      summary: Execute research with SSE streaming
+      description: Submit research query and receive real-time progress via Server-Sent Events
+      tags: [Research]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResearchQueryRequest'
+      responses:
+        '200':
+          description: SSE stream established
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/SSEEventStream'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/apps/{app}/users/{user}/sessions:
+    get:
+      summary: Get user chat sessions
+      description: Retrieve paginated list of user's chat sessions
+      tags: [Sessions]
+      parameters:
+        - name: app
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Application identifier
+        - name: user
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User identifier
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of sessions to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of sessions to skip
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, archived, deleted]
+          description: Filter by session status
+      responses:
+        '200':
+          description: Sessions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Create new chat session
+      description: Create a new chat session for the user
+      tags: [Sessions]
+      parameters:
+        - name: app
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: user
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+      responses:
+        '201':
+          description: Session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSessionResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/apps/{app}/users/{user}/sessions/{sessionId}:
+    get:
+      summary: Get specific chat session
+      description: Retrieve detailed information about a specific chat session
+      tags: [Sessions]
+      parameters:
+        - name: app
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: user
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSessionDetailResponse'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Update chat session
+      description: Update chat session metadata and settings
+      tags: [Sessions]
+      parameters:
+        - name: app
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: user
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSessionRequest'
+      responses:
+        '200':
+          description: Session updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSessionResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete chat session
+      description: Delete a chat session (soft delete - moves to archived status)
+      tags: [Sessions]
+      parameters:
+        - name: app
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: user
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Session deleted successfully
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/apps/{app}/users/{user}/sessions/{sessionId}/messages:
+    get:
+      summary: Get session messages
+      description: Retrieve paginated messages from a chat session
+      tags: [Messages]
+      parameters:
+        - name: app
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: user
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: before
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Get messages before this timestamp
+        - name: after
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Get messages after this timestamp
+      responses:
+        '200':
+          description: Messages retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessagesResponse'
+
+  /auth/login:
+    post:
+      summary: User authentication
+      description: Authenticate user and return access token
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      description: Refresh expired access token using refresh token
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+        services:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              status:
+                type: string
+                enum: [up, down, degraded]
+              responseTime:
+                type: number
+                description: Response time in milliseconds
+
+    ResearchQueryRequest:
+      type: object
+      required:
+        - query
+        - sessionId
+      properties:
+        query:
+          type: string
+          minLength: 10
+          maxLength: 5000
+          description: User's research question
+        sessionId:
+          type: string
+          format: uuid
+          description: Chat session identifier
+        type:
+          type: string
+          enum: [research, analysis, comparison, summarization, fact-check, creative]
+          default: research
+        priority:
+          type: string
+          enum: [low, medium, high]
+          default: medium
+        parameters:
+          $ref: '#/components/schemas/QueryParameters'
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueryAttachment'
+          maxItems: 10
+
+    QueryParameters:
+      type: object
+      properties:
+        maxDuration:
+          type: integer
+          minimum: 30
+          maximum: 300
+          default: 180
+          description: Maximum processing time in seconds
+        agentSelection:
+          type: array
+          items:
+            type: string
+          description: Specific agents to use
+        outputFormat:
+          type: string
+          enum: [structured, narrative, bullet-points]
+          default: structured
+        detailLevel:
+          type: string
+          enum: [brief, detailed, comprehensive]
+          default: detailed
+        sourcesRequired:
+          type: boolean
+          default: true
+
+    QueryAttachment:
+      type: object
+      required:
+        - filename
+        - contentType
+        - url
+      properties:
+        filename:
+          type: string
+          maxLength: 255
+        contentType:
+          type: string
+        size:
+          type: integer
+          minimum: 0
+          maximum: 104857600  # 100MB
+        url:
+          type: string
+          format: uri
+        metadata:
+          type: object
+          additionalProperties: true
+
+    SSEEventStream:
+      type: string
+      description: Server-Sent Events stream with the following event types
+      example: |
+        event: progress_update
+        data: {"type": "processing_started", "progress": 5, "message": "Research query received and processing started"}
+        
+        event: agent_update
+        data: {"agentId": "team_leader", "type": "agent_started", "progress": 10, "message": "Team leader agent analyzing query"}
+        
+        event: partial_result
+        data: {"agentId": "section_researcher", "content": "Initial findings from web search...", "progress": 45}
+        
+        event: progress_update
+        data: {"type": "quality_check", "progress": 85, "message": "Validating research quality and completeness"}
+        
+        event: result_complete
+        data: {"resultId": "uuid", "progress": 100, "message": "Research completed successfully"}
+        
+        event: error
+        data: {"type": "processing_error", "message": "Agent processing failed", "recoverable": true}
+
+    SessionsResponse:
+      type: object
+      required:
+        - sessions
+        - pagination
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatSessionResponse'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    ChatSessionResponse:
+      type: object
+      required:
+        - id
+        - title
+        - status
+        - createdAt
+        - updatedAt
+        - messageCount
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 3
+          maxLength: 100
+        status:
+          type: string
+          enum: [active, archived, deleted]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        messageCount:
+          type: integer
+          minimum: 0
+        settings:
+          $ref: '#/components/schemas/SessionSettings'
+
+    ChatSessionDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/ChatSessionResponse'
+        - type: object
+          properties:
+            recentMessages:
+              type: array
+              items:
+                $ref: '#/components/schemas/MessageResponse'
+              maxItems: 10
+            metadata:
+              $ref: '#/components/schemas/SessionMetadata'
+
+    SessionSettings:
+      type: object
+      properties:
+        theme:
+          type: string
+          enum: [light, dark, system]
+          default: system
+        autoScroll:
+          type: boolean
+          default: true
+        notifications:
+          type: boolean
+          default: true
+        streamingEnabled:
+          type: boolean
+          default: true
+
+    SessionMetadata:
+      type: object
+      properties:
+        userAgent:
+          type: string
+        lastIpAddress:
+          type: string
+          format: ipv4
+        researchContext:
+          type: string
+          maxLength: 500
+        agentPreferences:
+          type: array
+          items:
+            type: object
+
+    CreateSessionRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 100
+        settings:
+          $ref: '#/components/schemas/SessionSettings'
+        metadata:
+          type: object
+          properties:
+            researchContext:
+              type: string
+              maxLength: 500
+
+    UpdateSessionRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 100
+        status:
+          type: string
+          enum: [active, archived]
+        settings:
+          $ref: '#/components/schemas/SessionSettings'
+
+    MessagesResponse:
+      type: object
+      required:
+        - messages
+        - pagination
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessageResponse'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    MessageResponse:
+      type: object
+      required:
+        - id
+        - type
+        - content
+        - timestamp
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [user_query, agent_response, system_message, result_summary]
+        content:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        agentId:
+          type: string
+          description: Present for agent responses
+        agentType:
+          type: string
+          enum: [team_leader, plan_generator, section_planner, section_researcher, enhanced_search, research_evaluator, escalation_checker, report_writer]
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Confidence score for agent responses
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResponseSource'
+          description: Citations and references
+
+    ResponseSource:
+      type: object
+      required:
+        - id
+        - url
+        - title
+        - excerpt
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+          format: uri
+        title:
+          type: string
+        excerpt:
+          type: string
+          maxLength: 500
+        relevanceScore:
+          type: number
+          minimum: 0
+          maximum: 1
+        credibilityScore:
+          type: number
+          minimum: 0
+          maximum: 1
+        accessedAt:
+          type: string
+          format: date-time
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        rememberMe:
+          type: boolean
+          default: false
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+
+    AuthResponse:
+      type: object
+      required:
+        - accessToken
+        - refreshToken
+        - user
+        - expiresIn
+      properties:
+        accessToken:
+          type: string
+          description: JWT access token
+        refreshToken:
+          type: string
+          description: Refresh token (httpOnly cookie)
+        user:
+          $ref: '#/components/schemas/UserInfo'
+        expiresIn:
+          type: integer
+          description: Access token expiration time in seconds
+
+    UserInfo:
+      type: object
+      required:
+        - id
+        - email
+        - displayName
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+        avatar:
+          type: string
+          format: uri
+        preferences:
+          $ref: '#/components/schemas/UserPreferences'
+        subscription:
+          $ref: '#/components/schemas/SubscriptionInfo'
+
+    UserPreferences:
+      type: object
+      properties:
+        theme:
+          type: string
+          enum: [light, dark, system]
+        language:
+          type: string
+          pattern: '^[a-z]{2}$'
+        timezone:
+          type: string
+        notifications:
+          $ref: '#/components/schemas/NotificationSettings'
+
+    NotificationSettings:
+      type: object
+      properties:
+        email:
+          type: boolean
+          default: true
+        browser:
+          type: boolean
+          default: true
+        sound:
+          type: boolean
+          default: false
+        researchComplete:
+          type: boolean
+          default: true
+
+    SubscriptionInfo:
+      type: object
+      required:
+        - tier
+        - queriesUsed
+        - queriesLimit
+      properties:
+        tier:
+          type: string
+          enum: [free, pro, enterprise]
+        validUntil:
+          type: string
+          format: date-time
+        queriesUsed:
+          type: integer
+          minimum: 0
+        queriesLimit:
+          type: integer
+          minimum: 1
+        features:
+          type: array
+          items:
+            type: string
+
+    PaginationInfo:
+      type: object
+      required:
+        - total
+        - limit
+        - offset
+      properties:
+        total:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+        offset:
+          type: integer
+          minimum: 0
+        hasMore:
+          type: boolean
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+        - timestamp
+      properties:
+        error:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
+        timestamp:
+          type: string
+          format: date-time
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional error context
+        traceId:
+          type: string
+          description: Request trace identifier
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token for API authentication
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: System
+    description: System health and status endpoints
+  - name: Research
+    description: Research query execution and streaming
+  - name: Sessions
+    description: Chat session management
+  - name: Messages
+    description: Message history and retrieval
+  - name: Authentication
+    description: User authentication and authorization
