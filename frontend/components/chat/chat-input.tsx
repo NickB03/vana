@@ -94,7 +94,7 @@ export function ChatInput({ onSendMessage, disabled = false, placeholder }: Chat
           )}
         </div>
         
-        <form onSubmit={handleSubmit} className="relative">
+        <form onSubmit={handleSubmit} className="relative" role="form" aria-label={isResearchMode ? "Research query form" : "Chat message form"}>
           <div className="flex items-end gap-2 p-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 shadow-sm">
             {/* Upload Button */}
             <Button
@@ -104,6 +104,8 @@ export function ChatInput({ onSendMessage, disabled = false, placeholder }: Chat
               onClick={handleUploadClick}
               disabled={disabled}
               className="flex-shrink-0 p-2"
+              aria-label="Attach file"
+              title="Attach file"
             >
               <Paperclip size={18} />
             </Button>
@@ -117,6 +119,8 @@ export function ChatInput({ onSendMessage, disabled = false, placeholder }: Chat
               disabled={disabled}
               className="flex-1 min-h-[20px] max-h-[200px] resize-none border-0 shadow-none focus-visible:ring-0 bg-transparent disabled:opacity-50"
               rows={1}
+              aria-label={isResearchMode ? "Enter research query" : "Enter message"}
+              aria-describedby="chat-input-hint"
             />
 
             {/* Send Button */}
@@ -125,9 +129,18 @@ export function ChatInput({ onSendMessage, disabled = false, placeholder }: Chat
               size="sm"
               disabled={!message.trim() || disabled}
               className="flex-shrink-0 p-2"
+              aria-label="Send message"
+              title="Send message"
             >
               <Send size={18} />
             </Button>
+          </div>
+          {/* Screen reader hint */}
+          <div id="chat-input-hint" className="sr-only">
+            {isResearchMode 
+              ? "Press Enter to send research query, Shift+Enter for new line" 
+              : "Press Enter to send message, Shift+Enter for new line"
+            }
           </div>
         </form>
       </div>

@@ -247,6 +247,7 @@ from app.auth.models import User  # noqa: E402
 from app.auth.routes import admin_router, auth_router, users_router  # noqa: E402
 from app.auth.security import (  # noqa: E402
     current_active_user_dep,
+    current_superuser_dep,
     current_user_for_sse_dep,
 )
 from app.middleware import SecurityHeadersMiddleware  # noqa: E402
@@ -539,8 +540,7 @@ async def agent_network_sse(
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",  # Disable nginx buffering
             # Security fix: Use proper origin validation instead of wildcard
-            "Access-Control-Allow-Origin": "null",  # Will be set by middleware
-            "Access-Control-Allow-Headers": "Cache-Control",
+            # CORS headers are handled by middleware - don't override here
         },
     )
 
@@ -774,8 +774,7 @@ async def stream_chat_response(chat_id: str, task_id: str = None):
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
             # Security fix: Use proper origin validation instead of wildcard
-            "Access-Control-Allow-Origin": "null",  # Will be set by middleware
-            "Access-Control-Allow-Headers": "Cache-Control",
+            # CORS headers are handled by middleware - don't override here
             "Access-Control-Allow-Methods": "GET, OPTIONS",
         },
     )
@@ -791,16 +790,25 @@ async def cleanup_task(task_id: str, delay: int = 300):
 
 @app.get("/api/debug/phoenix")
 async def phoenix_debug_endpoint(
-    current_user: User = current_active_user_dep,
+    current_user: User = current_superuser_dep,
     access_code: str = Header(None, alias="X-Phoenix-Code")
 ) -> dict[str, Any]:
     """
     Secret debugging endpoint for internal system metrics.
-    Requires authentication and valid access code.
+    Requires superuser authentication and valid access code.
+    Disabled in production environment for security.
     Access code must be provided via X-Phoenix-Code header.
     """
     import psutil
     import time
+    
+    # Security check: Disable in production environment
+    if os.getenv("NODE_ENV") == "production":
+        logger.warning(f"Phoenix debug endpoint accessed in production by superuser {current_user.id}")
+        raise HTTPException(
+            status_code=503, 
+            detail="Debug endpoint disabled in production environment"
+        )
     
     # Get the required access code from environment variable
     required_access_code = os.getenv("PHOENIX_DEBUG_CODE")
@@ -876,9 +884,9 @@ async def phoenix_debug_endpoint(
             "application_state": {
                 "chat_tasks_count": len(chat_tasks.tasks),
                 "active_connections": "monitoring",
-                "session_storage_uri": session_service_uri,
-                "bucket_name": bucket_name,
-                "project_id": project_id
+                "session_storage_uri": "***REDACTED***" if session_service_uri else None,
+                "bucket_name": "***REDACTED***" if bucket_name else None,
+                "project_id": "***REDACTED***" if project_id else None
             },
             "environment_info": {
                 "google_api_configured": bool(os.getenv("GOOGLE_API_KEY")),
@@ -976,8 +984,7 @@ async def run_research_sse(
                 "Cache-Control": "no-cache",
                 "Connection": "keep-alive",
                 "X-Accel-Buffering": "no",
-                "Access-Control-Allow-Origin": "null",  # Will be set by middleware
-                "Access-Control-Allow-Headers": "Cache-Control",
+                # CORS headers are handled by middleware - don't override here
             },
         )
         
