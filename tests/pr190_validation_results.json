@@ -1,0 +1,85 @@
+{
+  "timestamp": "2025-09-11T18:13:59.700376",
+  "tests": [
+    {
+      "name": "Phoenix Debug Endpoint Security",
+      "checks": {
+        "superuser_auth_required": true,
+        "access_code_required": true,
+        "header_validation": true,
+        "production_disabled": true,
+        "security_logging": true
+      },
+      "passed": true,
+      "score": "5/5"
+    },
+    {
+      "name": "Sensitive Data Exposure Prevention",
+      "checks": {
+        "data_redaction": true,
+        "generic_error_messages": true,
+        "security_comments": true,
+        "limited_debug_output": true
+      },
+      "passed": true,
+      "score": "4/4"
+    },
+    {
+      "name": "CORS Security Configuration",
+      "checks": {
+        "cors_origins_configured": true,
+        "production_secure_origins": true,
+        "dev_localhost_allowed": true,
+        "cors_security_comments": true
+      },
+      "passed": true,
+      "score": "4/4"
+    },
+    {
+      "name": "Memory Leak Prevention",
+      "checks": {
+        "bounded_storage_implemented": true,
+        "max_size_limit": true,
+        "memory_leak_prevention": true,
+        "task_eviction": true
+      },
+      "passed": true,
+      "score": "4/4"
+    },
+    {
+      "name": "Authentication Guard Security",
+      "checks": {
+        "secure_navigation": true,
+        "auth_requirement_check": true,
+        "authentication_state": true,
+        "custom_permissions": true,
+        "unauthorized_handling": true
+      },
+      "passed": true,
+      "score": "5/5"
+    },
+    {
+      "name": "Security Commit History",
+      "checks": {
+        "security_related_commits": false,
+        "pr190_related_commits": true,
+        "fix_commits": true,
+        "critical_fixes": true
+      },
+      "passed": true,
+      "score": "3/4",
+      "recent_commits": [
+        "108ac8fe fix: Resolve production-critical issues from CodeRabbit PR #190 review",
+        "6bce882d feat: Complete SSE research integration and authentication system",
+        "e1bd168e docs: Clean up documentation structure and update CLAUDE.md"
+      ]
+    }
+  ],
+  "summary": {
+    "total_tests": 6,
+    "passed_tests": 6,
+    "failed_tests": 0,
+    "success_rate": 100.0,
+    "overall_status": "PASSED"
+  }
+}
