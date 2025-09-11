@@ -58,6 +58,7 @@ function ResearchModeToggle({ isResearchMode, onToggle, isResearchActive }: Rese
           onClick={() => onToggle(!isResearchMode)}
           disabled={isResearchActive}
           className="gap-1"
+          aria-label="Switch to chat mode"
         >
           <MessageSquare className="h-4 w-4" />
           Chat
@@ -68,6 +69,7 @@ function ResearchModeToggle({ isResearchMode, onToggle, isResearchActive }: Rese
           onClick={() => onToggle(!isResearchMode)}
           disabled={isResearchActive}
           className="gap-1"
+          aria-label="Switch to research mode"
         >
           <Search className="h-4 w-4" />
           Research

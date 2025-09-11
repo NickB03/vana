@@ -103,6 +103,8 @@ export function UserMenu({ className = '' }: UserMenuProps) {
           (isOpen ? "bg-gray-100 dark:bg-gray-800" : "")
         }
         disabled={isLoading}
+        aria-label="Open user menu"
+        aria-expanded={isOpen}
       >
         {/* Avatar */}
         <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center overflow-hidden">
@@ -178,6 +180,7 @@ export function UserMenu({ className = '' }: UserMenuProps) {
             <button
               onClick={handleProfileClick}
               className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2"
+              aria-label="Go to profile page"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -194,6 +197,7 @@ export function UserMenu({ className = '' }: UserMenuProps) {
             <button
               onClick={handleSettingsClick}
               className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2"
+              aria-label="Go to settings page"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -225,6 +229,7 @@ export function UserMenu({ className = '' }: UserMenuProps) {
                   ? "text-gray-400 cursor-not-allowed"
                   : "text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20")
               }
+              aria-label={isLoading ? "Signing out..." : "Sign out of account"}
             >
               {isLoading ? (
                 <>

@@ -12,8 +12,9 @@
 
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo, useRef } from 'react';
 import { AuthService } from '@/lib/auth-service';
+import { useDebouncedStorage, type StorageChangeEvent } from '@/hooks/use-debounced-storage';
 
 // ============================================================================
 // Types
@@ -98,6 +99,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Track initialization attempts to prevent race conditions
+  const initializationAttemptedRef = useRef(false);
+  const isInitializingRef = useRef(false);
 
   // ============================================================================
   // Utility Functions
@@ -116,6 +122,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       role.permissions?.some(p => p.name === permission)
     ) ?? false;
   }, [user]);
+  
+  // Memoized storage keys for debounced storage handler
+  const storageKeys = useMemo(() => ['vana_auth_token', 'vana_user_data'], []);
 
   // ============================================================================
   // Authentication Actions
@@ -225,9 +234,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // State Synchronization
   // ============================================================================
 
-  // Initialize auth state from storage
+  // Initialize auth state from storage with race condition prevention
   useEffect(() => {
     const initializeAuth = async () => {
+      // Prevent multiple initialization attempts
+      if (initializationAttemptedRef.current || isInitializingRef.current) {
+        return;
+      }
+      
+      initializationAttemptedRef.current = true;
+      isInitializingRef.current = true;
+      
       try {
         setIsLoading(true);
         
@@ -255,49 +272,55 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await AuthService.logout();
       } finally {
         setIsLoading(false);
+        setIsInitialized(true);
+        isInitializingRef.current = false;
       }
     };
 
     initializeAuth();
   }, []);
 
-  // Listen for auth state changes across tabs
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'vana_auth_token') {
-        if (e.newValue === null) {
-          // Token was removed in another tab
-          setToken(null);
-          setUser(null);
-          setIsAuthenticated(false);
-        } else if (e.newValue && e.newValue !== token) {
-          // Token was updated in another tab
-          setToken(e.newValue);
-          // Optionally fetch updated user data
+  // Debounced storage change handler
+  const handleDebouncedStorageChange = useCallback((event: StorageChangeEvent) => {
+    // Only process if we're initialized to prevent race conditions during startup
+    if (!isInitialized) return;
+    
+    if (event.key === 'vana_auth_token') {
+      if (event.newValue === null) {
+        // Token was removed in another tab
+        setToken(null);
+        setUser(null);
+        setIsAuthenticated(false);
+      } else if (event.newValue && event.newValue !== token) {
+        // Token was updated in another tab
+        setToken(event.newValue);
+        // Optionally fetch updated user data
+      }
+    }
+    
+    if (event.key === 'vana_user_data') {
+      if (event.newValue === null) {
+        setUser(null);
+      } else {
+        try {
+          const userData = JSON.parse(event.newValue);
+          setUser(userData);
+        } catch (err) {
+          console.error('Failed to parse user data:', err);
         }
       }
-      
-      if (e.key === 'vana_user_data') {
-        if (e.newValue === null) {
-          setUser(null);
-        } else {
-          try {
-            const userData = JSON.parse(e.newValue);
-            setUser(userData);
-          } catch (err) {
-            console.error('Failed to parse user data:', err);
-          }
-        }
-      }
-    };
+    }
+  }, [isInitialized, token]);
+  
+  // Use debounced storage hook
+  useDebouncedStorage(storageKeys, handleDebouncedStorageChange);
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [token]);
-
+  // Memoized refresh token function to prevent effect dependency issues
+  const memoizedRefreshToken = useMemo(() => refreshToken, [refreshToken]);
+  
   // Auto-refresh token before expiration
   useEffect(() => {
-    if (!token || !isAuthenticated) return;
+    if (!token || !isAuthenticated || !isInitialized) return;
 
     const checkTokenExpiry = async () => {
       try {
@@ -309,7 +332,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // Refresh if token expires within 5 minutes
         if (timeUntilExpiry <= 5 * 60 * 1000 && timeUntilExpiry > 0) {
-          await refreshToken();
+          await memoizedRefreshToken();
         }
       } catch (err) {
         console.error('Token expiry check failed:', err);
@@ -323,13 +346,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const interval = setInterval(checkTokenExpiry, 60 * 1000);
     
     return () => clearInterval(interval);
-  }, [token, isAuthenticated, refreshToken]);
+  }, [token, isAuthenticated, isInitialized, memoizedRefreshToken]);
 
   // ============================================================================
   // Context Value
   // ============================================================================
 
-  const contextValue: AuthContextType = {
+  const contextValue: AuthContextType = useMemo(() => ({
     // State
     isAuthenticated,
     isLoading,
@@ -347,7 +370,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     hasRole,
     hasPermission,
     clearError,
-  };
+  }), [isAuthenticated, isLoading, user, token, error, login, logout, refreshToken, validateToken, hasRole, hasPermission, clearError]);
 
   return (
     <AuthContext.Provider value={contextValue}>
