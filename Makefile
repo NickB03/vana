@@ -154,11 +154,15 @@ coverage-auto:
 TASK_ID ?= $(shell date +%s)
 SESSION_ID ?= session-$(shell date +%Y%m%d-%H%M%S)
 
-.PHONY: cf-pre-task cf-post-task cf-pre-edit cf-post-edit cf-session-end
+.PHONY: cf-pre-task cf-post-task cf-pre-edit cf-post-edit cf-session-restore cf-session-end
 
 # Hook: Before starting any development task
 cf-pre-task:
 	@echo "🚀 Initializing Claude Flow task coordination..."
+	@echo "🔄 Loading cross-session memory..."
+	@npx claude-flow memory usage --action retrieve --key "test/cross-session-challenge" 2>/dev/null || true
+	@npx claude-flow memory usage --action retrieve --key "knowledge/vana-secrets" 2>/dev/null || true
+	@npx claude-flow memory usage --action search --pattern "secret|challenge|knowledge" 2>/dev/null || true
 	@npx claude-flow hooks pre-task \
 		--description "$(TASK_DESC)" \
 		--task-id "$(TASK_ID)" \
@@ -185,6 +189,14 @@ cf-post-edit:
 	@npx claude-flow hooks post-edit \
 		--file "$(FILE_PATH)" \
 		--memory-key "swarm/$(SESSION_ID)/$(notdir $(FILE_PATH))"
+
+# Hook: Restore session state
+cf-session-restore:
+	@echo "🔄 Restoring session state and coordination..."
+	@npx claude-flow hooks session-restore \
+		--session-id "$(SESSION_ID)" \
+		--load-memory \
+		--sync-agents
 
 # Hook: End of development session
 cf-session-end:

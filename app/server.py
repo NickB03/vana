@@ -20,16 +20,15 @@ from collections.abc import AsyncGenerator
 from datetime import datetime
 from typing import Any
 
-# Load environment variables FIRST
-from dotenv import load_dotenv
+# Load environment variables using centralized loader
+from app.utils.environment import load_environment
 
-# Get the project root directory and load .env.local
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-env_path = os.path.join(project_root, ".env.local")
-load_dotenv(env_path)
+# Load environment at startup
+env_result = load_environment(silent=False)
+
 # Security fix: Only log sensitive information in development mode
 if os.getenv("NODE_ENV") == "development":
-    print(f"Loading environment from: {env_path}")
+    print(f"Environment loading result: {env_result}")
     print(f"GOOGLE_API_KEY loaded: {'Yes' if os.getenv('GOOGLE_API_KEY') else 'No'}")
 
 import google.auth
@@ -60,25 +59,12 @@ from app.utils.sse_broadcaster import (
 )
 from app.utils.tracing import CloudTraceLoggingSpanExporter
 from app.utils.typing import Feedback
+from app.research_agents import get_research_orchestrator
+from app.config import initialize_google_config
 
-# Get the project ID from Google Cloud authentication
-# Handle CI environment where credentials might not be available
-if os.environ.get("CI") == "true":
-    # In CI environment, skip authentication and use environment variable
-    project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "analystai-454200")
-    print(f"CI Environment: Using project ID from environment: {project_id}")
-else:
-    try:
-        _, project_id = google.auth.default()
-        if not project_id:
-            project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "analystai-454200")
-            print(f"Using project ID from environment/config: {project_id}")
-        else:
-            print(f"Using authenticated project ID: {project_id}")
-    except Exception as e:
-        print(f"Authentication setup: {e}")
-        project_id = "analystai-454200"
-        print(f"Using project ID: {project_id}")
+# Initialize Google Cloud configuration
+project_id = initialize_google_config(silent=False)
+
 # Set up logging based on environment
 if USE_CLOUD_LOGGING:
     try:
@@ -261,6 +247,7 @@ from app.auth.models import User  # noqa: E402
 from app.auth.routes import admin_router, auth_router, users_router  # noqa: E402
 from app.auth.security import (  # noqa: E402
     current_active_user_dep,
+    current_superuser_dep,
     current_user_for_sse_dep,
 )
 from app.middleware import SecurityHeadersMiddleware  # noqa: E402
@@ -299,11 +286,17 @@ app.add_middleware(AuditLogMiddleware)
 
 @app.get("/health")
 async def health_check() -> dict:
-    """Health check endpoint for service validation with environment migration status.
+    """Enhanced health check endpoint for comprehensive service validation.
 
     Returns:
-        Health status with timestamp, service information, and migration status
+        Comprehensive health status including system metrics, dependencies,
+        and service configuration information.
     """
+    import psutil
+    import time
+    
+    start_time = time.time()
+    
     # Get environment info - use simple string in CI environment
     is_ci = os.getenv("CI") == "true"
 
@@ -347,6 +340,41 @@ async def health_check() -> dict:
                 "conflicts": None,
             }
 
+    # Enhanced system metrics
+    try:
+        # Memory information
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage('/')
+        
+        system_metrics = {
+            "memory": {
+                "total": memory.total,
+                "available": memory.available,
+                "percent": memory.percent,
+                "used": memory.used
+            },
+            "disk": {
+                "total": disk.total,
+                "free": disk.free,
+                "percent": round((disk.used / disk.total) * 100, 2)
+            },
+            "cpu_percent": psutil.cpu_percent(interval=0.1),
+            "load_average": os.getloadavg() if hasattr(os, 'getloadavg') else None
+        }
+    except Exception as e:
+        system_metrics = {"error": f"Could not retrieve system metrics: {str(e)}"}
+
+    # Check dependencies
+    dependencies = {
+        "google_api_configured": bool(os.getenv("GOOGLE_API_KEY")),
+        "session_storage": session_service_uri is not None,
+        "cloud_logging": USE_CLOUD_LOGGING,
+        "project_id": project_id
+    }
+
+    # Calculate response time
+    response_time_ms = round((time.time() - start_time) * 1000, 2)
+
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
@@ -356,6 +384,11 @@ async def health_check() -> dict:
         "session_storage_enabled": session_service_uri is not None,
         "session_storage_uri": session_service_uri,
         "session_storage_bucket": session_storage_bucket,
+        "system_metrics": system_metrics,
+        "dependencies": dependencies,
+        "response_time_ms": response_time_ms,
+        "active_chat_tasks": len(chat_tasks.tasks),
+        "uptime_check": "operational"
     }
 
 
@@ -507,8 +540,7 @@ async def agent_network_sse(
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",  # Disable nginx buffering
             # Security fix: Use proper origin validation instead of wildcard
-            "Access-Control-Allow-Origin": "null",  # Will be set by middleware
-            "Access-Control-Allow-Headers": "Cache-Control",
+            # CORS headers are handled by middleware - don't override here
         },
     )
 
@@ -742,8 +774,7 @@ async def stream_chat_response(chat_id: str, task_id: str = None):
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
             # Security fix: Use proper origin validation instead of wildcard
-            "Access-Control-Allow-Origin": "null",  # Will be set by middleware
-            "Access-Control-Allow-Headers": "Cache-Control",
+            # CORS headers are handled by middleware - don't override here
             "Access-Control-Allow-Methods": "GET, OPTIONS",
         },
     )
@@ -755,6 +786,213 @@ async def cleanup_task(task_id: str, delay: int = 300):
     if task_id in chat_tasks:
         del chat_tasks[task_id]
         logger.info(f"Cleaned up task {task_id}")
+
+
+@app.get("/api/debug/phoenix")
+async def phoenix_debug_endpoint(
+    current_user: User = current_superuser_dep,
+    access_code: str = Header(None, alias="X-Phoenix-Code")
+) -> dict[str, Any]:
+    """
+    Secret debugging endpoint for internal system metrics.
+    Requires superuser authentication and valid access code.
+    Disabled in production environment for security.
+    Access code must be provided via X-Phoenix-Code header.
+    """
+    import psutil
+    import time
+    
+    # Security check: Disable in production environment
+    if os.getenv("NODE_ENV") == "production":
+        logger.warning(f"Phoenix debug endpoint accessed in production by superuser {current_user.id}")
+        raise HTTPException(
+            status_code=503, 
+            detail="Debug endpoint disabled in production environment"
+        )
+    
+    # Get the required access code from environment variable
+    required_access_code = os.getenv("PHOENIX_DEBUG_CODE")
+    
+    # Security check: Ensure access code is configured and provided
+    if not required_access_code:
+        logger.warning(f"Phoenix debug endpoint accessed but PHOENIX_DEBUG_CODE not configured. User: {current_user.id}")
+        raise HTTPException(
+            status_code=503, 
+            detail="Debug endpoint not available - configuration required"
+        )
+    
+    if not access_code or access_code != required_access_code:
+        # Log security event for failed access attempts
+        security_event = {
+            "message": "Phoenix debug endpoint unauthorized access attempt",
+            "user_id": current_user.id,
+            "user_email": current_user.email,
+            "provided_code": access_code[:8] + "***" if access_code else None,
+            "ip_address": "unknown",  # Could be extracted from request if needed
+            "timestamp": datetime.utcnow().isoformat(),
+            "severity": "SECURITY_ALERT"
+        }
+        
+        if hasattr(logger, "log_struct"):
+            logger.log_struct(security_event, severity="WARNING")
+        else:
+            logger.warning(f"Phoenix debug unauthorized access: {security_event}")
+            
+        raise HTTPException(
+            status_code=403, 
+            detail="Invalid or missing access code"
+        )
+    
+    try:
+        # Log successful access for audit trail
+        access_event = {
+            "message": "Phoenix debug endpoint accessed successfully",
+            "user_id": current_user.id,
+            "user_email": current_user.email,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        
+        if hasattr(logger, "log_struct"):
+            logger.log_struct(access_event, severity="INFO")
+        else:
+            logger.info(f"Phoenix debug endpoint accessed by user {current_user.id}")
+        
+        # Comprehensive system diagnostics
+        process = psutil.Process()
+        memory_info = process.memory_info()
+        
+        debug_metrics = {
+            "access_granted": True,
+            "accessed_by": {
+                "user_id": current_user.id,
+                "email": current_user.email
+            },
+            "service_info": {
+                "pid": os.getpid(),
+                "memory_rss": memory_info.rss,
+                "memory_vms": memory_info.vms,
+                "cpu_percent": process.cpu_percent(),
+                "create_time": process.create_time(),
+                "num_threads": process.num_threads()
+            },
+            "system_diagnostics": {
+                "cpu_count": psutil.cpu_count(),
+                "boot_time": psutil.boot_time(),
+                "disk_io": psutil.disk_io_counters()._asdict() if psutil.disk_io_counters() else None,
+                "network_io": psutil.net_io_counters()._asdict() if psutil.net_io_counters() else None
+            },
+            "application_state": {
+                "chat_tasks_count": len(chat_tasks.tasks),
+                "active_connections": "monitoring",
+                "session_storage_uri": "***REDACTED***" if session_service_uri else None,
+                "bucket_name": "***REDACTED***" if bucket_name else None,
+                "project_id": "***REDACTED***" if project_id else None
+            },
+            "environment_info": {
+                "google_api_configured": bool(os.getenv("GOOGLE_API_KEY")),
+                "cloud_logging_enabled": USE_CLOUD_LOGGING,
+                "node_env": os.getenv("NODE_ENV", "unknown"),
+                "ci_environment": os.getenv("CI") == "true"
+            },
+            "timestamp": datetime.utcnow().isoformat(),
+            "debug_session": f"phoenix-{int(time.time())}"
+        }
+        
+        return debug_metrics
+        
+    except Exception as e:
+        logger.error(f"Error in phoenix debug endpoint: {e}")
+        return {
+            "error": "Debug metrics unavailable",
+            "message": str(e),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+
+@app.post("/api/run_sse/{session_id}")
+async def run_research_sse(
+    session_id: str,
+    request: dict = Body(...),
+    current_user: User | None = current_user_for_sse_dep
+) -> StreamingResponse:
+    """Start multi-agent research with real-time SSE streaming.
+    
+    This endpoint orchestrates 6+ specialized AI agents to conduct comprehensive research:
+    - team_leader: Analyzes and creates research strategy
+    - plan_generator: Develops detailed research plans 
+    - section_planner: Structures content organization
+    - researcher: Conducts primary research
+    - evaluator: Assesses quality and completeness
+    - report_writer: Synthesizes final comprehensive report
+    
+    Args:
+        session_id: Unique session identifier for the research task
+        request: Research request containing the query/topic
+        current_user: Optional authenticated user
+        
+    Returns:
+        StreamingResponse with real-time research progress updates
+    """
+    
+    try:
+        research_query = request.get("query") or request.get("message", "")
+        if not research_query:
+            raise HTTPException(status_code=400, detail="Research query is required")
+        
+        # Get research orchestrator
+        orchestrator = get_research_orchestrator()
+        
+        # Start research session
+        await orchestrator.start_research_session(session_id, research_query)
+        
+        async def research_event_generator() -> AsyncGenerator[str, None]:
+            """Generate SSE events for research progress."""
+            try:
+                # Log research session start
+                access_info = {
+                    "message": "Multi-agent research session started",
+                    "session_id": session_id,
+                    "user_id": current_user.id if current_user else None,
+                    "query": research_query[:100] + "..." if len(research_query) > 100 else research_query,
+                    "timestamp": datetime.now().isoformat(),
+                }
+                
+                if hasattr(logger, "log_struct"):
+                    logger.log_struct(access_info, severity="INFO")
+                else:
+                    logger.info(f"Research session started: {access_info}")
+                
+                # Stream research progress
+                async for event in orchestrator.stream_research_progress(session_id):
+                    yield f"data: {json.dumps(event)}\n\n"
+                    
+            except asyncio.CancelledError:
+                logger.info(f"Research SSE connection cancelled for session {session_id}")
+            except Exception as e:
+                error_event = {
+                    "type": "error",
+                    "sessionId": session_id,
+                    "error": str(e),
+                    "timestamp": datetime.now().isoformat()
+                }
+                yield f"data: {json.dumps(error_event)}\n\n"
+        
+        return StreamingResponse(
+            research_event_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+                # CORS headers are handled by middleware - don't override here
+            },
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error starting research session {session_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to start research session: {str(e)}")
 
 
 @app.get("/agent_network_history")

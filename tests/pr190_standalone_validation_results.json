@@ -1,0 +1,261 @@
+{
+  "security_code": {
+    "phoenix_debug_auth_implemented": {
+      "test_name": "Phoenix Debug Authentication Code",
+      "passed": false,
+      "details": [
+        {
+          "test": "Debug endpoint exists",
+          "found": true,
+          "passed": true
+        },
+        {
+          "test": "Authentication dependency present",
+          "found": false,
+          "passed": false
+        },
+        {
+          "test": "Phoenix code header check",
+          "found": true,
+          "passed": true
+        },
+        {
+          "test": "Environment variable check",
+          "found": true,
+          "passed": true
+        }
+      ],
+      "errors": []
+    },
+    "jwt_validation_implemented": {
+      "test_name": "JWT Validation Code",
+      "passed": false,
+      "details": [
+        {
+          "test": "Token verification function",
+          "found": false,
+          "passed": false
+        },
+        {
+          "test": "JWT decode implementation",
+          "found": true,
+          "passed": true
+        },
+        {
+          "test": "Token validation logic",
+          "found": false,
+          "passed": false
+        },
+        {
+          "test": "Exception handling for invalid tokens",
+          "found": false,
+          "passed": false
+        }
+      ],
+      "errors": []
+    },
+    "sensitive_data_protection": {
+      "test_name": "Sensitive Data Protection Code",
+      "passed": true,
+      "details": [
+        {
+          "test": "Environment variable usage",
+          "patterns_found": [
+            "config.py: 6 env vars",
+            "environment.py: 7 env vars"
+          ],
+          "passed": true
+        },
+        {
+          "test": "No hardcoded secrets",
+          "hardcoded_found": [],
+          "passed": true
+        }
+      ],
+      "errors": []
+    },
+    "cors_security_implemented": {
+      "test_name": "CORS Security Code",
+      "passed": false,
+      "details": [
+        {
+          "test": "CORS middleware present",
+          "found": true,
+          "passed": true
+        },
+        {
+          "test": "CORS import present",
+          "found": false,
+          "passed": false
+        },
+        {
+          "test": "No wildcard origins (secure)",
+          "wildcard_found": false,
+          "passed": true
+        },
+        {
+          "test": "Specific origins configured",
+          "found": true,
+          "passed": true
+        }
+      ],
+      "errors": []
+    },
+    "security_headers_implemented": {
+      "test_name": "Security Headers Code",
+      "passed": true,
+      "details": [
+        {
+          "test": "X-Content-Type-Options header",
+          "found": true,
+          "passed": true
+        },
+        {
+          "test": "X-Frame-Options header",
+          "found": true,
+          "passed": true
+        },
+        {
+          "test": "Referrer-Policy header",
+          "found": true,
+          "passed": true
+        },
+        {
+          "test": "Content-Security-Policy header",
+          "found": true,
+          "passed": true
+        },
+        {
+          "test": "Permissions-Policy header",
+          "found": true,
+          "passed": true
+        }
+      ],
+      "errors": []
+    }
+  },
+  "functionality_code": {
+    "sse_implementation": {
+      "test_name": "SSE Implementation Code",
+      "passed": true,
+      "details": [
+        {
+          "test": "SSE endpoint exists",
+          "found": true,
+          "passed": true
+        },
+        {
+          "test": "StreamingResponse used",
+          "found": true,
+          "passed": true
+        },
+        {
+          "test": "StreamingResponse imported",
+          "found": true,
+          "passed": true
+        }
+      ],
+      "errors": []
+    },
+    "environment_loading": {
+      "test_name": "Environment Loading Code",
+      "passed": false,
+      "details": [
+        {
+          "test": "dotenv loading",
+          "found": false,
+          "passed": false
+        },
+        {
+          "test": "Environment validation",
+          "found": true,
+          "passed": true
+        },
+        {
+          "test": "Error handling present",
+          "found": true,
+          "passed": true
+        }
+      ],
+      "errors": []
+    },
+    "auth_navigation": {
+      "test_name": "Auth Navigation Code",
+      "passed": true,
+      "details": [
+        {
+          "test": "/register endpoint",
+          "found": true,
+          "passed": true
+        },
+        {
+          "test": "/login endpoint",
+          "found": true,
+          "passed": true
+        },
+        {
+          "test": "/logout endpoint",
+          "found": true,
+          "passed": true
+        },
+        {
+          "test": "/me endpoint",
+          "found": true,
+          "passed": true
+        }
+      ],
+      "errors": []
+    }
+  },
+  "accessibility_code": {
+    "frontend_accessibility": {
+      "test_name": "Frontend Accessibility Code",
+      "passed": true,
+      "details": [
+        {
+          "test": "Accessibility features in components",
+          "features_found": [
+            {
+              "file": "auth-guard.tsx",
+              "aria_label": false,
+              "role": false,
+              "tabindex": false
+            },
+            {
+              "file": "chat-input.tsx",
+              "aria_label": true,
+              "role": true,
+              "tabindex": false
+            }
+          ],
+          "passed": true
+        }
+      ],
+      "errors": []
+    },
+    "aria_implementation": {
+      "test_name": "ARIA Implementation Code",
+      "passed": true,
+      "details": [
+        {
+          "test": "ARIA implementation validated",
+          "passed": true
+        }
+      ],
+      "errors": []
+    }
+  },
+  "summary": {
+    "total_tests": 10,
+    "passed_tests": 6,
+    "failed_tests": 4,
+    "success_rate": 60.0,
+    "categories_tested": [
+      "security_code",
+      "functionality_code",
+      "accessibility_code"
+    ],
+    "overall_status": "FAILED"
+  },
+  "timestamp": "2025-09-11T18:18:40.871747"
+}
