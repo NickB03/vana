@@ -108,14 +108,33 @@ class EnvironmentInfo(BaseModel):
     conflicts: list[str] | None = Field(None, description="Environment conflicts")
 
 
+class SystemMetrics(BaseModel):
+    """System metrics model for health checks."""
+    
+    memory: dict[str, Any] | None = Field(None, description="Memory usage statistics")
+    disk: dict[str, Any] | None = Field(None, description="Disk usage statistics")
+    cpu_percent: float | None = Field(None, description="CPU usage percentage")
+    load_average: tuple[float, float, float] | None = Field(None, description="System load average")
+    error: str | None = Field(None, description="Error message if metrics unavailable")
+
+
+class DependencyStatus(BaseModel):
+    """Dependency status model."""
+    
+    google_api_configured: bool = Field(..., description="Google API configuration status")
+    session_storage: bool = Field(..., description="Session storage availability")
+    cloud_logging: bool = Field(..., description="Cloud logging status")
+    project_id: str = Field(..., description="Project ID")
+
+
 class HealthResponse(BaseModel):
-    """Health check response model."""
+    """Enhanced health check response model."""
 
     status: str = Field("healthy", description="Health status")
     timestamp: str = Field(..., description="Check timestamp")
     service: str = Field("vana", description="Service name")
     version: str = Field("1.0.0", description="API version")
-    environment: EnvironmentInfo = Field(..., description="Environment information")
+    environment: EnvironmentInfo | str = Field(..., description="Environment information")
     session_storage_enabled: bool | None = Field(
         None, description="Session storage availability"
     )
@@ -123,6 +142,11 @@ class HealthResponse(BaseModel):
     session_storage_bucket: str | None = Field(
         None, description="Session storage bucket"
     )
+    system_metrics: SystemMetrics | None = Field(None, description="System performance metrics")
+    dependencies: DependencyStatus | None = Field(None, description="Dependency status checks")
+    response_time_ms: float | None = Field(None, description="Health check response time in milliseconds")
+    active_chat_tasks: int | None = Field(None, description="Number of active chat tasks")
+    uptime_check: str | None = Field(None, description="Uptime status check")
     uptime: float | None = Field(None, description="Uptime in seconds")
 
 
@@ -183,7 +207,7 @@ JSONData = dict[str, Any]
 QueryData = Union[str, dict[str, Any]]
 ResponseData = Union[dict[str, Any], list[Any], str, int, float, bool]
 ModelType = str  # Model type alias for AI models
-HealthResponseData = dict[str, Union[str, bool, int, float, EnvironmentInfo, None]]
+HealthResponseData = dict[str, str | bool | int | float | EnvironmentInfo | None]
 
 # Model constants
 CRITIC_MODEL = "gemini-2.5-pro-latest"

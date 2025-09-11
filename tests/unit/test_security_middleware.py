@@ -1,14 +1,14 @@
 """Unit tests for security middleware integration."""
 
-import json
 import os
+from unittest.mock import patch
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from unittest.mock import patch
 
+from app.auth.middleware import AuditLogMiddleware, CORSMiddleware, RateLimitMiddleware
 from app.middleware import SecurityHeadersMiddleware
-from app.auth.middleware import CORSMiddleware, RateLimitMiddleware, AuditLogMiddleware
 
 
 class TestSecurityHeadersMiddleware:

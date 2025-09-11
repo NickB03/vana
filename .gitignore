@@ -278,6 +278,18 @@ frontend/src/__tests__/
 frontend/src/test-*.ts
 
 
+
+# Archive directories (one-time docs and scripts)
+archive/
+**/archive/
+frontend/archive/
+docs/archive/
+tests/archive/
+*.tsbuildinfo
+uv.lock
+runner.md
+frontend/tsconfig.tsbuildinfo
+
 # Claude Flow generated files
 .claude/settings.local.json
 .mcp.json
@@ -302,14 +314,3 @@ claude-flow
 claude-flow.bat
 claude-flow.ps1
 hive-mind-prompt-*.txt
-
-# Archive directories (one-time docs and scripts)
-archive/
-**/archive/
-frontend/archive/
-docs/archive/
-tests/archive/
-*.tsbuildinfo
-uv.lock
-runner.md
-frontend/tsconfig.tsbuildinfo

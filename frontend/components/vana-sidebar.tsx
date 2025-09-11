@@ -11,17 +11,25 @@ import {
   SidebarNavText,
   SidebarFooter,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/auth-context";
+import { UserMenu } from "@/components/auth/user-menu";
 
 export function VanaSidebar() {
+  const { isAuthenticated } = useAuth();
+  
   return (
     <Sidebar className="h-screen">
       <SidebarToggle />
       <SidebarContent>
-        {/* Vana Logo - aligned with text */}
-        <div className="flex items-center p-2 mb-4">
-          <div className="ml-3 w-8 h-8 bg-gradient-to-r from-purple-500 to-orange-400 rounded flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-sm">V</span>
-          </div>
+        {/* Header with Vana title */}
+        <div className="p-4 border-b border-border">
+          <h1 className="text-lg font-semibold text-foreground">
+            Vana AI
+          </h1>
+          <p className="text-xs text-muted-foreground">
+            AI Research Assistant
+          </p>
         </div>
 
         {/* New Chat - ChatGPT style */}
@@ -32,38 +40,28 @@ export function VanaSidebar() {
           </SidebarNavLink>
         </div>
 
-        {/* Recent Section */}
-        <div className="flex-1 overflow-y-auto">
-          <SidebarNav>
-            <SidebarNavItem title="Recent Chats">
-              <div className="space-y-1">
-                {/* Sample recent chat items */}
-                <SidebarNavLink href="#" onClick={(e) => { e.preventDefault(); console.log("Recent chat 1"); }}>
-                  <SidebarNavText className="truncate">Building a Frontend with Next.js</SidebarNavText>
-                </SidebarNavLink>
-                
-                <SidebarNavLink href="#" onClick={(e) => { e.preventDefault(); console.log("Recent chat 2"); }}>
-                  <SidebarNavText className="truncate">AI Research Assistant Setup</SidebarNavText>
-                </SidebarNavLink>
-                
-                <SidebarNavLink href="#" onClick={(e) => { e.preventDefault(); console.log("Recent chat 3"); }}>
-                  <SidebarNavText className="truncate">Streaming Chat Interface Design</SidebarNavText>
-                </SidebarNavLink>
-              </div>
-            </SidebarNavItem>
-          </SidebarNav>
-        </div>
-
-        {/* Footer Section */}
-        <SidebarFooter>
-          <SidebarNavItem title="Settings">
-            <SidebarNavLink href="#" onClick={(e) => { e.preventDefault(); console.log("Settings"); }}>
-              <Settings size={20} className="flex-shrink-0" />
-              <SidebarNavText>Settings</SidebarNavText>
+        {/* Navigation */}
+        <SidebarNav>
+          <SidebarNavItem title="Chat">
+            <SidebarNavLink href="/">
+              <SidebarNavText>Chat</SidebarNavText>
             </SidebarNavLink>
           </SidebarNavItem>
-        </SidebarFooter>
+        </SidebarNav>
       </SidebarContent>
+
+      {/* Footer */}
+      <SidebarFooter className="p-4 border-t border-border">
+        <div className="flex items-center justify-between">
+          {isAuthenticated ? (
+            <UserMenu />
+          ) : (
+            <Button variant="ghost" size="sm" className="h-8 px-2">
+              <Settings className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </SidebarFooter>
     </Sidebar>
   );
 }
