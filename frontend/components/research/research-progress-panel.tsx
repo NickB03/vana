@@ -151,6 +151,7 @@ function ProgressHeader({ sessionState, isLoading, error, onStart, onStop, onRet
               size="sm"
               onClick={onRetry}
               className="gap-1"
+              aria-label="Retry research process"
             >
               <RefreshCw className="h-4 w-4" />
               Retry
@@ -162,6 +163,7 @@ function ProgressHeader({ sessionState, isLoading, error, onStart, onStop, onRet
               size="sm"
               onClick={onStop}
               className="gap-1"
+              aria-label="Stop research process"
             >
               <Square className="h-4 w-4" />
               Stop
@@ -173,6 +175,7 @@ function ProgressHeader({ sessionState, isLoading, error, onStart, onStop, onRet
               onClick={onStart}
               disabled={isLoading}
               className="gap-1"
+              aria-label="Start research process"
             >
               <Play className="h-4 w-4" />
               Start Research

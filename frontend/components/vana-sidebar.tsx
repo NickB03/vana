@@ -34,7 +34,7 @@ export function VanaSidebar() {
 
         {/* New Chat - ChatGPT style */}
         <div className="mb-4">
-          <SidebarNavLink href="#" onClick={(e) => { e.preventDefault(); console.log("New Chat"); }}>
+          <SidebarNavLink href="#" onClick={(e) => { e.preventDefault(); console.log("New Chat"); }} aria-label="Start new chat conversation">
             <Plus size={24} className="flex-shrink-0 ml-3" />
             <SidebarNavText>New Chat</SidebarNavText>
           </SidebarNavLink>
@@ -56,7 +56,7 @@ export function VanaSidebar() {
           {isAuthenticated ? (
             <UserMenu />
           ) : (
-            <Button variant="ghost" size="sm" className="h-8 px-2">
+            <Button variant="ghost" size="sm" className="h-8 px-2" aria-label="Open settings">
               <Settings className="h-4 w-4" />
             </Button>
           )}
