@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Security scanning script for CI/CD pipeline."""
 
-import os
-import sys
 import json
-import subprocess
 import logging
-from pathlib import Path
-from typing import Dict, List, Any, Optional
+import os
+import subprocess
+import sys
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
+from typing import Any
 
 
 class SeverityLevel(Enum):
@@ -28,10 +28,10 @@ class SecurityIssue:
     type: str
     severity: SeverityLevel
     file_path: str
-    line_number: Optional[int]
+    line_number: int | None
     description: str
     recommendation: str
-    cwe_id: Optional[str] = None
+    cwe_id: str | None = None
 
 
 class SecurityScanner:
@@ -39,7 +39,7 @@ class SecurityScanner:
 
     def __init__(self, project_root: Path):
         self.project_root = project_root
-        self.issues: List[SecurityIssue] = []
+        self.issues: list[SecurityIssue] = []
         self.logger = self._setup_logging()
 
     def _setup_logging(self) -> logging.Logger:
@@ -50,7 +50,7 @@ class SecurityScanner:
         )
         return logging.getLogger(__name__)
 
-    def scan_dependencies(self) -> List[SecurityIssue]:
+    def scan_dependencies(self) -> list[SecurityIssue]:
         """Scan Python dependencies for known vulnerabilities using safety."""
         issues = []
 
@@ -93,7 +93,7 @@ class SecurityScanner:
 
         return issues
 
-    def scan_secrets(self) -> List[SecurityIssue]:
+    def scan_secrets(self) -> list[SecurityIssue]:
         """Scan for hardcoded secrets and sensitive information."""
         issues = []
 
@@ -171,7 +171,7 @@ class SecurityScanner:
 
         return issues
 
-    def scan_code_quality(self) -> List[SecurityIssue]:
+    def scan_code_quality(self) -> list[SecurityIssue]:
         """Scan for security-related code quality issues."""
         issues = []
 
@@ -234,7 +234,7 @@ class SecurityScanner:
 
         return issues
 
-    def scan_configuration(self) -> List[SecurityIssue]:
+    def scan_configuration(self) -> list[SecurityIssue]:
         """Scan configuration files for security issues."""
         issues = []
 
@@ -281,7 +281,7 @@ class SecurityScanner:
 
         return issues
 
-    def scan_docker_security(self) -> List[SecurityIssue]:
+    def scan_docker_security(self) -> list[SecurityIssue]:
         """Scan Docker configuration for security issues."""
         issues = []
 
@@ -332,7 +332,7 @@ class SecurityScanner:
 
         return issues
 
-    def generate_report(self) -> Dict[str, Any]:
+    def generate_report(self) -> dict[str, Any]:
         """Generate a comprehensive security report."""
         # Collect all issues
         self.issues.extend(self.scan_dependencies())
@@ -342,7 +342,7 @@ class SecurityScanner:
         self.issues.extend(self.scan_docker_security())
 
         # Categorize by severity
-        severity_counts = {level: 0 for level in SeverityLevel}
+        severity_counts = dict.fromkeys(SeverityLevel, 0)
         for issue in self.issues:
             severity_counts[issue.severity] += 1
 
