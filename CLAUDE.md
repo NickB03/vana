@@ -30,10 +30,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `/scripts` - Utility scripts
 - `/deployment` - Deployment configurations
 
-**IMPORTANT DISTINCTION:**
-- `.claude_workspace/` = Your workspace for drafts, analysis, working notes, temporary docs
-- `/docs` = Final, polished project documentation for the repository
-
 ## 🔄 Repository Structure & Workflow
 
 **PROJECT REPOSITORY:**
@@ -48,7 +44,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Vana is a multi-agent AI research platform built on Google's Agent Development Kit (ADK) that transforms complex research questions into comprehensive reports. The system orchestrates 8 specialized AI agents working collaboratively with real-time streaming capabilities via Server-Sent Events (SSE).
+Vana is a multi-agent AI research platform built on Google's Agent Development Kit (ADK) that transforms complex research questions into comprehensive reports. The system orchestrates specialized AI agents working collaboratively with real-time streaming capabilities via Server-Sent Events (SSE).
 
 ## Tech Stack
 
@@ -56,7 +52,7 @@ Vana is a multi-agent AI research platform built on Google's Agent Development K
 - Python 3.10+ with FastAPI
 - Google ADK 1.8.0 for agent orchestration
 - Google Gemini 2.5 Pro/Flash via AI Studio (primary - FREE with rate limits) / OpenRouter (fallback) for AI models
-- PostgreSQL, ChromaDB for data storage
+
 - JWT/OAuth2 authentication
 
 **Frontend (Under Development):**
