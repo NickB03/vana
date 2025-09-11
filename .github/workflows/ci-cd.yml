@@ -188,7 +188,7 @@ jobs:
             pytest-report.xml
             htmlcov/
           retention-days: 7
-          if-no-files-found: warn
+          if-no-files-found: ignore  # Changed from 'warn' to 'ignore'
 
       - name: System Status After Build
         if: always()

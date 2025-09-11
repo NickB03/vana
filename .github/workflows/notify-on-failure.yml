@@ -1,0 +1,23 @@
+# Optional: Slack/Discord notifications on CI failure
+# Uncomment and configure if you want team chat notifications
+
+name: CI Failure Notifications
+
+on:
+  workflow_run:
+    workflows: ["Cost-Optimized CI/CD Pipeline"]
+    types:
+      - completed
+
+jobs:
+  notify-on-failure:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    steps:
+      - name: Notify Failure
+        run: |
+          echo "CI Pipeline failed!"
+          # Add Slack webhook here if needed:
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"🚨 CI Pipeline failed for commit ${{ github.event.workflow_run.head_sha }}"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
