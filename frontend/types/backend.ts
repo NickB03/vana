@@ -441,6 +441,43 @@ export type ModelType = string;
 export type HealthResponseData = Record<string, string | boolean | number | EnvironmentInfo | null>;
 
 // ============================================================================
+// Environment Configuration Types
+// ============================================================================
+
+/**
+ * Environment configuration interface for runtime settings
+ */
+export interface EnvironmentConfig {
+  NODE_ENV: 'development' | 'production' | 'test';
+  REACT_APP_API_BASE_URL: string;
+  REACT_APP_BACKEND_URL: string;
+  REACT_APP_DEBUG_ENABLED?: string;
+  REACT_APP_PHOENIX_DEBUG_ENABLED?: string;
+}
+
+/**
+ * Debug configuration based on environment
+ */
+export interface DebugConfig {
+  enabled: boolean;
+  phoenixEndpointEnabled: boolean;
+  logLevel: 'debug' | 'info' | 'warn' | 'error';
+}
+
+/**
+ * Runtime application configuration
+ */
+export interface AppConfig {
+  environment: EnvironmentConfig;
+  debug: DebugConfig;
+  api: {
+    baseUrl: string;
+    timeout: number;
+    retries: number;
+  };
+}
+
+// ============================================================================
 // Backend Constants
 // ============================================================================
 
@@ -516,10 +553,10 @@ export const BACKEND_ENDPOINTS = {
 // ============================================================================
 
 /**
- * Phoenix debug response (secret endpoint /api/debug/phoenix)
+ * Phoenix debug response (debug endpoint /api/debug/phoenix)
  */
 export interface PhoenixDebugResponse {
-  access_code: string; // "AURORA-PHOENIX-7741"
+  access_code: string;
   service_info: {
     pid: number;
     memory_rss: number;
@@ -654,3 +691,8 @@ export type BackendSystemMetrics = SystemMetrics;
 export type BackendAgentStatus = AgentStatus;
 export type BackendTeamStatus = TeamStatus;
 export type BackendErrorResponse = ErrorResponse;
+
+// Export environment configuration types
+export type BackendEnvironmentConfig = EnvironmentConfig;
+export type BackendDebugConfig = DebugConfig;
+export type BackendAppConfig = AppConfig;

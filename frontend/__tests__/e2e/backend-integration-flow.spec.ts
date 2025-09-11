@@ -6,6 +6,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { E2E_USER } from '../constants/test-config';
 import { testUtils } from '../integration/api-client-backend.test';
 
 // Test configuration
@@ -16,7 +17,7 @@ const TEST_TIMEOUT = 60000;
 // Test data
 const TEST_USER = {
   email: 'test@vana.ai',
-  password: 'TestPassword123!',
+  password: E2E_USER.password,
   fullName: 'E2E Test User'
 };
 

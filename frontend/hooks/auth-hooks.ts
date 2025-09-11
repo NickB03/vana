@@ -25,6 +25,7 @@ export interface AuthTokenOptions {
 }
 
 export interface AuthGuardOptions {
+  // Keep for backward compatibility but prefer unified AuthGuardProps
   redirectTo?: string;
   requiredRoles?: string[];
   roleLogic?: 'OR' | 'AND';

@@ -8,6 +8,7 @@
 import { authService } from '../../lib/auth-service';
 import { enhancedApiService } from '../../lib/enhanced-api-client';
 import { streamChatResponse, checkHealth, getCurrentChatId } from '../../lib/chat-api';
+import { INTEGRATION_USER } from '../constants/test-config';
 import { testUtils } from './api-client-backend.test';
 import { sseTestUtils } from './sse-streaming-backend.test';
 import { performanceTestUtils } from '../performance/streaming-performance.test';
@@ -16,7 +17,7 @@ import { performanceTestUtils } from '../performance/streaming-performance.test'
 const INTEGRATION_TIMEOUT = 60000;
 const TEST_USER = {
   email: `test-${Date.now()}@vana.integration`,
-  password: 'IntegrationTest123!',
+  password: INTEGRATION_USER.password,
   fullName: 'Integration Test User'
 };
 

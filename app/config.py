@@ -24,30 +24,71 @@ from app.models import CRITIC_MODEL, WORKER_MODEL, ModelType
 #    GOOGLE_GENAI_USE_VERTEXAI=FALSE
 #    GOOGLE_API_KEY=PASTE_YOUR_ACTUAL_API_KEY_HERE
 # 2. This will override the default Vertex AI configuration
-# Get the project ID from Google Cloud authentication
-# Handle CI environment where credentials might not be available
-if os.environ.get("CI") == "true":
-    # In CI environment, skip authentication and use environment variable
-    project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "analystai-454200")
-    print(f"CI Environment: Using project ID from environment: {project_id}")
-else:
-    try:
-        _, project_id = google.auth.default()
-        if not project_id:
-            # Fallback to environment variable or your specific project
-            project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "analystai-454200")
-            print(f"Using project ID from environment/config: {project_id}")
-        else:
-            print(f"Using authenticated project ID: {project_id}")
-    except Exception as e:
-        print(f"Authentication error: {e}")
-        # Use your specific project ID as fallback
-        project_id = "analystai-454200"
-        print(f"Using fallback project ID: {project_id}")
+# Global project ID - will be set by initialize_google_config()
+_project_id: str | None = None
 
-os.environ.setdefault("GOOGLE_CLOUD_PROJECT", project_id)
-os.environ.setdefault("GOOGLE_CLOUD_LOCATION", "global")
-os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "True")
+
+def initialize_google_config(silent: bool = False) -> str:
+    """
+    Initialize Google Cloud configuration.
+    
+    This function should be called explicitly during application startup
+    to avoid import-time side effects.
+    
+    Args:
+        silent: If True, suppress logging output
+        
+    Returns:
+        The resolved project ID
+    """
+    global _project_id
+    
+    if _project_id is not None:
+        return _project_id
+    
+    # Handle CI environment where credentials might not be available
+    if os.environ.get("CI") == "true":
+        # In CI environment, skip authentication and use environment variable
+        _project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "analystai-454200")
+        if not silent:
+            print(f"CI Environment: Using project ID from environment: {_project_id}")
+    else:
+        try:
+            _, _project_id = google.auth.default()
+            if not _project_id:
+                # Fallback to environment variable or your specific project
+                _project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "analystai-454200")
+                if not silent:
+                    print(f"Using project ID from environment/config: {_project_id}")
+            else:
+                if not silent:
+                    print(f"Using authenticated project ID: {_project_id}")
+        except Exception as e:
+            if not silent:
+                print(f"Authentication error: {e}")
+            # Use your specific project ID as fallback
+            _project_id = "analystai-454200"
+            if not silent:
+                print(f"Using fallback project ID: {_project_id}")
+    
+    # Set environment defaults
+    os.environ.setdefault("GOOGLE_CLOUD_PROJECT", _project_id)
+    os.environ.setdefault("GOOGLE_CLOUD_LOCATION", "global")
+    os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "True")
+    
+    return _project_id
+
+
+def get_project_id() -> str:
+    """
+    Get the current project ID.
+    
+    Returns:
+        The project ID if initialized, otherwise initializes and returns it
+    """
+    if _project_id is None:
+        return initialize_google_config(silent=True)
+    return _project_id
 
 
 @dataclass
@@ -67,7 +108,7 @@ class ResearchConfiguration:
     max_search_iterations: int = 5
     session_storage_enabled: bool = field(default=True)
     session_storage_bucket: str = field(
-        default_factory=lambda: f"{os.environ.get('GOOGLE_CLOUD_PROJECT', 'analystai-454200')}-vana-session-storage"
+        default_factory=lambda: f"{get_project_id()}-vana-session-storage"
     )
     session_backup_interval_hours: int = field(default=6)
 

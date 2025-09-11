@@ -289,10 +289,13 @@ test.describe('Vana Integrated Chat and Research Flow E2E Tests', () => {
     
     console.log('✅ Backend health check passed');
     
-    // Test debug endpoint with secret code from memory
-    const debugResponse = await page.request.get(`${BACKEND_URL}/api/debug/phoenix`);
-    // This might require authentication, so we'll just check if endpoint exists
-    console.log(`Debug endpoint status: ${debugResponse.status()}`);
+    // Test debug endpoint (if enabled in environment)
+    if (process.env.REACT_APP_PHOENIX_DEBUG_ENABLED === 'true') {
+      const debugResponse = await page.request.get(`${BACKEND_URL}/api/debug/phoenix`);
+      console.log(`Debug endpoint status: ${debugResponse.status()}`);
+    } else {
+      console.log('Debug endpoint testing skipped (not enabled)');
+    }
     
     console.log('✅ Backend integration verification complete');
   });

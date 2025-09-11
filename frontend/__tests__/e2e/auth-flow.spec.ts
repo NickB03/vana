@@ -13,6 +13,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { TEST_CREDENTIALS, TEST_TOKENS, E2E_USER } from '../constants/test-config';
 
 // Test configuration
 const BASE_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
@@ -22,7 +23,7 @@ const API_BASE_URL = process.env.PLAYWRIGHT_API_BASE_URL || 'http://localhost:80
 const TEST_USERS = {
   valid: {
     email: 'test@example.com',
-    password: 'password123',
+    password: TEST_CREDENTIALS.VALID_USER.password,
     name: 'Test User'
   },
   admin: {
@@ -32,7 +33,7 @@ const TEST_USERS = {
   },
   unverified: {
     email: 'unverified@example.com',
-    password: 'password123',
+    password: TEST_CREDENTIALS.VALID_USER.password,
     name: 'Unverified User'
   }
 };
@@ -117,7 +118,7 @@ test.describe('Authentication E2E Tests', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            access_token: 'mock_jwt_token_e2e',
+            access_token: TEST_TOKENS.E2E_TOKEN,
             token_type: 'bearer',
             expires_in: 3600,
             user: {
@@ -469,7 +470,7 @@ test.describe('Authentication E2E Tests', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            access_token: 'new_refreshed_token',
+            access_token: TEST_TOKENS.NEW_REFRESH_TOKEN,
             expires_in: 3600
           })
         });
@@ -521,7 +522,7 @@ test.describe('Authentication E2E Tests', () => {
       await page.route('**/auth/reset-password/confirm', route => {
         const postData = route.request().postDataJSON();
         
-        if (postData?.token === 'valid_reset_token') {
+        if (postData?.token === process.env.TEST_VALID_RESET_TOKEN || 'valid_reset_token') {
           route.fulfill({
             status: 200,
             contentType: 'application/json',
@@ -663,7 +664,7 @@ test.describe('Authentication E2E Tests', () => {
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({
-              access_token: 'success_token',
+              access_token: TEST_TOKENS.SUCCESS_TOKEN,
               user: { id: '123', email: TEST_USERS.valid.email, name: TEST_USERS.valid.name }
             })
           });

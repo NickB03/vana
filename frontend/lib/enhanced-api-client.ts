@@ -71,6 +71,9 @@ import type {
   PhoenixDebugResponse,
   Feedback as BackendFeedback,
   BACKEND_ENDPOINTS,
+  EnvironmentConfig,
+  DebugConfig,
+  AppConfig,
 } from '../types/backend';
 
 // Import validation schemas and utilities
@@ -88,6 +91,54 @@ import {
 } from './backend-schemas';
 
 // ============================================================================
+// Environment Configuration Utilities
+// ============================================================================
+
+/**
+ * Get environment configuration with type safety
+ */
+function getEnvironmentConfig(): EnvironmentConfig {
+  return {
+    NODE_ENV: (process.env.NODE_ENV as EnvironmentConfig['NODE_ENV']) || 'development',
+    REACT_APP_API_BASE_URL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000',
+    REACT_APP_BACKEND_URL: process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000',
+    REACT_APP_DEBUG_ENABLED: process.env.REACT_APP_DEBUG_ENABLED,
+    REACT_APP_PHOENIX_DEBUG_ENABLED: process.env.REACT_APP_PHOENIX_DEBUG_ENABLED,
+  };
+}
+
+/**
+ * Get debug configuration based on environment
+ */
+function getDebugConfig(): DebugConfig {
+  const env = getEnvironmentConfig();
+  
+  return {
+    enabled: env.REACT_APP_DEBUG_ENABLED === 'true' || env.NODE_ENV === 'development',
+    phoenixEndpointEnabled: env.REACT_APP_PHOENIX_DEBUG_ENABLED === 'true' || env.NODE_ENV === 'development',
+    logLevel: env.NODE_ENV === 'development' ? 'debug' : 'info',
+  };
+}
+
+/**
+ * Get complete application configuration
+ */
+function getAppConfig(): AppConfig {
+  const env = getEnvironmentConfig();
+  const debug = getDebugConfig();
+
+  return {
+    environment: env,
+    debug,
+    api: {
+      baseUrl: env.REACT_APP_API_BASE_URL,
+      timeout: 30000,
+      retries: 3,
+    },
+  };
+}
+
+// ============================================================================
 // Enhanced API Client with Full Auth Integration
 // ============================================================================
 
@@ -97,10 +148,33 @@ class EnhancedApiClient implements ApiClient {
   private globalHeaders: Record<string, string> = {};
   private requestInterceptors: Array<(config: RequestConfig) => RequestConfig> = [];
   private responseInterceptors: Array<(response: ApiResponse) => ApiResponse> = [];
+  private appConfig: AppConfig;
+
+  constructor() {
+    this.appConfig = getAppConfig();
+  }
 
   // Configuration
   get config() {
-    return this.baseClient.config;
+    return {
+      ...this.baseClient.config,
+      ...this.appConfig,
+    };
+  }
+
+  get debugConfig(): DebugConfig {
+    return this.appConfig.debug;
+  }
+
+  private log(level: 'debug' | 'info' | 'warn' | 'error', message: string, data?: any): void {
+    if (this.appConfig.debug.enabled) {
+      const logLevels = ['debug', 'info', 'warn', 'error'];
+      const configuredLevel = this.appConfig.debug.logLevel;
+      
+      if (logLevels.indexOf(level) >= logLevels.indexOf(configuredLevel)) {
+        console[level](`[EnhancedApiClient] ${message}`, data || '');
+      }
+    }
   }
 
   // ========================================================================
@@ -165,13 +239,29 @@ class EnhancedApiClient implements ApiClient {
   // ========================================================================
 
   async get<T>(endpoint: string, options?: ApiRequestOptions): Promise<T> {
-    const processedOptions = await this.interceptRequest(endpoint, options);
-    return this.baseClient.get(endpoint, processedOptions);
+    this.log('debug', `GET ${endpoint}`, { options });
+    try {
+      const processedOptions = await this.interceptRequest(endpoint, options);
+      const result = await this.baseClient.get(endpoint, processedOptions);
+      this.log('debug', `GET ${endpoint} success`);
+      return result;
+    } catch (error) {
+      this.log('error', `GET ${endpoint} failed`, error);
+      throw error;
+    }
   }
 
   async post<T>(endpoint: string, data?: unknown, options?: ApiRequestOptions): Promise<T> {
-    const processedOptions = await this.interceptRequest(endpoint, options);
-    return this.baseClient.post(endpoint, data, processedOptions);
+    this.log('debug', `POST ${endpoint}`, { data, options });
+    try {
+      const processedOptions = await this.interceptRequest(endpoint, options);
+      const result = await this.baseClient.post(endpoint, data, processedOptions);
+      this.log('debug', `POST ${endpoint} success`);
+      return result;
+    } catch (error) {
+      this.log('error', `POST ${endpoint} failed`, error);
+      throw error;
+    }
   }
 
   async put<T>(endpoint: string, data?: unknown, options?: ApiRequestOptions): Promise<T> {
@@ -345,8 +435,24 @@ class EnhancedApiService implements ApiService {
   }
 
   async getPhoenixDebug(): Promise<PhoenixDebugResponse> {
-    const response = await this.client.authenticatedGet('/api/debug/phoenix');
-    return validatePhoenixDebug(response, '/api/debug/phoenix');
+    if (!this.client.debugConfig.phoenixEndpointEnabled) {
+      const env = this.client.config.environment.NODE_ENV;
+      throw new Error(
+        `Phoenix debug endpoint is disabled in ${env} environment. ` +
+        'Enable with REACT_APP_PHOENIX_DEBUG_ENABLED=true'
+      );
+    }
+    
+    try {
+      const response = await this.client.authenticatedGet('/api/debug/phoenix');
+      return validatePhoenixDebug(response, '/api/debug/phoenix');
+    } catch (error) {
+      // Add context for debug endpoint errors
+      if (error instanceof Error) {
+        throw new Error(`Phoenix debug endpoint error: ${error.message}`);
+      }
+      throw error;
+    }
   }
 
   // ========================================================================
@@ -532,6 +638,16 @@ class EnhancedApiService implements ApiService {
 
 export const enhancedApiClient = new EnhancedApiClient();
 export const enhancedApiService = new EnhancedApiService(enhancedApiClient);
+
+// ============================================================================
+// Configuration Exports
+// ============================================================================
+
+export {
+  getEnvironmentConfig,
+  getDebugConfig,
+  getAppConfig,
+};
 
 // ============================================================================
 // Default Export (Enhanced Service)

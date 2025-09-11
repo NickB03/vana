@@ -13,6 +13,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { TEST_TOKENS } from '../constants/test-config';
 import { LoginForm } from '@/components/auth/login-form';
 import { AuthGuard } from '@/components/auth/auth-guard';
 import { ProfileDropdown } from '@/components/auth/profile-dropdown';
@@ -113,7 +114,7 @@ describe('Authentication Components', () => {
 
     it('should handle successful login submission', async () => {
       const mockLoginData = {
-        access_token: 'success-token',
+        access_token: TEST_TOKENS.SUCCESS_TOKEN,
         user: {
           id: 'user-success',
           email: 'success@example.com',

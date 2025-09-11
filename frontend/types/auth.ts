@@ -321,6 +321,7 @@ export interface RouteConfig {
 
 /**
  * Auth guard configuration
+ * @deprecated Use AuthGuardProps from '@/components/auth/auth-guard' instead
  */
 export interface AuthGuardConfig {
   requireAuth?: boolean;

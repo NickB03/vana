@@ -16,6 +16,7 @@ import { AuthProvider } from '@/contexts/auth-context';
 import { AuthService } from '@/lib/auth-service';
 import { useRouter } from 'next/navigation';
 import '@testing-library/jest-dom';
+import { TEST_TOKENS } from '../constants/test-config';
 
 // Mock dependencies
 jest.mock('@/lib/auth-service');
@@ -331,7 +332,7 @@ describe('Authentication Hooks', () => {
 
     it('should handle successful login submission', async () => {
       const mockLoginData = {
-        access_token: 'login-token',
+        access_token: TEST_TOKENS.LOGIN_TOKEN,
         user: {
           id: 'user-123',
           email: 'test@example.com',
