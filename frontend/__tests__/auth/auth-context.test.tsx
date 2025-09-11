@@ -15,6 +15,7 @@ import { render, renderHook, act, screen, waitFor } from '@testing-library/react
 import { AuthProvider, useAuth, AuthContext } from '@/contexts/auth-context';
 import { AuthService } from '@/lib/auth-service';
 import '@testing-library/jest-dom';
+import { TEST_TOKENS } from '../constants/test-config';
 
 // Mock auth service
 jest.mock('@/lib/auth-service', () => ({
@@ -328,7 +329,7 @@ describe('AuthContext', () => {
 
     it('should handle concurrent authentication operations', async () => {
       const mockLoginData = {
-        access_token: 'concurrent-token',
+        access_token: TEST_TOKENS.CONCURRENT_TOKEN,
         user: {
           id: 'user-concurrent',
           email: 'concurrent@example.com',

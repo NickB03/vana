@@ -5,6 +5,7 @@
  */
 
 import { http, HttpResponse } from 'msw'
+import { TEST_CREDENTIALS, TEST_TOKENS, TEST_USERS } from '../constants/test-config'
 
 // Mock API base URL
 const API_BASE = 'http://localhost:8000'
@@ -185,15 +186,15 @@ export const handlers = [
   http.post(`${API_BASE}/auth/login`, async ({ request }) => {
     const body = await request.json() as { email: string; password: string }
     
-    if (body.email === 'test@example.com' && body.password === 'password123') {
+    if (body.email === TEST_CREDENTIALS.VALID_USER.email && body.password === TEST_CREDENTIALS.VALID_USER.password) {
       return HttpResponse.json({
-        access_token: 'mock_jwt_token_12345',
+        access_token: TEST_TOKENS.MOCK_JWT,
         token_type: 'bearer',
         expires_in: 3600,
         user: {
-          id: 'user_123',
-          email: 'test@example.com',
-          name: 'Test User'
+          id: TEST_USERS.DEFAULT.id,
+          email: TEST_USERS.DEFAULT.email,
+          name: TEST_USERS.DEFAULT.name
         }
       })
     }
@@ -210,7 +211,7 @@ export const handlers = [
     
     if (authHeader && authHeader.startsWith('Bearer mock_jwt_token')) {
       return HttpResponse.json({
-        access_token: 'mock_refreshed_jwt_token_67890',
+        access_token: TEST_TOKENS.MOCK_REFRESH,
         token_type: 'bearer',
         expires_in: 3600
       })

@@ -6,22 +6,23 @@
  */
 
 import { http, HttpResponse } from 'msw';
+import { TEST_CREDENTIALS, TEST_TOKENS, TEST_USERS } from '../constants/test-config';
 
 const BACKEND_URL = 'http://localhost:8000';
 
 // Mock data
 const mockUser = {
-  user_id: 'mock-user-123',
+  user_id: TEST_USERS.DEFAULT.id,
   username: 'testuser',
-  email: 'test@example.com',
-  full_name: 'Test User',
+  email: TEST_USERS.DEFAULT.email,
+  full_name: TEST_USERS.DEFAULT.name,
   created_at: new Date().toISOString(),
   subscription_tier: 'free' as const,
   preferences: {}
 };
 
 const mockAuthToken = {
-  access_token: 'mock-jwt-token-for-testing',
+  access_token: TEST_TOKENS.BACKEND_TOKEN,
   token_type: 'bearer',
   expires_in: 3600
 };
@@ -68,7 +69,7 @@ export const backendHandlers = [
   http.post(`${BACKEND_URL}/auth/login`, async ({ request }) => {
     const body = await request.json() as any;
     
-    if (body.email === 'test@example.com' && body.password === 'password123') {
+    if (body.email === TEST_CREDENTIALS.VALID_USER.email && body.password === TEST_CREDENTIALS.VALID_USER.password) {
       return HttpResponse.json({
         ...mockAuthToken,
         user: mockUser

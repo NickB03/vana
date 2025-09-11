@@ -14,6 +14,7 @@ import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { server } from '../mocks/server'
 import { ChatProvider, useChatContext } from '@/contexts/chat-context'
+import { TEST_STORAGE_KEYS } from '../constants/test-config'
 
 // Mock chat interface component for testing
 const MockChatInterface = () => {
@@ -151,7 +152,7 @@ const MockAuthComponent = () => {
 
   React.useEffect(() => {
     // Check for existing auth token
-    const token = localStorage.getItem('vana_auth_token')
+    const token = localStorage.getItem(TEST_STORAGE_KEYS.AUTH_TOKEN)
     setIsAuthenticated(!!token)
   }, [])
 

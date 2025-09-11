@@ -13,6 +13,7 @@
 import { AuthService } from '@/lib/auth-service';
 import { render, RenderOptions } from '@testing-library/react';
 import { ReactElement } from 'react';
+import { TEST_CREDENTIALS, TEST_TOKENS, TEST_USERS } from '../constants/test-config';
 import { AuthProvider } from '@/contexts/auth-context';
 
 // ============================================================================
@@ -44,7 +45,7 @@ export interface MockAuthResponse {
  * Generate a mock user with customizable properties
  */
 export const createMockUser = (overrides: Partial<MockUser> = {}): MockUser => ({
-  id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+  id: `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
   email: 'test@example.com',
   name: 'Test User',
   avatar: 'https://example.com/avatar.jpg',
@@ -61,7 +62,7 @@ export const createMockUser = (overrides: Partial<MockUser> = {}): MockUser => (
  * Generate a mock authentication response
  */
 export const createMockAuthResponse = (overrides: Partial<MockAuthResponse> = {}): MockAuthResponse => ({
-  access_token: `mock_jwt_token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+  access_token: `mock_jwt_token_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
   token_type: 'bearer',
   expires_in: 3600,
   refresh_token: `mock_refresh_token_${Date.now()}`,
@@ -328,10 +329,7 @@ export const waitForAuth = async () => {
  */
 export const simulateLogin = async (
   mockAuthService: MockAuthService,
-  credentials: { email: string; password: string } = { 
-    email: 'test@example.com', 
-    password: 'password123' 
-  }
+  credentials: { email: string; password: string } = TEST_CREDENTIALS.VALID_USER
 ) => {
   const authResponse = createMockAuthResponse({ user: { email: credentials.email } });
   mockAuthService.getMock('login').mockResolvedValueOnce(authResponse);
@@ -394,17 +392,17 @@ export const createUserByRole = (role: string): MockUser => {
 export const getTestCredentials = (scenario: string) => {
   switch (scenario) {
     case 'valid':
-      return { email: 'test@example.com', password: 'password123' };
+      return TEST_CREDENTIALS.VALID_USER;
     case 'invalid':
-      return { email: 'wrong@example.com', password: 'wrongpassword' };
+      return TEST_CREDENTIALS.INVALID_USER;
     case 'malformed_email':
-      return { email: 'invalid-email', password: 'password123' };
+      return TEST_CREDENTIALS.MALFORMED_EMAIL;
     case 'weak_password':
       return { email: 'test@example.com', password: '123' };
     case 'empty':
       return { email: '', password: '' };
     default:
-      return { email: 'test@example.com', password: 'password123' };
+      return TEST_CREDENTIALS.VALID_USER;
   }
 };
 

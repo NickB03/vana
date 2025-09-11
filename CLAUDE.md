@@ -17,11 +17,11 @@
 mcp__claude-flow__memory_usage --action list
 
 # 2. Search for relevant knowledge
-mcp__claude-flow__memory_search --pattern "secret|knowledge|challenge|test"
+mcp__claude-flow__memory_search --pattern "knowledge|project|architecture"
 
 # 3. Retrieve key project data
-mcp__claude-flow__memory_usage --action retrieve --key "test/cross-session-challenge"
-mcp__claude-flow__memory_usage --action retrieve --key "knowledge/vana-secrets"
+mcp__claude-flow__memory_usage --action retrieve --key "project/current-state"
+mcp__claude-flow__memory_usage --action retrieve --key "knowledge/project-config"
 ```
 
 **❌ NEVER claim you "don't know" without checking memory first**  
@@ -261,9 +261,9 @@ Flow-Nexus extends MCP capabilities with 70+ cloud-based orchestration tools:
 npx claude-flow@alpha hooks pre-task --description "[task]"
 npx claude-flow@alpha hooks session-restore --session-id "swarm-[id]"
 # AUTO-LOAD CROSS-SESSION KNOWLEDGE:
-mcp__claude-flow__memory_usage --action retrieve --key "knowledge/vana-secrets"
-mcp__claude-flow__memory_usage --action retrieve --key "test/cross-session-challenge"
-mcp__claude-flow__memory_search --pattern "secret|challenge|knowledge"
+mcp__claude-flow__memory_usage --action retrieve --key "knowledge/project-config"
+mcp__claude-flow__memory_usage --action retrieve --key "project/current-state"
+mcp__claude-flow__memory_search --pattern "project|architecture|config"
 ```
 
 **2️⃣ DURING Work:**
@@ -388,23 +388,23 @@ Message 4: Write "file.js"
 ## 🗝️ Key Memory Keys (Cross-Session Knowledge)
 
 **Essential Data Stored in Memory:**
-- `test/cross-session-challenge` - **Secret code: AURORA-PHOENIX-7741**
-- `knowledge/vana-secrets` - **Debug endpoint: /api/debug/phoenix** 
-- `instructions/future-agent-test` - Test questions and answers
-- `project/current-state` - Current Vana project architecture
+- `project/current-state` - Current project architecture and status
+- `knowledge/project-config` - Project configuration and settings
+- `instructions/development-guide` - Development guidelines and procedures
 - `project/post-cleanup-status` - System status and cleanup info
+- `environment/variables` - Environment-specific configuration
 
-**Vana Project Key Facts:**
-- **Secret Code**: `AURORA-PHOENIX-7741`
-- **Debug Endpoint**: `/api/debug/phoenix` (returns internal metrics)
+**Project Key Facts:**
+- **Debug Endpoints**: Use `${DEBUG_ENDPOINT}` environment variable
+- **API Keys**: Stored in environment variables (never hardcoded)
 - **Performance**: Hook automation = 32.3% token reduction, 2.8-4.4x speed
-- **Memory Location**: `/Users/nick/Development/vana/.swarm/memory.db`
+- **Memory Location**: `${PROJECT_ROOT}/.swarm/memory.db`
 - **AI Models**: Google Gemini 2.5 Pro/Flash + OpenRouter fallback
 - **Backend**: Python FastAPI with Google ADK 1.8.0
-- **Session Stats**: 47 tasks, 981 edits, 100% success rate
+- **Session Stats**: Tracked in memory for performance monitoring
 
 **🚨 CRITICAL FOR NEW SESSIONS:**
-Before claiming you don't know something about Vana project, ALWAYS check these memory keys!
+Before claiming you don't know something about the project, ALWAYS check these memory keys!
 
 ## Support
 

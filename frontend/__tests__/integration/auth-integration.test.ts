@@ -12,11 +12,12 @@
 import { http, HttpResponse } from 'msw'
 import { server } from '../mocks/server'
 import { apiService } from '@/lib/api-client'
+import { TEST_STORAGE_KEYS, TEST_TOKENS } from '../constants/test-config'
 
 // Mock auth service (would be implemented in a real auth module)
 class MockAuthService {
-  private tokenKey = 'vana_auth_token'
-  private userKey = 'vana_user_data'
+  private tokenKey = TEST_STORAGE_KEYS.AUTH_TOKEN
+  private userKey = TEST_STORAGE_KEYS.USER_DATA
 
   async login(email: string, password: string) {
     const response = await fetch('http://localhost:8000/auth/login', {
@@ -118,7 +119,7 @@ describe('Authentication Integration Tests', () => {
       const result = await authService.login('test@example.com', 'password123')
       
       expect(result).toEqual({
-        access_token: 'mock_jwt_token_12345',
+        access_token: TEST_TOKENS.MOCK_JWT,
         token_type: 'bearer',
         expires_in: 3600,
         user: {

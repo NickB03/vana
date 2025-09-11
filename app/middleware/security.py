@@ -56,7 +56,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         return " ".join(default_domains)
 
-    def _get_csp_policy_for_path(self, path: str, nonce: str) -> str:
+    def _get_csp_policy_for_path(self, path: str, nonce: str, request: Request = None) -> str:
         """Get appropriate CSP policy based on request path."""
         # Strict API-only policy for API endpoints
         if path.startswith("/api/") or path.startswith("/auth/"):
@@ -66,6 +66,36 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 "form-action 'none'; "
                 "base-uri 'none'"
             )
+
+        # Check if this is a Google ADK dev-ui request (broader detection)
+        is_adk_request = (
+            path.startswith("/dev-ui") or 
+            path.startswith("/_adk") or 
+            path.startswith("/apps/") or
+            path.startswith("/list-apps") or
+            path.startswith("/debug/") or
+            "dev-ui" in path.lower() or
+            (request and "google" in request.headers.get("user-agent", "").lower())
+        )
+        
+        if is_adk_request:
+            # Completely relaxed CSP for Google ADK dev-ui compatibility
+            return f"""
+                default-src 'self' 'unsafe-inline' 'unsafe-eval';
+                script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-{nonce}';
+                style-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-{nonce}';
+                img-src 'self' data: https: blob:;
+                font-src 'self' data: https:;
+                connect-src 'self' https: wss: ws:;
+                frame-src 'self';
+                object-src 'self';
+                media-src 'self';
+                worker-src 'self' blob:;
+                child-src 'self' blob:;
+                frame-ancestors 'self';
+                base-uri 'self';
+                form-action 'self';
+            """.replace("\n", " ").strip()
 
         # Web application policy for UI endpoints
         # Secure nonce-based policy without unsafe-inline
@@ -90,7 +120,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
 
         # Determine CSP policy based on path
-        csp_policy = self._get_csp_policy_for_path(request.url.path, nonce)
+        csp_policy = self._get_csp_policy_for_path(request.url.path, nonce, request)
 
         # Security Headers
         security_headers = {

@@ -13,6 +13,7 @@ import { server } from '../mocks/server'
 import type { ReactElement } from 'react'
 import { render, RenderOptions } from '@testing-library/react'
 import { ChatProvider } from '@/contexts/chat-context'
+import { TEST_TOKENS, TEST_USERS, TEST_STORAGE_KEYS } from '../constants/test-config'
 
 // ============================================================================
 // Test Providers and Wrappers
@@ -46,7 +47,7 @@ export const AuthTestUtils = {
   /**
    * Set up authenticated state for tests
    */
-  setupAuth: (token: string = 'mock_test_token') => {
+  setupAuth: (token: string = TEST_TOKENS.GENERIC_TOKEN) => {
     localStorage.setItem('vana_auth_token', token)
     localStorage.setItem('vana_user_data', JSON.stringify({
       id: 'test_user_123',
@@ -70,7 +71,7 @@ export const AuthTestUtils = {
     server.use(
       http.post('http://localhost:8000/auth/login', () => {
         return HttpResponse.json({
-          access_token: 'mock_test_token',
+          access_token: TEST_TOKENS.GENERIC_TOKEN,
           token_type: 'bearer',
           expires_in: 3600,
           user: {

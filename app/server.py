@@ -20,16 +20,15 @@ from collections.abc import AsyncGenerator
 from datetime import datetime
 from typing import Any
 
-# Load environment variables FIRST
-from dotenv import load_dotenv
+# Load environment variables using centralized loader
+from app.utils.environment import load_environment
 
-# Get the project root directory and load .env.local
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-env_path = os.path.join(project_root, ".env.local")
-load_dotenv(env_path)
+# Load environment at startup
+env_result = load_environment(silent=False)
+
 # Security fix: Only log sensitive information in development mode
 if os.getenv("NODE_ENV") == "development":
-    print(f"Loading environment from: {env_path}")
+    print(f"Environment loading result: {env_result}")
     print(f"GOOGLE_API_KEY loaded: {'Yes' if os.getenv('GOOGLE_API_KEY') else 'No'}")
 
 import google.auth
@@ -61,25 +60,11 @@ from app.utils.sse_broadcaster import (
 from app.utils.tracing import CloudTraceLoggingSpanExporter
 from app.utils.typing import Feedback
 from app.research_agents import get_research_orchestrator
+from app.config import initialize_google_config
 
-# Get the project ID from Google Cloud authentication
-# Handle CI environment where credentials might not be available
-if os.environ.get("CI") == "true":
-    # In CI environment, skip authentication and use environment variable
-    project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "analystai-454200")
-    print(f"CI Environment: Using project ID from environment: {project_id}")
-else:
-    try:
-        _, project_id = google.auth.default()
-        if not project_id:
-            project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "analystai-454200")
-            print(f"Using project ID from environment/config: {project_id}")
-        else:
-            print(f"Using authenticated project ID: {project_id}")
-    except Exception as e:
-        print(f"Authentication setup: {e}")
-        project_id = "analystai-454200"
-        print(f"Using project ID: {project_id}")
+# Initialize Google Cloud configuration
+project_id = initialize_google_config(silent=False)
+
 # Set up logging based on environment
 if USE_CLOUD_LOGGING:
     try:
@@ -806,26 +791,74 @@ async def cleanup_task(task_id: str, delay: int = 300):
 
 @app.get("/api/debug/phoenix")
 async def phoenix_debug_endpoint(
-    current_user: User = current_active_user_dep
+    current_user: User = current_active_user_dep,
+    access_code: str = Header(None, alias="X-Phoenix-Code")
 ) -> dict[str, Any]:
     """
     Secret debugging endpoint for internal system metrics.
-    Requires authentication. Returns comprehensive system information.
-    Access code: AURORA-PHOENIX-7741
+    Requires authentication and valid access code.
+    Access code must be provided via X-Phoenix-Code header.
     """
     import psutil
     import time
     
-    # Check for secret access code in headers or query params
-    # This is the easter egg mentioned in memory
+    # Get the required access code from environment variable
+    required_access_code = os.getenv("PHOENIX_DEBUG_CODE")
+    
+    # Security check: Ensure access code is configured and provided
+    if not required_access_code:
+        logger.warning(f"Phoenix debug endpoint accessed but PHOENIX_DEBUG_CODE not configured. User: {current_user.id}")
+        raise HTTPException(
+            status_code=503, 
+            detail="Debug endpoint not available - configuration required"
+        )
+    
+    if not access_code or access_code != required_access_code:
+        # Log security event for failed access attempts
+        security_event = {
+            "message": "Phoenix debug endpoint unauthorized access attempt",
+            "user_id": current_user.id,
+            "user_email": current_user.email,
+            "provided_code": access_code[:8] + "***" if access_code else None,
+            "ip_address": "unknown",  # Could be extracted from request if needed
+            "timestamp": datetime.utcnow().isoformat(),
+            "severity": "SECURITY_ALERT"
+        }
+        
+        if hasattr(logger, "log_struct"):
+            logger.log_struct(security_event, severity="WARNING")
+        else:
+            logger.warning(f"Phoenix debug unauthorized access: {security_event}")
+            
+        raise HTTPException(
+            status_code=403, 
+            detail="Invalid or missing access code"
+        )
     
     try:
+        # Log successful access for audit trail
+        access_event = {
+            "message": "Phoenix debug endpoint accessed successfully",
+            "user_id": current_user.id,
+            "user_email": current_user.email,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        
+        if hasattr(logger, "log_struct"):
+            logger.log_struct(access_event, severity="INFO")
+        else:
+            logger.info(f"Phoenix debug endpoint accessed by user {current_user.id}")
+        
         # Comprehensive system diagnostics
         process = psutil.Process()
         memory_info = process.memory_info()
         
         debug_metrics = {
-            "access_code": "AURORA-PHOENIX-7741",
+            "access_granted": True,
+            "accessed_by": {
+                "user_id": current_user.id,
+                "email": current_user.email
+            },
             "service_info": {
                 "pid": os.getpid(),
                 "memory_rss": memory_info.rss,
@@ -847,7 +880,7 @@ async def phoenix_debug_endpoint(
                 "bucket_name": bucket_name,
                 "project_id": project_id
             },
-            "environment_secrets": {
+            "environment_info": {
                 "google_api_configured": bool(os.getenv("GOOGLE_API_KEY")),
                 "cloud_logging_enabled": USE_CLOUD_LOGGING,
                 "node_env": os.getenv("NODE_ENV", "unknown"),
@@ -857,7 +890,6 @@ async def phoenix_debug_endpoint(
             "debug_session": f"phoenix-{int(time.time())}"
         }
         
-        logger.info(f"Phoenix debug endpoint accessed by user {current_user.id}")
         return debug_metrics
         
     except Exception as e:

@@ -12,6 +12,25 @@
  */
 
 import { z } from 'zod';
+import {
+  EnvironmentInfoSchema,
+  AuthResponseSchema as BackendAuthResponseSchema,
+  UserResponseSchema,
+  TokenSchema,
+  ResearchRequestSchema
+} from './backend-schemas';
+import type {
+  LoginRequest,
+  RegisterRequest,
+  RefreshTokenRequest,
+  ChangePasswordRequest
+} from '../types/auth';
+import type {
+  AuthResponse,
+  UserResponse,
+  Token,
+  ResearchRequest
+} from '../types/backend';
 
 // ============================================================================
 // Additional Type Definitions
@@ -77,7 +96,7 @@ const CreateChatResponseSchema = z.object({
 const HealthResponseSchema = z.object({
   status: z.string(),
   timestamp: z.string(),
-  environment: z.string().optional(),
+  environment: z.union([z.string(), EnvironmentInfoSchema]).optional(),
   version: z.string().optional(),
 });
 
@@ -782,9 +801,11 @@ export class ApiService {
     sessionId: string,
     request: ResearchRequest
   ): Promise<Response> {
+    // Validate request data before sending
+    const validatedRequest = ResearchRequestSchema.parse(request);
     return this.client.createEventStream(`/api/run_sse/${sessionId}`, {
       method: 'POST',
-      body: request,
+      body: validatedRequest,
     });
   }
 
@@ -797,7 +818,7 @@ export class ApiService {
    */
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     return this.client.post('/auth/login', credentials, {
-      schema: AuthResponseSchema,
+      schema: BackendAuthResponseSchema,
     });
   }
 
@@ -806,7 +827,7 @@ export class ApiService {
    */
   async register(userData: RegisterRequest): Promise<AuthResponse> {
     return this.client.post('/auth/register', userData, {
-      schema: AuthResponseSchema,
+      schema: BackendAuthResponseSchema,
     });
   }
 

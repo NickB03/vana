@@ -6,29 +6,7 @@ This module defines the core data structures used throughout the application,
 including request/response models, session management, and type definitions.
 """
 
-# Load environment variables FIRST before any other imports
-import os
-
-from dotenv import load_dotenv
-
-# Get the project root directory and load .env.local
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-env_path = os.path.join(project_root, ".env.local")
-
-# Try to load .env.local first, fall back to .env if not found
-if os.path.exists(env_path):
-    load_dotenv(env_path)
-    print(f"✅ Loaded environment from {env_path}")
-else:
-    # Try standard .env as fallback
-    fallback_env = os.path.join(project_root, ".env")
-    if os.path.exists(fallback_env):
-        load_dotenv(fallback_env)
-        print(f"✅ Loaded environment from {fallback_env}")
-    else:
-        print("⚠️ No .env.local or .env file found, using environment variables only")
-
-# Now import everything else
+# Standard library imports
 from datetime import datetime
 from typing import Any, Union
 
