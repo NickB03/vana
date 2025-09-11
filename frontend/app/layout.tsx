@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "@/contexts/auth-context";
 import AdminPanelLayout from "@/components/admin-panel/admin-panel-layout";
 
 const geistSans = Geist({
@@ -35,9 +36,11 @@ export default function RootLayout({
           enableSystem={true}
           storageKey="vana-theme"
         >
-          <AdminPanelLayout>
-            {children}
-          </AdminPanelLayout>
+          <AuthProvider>
+            <AdminPanelLayout>
+              {children}
+            </AdminPanelLayout>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

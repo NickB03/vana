@@ -1,7 +1,8 @@
 """Configuration validation tests."""
 
-import pytest
 import os
+
+import pytest
 
 
 def test_environment_configuration():
