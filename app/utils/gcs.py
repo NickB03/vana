@@ -14,8 +14,18 @@
 
 import logging
 
-import google.cloud.storage as storage
-from google.api_core import exceptions
+# These utilities interact with Google Cloud Storage.  During testing the
+# ``google-cloud-storage`` package is not installed so we provide a small shim
+# allowing the module to be imported without the dependency.
+try:  # pragma: no cover - simple import wrapper
+    import google.cloud.storage as storage  # type: ignore
+    from google.api_core import exceptions  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover
+    storage = None  # type: ignore
+
+    class exceptions:  # type: ignore
+        class NotFound(Exception):
+            pass
 
 
 def create_bucket_if_not_exists(bucket_name: str, project: str, location: str) -> None:
@@ -26,6 +36,10 @@ def create_bucket_if_not_exists(bucket_name: str, project: str, location: str) -
         project: Google Cloud project ID
         location: Location to create the bucket in (defaults to us-central1)
     """
+    if storage is None:
+        logging.info("google-cloud-storage not installed; skipping bucket check")
+        return
+
     storage_client = storage.Client(project=project)
 
     if bucket_name.startswith("gs://"):

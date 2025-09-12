@@ -25,7 +25,12 @@ import uuid
 from datetime import datetime
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
-import google.generativeai as genai
+# ``google.generativeai`` is optional in the test environment.  Import it
+# conditionally so that this module can be imported without the dependency.
+try:  # pragma: no cover
+    import google.generativeai as genai  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover
+    genai = None  # type: ignore
 from pydantic import BaseModel, Field
 
 
@@ -73,6 +78,8 @@ class MultiAgentResearchOrchestrator:
     
     def __init__(self, api_key: str):
         """Initialize the orchestrator with Google API key"""
+        if genai is None:
+            raise RuntimeError("google.generativeai is required for research orchestration")
         self.api_key = api_key
         genai.configure(api_key=api_key)
         self.active_sessions: Dict[str, ResearchProgress] = {}
@@ -329,12 +336,17 @@ research_orchestrator: Optional[MultiAgentResearchOrchestrator] = None
 def get_research_orchestrator() -> MultiAgentResearchOrchestrator:
     """Get or create research orchestrator instance"""
     global research_orchestrator
-    
+
+    if genai is None:
+        raise RuntimeError(
+            "google.generativeai is required for research orchestration"
+        )
+
     if not research_orchestrator:
         import os
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
             raise ValueError("GOOGLE_API_KEY not configured")
         research_orchestrator = MultiAgentResearchOrchestrator(api_key)
-    
+
     return research_orchestrator
