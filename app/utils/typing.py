@@ -16,8 +16,17 @@ from typing import (
     Literal,
 )
 
-from google.adk.events.event import Event
-from google.genai.types import Content
+# Optional Google GenAI and ADK dependencies are imported lazily so that this
+# module can be used in environments where those packages aren't installed.
+try:  # pragma: no cover
+    from google.adk.events.event import Event  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover
+    from typing import Any as Event  # type: ignore
+
+try:  # pragma: no cover
+    from google.genai.types import Content  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover
+    from typing import Any as Content  # type: ignore
 from pydantic import (
     BaseModel,
     Field,
@@ -32,7 +41,7 @@ class Request(BaseModel):
     user_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     session_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
 
-    model_config = {"extra": "allow"}
+    model_config = {"extra": "allow", "arbitrary_types_allowed": True}
 
 
 class Feedback(BaseModel):
