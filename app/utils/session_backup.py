@@ -17,8 +17,18 @@ import logging
 import os
 from datetime import datetime
 
-import google.cloud.storage as storage
-from google.api_core import exceptions
+# These backup utilities rely on Google Cloud Storage.  Provide optional
+# imports so that the module can be loaded when the dependency is missing
+# (e.g. in the execution environment for the tests).
+try:  # pragma: no cover
+    import google.cloud.storage as storage  # type: ignore
+    from google.api_core import exceptions  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover
+    storage = None  # type: ignore
+
+    class exceptions:  # type: ignore
+        class NotFound(Exception):
+            pass
 
 
 async def backup_session_db_to_gcs_async(
@@ -38,6 +48,10 @@ async def backup_session_db_to_gcs_async(
     Returns:
         GCS path of backup file if successful, None if failed
     """
+    if storage is None:
+        logging.info("google-cloud-storage not installed; skipping session backup")
+        return None
+
     # Check if file exists
     if not os.path.exists(local_db_path):
         logging.warning(f"Session database not found at {local_db_path}")
@@ -89,6 +103,10 @@ async def restore_session_db_from_gcs_async(
     Returns:
         True if restore successful, False otherwise
     """
+    if storage is None:
+        logging.info("google-cloud-storage not installed; skipping session restore")
+        return False
+
     try:
 
         def _download_from_gcs() -> bool:
@@ -164,6 +182,10 @@ def backup_session_db_to_gcs(
     Returns:
         GCS path of backup file if successful, None if failed
     """
+    if storage is None:
+        logging.info("google-cloud-storage not installed; skipping session backup")
+        return None
+
     try:
         # Check if we're already in an async context
         try:
@@ -220,6 +242,10 @@ def restore_session_db_from_gcs(
     Returns:
         True if restore successful, False otherwise
     """
+    if storage is None:
+        logging.info("google-cloud-storage not installed; skipping session restore")
+        return False
+
     try:
         # Check if we're already in an async context
         try:
@@ -311,6 +337,14 @@ async def create_periodic_backup_job_async(
         The backup task that can be cancelled if needed
     """
 
+    if storage is None:
+        logging.info("google-cloud-storage not installed; periodic backup disabled")
+
+        async def noop() -> None:
+            return None
+
+        return asyncio.create_task(noop())
+
     async def backup_loop() -> None:
         while True:
             await asyncio.sleep(interval_hours * 3600)  # Convert hours to seconds
@@ -345,6 +379,10 @@ def create_periodic_backup_job(
         project_id: Google Cloud project ID
         interval_hours: Backup interval in hours
     """
+    if storage is None:
+        logging.info("google-cloud-storage not installed; periodic backup disabled")
+        return
+
     try:
         # Try to use async version if we're in an event loop
         loop = asyncio.get_running_loop()

@@ -17,11 +17,33 @@ import logging
 from collections.abc import Sequence
 from typing import Any
 
-import google.cloud.storage as storage
-from google.cloud import logging as google_cloud_logging
-from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
-from opentelemetry.sdk.trace import ReadableSpan
-from opentelemetry.sdk.trace.export import SpanExportResult
+# Optional Google Cloud and OpenTelemetry dependencies.  When these packages are
+# not installed (as in the testing environment) we provide lightweight stubs so
+# that importing this module does not fail.  The tracing features will simply be
+# disabled.
+try:  # pragma: no cover
+    import google.cloud.storage as storage  # type: ignore
+    from google.cloud import logging as google_cloud_logging  # type: ignore
+    from opentelemetry.exporter.cloud_trace import (  # type: ignore
+        CloudTraceSpanExporter,
+    )
+    from opentelemetry.sdk.trace import ReadableSpan  # type: ignore
+    from opentelemetry.sdk.trace.export import SpanExportResult  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover
+    import types
+
+    storage = types.SimpleNamespace(Client=object)  # type: ignore
+    google_cloud_logging = types.SimpleNamespace(Client=object)  # type: ignore
+
+    class CloudTraceSpanExporter:  # type: ignore
+        def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: D401
+            raise RuntimeError("OpenTelemetry tracing is unavailable")
+
+    class ReadableSpan:  # type: ignore
+        pass
+
+    class SpanExportResult:  # type: ignore
+        SUCCESS = 0
 
 
 class CloudTraceLoggingSpanExporter(CloudTraceSpanExporter):
