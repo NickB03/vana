@@ -15,7 +15,14 @@
 import os
 from dataclasses import dataclass, field
 
-import google.auth
+# ``google.auth`` is an optional dependency.  The test environment used for the
+# kata doesn't provide it which previously caused a ``ModuleNotFoundError`` at
+# import time.  We import it lazily and fall back to ``None`` so that the rest of
+# the module can operate with sensible defaults.
+try:  # pragma: no cover - thin wrapper
+    import google.auth  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover
+    google = None
 
 from app.models import CRITIC_MODEL, WORKER_MODEL, ModelType
 
@@ -53,23 +60,37 @@ def initialize_google_config(silent: bool = False) -> str:
         if not silent:
             print(f"CI Environment: Using project ID from environment: {_project_id}")
     else:
-        try:
-            _, _project_id = google.auth.default()
-            if not _project_id:
-                # Fallback to environment variable or your specific project
-                _project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "analystai-454200")
-                if not silent:
-                    print(f"Using project ID from environment/config: {_project_id}")
-            else:
-                if not silent:
-                    print(f"Using authenticated project ID: {_project_id}")
-        except Exception as e:
+        if google is None:
+            # Without the Google libraries we cannot perform ADC.  Fall back to
+            # environment variables or a hard coded project id.
+            _project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "analystai-454200")
             if not silent:
-                print(f"Authentication error: {e}")
-            # Use your specific project ID as fallback
-            _project_id = "analystai-454200"
-            if not silent:
-                print(f"Using fallback project ID: {_project_id}")
+                print(
+                    "google.auth not available, using project ID from environment: "
+                    f"{_project_id}"
+                )
+        else:
+            try:
+                _, _project_id = google.auth.default()
+                if not _project_id:
+                    # Fallback to environment variable or your specific project
+                    _project_id = os.environ.get(
+                        "GOOGLE_CLOUD_PROJECT", "analystai-454200"
+                    )
+                    if not silent:
+                        print(
+                            f"Using project ID from environment/config: {_project_id}"
+                        )
+                else:
+                    if not silent:
+                        print(f"Using authenticated project ID: {_project_id}")
+            except Exception as e:
+                if not silent:
+                    print(f"Authentication error: {e}")
+                # Use your specific project ID as fallback
+                _project_id = "analystai-454200"
+                if not silent:
+                    print(f"Using fallback project ID: {_project_id}")
     
     # Set environment defaults
     os.environ.setdefault("GOOGLE_CLOUD_PROJECT", _project_id)
