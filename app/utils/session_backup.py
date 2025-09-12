@@ -37,16 +37,21 @@ async def backup_session_db_to_gcs_async(
     project_id: str,
     backup_prefix: str = "session_backups",
 ) -> str | None:
-    """Async backup local session database to Google Cloud Storage.
-
-    Args:
-        local_db_path: Path to local SQLite database file
-        bucket_name: GCS bucket name (without gs:// prefix)
-        project_id: Google Cloud project ID
-        backup_prefix: Prefix for backup files in GCS
-
+    """
+    Upload a local SQLite session database file to Google Cloud Storage and return its GCS path.
+    
+    Asynchronously runs the upload in a thread pool (GCS client is not async). If the google-cloud-storage package is unavailable
+    or the local database file does not exist, the function returns None. On success returns the produced `gs://{bucket}/{object}` path.
+    
+    Parameters:
+        local_db_path (str): Filesystem path to the local SQLite database file to upload.
+        bucket_name (str): Destination GCS bucket name (no `gs://` prefix).
+        project_id (str): Google Cloud project ID used to construct the storage client.
+        backup_prefix (str): Optional object prefix/virtual folder in the bucket for the backup file (default: "session_backups").
+    
     Returns:
-        GCS path of backup file if successful, None if failed
+        str | None: The GCS URI of the uploaded backup (e.g. `gs://bucket/session_backups/vana_sessions_YYYYMMDD_HHMMSS.db`)
+        or None if the upload was skipped or failed.
     """
     if storage is None:
         logging.info("google-cloud-storage not installed; skipping session backup")
@@ -91,17 +96,24 @@ async def restore_session_db_from_gcs_async(
     backup_filename: str | None = None,
     backup_prefix: str = "session_backups",
 ) -> bool:
-    """Async restore session database from Google Cloud Storage backup.
-
-    Args:
-        local_db_path: Path where to restore the database
-        bucket_name: GCS bucket name (without gs:// prefix)
-        project_id: Google Cloud project ID
-        backup_filename: Specific backup file to restore (if None, uses latest)
-        backup_prefix: Prefix for backup files in GCS
-
+    """
+    Restore a local session SQLite database from a Google Cloud Storage backup.
+    
+    If `backup_filename` is None the function selects the latest `.db` file under the given `backup_prefix` in `bucket_name`. The function ensures the local directory for `local_db_path` exists and performs GCS I/O in a threadpool so it can be awaited from an async context.
+    
+    Parameters:
+        local_db_path (str): Destination path for the restored database file.
+        bucket_name (str): GCS bucket name (no `gs://` prefix).
+        project_id (str): Google Cloud project ID.
+        backup_filename (str | None): Specific object name to download; if None, the latest `.db` under `backup_prefix` is used.
+        backup_prefix (str): Object prefix in the bucket where backups are stored.
+    
     Returns:
-        True if restore successful, False otherwise
+        bool: True if the file was successfully downloaded to `local_db_path`, False otherwise.
+    
+    Notes:
+        - If the `google-cloud-storage` dependency is not available, the function logs and returns False.
+        - Missing backup files or GCS NotFound errors cause the function to return False (no exception is propagated).
     """
     if storage is None:
         logging.info("google-cloud-storage not installed; skipping session restore")
@@ -110,6 +122,17 @@ async def restore_session_db_from_gcs_async(
     try:
 
         def _download_from_gcs() -> bool:
+            """
+            Download the specified or latest .db backup from GCS to the local path.
+            
+            If `backup_filename` is None, lists blobs under the given `backup_prefix` in `bucket_name`,
+            selects the latest blob whose name ends with `.db` (sorted by name), and updates the
+            nonlocal `backup_filename` to that blob's name. Then downloads the blob to `local_db_path`.
+            
+            Returns:
+                bool: True if a backup was successfully downloaded; False if no backups or no `.db`
+                files were found under the prefix.
+            """
             storage_client = storage.Client(project=project_id)
             bucket = storage_client.bucket(bucket_name)
 
@@ -171,16 +194,19 @@ def backup_session_db_to_gcs(
     project_id: str,
     backup_prefix: str = "session_backups",
 ) -> str | None:
-    """Backup local session database to Google Cloud Storage (sync wrapper).
-
-    Args:
-        local_db_path: Path to local SQLite database file
-        bucket_name: GCS bucket name (without gs:// prefix)
-        project_id: Google Cloud project ID
-        backup_prefix: Prefix for backup files in GCS
-
+    """
+    Synchronous wrapper that backs up a local SQLite session database to Google Cloud Storage and returns the resulting gs:// path.
+    
+    This function calls the async backup implementation and adapts to the current execution context:
+    - If google-cloud-storage is not available, it returns None.
+    - If called from within an active asyncio event loop, the async backup is executed in a worker thread with a fresh event loop and a 5-minute timeout.
+    - If no asyncio event loop is running, it invokes the async backup via asyncio.run.
+    
+    Parameters:
+        bucket_name: GCS bucket name (provide the raw bucket name, without a `gs://` prefix).
+    
     Returns:
-        GCS path of backup file if successful, None if failed
+        The GCS path (e.g. `gs://{bucket}/{prefix}/{file}`) of the uploaded backup on success, or None on failure.
     """
     if storage is None:
         logging.info("google-cloud-storage not installed; skipping session backup")
@@ -230,17 +256,24 @@ def restore_session_db_from_gcs(
     backup_filename: str | None = None,
     backup_prefix: str = "session_backups",
 ) -> bool:
-    """Restore session database from Google Cloud Storage backup (sync wrapper).
-
-    Args:
-        local_db_path: Path where to restore the database
-        bucket_name: GCS bucket name (without gs:// prefix)
-        project_id: Google Cloud project ID
-        backup_filename: Specific backup file to restore (if None, uses latest)
-        backup_prefix: Prefix for backup files in GCS
-
+    """
+    Restore the session SQLite database from a Google Cloud Storage backup (synchronous wrapper).
+    
+    This function synchronously restores a local session DB by running the asynchronous
+    restore routine. If the google-cloud-storage dependency is not available this is a
+    no-op that returns False. When called from inside an already-running asyncio event
+    loop, the async restore is executed in a separate thread with a 5-minute timeout;
+    otherwise it is run via asyncio.run. Returns True on successful restore, False on
+    failure.
+    Parameters:
+        local_db_path (str): Local filesystem path to restore the database to.
+        bucket_name (str): GCS bucket name (without the gs:// prefix).
+        project_id (str): Google Cloud project ID.
+        backup_filename (str | None): Specific backup filename to restore; if None the latest backup is used.
+        backup_prefix (str): GCS prefix/directory where backups are stored.
+    
     Returns:
-        True if restore successful, False otherwise
+        bool: True if the restore completed successfully, False otherwise.
     """
     if storage is None:
         logging.info("google-cloud-storage not installed; skipping session restore")
@@ -325,27 +358,48 @@ def setup_session_persistence_for_cloud_run(
 async def create_periodic_backup_job_async(
     local_db_path: str, bucket_name: str, project_id: str, interval_hours: int = 6
 ) -> asyncio.Task:
-    """Create an async periodic backup job for session database.
-
+    """
+    Create and start an asyncio Task that periodically backs up the local session SQLite DB to GCS.
+    
+    The returned Task runs an infinite loop that waits interval_hours between attempts and invokes
+    backup_session_db_to_gcs_async to upload the DB. If Google Cloud Storage support is unavailable
+    (the module-level `storage` is None), this returns a no-op Task that does nothing when awaited.
+    Cancel the returned Task to stop the periodic backups.
+    
     Args:
-        local_db_path: Path to local SQLite database
-        bucket_name: GCS bucket name for backups
-        project_id: Google Cloud project ID
-        interval_hours: Backup interval in hours
-
+        local_db_path: Path to the local SQLite database file to back up.
+        bucket_name: GCS bucket name where backups will be stored.
+        project_id: Google Cloud project ID used to construct the storage client.
+        interval_hours: Interval between backups in hours (default: 6).
+    
     Returns:
-        The backup task that can be cancelled if needed
+        An asyncio.Task running the periodic backup loop (or a no-op Task if GCS is unavailable).
     """
 
     if storage is None:
         logging.info("google-cloud-storage not installed; periodic backup disabled")
 
         async def noop() -> None:
+            """
+            No-op asynchronous coroutine that does nothing.
+            
+            Useful as a placeholder task or default coroutine where an awaitable is required. Returns None.
+            """
             return None
 
         return asyncio.create_task(noop())
 
     async def backup_loop() -> None:
+        """
+        Run an endless periodic loop that sleeps for `interval_hours` and attempts to back up the local session DB to GCS.
+        
+        This coroutine repeatedly:
+        - waits for interval_hours (converted to seconds),
+        - calls backup_session_db_to_gcs_async(local_db_path, bucket_name, project_id),
+        - logs success when a GCS path is returned, logs a warning when the backup fails, and logs errors for unexpected exceptions.
+        
+        The coroutine captures and uses the surrounding closure variables: local_db_path, bucket_name, project_id, and interval_hours. It runs until cancelled (e.g., by cancelling the Task running it) and always returns None.
+        """
         while True:
             await asyncio.sleep(interval_hours * 3600)  # Convert hours to seconds
             try:
@@ -368,16 +422,21 @@ async def create_periodic_backup_job_async(
 def create_periodic_backup_job(
     local_db_path: str, bucket_name: str, project_id: str, interval_hours: int = 6
 ) -> None:
-    """Create a periodic backup job for session database (sync wrapper).
-
-    Note: This is a simple implementation. For production, consider using
-    Cloud Scheduler or Kubernetes CronJobs for more robust scheduling.
-
-    Args:
-        local_db_path: Path to local SQLite database
-        bucket_name: GCS bucket name for backups
-        project_id: Google Cloud project ID
-        interval_hours: Backup interval in hours
+    """
+    Start a background periodic backup of the local session SQLite database to GCS.
+    
+    If Google Cloud Storage client is unavailable, the function returns immediately without scheduling backups.
+    If called from within an active asyncio event loop, schedules an asynchronous periodic backup task on that loop.
+    If no event loop is running, starts a daemon thread that performs backups at the given interval.
+    
+    Parameters:
+        local_db_path: Filesystem path to the local SQLite session database.
+        bucket_name: Name of the GCS bucket to store backups.
+        project_id: Google Cloud project ID used to construct the storage client.
+        interval_hours: How often to run backups, in hours (default: 6).
+    
+    Returns:
+        None
     """
     if storage is None:
         logging.info("google-cloud-storage not installed; periodic backup disabled")

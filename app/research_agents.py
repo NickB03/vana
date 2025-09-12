@@ -77,7 +77,17 @@ class MultiAgentResearchOrchestrator:
     ]
     
     def __init__(self, api_key: str):
-        """Initialize the orchestrator with Google API key"""
+        """
+        Create a MultiAgentResearchOrchestrator and configure the Google Generative AI client.
+        
+        Initializes the orchestrator by configuring the genai client with the provided API key and creating an empty active_sessions mapping.
+        
+        Parameters:
+            api_key (str): Google API key used to configure google.generativeai.
+        
+        Raises:
+            RuntimeError: If the optional google.generativeai dependency is not available.
+        """
         if genai is None:
             raise RuntimeError("google.generativeai is required for research orchestration")
         self.api_key = api_key
@@ -334,7 +344,15 @@ research_orchestrator: Optional[MultiAgentResearchOrchestrator] = None
 
 
 def get_research_orchestrator() -> MultiAgentResearchOrchestrator:
-    """Get or create research orchestrator instance"""
+    """
+    Return the singleton MultiAgentResearchOrchestrator, creating it on first use.
+    
+    On first call, reads GOOGLE_API_KEY from the environment and constructs the orchestrator.
+    
+    Raises:
+        RuntimeError: if the google.generativeai library is not available.
+        ValueError: if GOOGLE_API_KEY is not set in the environment.
+    """
     global research_orchestrator
 
     if genai is None:

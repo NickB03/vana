@@ -37,6 +37,17 @@ except ModuleNotFoundError:  # pragma: no cover
 
     class CloudTraceSpanExporter:  # type: ignore
         def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: D401
+            """
+            Stub initializer that always raises to indicate OpenTelemetry tracing is unavailable.
+            
+            This constructor accepts arbitrary positional and keyword arguments to match the real exporter API,
+            but immediately raises RuntimeError("OpenTelemetry tracing is unavailable"). It is used as a sentinel
+            when optional OpenTelemetry/Google Cloud dependencies are not installed so importing the module
+            does not fail while clearly signalling that tracing cannot be used.
+            
+            Raises:
+                RuntimeError: Always raised to indicate tracing functionality is disabled.
+            """
             raise RuntimeError("OpenTelemetry tracing is unavailable")
 
     class ReadableSpan:  # type: ignore

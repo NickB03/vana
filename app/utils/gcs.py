@@ -29,12 +29,16 @@ except ModuleNotFoundError:  # pragma: no cover
 
 
 def create_bucket_if_not_exists(bucket_name: str, project: str, location: str) -> None:
-    """Creates a new bucket if it doesn't already exist.
-
-    Args:
-        bucket_name: Name of the bucket to create
-        project: Google Cloud project ID
-        location: Location to create the bucket in (defaults to us-central1)
+    """
+    Create the Google Cloud Storage bucket if it does not already exist.
+    
+    If the google-cloud-storage package is not installed, the function returns without performing any checks.
+    Accepts bucket names with or without the "gs://" prefix; when the bucket is missing it will be created in the specified project and location.
+    
+    Parameters:
+        bucket_name (str): Name of the bucket to create; may include a leading "gs://".
+        project (str): Google Cloud project ID where the bucket should exist.
+        location (str): Location/region to create the bucket in (no default; pass the desired region).
     """
     if storage is None:
         logging.info("google-cloud-storage not installed; skipping bucket check")

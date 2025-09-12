@@ -54,7 +54,21 @@ except ModuleNotFoundError:  # pragma: no cover
         allow_origins: list[str] | None,
         session_service_uri: str | None,
     ) -> FastAPI:
-        """Fallback FastAPI factory used when Google ADK is unavailable."""
+        """
+        Create a minimal FastAPI application used as a fallback when Google ADK/optional dependencies are unavailable.
+        
+        This factory returns a lightweight FastAPI instance suitable for health checks, basic endpoints, and to allow the server to start without the Google ADK stack. It does not enable ADK-specific routing or instrumentation.
+        
+        Parameters:
+            agents_dir: Path to the agents directory (used by the full app for discovery; retained here for API compatibility).
+            web: Whether the app should include web-facing routes in the full implementation; retained for compatibility.
+            artifact_service_uri: Optional URI of the artifact service or bucket (kept for signature compatibility; unused by the fallback).
+            allow_origins: Optional list of CORS-allowed origins (kept for signature compatibility; middleware may be applied by the caller).
+            session_service_uri: Optional session storage service URI (kept for signature compatibility; unused by the fallback).
+        
+        Returns:
+            FastAPI: A minimal FastAPI application instance.
+        """
 
         return FastAPI()
 
@@ -282,6 +296,11 @@ except ModuleNotFoundError:  # pragma: no cover
     from fastapi import APIRouter
 
     def init_auth_db() -> None:  # type: ignore
+        """
+        Initialize the authentication database used by the app.
+        
+        Performs any necessary startup steps for the auth subsystem (e.g., creating or migrating auth tables). Failures are handled internally (a warning is logged) so callers do not need to catch exceptions; in environments where the optional auth components are absent this function may be a no-op.
+        """
         pass
 
     from pydantic import BaseModel
@@ -290,19 +309,54 @@ except ModuleNotFoundError:  # pragma: no cover
         pass
 
     def current_active_user_dep() -> None:  # type: ignore
+        """
+        No-op FastAPI dependency used when the authentication subsystem is unavailable.
+        
+        This placeholder function is intended to be injected as a dependency (e.g., via Depends) where an authenticated current user would normally be provided. It performs no authentication and always returns None so routes depending on it can still be imported and health-checked in environments without the auth stack.
+        """
         return None
 
     def current_superuser_dep() -> None:  # type: ignore
+        """
+        No-op placeholder dependency that represents a superuser authentication dependency.
+        
+        Used when the full authentication subsystem is unavailable; always returns None so routes that declare a superuser dependency remain importable and callable in environments without auth support.
+        """
         return None
 
     def current_user_for_sse_dep() -> None:  # type: ignore
+        """
+        No-op dependency for Server-Sent Events endpoints that provides a placeholder current user.
+        
+        Used when the authentication subsystem is unavailable; always returns None so routes can accept an optional user dependency without requiring auth.
+        """
         return None
 
     class AuditLogMiddleware:  # type: ignore
         def __init__(self, app: FastAPI, *args: Any, **kwargs: Any) -> None:
+            """
+            Initialize the object with the FastAPI application.
+            
+            Stores the provided FastAPI instance on self.app for later middleware or route interactions.
+            """
             self.app = app
 
         async def __call__(self, scope, receive, send):  # type: ignore
+            """
+            ASGI entry point that forwards the incoming connection to the wrapped ASGI application.
+            
+            This coroutine implements the ASGI callable interface by awaiting the inner application with the provided
+            scope, receive, and send callables. It does not modify the scope or messages; any side effects come from
+            the wrapped application.
+            
+            Parameters:
+                scope: ASGI connection scope dictionary describing the connection.
+                receive: async callable to receive ASGI events.
+                send: async callable to send ASGI events.
+            
+            Returns:
+                None
+            """
             await self.app(scope, receive, send)
 
     class CORSMiddleware(AuditLogMiddleware):  # type: ignore
@@ -349,11 +403,30 @@ app.add_middleware(AuditLogMiddleware)
 
 @app.get("/health")
 async def health_check() -> dict:
-    """Enhanced health check endpoint for comprehensive service validation.
-
+    """
+    Return a comprehensive health dictionary for the service.
+    
+    Performs environment and dependency checks and collects optional system metrics when available.
+    The response is safe for CI environments (returns a simplified environment string) and degrades
+    gracefully if optional modules (e.g., psutil) or helpers are missing.
+    
     Returns:
-        Comprehensive health status including system metrics, dependencies,
-        and service configuration information.
+        dict: A health payload containing:
+            - status (str): overall service status (e.g., "healthy").
+            - timestamp (str): UTC ISO timestamp when the check was performed.
+            - service (str): service name ("vana").
+            - version (str): service version string.
+            - environment (str | dict): environment info or migration status (simplified in CI).
+            - session_storage_enabled (bool): whether session storage is configured.
+            - session_storage_uri (str | None): configured session storage URI, if any.
+            - session_storage_bucket (str | None): configured GCS session bucket name.
+            - system_metrics (dict): memory, disk, CPU and load metrics or an error message if metrics
+              could not be collected (e.g., psutil not installed).
+            - dependencies (dict): flags and identifiers for external dependencies (Google API key,
+              cloud logging, project_id, etc.).
+            - response_time_ms (float): elapsed time to produce the health response in milliseconds.
+            - active_chat_tasks (int): number of active in-memory chat tasks.
+            - uptime_check (str): brief operational indicator.
     """
     try:
         import psutil  # type: ignore

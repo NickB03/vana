@@ -37,16 +37,20 @@ _project_id: str | None = None
 
 def initialize_google_config(silent: bool = False) -> str:
     """
-    Initialize Google Cloud configuration.
+    Initialize and return the active Google Cloud project ID.
     
-    This function should be called explicitly during application startup
-    to avoid import-time side effects.
+    Resolves the project ID and initializes related environment defaults. Behavior:
+    - If already resolved, returns the cached global project ID.
+    - In CI (CI="true"), prefers GOOGLE_CLOUD_PROJECT or a hard-coded default.
+    - If google.auth is available, attempts Application Default Credentials to obtain the project ID and falls back to the environment or the default on failure.
+    - If google.auth is unavailable, falls back to the environment or the default.
+    Sets the global _project_id and the environment defaults: GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION ("global"), and GOOGLE_GENAI_USE_VERTEXAI ("True").
     
-    Args:
-        silent: If True, suppress logging output
-        
+    Parameters:
+        silent (bool): If True, suppress informational console output.
+    
     Returns:
-        The resolved project ID
+        str: The resolved Google Cloud project ID.
     """
     global _project_id
     
