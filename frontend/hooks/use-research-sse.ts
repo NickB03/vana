@@ -81,8 +81,12 @@ export function useResearchSSE(options: UseResearchSSEOptions = {}): UseResearch
     
     // Handle completion (only fire once)
     if (newState.status === 'completed' && previousState?.status !== 'completed') {
+      console.log('[useResearchSSE] Research completed, calling onComplete with final report:', newState.finalReport ? 'present' : 'null/missing');
+      console.log('[useResearchSSE] Final report content length:', newState.finalReport?.length || 0);
       if (onComplete) {
         onComplete(newState.finalReport);
+      } else {
+        console.warn('[useResearchSSE] onComplete callback is not defined');
       }
       setIsLoading(false);
     }

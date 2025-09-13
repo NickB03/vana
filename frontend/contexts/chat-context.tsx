@@ -62,7 +62,10 @@ export function ChatProvider({ children }: ChatProviderProps) {
   // Initialize research SSE functionality with enhanced error handling
   const research = useResearchSSE({
     onComplete: (finalReport) => {
-      console.log('[Chat Context] Research completed:', finalReport);
+      console.log('[Chat Context] onComplete called with finalReport:', finalReport ? 'present' : 'null/missing');
+      console.log('[Chat Context] Final report length:', finalReport?.length || 0);
+      console.log('[Chat Context] Final report preview:', finalReport?.substring(0, 100) || 'N/A');
+      
       // Add final report as a message
       if (finalReport) {
         const researchMessage: ChatMessage = {
@@ -72,8 +75,16 @@ export function ChatProvider({ children }: ChatProviderProps) {
           timestamp: new Date(),
           isResearchResult: true
         };
-        setMessages(prev => [...prev, researchMessage]);
+        console.log('[Chat Context] Creating research message:', researchMessage);
+        setMessages(prev => {
+          const newMessages = [...prev, researchMessage];
+          console.log('[Chat Context] Updated messages array length:', newMessages.length);
+          return newMessages;
+        });
+      } else {
+        console.warn('[Chat Context] Cannot create research message: finalReport is null/empty');
       }
+      
       // Clear streaming state when complete
       setStreamingState(prev => ({
         isStreaming: false,

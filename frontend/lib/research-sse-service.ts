@@ -342,12 +342,16 @@ class SSEConnectionManager {
         } else {
           const errMsg = pr?.error?.message || 'Unknown validation error';
           console.warn('[Research SSE] research_complete validation failed:', errMsg);
+          console.log('[Research SSE] Original event data:', eventData);
           event = {
             type: 'research_complete',
             sessionId: eventData.sessionId as string || 'unknown',
             status: eventData.status as 'completed' | 'error' || 'completed',
+            final_report: eventData.final_report as string || null, // FIX: Preserve final_report
+            error: eventData.error as string || null, // FIX: Preserve error
             timestamp: eventData.timestamp as string || new Date().toISOString()
           };
+          console.log('[Research SSE] Created fallback event with final_report:', event.final_report ? 'present' : 'missing');
         }
       } else if (eventData.type === 'error') {
         let pr: any;
