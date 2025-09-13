@@ -1,31 +1,41 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode, useRef, useEffect } from 'react';
-import { ChatMessage, streamChatResponse, StreamingResponse } from '@/lib/chat-api';
+import React, { createContext, useContext, useState, ReactNode, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useResearchSSE, UseResearchSSEResult } from '@/hooks/use-research-sse';
+
+// ============================================================================
+// Type Definitions (simplified - using only research functionality)
+// ============================================================================
+
+type ChatMessage = {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  timestamp: Date;
+  isResearchQuery?: boolean;
+  isResearchResult?: boolean;
+};
 
 interface StreamingState {
   isStreaming: boolean;
   content: string;
   error?: string;
   connectionState?: 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'failed';
+  lastActivity?: Date;
+  retryCount?: number;
 }
 
 interface ChatContextType {
-  // Chat functionality
+  // Research-only functionality (chat-api removed)
   messages: ChatMessage[];
   streamingState: StreamingState;
-  isWaitingForResponse: boolean;
-  sendMessage: (content: string) => void;
+  sendMessage: (content: string) => Promise<void>;
   clearMessages: () => void;
   connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'failed';
-  
-  // Research mode functionality
-  isResearchMode: boolean;
-  setIsResearchMode: (enabled: boolean) => void;
   research: UseResearchSSEResult;
-  sendResearchQuery: (query: string) => Promise<void>;
+  retryLastMessage: () => void;
+  clearError: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -48,14 +58,12 @@ export function ChatProvider({ children }: ChatProviderProps) {
   const [streamingState, setStreamingState] = useState<StreamingState>({
     isStreaming: false,
     content: '',
-    connectionState: 'disconnected'
+    connectionState: 'disconnected',
+    lastActivity: new Date(),
+    retryCount: 0
   });
-  const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
   
-  // Research mode state
-  const [isResearchMode, setIsResearchMode] = useState(false);
-  
-  // Initialize research SSE functionality
+  // Initialize research SSE functionality with enhanced error handling
   const research = useResearchSSE({
     onComplete: (finalReport) => {
       console.log('[Chat Context] Research completed:', finalReport);
@@ -70,13 +78,24 @@ export function ChatProvider({ children }: ChatProviderProps) {
         };
         setMessages(prev => [...prev, researchMessage]);
       }
+      // Clear streaming state when complete
+      setStreamingState(prev => ({
+        isStreaming: false,
+        content: '',
+        connectionState: 'disconnected',
+        lastActivity: new Date(),
+        retryCount: 0
+      }));
     },
     onError: (error) => {
       console.error('[Chat Context] Research error:', error);
       setStreamingState(prev => ({
         ...prev,
         error: error,
-        connectionState: 'failed'
+        connectionState: 'failed',
+        isStreaming: false,
+        lastActivity: new Date(),
+        retryCount: (prev.retryCount || 0) + 1
       }));
     },
     onProgress: (progress, phase) => {
@@ -84,178 +103,64 @@ export function ChatProvider({ children }: ChatProviderProps) {
       setStreamingState(prev => ({
         ...prev,
         content: `Research in progress: ${phase} (${Math.round(progress * 100)}%)`,
-        connectionState: 'connected'
+        connectionState: 'connected',
+        lastActivity: new Date(),
+        error: undefined // Clear any previous errors on successful progress
       }));
     },
   });
   
-  // Use refs to track active streaming to prevent memory leaks
-  const activeStreamRef = useRef<{ abort: () => void } | null>(null);
-  const chatIdRef = useRef<string>('default');
-
-  const sendMessage = async (content: string) => {
-    // If in research mode, redirect to research query
-    if (isResearchMode) {
-      await sendResearchQuery(content);
-      return;
-    }
-
-    // Abort any existing stream
-    if (activeStreamRef.current) {
-      activeStreamRef.current.abort();
-      activeStreamRef.current = null;
-    }
-
+  // Enhanced message sending with better error handling and retry logic
+  const sendMessage = async (content: string, retryCount: number = 0) => {
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
-      content,
-      role: 'user',
-      timestamp: new Date()
-    };
-    
-    setMessages(prev => [...prev, userMessage]);
-    setIsWaitingForResponse(true);
-    
-    try {
-      // Start real SSE streaming
-      await handleRealStreamingResponse(content);
-    } catch (error) {
-      console.error('Error sending message:', error);
-      setStreamingState({
-        isStreaming: false,
-        content: '',
-        error: error instanceof Error ? error.message : 'Failed to send message',
-        connectionState: 'failed'
-      });
-      setIsWaitingForResponse(false);
-    }
-  };
-
-  const sendResearchQuery = async (query: string) => {
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      content: query,
+      content: content,
       role: 'user',
       timestamp: new Date(),
       isResearchQuery: true
     };
     
-    setMessages(prev => [...prev, userMessage]);
-    setIsWaitingForResponse(false);
+    // Only add the user message if it's not a retry
+    if (retryCount === 0) {
+      setMessages(prev => [...prev, userMessage]);
+    }
     
     try {
-      await research.startResearch(query);
+      await research.startResearch(content);
       
       // Update streaming state to show research is starting
-      setStreamingState({
+      setStreamingState(prev => ({
         isStreaming: true,
         content: 'Starting multi-agent research...',
-        connectionState: 'connecting'
-      });
+        connectionState: 'connecting',
+        lastActivity: new Date(),
+        retryCount: 0,
+        error: undefined
+      }));
     } catch (error) {
       console.error('Error starting research:', error);
-      setStreamingState({
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start research';
+      
+      setStreamingState(prev => ({
         isStreaming: false,
         content: '',
-        error: error instanceof Error ? error.message : 'Failed to start research',
-        connectionState: 'failed'
-      });
-    }
-  };
-
-  const handleRealStreamingResponse = async (message: string) => {
-    let aborted = false;
-    let accumulatedContent = '';
-    
-    // Create abort controller for cleanup
-    const abortController = {
-      abort: () => {
-        aborted = true;
-      }
-    };
-    activeStreamRef.current = abortController;
-    
-    try {
-      setIsWaitingForResponse(false);
-      setStreamingState({ 
-        isStreaming: true, 
-        content: '',
-        connectionState: 'connecting'
-      });
-      
-      // Start streaming from the real API
-      const streamGenerator = streamChatResponse(message, {
-        chatId: chatIdRef.current,
-        userId: user?.id, // Pass authenticated user ID
-        onError: (error) => {
-          console.error('[Chat Context] Streaming error:', error);
-        }
-      });
-      
-      setStreamingState(prev => ({ 
-        ...prev, 
-        connectionState: 'connected' 
+        error: errorMessage,
+        connectionState: 'failed',
+        lastActivity: new Date(),
+        retryCount: retryCount + 1
       }));
       
-      for await (const chunk of streamGenerator) {
-        if (aborted) {
-          break;
-        }
-        
-        // Error handling is done by the streamChatResponse function itself
-        
-        if (chunk.isComplete) {
-          // Complete the streaming
-          const assistantMessage: ChatMessage = {
-            id: Date.now().toString(),
-            content: accumulatedContent,
-            role: 'assistant',
-            timestamp: new Date()
-          };
-          
-          setMessages(prev => [...prev, assistantMessage]);
-          setStreamingState({ 
-            isStreaming: false, 
-            content: '',
-            connectionState: 'disconnected'
-          });
-          return;
-        }
-        
-        // Update streaming content
-        if (chunk.content) {
-          accumulatedContent += chunk.content;
-          setStreamingState(prev => ({
-            ...prev,
-            content: prev.content + chunk.content
-          }));
-        }
-      }
-      
-    } catch (error) {
-      if (!aborted) {
-        console.error('Streaming error:', error);
-        setStreamingState({
-          isStreaming: false,
-          content: accumulatedContent,
-          error: error instanceof Error ? error.message : 'Streaming failed',
-          connectionState: 'failed'
-        });
-      }
-    } finally {
-      if (activeStreamRef.current === abortController) {
-        activeStreamRef.current = null;
+      // Auto-retry for certain types of errors (network issues, etc.)
+      if (retryCount < 2 && (errorMessage.includes('network') || errorMessage.includes('timeout'))) {
+        console.log(`[Chat Context] Auto-retrying message send (attempt ${retryCount + 2}/3)`);
+        setTimeout(() => {
+          sendMessage(content, retryCount + 1);
+        }, Math.pow(2, retryCount) * 1000); // Exponential backoff
       }
     }
   };
 
   const clearMessages = () => {
-    // Abort any active streaming
-    if (activeStreamRef.current) {
-      activeStreamRef.current.abort();
-      activeStreamRef.current = null;
-    }
-    
     // Stop any active research
     if (research.isResearchActive) {
       research.stopResearch();
@@ -265,35 +170,41 @@ export function ChatProvider({ children }: ChatProviderProps) {
     setStreamingState({
       isStreaming: false,
       content: '',
-      connectionState: 'disconnected'
+      connectionState: 'disconnected',
+      lastActivity: new Date(),
+      retryCount: 0,
+      error: undefined
     });
-    setIsWaitingForResponse(false);
   };
   
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (activeStreamRef.current) {
-        activeStreamRef.current.abort();
-        activeStreamRef.current = null;
-      }
-    };
+  // Add retry functionality for failed messages
+  const retryLastMessage = useCallback(() => {
+    const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+    if (lastUserMessage) {
+      console.log('[Chat Context] Retrying last message:', lastUserMessage.content);
+      sendMessage(lastUserMessage.content, streamingState.retryCount || 0);
+    }
+  }, [messages, streamingState.retryCount]);
+  
+  // Enhanced clear error function
+  const clearError = useCallback(() => {
+    setStreamingState(prev => ({
+      ...prev,
+      error: undefined,
+      retryCount: 0
+    }));
   }, []);
 
   const value: ChatContextType = {
-    // Chat functionality
+    // Research-only functionality (chat-api removed)
     messages,
     streamingState,
-    isWaitingForResponse,
     sendMessage,
     clearMessages,
     connectionStatus: streamingState.connectionState || 'disconnected',
-    
-    // Research mode functionality
-    isResearchMode,
-    setIsResearchMode,
     research,
-    sendResearchQuery
+    retryLastMessage,
+    clearError
   };
 
   return (

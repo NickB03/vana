@@ -90,7 +90,7 @@ export function ChatMessages() {
 
   // Show message history when there are messages
   return (
-    <ScrollArea className="h-full">
+    <ScrollArea className="h-full" data-testid="chat-messages">
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {messages.map((message) => 
           renderResearchMessage(message)

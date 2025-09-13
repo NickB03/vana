@@ -94,7 +94,7 @@ async def brave_web_search_async(
         params = {
             "q": query,
             "count": count,
-            "text_decorations": False,
+            "text_decorations": "false",  # API expects string, not boolean
             "search_lang": "en",
         }
 
@@ -137,7 +137,7 @@ def brave_web_search_function(query: str, count: int = 5, **kwargs) -> dict[str,
     try:
         # Check if we're already in an async context
         try:
-            asyncio.get_running_loop()
+            loop = asyncio.get_running_loop()
             # We're in an async context, need to run in thread pool
             import concurrent.futures
 
@@ -146,11 +146,18 @@ def brave_web_search_function(query: str, count: int = 5, **kwargs) -> dict[str,
                 new_loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(new_loop)
                 try:
-                    return new_loop.run_until_complete(
+                    result = new_loop.run_until_complete(
                         brave_web_search_async(query, count, **kwargs)
                     )
+                    return result
+                except Exception as e:
+                    logger.error(f"Brave async search thread error: {e}")
+                    return {"error": str(e), "query": query, "results": []}
                 finally:
-                    new_loop.close()
+                    try:
+                        new_loop.close()
+                    except Exception:
+                        pass  # Ignore close errors
 
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 future = executor.submit(run_async)
