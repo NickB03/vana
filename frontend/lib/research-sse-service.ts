@@ -73,6 +73,7 @@ const ErrorEventSchema = z.object({
 });
 
 export type AgentStatus = z.infer<typeof AgentStatusSchema>;
+export type { SSEAgentStatus } from '@/types/api';
 export type ResearchProgressEvent = z.infer<typeof ResearchProgressEventSchema>;
 export type ConnectionEvent = z.infer<typeof ConnectionEventSchema>;
 export type ResearchStartedEvent = z.infer<typeof ResearchStartedEventSchema>;
@@ -175,7 +176,7 @@ class SSEConnectionManager {
   private connectionListeners: ((status: 'connected' | 'disconnected' | 'error') => void)[] = [];
   private lastConnectionUrl: string | null = null;
   private lastConnectionHeaders: Record<string, string> | undefined = undefined;
-  private reconnectTimer: NodeJS.Timeout | null = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private isExplicitDisconnect = false;
 
   // Circuit breaker for connection failures
@@ -193,17 +194,8 @@ class SSEConnectionManager {
       console.log('[Research SSE] Connecting to:', url, headers ? 'with auth' : 'without auth');
 
       // Create EventSource with proper configuration
-      if (headers?.Authorization) {
-        // EventSource doesn't support custom headers directly
-        // We need to pass auth via URL params or rely on cookies
-        const authUrl = new URL(url, window.location.origin);
-        authUrl.searchParams.set('auth', encodeURIComponent(headers.Authorization));
-        this.eventSource = new EventSource(authUrl.toString());
-      } else {
-        this.eventSource = new EventSource(url, {
-          withCredentials: true // Include cookies for authentication
-        });
-      }
+      // Always rely on proxy/cookies for auth with SSE to avoid token leakage
+      this.eventSource = new EventSource(url, { withCredentials: true });
 
       this.eventSource.onopen = (event) => {
         console.log('[Research SSE] Connection opened successfully', {
@@ -511,7 +503,11 @@ export class ResearchSSEService {
   private listeners = new Map<string, Set<(state: ResearchSessionState) => void>>();
   private baseUrl: string;
 
-  constructor(baseUrl: string = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000') {
+  constructor(
+    baseUrl: string = process.env.NEXT_PUBLIC_API_URL
+      || process.env.NEXT_PUBLIC_DEBUG_ENDPOINT
+      || ''
+  ) {
     this.baseUrl = baseUrl;
 
     // Set up global event handling with error protection
@@ -556,17 +552,14 @@ export class ResearchSSEService {
         }
 
         // Fallback to localStorage - check multiple possible token keys
-        let token = localStorage.getItem('vana_auth_token') || 
-                   localStorage.getItem('vana_auth_auth_token') ||
-                   localStorage.getItem('auth_token');
+        let token = localStorage.getItem('vana_auth_token')
+                 || localStorage.getItem('auth_token');
         
         if (token) {
           headers.Authorization = `Bearer ${token}`;
           console.log('[Research SSE] Using localStorage token for auth');
         } else {
           console.warn('[Research SSE] No authentication token found in any storage location');
-          // Log all available localStorage keys for debugging
-          console.warn('[Research SSE] Available localStorage keys:', Object.keys(localStorage).filter(k => k.includes('auth')));
         }
       } catch (error) {
         console.warn('[Research SSE] Could not get auth token:', error);
@@ -687,7 +680,7 @@ export class ResearchSSEService {
           console.log('[Research SSE] Research started for session:', sessionId);
           break;
 
-        case 'research_progress':
+        case 'research_progress': {
           // If the server marks the progress event as error, reflect it immediately
           if ((event as any).status === 'error') {
             sessionState.status = 'error';
@@ -707,6 +700,7 @@ export class ResearchSSEService {
 
           console.log('[Research SSE] Progress update:', Math.round((event.overall_progress || 0) * 100) + '%', event.current_phase);
           break;
+        }
 
         case 'research_complete':
           sessionState.status = event.status === 'completed' ? 'completed' : 'error';

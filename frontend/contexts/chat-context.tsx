@@ -3,18 +3,14 @@
 import React, { createContext, useContext, useState, ReactNode, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useResearchSSE, UseResearchSSEResult } from '@/hooks/use-research-sse';
+import type { ChatMessage as ApiChatMessage } from '@/types/api';
 
 // ============================================================================
 // Type Definitions (simplified - using only research functionality)
 // ============================================================================
 
-type ChatMessage = {
-  id: string;
-  content: string;
-  role: 'user' | 'assistant';
-  timestamp: Date;
-  isResearchQuery?: boolean;
-  isResearchResult?: boolean;
+type ChatMessage = ApiChatMessage & {
+  isResearchQuery?: boolean; // local-only
 };
 
 interface StreamingState {
@@ -127,7 +123,11 @@ export function ChatProvider({ children }: ChatProviderProps) {
               };
               setMessages(prev => {
                 // Check if we already have this message to avoid duplicates
-                const exists = prev.some(msg => msg.content === content && msg.agentType === agentType);
+                const exists = prev.some(msg =>
+                  msg.isAgentResponse === true &&
+                  msg.agentType === agentType &&
+                  msg.content === content
+                );
                 return exists ? prev : [...prev, agentMessage];
               });
             }

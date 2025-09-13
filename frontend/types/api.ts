@@ -232,6 +232,17 @@ export interface AgentStatus {
   user_id?: string;
 }
 
+// SSE-specific agent status (for streaming research)
+export interface SSEAgentStatus {
+  agent_id: string;
+  agent_type: string;
+  name: string;
+  status: 'waiting' | 'current' | 'completed' | 'error';
+  progress: number;
+  current_task?: string | null;
+  error?: string | null;
+}
+
 export interface TeamStatus {
   session_id: string;
   team_status: 'initializing' | 'active' | 'paused' | 'completed' | 'error';

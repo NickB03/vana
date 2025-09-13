@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import type { ChatMessage } from '@/types/api';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChatHeader } from './chat-header';
 import { MessageBubble } from './message-bubble';
@@ -9,7 +10,6 @@ import { StreamingMessage } from './streaming-message';
 import { useChatContext } from '@/contexts/chat-context';
 import { ResearchProgressPanel } from '@/components/research/research-progress-panel';
 import { AgentStatusDisplay } from '@/components/research/agent-status-display';
-import { useAgentStatusTracker } from '@/hooks/use-research-sse';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Search, Bot, CheckCircle } from 'lucide-react';
@@ -114,9 +114,11 @@ export function ChatMessages() {
   return (
     <ScrollArea className="h-full" data-testid="chat-messages">
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-        {messages.map((message) => 
-          renderResearchMessage(message)
-        )}
+        {messages.map((message) => (
+          <React.Fragment key={message.id}>
+            {renderResearchMessage(message)}
+          </React.Fragment>
+        ))}
         
         {/* Show research progress panel if in research mode and research is active */}
         {isResearchMode && research.isResearchActive && research.sessionState && (

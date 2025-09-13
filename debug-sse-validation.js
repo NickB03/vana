@@ -87,6 +87,7 @@ const invalidStatuses = testData.agents
 
 if (invalidStatuses.length > 0) {
   console.log('❌ Invalid agent status values found:', invalidStatuses);
+  process.exitCode = 1;
 } else {
   console.log('✅ All agent statuses are valid');
 }
@@ -97,6 +98,7 @@ const invalidProgress = testData.agents
 
 if (invalidProgress.length > 0) {
   console.log('❌ Invalid progress values:', invalidProgress.map(a => a.progress));
+  process.exitCode = 1;
 } else {
   console.log('✅ All progress values are valid (0-1 range)');
 }
