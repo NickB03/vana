@@ -73,6 +73,28 @@ export function ChatMessages() {
       );
     }
     
+    if (message.isAgentResponse) {
+      return (
+        <div className="space-y-4">
+          <Card className="border-blue-200 bg-blue-50 dark:bg-blue-900/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
+                <h3 className="font-medium text-sm">
+                  {message.agentType ? `${message.agentType} Agent` : 'Research Agent'}
+                </h3>
+              </div>
+              <div className="prose prose-sm max-w-none dark:prose-invert">
+                <div className="whitespace-pre-wrap text-sm">
+                  {message.content}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+    
     return <MessageBubble key={message.id} message={message} />;
   };
 

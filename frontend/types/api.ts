@@ -139,6 +139,9 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   timestamp: Date;
   user_id?: string; // For authenticated chats
+  isResearchResult?: boolean; // For final research reports
+  isAgentResponse?: boolean; // For individual agent responses
+  agentType?: string; // The type of agent that generated this response
 }
 
 export interface CreateChatMessageRequest {

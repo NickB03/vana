@@ -107,6 +107,33 @@ export function ChatProvider({ children }: ChatProviderProps) {
         lastActivity: new Date(),
         error: undefined // Clear any previous errors on successful progress
       }));
+      
+      // Also handle partial results from agents
+      const sessionState = research.sessionState;
+      if (sessionState?.partialResults) {
+        Object.entries(sessionState.partialResults).forEach(([agentType, result]) => {
+          if (result && typeof result === 'object' && 'content' in result) {
+            console.log(`[Chat Context] Agent ${agentType} response:`, result.content);
+            // Add agent response as a message if it's substantial content
+            const content = result.content as string;
+            if (content && content.length > 100) {
+              const agentMessage: ChatMessage = {
+                id: `agent-${agentType}-${Date.now()}`,
+                content: content,
+                role: 'assistant',
+                timestamp: new Date(),
+                isAgentResponse: true,
+                agentType: agentType
+              };
+              setMessages(prev => {
+                // Check if we already have this message to avoid duplicates
+                const exists = prev.some(msg => msg.content === content && msg.agentType === agentType);
+                return exists ? prev : [...prev, agentMessage];
+              });
+            }
+          }
+        });
+      }
     },
   });
   
