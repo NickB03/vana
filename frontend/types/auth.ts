@@ -217,7 +217,9 @@ export interface AuthContextType extends AuthState {
 /**
  * UseAuth hook return type
  */
-export interface UseAuthReturn extends AuthContextType {}
+export interface UseAuthReturn extends AuthContextType {
+  // Extending AuthContextType with all authentication methods
+}
 
 /**
  * UseAuthForm hook return type for form handling

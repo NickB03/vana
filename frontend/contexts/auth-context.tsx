@@ -51,6 +51,63 @@ export interface User {
   }>;
 }
 
+// ============================================================================
+// User Data Transformation Utilities
+// ============================================================================
+
+/**
+ * Transform stored user data from AuthService to match the expected User interface
+ * Handles compatibility between different user data formats
+ */
+function transformStoredUser(storedUser: any): User | null {
+  if (!storedUser) return null;
+
+  try {
+    return {
+      id: storedUser.id || storedUser.user_id || '',
+      email: storedUser.email || '',
+      username: storedUser.username || storedUser.name || storedUser.email?.split('@')[0] || 'user',
+      first_name: storedUser.first_name,
+      last_name: storedUser.last_name,
+      full_name: storedUser.full_name || storedUser.name,
+      is_active: storedUser.is_active,
+      is_verified: storedUser.is_verified || storedUser.isEmailVerified,
+      is_superuser: storedUser.is_superuser,
+      google_cloud_identity: storedUser.google_cloud_identity,
+      last_login: storedUser.last_login || storedUser.lastLogin,
+      created_at: storedUser.created_at || storedUser.createdAt,
+      updated_at: storedUser.updated_at,
+      roles: transformRoles(storedUser.roles),
+    };
+  } catch (error) {
+    console.error('Error transforming stored user data:', error);
+    return null;
+  }
+}
+
+/**
+ * Transform roles from various formats to the expected format
+ */
+function transformRoles(roles: any): User['roles'] {
+  if (!roles) return undefined;
+  
+  // If roles is already in the expected format
+  if (Array.isArray(roles) && typeof roles[0] === 'object' && roles[0]?.id) {
+    return roles;
+  }
+  
+  // If roles is a simple string array
+  if (Array.isArray(roles) && typeof roles[0] === 'string') {
+    return roles.map((roleName: string, index: number) => ({
+      id: index + 1,
+      name: roleName,
+      is_active: true,
+    }));
+  }
+  
+  return undefined;
+}
+
 export interface AuthContextType {
   // State
   isAuthenticated: boolean;
@@ -156,8 +213,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Update state
       setToken(response.tokens.access_token);
-      setUser(response.user);
-      setIsAuthenticated(true);
+      const transformedUser = transformStoredUser(response.user);
+      if (transformedUser) {
+        setUser(transformedUser);
+        setIsAuthenticated(true);
+      } else {
+        throw new Error('Invalid user data received from server');
+      }
       
       return response;
     } catch (err) {
@@ -259,8 +321,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           
           if (isValidToken) {
             setToken(storedToken);
-            setUser(storedUser);
-            setIsAuthenticated(true);
+            const transformedUser = transformStoredUser(storedUser);
+            if (transformedUser) {
+              setUser(transformedUser);
+              setIsAuthenticated(true);
+            } else {
+              console.error('Failed to transform stored user data, clearing session');
+              await AuthService.logout();
+            }
           } else {
             // Clear invalid session
             await AuthService.logout();
@@ -304,7 +372,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         try {
           const userData = JSON.parse(event.newValue);
-          setUser(userData);
+          const transformedUser = transformStoredUser(userData);
+          if (transformedUser) {
+            setUser(transformedUser);
+          } else {
+            console.error('Failed to transform user data from storage change');
+          }
         } catch (err) {
           console.error('Failed to parse user data:', err);
         }

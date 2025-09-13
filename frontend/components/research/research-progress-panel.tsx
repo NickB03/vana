@@ -32,6 +32,11 @@ import { AgentStatusDisplay, AgentStatusBar } from "./agent-status-display";
 // Type Definitions
 // ============================================================================
 
+interface PartialResultContent {
+  content: string;
+  [key: string]: unknown;
+}
+
 interface ResearchProgressPanelProps {
   sessionState: ResearchSessionState | null;
   isLoading: boolean;
@@ -86,6 +91,19 @@ const getPhaseProgress = (currentPhase: string) => {
   const index = RESEARCH_PHASES.findIndex(phase => phase.key === currentPhase);
   return index >= 0 ? ((index + 1) / RESEARCH_PHASES.length) * 100 : 0;
 };
+
+// ============================================================================
+// Type Guards
+// ============================================================================
+
+function isPartialResultWithContent(obj: unknown): obj is PartialResultContent {
+  return (
+    obj !== null && 
+    typeof obj === 'object' && 
+    'content' in obj && 
+    typeof (obj as PartialResultContent).content === 'string'
+  );
+}
 
 // ============================================================================
 // Status Configuration
@@ -206,7 +224,7 @@ function ProgressHeader({ sessionState, isLoading, error, onStart, onStop, onRet
 
 function PhaseIndicator({ currentPhase, progress, status }: PhaseIndicatorProps) {
   const phaseInfo = getPhaseInfo(currentPhase);
-  const phaseProgress = getPhaseProgress(currentPhase);
+  const _phaseProgress = getPhaseProgress(currentPhase);
   const isActive = status === 'running' || status === 'connected';
   
   return (
@@ -348,7 +366,7 @@ function ResultsSection({ partialResults, finalReport, status }: ResultsSectionP
             <div className="space-y-3">
               {(() => {
                 const result = partialResults?.[selectedSection];
-                if (result && typeof result === 'object' && result.content) {
+                if (isPartialResultWithContent(result)) {
                   return (
                     <>
                       <h4 className="font-medium">

@@ -18,8 +18,6 @@ export function ChatMessages() {
   const { 
     messages, 
     streamingState, 
-    isWaitingForResponse, 
-    isResearchMode, 
     research 
   } = useChatContext();
   
@@ -28,7 +26,7 @@ export function ChatMessages() {
 
   // Helper to render research-specific message content
   const renderResearchMessage = (message: ChatMessage) => {
-    if (message.isResearchQuery) {
+    if ('isResearchQuery' in message && message.isResearchQuery) {
       return (
         <div className="space-y-4">
           <MessageBubble key={message.id} message={message} />
@@ -42,10 +40,13 @@ export function ChatMessages() {
                     Multi-Agent Research Active
                   </Badge>
                 </div>
-                <AgentStatusDisplay 
-                  sessionState={research.sessionState}
+                {/* <AgentStatusDisplay 
+                  sessionState={research.sessionState as any}
                   className="mb-4"
-                />
+                /> */}
+                <div className="text-sm text-gray-600 mb-4">
+                  Research in progress...
+                </div>
               </CardContent>
             </Card>
           )}
@@ -100,7 +101,7 @@ export function ChatMessages() {
 
 
   // Show welcome screen when no messages
-  if (messages.length === 0 && !isWaitingForResponse && !streamingState.isStreaming) {
+  if (messages.length === 0 && !streamingState.isStreaming) {
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 flex items-center justify-center">
@@ -121,7 +122,7 @@ export function ChatMessages() {
         ))}
         
         {/* Show research progress panel if in research mode and research is active */}
-        {isResearchMode && research.isResearchActive && research.sessionState && (
+        {research.isResearchActive && research.sessionState && (
           <Card className="border-blue-200 bg-blue-50 dark:bg-blue-900/20">
             <CardContent className="p-4">
               <ResearchProgressPanel 
@@ -137,7 +138,7 @@ export function ChatMessages() {
         )}
         
         {/* Show loading skeleton while waiting for response */}
-        {isWaitingForResponse && <MessageSkeleton />}
+        {streamingState.isStreaming && <MessageSkeleton />}
         
         {/* Show streaming message */}
         {(streamingState.isStreaming || streamingState.error) && (

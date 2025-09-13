@@ -277,9 +277,9 @@ class SSEConnectionManager {
 
       if (eventData.type === 'research_progress') {
         // Manually validate and normalize the payload (avoid Zod to prevent bundle/runtime issues)
-        const ed: any = eventData;
+        const ed = eventData as Record<string, unknown>;
         const rawAgents = Array.isArray(ed.agents) ? ed.agents : [];
-        const agents: AgentStatus[] = rawAgents.map((a: any) => ({
+        const agents: AgentStatus[] = rawAgents.map((a: Record<string, unknown>) => ({
           agent_id: String(a?.agent_id ?? 'unknown'),
           agent_type: String(a?.agent_type ?? 'unknown'),
           name: String(a?.name ?? 'Agent'),
@@ -299,7 +299,7 @@ class SSEConnectionManager {
           timestamp: typeof ed.timestamp === 'string' ? ed.timestamp : new Date().toISOString(),
         };
       } else if (eventData.type === 'connection') {
-        let pr: any;
+        let pr: z.SafeParseReturnType<unknown, z.infer<typeof ConnectionEventSchema>>;
         try {
           pr = ConnectionEventSchema.safeParse(data);
         } catch (e) {
@@ -319,7 +319,7 @@ class SSEConnectionManager {
           };
         }
       } else if (eventData.type === 'research_started') {
-        let pr: any;
+        let pr: z.SafeParseReturnType<unknown, z.infer<typeof ResearchStartedEventSchema>>;
         try {
           pr = ResearchStartedEventSchema.safeParse(data);
         } catch (e) {
@@ -338,7 +338,7 @@ class SSEConnectionManager {
           };
         }
       } else if (eventData.type === 'research_complete') {
-        let pr: any;
+        let pr: z.SafeParseReturnType<unknown, z.infer<typeof ResearchCompleteEventSchema>>;
         try {
           pr = ResearchCompleteEventSchema.safeParse(data);
         } catch (e) {
@@ -362,7 +362,7 @@ class SSEConnectionManager {
           console.log('[Research SSE] Created fallback event with final_report:', event.final_report ? 'present' : 'missing');
         }
       } else if (eventData.type === 'error') {
-        let pr: any;
+        let pr: z.SafeParseReturnType<unknown, z.infer<typeof ErrorEventSchema>>;
         try {
           pr = ErrorEventSchema.safeParse(data);
         } catch (e) {
@@ -575,8 +575,8 @@ export class ResearchSSEService {
         }
 
         // Fallback to localStorage - check multiple possible token keys
-        let token = localStorage.getItem('vana_auth_token')
-                 || localStorage.getItem('auth_token');
+        const token = localStorage.getItem('vana_auth_token')
+                   || localStorage.getItem('auth_token');
         
         if (token) {
           headers.Authorization = `Bearer ${token}`;
@@ -705,7 +705,7 @@ export class ResearchSSEService {
 
         case 'research_progress': {
           // If the server marks the progress event as error, reflect it immediately
-          if ((event as any).status === 'error') {
+          if ('status' in event && (event as ResearchProgressEvent).status === 'error') {
             sessionState.status = 'error';
           } else {
             sessionState.status = 'running';
@@ -740,7 +740,7 @@ export class ResearchSSEService {
           break;
 
         default:
-          console.warn('[Research SSE] Unknown event type:', (event as any).type);
+          console.warn('[Research SSE] Unknown event type:', 'type' in event ? (event as { type: string }).type : 'unknown');
           return; // Don't update if unknown event type
       }
 

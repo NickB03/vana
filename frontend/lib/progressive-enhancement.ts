@@ -8,12 +8,30 @@
  * - User preferences
  */
 
+import type { NetworkNavigator } from '@/types/research'
+
 // ============================================================================
 // Network Quality Detection
 // ============================================================================
 
 export type NetworkQuality = 'fast' | 'moderate' | 'slow' | 'offline';
 export type ConnectionType = 'wifi' | 'cellular' | 'ethernet' | 'unknown';
+
+interface NetworkInformation {
+  effectiveType?: '4g' | '3g' | '2g' | 'slow-2g';
+  downlink?: number;
+  rtt?: number;
+  saveData?: boolean;
+  type?: 'wifi' | 'cellular' | 'ethernet' | 'bluetooth' | 'unknown';
+  addEventListener?: (event: string, handler: () => void) => void;
+  removeEventListener?: (event: string, handler: () => void) => void;
+}
+
+type NavigatorWithConnection = Navigator & {
+  connection?: NetworkInformation;
+  mozConnection?: NetworkInformation;
+  webkitConnection?: NetworkInformation;
+};
 
 interface NetworkInfo {
   quality: NetworkQuality;
@@ -42,7 +60,9 @@ export function getNetworkInfo(): NetworkInfo {
   }
 
   // Check if Network Information API is available
-  const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+  const connection = (navigator as NavigatorWithConnection).connection || 
+    (navigator as NavigatorWithConnection).mozConnection || 
+    (navigator as NavigatorWithConnection).webkitConnection;
   
   if (!connection) {
     return defaultInfo;
@@ -242,7 +262,7 @@ export class ConnectionQualityMonitor {
       window.addEventListener('offline', this.handleNetworkChange);
       
       // Listen for connection changes if supported
-      const connection = (navigator as any).connection;
+      const connection = (navigator as NavigatorWithConnection).connection;
       if (connection) {
         connection.addEventListener('change', this.handleNetworkChange);
       }
@@ -269,7 +289,7 @@ export class ConnectionQualityMonitor {
       window.removeEventListener('online', this.handleNetworkChange);
       window.removeEventListener('offline', this.handleNetworkChange);
       
-      const connection = (navigator as any).connection;
+      const connection = (navigator as NavigatorWithConnection).connection;
       if (connection) {
         connection.removeEventListener('change', this.handleNetworkChange);
       }
@@ -401,7 +421,7 @@ export function getAdaptiveClasses(settings: EnhancementSettings): {
 /**
  * Debounce function for throttling updates based on network quality
  */
-export function createNetworkAwareDebounce<T extends (...args: any[]) => any>(
+export function createNetworkAwareDebounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   settings: EnhancementSettings
 ): T {
