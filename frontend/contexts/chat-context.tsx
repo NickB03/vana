@@ -104,8 +104,10 @@ export function ChatProvider({ children }: ChatProviderProps) {
         error: undefined // Clear any previous errors on successful progress
       }));
       
-      // Also handle partial results from agents
+      // Handle both partial results and agent progress updates
       const sessionState = research.sessionState;
+      
+      // Show partial results when available
       if (sessionState?.partialResults) {
         Object.entries(sessionState.partialResults).forEach(([agentType, result]) => {
           if (result && typeof result === 'object' && 'content' in result) {
@@ -132,6 +134,49 @@ export function ChatProvider({ children }: ChatProviderProps) {
               });
             }
           }
+        });
+      }
+      
+      // Show agent progress updates when agents are actively working
+      if (sessionState?.agents) {
+        const activeAgents = sessionState.agents.filter(agent => 
+          agent.status === 'current' && agent.progress > 0
+        );
+        
+        activeAgents.forEach(agent => {
+          const progressMessage = `🤖 **${agent.name}** is actively working...\n\n` +
+            `📋 **Current Task:** ${agent.current_task || 'Processing'}\n` +
+            `📊 **Progress:** ${Math.round(agent.progress * 100)}%\n` +
+            `🔄 **Status:** ${agent.status}`;
+          
+          const agentProgressId = `agent-progress-${agent.agent_type}-${agent.agent_id}`;
+          
+          setMessages(prev => {
+            // Check if we already have a progress message for this agent
+            const existingIndex = prev.findIndex(msg => msg.id === agentProgressId);
+            
+            if (existingIndex >= 0) {
+              // Update existing progress message
+              const updated = [...prev];
+              updated[existingIndex] = {
+                ...updated[existingIndex],
+                content: progressMessage,
+                timestamp: new Date()
+              };
+              return updated;
+            } else {
+              // Create new progress message
+              const progressMsg: ChatMessage = {
+                id: agentProgressId,
+                content: progressMessage,
+                role: 'assistant',
+                timestamp: new Date(),
+                isAgentResponse: true,
+                agentType: agent.agent_type
+              };
+              return [...prev, progressMsg];
+            }
+          });
         });
       }
     },
