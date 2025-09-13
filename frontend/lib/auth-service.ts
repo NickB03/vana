@@ -11,6 +11,7 @@
 
 import { apiClient } from '@/lib/api-client';
 import { z } from 'zod';
+import type { User } from '@/types/auth';
 
 // ============================================================================
 // Types and Schemas
@@ -19,11 +20,13 @@ import { z } from 'zod';
 const AuthResponseSchema = z.object({
   user: z.object({
     id: z.union([z.string(), z.number()]).transform(String),
+    user_id: z.union([z.string(), z.number()]).transform(String).optional(),
     email: z.string().email(),
     username: z.string(),
     first_name: z.string().optional(),
     last_name: z.string().optional(),
     full_name: z.string().optional(),
+    name: z.string().optional(),
     is_active: z.boolean().optional(),
     is_verified: z.boolean().optional(),
     is_superuser: z.boolean().optional(),
@@ -31,6 +34,14 @@ const AuthResponseSchema = z.object({
     last_login: z.string().nullable().optional(),
     created_at: z.string().optional(),
     updated_at: z.string().optional(),
+    preferences: z.record(z.any()).optional(),
+    subscription_tier: z.enum(['free', 'pro', 'enterprise']).optional(),
+    avatar: z.string().optional(),
+    profile: z.object({
+      avatar_url: z.string().optional(),
+      bio: z.string().optional(),
+      location: z.string().optional(),
+    }).optional(),
     roles: z.array(z.object({
       id: z.number(),
       name: z.string(),
@@ -46,6 +57,8 @@ const AuthResponseSchema = z.object({
         created_at: z.string().optional(),
       })).optional(),
     })).optional(),
+    role_names: z.array(z.string()).optional(),
+    permissions: z.array(z.string()).optional(),
   }),
   tokens: z.object({
     access_token: z.string(),
@@ -55,21 +68,7 @@ const AuthResponseSchema = z.object({
   }),
 });
 
-const UserSchema = z.object({
-  id: z.string(),
-  email: z.string().email(),
-  name: z.string(),
-  avatar: z.string().optional(),
-  roles: z.array(z.string()).optional(),
-  permissions: z.array(z.string()).optional(),
-  createdAt: z.string().optional(),
-  lastLogin: z.string().optional(),
-  isEmailVerified: z.boolean().optional(),
-  preferences: z.record(z.any()).optional(),
-});
-
 export type AuthResponse = z.infer<typeof AuthResponseSchema>;
-export type User = z.infer<typeof UserSchema>;
 
 export interface LoginCredentials {
   email: string;
@@ -356,13 +355,15 @@ export class AuthService {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
-      schema: UserSchema,
     });
 
-    // Update stored user data
-    this.setUser(response);
+    // Transform response to unified User interface
+    const user = this.transformApiUserToUnified(response);
     
-    return response;
+    // Update stored user data
+    this.setUser(user);
+    
+    return user;
   }
 
   /**
@@ -378,13 +379,15 @@ export class AuthService {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
-      schema: UserSchema,
     });
 
-    // Update stored user data
-    this.setUser(response);
+    // Transform response to unified User interface
+    const user = this.transformApiUserToUnified(response);
     
-    return response;
+    // Update stored user data
+    this.setUser(user);
+    
+    return user;
   }
 
   // ============================================================================
@@ -457,7 +460,7 @@ export class AuthService {
 
     try {
       const parsed = JSON.parse(userData);
-      return UserSchema.parse(parsed);
+      return this.transformApiUserToUnified(parsed);
     } catch {
       // Clear invalid user data
       getStorage().removeItem(STORAGE_KEYS.USER);
@@ -508,6 +511,58 @@ export class AuthService {
   }
 
   // ============================================================================
+  // Data Transformation Helpers
+  // ============================================================================
+
+  /**
+   * Transform API user response to unified User interface
+   */
+  private static transformApiUserToUnified(apiUser: any): User {
+    const userId = apiUser.id || apiUser.user_id || '';
+    return {
+      // Primary identifiers
+      user_id: userId,
+      id: userId,
+      
+      // Basic profile information
+      username: apiUser.username || apiUser.name || '',
+      email: apiUser.email || null,
+      
+      // Name fields
+      first_name: apiUser.first_name || null,
+      last_name: apiUser.last_name || null,
+      full_name: apiUser.full_name || apiUser.name || null,
+      name: apiUser.name || apiUser.full_name || apiUser.username || '',
+      
+      // Status and verification
+      is_active: apiUser.is_active,
+      is_verified: apiUser.is_verified || apiUser.isEmailVerified,
+      is_superuser: apiUser.is_superuser,
+      
+      // Authentication and security
+      google_cloud_identity: apiUser.google_cloud_identity || null,
+      last_login: apiUser.last_login || apiUser.lastLogin || null,
+      
+      // Timestamps
+      created_at: apiUser.created_at || apiUser.createdAt || new Date().toISOString(),
+      updated_at: apiUser.updated_at,
+      
+      // User preferences and settings
+      preferences: apiUser.preferences || {},
+      subscription_tier: apiUser.subscription_tier || 'free',
+      
+      // Profile customization
+      avatar: apiUser.avatar,
+      profile: apiUser.profile,
+      
+      // Authorization
+      roles: apiUser.roles,
+      role_names: apiUser.role_names || (apiUser.roles?.map((r: any) => r.name)),
+      permissions: apiUser.permissions,
+    };
+  }
+
+  // ============================================================================
   // Permission Helpers
   // ============================================================================
 
@@ -516,7 +571,11 @@ export class AuthService {
    */
   static hasRole(role: string): boolean {
     const user = this.getUser();
-    return user?.roles?.includes(role) ?? false;
+    // Check both role_names array and complex roles array
+    return (
+      user?.role_names?.includes(role) ||
+      user?.roles?.some(r => r.name === role)
+    ) ?? false;
   }
 
   /**
@@ -524,7 +583,13 @@ export class AuthService {
    */
   static hasPermission(permission: string): boolean {
     const user = this.getUser();
-    return user?.permissions?.includes(permission) ?? false;
+    // Check both simple permissions array and complex roles permissions
+    return (
+      user?.permissions?.includes(permission) ||
+      user?.roles?.some(role => 
+        role.permissions?.some(p => p.name === permission)
+      )
+    ) ?? false;
   }
 
   /**
@@ -532,9 +597,12 @@ export class AuthService {
    */
   static hasAnyRole(roles: string[]): boolean {
     const user = this.getUser();
-    if (!user?.roles) return false;
+    if (!user) return false;
     
-    return roles.some(role => user.roles!.includes(role));
+    return roles.some(role => (
+      user.role_names?.includes(role) ||
+      user.roles?.some(r => r.name === role)
+    ));
   }
 
   /**
@@ -542,9 +610,12 @@ export class AuthService {
    */
   static hasAllRoles(roles: string[]): boolean {
     const user = this.getUser();
-    if (!user?.roles) return false;
+    if (!user) return false;
     
-    return roles.every(role => user.roles!.includes(role));
+    return roles.every(role => (
+      user.role_names?.includes(role) ||
+      user.roles?.some(r => r.name === role)
+    ));
   }
 
   /**
@@ -552,7 +623,7 @@ export class AuthService {
    */
   static getUserRoles(): string[] {
     const user = this.getUser();
-    return user?.roles ?? [];
+    return user?.role_names ?? user?.roles?.map(r => r.name) ?? [];
   }
 
   /**
@@ -560,7 +631,13 @@ export class AuthService {
    */
   static getUserPermissions(): string[] {
     const user = this.getUser();
-    return user?.permissions ?? [];
+    const simplePermissions = user?.permissions ?? [];
+    const complexPermissions = user?.roles?.flatMap(role => 
+      role.permissions?.map(p => p.name) ?? []
+    ) ?? [];
+    
+    // Combine and deduplicate
+    return [...new Set([...simplePermissions, ...complexPermissions])];
   }
 }
 

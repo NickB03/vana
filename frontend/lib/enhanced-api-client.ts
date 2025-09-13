@@ -344,9 +344,13 @@ class EnhancedApiClient implements ApiClient {
   // Streaming Methods
   // ========================================================================
 
-  async createEventStream(endpoint: string, options?: ApiRequestOptions): Promise<Response> {
+  async createEventStream(endpoint: string, options?: ApiRequestOptions & { method?: 'GET' | 'POST'; body?: unknown }): Promise<Response> {
     const processedOptions = await this.interceptRequest(endpoint, options);
-    return this.baseClient.createEventStream(endpoint, processedOptions);
+    return this.baseClient.createEventStream(endpoint, {
+      headers: processedOptions.headers,
+      method: options?.method,
+      body: options?.body
+    });
   }
 
   // ========================================================================

@@ -15,69 +15,65 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo, useRef } from 'react';
 import { AuthService } from '@/lib/auth-service';
 import { useDebouncedStorage, type StorageChangeEvent } from '@/hooks/use-debounced-storage';
+import type { User } from '@/types/auth';
 
 // ============================================================================
 // Types
 // ============================================================================
-
-export interface User {
-  id: string;
-  email: string;
-  username: string;
-  first_name?: string;
-  last_name?: string;
-  full_name?: string;
-  is_active?: boolean;
-  is_verified?: boolean;
-  is_superuser?: boolean;
-  google_cloud_identity?: string | null;
-  last_login?: string | null;
-  created_at?: string;
-  updated_at?: string;
-  roles?: Array<{
-    id: number;
-    name: string;
-    description?: string;
-    is_active?: boolean;
-    created_at?: string;
-    permissions?: Array<{
-      id: number;
-      name: string;
-      description?: string;
-      resource: string;
-      action: string;
-      created_at?: string;
-    }>;
-  }>;
-}
 
 // ============================================================================
 // User Data Transformation Utilities
 // ============================================================================
 
 /**
- * Transform stored user data from AuthService to match the expected User interface
+ * Transform stored user data from AuthService to match the unified User interface
  * Handles compatibility between different user data formats
  */
 function transformStoredUser(storedUser: any): User | null {
   if (!storedUser) return null;
 
   try {
+    const userId = storedUser.id || storedUser.user_id || '';
     return {
-      id: storedUser.id || storedUser.user_id || '',
+      // Primary identifiers
+      user_id: userId,
+      id: userId,
+      
+      // Basic profile information
       email: storedUser.email || '',
       username: storedUser.username || storedUser.name || storedUser.email?.split('@')[0] || 'user',
+      
+      // Name fields
       first_name: storedUser.first_name,
       last_name: storedUser.last_name,
       full_name: storedUser.full_name || storedUser.name,
+      name: storedUser.name || storedUser.full_name || storedUser.username,
+      
+      // Status and verification
       is_active: storedUser.is_active,
       is_verified: storedUser.is_verified || storedUser.isEmailVerified,
       is_superuser: storedUser.is_superuser,
+      
+      // Authentication and security
       google_cloud_identity: storedUser.google_cloud_identity,
       last_login: storedUser.last_login || storedUser.lastLogin,
-      created_at: storedUser.created_at || storedUser.createdAt,
+      
+      // Timestamps
+      created_at: storedUser.created_at || storedUser.createdAt || new Date().toISOString(),
       updated_at: storedUser.updated_at,
+      
+      // User preferences and settings
+      preferences: storedUser.preferences || {},
+      subscription_tier: storedUser.subscription_tier || 'free',
+      
+      // Profile customization
+      avatar: storedUser.avatar,
+      profile: storedUser.profile,
+      
+      // Authorization
       roles: transformRoles(storedUser.roles),
+      role_names: extractRoleNames(storedUser.roles),
+      permissions: storedUser.permissions,
     };
   } catch (error) {
     console.error('Error transforming stored user data:', error);
@@ -103,6 +99,25 @@ function transformRoles(roles: any): User['roles'] {
       name: roleName,
       is_active: true,
     }));
+  }
+  
+  return undefined;
+}
+
+/**
+ * Extract simple role names from complex role objects
+ */
+function extractRoleNames(roles: any): string[] | undefined {
+  if (!roles) return undefined;
+  
+  // If roles is already a string array
+  if (Array.isArray(roles) && typeof roles[0] === 'string') {
+    return roles;
+  }
+  
+  // If roles is an array of objects, extract the names
+  if (Array.isArray(roles) && typeof roles[0] === 'object' && roles[0]?.name) {
+    return roles.map((role: any) => role.name);
   }
   
   return undefined;

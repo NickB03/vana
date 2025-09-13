@@ -84,7 +84,7 @@ export function UserMenu({ className = '' }: UserMenuProps) {
   }
 
   // Get user display name and avatar
-  const displayName = user.full_name || user.email.split('@')[0];
+  const displayName = user.full_name || (user.email ? user.email.split('@')[0] : user.username);
   const avatarUrl = undefined; // TODO: Add profile.avatar_url to User interface
   const userInitials = displayName
     .split(' ')

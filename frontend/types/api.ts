@@ -332,7 +332,7 @@ export interface ApiClient {
   delete<T>(endpoint: string, options?: ApiRequestOptions): Promise<T>;
   
   // Streaming
-  createEventStream(endpoint: string, options?: ApiRequestOptions): Promise<Response>;
+  createEventStream(endpoint: string, options?: ApiRequestOptions & { method?: 'GET' | 'POST'; body?: unknown }): Promise<Response>;
   
   // Auth-aware methods
   authenticatedGet<T>(endpoint: string, options?: ApiRequestOptions): Promise<T>;

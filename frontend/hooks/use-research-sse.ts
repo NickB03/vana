@@ -58,25 +58,55 @@ export function useResearchSSE(options: UseResearchSSEOptions = {}): UseResearch
   const handleSessionUpdate = useCallback((newState: ResearchSessionState) => {
     const previousState = previousStateRef.current;
     
-    // Prevent unnecessary updates if state hasn't meaningfully changed
-    if (previousState && 
-        previousState.status === newState.status &&
-        previousState.overallProgress === newState.overallProgress &&
-        previousState.currentPhase === newState.currentPhase &&
-        previousState.error === newState.error) {
+    // Helper function to check if agents array has changed
+    const agentsChanged = (prev: ResearchSessionState | null, curr: ResearchSessionState) => {
+      if (!prev?.agents || !curr.agents) return prev?.agents !== curr.agents;
+      if (prev.agents.length !== curr.agents.length) return true;
+      
+      return prev.agents.some((prevAgent, index) => {
+        const currAgent = curr.agents[index];
+        return prevAgent.agent_id !== currAgent.agent_id ||
+               prevAgent.status !== currAgent.status ||
+               prevAgent.progress !== currAgent.progress ||
+               prevAgent.current_task !== currAgent.current_task ||
+               prevAgent.error !== currAgent.error;
+      });
+    };
+    
+    // Helper function to check if partial results have changed  
+    const partialResultsChanged = (prev: ResearchSessionState | null, curr: ResearchSessionState) => {
+      if (!prev?.partialResults && !curr.partialResults) return false;
+      if (!prev?.partialResults || !curr.partialResults) return true;
+      
+      const prevKeys = Object.keys(prev.partialResults);
+      const currKeys = Object.keys(curr.partialResults);
+      
+      if (prevKeys.length !== currKeys.length) return true;
+      
+      return currKeys.some(key => {
+        const prevResult = prev.partialResults?.[key];
+        const currResult = curr.partialResults?.[key];
+        return JSON.stringify(prevResult) !== JSON.stringify(currResult);
+      });
+    };
+    
+    // Check if any meaningful field has changed
+    const hasChanged = !previousState ||
+      previousState.status !== newState.status ||
+      previousState.overallProgress !== newState.overallProgress ||
+      previousState.currentPhase !== newState.currentPhase ||
+      previousState.error !== newState.error ||
+      previousState.finalReport !== newState.finalReport ||
+      agentsChanged(previousState, newState) ||
+      partialResultsChanged(previousState, newState) ||
+      previousState.lastUpdate.getTime() !== newState.lastUpdate.getTime();
+    
+    if (!hasChanged) {
       return; // Skip update if no meaningful change
     }
     
-    setSessionState(prev => {
-      if (prev && 
-          prev.status === newState.status &&
-          prev.overallProgress === newState.overallProgress &&
-          prev.currentPhase === newState.currentPhase) {
-        return prev; // Return previous state to prevent re-render
-      }
-      return newState;
-    });
-    
+    // Always update state when there are meaningful changes
+    setSessionState(newState);
     setIsConnected(newState.status === 'connected' || newState.status === 'running');
     
     // Handle completion (only fire once)

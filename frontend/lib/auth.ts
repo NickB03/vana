@@ -7,25 +7,11 @@
 
 import { jwtDecode } from 'jwt-decode';
 import { apiService } from './api-client';
+import type { User } from '@/types/auth';
 
 // ============================================================================
 // Types
 // ============================================================================
-
-export interface User {
-  id: string;
-  email: string;
-  full_name: string | null;
-  is_active: boolean;
-  is_superuser: boolean;
-  created_at: string;
-  last_login: string | null;
-  profile?: {
-    avatar_url?: string;
-    bio?: string;
-    location?: string;
-  };
-}
 
 export interface AuthTokens {
   access_token: string;

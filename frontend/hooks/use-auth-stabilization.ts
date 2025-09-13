@@ -12,6 +12,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/auth-context';
+import { User } from '@/types/auth';
 
 // ============================================================================
 // Types
@@ -21,7 +22,7 @@ export interface AuthStabilizationState {
   isStable: boolean;
   isInitialized: boolean;
   stableAuth: boolean;
-  stableUser: any;
+  stableUser: User | null;
   canRedirect: boolean;
   redirectHistory: string[];
 }
