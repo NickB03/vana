@@ -256,6 +256,8 @@ function PhaseIndicator({ currentPhase, progress, status }: PhaseIndicatorProps)
                     ? 'bg-green-500'
                     : 'bg-gray-300 dark:bg-gray-600'
                 )}
+                aria-label={`Research phase ${phase.name}: ${isCurrentPhase ? 'Current' : isCompletedPhase ? 'Completed' : 'Pending'}`}
+                role="status"
               />
               <span
                 className={cn(

@@ -183,6 +183,13 @@ class SSEConnectionManager {
   private circuitBreaker = new SSECircuitBreaker();
 
   connect(url: string, headers?: Record<string, string>): void {
+    // Check circuit breaker before attempting connection
+    if (!this.circuitBreaker.canAttemptConnection()) {
+      console.warn('[Research SSE] Circuit breaker is OPEN, connection attempt blocked');
+      this.notifyConnectionListeners('error');
+      return;
+    }
+
     // Store connection details for potential reconnection
     this.lastConnectionUrl = url;
     this.lastConnectionHeaders = headers;
@@ -204,6 +211,7 @@ class SSEConnectionManager {
         });
         this.reconnectAttempts = 0;
         this.reconnectDelay = 1000;
+        this.circuitBreaker.recordSuccess();
         this.notifyConnectionListeners('connected');
       };
 
@@ -397,6 +405,9 @@ class SSEConnectionManager {
   private handleConnectionError(): void {
     const currentReadyState = this.eventSource?.readyState;
 
+    // Record failure with circuit breaker
+    this.circuitBreaker.recordFailure();
+
     // Clear any existing reconnect timer
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
@@ -494,6 +505,14 @@ class SSEConnectionManager {
 
   getReconnectAttempts(): number {
     return this.reconnectAttempts;
+  }
+
+  getCircuitBreakerState(): string {
+    return this.circuitBreaker.getState();
+  }
+
+  resetCircuitBreaker(): void {
+    this.circuitBreaker.reset();
   }
 }
 
@@ -821,6 +840,14 @@ export class ResearchSSEService {
 
   getAllSessions(): Map<string, ResearchSessionState> {
     return new Map(this.activeSessions);
+  }
+
+  getCircuitBreakerState(): string {
+    return this.connectionManager.getCircuitBreakerState();
+  }
+
+  resetCircuitBreaker(): void {
+    this.connectionManager.resetCircuitBreaker();
   }
 }
 

@@ -225,19 +225,19 @@ export function useAgentStatusTracker(sessionState: ResearchSessionState | null)
   }, [agentMap]);
   
   const getActiveAgent = useCallback(() => {
-    return sessionState?.agents.find(agent => agent.status === 'current') || null;
+    return sessionState?.agents?.find(agent => agent.status === 'current') ?? null;
   }, [sessionState?.agents]);
   
   const getCompletedAgents = useCallback(() => {
-    return sessionState?.agents.filter(agent => agent.status === 'completed') || [];
+    return sessionState?.agents?.filter(agent => agent.status === 'completed') ?? [];
   }, [sessionState?.agents]);
   
   const getPendingAgents = useCallback(() => {
-    return sessionState?.agents.filter(agent => agent.status === 'waiting') || [];
+    return sessionState?.agents?.filter(agent => agent.status === 'waiting') ?? [];
   }, [sessionState?.agents]);
   
   const getFailedAgents = useCallback(() => {
-    return sessionState?.agents.filter(agent => agent.status === 'error') || [];
+    return sessionState?.agents?.filter(agent => agent.status === 'error') ?? [];
   }, [sessionState?.agents]);
   
   return {
@@ -247,9 +247,9 @@ export function useAgentStatusTracker(sessionState: ResearchSessionState | null)
     getCompletedAgents,
     getPendingAgents,
     getFailedAgents,
-    totalAgents: sessionState?.agents.length || 0,
+    totalAgents: sessionState?.agents?.length ?? 0,
     completedCount: getCompletedAgents().length,
-    activeCount: sessionState?.agents.filter(a => a.status === 'current').length || 0,
+    activeCount: sessionState?.agents?.filter(a => a.status === 'current')?.length ?? 0,
     errorCount: getFailedAgents().length,
   };
 }
@@ -279,7 +279,7 @@ export function useResearchResults(sessionState: ResearchSessionState | null) {
       Object.entries(sessionState.partialResults).forEach(([agentType, result]) => {
         if (result && typeof result === 'object' && result.content) {
           sections.push({
-            title: agentType.replace('_', ' ').toUpperCase(),
+            title: agentType.replaceAll('_', ' ').toUpperCase(),
             content: result.content,
             agent: agentType,
           });

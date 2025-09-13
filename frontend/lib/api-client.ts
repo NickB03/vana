@@ -26,6 +26,9 @@ import type {
   ChangePasswordRequest
 } from '../types/auth';
 import type {
+  ChatMessage
+} from '../types/api';
+import type {
   AuthResponse,
   UserResponse,
   Token,
@@ -100,16 +103,6 @@ const HealthResponseSchema = z.object({
   version: z.string().optional(),
 });
 
-export interface ChatMessage {
-  id: string;
-  content: string;
-  role: 'user' | 'assistant';
-  timestamp: Date;
-  // Research-specific fields
-  isResearchQuery?: boolean;
-  isResearchResult?: boolean;
-  researchSessionId?: string;
-}
 
 export type CreateChatResponse = z.infer<typeof CreateChatResponseSchema>;
 export type HealthResponse = z.infer<typeof HealthResponseSchema>;
