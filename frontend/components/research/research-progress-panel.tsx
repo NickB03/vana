@@ -388,7 +388,7 @@ export function ResearchProgressPanel({
   const [activeTab, setActiveTab] = useState('overview');
   
   return (
-    <Card className={cn('w-full', className)}>
+    <Card className={cn('w-full', className)} data-testid="research-progress-panel">
       <ProgressHeader
         sessionState={sessionState}
         isLoading={isLoading}

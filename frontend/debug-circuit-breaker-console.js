@@ -5,8 +5,8 @@ console.log('🔧 Circuit Breaker Debug Tool Starting...');
 
 const debugCircuitBreaker = async () => {
   try {
-    // Try to import api client utils
-    const { apiClientUtils } = await import('./lib/api-client');
+    // Try to import api client utils 
+    const { apiClientUtils } = await import('/lib/api-client.ts');
     
     console.log('📊 Getting circuit breaker status...');
     const status = apiClientUtils.getCircuitBreakerStatus();
@@ -32,7 +32,8 @@ const debugCircuitBreaker = async () => {
     
     // Test backend connectivity
     console.log('🔍 Testing backend connectivity...');
-    const response = await fetch('http://127.0.0.1:8000/health');
+    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const response = await fetch(`${base}/health`, { credentials: 'include' });
     if (response.ok) {
       const data = await response.json();
       console.log('✅ Backend is responding:', data.status);
@@ -45,10 +46,11 @@ const debugCircuitBreaker = async () => {
     apiClientUtils.clearCache();
     console.log('✅ Cache cleared');
     
+    const { status: healthStatus } = await response.json().catch(() => ({ status: 'unknown' }));
     return {
       circuitBreakerStatus: apiClientUtils.getCircuitBreakerStatus(),
-      backendHealthy: response.ok,
-      ready: true
+      backendHealthy: healthStatus === 'healthy',
+      ready: healthStatus === 'healthy'
     };
     
   } catch (error) {

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Send, Paperclip, MessageSquare, Search, Bot } from 'lucide-react';
+import { Send, Paperclip, Bot } from 'lucide-react';
 import { useChatContext } from '@/contexts/chat-context';
 
 interface ChatInputProps {
@@ -15,9 +15,10 @@ interface ChatInputProps {
 
 export function ChatInput({ onSendMessage, disabled = false, placeholder }: ChatInputProps) {
   const [message, setMessage] = useState('');
-  const { sendMessage, isResearchMode, setIsResearchMode, research } = useChatContext();
+  const { sendMessage, research } = useChatContext();
   
-  // Research mode is disabled if research is currently active
+  // Always use research mode (no toggle)
+  const isResearchMode = true;
   const isResearchDisabled = research.isResearchActive;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -59,40 +60,15 @@ export function ChatInput({ onSendMessage, disabled = false, placeholder }: Chat
   return (
     <div className="p-4">
       <div className="max-w-4xl mx-auto">
-        {/* Research Mode Toggle */}
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant={!isResearchMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => setIsResearchMode(false)}
-              disabled={isResearchDisabled}
-              className="gap-1"
-            >
-              <MessageSquare className="h-4 w-4" />
-              Chat
-            </Button>
-            <Button
-              type="button"
-              variant={isResearchMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => setIsResearchMode(true)}
-              disabled={isResearchDisabled}
-              className="gap-1"
-            >
-              <Search className="h-4 w-4" />
-              Research
-            </Button>
-          </div>
-          
-          {isResearchDisabled && (
+        {/* Research Status (when active) */}
+        {isResearchDisabled && (
+          <div className="flex justify-center mb-3">
             <Badge variant="default" className="gap-1">
               <Bot className="h-3 w-3 animate-pulse" />
               Research Active
             </Badge>
-          )}
-        </div>
+          </div>
+        )}
         
         <form onSubmit={handleSubmit} className="relative" role="form" aria-label={isResearchMode ? "Research query form" : "Chat message form"}>
           <div className="flex items-end gap-2 p-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 shadow-sm">
@@ -121,6 +97,7 @@ export function ChatInput({ onSendMessage, disabled = false, placeholder }: Chat
               rows={1}
               aria-label={isResearchMode ? "Enter research query" : "Enter message"}
               aria-describedby="chat-input-hint"
+              data-testid="chat-input"
             />
 
             {/* Send Button */}
@@ -131,6 +108,7 @@ export function ChatInput({ onSendMessage, disabled = false, placeholder }: Chat
               className="flex-shrink-0 p-2"
               aria-label="Send message"
               title="Send message"
+              data-testid="send-button"
             >
               <Send size={18} />
             </Button>

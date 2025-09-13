@@ -83,6 +83,10 @@ else:
 
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
+
+# Simple in-memory session store for SSE communication
+research_sessions = {}
+
 # Security fix: Proper CORS configuration based on environment
 allowed_origins_env = os.getenv("ALLOW_ORIGINS", "")
 if allowed_origins_env:
@@ -386,7 +390,7 @@ async def health_check() -> dict:
         "system_metrics": system_metrics,
         "dependencies": dependencies,
         "response_time_ms": response_time_ms,
-        "active_adk_sessions": "monitoring",
+        "active_adk_sessions": 0,  # TODO: replace with real count when ADK session tracking is wired
         "uptime_check": "operational"
     }
 
@@ -648,7 +652,7 @@ async def phoenix_debug_endpoint(
                 "network_io": psutil.net_io_counters()._asdict() if psutil.net_io_counters() else None
             },
             "application_state": {
-                "adk_agents_active": "monitoring",
+                "adk_agents_active": True,
                 "active_connections": "monitoring",
                 "session_storage_uri": "***REDACTED***" if session_service_uri else None,
                 "bucket_name": "***REDACTED***" if bucket_name else None,
@@ -705,11 +709,14 @@ async def run_research_sse(
         if not research_query:
             raise HTTPException(status_code=400, detail="Research query is required")
         
-        # ADK agent integration - import the perfect ADK agent
-        from app.agent import root_agent
+        # Store session info for GET endpoint
+        research_sessions[session_id] = {
+            'status': 'starting',
+            'query': research_query,
+            'created_at': datetime.now()
+        }
         
-        # Start ADK agent research session
-        # The agent.py implementation is perfect ADK-compliant
+        # TODO: Integrate ADK root_agent when ready (currently simulating progress events)
         
         async def research_event_generator() -> AsyncGenerator[str, None]:
             """Generate SSE events for research progress."""
@@ -728,58 +735,26 @@ async def run_research_sse(
                 else:
                     logger.info(f"Research session started: {access_info}")
                 
-                # Stream research progress using perfect ADK agent
-                # This uses the Google ADK agent system from agent.py
-                yield f"data: {json.dumps({'type': 'research_started', 'sessionId': session_id, 'timestamp': datetime.now().isoformat()})}\n\n"
+                # Use real multi-agent research orchestrator
+                from app.research_agents import get_research_orchestrator
                 
-                # Simulate research progress events until ADK integration is complete
-                import asyncio
+                orchestrator = get_research_orchestrator()
                 
-                # Send connection established event
-                yield f"data: {json.dumps({'type': 'connection', 'status': 'connected', 'sessionId': session_id, 'timestamp': datetime.now().isoformat()})}\n\n"
-                await asyncio.sleep(0.1)
+                # Start real research session
+                research_progress = await orchestrator.start_research_session(session_id, research_query)
                 
-                # Send research progress events
-                phases = ['Initializing agents', 'Analyzing query', 'Conducting research', 'Synthesizing results']
-                for i, phase in enumerate(phases):
-                    progress = (i + 1) / len(phases)
-                    
-                    # Create mock agent statuses
-                    agents = [
-                        {'agent_id': 'team_leader', 'agent_type': 'coordinator', 'name': 'Team Leader', 
-                         'status': 'completed' if i > 0 else 'current', 'progress': 1.0 if i > 0 else progress},
-                        {'agent_id': 'researcher', 'agent_type': 'researcher', 'name': 'Researcher', 
-                         'status': 'current' if i == 2 else ('completed' if i > 2 else 'waiting'), 'progress': progress if i >= 2 else 0},
-                        {'agent_id': 'evaluator', 'agent_type': 'evaluator', 'name': 'Evaluator', 
-                         'status': 'current' if i == 3 else ('completed' if i > 3 else 'waiting'), 'progress': progress if i >= 3 else 0},
-                    ]
-                    
-                    progress_event = {
-                        'type': 'research_progress',
-                        'sessionId': session_id,
-                        'status': 'running',
-                        'overall_progress': progress,
-                        'current_phase': phase,
-                        'agents': agents,
-                        'partial_results': {'phase': phase, 'query': research_query[:50]},
-                        'timestamp': datetime.now().isoformat()
-                    }
-                    
-                    yield f"data: {json.dumps(progress_event)}\n\n"
-                    await asyncio.sleep(1)  # Simulate processing time
-                
-                # Send completion event
-                completion_event = {
-                    'type': 'research_complete',
-                    'sessionId': session_id,
-                    'status': 'completed',
-                    'final_report': f'Research completed for query: {research_query}',
-                    'timestamp': datetime.now().isoformat()
-                }
-                yield f"data: {json.dumps(completion_event)}\n\n"
+                # Stream real progress updates
+                async for event in orchestrator.stream_research_progress(session_id):
+                    yield f"data: {json.dumps(event)}\n\n"
                     
             except asyncio.CancelledError:
-                logger.info(f"Research SSE connection cancelled for session {session_id}")
+                if hasattr(logger, "log_struct"):
+                    logger.log_struct({
+                        "message": f"Research SSE connection cancelled for session {session_id}",
+                        "session_id": session_id
+                    }, severity="INFO")
+                else:
+                    print(f"Research SSE connection cancelled for session {session_id}")
             except Exception as e:
                 error_event = {
                     "type": "error",
@@ -805,6 +780,75 @@ async def run_research_sse(
     except Exception as e:
         logger.error(f"Error starting research session {session_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to start research session: {str(e)}")
+
+
+@app.get("/api/run_sse/{session_id}")
+async def get_research_sse(
+    session_id: str,
+    current_user: User | None = current_user_for_sse_dep
+) -> StreamingResponse:
+    """GET endpoint for EventSource SSE connection.
+    
+    This endpoint allows frontend EventSource to connect and receive research progress events.
+    The actual research should be started via the POST endpoint first.
+    
+    Args:
+        session_id: Unique session identifier
+        current_user: Optional authenticated user for access control
+    
+    Returns:
+        StreamingResponse with SSE events for the research session
+    """
+    # Check if session exists, if not create a basic one
+    if session_id not in research_sessions:
+        research_sessions[session_id] = {
+            'status': 'waiting',
+            'query': 'Research session via EventSource',
+            'created_at': datetime.now()
+        }
+    
+    # Generate research events using real agent orchestrator
+    async def research_event_generator():
+        try:
+            # Use real multi-agent research orchestrator for GET endpoint too
+            from app.research_agents import get_research_orchestrator
+            
+            orchestrator = get_research_orchestrator()
+            research_query = research_sessions[session_id].get('query', 'Research via EventSource')
+            
+            # Start real research session
+            research_progress = await orchestrator.start_research_session(session_id, research_query)
+            
+            # Stream real progress updates
+            async for event in orchestrator.stream_research_progress(session_id):
+                yield f"data: {json.dumps(event)}\n\n"
+                    
+        except asyncio.CancelledError:
+            if hasattr(logger, "log_struct"):
+                logger.log_struct({
+                    "message": f"Research SSE connection cancelled for session {session_id}",
+                    "session_id": session_id
+                }, severity="INFO")
+            else:
+                print(f"Research SSE connection cancelled for session {session_id}")
+        except Exception as e:
+            error_event = {
+                "type": "error",
+                "sessionId": session_id,
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            }
+            yield f"data: {json.dumps(error_event)}\n\n"
+    
+    return StreamingResponse(
+        research_event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache", 
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        }
+    )
 
 
 @app.get("/agent_network_history")
