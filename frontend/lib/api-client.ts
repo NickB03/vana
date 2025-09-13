@@ -300,6 +300,12 @@ class CircuitBreaker {
   getFailures(): number {
     return this.failures;
   }
+
+  reset(): void {
+    this.failures = 0;
+    this.lastFailureTime = 0;
+    this.state = 'CLOSED';
+  }
 }
 
 // ============================================================================
@@ -918,6 +924,18 @@ export const apiClientUtils = {
       state: circuitBreaker.getState?.() || 'UNKNOWN',
       failures: circuitBreaker.getFailures?.() || 0,
     } : { state: 'UNKNOWN', failures: 0 };
+  },
+
+  /**
+   * Reset circuit breaker state
+   */
+  resetCircuitBreaker: () => {
+    const circuitBreaker = (apiClient as ApiClientWithExtensions).circuitBreaker;
+    if (circuitBreaker && circuitBreaker.reset) {
+      circuitBreaker.reset();
+      return true;
+    }
+    return false;
   },
   
   /**

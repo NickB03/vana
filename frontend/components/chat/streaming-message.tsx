@@ -53,7 +53,7 @@ export function StreamingMessage({
   const hasError = !!error;
   const isStreaming = !isComplete && !hasError && connectionState === 'connected';
   return (
-    <div className="flex gap-4 flex-row">
+    <div className="flex gap-4 flex-row" data-testid="streaming-message">
       {/* AI Avatar */}
       <Avatar className="w-8 h-8 flex-shrink-0">
         <div className="w-full h-full flex items-center justify-center rounded-full bg-gradient-to-r from-purple-500 to-orange-400 text-white">

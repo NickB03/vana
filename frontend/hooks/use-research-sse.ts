@@ -54,13 +54,32 @@ export function useResearchSSE(options: UseResearchSSEOptions = {}): UseResearch
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const previousStateRef = useRef<ResearchSessionState | null>(null);
   
-  // Handle session state updates
+  // Handle session state updates with memoization to prevent infinite loops
   const handleSessionUpdate = useCallback((newState: ResearchSessionState) => {
     const previousState = previousStateRef.current;
-    setSessionState(newState);
+    
+    // Prevent unnecessary updates if state hasn't meaningfully changed
+    if (previousState && 
+        previousState.status === newState.status &&
+        previousState.overallProgress === newState.overallProgress &&
+        previousState.currentPhase === newState.currentPhase &&
+        previousState.error === newState.error) {
+      return; // Skip update if no meaningful change
+    }
+    
+    setSessionState(prev => {
+      if (prev && 
+          prev.status === newState.status &&
+          prev.overallProgress === newState.overallProgress &&
+          prev.currentPhase === newState.currentPhase) {
+        return prev; // Return previous state to prevent re-render
+      }
+      return newState;
+    });
+    
     setIsConnected(newState.status === 'connected' || newState.status === 'running');
     
-    // Handle completion
+    // Handle completion (only fire once)
     if (newState.status === 'completed' && previousState?.status !== 'completed') {
       if (onComplete) {
         onComplete(newState.finalReport);
@@ -68,8 +87,8 @@ export function useResearchSSE(options: UseResearchSSEOptions = {}): UseResearch
       setIsLoading(false);
     }
     
-    // Handle errors
-    if (newState.status === 'error') {
+    // Handle errors (only fire once)
+    if (newState.status === 'error' && previousState?.status !== 'error') {
       const errorMessage = newState.error || 'Research session failed';
       setError(errorMessage);
       if (onError) {
@@ -78,7 +97,7 @@ export function useResearchSSE(options: UseResearchSSEOptions = {}): UseResearch
       setIsLoading(false);
     }
     
-    // Handle progress updates
+    // Handle progress updates (only when actually changed)
     if (onProgress && newState.status === 'running') {
       if (previousState?.overallProgress !== newState.overallProgress ||
           previousState?.currentPhase !== newState.currentPhase) {

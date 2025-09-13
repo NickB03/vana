@@ -202,7 +202,7 @@ export function AgentStatusDisplay({ agents, className }: AgentStatusDisplayProp
   }
   
   return (
-    <div className={cn('space-y-4', className)}>
+    <div className={cn('space-y-4', className)} data-testid="agent-status-display">
       {/* Overall Status Header */}
       <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
         <div className="flex items-center gap-2">

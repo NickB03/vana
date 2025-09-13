@@ -74,16 +74,21 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             path.startswith("/apps/") or
             path.startswith("/list-apps") or
             path.startswith("/debug/") or
+            path.startswith("/static/") or  # ADK static assets
+            path.endswith(".js") or         # JavaScript files (ADK main files)
+            path.endswith(".css") or        # CSS files (ADK styling)
             "dev-ui" in path.lower() or
+            "main-" in path or              # ADK main-*.js files
             (request and "google" in request.headers.get("user-agent", "").lower())
         )
         
         if is_adk_request:
             # Completely relaxed CSP for Google ADK dev-ui compatibility
-            return f"""
+            # Note: Remove nonce to allow 'unsafe-inline' to work (CSP spec requirement)
+            return """
                 default-src 'self' 'unsafe-inline' 'unsafe-eval';
-                script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-{nonce}';
-                style-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-{nonce}';
+                script-src 'self' 'unsafe-inline' 'unsafe-eval';
+                style-src 'self' 'unsafe-inline' 'unsafe-eval';
                 img-src 'self' data: https: blob:;
                 font-src 'self' data: https:;
                 connect-src 'self' https: wss: ws:;

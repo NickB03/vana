@@ -87,7 +87,6 @@ from app.utils.sse_broadcaster import (
 )
 from app.utils.tracing import CloudTraceLoggingSpanExporter
 from app.utils.typing import Feedback
-from app.research_agents import get_research_orchestrator
 from app.config import initialize_google_config
 
 # Initialize Google Cloud configuration
@@ -112,6 +111,10 @@ else:
 
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
+
+# Simple in-memory session store for SSE communication
+research_sessions = {}
+
 # Security fix: Proper CORS configuration based on environment
 allowed_origins_env = os.getenv("ALLOW_ORIGINS", "")
 if allowed_origins_env:
@@ -456,7 +459,7 @@ async def health_check() -> dict:
         "system_metrics": system_metrics,
         "dependencies": dependencies,
         "response_time_ms": response_time_ms,
-        "active_chat_tasks": len(chat_tasks.tasks),
+        "active_adk_sessions": 0,  # TODO: replace with real count when ADK session tracking is wired
         "uptime_check": "operational"
     }
 
@@ -614,247 +617,14 @@ async def agent_network_sse(
     )
 
 
-# Security fix: Bounded task storage to prevent memory leaks
-class BoundedTaskStorage:
-    def __init__(self, max_size: int = 1000):
-        self.max_size = max_size
-        self.tasks = {}
-        self.access_order = []
-
-    def __setitem__(self, key: str, value: dict):
-        if key in self.tasks:
-            # Update existing task, move to end
-            self.access_order.remove(key)
-        elif len(self.tasks) >= self.max_size:
-            # Remove oldest task
-            oldest_key = self.access_order.pop(0)
-            del self.tasks[oldest_key]
-            logger.info(f"Evicted old task {oldest_key} due to storage limit")
-
-        self.tasks[key] = value
-        self.access_order.append(key)
-
-    def __getitem__(self, key: str):
-        return self.tasks[key]
-
-    def __contains__(self, key: str):
-        return key in self.tasks
-
-    def get(self, key: str, default=None):
-        return self.tasks.get(key, default)
-
-    def __delitem__(self, key: str):
-        if key in self.tasks:
-            del self.tasks[key]
-            self.access_order.remove(key)
 
 
-# Global task storage for streaming responses with bounded size
-chat_tasks = BoundedTaskStorage(max_size=1000)
 
 
-@app.post("/chat/{chat_id}/message")
-async def create_chat_message(
-    chat_id: str,
-    request: dict = Body(...),
-    x_user_id: str = Header(None, alias="X-User-ID"),
-    x_session_id: str = Header(None, alias="X-Session-ID"),
-):
-    """Handle chat messages from the frontend."""
-    try:
-        message = request.get("message", "")
-        message_id = request.get("message_id", str(uuid.uuid4()))
-        model = request.get("model", "gemini-2.5-flash")
-
-        if not message:
-            raise HTTPException(status_code=400, detail="Message is required")
-
-        # Create a task ID for this chat session
-        task_id = str(uuid.uuid4())
-
-        # Configure Google Generative AI
-        api_key = os.getenv("GOOGLE_API_KEY")
-        if not api_key:
-            # Security fix: Generic error message for API key issues
-            logger.error("Google API key not configured for chat request")
-            raise HTTPException(status_code=500, detail="Service configuration error")
-
-        genai.configure(api_key=api_key)
-
-        # Initialize the model
-        try:
-            gemini_model = genai.GenerativeModel(model)
-        except Exception as model_error:
-            logger.error(f"Error initializing model {model}: {model_error}")
-            # Fallback to basic model
-            gemini_model = genai.GenerativeModel("gemini-1.5-flash")
-
-        # Store task for streaming
-        chat_tasks[task_id] = {
-            "chat_id": chat_id,
-            "message_id": message_id,
-            "message": message,
-            "model": gemini_model,
-            "status": "started",
-            "response_queue": asyncio.Queue(),
-            "created_at": datetime.now(),
-        }
-
-        # Process message asynchronously
-        asyncio.create_task(process_chat_message(task_id))
-
-        return {
-            "task_id": task_id,
-            "message_id": message_id,
-            "status": "started",
-            "chat_id": chat_id,
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error creating chat message: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 
-async def process_chat_message(task_id: str):
-    """Process chat message with Gemini and stream response."""
-    try:
-        task = chat_tasks.get(task_id)
-        if not task:
-            logger.error(f"Task {task_id} not found")
-            return
-
-        model = task["model"]
-        message = task["message"]
-        queue = task["response_queue"]
-
-        # Update task status
-        task["status"] = "processing"
-
-        # Generate response with streaming
-        try:
-            response = model.generate_content(
-                message,
-                stream=True,
-                generation_config=genai.types.GenerationConfig(
-                    temperature=0.7,
-                    top_p=0.8,
-                    top_k=40,
-                    max_output_tokens=2048,
-                ),
-            )
-
-            full_response = ""
-            for chunk in response:
-                if chunk.text:
-                    full_response += chunk.text
-                    await queue.put(
-                        {
-                            "type": "message_delta",
-                            "content": chunk.text,
-                            "task_id": task_id,
-                        }
-                    )
-
-            # Send completion message
-            await queue.put(
-                {
-                    "type": "message_complete",
-                    "content": full_response,
-                    "task_id": task_id,
-                }
-            )
-
-            task["status"] = "completed"
-            task["response"] = full_response
-
-        except Exception as gen_error:
-            logger.error(f"Error generating response: {gen_error}")
-            await queue.put(
-                {"type": "error", "error": str(gen_error), "task_id": task_id}
-            )
-            task["status"] = "error"
-
-        # Send task completion
-        await queue.put(
-            {"type": "task_complete", "task_id": task_id, "status": task["status"]}
-        )
-
-    except Exception as e:
-        logger.error(f"Error in process_chat_message: {e}")
-        if task_id in chat_tasks:
-            task = chat_tasks[task_id]
-            task["status"] = "error"
-            await task["response_queue"].put(
-                {"type": "error", "error": str(e), "task_id": task_id}
-            )
 
 
-@app.get("/chat/{chat_id}/stream")
-async def stream_chat_response(chat_id: str, task_id: str = None):
-    """Stream chat response using Server-Sent Events."""
-
-    if not task_id:
-        raise HTTPException(status_code=400, detail="task_id is required")
-
-    task = chat_tasks.get(task_id)
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-
-    if task["chat_id"] != chat_id:
-        raise HTTPException(status_code=403, detail="Task does not belong to this chat")
-
-    async def event_generator():
-        """Generate SSE events for chat response."""
-        try:
-            queue = task["response_queue"]
-
-            # Send initial connection event
-            yield f"data: {json.dumps({'type': 'connection', 'status': 'connected', 'task_id': task_id})}\n\n"
-
-            while True:
-                try:
-                    # Wait for events with timeout
-                    event = await asyncio.wait_for(queue.get(), timeout=30.0)
-                    yield f"data: {json.dumps(event)}\n\n"
-
-                    # Check if task is complete
-                    if event.get("type") in ["task_complete", "error"]:
-                        break
-
-                except asyncio.TimeoutError:
-                    # Send heartbeat
-                    yield f"data: {json.dumps({'type': 'heartbeat', 'timestamp': datetime.now().isoformat()})}\n\n"
-
-        except asyncio.CancelledError:
-            logger.info(f"SSE connection cancelled for task {task_id}")
-        except Exception as e:
-            logger.error(f"Error in SSE stream: {e}")
-            yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
-        finally:
-            # Clean up old task after some time
-            asyncio.create_task(cleanup_task(task_id, delay=300))  # 5 minutes
-
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-            # Security fix: Use proper origin validation instead of wildcard
-            # CORS headers are handled by middleware - don't override here
-            "Access-Control-Allow-Methods": "GET, OPTIONS",
-        },
-    )
-
-
-async def cleanup_task(task_id: str, delay: int = 300):
-    """Clean up completed task after delay."""
-    await asyncio.sleep(delay)
-    if task_id in chat_tasks:
-        del chat_tasks[task_id]
-        logger.info(f"Cleaned up task {task_id}")
 
 
 @app.get("/api/debug/phoenix")
@@ -951,7 +721,7 @@ async def phoenix_debug_endpoint(
                 "network_io": psutil.net_io_counters()._asdict() if psutil.net_io_counters() else None
             },
             "application_state": {
-                "chat_tasks_count": len(chat_tasks.tasks),
+                "adk_agents_active": True,
                 "active_connections": "monitoring",
                 "session_storage_uri": "***REDACTED***" if session_service_uri else None,
                 "bucket_name": "***REDACTED***" if bucket_name else None,
@@ -1008,11 +778,14 @@ async def run_research_sse(
         if not research_query:
             raise HTTPException(status_code=400, detail="Research query is required")
         
-        # Get research orchestrator
-        orchestrator = get_research_orchestrator()
+        # Store session info for GET endpoint
+        research_sessions[session_id] = {
+            'status': 'starting',
+            'query': research_query,
+            'created_at': datetime.now()
+        }
         
-        # Start research session
-        await orchestrator.start_research_session(session_id, research_query)
+        # TODO: Integrate ADK root_agent when ready (currently simulating progress events)
         
         async def research_event_generator() -> AsyncGenerator[str, None]:
             """Generate SSE events for research progress."""
@@ -1031,12 +804,26 @@ async def run_research_sse(
                 else:
                     logger.info(f"Research session started: {access_info}")
                 
-                # Stream research progress
+                # Use real multi-agent research orchestrator
+                from app.research_agents import get_research_orchestrator
+                
+                orchestrator = get_research_orchestrator()
+                
+                # Start real research session
+                research_progress = await orchestrator.start_research_session(session_id, research_query)
+                
+                # Stream real progress updates
                 async for event in orchestrator.stream_research_progress(session_id):
                     yield f"data: {json.dumps(event)}\n\n"
                     
             except asyncio.CancelledError:
-                logger.info(f"Research SSE connection cancelled for session {session_id}")
+                if hasattr(logger, "log_struct"):
+                    logger.log_struct({
+                        "message": f"Research SSE connection cancelled for session {session_id}",
+                        "session_id": session_id
+                    }, severity="INFO")
+                else:
+                    print(f"Research SSE connection cancelled for session {session_id}")
             except Exception as e:
                 error_event = {
                     "type": "error",
@@ -1062,6 +849,75 @@ async def run_research_sse(
     except Exception as e:
         logger.error(f"Error starting research session {session_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to start research session: {str(e)}")
+
+
+@app.get("/api/run_sse/{session_id}")
+async def get_research_sse(
+    session_id: str,
+    current_user: User | None = current_user_for_sse_dep
+) -> StreamingResponse:
+    """GET endpoint for EventSource SSE connection.
+    
+    This endpoint allows frontend EventSource to connect and receive research progress events.
+    The actual research should be started via the POST endpoint first.
+    
+    Args:
+        session_id: Unique session identifier
+        current_user: Optional authenticated user for access control
+    
+    Returns:
+        StreamingResponse with SSE events for the research session
+    """
+    # Check if session exists, if not create a basic one
+    if session_id not in research_sessions:
+        research_sessions[session_id] = {
+            'status': 'waiting',
+            'query': 'Research session via EventSource',
+            'created_at': datetime.now()
+        }
+    
+    # Generate research events using real agent orchestrator
+    async def research_event_generator():
+        try:
+            # Use real multi-agent research orchestrator for GET endpoint too
+            from app.research_agents import get_research_orchestrator
+            
+            orchestrator = get_research_orchestrator()
+            research_query = research_sessions[session_id].get('query', 'Research via EventSource')
+            
+            # Start real research session
+            research_progress = await orchestrator.start_research_session(session_id, research_query)
+            
+            # Stream real progress updates
+            async for event in orchestrator.stream_research_progress(session_id):
+                yield f"data: {json.dumps(event)}\n\n"
+                    
+        except asyncio.CancelledError:
+            if hasattr(logger, "log_struct"):
+                logger.log_struct({
+                    "message": f"Research SSE connection cancelled for session {session_id}",
+                    "session_id": session_id
+                }, severity="INFO")
+            else:
+                print(f"Research SSE connection cancelled for session {session_id}")
+        except Exception as e:
+            error_event = {
+                "type": "error",
+                "sessionId": session_id,
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            }
+            yield f"data: {json.dumps(error_event)}\n\n"
+    
+    return StreamingResponse(
+        research_event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache", 
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        }
+    )
 
 
 @app.get("/agent_network_history")

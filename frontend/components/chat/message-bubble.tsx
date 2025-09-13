@@ -20,7 +20,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === 'user';
 
   return (
-    <div className={`flex gap-4 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+    <div className={`flex gap-4 ${isUser ? 'flex-row-reverse' : 'flex-row'}`} data-testid="message-bubble" data-sender={message.role}>
       {/* Avatar */}
       <Avatar className="w-8 h-8 flex-shrink-0">
         <div className={`w-full h-full flex items-center justify-center rounded-full ${
