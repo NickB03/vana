@@ -10,34 +10,11 @@
 
 import { http, HttpResponse } from 'msw'
 import { server } from '../mocks/server'
-import type { ReactElement } from 'react'
-import { render, RenderOptions } from '@testing-library/react'
-import { ChatProvider } from '@/contexts/chat-context'
 import { TEST_TOKENS, TEST_USERS, TEST_STORAGE_KEYS } from '../constants/test-config'
 
-// ============================================================================
-// Test Providers and Wrappers
-// ============================================================================
-
-interface AllTheProvidersProps {
-  children: React.ReactNode
-}
-
-const AllTheProviders = ({ children }: AllTheProvidersProps) => {
-  return (
-    <ChatProvider>
-      {children}
-    </ChatProvider>
-  )
-}
-
-const customRender = (
-  ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>
-) => render(ui, { wrapper: AllTheProviders, ...options })
-
+// Re-export React testing utilities from the separate providers file
+export { render, AllTheProviders } from './test-providers'
 export * from '@testing-library/react'
-export { customRender as render }
 
 // ============================================================================
 // Authentication Test Utilities

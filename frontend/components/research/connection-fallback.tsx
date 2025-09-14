@@ -3,10 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { 
   AlertCircle, 
-  Wifi, 
   WifiOff, 
   RefreshCw, 
   Clock, 
@@ -16,6 +14,17 @@ import {
   Router
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// Network Information API types
+interface NetworkInformation {
+  effectiveType?: '4g' | '3g' | '2g' | 'slow-2g';
+  downlink?: number;
+  rtt?: number;
+  saveData?: boolean;
+  type?: 'wifi' | 'cellular' | 'ethernet' | 'bluetooth' | 'unknown';
+  addEventListener?: (event: string, handler: () => void) => void;
+  removeEventListener?: (event: string, handler: () => void) => void;
+}
 
 // ============================================================================
 // Types
@@ -51,7 +60,7 @@ function useNetworkStatus() {
       
       // Check connection type if available
       if ('connection' in navigator) {
-        const connection = (navigator as any).connection;
+        const connection = (navigator as { connection?: NetworkInformation }).connection;
         setConnectionType(connection?.effectiveType || 'unknown');
       }
     };

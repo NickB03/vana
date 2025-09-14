@@ -3,16 +3,21 @@
  * 
  * Enhanced interface that ONLY uses multi-agent research through ADK.
  * Features comprehensive error handling, connection monitoring, and fallback UI.
+ * Now supports both original and prompt-kit enhanced versions via feature flags.
  */
 
 "use client";
 
 import React, { useState, useCallback, useEffect } from 'react';
+import { featureFlags } from '@/lib/feature-flags';
+import { ResearchChatInterfaceV2 } from './research-chat-interface-v2';
 import { ChatMessages } from '@/components/chat/chat-messages';
 import { ChatInput } from '@/components/chat/chat-input';
 import { ChatProvider, useChatContext } from '@/contexts/chat-context';
 import { ResearchProgressPanel } from './research-progress-panel';
 import { ConnectionFallback, useConnectionHealth } from './connection-fallback';
+import { AgentStatusSidebar } from '@/components/ui/agent-status-sidebar';
+import { ResearchStatusIntegration } from '@/components/ui/research-status-integration';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -367,68 +372,103 @@ function ResearchChatInterfaceInner({ className }: ResearchChatInterfaceProps) {
         </div>
       )}
       
-      {/* Main Content */}
+      {/* Agent Status Popup Integration */}
+      {featureFlags.useAgentStatusPopup && (
+        <ResearchStatusIntegration
+          sessionState={sessionState}
+          isResearchActive={isResearchActive}
+          mode="full"
+          position="inline"
+        />
+      )}
+      
+      {/* Main Content with Agent Status Sidebar */}
       <div className="flex-1 overflow-hidden">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <div className="border-b px-4 py-2">
-            <TabsList className="w-full">
-              <TabsTrigger value="interface" className="flex-1">
-                Interface
-              </TabsTrigger>
-              <TabsTrigger value="progress" className="flex-1">
-                Progress
-              </TabsTrigger>
-              {isResearchComplete && (
-                <TabsTrigger value="results" className="flex-1">
-                  Results
-                </TabsTrigger>
-              )}
-            </TabsList>
+        <div className="h-full flex">
+          {/* Main Chat Area */}
+          <div className="flex-1 overflow-hidden min-w-0">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+              <div className="border-b px-4 py-2">
+                <TabsList className="w-full">
+                  <TabsTrigger value="interface" className="flex-1">
+                    Interface
+                  </TabsTrigger>
+                  <TabsTrigger value="progress" className="flex-1">
+                    Progress
+                  </TabsTrigger>
+                  {isResearchComplete && (
+                    <TabsTrigger value="results" className="flex-1">
+                      Results
+                    </TabsTrigger>
+                  )}
+                </TabsList>
+              </div>
+              
+              <div className="flex-1 overflow-hidden">
+                <TabsContent value="interface" className="h-full m-0">
+                  <div className="flex flex-col h-full">
+                    <div className="flex-1 overflow-hidden">
+                      <ChatMessages />
+                    </div>
+                    <div className="border-t border-gray-200 dark:border-gray-800">
+                      <ChatInput
+                        onSendMessage={handleStartResearch}
+                        disabled={isResearchActive || connectionHealth === 'poor'}
+                        placeholder={
+                          connectionHealth === 'poor'
+                            ? 'Connection issues - please wait...'
+                            : isResearchActive
+                            ? 'Research in progress...'
+                            : 'Enter your research query to start multi-agent analysis...'
+                        }
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="progress" className="h-full m-0 p-4 overflow-auto">
+                  <ResearchProgressPanel
+                    sessionState={sessionState}
+                    isLoading={isLoading}
+                    error={error}
+                    onStart={() => {
+                      // This would need to be connected to a research query input
+                      console.log('Start research clicked');
+                    }}
+                    onStop={handleStopResearch}
+                    onRetry={handleRetryResearch}
+                  />
+                </TabsContent>
+                
+                {isResearchComplete && (
+                  <TabsContent value="results" className="h-full m-0 p-4 overflow-auto">
+                    <ResearchResultsDisplay sessionState={sessionState} />
+                  </TabsContent>
+                )}
+              </div>
+            </Tabs>
           </div>
           
-          <div className="flex-1 overflow-hidden">
-            <TabsContent value="interface" className="h-full m-0">
-              <div className="flex flex-col h-full">
-                <div className="flex-1 overflow-hidden">
-                  <ChatMessages />
-                </div>
-                <div className="border-t border-gray-200 dark:border-gray-800">
-                  <ChatInput
-                    onSendMessage={handleStartResearch}
-                    disabled={isResearchActive || connectionHealth === 'poor'}
-                    placeholder={
-                      connectionHealth === 'poor'
-                        ? 'Connection issues - please wait...'
-                        : isResearchActive
-                        ? 'Research in progress...'
-                        : 'Enter your research query to start multi-agent analysis...'
-                    }
-                  />
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="progress" className="h-full m-0 p-4 overflow-auto">
-              <ResearchProgressPanel
-                sessionState={sessionState}
-                isLoading={isLoading}
-                error={error}
-                onStart={() => {
-                  // This would need to be connected to a research query input
-                  console.log('Start research clicked');
-                }}
-                onStop={handleStopResearch}
-                onRetry={handleRetryResearch}
-              />
-            </TabsContent>
-            
-            {isResearchComplete && (
-              <TabsContent value="results" className="h-full m-0 p-4 overflow-auto">
-                <ResearchResultsDisplay sessionState={sessionState} />
-              </TabsContent>
-            )}
-          </div>
-        </Tabs>
+          {/* Agent Status Sidebar - Only show when agents are active */}
+          {sessionState && sessionState.agents && sessionState.agents.length > 0 && (
+            <AgentStatusSidebar
+              agents={sessionState.agents}
+              isConnected={isConnected}
+              streamingStatus={connectionHealth === 'good' ? 'active' : connectionHealth === 'degraded' ? 'idle' : 'error'}
+              showConnectionHealth={true}
+              position="right"
+              defaultCollapsed={false}
+              onAgentClick={(agent) => {
+                console.log('Agent clicked:', agent.name);
+                // Switch to progress tab when agent is clicked
+                if (activeTab !== 'progress') {
+                  setActiveTab('progress');
+                }
+              }}
+              className="border-l border-gray-200 dark:border-gray-800"
+            />
+          )}
+        </div>
       </div>
       
       {/* Connection Status and Error Handling */}
@@ -480,10 +520,16 @@ function ResearchChatInterfaceInner({ className }: ResearchChatInterfaceProps) {
 }
 
 // ============================================================================
-// Main Research Chat Interface Component
+// Main Research Chat Interface Component with Version Selection
 // ============================================================================
 
 export function ResearchChatInterface({ className }: ResearchChatInterfaceProps) {
+  // Use feature flag to determine which version to render
+  if (featureFlags.usePromptKitInterface) {
+    return <ResearchChatInterfaceV2 className={className} />;
+  }
+  
+  // Fall back to original version
   return (
     <ChatProvider>
       <ResearchChatInterfaceInner className={className} />

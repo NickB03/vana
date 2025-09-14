@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./agent-cards.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -186,8 +187,23 @@
   body {
     @apply bg-background text-foreground;
     letter-spacing: var(--tracking-normal);
+    /* Better mobile scrolling and touch interactions */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
-  
+
+  /* Improved mobile touch targets and interactions */
+  @media (max-width: 1024px) {
+    button, a, input, textarea, select {
+      @apply min-h-[44px] min-w-[44px];
+    }
+  }
+
+  /* Better mobile viewport handling */
+  html {
+    overflow-x: hidden;
+  }
+
   /* Remove list markers only for navigation and UI components */
   nav ul,
   nav ol,
@@ -201,7 +217,7 @@
     margin: 0;
     padding: 0;
   }
-  
+
   /* Preserve list markers for content */
   article ul,
   article ol,
@@ -212,5 +228,415 @@
     list-style: revert;
     margin: revert;
     padding: revert;
+  }
+}
+
+@layer components {
+  /* ============================================================================
+   * Chat Layout Components - Prompt-Kit Compatible
+   * ============================================================================ */
+
+  .chat-layout {
+    /* Full height layout with proper flex behavior */
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .chat-main-content {
+    /* Main content area with proper scrolling */
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .chat-messages-container {
+    /* Messages container with proper scroll behavior */
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    padding: 1rem;
+  }
+
+  .chat-input-area {
+    /* Input area with proper positioning */
+    flex-shrink: 0;
+    border-top: 1px solid hsl(var(--border));
+    background: hsl(var(--background) / 0.95);
+    backdrop-filter: blur(8px);
+    padding: 1rem;
+  }
+
+  /* Responsive chat layout */
+  @media (min-width: 1024px) {
+    .chat-main-content {
+      flex-direction: row;
+    }
+
+    .chat-messages-container {
+      flex: 1;
+      border-right: 1px solid hsl(var(--border));
+    }
+  }
+  /* Agent Status Cards - Enhanced Positioning and Behavior */
+  .agent-status-card {
+    /* Smooth transitions for all state changes */
+    transition-property: transform, box-shadow, opacity, border-color, background-color;
+    transition-duration: 200ms;
+    transition-timing-function: ease-out;
+
+    /* Ensure proper stacking context */
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+
+    /* Micro-interactions */
+    will-change: transform, box-shadow;
+  }
+
+  .agent-status-card:hover {
+    /* Subtle lift effect */
+    transform: translateY(-2px) translateZ(0);
+    box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.15);
+  }
+
+  .agent-status-card.active {
+    /* Enhanced active state */
+    transform: translateY(-1px) scale(1.02) translateZ(0);
+    box-shadow: 0 12px 30px -8px rgba(59, 130, 246, 0.3);
+  }
+
+  /* Enhanced Agent Grid Layout - Prompt-Kit Compatible */
+  .agent-grid {
+    /* Use CSS Grid with proper responsive layout */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    align-items: start;
+    width: 100%;
+  }
+
+  /* Mobile: Single column for better readability */
+  @media (max-width: 640px) {
+    .agent-grid {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+  }
+
+  /* Tablet: Two columns for landscape orientation */
+  @media (min-width: 641px) and (max-width: 1023px) {
+    .agent-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+  }
+
+  /* Desktop: Responsive columns based on available space */
+  @media (min-width: 1024px) {
+    .agent-grid {
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+      max-width: 100%;
+    }
+  }
+
+  /* Ultra-wide: Prevent cards from becoming too wide */
+  @media (min-width: 1920px) {
+    .agent-grid {
+      grid-template-columns: repeat(auto-fit, minmax(300px, 400px));
+      gap: 1.5rem;
+    }
+  }
+
+  /* Scrollable Area Optimizations */
+  .agent-scroll-area {
+    /* Smooth scrolling */
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+  }
+
+  .agent-scroll-area::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .agent-scroll-area::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .agent-scroll-area::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.3);
+    border-radius: 3px;
+  }
+
+  .agent-scroll-area::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.5);
+  }
+
+  /* Enhanced Panel Responsive Behavior - Prompt-Kit Compatible */
+  .agent-panel-responsive {
+    /* Mobile: Bottom sheet with proper z-index and positioning */
+    @media (max-width: 1023px) {
+      position: relative;
+      border-radius: 12px 12px 0 0;
+      box-shadow: 0 -4px 20px -4px rgba(0, 0, 0, 0.1);
+      max-height: 50vh;
+      overflow-y: auto;
+      background: hsl(var(--background) / 0.95);
+      backdrop-filter: blur(8px);
+    }
+
+    /* Desktop: Side panel with proper scrolling */
+    @media (min-width: 1024px) {
+      position: relative;
+      height: 100%;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  /* Agent Status Popup Positioning */
+  .agent-status-popup {
+    position: absolute;
+    z-index: 50;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 0.5rem;
+    background: hsl(var(--popover));
+    border: 1px solid hsl(var(--border));
+    border-radius: calc(var(--radius) + 2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    animation: fadeInUp 0.2s ease-out;
+    backdrop-filter: blur(8px);
+  }
+
+  .agent-status-popup::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 1rem;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 8px solid hsl(var(--popover));
+  }
+
+  /* Responsive popup positioning */
+  @media (max-width: 640px) {
+    .agent-status-popup {
+      left: -1rem;
+      right: -1rem;
+      margin-left: 0;
+      margin-right: 0;
+    }
+  }
+
+  /* Animation utilities */
+  .fade-in-up {
+    animation: fadeInUp 0.3s ease-out;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .stagger-children > * {
+    animation: fadeInUp 0.3s ease-out;
+  }
+
+  .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+  .stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+  .stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+  .stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+  .stagger-children > *:nth-child(6) { animation-delay: 250ms; }
+  .stagger-children > *:nth-child(n+7) { animation-delay: 300ms; }
+
+  /* Agent Status Popup Enhancements */
+  .agent-popup-container {
+    /* Enhanced backdrop blur and glass effect */
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+
+    /* Smooth transitions for all interactive states */
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Hardware acceleration for smooth animations */
+    will-change: transform, opacity, filter;
+    transform: translateZ(0);
+  }
+
+  .agent-popup-container.dragging {
+    /* Enhanced visual feedback during drag */
+    filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.15));
+    transform: scale(1.02) translateZ(0);
+  }
+
+  .agent-popup-container.pinned {
+    /* Visual indication of pinned state */
+    box-shadow: 0 0 0 2px rgba(var(--primary), 0.2), 
+                0 8px 30px rgba(0, 0, 0, 0.12);
+  }
+
+  /* Mobile-specific popup optimizations */
+  @media (max-width: 768px) {
+    .agent-popup-container {
+      /* Better mobile positioning */
+      max-width: calc(100vw - 32px);
+      max-height: calc(100vh - 80px);
+
+      /* Enhanced touch targets */
+      min-height: 44px;
+    }
+
+    .agent-popup-container .popup-header button {
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    .agent-popup-container .popup-drag-handle {
+      height: 6px;
+      width: 40px;
+      background: rgba(156, 163, 175, 0.6);
+      border-radius: 3px;
+      margin: 8px auto 4px;
+      transition: background-color 0.2s ease;
+    }
+
+    .agent-popup-container .popup-drag-handle:active {
+      background: rgba(156, 163, 175, 0.8);
+    }
+  }
+
+  /* Tablet optimizations */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .agent-popup-container {
+      max-width: 420px;
+      max-height: 60vh;
+    }
+  }
+
+  /* Desktop enhancements */
+  @media (min-width: 1025px) {
+    .agent-popup-container:hover {
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  /* Approval banner animations */
+  .approval-banner {
+    /* Smooth entrance animation */
+    animation: slideInFromTop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* Enhanced glass effect */
+    backdrop-filter: blur(8px) saturate(150%);
+    -webkit-backdrop-filter: blur(8px) saturate(150%);
+  }
+
+  @keyframes slideInFromTop {
+    from {
+      opacity: 0;
+      transform: translateY(-24px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .approval-banner-pulse {
+    /* Subtle pulse animation for attention */
+    animation: gentlePulse 2s ease-in-out infinite;
+  }
+
+  @keyframes gentlePulse {
+    0%, 100% { 
+      transform: scale(1); 
+      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.1);
+    }
+    50% { 
+      transform: scale(1.01); 
+      box-shadow: 0 6px 25px rgba(59, 130, 246, 0.15);
+    }
+  }
+
+  /* Loading states for popup content */
+  .popup-loading-skeleton {
+    background: linear-gradient(90deg, 
+      rgba(156, 163, 175, 0.1) 25%, 
+      rgba(156, 163, 175, 0.2) 50%, 
+      rgba(156, 163, 175, 0.1) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  /* Smooth transitions for popup state changes */
+  .popup-content-transition {
+    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.2s ease,
+                transform 0.2s ease;
+  }
+
+  /* Enhanced focus states for accessibility */
+  .agent-popup-container button:focus-visible,
+  .agent-popup-container [tabindex]:focus-visible {
+    outline: 2px solid rgba(var(--primary), 0.8);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(var(--primary), 0.1);
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .agent-popup-container,
+    .approval-banner,
+    .fade-in-up,
+    .stagger-children > * {
+      animation: none;
+      transition-duration: 0.1s;
+    }
+
+    .approval-banner-pulse {
+      animation: none;
+    }
+
+    .popup-loading-skeleton {
+      animation: none;
+      background: rgba(156, 163, 175, 0.1);
+    }
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .agent-popup-container {
+      border-width: 2px;
+      box-shadow: none;
+    }
+
+    .approval-banner {
+      border-width: 2px;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
   }
 }

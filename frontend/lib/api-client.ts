@@ -26,6 +26,9 @@ import type {
   ChangePasswordRequest
 } from '../types/auth';
 import type {
+  ChatMessage
+} from '../types/api';
+import type {
   AuthResponse,
   UserResponse,
   Token,
@@ -100,16 +103,6 @@ const HealthResponseSchema = z.object({
   version: z.string().optional(),
 });
 
-export interface ChatMessage {
-  id: string;
-  content: string;
-  role: 'user' | 'assistant';
-  timestamp: Date;
-  // Research-specific fields
-  isResearchQuery?: boolean;
-  isResearchResult?: boolean;
-  researchSessionId?: string;
-}
 
 export type CreateChatResponse = z.infer<typeof CreateChatResponseSchema>;
 export type HealthResponse = z.infer<typeof HealthResponseSchema>;
@@ -701,19 +694,48 @@ class HttpClient {
     endpoint: string,
     options?: {
       headers?: Record<string, string>;
+      method?: 'GET' | 'POST';
+      body?: unknown;
     }
   ): Promise<Response> {
     const url = `${this.config.baseUrl}${endpoint}`;
+    const method = options?.method || 'GET';
+    
     const headers = await this.getHeaders({
       'Accept': 'text/event-stream',
       'Cache-Control': 'no-cache',
       ...options?.headers,
     });
 
-    const response = await this.fetchWithRetry(url, {
-      method: 'GET',
+    // Validate input data for POST requests (similar to post method)
+    let sanitizedBody = options?.body;
+    if (method === 'POST' && endpoint.includes('/chat/') && sanitizedBody && typeof sanitizedBody === 'object' && 'message' in sanitizedBody) {
+      try {
+        const { InputValidator } = await import('./security');
+        const validation = InputValidator.validateMessage((sanitizedBody as { message?: string }).message);
+        
+        if (!validation.isValid) {
+          throw new ApiError('Invalid input: ' + validation.errors.join(', '));
+        }
+        
+        sanitizedBody = { ...sanitizedBody, message: validation.sanitized };
+      } catch (error) {
+        // Fallback if security module fails
+        console.warn('[Security] Input validation failed, proceeding without sanitization');
+      }
+    }
+
+    const requestOptions: RequestInit = {
+      method,
       headers,
-    });
+    };
+
+    // Add body for POST requests
+    if (method === 'POST' && sanitizedBody !== undefined) {
+      requestOptions.body = JSON.stringify(sanitizedBody);
+    }
+
+    const response = await this.fetchWithRetry(url, requestOptions);
 
     if (!response.ok) {
       throw ApiError.fromResponse(response);

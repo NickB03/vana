@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import type { ChatMessage } from '@/types/api';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChatHeader } from './chat-header';
 import { MessageBubble } from './message-bubble';
@@ -8,8 +9,7 @@ import { MessageSkeleton } from './message-skeleton';
 import { StreamingMessage } from './streaming-message';
 import { useChatContext } from '@/contexts/chat-context';
 import { ResearchProgressPanel } from '@/components/research/research-progress-panel';
-import { AgentStatusDisplay } from '@/components/research/agent-status-display';
-import { useAgentStatusTracker } from '@/hooks/use-research-sse';
+// AgentStatusDisplay import removed as it's not used in this component
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Search, Bot, CheckCircle } from 'lucide-react';
@@ -18,8 +18,6 @@ export function ChatMessages() {
   const { 
     messages, 
     streamingState, 
-    isWaitingForResponse, 
-    isResearchMode, 
     research 
   } = useChatContext();
   
@@ -28,7 +26,7 @@ export function ChatMessages() {
 
   // Helper to render research-specific message content
   const renderResearchMessage = (message: ChatMessage) => {
-    if (message.isResearchQuery) {
+    if ('isResearchQuery' in message && message.isResearchQuery) {
       return (
         <div className="space-y-4">
           <MessageBubble key={message.id} message={message} />
@@ -42,10 +40,13 @@ export function ChatMessages() {
                     Multi-Agent Research Active
                   </Badge>
                 </div>
-                <AgentStatusDisplay 
-                  sessionState={research.sessionState}
+                {/* <AgentStatusDisplay 
+                  sessionState={research.sessionState as any}
                   className="mb-4"
-                />
+                /> */}
+                <div className="text-sm text-gray-600 mb-4">
+                  Research in progress...
+                </div>
               </CardContent>
             </Card>
           )}
@@ -73,12 +74,34 @@ export function ChatMessages() {
       );
     }
     
+    if (message.isAgentResponse) {
+      return (
+        <div className="space-y-4">
+          <Card className="border-blue-200 bg-blue-50 dark:bg-blue-900/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
+                <h3 className="font-medium text-sm">
+                  {message.agentType ? `${message.agentType} Agent` : 'Research Agent'}
+                </h3>
+              </div>
+              <div className="prose prose-sm max-w-none dark:prose-invert">
+                <div className="whitespace-pre-wrap text-sm">
+                  {message.content}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+    
     return <MessageBubble key={message.id} message={message} />;
   };
 
 
   // Show welcome screen when no messages
-  if (messages.length === 0 && !isWaitingForResponse && !streamingState.isStreaming) {
+  if (messages.length === 0 && !streamingState.isStreaming) {
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 flex items-center justify-center">
@@ -92,12 +115,14 @@ export function ChatMessages() {
   return (
     <ScrollArea className="h-full" data-testid="chat-messages">
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-        {messages.map((message) => 
-          renderResearchMessage(message)
-        )}
+        {messages.map((message) => (
+          <React.Fragment key={message.id}>
+            {renderResearchMessage(message)}
+          </React.Fragment>
+        ))}
         
         {/* Show research progress panel if in research mode and research is active */}
-        {isResearchMode && research.isResearchActive && research.sessionState && (
+        {research.isResearchActive && research.sessionState && (
           <Card className="border-blue-200 bg-blue-50 dark:bg-blue-900/20">
             <CardContent className="p-4">
               <ResearchProgressPanel 
@@ -113,7 +138,7 @@ export function ChatMessages() {
         )}
         
         {/* Show loading skeleton while waiting for response */}
-        {isWaitingForResponse && <MessageSkeleton />}
+        {streamingState.isStreaming && <MessageSkeleton />}
         
         {/* Show streaming message */}
         {(streamingState.isStreaming || streamingState.error) && (

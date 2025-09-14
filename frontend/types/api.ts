@@ -139,6 +139,9 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   timestamp: Date;
   user_id?: string; // For authenticated chats
+  isResearchResult?: boolean; // For final research reports
+  isAgentResponse?: boolean; // For individual agent responses
+  agentType?: string; // The type of agent that generated this response
 }
 
 export interface CreateChatMessageRequest {
@@ -227,6 +230,17 @@ export interface AgentStatus {
   progress: number;
   last_update: string; // ISO datetime
   user_id?: string;
+}
+
+// SSE-specific agent status (for streaming research)
+export interface SSEAgentStatus {
+  agent_id: string;
+  agent_type: string;
+  name: string;
+  status: 'waiting' | 'current' | 'completed' | 'error';
+  progress: number;
+  current_task?: string | null;
+  error?: string | null;
 }
 
 export interface TeamStatus {
@@ -318,7 +332,7 @@ export interface ApiClient {
   delete<T>(endpoint: string, options?: ApiRequestOptions): Promise<T>;
   
   // Streaming
-  createEventStream(endpoint: string, options?: ApiRequestOptions): Promise<Response>;
+  createEventStream(endpoint: string, options?: ApiRequestOptions & { method?: 'GET' | 'POST'; body?: unknown }): Promise<Response>;
   
   // Auth-aware methods
   authenticatedGet<T>(endpoint: string, options?: ApiRequestOptions): Promise<T>;

@@ -5,19 +5,17 @@ import { Avatar } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { User, Bot } from 'lucide-react';
 
-interface Message {
-  id: string;
-  content: string;
-  role: 'user' | 'assistant';
-  timestamp: Date;
-}
+import type { ChatMessage } from '@/types/api';
 
 interface MessageBubbleProps {
-  message: Message;
+  message: ChatMessage;
 }
 
 export function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === 'user';
+  
+  // DEBUG: Log message being rendered
+  console.log('[MessageBubble] Rendering message:', message);
 
   return (
     <div className={`flex gap-4 ${isUser ? 'flex-row-reverse' : 'flex-row'}`} data-testid="message-bubble" data-sender={message.role}>

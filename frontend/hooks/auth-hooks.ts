@@ -11,7 +11,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
-import { AuthService, User } from '@/lib/auth-service';
+import { AuthService } from '@/lib/auth-service';
+import type { User } from '@/types/auth';
 
 // ============================================================================
 // Types
@@ -64,7 +65,7 @@ export function useAuthToken(options: AuthTokenOptions = {}) {
     onRefreshSuccess,
   } = options;
 
-  const refreshTimeoutRef = useRef<NodeJS.Timeout>();
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const refreshPromiseRef = useRef<Promise<string> | null>(null);
 
   // Validate token format
@@ -185,8 +186,10 @@ export function useAuthGuard(options: AuthGuardOptions = {}) {
       const userRoles = user.roles || [];
       
       const hasRoles = roleLogic === 'AND'
-        ? requiredRoles.every(role => userRoles.includes(role))
-        : requiredRoles.some(role => userRoles.includes(role));
+        ? requiredRoles.every(role => userRoles.some(userRole => 
+            typeof userRole === 'string' ? userRole === role : userRole.name === role))
+        : requiredRoles.some(role => userRoles.some(userRole => 
+            typeof userRole === 'string' ? userRole === role : userRole.name === role));
 
       setHasRequiredRoles(hasRoles);
       
@@ -340,7 +343,7 @@ export function useSessionManager(options: SessionManagerOptions = {}) {
 
   const sessionStartRef = useRef(Date.now());
   const warningShownRef = useRef(false);
-  const intervalRef = useRef<NodeJS.Timeout>();
+  const intervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   useEffect(() => {
     const updateSessionStatus = () => {
@@ -417,7 +420,9 @@ export function usePermissions() {
   const { user } = useAuth();
 
   const hasRole = useCallback((role: string): boolean => {
-    return user?.roles?.includes(role) ?? false;
+    return user?.roles?.some(userRole => 
+      typeof userRole === 'string' ? userRole === role : userRole.name === role
+    ) ?? false;
   }, [user]);
 
   const hasPermission = useCallback((permission: string): boolean => {
@@ -426,12 +431,16 @@ export function usePermissions() {
 
   const hasAnyRole = useCallback((roles: string[]): boolean => {
     if (!user?.roles) return false;
-    return roles.some(role => user.roles!.includes(role));
+    return roles.some(role => user.roles!.some(userRole => 
+      typeof userRole === 'string' ? userRole === role : userRole.name === role
+    ));
   }, [user]);
 
   const hasAllRoles = useCallback((roles: string[]): boolean => {
     if (!user?.roles) return false;
-    return roles.every(role => user.roles!.includes(role));
+    return roles.every(role => user.roles!.some(userRole => 
+      typeof userRole === 'string' ? userRole === role : userRole.name === role
+    ));
   }, [user]);
 
   return {

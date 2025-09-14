@@ -431,6 +431,265 @@ class MultiAgentResearchOrchestrator:
             "timestamp": datetime.now().isoformat()
         }
 
+    async def start_research_with_broadcasting(self, session_id: str, research_query: str):
+        """Start research and broadcast events via SSE broadcaster"""
+        try:
+            # Import SSE broadcaster
+            from app.utils.sse_broadcaster import broadcast_agent_network_update
+            
+            # Create agents
+            agents = [self.create_agent_status(agent_type) for agent_type in self.AGENT_TYPES]
+
+            # Initialize research progress
+            progress = ResearchProgress(
+                session_id=session_id,
+                status="initializing",
+                current_phase="Team Assembly",
+                agents=agents
+            )
+
+            self.active_sessions[session_id] = progress
+            
+            # Broadcast initial connection
+            broadcast_agent_network_update({
+                "type": "connection",
+                "status": "connected",
+                "sessionId": session_id,
+                "timestamp": datetime.now().isoformat()
+            }, session_id)
+            
+            # Broadcast research started event
+            broadcast_agent_network_update({
+                "type": "research_started",
+                "sessionId": session_id,
+                "timestamp": datetime.now().isoformat()
+            }, session_id)
+
+            # Start research orchestration with broadcasting
+            await self._orchestrate_research_with_broadcasting(session_id, research_query)
+            
+        except Exception as e:
+            # Broadcast error
+            from app.utils.sse_broadcaster import broadcast_agent_network_update
+            broadcast_agent_network_update({
+                "type": "error",
+                "sessionId": session_id,
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            }, session_id)
+            raise
+
+    async def _orchestrate_research_with_broadcasting(self, session_id: str, research_query: str):
+        """Research orchestration with SSE event broadcasting"""
+        try:
+            from app.utils.sse_broadcaster import broadcast_agent_network_update
+            
+            progress = self.active_sessions[session_id]
+            progress.status = "running"
+            progress.current_phase = "Research Planning"
+            
+            # Broadcast initial progress
+            broadcast_agent_network_update({
+                "type": "research_progress",
+                "sessionId": session_id,
+                "status": progress.status,
+                "overall_progress": 0.0,
+                "current_phase": progress.current_phase,
+                "agents": [
+                    {
+                        "agent_id": agent.agent_id,
+                        "agent_type": agent.agent_type,
+                        "name": agent.name,
+                        "status": agent.status,
+                        "progress": agent.progress,
+                        "current_task": agent.current_task,
+                        "error": agent.error
+                    }
+                    for agent in progress.agents
+                ],
+                "partial_results": progress.partial_results,
+                "timestamp": progress.updated_at.isoformat()
+            }, session_id)
+
+            # Execute research phases with broadcasting
+            phases = [
+                ("team_leader", "Analyze this research request and create a comprehensive research strategy", 0.15),
+                ("plan_generator", "Create a detailed research plan based on the strategy", 0.30),
+                ("section_planner", "Break down the research plan into structured sections", 0.45),
+                ("researcher", "Conduct comprehensive research based on the plan", 0.70),
+                ("evaluator", "Evaluate research quality and identify gaps", 0.85),
+                ("report_writer", "Synthesize findings into a comprehensive report", 1.0)
+            ]
+
+            for i, (agent_type, task_description, target_progress) in enumerate(phases):
+                phase_name = f"Phase {i+1}: {agent_type.replace('_', ' ').title()}"
+                progress.current_phase = phase_name
+                progress.overall_progress = target_progress
+                progress.updated_at = datetime.now()
+                
+                # Execute agent phase with broadcasting
+                await self._execute_agent_phase_with_broadcasting(
+                    session_id, agent_type, f"{task_description}: {research_query}"
+                )
+                
+                # Broadcast progress update
+                broadcast_agent_network_update({
+                    "type": "research_progress",
+                    "sessionId": session_id,
+                    "status": progress.status,
+                    "overall_progress": progress.overall_progress,
+                    "current_phase": progress.current_phase,
+                    "agents": [
+                        {
+                            "agent_id": agent.agent_id,
+                            "agent_type": agent.agent_type,
+                            "name": agent.name,
+                            "status": agent.status,
+                            "progress": agent.progress,
+                            "current_task": agent.current_task,
+                            "error": agent.error
+                        }
+                        for agent in progress.agents
+                    ],
+                    "partial_results": progress.partial_results,
+                    "timestamp": progress.updated_at.isoformat()
+                }, session_id)
+
+            # Mark research as completed
+            progress.status = "completed"
+            progress.current_phase = "Research Complete"
+            progress.overall_progress = 1.0
+            progress.updated_at = datetime.now()
+            
+            # Generate final report
+            if progress.partial_results:
+                final_report_parts = []
+                for agent_type, result in progress.partial_results.items():
+                    if isinstance(result, dict) and 'content' in result:
+                        final_report_parts.append(f"## {agent_type.replace('_', ' ').title()}\n{result['content']}\n")
+                progress.final_report = "\n".join(final_report_parts)
+            else:
+                progress.final_report = f"Research completed for: {research_query}"
+
+            # Broadcast completion
+            broadcast_agent_network_update({
+                "type": "research_complete",
+                "sessionId": session_id,
+                "status": "completed",
+                "final_report": progress.final_report,
+                "timestamp": progress.updated_at.isoformat()
+            }, session_id)
+
+        except Exception as e:
+            # Handle errors
+            progress = self.active_sessions.get(session_id)
+            if progress:
+                progress.status = "error"
+                progress.error = str(e)
+                progress.updated_at = datetime.now()
+                
+            # Broadcast error
+            broadcast_agent_network_update({
+                "type": "error",
+                "sessionId": session_id,
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            }, session_id)
+            raise
+
+    async def _execute_agent_phase_with_broadcasting(self, session_id: str, agent_type: str, prompt: str):
+        """Execute agent phase with real-time broadcasting"""
+        from app.utils.sse_broadcaster import broadcast_agent_network_update
+        
+        progress = self.active_sessions[session_id]
+        agent = next((a for a in progress.agents if a.agent_type == agent_type), None)
+        if not agent:
+            return
+
+        try:
+            # Mark agent as current
+            agent.status = "current"
+            agent.current_task = f"Processing: {agent_type.replace('_', ' ')}"
+            agent.started_at = datetime.now()
+            progress.updated_at = datetime.now()
+
+            # Broadcast agent start
+            broadcast_agent_network_update({
+                "type": "research_progress",
+                "sessionId": session_id,
+                "status": "running",
+                "overall_progress": progress.overall_progress,
+                "current_phase": progress.current_phase,
+                "agents": [
+                    {
+                        "agent_id": a.agent_id,
+                        "agent_type": a.agent_type,
+                        "name": a.name,
+                        "status": a.status,
+                        "progress": a.progress,
+                        "current_task": a.current_task,
+                        "error": a.error
+                    }
+                    for a in progress.agents
+                ],
+                "partial_results": progress.partial_results,
+                "timestamp": progress.updated_at.isoformat()
+            }, session_id)
+
+            # Simulate processing with progress updates
+            for step in range(5):
+                await asyncio.sleep(0.8)  # Simulate work
+                agent.progress = (step + 1) / 5
+                progress.updated_at = datetime.now()
+                
+                # Broadcast incremental progress
+                broadcast_agent_network_update({
+                    "type": "research_progress",
+                    "sessionId": session_id,
+                    "status": "running",
+                    "overall_progress": progress.overall_progress,
+                    "current_phase": progress.current_phase,
+                    "agents": [
+                        {
+                            "agent_id": a.agent_id,
+                            "agent_type": a.agent_type,
+                            "name": a.name,
+                            "status": a.status,
+                            "progress": a.progress,
+                            "current_task": a.current_task,
+                            "error": a.error
+                        }
+                        for a in progress.agents
+                    ],
+                    "partial_results": progress.partial_results,
+                    "timestamp": progress.updated_at.isoformat()
+                }, session_id)
+
+            # Generate agent result
+            result_content = f"Results from {agent_type.replace('_', ' ')} analysis of: {prompt[:100]}..."
+            
+            # Store partial results
+            if not progress.partial_results:
+                progress.partial_results = {}
+            progress.partial_results[agent_type] = {
+                "content": result_content,
+                "completed_at": datetime.now().isoformat()
+            }
+
+            # Mark agent as completed
+            agent.status = "completed"
+            agent.progress = 1.0
+            agent.completed_at = datetime.now()
+            agent.current_task = None
+            progress.updated_at = datetime.now()
+
+        except Exception as e:
+            agent.status = "error"
+            agent.error = str(e)
+            agent.current_task = None
+            progress.updated_at = datetime.now()
+            raise
+
 
 # Global orchestrator instance
 research_orchestrator: Optional[MultiAgentResearchOrchestrator] = None

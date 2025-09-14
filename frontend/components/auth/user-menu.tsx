@@ -9,6 +9,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useAuth } from '../../contexts/auth-context';
 
 // ============================================================================
@@ -83,8 +84,8 @@ export function UserMenu({ className = '' }: UserMenuProps) {
   }
 
   // Get user display name and avatar
-  const displayName = user.full_name || user.email.split('@')[0];
-  const avatarUrl = user.profile?.avatar_url;
+  const displayName = user.full_name || (user.email ? user.email.split('@')[0] : user.username);
+  const avatarUrl = undefined; // TODO: Add profile.avatar_url to User interface
   const userInitials = displayName
     .split(' ')
     .map(name => name[0])
@@ -109,9 +110,11 @@ export function UserMenu({ className = '' }: UserMenuProps) {
         {/* Avatar */}
         <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center overflow-hidden">
           {avatarUrl ? (
-            <img
+            <Image
               src={avatarUrl}
               alt={displayName}
+              width={32}
+              height={32}
               className="w-full h-full object-cover"
             />
           ) : (
@@ -152,9 +155,11 @@ export function UserMenu({ className = '' }: UserMenuProps) {
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center overflow-hidden">
                 {avatarUrl ? (
-                  <img
+                  <Image
                     src={avatarUrl}
                     alt={displayName}
+                    width={40}
+                    height={40}
                     className="w-full h-full object-cover"
                   />
                 ) : (
