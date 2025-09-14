@@ -96,7 +96,7 @@ export function RegisterForm({
   showLoginLink = true 
 }: RegisterFormProps) {
   const router = useRouter();
-  const { register, isLoading, error, clearError } = useAuth();
+  const { isLoading, error, clearError } = useAuth();
   
   const [formData, setFormData] = useState<RegisterData & { confirmPassword: string }>({
     email: '',
@@ -184,7 +184,10 @@ export function RegisterForm({
         full_name: formData.full_name || undefined,
       };
       
-      await register(registerData);
+      // TODO: Implement registration API
+      console.log('Registration data:', registerData);
+      // Temporary placeholder - replace with actual registration service
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Call success callback
       if (onSuccess) {

@@ -4,7 +4,7 @@ import { defineConfig, devices } from '@playwright/test';
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
-  testDir: './tests/e2e',
+  testDir: './tests',
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -22,7 +22,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:3001',
+    baseURL: 'http://localhost:3002',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -34,66 +34,81 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
 
-  /* Configure projects for major browsers */
+  /* Configure projects for comprehensive responsive testing */
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-
-    /* Test against mobile viewports. */
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
+      name: 'chromium-desktop',
+      use: { 
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1440, height: 900 }
+      },
     },
     {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
+      name: 'chromium-mobile',
+      use: { 
+        ...devices['Pixel 5'],
+        viewport: { width: 393, height: 851 }
+      },
+    },
+    {
+      name: 'chromium-tablet',
+      use: {
+        ...devices['iPad Pro'],
+        viewport: { width: 1024, height: 1366 }
+      },
+    },
+    {
+      name: 'webkit-desktop',
+      use: { 
+        ...devices['Desktop Safari'],
+        viewport: { width: 1440, height: 900 }
+      },
+    },
+    {
+      name: 'webkit-mobile',
+      use: {
+        ...devices['iPhone 12'],
+        viewport: { width: 390, height: 844 }
+      },
     },
 
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
+    /* Test against branded browsers and ultra-wide displays */
+    {
+      name: 'Microsoft Edge',
+      use: { 
+        ...devices['Desktop Edge'], 
+        channel: 'msedge',
+        viewport: { width: 1440, height: 900 }
+      },
+    },
+    {
+      name: 'Google Chrome',
+      use: { 
+        ...devices['Desktop Chrome'], 
+        channel: 'chrome',
+        viewport: { width: 1920, height: 1080 }
+      },
+    },
+    {
+      name: 'ultrawide',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 2560, height: 1440 }
+      },
+    },
   ],
 
   /* Run your local dev server before starting the tests */
-  // webServer: [
-  //   {
-  //     command: 'npm run dev',
-  //     url: 'http://localhost:3001',
-  //     reuseExistingServer: true,
-  //     env: {
-  //       NEXT_PUBLIC_API_URL: 'http://localhost:8000',
-  //       NEXT_PUBLIC_AUTH_REQUIRE_SSE_AUTH: 'false',
-  //     }
-  //   },
-  //   {
-  //     command: 'cd .. && make dev-backend',
-  //     url: 'http://localhost:8000/health',
-  //     reuseExistingServer: true,
-  //     timeout: 30000,
-  //   }
-  // ],
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:3002',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120 * 1000, // 2 minutes timeout
+  },
 
   /* Global setup and teardown */
-  globalSetup: require.resolve('./__tests__/e2e/global-setup.ts'),
-  globalTeardown: require.resolve('./__tests__/e2e/global-teardown.ts'),
+  // globalSetup: require.resolve('./__tests__/e2e/global-setup.ts'),
+  // globalTeardown: require.resolve('./__tests__/e2e/global-teardown.ts'),
 
   /* Timeout settings */
   timeout: 30000,

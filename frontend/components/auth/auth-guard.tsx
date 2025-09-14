@@ -64,7 +64,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   loadingComponent,
   unauthorizedComponent,
 }) => {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { isLoading, hasRole, hasPermission } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   
@@ -98,27 +98,18 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   const checkRolePermissions = useCallback((userToCheck: User | null): boolean => {
     if (!userToCheck || requiredRoles.length === 0) return true;
     
-    const userRoles = userToCheck.roles || [];
-    const roleNames = userRoles.map(role => 
-      typeof role === 'string' ? role : role.name || role
-    );
-    
+    // Use the auth context's hasRole method which works with JWT payload
     return roleLogic === 'AND'
-      ? requiredRoles.every(role => roleNames.includes(role))
-      : requiredRoles.some(role => roleNames.includes(role));
-  }, [requiredRoles, roleLogic]);
+      ? requiredRoles.every(role => hasRole(role))
+      : requiredRoles.some(role => hasRole(role));
+  }, [requiredRoles, roleLogic, hasRole]);
   
   const checkRequiredPermissions = useCallback((userToCheck: User | null): boolean => {
     if (!userToCheck || requiredPermissions.length === 0) return true;
     
-    return requiredPermissions.some(permission => 
-      userToCheck.roles?.some(role => 
-        role.permissions?.some(p => 
-          (typeof p === 'string' ? p : p.name) === permission
-        )
-      ) ?? false
-    );
-  }, [requiredPermissions]);
+    // Use the auth context's hasPermission method which works with JWT payload
+    return requiredPermissions.some(permission => hasPermission(permission));
+  }, [requiredPermissions, hasPermission]);
   
   const checkCustomPermissions = useCallback((userToCheck: User | null): boolean => {
     if (!customPermissionCheck) return true;

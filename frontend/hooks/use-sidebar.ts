@@ -14,7 +14,7 @@ type SidebarStore = {
   setSettings: (settings: Partial<SidebarSettings>) => void;
 };
 
-export const useSidebar = create(
+export const useSidebarStore = create(
   persist<SidebarStore>(
     (set, get) => ({
       isOpen: false,

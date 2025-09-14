@@ -212,12 +212,18 @@ export function AgentStatusDisplay({ agents, className }: AgentStatusDisplayProp
                 key={agent.agent_id}
                 className="w-8 h-8 rounded-full bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 flex items-center justify-center text-sm"
                 style={{ zIndex: agents.length - index }}
+                aria-label={`Agent ${agent.name} - Status: ${agent.status}`}
+                role="status"
               >
                 {getAgentTypeIcon(agent.agent_type)}
               </div>
             ))}
             {agents.length > 3 && (
-              <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 border-2 border-gray-200 dark:border-gray-600 flex items-center justify-center text-xs font-medium">
+              <div 
+                className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 border-2 border-gray-200 dark:border-gray-600 flex items-center justify-center text-xs font-medium"
+                aria-label={`${agents.length - 3} more research agents`}
+                role="status"
+              >
                 +{agents.length - 3}
               </div>
             )}

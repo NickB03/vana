@@ -12,15 +12,69 @@ import { JwtPayload } from 'jwt-decode';
 // ============================================================================
 
 /**
- * User Profile interface matching backend UserProfile model
+ * Unified User interface - Single source of truth for all user data
+ * Combines fields from all existing User interfaces to prevent conflicts
  */
 export interface User {
+  // Primary identifiers (compatible with all existing usages)
   user_id: string;
+  id: string; // Alias for user_id for backward compatibility
+  
+  // Basic profile information
   username: string;
   email: string | null;
+  
+  // Name fields (supporting various formats)
+  first_name?: string | null;
+  last_name?: string | null;
+  full_name?: string | null;
+  name?: string; // Alias for display name
+  
+  // Status and verification
+  is_active?: boolean;
+  is_verified?: boolean;
+  is_superuser?: boolean;
+  
+  // Authentication and security
+  google_cloud_identity?: string | null;
+  last_login?: string | null;
+  
+  // Timestamps
   created_at: string; // ISO datetime string
+  updated_at?: string;
+  
+  // User preferences and settings
   preferences: Record<string, unknown>;
   subscription_tier: 'free' | 'pro' | 'enterprise';
+  
+  // Profile customization
+  avatar?: string;
+  profile?: {
+    avatar_url?: string;
+    bio?: string;
+    location?: string;
+  };
+  
+  // Authorization (supporting both formats)
+  roles?: Array<{
+    id: number;
+    name: string;
+    description?: string;
+    is_active?: boolean;
+    created_at?: string;
+    permissions?: Array<{
+      id: number;
+      name: string;
+      description?: string;
+      resource: string;
+      action: string;
+      created_at?: string;
+    }>;
+  }>;
+  
+  // Simple role names (for backward compatibility)
+  role_names?: string[];
+  permissions?: string[];
 }
 
 /**
@@ -217,7 +271,9 @@ export interface AuthContextType extends AuthState {
 /**
  * UseAuth hook return type
  */
-export interface UseAuthReturn extends AuthContextType {}
+export interface UseAuthReturn extends AuthContextType {
+  // Extending AuthContextType with all authentication methods
+}
 
 /**
  * UseAuthForm hook return type for form handling

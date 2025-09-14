@@ -58,31 +58,65 @@ export function useResearchSSE(options: UseResearchSSEOptions = {}): UseResearch
   const handleSessionUpdate = useCallback((newState: ResearchSessionState) => {
     const previousState = previousStateRef.current;
     
-    // Prevent unnecessary updates if state hasn't meaningfully changed
-    if (previousState && 
-        previousState.status === newState.status &&
-        previousState.overallProgress === newState.overallProgress &&
-        previousState.currentPhase === newState.currentPhase &&
-        previousState.error === newState.error) {
+    // Helper function to check if agents array has changed
+    const agentsChanged = (prev: ResearchSessionState | null, curr: ResearchSessionState) => {
+      if (!prev?.agents || !curr.agents) return prev?.agents !== curr.agents;
+      if (prev.agents.length !== curr.agents.length) return true;
+      
+      return prev.agents.some((prevAgent, index) => {
+        const currAgent = curr.agents[index];
+        return prevAgent.agent_id !== currAgent.agent_id ||
+               prevAgent.status !== currAgent.status ||
+               prevAgent.progress !== currAgent.progress ||
+               prevAgent.current_task !== currAgent.current_task ||
+               prevAgent.error !== currAgent.error;
+      });
+    };
+    
+    // Helper function to check if partial results have changed  
+    const partialResultsChanged = (prev: ResearchSessionState | null, curr: ResearchSessionState) => {
+      if (!prev?.partialResults && !curr.partialResults) return false;
+      if (!prev?.partialResults || !curr.partialResults) return true;
+      
+      const prevKeys = Object.keys(prev.partialResults);
+      const currKeys = Object.keys(curr.partialResults);
+      
+      if (prevKeys.length !== currKeys.length) return true;
+      
+      return currKeys.some(key => {
+        const prevResult = prev.partialResults?.[key];
+        const currResult = curr.partialResults?.[key];
+        return JSON.stringify(prevResult) !== JSON.stringify(currResult);
+      });
+    };
+    
+    // Check if any meaningful field has changed
+    const hasChanged = !previousState ||
+      previousState.status !== newState.status ||
+      previousState.overallProgress !== newState.overallProgress ||
+      previousState.currentPhase !== newState.currentPhase ||
+      previousState.error !== newState.error ||
+      previousState.finalReport !== newState.finalReport ||
+      agentsChanged(previousState, newState) ||
+      partialResultsChanged(previousState, newState) ||
+      previousState.lastUpdate.getTime() !== newState.lastUpdate.getTime();
+    
+    if (!hasChanged) {
       return; // Skip update if no meaningful change
     }
     
-    setSessionState(prev => {
-      if (prev && 
-          prev.status === newState.status &&
-          prev.overallProgress === newState.overallProgress &&
-          prev.currentPhase === newState.currentPhase) {
-        return prev; // Return previous state to prevent re-render
-      }
-      return newState;
-    });
-    
+    // Always update state when there are meaningful changes
+    setSessionState(newState);
     setIsConnected(newState.status === 'connected' || newState.status === 'running');
     
     // Handle completion (only fire once)
     if (newState.status === 'completed' && previousState?.status !== 'completed') {
+      console.log('[useResearchSSE] Research completed, calling onComplete with final report:', newState.finalReport ? 'present' : 'null/missing');
+      console.log('[useResearchSSE] Final report content length:', newState.finalReport?.length || 0);
       if (onComplete) {
         onComplete(newState.finalReport);
+      } else {
+        console.warn('[useResearchSSE] onComplete callback is not defined');
       }
       setIsLoading(false);
     }
@@ -221,19 +255,19 @@ export function useAgentStatusTracker(sessionState: ResearchSessionState | null)
   }, [agentMap]);
   
   const getActiveAgent = useCallback(() => {
-    return sessionState?.agents.find(agent => agent.status === 'current') || null;
+    return sessionState?.agents?.find(agent => agent.status === 'current') ?? null;
   }, [sessionState?.agents]);
   
   const getCompletedAgents = useCallback(() => {
-    return sessionState?.agents.filter(agent => agent.status === 'completed') || [];
+    return sessionState?.agents?.filter(agent => agent.status === 'completed') ?? [];
   }, [sessionState?.agents]);
   
   const getPendingAgents = useCallback(() => {
-    return sessionState?.agents.filter(agent => agent.status === 'waiting') || [];
+    return sessionState?.agents?.filter(agent => agent.status === 'waiting') ?? [];
   }, [sessionState?.agents]);
   
   const getFailedAgents = useCallback(() => {
-    return sessionState?.agents.filter(agent => agent.status === 'error') || [];
+    return sessionState?.agents?.filter(agent => agent.status === 'error') ?? [];
   }, [sessionState?.agents]);
   
   return {
@@ -243,9 +277,9 @@ export function useAgentStatusTracker(sessionState: ResearchSessionState | null)
     getCompletedAgents,
     getPendingAgents,
     getFailedAgents,
-    totalAgents: sessionState?.agents.length || 0,
+    totalAgents: sessionState?.agents?.length ?? 0,
     completedCount: getCompletedAgents().length,
-    activeCount: sessionState?.agents.filter(a => a.status === 'current').length || 0,
+    activeCount: sessionState?.agents?.filter(a => a.status === 'current')?.length ?? 0,
     errorCount: getFailedAgents().length,
   };
 }
@@ -275,7 +309,7 @@ export function useResearchResults(sessionState: ResearchSessionState | null) {
       Object.entries(sessionState.partialResults).forEach(([agentType, result]) => {
         if (result && typeof result === 'object' && result.content) {
           sections.push({
-            title: agentType.replace('_', ' ').toUpperCase(),
+            title: agentType.replaceAll('_', ' ').toUpperCase(),
             content: result.content,
             agent: agentType,
           });

@@ -3,18 +3,14 @@
 import React, { createContext, useContext, useState, ReactNode, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useResearchSSE, UseResearchSSEResult } from '@/hooks/use-research-sse';
+import type { ChatMessage as ApiChatMessage } from '@/types/api';
 
 // ============================================================================
 // Type Definitions (simplified - using only research functionality)
 // ============================================================================
 
-type ChatMessage = {
-  id: string;
-  content: string;
-  role: 'user' | 'assistant';
-  timestamp: Date;
-  isResearchQuery?: boolean;
-  isResearchResult?: boolean;
+type ChatMessage = ApiChatMessage & {
+  isResearchQuery?: boolean; // local-only
 };
 
 interface StreamingState {
@@ -55,6 +51,8 @@ interface ChatProviderProps {
 export function ChatProvider({ children }: ChatProviderProps) {
   const { user, isAuthenticated } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  
+  console.log('[ChatProvider] Messages state:', messages.length, 'messages');
   const [streamingState, setStreamingState] = useState<StreamingState>({
     isStreaming: false,
     content: '',
@@ -66,7 +64,10 @@ export function ChatProvider({ children }: ChatProviderProps) {
   // Initialize research SSE functionality with enhanced error handling
   const research = useResearchSSE({
     onComplete: (finalReport) => {
-      console.log('[Chat Context] Research completed:', finalReport);
+      console.log('[Chat Context] onComplete called with finalReport:', finalReport ? 'present' : 'null/missing');
+      console.log('[Chat Context] Final report length:', finalReport?.length || 0);
+      console.log('[Chat Context] Final report preview:', finalReport?.substring(0, 100) || 'N/A');
+      
       // Add final report as a message
       if (finalReport) {
         const researchMessage: ChatMessage = {
@@ -76,8 +77,16 @@ export function ChatProvider({ children }: ChatProviderProps) {
           timestamp: new Date(),
           isResearchResult: true
         };
-        setMessages(prev => [...prev, researchMessage]);
+        console.log('[Chat Context] Creating research message:', researchMessage);
+        setMessages(prev => {
+          const newMessages = [...prev, researchMessage];
+          console.log('[Chat Context] Updated messages array length:', newMessages.length);
+          return newMessages;
+        });
+      } else {
+        console.warn('[Chat Context] Cannot create research message: finalReport is null/empty');
       }
+      
       // Clear streaming state when complete
       setStreamingState(prev => ({
         isStreaming: false,
@@ -107,11 +116,89 @@ export function ChatProvider({ children }: ChatProviderProps) {
         lastActivity: new Date(),
         error: undefined // Clear any previous errors on successful progress
       }));
+      
+      // Handle both partial results and agent progress updates
+      const sessionState = research.sessionState;
+      
+      // Show partial results when available
+      if (sessionState?.partialResults) {
+        Object.entries(sessionState.partialResults).forEach(([agentType, result]) => {
+          if (result && typeof result === 'object' && 'content' in result) {
+            console.log(`[Chat Context] Agent ${agentType} response:`, result.content);
+            // Add agent response as a message if it's substantial content
+            const content = result.content as string;
+            if (content && content.length > 100) {
+              const agentMessage: ChatMessage = {
+                id: `agent-${agentType}-${Date.now()}`,
+                content: content,
+                role: 'assistant',
+                timestamp: new Date(),
+                isAgentResponse: true,
+                agentType: agentType
+              };
+              setMessages(prev => {
+                // Check if we already have this message to avoid duplicates
+                const exists = prev.some(msg =>
+                  msg.isAgentResponse === true &&
+                  msg.agentType === agentType &&
+                  msg.content === content
+                );
+                return exists ? prev : [...prev, agentMessage];
+              });
+            }
+          }
+        });
+      }
+      
+      // Show agent progress updates when agents are actively working
+      if (sessionState?.agents) {
+        const activeAgents = sessionState.agents.filter(agent => 
+          agent.status === 'current' && agent.progress > 0
+        );
+        
+        activeAgents.forEach(agent => {
+          const progressMessage = `🤖 **${agent.name}** is actively working...\n\n` +
+            `📋 **Current Task:** ${agent.current_task || 'Processing'}\n` +
+            `📊 **Progress:** ${Math.round(agent.progress * 100)}%\n` +
+            `🔄 **Status:** ${agent.status}`;
+          
+          const agentProgressId = `agent-progress-${agent.agent_type}-${agent.agent_id}`;
+          
+          setMessages(prev => {
+            // Check if we already have a progress message for this agent
+            const existingIndex = prev.findIndex(msg => msg.id === agentProgressId);
+            
+            if (existingIndex >= 0) {
+              // Update existing progress message
+              const updated = [...prev];
+              updated[existingIndex] = {
+                ...updated[existingIndex],
+                content: progressMessage,
+                timestamp: new Date()
+              };
+              return updated;
+            } else {
+              // Create new progress message
+              const progressMsg: ChatMessage = {
+                id: agentProgressId,
+                content: progressMessage,
+                role: 'assistant',
+                timestamp: new Date(),
+                isAgentResponse: true,
+                agentType: agent.agent_type
+              };
+              return [...prev, progressMsg];
+            }
+          });
+        });
+      }
     },
   });
   
   // Enhanced message sending with better error handling and retry logic
   const sendMessage = async (content: string, retryCount: number = 0) => {
+    console.log('[Chat Context] sendMessage called with:', content, 'retryCount:', retryCount);
+    
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       content: content,
@@ -120,9 +207,18 @@ export function ChatProvider({ children }: ChatProviderProps) {
       isResearchQuery: true
     };
     
+    console.log('[Chat Context] Created user message:', userMessage);
+    
     // Only add the user message if it's not a retry
     if (retryCount === 0) {
-      setMessages(prev => [...prev, userMessage]);
+      console.log('[Chat Context] Adding user message to array (not retry)');
+      setMessages(prev => {
+        const newMessages = [...prev, userMessage];
+        console.log('[Chat Context] Updated messages array:', newMessages);
+        return newMessages;
+      });
+    } else {
+      console.log('[Chat Context] Skipping user message add (retry attempt)');
     }
     
     try {
