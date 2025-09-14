@@ -51,6 +51,8 @@ interface ChatProviderProps {
 export function ChatProvider({ children }: ChatProviderProps) {
   const { user, isAuthenticated } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  
+  console.log('[ChatProvider] Messages state:', messages.length, 'messages');
   const [streamingState, setStreamingState] = useState<StreamingState>({
     isStreaming: false,
     content: '',
@@ -195,6 +197,8 @@ export function ChatProvider({ children }: ChatProviderProps) {
   
   // Enhanced message sending with better error handling and retry logic
   const sendMessage = async (content: string, retryCount: number = 0) => {
+    console.log('[Chat Context] sendMessage called with:', content, 'retryCount:', retryCount);
+    
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       content: content,
@@ -203,9 +207,18 @@ export function ChatProvider({ children }: ChatProviderProps) {
       isResearchQuery: true
     };
     
+    console.log('[Chat Context] Created user message:', userMessage);
+    
     // Only add the user message if it's not a retry
     if (retryCount === 0) {
-      setMessages(prev => [...prev, userMessage]);
+      console.log('[Chat Context] Adding user message to array (not retry)');
+      setMessages(prev => {
+        const newMessages = [...prev, userMessage];
+        console.log('[Chat Context] Updated messages array:', newMessages);
+        return newMessages;
+      });
+    } else {
+      console.log('[Chat Context] Skipping user message add (retry attempt)');
     }
     
     try {

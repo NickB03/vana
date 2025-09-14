@@ -1,6 +1,6 @@
 "use client";
 
-import { VanaSidebar } from "@/components/vana-sidebar";
+import { UnifiedChatLayout } from "@/components/layouts/unified-chat-layout";
 
 export default function AdminPanelLayout({
   children
@@ -8,11 +8,8 @@ export default function AdminPanelLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen">
-      <VanaSidebar />
-      <main className="flex-1 min-h-screen bg-zinc-50 dark:bg-zinc-900">
-        {children}
-      </main>
-    </div>
+    <UnifiedChatLayout headerTitle="Admin Panel">
+      {children}
+    </UnifiedChatLayout>
   );
 }

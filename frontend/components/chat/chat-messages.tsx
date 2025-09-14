@@ -9,7 +9,7 @@ import { MessageSkeleton } from './message-skeleton';
 import { StreamingMessage } from './streaming-message';
 import { useChatContext } from '@/contexts/chat-context';
 import { ResearchProgressPanel } from '@/components/research/research-progress-panel';
-import { AgentStatusDisplay } from '@/components/research/agent-status-display';
+// AgentStatusDisplay import removed as it's not used in this component
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Search, Bot, CheckCircle } from 'lucide-react';
