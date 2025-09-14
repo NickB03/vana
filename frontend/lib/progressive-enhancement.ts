@@ -8,7 +8,7 @@
  * - User preferences
  */
 
-import type { NetworkNavigator } from '@/types/research'
+// NetworkNavigator type import removed as it's not used
 
 // ============================================================================
 // Network Quality Detection

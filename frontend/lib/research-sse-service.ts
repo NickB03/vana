@@ -32,7 +32,7 @@ const AgentStatusSchema = z.object({
   error: z.string().nullable().optional(),
 });
 
-const ResearchProgressEventSchema = z.object({
+const _ResearchProgressEventSchema = z.object({
   type: z.literal('research_progress'),
   sessionId: z.string(),
   status: z.enum(['initializing', 'running', 'completed', 'error']),
@@ -569,7 +569,7 @@ export class ResearchSSEService {
             console.log('[Research SSE] Using secure token manager for auth');
             return headers;
           }
-        } catch (error) {
+        } catch (_error) {
           // Security module not available, fall back
           console.warn('[Research SSE] Security module unavailable, falling back to localStorage');
         }
@@ -636,11 +636,16 @@ export class ResearchSSEService {
         throw new Error(errorMessage);
       }
 
-      console.log('[Research SSE] POST request successful, connecting to SSE stream');
+      // Parse the POST response
+      const startResponse = await response.json();
+      console.log('[Research SSE] POST request successful:', startResponse);
 
-      // Connect to SSE stream
+      // Small delay to allow backend to initialize properly
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Connect to SSE stream (no auth headers needed for EventSource)
       const sseUrl = `${this.baseUrl}/api/run_sse/${sessionId}`;
-      this.connectionManager.connect(sseUrl, authHeaders);
+      this.connectionManager.connect(sseUrl);
 
       sessionState.status = 'connected';
       sessionState.lastUpdate = new Date();
