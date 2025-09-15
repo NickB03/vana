@@ -11,7 +11,17 @@ logger = logging.getLogger(__name__)
 
 
 class ProtectionLevel(Enum):
-    """Branch protection levels."""
+    """Branch protection levels.
+    
+    Defines different levels of branch protection with increasing security.
+    
+    Attributes:
+        NONE: No protection, allows all operations.
+        BASIC: Basic protection with minimal restrictions.
+        STANDARD: Standard protection suitable for most projects.
+        STRICT: Strict protection for critical branches.
+        ENTERPRISE: Maximum protection for enterprise environments.
+    """
 
     NONE = "none"
     BASIC = "basic"
@@ -21,7 +31,16 @@ class ProtectionLevel(Enum):
 
 
 class ReviewRequirement(Enum):
-    """Code review requirements."""
+    """Code review requirements.
+    
+    Defines different levels of code review requirements for pull requests.
+    
+    Attributes:
+        NONE: No review required.
+        OPTIONAL: Reviews are optional but encouraged.
+        REQUIRED: Reviews are required before merging.
+        REQUIRED_FROM_CODEOWNERS: Reviews required from designated code owners.
+    """
 
     NONE = "none"
     OPTIONAL = "optional"
@@ -31,7 +50,16 @@ class ReviewRequirement(Enum):
 
 @dataclass
 class StatusCheck:
-    """Required status check configuration."""
+    """Required status check configuration.
+    
+    Represents a required status check that must pass before merging.
+    
+    Attributes:
+        context: Status check context name (e.g., 'ci/tests').
+        description: Human-readable description of the check.
+        required: Whether this check is required for merging.
+        strict: Whether branches must be up-to-date before merging.
+    """
 
     context: str
     description: str
@@ -41,7 +69,36 @@ class StatusCheck:
 
 @dataclass
 class BranchProtectionRule:
-    """Branch protection rule configuration."""
+    """Branch protection rule configuration.
+    
+    Comprehensive configuration for Git branch protection rules including
+    pull request requirements, status checks, push restrictions, and
+    administrative settings.
+    
+    Attributes:
+        name: Unique rule identifier.
+        pattern: Branch name pattern (glob or regex).
+        protection_level: Overall protection level.
+        require_pull_request: Whether pull requests are required.
+        required_reviewers: Number of required reviewers.
+        dismiss_stale_reviews: Whether to dismiss stale reviews on new commits.
+        require_code_owner_reviews: Whether code owner reviews are required.
+        require_last_push_approval: Whether approval after last push is required.
+        required_status_checks: List of required status checks.
+        require_branches_up_to_date: Whether branches must be current.
+        restrict_pushes: Whether to restrict direct pushes.
+        allowed_push_users: Users allowed to push directly.
+        allowed_push_teams: Teams allowed to push directly.
+        enforce_admins: Whether rules apply to administrators.
+        allow_force_pushes: Whether force pushes are allowed.
+        allow_deletions: Whether branch deletions are allowed.
+        allow_auto_merge: Whether auto-merge is enabled.
+        delete_branch_on_merge: Whether to delete branches after merge.
+        required_linear_history: Whether linear history is required.
+        required_conversation_resolution: Whether conversations must be resolved.
+        custom_hooks: List of custom hook identifiers.
+        created_at: Rule creation timestamp.
+    """
 
     name: str
     pattern: str  # Branch name pattern (glob or regex)
@@ -82,7 +139,14 @@ class BranchProtectionRule:
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def to_github_config(self) -> dict[str, Any]:
-        """Convert to GitHub API format."""
+        """Convert to GitHub API format.
+        
+        Transforms the rule configuration into the format expected by
+        the GitHub branch protection API.
+        
+        Returns:
+            Dictionary formatted for GitHub API consumption.
+        """
         config = {
             "required_status_checks": {
                 "strict": self.require_branches_up_to_date,
@@ -118,9 +182,22 @@ class BranchProtectionRule:
 
 
 class BranchProtectionManager:
-    """Manager for branch protection rules and Git workflows."""
+    """Manager for branch protection rules and Git workflows.
+    
+    Provides comprehensive management of Git branch protection rules including
+    creation, validation, template-based generation, and GitHub API integration.
+    
+    Attributes:
+        rules: Dictionary of active protection rules by name.
+        templates: Dictionary of rule templates for common scenarios.
+    """
 
     def __init__(self, config_file: str | None = None):
+        """Initialize the branch protection manager.
+        
+        Args:
+            config_file: Optional configuration file to load rules from.
+        """
         self.rules: dict[str, BranchProtectionRule] = {}
         self.templates: dict[str, BranchProtectionRule] = {}
 
@@ -132,7 +209,11 @@ class BranchProtectionManager:
             self.load_config(config_file)
 
     def add_rule(self, rule: BranchProtectionRule) -> None:
-        """Add a branch protection rule."""
+        """Add a branch protection rule.
+        
+        Args:
+            rule: BranchProtectionRule instance to add.
+        """
         self.rules[rule.name] = rule
         logger.info(f"Added branch protection rule: {rule.name}")
 
@@ -149,7 +230,16 @@ class BranchProtectionManager:
         return self.rules.get(rule_name)
 
     def get_rules_for_branch(self, branch_name: str) -> list[BranchProtectionRule]:
-        """Get all rules that apply to a branch."""
+        """Get all rules that apply to a branch.
+        
+        Matches branch name against rule patterns using glob and regex.
+        
+        Args:
+            branch_name: Name of the branch to check.
+            
+        Returns:
+            List of applicable BranchProtectionRule instances.
+        """
         import fnmatch
         import re
 
@@ -213,7 +303,17 @@ class BranchProtectionManager:
         return rule
 
     def validate_rule(self, rule: BranchProtectionRule) -> list[str]:
-        """Validate a protection rule and return any issues."""
+        """Validate a protection rule and return any issues.
+        
+        Checks for configuration conflicts, missing required settings,
+        and invalid patterns.
+        
+        Args:
+            rule: BranchProtectionRule to validate.
+            
+        Returns:
+            List of validation issue descriptions.
+        """
         issues = []
 
         # Check for conflicting settings
@@ -505,7 +605,11 @@ _branch_protection_manager: BranchProtectionManager | None = None
 
 
 def get_branch_protection_manager() -> BranchProtectionManager:
-    """Get the global branch protection manager."""
+    """Get the global branch protection manager singleton.
+    
+    Returns:
+        The global BranchProtectionManager instance, creating it if needed.
+    """
     global _branch_protection_manager
     if _branch_protection_manager is None:
         _branch_protection_manager = BranchProtectionManager()

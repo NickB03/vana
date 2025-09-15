@@ -8,7 +8,42 @@ from pydantic_settings import BaseSettings
 
 
 class AuthSettings(BaseSettings):
-    """Authentication configuration settings."""
+    """Comprehensive authentication configuration settings with security defaults.
+
+    Centralizes all authentication-related configuration with secure defaults
+    and environment-based overrides. Supports JWT tokens, password policies,
+    Google Cloud integration, and security features.
+
+    Configuration Sources (in order of precedence):
+        1. Environment variables with AUTH_ prefix
+        2. .env.local file (if exists)
+        3. Default values defined in field definitions
+
+    Security Features:
+        - Secure random secret key generation
+        - Configurable password strength requirements
+        - JWT token expiration controls
+        - Rate limiting configuration
+        - Session management settings
+        - Development vs production mode toggles
+
+    Environment Variables:
+        All settings can be overridden with AUTH_ prefix:
+        - AUTH_SECRET_KEY: JWT signing secret
+        - AUTH_ACCESS_TOKEN_EXPIRE_MINUTES: Access token lifetime
+        - AUTH_PASSWORD_MIN_LENGTH: Minimum password length
+        - AUTH_REQUIRE_SSE_AUTH: Enable SSE authentication
+        - etc.
+
+    Example:
+        >>> settings = AuthSettings()
+        >>> print(f"Token expires in: {settings.access_token_expire_minutes} minutes")
+        >>> 
+        >>> # Override via environment
+        >>> os.environ["AUTH_ACCESS_TOKEN_EXPIRE_MINUTES"] = "60"
+        >>> settings = AuthSettings()
+        >>> print(f"New expiration: {settings.access_token_expire_minutes} minutes")
+    """
 
     # JWT Settings
     secret_key: str = Field(
@@ -89,7 +124,29 @@ auth_settings = AuthSettings()
 
 
 def get_auth_settings() -> AuthSettings:
-    """Get authentication settings."""
+    """Get the global authentication settings instance.
+
+    Returns:
+        AuthSettings: Configured authentication settings object.
+
+    Usage:
+        This function provides access to the singleton AuthSettings instance
+        that is configured at module import time. Settings are loaded from
+        environment variables and .env.local file.
+
+    Thread Safety:
+        The returned settings object is thread-safe for reading. Values are
+        loaded once at startup and remain constant during application runtime.
+
+    Example:
+        >>> settings = get_auth_settings()
+        >>> if settings.require_sse_auth:
+        ...     # Production mode - enforce authentication
+        ...     validate_user_token(request)
+        >>> else:
+        ...     # Demo mode - optional authentication
+        ...     user = get_optional_user(request)
+    """
     return auth_settings
 
 

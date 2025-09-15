@@ -13,7 +13,25 @@ logger = logging.getLogger(__name__)
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    """Add security headers to all responses."""
+    """ASGI middleware that adds comprehensive security headers to HTTP responses.
+    
+    This middleware enhances application security by automatically adding appropriate
+    security headers based on the request path. It provides different Content Security
+    Policy (CSP) configurations for different types of endpoints (API, web UI, and
+    Google ADK dev-ui) while maintaining strong security defaults.
+    
+    Attributes:
+        csp_nonce_header: Header name for CSP nonce value
+        enable_hsts: Whether to enable HTTP Strict Transport Security
+        csp_connect_domains: Allowed domains for CSP connect-src directive
+        
+    Example:
+        >>> app.add_middleware(
+        ...     SecurityHeadersMiddleware,
+        ...     csp_nonce_header="X-CSP-Nonce",
+        ...     enable_hsts=True
+        ... )
+    """
 
     def __init__(
         self,
@@ -21,6 +39,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         csp_nonce_header: str = "X-CSP-Nonce",
         enable_hsts: bool = True,
     ):
+        """Initialize the security headers middleware.
+        
+        Args:
+            app: The ASGI application instance
+            csp_nonce_header: Header name to use for CSP nonce (default: "X-CSP-Nonce")
+            enable_hsts: Whether to enable HSTS headers for HTTPS requests (default: True)
+        """
         super().__init__(app)
         self.csp_nonce_header = csp_nonce_header
         self.enable_hsts = enable_hsts
@@ -33,7 +58,19 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         )
 
     def _get_csp_connect_domains(self) -> str:
-        """Get CSP connect-src domains from environment variables."""
+        """Build CSP connect-src directive from environment configuration.
+        
+        Constructs a whitespace-separated list of allowed domains for CSP connect-src
+        directive. Includes default secure domains for AI services and adds OpenRouter
+        if enabled via environment variables.
+        
+        Returns:
+            Space-separated string of allowed domains for CSP connect-src directive
+            
+        Environment Variables:
+            USE_OPENROUTER: Set to "true" to include OpenRouter domain
+            CSP_EXTRA_CONNECT_DOMAINS: Comma-separated additional domains to allow
+        """
         # Default secure domains for AI services
         default_domains = [
             "'self'",
@@ -57,7 +94,26 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return " ".join(default_domains)
 
     def _get_csp_policy_for_path(self, path: str, nonce: str, request: Request = None) -> str:
-        """Get appropriate CSP policy based on request path."""
+        """Generate path-specific Content Security Policy.
+        
+        Returns different CSP policies based on the request path to balance security
+        with functionality requirements:
+        - API endpoints: Strictest policy with minimal allowed sources
+        - Google ADK dev-ui: Relaxed policy for development tools compatibility
+        - Web application: Secure nonce-based policy for UI endpoints
+        
+        Args:
+            path: The request path to determine policy for
+            nonce: Cryptographic nonce for CSP script/style sources
+            request: Optional request object for additional context
+            
+        Returns:
+            Complete CSP policy string appropriate for the request path
+            
+        Note:
+            Google ADK dev-ui paths receive a relaxed CSP policy that allows
+            'unsafe-inline' for compatibility with development tools.
+        """
         # Strict API-only policy for API endpoints
         if path.startswith("/api/") or path.startswith("/auth/"):
             return (
@@ -118,6 +174,29 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         """.replace("\n", " ").strip()
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        """Process HTTP request and add security headers to response.
+        
+        Generates a cryptographic nonce for CSP, processes the request through
+        the application stack, then adds appropriate security headers based on
+        the request path and configuration.
+        
+        Args:
+            request: The incoming HTTP request
+            call_next: The next middleware or application handler
+            
+        Returns:
+            HTTP response with security headers added
+            
+        Security Headers Added:
+            - Content-Security-Policy: Path-specific CSP with nonce
+            - X-Content-Type-Options: Prevents MIME type sniffing
+            - X-Frame-Options: Prevents clickjacking
+            - Referrer-Policy: Controls referrer information
+            - Permissions-Policy: Restricts browser features
+            - Strict-Transport-Security: HTTPS enforcement (HTTPS only)
+            - Server: Custom server identifier
+            - X-CSP-Nonce: CSP nonce for frontend use
+        """
         # Generate nonce for CSP
         nonce = secrets.token_urlsafe(16)
         request.state.csp_nonce = nonce

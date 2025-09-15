@@ -72,9 +72,34 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    """User creation schema."""
+    """User registration schema with password validation.
 
-    password: str = Field(..., min_length=8, description="User password")
+    Used for creating new user accounts through the registration endpoint.
+    Inherits basic user fields and adds password requirement with validation.
+
+    Security:
+        - Password minimum length enforced (8 characters)
+        - Additional password strength validation applied server-side
+        - Email format validation through EmailStr type
+        - Username length constraints (3-50 characters)
+
+    Validation Rules:
+        - email: Must be valid email format
+        - username: 3-50 characters, unique in database
+        - password: Minimum 8 characters, strength validated server-side
+        - first_name/last_name: Optional, max 50 characters each
+
+    Example:
+        >>> user_data = UserCreate(
+        ...     email="user@example.com",
+        ...     username="johndoe",
+        ...     password="SecureP@ss123",
+        ...     first_name="John",
+        ...     last_name="Doe"
+        ... )
+    """
+
+    password: str = Field(..., min_length=8, description="User password (min 8 chars, will be validated for strength)")
 
 
 class UserUpdate(BaseModel):
@@ -117,12 +142,39 @@ class UserLogin(BaseModel):
 
 
 class Token(BaseModel):
-    """JWT token response schema."""
+    """JWT token response schema for authentication endpoints.
 
-    access_token: str = Field(..., description="JWT access token")
-    refresh_token: str = Field(..., description="JWT refresh token")
-    token_type: str = Field("bearer", description="Token type")
-    expires_in: int = Field(..., description="Token expiration in seconds")
+    Contains both access and refresh tokens returned after successful
+    authentication (login, registration, token refresh).
+
+    Security:
+        - access_token: Short-lived (30 min) for API access
+        - refresh_token: Long-lived (7 days) for obtaining new access tokens
+        - token_type: Always "bearer" for HTTP Authorization header
+        - expires_in: Access token lifetime in seconds for client scheduling
+
+    Token Usage:
+        - Include access_token in Authorization header: "Bearer {access_token}"
+        - Store refresh_token securely (httpOnly cookie recommended)
+        - Use refresh_token to get new access_token before expiration
+        - Both tokens should be cleared on logout
+
+    Example:
+        >>> tokens = Token(
+        ...     access_token="eyJhbGciOiJIUzI1NiIs...",
+        ...     refresh_token="def50200d4f1b7c8e9a...",
+        ...     token_type="bearer",
+        ...     expires_in=1800  # 30 minutes
+        ... )
+        >>> 
+        >>> # Client usage
+        >>> headers = {"Authorization": f"Bearer {tokens.access_token}"}
+    """
+
+    access_token: str = Field(..., description="JWT access token for API authorization")
+    refresh_token: str = Field(..., description="Refresh token for obtaining new access tokens")
+    token_type: str = Field("bearer", description="Token type (always 'bearer')")
+    expires_in: int = Field(..., description="Access token expiration time in seconds")
 
 
 class TokenData(BaseModel):
@@ -210,10 +262,41 @@ class OAuth2TokenRequest(BaseModel):
 
 
 class AuthResponse(BaseModel):
-    """Standardized authentication response schema."""
+    """Standardized authentication response for login and registration endpoints.
 
-    user: UserResponse = Field(..., description="Authenticated user information")
-    tokens: Token = Field(..., description="Access and refresh tokens")
+    Combines user profile information with authentication tokens in a single
+    response object. Used by login, registration, and Google OAuth endpoints.
+
+    Security:
+        - Returns user profile data (excludes sensitive fields like password hash)
+        - Includes role and permission information for client authorization
+        - Provides both access and refresh tokens for session management
+        - All sensitive data is properly filtered through UserResponse schema
+
+    Response Structure:
+        - user: Complete user profile with roles and permissions
+        - tokens: Access token (30 min) and refresh token (7 days)
+
+    Client Usage:
+        1. Store tokens securely (access token in memory, refresh in httpOnly cookie)
+        2. Use user data to populate UI and determine available features
+        3. Check user roles/permissions for client-side authorization
+        4. Set up token refresh before access token expires
+
+    Example:
+        >>> auth_response = AuthResponse(
+        ...     user=UserResponse.model_validate(authenticated_user),
+        ...     tokens=Token(
+        ...         access_token="jwt_access_token",
+        ...         refresh_token="secure_refresh_token",
+        ...         token_type="bearer",
+        ...         expires_in=1800
+        ...     )
+        ... )
+    """
+
+    user: UserResponse = Field(..., description="Authenticated user profile and permissions")
+    tokens: Token = Field(..., description="JWT access and refresh tokens for session management")
 
 
 class GoogleOAuthCallbackRequest(BaseModel):

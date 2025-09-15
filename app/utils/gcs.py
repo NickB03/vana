@@ -12,11 +12,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Google Cloud Storage utility functions for bucket management.
+
+This module provides utilities for Google Cloud Storage bucket operations
+with graceful handling of optional dependencies. The module can be imported
+and used in environments where google-cloud-storage is not available,
+making it suitable for testing and development scenarios.
+
+Key Features:
+    - Safe bucket creation with existence checking
+    - Graceful handling of missing google-cloud-storage dependency
+    - Automatic gs:// prefix handling for bucket names
+    - Comprehensive error handling and logging
+    - Support for multi-region bucket creation
+
+Dependencies:
+    - google-cloud-storage: Optional, operations are skipped if not available
+    - google-api-core: Optional, provides exception types for error handling
+
+Example:
+    >>> from app.utils.gcs import create_bucket_if_not_exists
+    >>> 
+    >>> # Create bucket for application storage
+    >>> create_bucket_if_not_exists(
+    ...     bucket_name="my-app-data",
+    ...     project="my-gcp-project",
+    ...     location="us-central1"
+    ... )
+"""
+
 import logging
 
-# These utilities interact with Google Cloud Storage.  During testing the
-# ``google-cloud-storage`` package is not installed so we provide a small shim
-# allowing the module to be imported without the dependency.
+# Google Cloud Storage dependencies with optional import handling.
+# During testing or in environments where GCS is not required, the
+# google-cloud-storage package may not be installed. We provide fallback
+# implementations to allow the module to be imported without dependency errors.
 try:  # pragma: no cover - simple import wrapper
     import google.cloud.storage as storage  # type: ignore
     from google.api_core import exceptions  # type: ignore
@@ -29,12 +59,49 @@ except ModuleNotFoundError:  # pragma: no cover
 
 
 def create_bucket_if_not_exists(bucket_name: str, project: str, location: str) -> None:
-    """Creates a new bucket if it doesn't already exist.
-
+    """Create a Google Cloud Storage bucket if it doesn't already exist.
+    
+    Safely creates a new GCS bucket with the specified name and configuration.
+    If the bucket already exists, the function logs this information and returns
+    without error. Handles the google-cloud-storage dependency gracefully when
+    not available.
+    
     Args:
-        bucket_name: Name of the bucket to create
-        project: Google Cloud project ID
-        location: Location to create the bucket in (defaults to us-central1)
+        bucket_name: Name of the bucket to create. Can include \"gs://\" prefix
+                    which will be automatically stripped.
+        project: Google Cloud project ID where the bucket should be created
+        location: GCS location/region for the bucket (e.g., \"us-central1\",
+                 \"europe-west1\", \"asia-east1\")
+                 
+    Raises:
+        google.api_core.exceptions.Conflict: If bucket name is already taken
+        google.api_core.exceptions.Forbidden: If insufficient permissions
+        google.cloud.exceptions.GoogleCloudError: For other GCS-related errors
+        
+    Example:
+        >>> # Create bucket in default US region
+        >>> create_bucket_if_not_exists(
+        ...     bucket_name=\"my-app-storage\",
+        ...     project=\"my-gcp-project\",
+        ...     location=\"us-central1\"
+        ... )
+        >>> 
+        >>> # Handle gs:// prefix automatically
+        >>> create_bucket_if_not_exists(
+        ...     bucket_name=\"gs://my-app-logs\",
+        ...     project=\"my-gcp-project\", 
+        ...     location=\"europe-west1\"
+        ... )
+        
+    Note:
+        If google-cloud-storage is not installed, the function logs a warning
+        and returns without error to support environments where GCS is not
+        required (such as testing).
+        
+    Security Considerations:
+        - Bucket names must be globally unique across all GCS
+        - Consider bucket naming conventions for security and organization
+        - Location choice affects data residency and latency
     """
     if storage is None:
         logging.info("google-cloud-storage not installed; skipping bucket check")
