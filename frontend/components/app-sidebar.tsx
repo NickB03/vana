@@ -1,5 +1,16 @@
 "use client"
 
+/**
+ * @fileoverview Main Application Sidebar Component
+ * 
+ * Provides the primary navigation sidebar for the Vana AI Research Platform.
+ * Features include dynamic navigation, chat history, user authentication state,
+ * and responsive design with collapsible functionality.
+ * 
+ * @author Vana AI Team
+ * @version 1.0.0
+ */
+
 import * as React from "react"
 import {
   BookOpen,
@@ -49,7 +60,15 @@ import { ChevronRight } from "lucide-react"
 import { getChatData, type NavItem, type UserData, type TeamData } from "@/lib/chat-data"
 
 
-// Application data with proper TypeScript types
+/**
+ * Static application data configuration
+ * Contains default user data, team information, and main navigation items
+ * 
+ * @type {Object}
+ * @property {UserData} user - Default user information
+ * @property {TeamData[]} teams - Available teams/organizations
+ * @property {NavItem[]} navMain - Primary navigation menu items
+ */
 const data: {
   user: UserData;
   teams: TeamData[];
@@ -85,7 +104,26 @@ const data: {
   ],
 }
 
-// Navigation component
+/**
+ * Unified Navigation Menu Component
+ * 
+ * Renders the main platform navigation with collapsible sections.
+ * Supports both simple links and nested menu items with expand/collapse functionality.
+ * 
+ * @component
+ * @param {Object} props - Component props
+ * @param {NavItem[]} props.items - Array of navigation items to render
+ * @param {string} [props.className] - Optional CSS classes to apply
+ * @returns {JSX.Element} Rendered navigation menu
+ * 
+ * @example
+ * ```tsx
+ * <UnifiedNavMain 
+ *   items={navItems} 
+ *   className="custom-nav-styles" 
+ * />
+ * ```
+ */
 function UnifiedNavMain({
   items,
   className,
@@ -142,7 +180,21 @@ function UnifiedNavMain({
   )
 }
 
-// Enhanced chat history component
+/**
+ * Unified Chat History Component
+ * 
+ * Displays chat history organized by time periods with interactive controls.
+ * Includes a "New Chat" button and context menu actions for each chat item.
+ * Adapts layout based on sidebar collapse state and mobile viewport.
+ * 
+ * @component
+ * @returns {JSX.Element} Chat history section with grouped conversations
+ * 
+ * @example
+ * ```tsx
+ * <UnifiedChatHistory />
+ * ```
+ */
 function UnifiedChatHistory() {
   const { isMobile } = useSidebar()
   const chatData = getChatData()
@@ -217,7 +269,35 @@ function UnifiedChatHistory() {
   )
 }
 
-// Main app sidebar component
+/**
+ * Main Application Sidebar Component
+ * 
+ * Primary navigation sidebar for the Vana AI Research Platform.
+ * Integrates user authentication, chat history, platform navigation,
+ * and responsive design patterns. Automatically adapts to user authentication
+ * state and provides fallback data when needed.
+ * 
+ * @component
+ * @param {React.ComponentProps<typeof Sidebar>} props - Sidebar component props
+ * @returns {JSX.Element} Complete application sidebar with header, content, and footer
+ * 
+ * @example
+ * ```tsx
+ * <AppSidebar 
+ *   collapsible="offcanvas"
+ *   className="custom-sidebar"
+ * />
+ * ```
+ * 
+ * @features
+ * - Dynamic user authentication integration
+ * - Collapsible navigation with off-canvas support
+ * - Chat history with time-based grouping
+ * - Platform navigation with nested menus
+ * - Search functionality
+ * - User profile management
+ * - Responsive design for mobile and desktop
+ */
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isAuthenticated, user } = useAuth()
 
