@@ -9,7 +9,7 @@ import { Send, Paperclip, Plus, Sparkles } from "lucide-react"
 // Modern Prompt-Kit Input Component (Shadcn v4 Compatible)
 // ============================================================================
 
-interface PromptInputProps extends React.HTMLAttributes<HTMLDivElement> {
+interface PromptInputProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSubmit'> {
   value?: string
   onValueChange?: (value: string) => void
   onSubmit?: (value: string) => void

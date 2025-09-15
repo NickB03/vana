@@ -1,7 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { VanaSidebarUnified, getChatData } from "@/components/vana-sidebar-unified"
+import { VanaSidebarUnified } from "@/components/vana-sidebar-unified"
+import { getDynamicTitle } from "@/lib/chat-data"
 import {
   SidebarInset,
   SidebarProvider,
@@ -13,16 +14,7 @@ import { usePathname } from "next/navigation"
 export function UnifiedChatHeader() {
   const pathname = usePathname()
   const title = React.useMemo(() => {
-    if (!pathname) return "Vana AI"
-    if (pathname.startsWith("/chat")) {
-      const chats = getChatData().flatMap((g: any) => g.chats)
-      const match = chats.find((c: any) => c.url === pathname)
-      if (match?.title) return match.title
-      if (pathname === "/chat" || pathname === "/chat/new") return "New Chat"
-      return "Vana AI"
-    }
-    if (pathname === "/login") return "Vana AI"
-    return "Vana AI"
+    return getDynamicTitle(pathname, "Vana AI")
   }, [pathname])
 
   return (
@@ -44,16 +36,7 @@ interface UnifiedChatLayoutProps {
 export function UnifiedChatLayout({ children, headerTitle }: UnifiedChatLayoutProps) {
   const pathname = usePathname()
   const dynamicTitle = React.useMemo(() => {
-    if (!pathname) return headerTitle || "Vana AI"
-    if (pathname.startsWith("/chat")) {
-      const chats = getChatData().flatMap((g: any) => g.chats)
-      const match = chats.find((c: any) => c.url === pathname)
-      if (match?.title) return match.title
-      if (pathname === "/chat" || pathname === "/chat/new") return "New Chat"
-      return headerTitle || "Vana AI"
-    }
-    if (pathname === "/login") return headerTitle || "Vana AI"
-    return headerTitle || "Vana AI"
+    return getDynamicTitle(pathname, headerTitle || "Vana AI")
   }, [pathname, headerTitle])
 
   return (

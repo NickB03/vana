@@ -15,6 +15,7 @@ import {
 
 import { NavUser } from "@/components/sidebar/nav-user"
 import Image from "next/image"
+import Link from "next/link"
 import {
   Sidebar,
   SidebarContent,
@@ -45,112 +46,15 @@ import {
 import { useAuth } from "@/contexts/auth-context"
 import { cn } from "@/lib/utils"
 import { ChevronRight } from "lucide-react"
+import { getChatData, type NavItem, type UserData, type TeamData } from "@/lib/chat-data"
 
-// Enhanced chat data with proper time grouping
-export const getChatData = () => {
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
-  const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
-  const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
 
-  return [
-    {
-      id: "today",
-      label: "Today",
-      chats: [
-        {
-          id: "t1",
-          title: "Project roadmap discussion",
-          url: "/chat/t1",
-          createdAt: today.toISOString(),
-          isActive: true,
-        },
-        {
-          id: "t2",
-          title: "API Documentation Review",
-          url: "/chat/t2",
-          createdAt: today.toISOString(),
-        },
-        {
-          id: "t3",
-          title: "Frontend Bug Analysis",
-          url: "/chat/t3",
-          createdAt: today.toISOString(),
-        },
-      ],
-    },
-    {
-      id: "yesterday",
-      label: "Yesterday",
-      chats: [
-        {
-          id: "y1",
-          title: "Database Schema Design",
-          url: "/chat/y1",
-          createdAt: yesterday.toISOString(),
-        },
-        {
-          id: "y2",
-          title: "Performance Optimization",
-          url: "/chat/y2",
-          createdAt: yesterday.toISOString(),
-        },
-      ],
-    },
-    {
-      id: "week",
-      label: "Last 7 days",
-      chats: [
-        {
-          id: "w1",
-          title: "Authentication Flow",
-          url: "/chat/w1",
-          createdAt: new Date(weekAgo.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: "w2",
-          title: "UI Component Library",
-          url: "/chat/w2",
-          createdAt: new Date(weekAgo.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: "w3",
-          title: "Testing Strategy",
-          url: "/chat/w3",
-          createdAt: weekAgo.toISOString(),
-        },
-      ],
-    },
-    {
-      id: "month",
-      label: "Last month",
-      chats: [
-        {
-          id: "m1",
-          title: "Initial Project Setup",
-          url: "/chat/m1",
-          createdAt: new Date(monthAgo.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: "m2",
-          title: "Requirements Gathering",
-          url: "/chat/m2",
-          createdAt: new Date(monthAgo.getTime() + 8 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: "m3",
-          title: "Tech Stack Selection",
-          url: "/chat/m3",
-          createdAt: monthAgo.toISOString(),
-        },
-      ],
-    },
-  ]
-}
-
-// Application data
-const data = {
+// Application data with proper TypeScript types
+const data: {
+  user: UserData;
+  teams: TeamData[];
+  navMain: NavItem[];
+} = {
   user: {
     name: "Vana User",
     email: "user@vana.ai",
@@ -186,7 +90,7 @@ function UnifiedNavMain({
   items,
   className,
 }: {
-  items: typeof data.navMain
+  items: NavItem[]
   className?: string
 }) {
   return (
@@ -213,9 +117,9 @@ function UnifiedNavMain({
                     {item.items?.map((subItem) => (
                       <SidebarMenuItem key={subItem.title}>
                         <SidebarMenuButton asChild size="sm">
-                          <a href={subItem.url}>
+                          <Link href={subItem.url}>
                             <span>{subItem.title}</span>
-                          </a>
+                          </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     ))}
@@ -226,9 +130,9 @@ function UnifiedNavMain({
           ) : (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild>
-                <a href={item.url}>
+                <Link href={item.url}>
                   <span>{item.title}</span>
-                </a>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           )
@@ -248,10 +152,10 @@ function UnifiedChatHistory() {
       {/* New Chat Button (Prompt Kit style) */}
       <div className="group-data-[collapsible=icon]:hidden px-2 pb-2">
         <Button asChild variant="outline" size="sm" className="w-full justify-start gap-2 font-normal">
-          <a href="/chat/new">
+          <Link href="/chat/new">
             <Plus className="h-4 w-4" />
             <span>New Chat</span>
-          </a>
+          </Link>
         </Button>
       </div>
 
@@ -269,9 +173,9 @@ function UnifiedChatHistory() {
                     chat.isActive && "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                   )}
                 >
-                  <a href={chat.url}>
+                  <Link href={chat.url}>
                     <span className="truncate flex-1">{chat.title}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
