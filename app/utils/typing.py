@@ -11,6 +11,29 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Type definitions and data models for Vana application.
+
+This module provides Pydantic data models and type definitions used throughout
+the Vana application for request/response handling, data validation, and
+API documentation. All models include proper validation, serialization
+support, and comprehensive field documentation.
+
+Key Models:
+    - Request: Chat request data with optional configuration
+    - Feedback: User feedback collection with structured logging
+    
+Features:
+    - Automatic UUID generation for user and session IDs
+    - Optional Google ADK and GenAI dependency handling
+    - JSON serialization support with arbitrary types
+    - Comprehensive field validation and documentation
+    - Integration with FastAPI automatic API documentation
+
+Dependencies:
+    The module gracefully handles optional Google ADK and GenAI dependencies
+    using fallback type imports when packages are not available.
+"""
 import uuid
 from typing import (
     Literal,
@@ -34,7 +57,39 @@ from pydantic import (
 
 
 class Request(BaseModel):
-    """Represents the input for a chat request with optional configuration."""
+    """Pydantic model for chat request data with optional configuration.
+    
+    Represents a complete chat request including the message content, event history,
+    and session tracking information. Automatically generates UUIDs for user and
+    session identification when not provided.
+    
+    Attributes:
+        message: The chat message content (Google GenAI Content type)
+        events: List of previous events in the conversation history
+        user_id: Unique identifier for the user (auto-generated UUID if not provided)
+        session_id: Unique identifier for the chat session (auto-generated UUID if not provided)
+        
+    Configuration:
+        - Allows extra fields for future extensibility
+        - Supports arbitrary types for Google ADK integration
+        - Automatic JSON serialization for API responses
+        
+    Example:
+        >>> # Basic request with auto-generated IDs
+        >>> request = Request(
+        ...     message=content_object,
+        ...     events=[]
+        ... )
+        >>> print(request.user_id)  # Auto-generated UUID
+        >>> 
+        >>> # Request with specific IDs
+        >>> request = Request(
+        ...     message=content_object,
+        ...     events=event_list,
+        ...     user_id="user_123",
+        ...     session_id="session_abc"
+        ... )
+    """
 
     message: Content
     events: list[Event]
@@ -45,7 +100,44 @@ class Request(BaseModel):
 
 
 class Feedback(BaseModel):
-    """Represents feedback for a conversation."""
+    """Pydantic model for structured user feedback collection.
+    
+    Represents user feedback on conversation quality with structured logging
+    support for analytics and improvement tracking. Includes scoring,
+    optional text feedback, and metadata for proper categorization.
+    
+    Attributes:
+        score: Numerical feedback score (integer or float)
+        text: Optional text feedback from user (empty string if not provided)
+        invocation_id: Unique identifier for the conversation being rated
+        log_type: Fixed value \"feedback\" for log categorization
+        service_name: Fixed value \"vana\" for service identification
+        user_id: Identifier for the user providing feedback (empty string if not provided)
+        
+    Logging Integration:
+        This model is designed for structured logging systems that categorize
+        feedback data for analytics, quality monitoring, and improvement tracking.
+        
+    Example:
+        >>> # Basic feedback with score only
+        >>> feedback = Feedback(
+        ...     score=5,
+        ...     invocation_id="conv_123"
+        ... )
+        >>> 
+        >>> # Detailed feedback with text
+        >>> feedback = Feedback(
+        ...     score=4.5,
+        ...     text="Great response, very helpful!",
+        ...     invocation_id="conv_456",
+        ...     user_id="user_789"
+        ... )
+        >>> 
+        >>> # Feedback data ready for logging
+        >>> log_data = feedback.model_dump()
+        >>> print(log_data[\"log_type\"])  # \"feedback\"
+        >>> print(log_data[\"service_name\"])  # \"vana\"
+    """
 
     score: int | float
     text: str | None = ""

@@ -32,6 +32,42 @@
         "enabled": true
       }
     ],
+    "post-task": [
+      {
+        "name": "memory-optimizer",
+        "description": "Compress memory database after task completion",
+        "pattern": ".*",
+        "command": "npx claude-flow@alpha mcp --tool memory_compress",
+        "blocking": false,
+        "enabled": true
+      },
+      {
+        "name": "performance-tracker",
+        "description": "Track task performance metrics",
+        "pattern": ".*",
+        "command": "npx claude-flow@alpha mcp --tool performance_report --format summary",
+        "blocking": false,
+        "enabled": true
+      }
+    ],
+    "session-end": [
+      {
+        "name": "memory-backup",
+        "description": "Backup memory database at session end",
+        "pattern": ".*",
+        "command": "npx claude-flow@alpha mcp --tool memory_backup --path ./backups/memory/session-$(date +%Y%m%d-%H%M%S)",
+        "blocking": false,
+        "enabled": true
+      },
+      {
+        "name": "analytics-export",
+        "description": "Export performance analytics and metrics",
+        "pattern": ".*",
+        "command": "npx claude-flow@alpha mcp --tool performance_report --format detailed > performance-$(date +%Y%m%d).log",
+        "blocking": false,
+        "enabled": true
+      }
+    ],
     "pre-command": [
       {
         "name": "shadcn-cli-suggester",

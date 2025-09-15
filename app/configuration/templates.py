@@ -17,7 +17,17 @@ logger = logging.getLogger(__name__)
 
 
 class TemplateFormat(Enum):
-    """Template file formats."""
+    """Template file formats.
+    
+    Supported output formats for configuration templates.
+    
+    Attributes:
+        JSON: JavaScript Object Notation format.
+        YAML: YAML Ain't Markup Language format.
+        TOML: Tom's Obvious Minimal Language format.
+        INI: Traditional INI configuration file format.
+        ENV: Environment variable file format.
+    """
 
     JSON = "json"
     YAML = "yaml"
@@ -28,7 +38,24 @@ class TemplateFormat(Enum):
 
 @dataclass
 class ConfigTemplate:
-    """Configuration template definition."""
+    """Configuration template definition.
+    
+    Represents a configuration template with metadata for generating
+    configuration files from Jinja2 templates.
+    
+    Attributes:
+        name: Unique template identifier.
+        description: Human-readable template description.
+        template_path: Path to the Jinja2 template file.
+        output_format: Target output format for generated files.
+        required_variables: List of required template variables.
+        optional_variables: Default values for optional variables.
+        validation_schema: JSON schema for template validation.
+        tags: List of tags for categorization.
+        version: Template version string.
+        author: Template author identifier.
+        created_at: Template creation timestamp.
+    """
 
     name: str
     description: str
@@ -43,7 +70,14 @@ class ConfigTemplate:
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def validate_variables(self, variables: dict[str, Any]) -> list[str]:
-        """Validate that all required variables are provided."""
+        """Validate that all required variables are provided.
+        
+        Args:
+            variables: Dictionary of template variables to validate.
+            
+        Returns:
+            List of missing required variable names.
+        """
         missing = []
         for var in self.required_variables:
             if var not in variables:
@@ -52,14 +86,36 @@ class ConfigTemplate:
 
 
 class TemplateEngine:
-    """Advanced template engine with Jinja2 backend."""
+    """Advanced template engine with Jinja2 backend.
+    
+    Provides template rendering capabilities with custom filters and functions
+    for configuration file generation. Supports multiple template directories
+    and security features.
+    
+    Attributes:
+        template_dirs: List of directories to search for templates.
+        environment: Configured Jinja2 environment instance.
+    """
 
     def __init__(self, template_dirs: list[str] | None = None):
+        """Initialize the template engine.
+        
+        Args:
+            template_dirs: List of directories to search for templates.
+                          Defaults to ['templates', 'config/templates'].
+        """
         self.template_dirs = template_dirs or ["templates", "config/templates"]
         self.environment = self._create_environment()
 
     def _create_environment(self) -> Environment:
-        """Create Jinja2 environment with custom filters and functions."""
+        """Create Jinja2 environment with custom filters and functions.
+        
+        Sets up the Jinja2 environment with security settings, custom filters
+        for data formatting, and global functions for template logic.
+        
+        Returns:
+            Configured Jinja2 Environment instance.
+        """
         # Find existing template directories
         existing_dirs = []
         for template_dir in self.template_dirs:
@@ -105,7 +161,18 @@ class TemplateEngine:
         return env
 
     def render_template(self, template_path: str, variables: dict[str, Any]) -> str:
-        """Render a template with provided variables."""
+        """Render a template file with provided variables.
+        
+        Args:
+            template_path: Path to the template file relative to template directories.
+            variables: Dictionary of variables to pass to the template.
+            
+        Returns:
+            Rendered template content as string.
+            
+        Raises:
+            TemplateError: If template rendering fails.
+        """
         try:
             template = self.environment.get_template(template_path)
             return template.render(**variables)
@@ -117,7 +184,18 @@ class TemplateEngine:
             raise
 
     def render_string(self, template_string: str, variables: dict[str, Any]) -> str:
-        """Render a template string with provided variables."""
+        """Render a template string with provided variables.
+        
+        Args:
+            template_string: Template content as string.
+            variables: Dictionary of variables to pass to the template.
+            
+        Returns:
+            Rendered template content as string.
+            
+        Raises:
+            TemplateError: If template rendering fails.
+        """
         try:
             template = self.environment.from_string(template_string)
             return template.render(**variables)
@@ -126,7 +204,14 @@ class TemplateEngine:
             raise
 
     def validate_template(self, template_path: str) -> list[str]:
-        """Validate template syntax and return any issues."""
+        """Validate template syntax and return any issues.
+        
+        Args:
+            template_path: Path to template file to validate.
+            
+        Returns:
+            List of validation error messages, empty if valid.
+        """
         issues = []
         try:
             template = self.environment.get_template(template_path)
@@ -141,7 +226,14 @@ class TemplateEngine:
         return issues
 
     def get_template_variables(self, template_path: str) -> list[str]:
-        """Extract variables used in a template."""
+        """Extract variables used in a template.
+        
+        Args:
+            template_path: Path to template file to analyze.
+            
+        Returns:
+            List of variable names used in the template.
+        """
         try:
             self.environment.get_template(template_path)
             # Parse template to find undefined variables
@@ -202,9 +294,23 @@ class TemplateEngine:
 
 
 class ConfigTemplateManager:
-    """Manager for configuration templates."""
+    """Manager for configuration templates.
+    
+    Provides comprehensive template management including creation, storage,
+    rendering, validation, and import/export functionality.
+    
+    Attributes:
+        templates_dir: Directory path for storing template files.
+        templates: Dictionary of loaded template definitions.
+        template_engine: TemplateEngine instance for rendering.
+    """
 
     def __init__(self, templates_dir: str = "config/templates"):
+        """Initialize the template manager.
+        
+        Args:
+            templates_dir: Directory for storing template files and metadata.
+        """
         self.templates_dir = Path(templates_dir)
         self.templates_dir.mkdir(parents=True, exist_ok=True)
 
@@ -218,7 +324,12 @@ class ConfigTemplateManager:
         self._create_default_templates()
 
     def create_template(self, template: ConfigTemplate, content: str) -> None:
-        """Create a new configuration template."""
+        """Create a new configuration template.
+        
+        Args:
+            template: ConfigTemplate definition with metadata.
+            content: Jinja2 template content string.
+        """
         template_file = self.templates_dir / f"{template.name}.j2"
 
         # Write template content
@@ -235,11 +346,25 @@ class ConfigTemplateManager:
         logger.info(f"Created template: {template.name}")
 
     def get_template(self, name: str) -> ConfigTemplate | None:
-        """Get template by name."""
+        """Get template by name.
+        
+        Args:
+            name: Template name identifier.
+            
+        Returns:
+            ConfigTemplate instance if found, None otherwise.
+        """
         return self.templates.get(name)
 
     def list_templates(self, tags: list[str] | None = None) -> list[ConfigTemplate]:
-        """List available templates, optionally filtered by tags."""
+        """List available templates, optionally filtered by tags.
+        
+        Args:
+            tags: List of tags to filter by, returns all if None.
+            
+        Returns:
+            List of ConfigTemplate instances sorted by name.
+        """
         templates = list(self.templates.values())
 
         if tags:
@@ -253,7 +378,19 @@ class ConfigTemplateManager:
         variables: dict[str, Any],
         output_file: str | None = None,
     ) -> str:
-        """Render a template with variables."""
+        """Render a template with variables.
+        
+        Args:
+            template_name: Name of the template to render.
+            variables: Dictionary of template variables.
+            output_file: Optional file path to write rendered content.
+            
+        Returns:
+            Rendered template content as formatted string.
+            
+        Raises:
+            ValueError: If template not found or required variables missing.
+        """
         template = self.get_template(template_name)
         if not template:
             raise ValueError(f"Template not found: {template_name}")
@@ -283,7 +420,14 @@ class ConfigTemplateManager:
         return formatted_content
 
     def validate_template(self, template_name: str) -> list[str]:
-        """Validate a template."""
+        """Validate a template for syntax and file existence.
+        
+        Args:
+            template_name: Name of the template to validate.
+            
+        Returns:
+            List of validation error messages, empty if valid.
+        """
         template = self.get_template(template_name)
         if not template:
             return [f"Template not found: {template_name}"]
@@ -622,7 +766,11 @@ _template_manager: ConfigTemplateManager | None = None
 
 
 def get_template_manager() -> ConfigTemplateManager:
-    """Get the global template manager."""
+    """Get the global template manager singleton.
+    
+    Returns:
+        The global ConfigTemplateManager instance, creating it if needed.
+    """
     global _template_manager
     if _template_manager is None:
         _template_manager = ConfigTemplateManager()

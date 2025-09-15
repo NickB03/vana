@@ -1,5 +1,16 @@
 "use client"
 
+/**
+ * @fileoverview Main Application Sidebar Component
+ * 
+ * Provides the primary navigation sidebar for the Vana AI Research Platform.
+ * Features include dynamic navigation, chat history, user authentication state,
+ * and responsive design with collapsible functionality.
+ * 
+ * @author Vana AI Team
+ * @version 1.0.0
+ */
+
 import * as React from "react"
 import {
   BookOpen,
@@ -15,6 +26,7 @@ import {
 
 import { NavUser } from "@/components/sidebar/nav-user"
 import Image from "next/image"
+import Link from "next/link"
 import {
   Sidebar,
   SidebarContent,
@@ -45,116 +57,27 @@ import {
 import { useAuth } from "@/contexts/auth-context"
 import { cn } from "@/lib/utils"
 import { ChevronRight } from "lucide-react"
+import { getChatData, type NavItem, type UserData, type TeamData } from "@/lib/chat-data"
 
-// Enhanced chat data with proper time grouping
-export const getChatData = () => {
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
-  const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
-  const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
 
-  return [
-    {
-      id: "today",
-      label: "Today",
-      chats: [
-        {
-          id: "t1",
-          title: "Project roadmap discussion",
-          url: "/chat/t1",
-          createdAt: today.toISOString(),
-          isActive: true,
-        },
-        {
-          id: "t2",
-          title: "API Documentation Review",
-          url: "/chat/t2",
-          createdAt: today.toISOString(),
-        },
-        {
-          id: "t3",
-          title: "Frontend Bug Analysis",
-          url: "/chat/t3",
-          createdAt: today.toISOString(),
-        },
-      ],
-    },
-    {
-      id: "yesterday",
-      label: "Yesterday",
-      chats: [
-        {
-          id: "y1",
-          title: "Database Schema Design",
-          url: "/chat/y1",
-          createdAt: yesterday.toISOString(),
-        },
-        {
-          id: "y2",
-          title: "Performance Optimization",
-          url: "/chat/y2",
-          createdAt: yesterday.toISOString(),
-        },
-      ],
-    },
-    {
-      id: "week",
-      label: "Last 7 days",
-      chats: [
-        {
-          id: "w1",
-          title: "Authentication Flow",
-          url: "/chat/w1",
-          createdAt: new Date(weekAgo.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: "w2",
-          title: "UI Component Library",
-          url: "/chat/w2",
-          createdAt: new Date(weekAgo.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: "w3",
-          title: "Testing Strategy",
-          url: "/chat/w3",
-          createdAt: weekAgo.toISOString(),
-        },
-      ],
-    },
-    {
-      id: "month",
-      label: "Last month",
-      chats: [
-        {
-          id: "m1",
-          title: "Initial Project Setup",
-          url: "/chat/m1",
-          createdAt: new Date(monthAgo.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: "m2",
-          title: "Requirements Gathering",
-          url: "/chat/m2",
-          createdAt: new Date(monthAgo.getTime() + 8 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: "m3",
-          title: "Tech Stack Selection",
-          url: "/chat/m3",
-          createdAt: monthAgo.toISOString(),
-        },
-      ],
-    },
-  ]
-}
-
-// Application data
-const data = {
+/**
+ * Static application data configuration
+ * Contains default user data, team information, and main navigation items
+ * 
+ * @type {Object}
+ * @property {UserData} user - Default user information
+ * @property {TeamData[]} teams - Available teams/organizations
+ * @property {NavItem[]} navMain - Primary navigation menu items
+ */
+const data: {
+  user: UserData;
+  teams: TeamData[];
+  navMain: NavItem[];
+} = {
   user: {
     name: "Vana User",
     email: "user@vana.ai",
-    avatar: "/avatars/user.jpg",
+    avatar: "/avatars/user.svg",
   },
   teams: [
     {
@@ -181,12 +104,31 @@ const data = {
   ],
 }
 
-// Navigation component
+/**
+ * Unified Navigation Menu Component
+ * 
+ * Renders the main platform navigation with collapsible sections.
+ * Supports both simple links and nested menu items with expand/collapse functionality.
+ * 
+ * @component
+ * @param {Object} props - Component props
+ * @param {NavItem[]} props.items - Array of navigation items to render
+ * @param {string} [props.className] - Optional CSS classes to apply
+ * @returns {JSX.Element} Rendered navigation menu
+ * 
+ * @example
+ * ```tsx
+ * <UnifiedNavMain 
+ *   items={navItems} 
+ *   className="custom-nav-styles" 
+ * />
+ * ```
+ */
 function UnifiedNavMain({
   items,
   className,
 }: {
-  items: typeof data.navMain
+  items: NavItem[]
   className?: string
 }) {
   return (
@@ -213,9 +155,9 @@ function UnifiedNavMain({
                     {item.items?.map((subItem) => (
                       <SidebarMenuItem key={subItem.title}>
                         <SidebarMenuButton asChild size="sm">
-                          <a href={subItem.url}>
+                          <Link href={subItem.url}>
                             <span>{subItem.title}</span>
-                          </a>
+                          </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     ))}
@@ -226,9 +168,9 @@ function UnifiedNavMain({
           ) : (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild>
-                <a href={item.url}>
+                <Link href={item.url}>
                   <span>{item.title}</span>
-                </a>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           )
@@ -238,40 +180,54 @@ function UnifiedNavMain({
   )
 }
 
-// Enhanced chat history component
+/**
+ * Unified Chat History Component
+ * 
+ * Displays chat history organized by time periods with interactive controls.
+ * Includes a "New Chat" button and context menu actions for each chat item.
+ * Adapts layout based on sidebar collapse state and mobile viewport.
+ * 
+ * @component
+ * @returns {JSX.Element} Chat history section with grouped conversations
+ * 
+ * @example
+ * ```tsx
+ * <UnifiedChatHistory />
+ * ```
+ */
 function UnifiedChatHistory() {
   const { isMobile } = useSidebar()
   const chatData = getChatData()
 
   return (
     <>
-      {/* New Chat Button (Prompt Kit style) */}
-      <div className="group-data-[collapsible=icon]:hidden px-2 pb-2">
-        <Button asChild variant="outline" size="sm" className="w-full justify-start gap-2 font-normal">
-          <a href="/chat/new">
+      {/* New Chat Button - Prompt Kit style with better spacing */}
+      <div className="group-data-[collapsible=icon]:hidden px-3 py-2">
+        <Button asChild variant="outline" size="sm" className="w-full justify-start gap-2 h-8 font-normal border-border">
+          <Link href="/chat">
             <Plus className="h-4 w-4" />
             <span>New Chat</span>
-          </a>
+          </Link>
         </Button>
       </div>
 
       {chatData.map((group) => (
-        <SidebarGroup key={group.id} className="group-data-[collapsible=icon]:hidden">
-          <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-          <SidebarMenu>
+        <SidebarGroup key={group.id} className="group-data-[collapsible=icon]:hidden px-3">
+          <SidebarGroupLabel className="px-0 text-xs font-medium text-muted-foreground">{group.label}</SidebarGroupLabel>
+          <SidebarMenu className="space-y-1">
             {group.chats.map((chat) => (
               <SidebarMenuItem key={chat.id}>
                 <SidebarMenuButton
                   asChild
                   isActive={chat.isActive}
                   className={cn(
-                    "w-full justify-start",
-                    chat.isActive && "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                    "w-full justify-start h-8 px-2 rounded-md",
+                    chat.isActive && "bg-accent text-accent-foreground font-medium"
                   )}
                 >
-                  <a href={chat.url}>
+                  <Link href={chat.url}>
                     <span className="truncate flex-1">{chat.title}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -313,8 +269,36 @@ function UnifiedChatHistory() {
   )
 }
 
-// Main unified sidebar component
-export function VanaSidebarUnified({ ...props }: React.ComponentProps<typeof Sidebar>) {
+/**
+ * Main Application Sidebar Component
+ * 
+ * Primary navigation sidebar for the Vana AI Research Platform.
+ * Integrates user authentication, chat history, platform navigation,
+ * and responsive design patterns. Automatically adapts to user authentication
+ * state and provides fallback data when needed.
+ * 
+ * @component
+ * @param {React.ComponentProps<typeof Sidebar>} props - Sidebar component props
+ * @returns {JSX.Element} Complete application sidebar with header, content, and footer
+ * 
+ * @example
+ * ```tsx
+ * <AppSidebar 
+ *   collapsible="offcanvas"
+ *   className="custom-sidebar"
+ * />
+ * ```
+ * 
+ * @features
+ * - Dynamic user authentication integration
+ * - Collapsible navigation with off-canvas support
+ * - Chat history with time-based grouping
+ * - Platform navigation with nested menus
+ * - Search functionality
+ * - User profile management
+ * - Responsive design for mobile and desktop
+ */
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isAuthenticated, user } = useAuth()
 
   // Use authenticated user data if available, fallback to sample data
@@ -323,7 +307,7 @@ export function VanaSidebarUnified({ ...props }: React.ComponentProps<typeof Sid
       return {
         name: user.name || user.email || "Vana User",
         email: user.email || "user@vana.ai",
-        avatar: user.avatar || "/avatars/user.jpg",
+        avatar: user.avatar || "/avatars/user.svg",
       }
     }
     return data.user
@@ -332,9 +316,15 @@ export function VanaSidebarUnified({ ...props }: React.ComponentProps<typeof Sid
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
-        {/* Logo and Search */}
-        <div className="flex items-center justify-between px-2 py-1">
-          <Image src="/vana-logo.png" alt="Vana AI logo" width={32} height={32} className="h-8 w-auto rounded-md" priority />
+        {/* Logo and Search - Clean prompt-kit style */}
+        <div className="flex items-center justify-between p-2">
+          <div className="flex items-center gap-3">
+            <Image src="/vana-logo.svg" alt="Vana AI logo" width={32} height={32} className="h-8 w-8 rounded-md" priority />
+            <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+              <span className="text-sm font-medium">Vana AI</span>
+              <span className="text-xs text-muted-foreground">Research Platform</span>
+            </div>
+          </div>
           <Button
             variant="ghost"
             size="icon"
@@ -344,8 +334,6 @@ export function VanaSidebarUnified({ ...props }: React.ComponentProps<typeof Sid
             <span className="sr-only">Search</span>
           </Button>
         </div>
-
-
       </SidebarHeader>
 
       <SidebarContent>
