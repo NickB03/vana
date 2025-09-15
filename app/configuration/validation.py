@@ -14,7 +14,17 @@ logger = logging.getLogger(__name__)
 
 
 class ValidationSeverity(Enum):
-    """Validation issue severity levels."""
+    """Validation issue severity levels.
+    
+    Defines the severity levels for validation issues to help prioritize
+    and categorize configuration problems.
+    
+    Attributes:
+        INFO: Informational messages that don't require action.
+        WARNING: Issues that should be addressed but don't prevent operation.
+        ERROR: Serious issues that may cause problems during operation.
+        CRITICAL: Severe issues that will prevent proper system operation.
+    """
 
     INFO = "info"
     WARNING = "warning"
@@ -23,7 +33,21 @@ class ValidationSeverity(Enum):
 
 
 class ValidationType(Enum):
-    """Types of validation rules."""
+    """Types of validation rules.
+    
+    Categorizes different types of validation checks that can be applied
+    to configuration values.
+    
+    Attributes:
+        REQUIRED: Validates that required fields are present.
+        TYPE_CHECK: Validates that values match expected types.
+        RANGE: Validates that numeric values fall within specified ranges.
+        PATTERN: Validates that string values match regex patterns.
+        CUSTOM: Custom validation logic defined by user functions.
+        DEPENDENCY: Validates relationships between multiple fields.
+        SECURITY: Security-focused validation checks.
+        PERFORMANCE: Performance-related validation checks.
+    """
 
     REQUIRED = "required"
     TYPE_CHECK = "type_check"
@@ -37,7 +61,22 @@ class ValidationType(Enum):
 
 @dataclass
 class ValidationResult:
-    """Result of a validation check."""
+    """Result of a validation check.
+    
+    Contains detailed information about a validation issue including
+    the rule that failed, severity, and suggestions for resolution.
+    
+    Attributes:
+        rule_name: Name of the validation rule that generated this result.
+        field_name: Name of the field that was validated.
+        severity: Severity level of the validation issue.
+        message: Human-readable description of the validation issue.
+        current_value: The actual value that failed validation.
+        expected_value: The expected value or format.
+        suggestion: Helpful suggestion for resolving the issue.
+        category: Category of the validation rule.
+        timestamp: When the validation was performed.
+    """
 
     rule_name: str
     field_name: str
@@ -50,7 +89,12 @@ class ValidationResult:
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary."""
+        """Convert validation result to dictionary format.
+        
+        Returns:
+            Dictionary representation of the validation result with all
+            fields serialized to JSON-compatible types.
+        """
         return {
             "rule_name": self.rule_name,
             "field_name": self.field_name,
@@ -65,7 +109,18 @@ class ValidationResult:
 
 
 class ValidationRule(ABC):
-    """Abstract base class for validation rules."""
+    """Abstract base class for validation rules.
+    
+    Defines the interface that all validation rules must implement.
+    Subclasses should override the validate method to provide specific
+    validation logic.
+    
+    Attributes:
+        name: Unique name identifier for the rule.
+        severity: Default severity level for validation failures.
+        category: Category grouping for the rule.
+        description: Human-readable description of what the rule checks.
+    """
 
     def __init__(
         self,
@@ -74,6 +129,14 @@ class ValidationRule(ABC):
         category: str = "general",
         description: str = "",
     ):
+        """Initialize the validation rule.
+        
+        Args:
+            name: Unique identifier for the rule.
+            severity: Default severity level for failures.
+            category: Category for grouping related rules.
+            description: Human-readable description of the rule.
+        """
         self.name = name
         self.severity = severity
         self.category = category
@@ -83,19 +146,48 @@ class ValidationRule(ABC):
     def validate(
         self, field_name: str, value: Any, context: dict[str, Any]
     ) -> ValidationResult | None:
-        """Validate a field value and return result if validation fails."""
+        """Validate a field value and return result if validation fails.
+        
+        Args:
+            field_name: Name of the field being validated.
+            value: The value to validate.
+            context: Full configuration context for dependency checking.
+            
+        Returns:
+            ValidationResult if validation fails, None if validation passes.
+        """
         pass
 
 
 class RequiredFieldRule(ValidationRule):
-    """Rule to check if required fields are present and not empty."""
+    """Rule to check if required fields are present and not empty.
+    
+    Validates that required configuration fields have non-null, non-empty
+    values. Empty strings and None values are considered invalid.
+    """
 
     def __init__(self, name: str = "required_field", **kwargs):
+        """Initialize the required field rule.
+        
+        Args:
+            name: Name of the validation rule.
+            **kwargs: Additional arguments passed to parent ValidationRule.
+        """
         super().__init__(name, **kwargs)
 
     def validate(
         self, field_name: str, value: Any, context: dict[str, Any]
     ) -> ValidationResult | None:
+        """Validate that the field has a non-empty value.
+        
+        Args:
+            field_name: Name of the field being validated.
+            value: The value to check for presence.
+            context: Full configuration context (unused in this rule).
+            
+        Returns:
+            ValidationResult if field is missing/empty, None if valid.
+        """
         if value is None or (isinstance(value, str) and not value.strip()):
             return ValidationResult(
                 rule_name=self.name,
@@ -110,11 +202,25 @@ class RequiredFieldRule(ValidationRule):
 
 
 class TypeCheckRule(ValidationRule):
-    """Rule to check if field value matches expected type."""
+    """Rule to check if field value matches expected type.
+    
+    Validates that configuration values match the expected Python type.
+    Supports checking against multiple acceptable types.
+    
+    Attributes:
+        expected_type: List of acceptable types for the field.
+    """
 
     def __init__(
         self, expected_type: type | list[type], name: str = "type_check", **kwargs
     ):
+        """Initialize the type check rule.
+        
+        Args:
+            expected_type: Single type or list of acceptable types.
+            name: Name of the validation rule.
+            **kwargs: Additional arguments passed to parent ValidationRule.
+        """
         super().__init__(name, **kwargs)
         self.expected_type = (
             expected_type if isinstance(expected_type, list) else [expected_type]
@@ -123,6 +229,16 @@ class TypeCheckRule(ValidationRule):
     def validate(
         self, field_name: str, value: Any, context: dict[str, Any]
     ) -> ValidationResult | None:
+        """Validate that the value matches one of the expected types.
+        
+        Args:
+            field_name: Name of the field being validated.
+            value: The value to type-check.
+            context: Full configuration context (unused in this rule).
+            
+        Returns:
+            ValidationResult if type is incorrect, None if valid.
+        """
         if value is not None and not any(
             isinstance(value, t) for t in self.expected_type
         ):
@@ -141,7 +257,15 @@ class TypeCheckRule(ValidationRule):
 
 
 class RangeRule(ValidationRule):
-    """Rule to check if numeric value is within specified range."""
+    """Rule to check if numeric value is within specified range.
+    
+    Validates that numeric configuration values fall within acceptable
+    minimum and maximum bounds.
+    
+    Attributes:
+        min_value: Minimum acceptable value (inclusive).
+        max_value: Maximum acceptable value (inclusive).
+    """
 
     def __init__(
         self,
@@ -150,6 +274,14 @@ class RangeRule(ValidationRule):
         name: str = "range_check",
         **kwargs,
     ):
+        """Initialize the range validation rule.
+        
+        Args:
+            min_value: Minimum acceptable value (inclusive). None for no minimum.
+            max_value: Maximum acceptable value (inclusive). None for no maximum.
+            name: Name of the validation rule.
+            **kwargs: Additional arguments passed to parent ValidationRule.
+        """
         super().__init__(name, **kwargs)
         self.min_value = min_value
         self.max_value = max_value
@@ -157,6 +289,16 @@ class RangeRule(ValidationRule):
     def validate(
         self, field_name: str, value: Any, context: dict[str, Any]
     ) -> ValidationResult | None:
+        """Validate that the numeric value is within the specified range.
+        
+        Args:
+            field_name: Name of the field being validated.
+            value: The numeric value to range-check.
+            context: Full configuration context (unused in this rule).
+            
+        Returns:
+            ValidationResult if value is out of range, None if valid.
+        """
         if value is None or not isinstance(value, int | float):
             return None
 

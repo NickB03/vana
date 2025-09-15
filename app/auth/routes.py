@@ -74,7 +74,46 @@ auth_db_dependency = Depends(get_auth_db)
 async def register_user(
     user: UserCreate, request: Request, db: Session = auth_db_dependency
 ) -> AuthResponse:
-    """Register a new user."""
+    """Register a new user account with automatic role assignment.
+
+    Args:
+        user: User registration data including email, username, and password.
+        request: FastAPI request object for extracting client information.
+        db: Database session for user creation and role assignment.
+
+    Returns:
+        AuthResponse containing user data and authentication tokens.
+
+    Raises:
+        HTTPException: 400 Bad Request if password doesn't meet requirements
+                      or 409 Conflict if email/username already exists.
+
+    Security:
+        - Validates password strength (8+ chars, mixed case, numbers, symbols)
+        - Checks for existing email/username to prevent duplicates
+        - Hashes password with bcrypt before storage
+        - Assigns default "user" role automatically
+        - Creates immediate login session with tokens
+        - Records device info and IP address for audit trails
+
+    Registration Process:
+        1. Validate password meets security requirements
+        2. Check email/username uniqueness
+        3. Hash password with bcrypt
+        4. Create user with is_active=True, is_verified=False
+        5. Assign default "user" role
+        6. Generate access and refresh tokens
+        7. Return user data and tokens for immediate login
+
+    Example:
+        >>> user_data = UserCreate(
+        ...     email="user@example.com",
+        ...     username="newuser",
+        ...     password="SecureP@ss123"
+        ... )
+        >>> response = await register_user(user_data, request, db)
+        >>> print(f"User {response.user.email} registered successfully")
+    """
     # Validate password strength
     if not validate_password_strength(user.password):
         raise HTTPException(
@@ -158,11 +197,57 @@ async def register_user(
 async def login_user(
     request: Request, db: Session = auth_db_dependency
 ) -> AuthResponse:
-    """OAuth2-compliant login endpoint that accepts both form and JSON data.
+    """OAuth2-compliant user authentication endpoint with multi-format support.
 
-    Supports:
-    - application/x-www-form-urlencoded (OAuth2 standard)
-    - application/json (backward compatibility)
+    Args:
+        request: FastAPI request object containing login credentials.
+        db: Database session for user authentication and token creation.
+
+    Returns:
+        AuthResponse containing authenticated user data and tokens.
+
+    Raises:
+        HTTPException: 
+            - 400 Bad Request for malformed requests or unsupported content types
+            - 401 Unauthorized for invalid credentials or inactive accounts
+
+    Security:
+        - OAuth2 compliant with proper error responses
+        - Supports both form-encoded and JSON content types
+        - Validates credentials using constant-time password verification
+        - Updates last_login timestamp on successful authentication
+        - Creates new access and refresh tokens
+        - Records device info and IP address for audit trails
+        - Implements proper error responses to prevent user enumeration
+
+    Supported Content Types:
+        1. application/x-www-form-urlencoded (OAuth2 standard):
+           - username: Username or email address
+           - password: User password
+           - grant_type: Must be "password" if provided
+           
+        2. application/json (backward compatibility):
+           - username OR email: Username or email address
+           - password: User password
+
+    OAuth2 Compliance:
+        - Returns proper OAuth2 error codes (invalid_request, invalid_grant)
+        - Includes appropriate HTTP headers for caching and authentication
+        - Supports grant_type validation for OAuth2 flows
+
+    Example:
+        >>> # Form data (OAuth2 standard)
+        >>> response = requests.post("/auth/login", data={
+        ...     "username": "user@example.com",
+        ...     "password": "password123",
+        ...     "grant_type": "password"
+        ... })
+        
+        >>> # JSON data (backward compatibility)
+        >>> response = requests.post("/auth/login", json={
+        ...     "email": "user@example.com",
+        ...     "password": "password123"
+        ... })
     """
     content_type = request.headers.get("content-type", "").lower()
 
@@ -306,7 +391,40 @@ async def refresh_access_token(
     refresh_data: RefreshTokenRequest,
     db: Session = auth_db_dependency,
 ) -> Token:
-    """Refresh access token using refresh token."""
+    """Generate new access token using a valid refresh token.
+
+    Args:
+        request: FastAPI request object for extracting client information.
+        refresh_data: Request data containing the refresh token.
+        db: Database session for token verification and creation.
+
+    Returns:
+        Token object with new access and refresh tokens.
+
+    Raises:
+        HTTPException: 401 Unauthorized if refresh token is invalid,
+                      expired, revoked, or user is inactive.
+
+    Security:
+        - Validates refresh token signature, expiration, and revocation status
+        - Checks user account is still active
+        - Revokes old refresh token to prevent reuse (token rotation)
+        - Creates new access and refresh token pair
+        - Records device info and IP address for audit trails
+        - Implements refresh token rotation for enhanced security
+
+    Token Rotation:
+        - Old refresh token is immediately revoked
+        - New refresh token replaces the old one
+        - Prevents token replay attacks if refresh token is compromised
+        - Maintains session continuity for legitimate users
+
+    Example:
+        >>> refresh_request = RefreshTokenRequest(refresh_token="abc123...")
+        >>> new_tokens = await refresh_access_token(request, refresh_request, db)
+        >>> # Update client storage with new tokens
+        >>> store_tokens(new_tokens.access_token, new_tokens.refresh_token)
+    """
     user = verify_refresh_token(refresh_data.refresh_token, db)
 
     if not user or not user.is_active:
@@ -340,7 +458,44 @@ async def logout_user(
     current_user: User = current_active_user_dep,
     db: Session = auth_db_dependency,
 ):
-    """Logout user by revoking refresh token."""
+    """Logout user from current session by revoking the refresh token.
+
+    Args:
+        refresh_data: Request data containing the refresh token to revoke.
+        current_user: Currently authenticated user (from JWT access token).
+        db: Database session for token revocation.
+
+    Returns:
+        Success message confirming logout.
+
+    Raises:
+        HTTPException: 
+            - 403 Forbidden if token doesn't belong to current user
+            - 400 Bad Request if refresh token is invalid
+
+    Security:
+        - Validates token ownership to prevent token hijacking
+        - Only allows users to revoke their own tokens
+        - Immediately invalidates refresh token in database
+        - Access token remains valid until natural expiration (30 minutes)
+        - Prevents unauthorized logout attacks on other users
+
+    Logout Process:
+        1. Verify refresh token belongs to authenticated user
+        2. Revoke refresh token in database
+        3. Return success confirmation
+        4. Client should discard both access and refresh tokens
+
+    Note:
+        Access tokens cannot be revoked server-side due to JWT stateless design.
+        They will expire naturally after 30 minutes.
+
+    Example:
+        >>> logout_request = RefreshTokenRequest(refresh_token="abc123...")
+        >>> result = await logout_user(logout_request, current_user, db)
+        >>> # Client should clear stored tokens
+        >>> clear_local_tokens()
+    """
     # Verify token ownership before revocation to prevent token hijacking
     token_owner = verify_refresh_token(refresh_data.refresh_token, db)
     if not token_owner or token_owner.id != current_user.id:
@@ -364,7 +519,44 @@ async def logout_all_devices(
     current_user: User = current_active_user_dep,
     db: Session = auth_db_dependency,
 ):
-    """Logout user from all devices by revoking all refresh tokens."""
+    """Logout user from all devices by revoking all active refresh tokens.
+
+    Args:
+        current_user: Currently authenticated user (from JWT access token).
+        db: Database session for bulk token revocation.
+
+    Returns:
+        Success message with count of devices logged out.
+
+    Security:
+        - Revokes all active refresh tokens for the user
+        - Forces logout from all devices and sessions
+        - Used for security incidents or voluntary security actions
+        - Does not affect currently valid access tokens (they expire naturally)
+        - Prevents continued access from potentially compromised devices
+
+    Use Cases:
+        - User suspects account compromise
+        - Password change (security best practice)
+        - Device theft or loss
+        - Security policy enforcement
+        - Administrative security actions
+
+    Process:
+        1. Find all active (non-revoked) refresh tokens for user
+        2. Mark all tokens as revoked in database
+        3. Commit changes immediately
+        4. Return count of revoked tokens
+
+    Note:
+        Access tokens will continue to work until their natural expiration.
+        For immediate revocation, consider implementing a token blacklist.
+
+    Example:
+        >>> result = await logout_all_devices(current_user, db)
+        >>> print(f"Logged out from {result['count']} devices")
+        >>> # User must re-authenticate on all devices
+    """
     count = revoke_all_user_tokens(current_user.id, db)
     return {"message": f"Logged out from {count} devices"}
 
@@ -373,7 +565,33 @@ async def logout_all_devices(
 async def get_current_user_info(
     current_user: User = current_active_user_dep,
 ) -> UserResponse:
-    """Get current user information."""
+    """Retrieve current authenticated user's profile information.
+
+    Args:
+        current_user: Currently authenticated and active user.
+
+    Returns:
+        UserResponse containing user profile data including roles and permissions.
+
+    Security:
+        - Requires valid authentication (access token)
+        - Only returns data for the authenticated user
+        - Includes role and permission information for client authorization
+        - Excludes sensitive data like hashed passwords
+
+    Response Data:
+        - Basic profile: id, email, username, names
+        - Account status: is_active, is_verified, is_superuser
+        - Authentication info: google_cloud_identity, last_login
+        - Timestamps: created_at, updated_at
+        - Roles and permissions for client-side authorization
+
+    Example:
+        >>> user_info = await get_current_user_info(current_user)
+        >>> print(f"Welcome {user_info.full_name}")
+        >>> if "admin" in [role.name for role in user_info.roles]:
+        ...     show_admin_menu()
+    """
     return UserResponse.model_validate(current_user)
 
 
@@ -434,7 +652,46 @@ async def change_password(
     current_user: User = current_active_user_dep,
     db: Session = auth_db_dependency,
 ):
-    """Change user password."""
+    """Change the current user's password with validation and security measures.
+
+    Args:
+        password_data: Current and new password data.
+        current_user: Currently authenticated and active user.
+        db: Database session for password update and token revocation.
+
+    Returns:
+        Success message indicating password change and logout requirement.
+
+    Raises:
+        HTTPException:
+            - 400 Bad Request if current password is incorrect
+            - 400 Bad Request if new password is same as current
+            - 400 Bad Request if new password doesn't meet requirements
+
+    Security:
+        - Validates current password before allowing change
+        - Enforces password strength requirements for new password
+        - Prevents reuse of current password
+        - Hashes new password with bcrypt before storage
+        - Revokes all refresh tokens to force re-authentication
+        - Updates password change timestamp
+
+    Security Measures:
+        1. Current password verification (prevents unauthorized changes)
+        2. New password strength validation
+        3. Password reuse prevention
+        4. Secure bcrypt hashing
+        5. Force logout from all devices (token revocation)
+        6. Audit trail with updated_at timestamp
+
+    Example:
+        >>> password_change = ChangePassword(
+        ...     current_password="oldpass123",
+        ...     new_password="NewSecure@Pass456"
+        ... )
+        >>> result = await change_password(password_change, current_user, db)
+        >>> # User must re-authenticate on all devices
+    """
     from .security import verify_password
 
     # Verify current password
@@ -476,7 +733,39 @@ async def forgot_password(
     background_tasks: BackgroundTasks,
     db: Session = auth_db_dependency,
 ):
-    """Request password reset."""
+    """Initiate password reset process by sending reset token to user's email.
+
+    Args:
+        request_data: Email address for password reset.
+        background_tasks: FastAPI background tasks for email sending.
+        db: Database session for user lookup.
+
+    Returns:
+        Generic success message (same for existing and non-existing emails).
+
+    Security:
+        - Always returns success message to prevent email enumeration
+        - Only sends reset token if email exists and user is active
+        - Reset token expires after 1 hour
+        - Token includes email claim for validation
+        - Development mode can log masked tokens for testing
+
+    Email Enumeration Prevention:
+        - Returns identical response for valid and invalid emails
+        - Prevents attackers from discovering registered email addresses
+        - Processing time should be consistent regardless of email validity
+
+    Development Features:
+        - Set VANA_DEV_LOG_RESET_TOKEN=true to log masked tokens
+        - Tokens are masked in logs (first 4 + last 4 characters only)
+        - Production deployments should never log tokens
+
+    Example:
+        >>> reset_request = PasswordResetRequest(email="user@example.com")
+        >>> result = await forgot_password(reset_request, bg_tasks, db)
+        >>> # Always returns success message
+        >>> print(result["message"])  # "If the email exists, a reset link has been sent."
+    """
     user = db.query(User).filter(User.email == request_data.email).first()
 
     # Always return success to prevent email enumeration

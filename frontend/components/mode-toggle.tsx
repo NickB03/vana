@@ -13,7 +13,10 @@ import {
 } from "@/components/ui/tooltip";
 
 export function ModeToggle() {
-  const { setTheme, theme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+  const isDark = mounted && resolvedTheme === "dark";
 
   return (
     <TooltipProvider disableHoverableContent>
@@ -23,10 +26,10 @@ export function ModeToggle() {
             className="rounded-full w-8 h-8 bg-background mr-2"
             variant="outline"
             size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            onClick={() => setTheme(isDark ? "light" : "dark")}
           >
-            <Sun className="w-[1.2rem] h-[1.2rem] rotate-90 scale-0 transition-transform ease-in-out duration-500 dark:rotate-0 dark:scale-100" />
-            <Moon className="absolute w-[1.2rem] h-[1.2rem] rotate-0 scale-100 transition-transform ease-in-out duration-500 dark:-rotate-90 dark:scale-0" />
+            <Sun className={`w-[1.2rem] h-[1.2rem] transition-transform ease-in-out duration-500 ${isDark ? 'rotate-0 scale-100' : 'rotate-90 scale-0'}`} />
+            <Moon className={`absolute w-[1.2rem] h-[1.2rem] transition-transform ease-in-out duration-500 ${isDark ? '-rotate-90 scale-0' : 'rotate-0 scale-100'}`} />
             <span className="sr-only">Switch Theme</span>
           </Button>
         </TooltipTrigger>

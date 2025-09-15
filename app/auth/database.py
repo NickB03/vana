@@ -33,7 +33,31 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def get_auth_db() -> Generator[Session, None, None]:
-    """Get database session for authentication."""
+    """Dependency function to provide database session for authentication operations.
+
+    Yields:
+        SQLAlchemy Session: Database session configured for authentication.
+
+    Session Management:
+        - Creates new session from configured SessionLocal factory
+        - Automatically closes session after use (finally block)
+        - Safe for use in FastAPI dependency injection
+        - Handles connection errors gracefully
+
+    Usage:
+        This function is designed to be used as a FastAPI dependency:
+        
+        >>> @app.get("/users/me")
+        >>> async def get_user(db: Session = Depends(get_auth_db)):
+        ...     return db.query(User).filter(User.id == user_id).first()
+
+    Example:
+        >>> db_dependency = Depends(get_auth_db)
+        >>> 
+        >>> def some_function(db: Session = db_dependency):
+        ...     users = db.query(User).all()
+        ...     return users
+    """
     db = SessionLocal()
     try:
         yield db
@@ -42,17 +66,97 @@ def get_auth_db() -> Generator[Session, None, None]:
 
 
 def create_tables() -> None:
-    """Create all authentication tables."""
+    """Create all authentication tables in the database.
+
+    Creates tables for User, Role, Permission, RefreshToken and their
+    association tables based on SQLAlchemy model metadata.
+
+    Security:
+        - Creates tables with proper foreign key constraints
+        - Establishes many-to-many relationship tables
+        - Uses database engine configured with authentication settings
+
+    Tables Created:
+        - users: User accounts and authentication data
+        - roles: Role definitions for RBAC
+        - permissions: Fine-grained permission definitions  
+        - refresh_tokens: Session management tokens
+        - user_roles: Many-to-many user-role associations
+        - role_permissions: Many-to-many role-permission associations
+
+    Example:
+        >>> create_tables()
+        >>> # All authentication tables now exist in database
+    """
     Base.metadata.create_all(bind=engine)
 
 
 def drop_tables() -> None:
-    """Drop all authentication tables."""
+    """Drop all authentication tables from the database.
+
+    WARNING: This operation is destructive and will permanently delete
+    all authentication data including users, roles, permissions, and tokens.
+
+    Security:
+        - Use only for testing, development, or complete system reset
+        - Production systems should use database migrations instead
+        - Drops tables in correct order to handle foreign key constraints
+
+    Tables Dropped:
+        - All tables defined in authentication models
+        - Association tables for many-to-many relationships
+        - All data will be permanently lost
+
+    Example:
+        >>> # WARNING: This deletes all authentication data!
+        >>> drop_tables()
+        >>> # All authentication tables and data are now gone
+    """
     Base.metadata.drop_all(bind=engine)
 
 
 def init_auth_db() -> None:
-    """Initialize authentication database with tables and default data."""
+    """Initialize authentication database with tables, roles, permissions, and admin user.
+
+    Performs complete database initialization for the authentication system:
+    1. Creates all necessary tables
+    2. Sets up default permissions for all resources
+    3. Creates standard roles (viewer, user, admin)
+    4. Assigns appropriate permissions to each role
+    5. Creates admin user if credentials provided in environment
+
+    Environment Variables:
+        - ADMIN_EMAIL: Email for default admin user (optional)
+        - ADMIN_PASSWORD: Password for default admin user (optional)
+
+    Security:
+        - Idempotent operation (safe to run multiple times)
+        - Skips initialization if permissions already exist
+        - Uses secure password hashing for admin user
+        - Assigns comprehensive permissions to roles
+
+    Default Permissions Created:
+        - Resource-based permissions for: agents, sessions, feedback, users, admin
+        - Action-based permissions: read, create, update, delete, manage
+        - Fine-grained control over system resources
+
+    Default Roles Created:
+        - "viewer": Read-only access to all resources
+        - "user": Standard user operations (agents, sessions, feedback)
+        - "admin": Full system access with all permissions
+
+    Raises:
+        Exception: If database initialization fails (rolled back automatically)
+
+    Example:
+        >>> # Set environment variables first
+        >>> os.environ["ADMIN_EMAIL"] = "admin@company.com"
+        >>> os.environ["ADMIN_PASSWORD"] = "SecureAdminPass123!"
+        >>> 
+        >>> # Initialize database
+        >>> init_auth_db()
+        >>> print("Authentication database initialized successfully")
+    """
     from .models import Permission, Role, User
     from .security import get_password_hash
 

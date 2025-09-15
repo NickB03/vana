@@ -18,9 +18,6 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: false
   },
   
-  devIndicators: {
-    position: "bottom-right"
-  },
   
   // Performance optimizations
   compress: true,

@@ -125,6 +125,26 @@ This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Co
 - **Clean Architecture**: Separate concerns
 - **Documentation**: Keep updated
 
+### Component Naming & Organization
+
+**React Component Naming Convention:**
+- Use PascalCase for component names and file names
+- Components should be descriptive and indicate their purpose
+- Avoid vendor prefixes (e.g., "Vana") in component names
+- Use standard React naming patterns
+
+**Current Sidebar Architecture:**
+- **Primary**: `AppSidebar` (`components/app-sidebar.tsx`) - Main application sidebar
+- **Layout**: `UnifiedChatLayout` (`components/layouts/unified-chat-layout.tsx`) - Layout wrapper with AppSidebar
+- **Usage**: Import `AppSidebar` directly or use `UnifiedChatLayout` for full page layouts
+
+**Component Organization Rules:**
+- Core UI components: `/components/ui/`
+- Layout components: `/components/layouts/`
+- Feature-specific components: `/components/[feature]/`
+- Shared utilities: `/lib/`
+- Never nest layout providers (avoid dual sidebar rendering)
+
 ## 🚀 Available Agents (54 Total)
 
 ### Core Development
@@ -286,35 +306,57 @@ mcp__claude-flow__memory_usage --action store --key "learnings/[session-id]" --v
 
 ## 🎯 Concurrent Execution Examples
 
-### ✅ CORRECT WORKFLOW: MCP Coordinates, Claude Code Executes
+### ✅ OPTIMIZED WORKFLOW: Maximum Parallel Efficiency (8-12 Agents)
 
 ```javascript
-// Step 1: MCP tools set up coordination (optional, for complex tasks)
+// Step 1: MCP tools set up adaptive coordination (recommended)
 [Single Message - Coordination Setup]:
-  mcp__claude-flow__swarm_init { topology: "mesh", maxAgents: 6 }
+  mcp__claude-flow__swarm_init { topology: "adaptive", maxAgents: 12 }
   mcp__claude-flow__agent_spawn { type: "researcher" }
-  mcp__claude-flow__agent_spawn { type: "coder" }
+  mcp__claude-flow__agent_spawn { type: "system-architect" }
+  mcp__claude-flow__agent_spawn { type: "backend-dev" }
+  mcp__claude-flow__agent_spawn { type: "frontend-dev" }
   mcp__claude-flow__agent_spawn { type: "tester" }
+  mcp__claude-flow__agent_spawn { type: "reviewer" }
+  mcp__claude-flow__agent_spawn { type: "perf-analyzer" }
+  mcp__claude-flow__agent_spawn { type: "security-manager" }
 
-// Step 2: Claude Code Task tool spawns ACTUAL agents that do the work
-[Single Message - Parallel Agent Execution]:
-  // Claude Code's Task tool spawns real agents concurrently
-  Task("Research agent", "Analyze API requirements and best practices. Check memory for prior decisions.", "researcher")
-  Task("Coder agent", "Implement REST endpoints with authentication. Coordinate via hooks.", "coder")
-  Task("Database agent", "Design and implement database schema. Store decisions in memory.", "code-analyzer")
-  Task("Tester agent", "Create comprehensive test suite with 90% coverage.", "tester")
-  Task("Reviewer agent", "Review code quality and security. Document findings.", "reviewer")
+// Step 2: Claude Code Task tool spawns ACTUAL agents (MAXIMUM PARALLEL)
+[Single Message - 8-12 Agent Parallel Execution]:
+  // Primary development agents
+  Task("Research Specialist", "Analyze requirements, patterns, and best practices. Store findings in memory.", "researcher")
+  Task("System Architect", "Design overall architecture and data flows. Document decisions.", "system-architect")
+  Task("Backend Developer", "Implement REST API, authentication, and business logic.", "backend-dev")
+  Task("Frontend Developer", "Build UI components and user interactions. Follow shadcn patterns.", "coder")
+  Task("Database Engineer", "Design schema, optimize queries, handle migrations.", "code-analyzer")
   
-  // Batch ALL todos in ONE call
+  // Quality assurance agents
+  Task("Test Engineer", "Create comprehensive test suite with 95%+ coverage.", "tester")
+  Task("Code Reviewer", "Review code quality, security, and best practices.", "reviewer")
+  Task("Performance Analyst", "Analyze and optimize performance bottlenecks.", "perf-analyzer")
+  
+  // Specialized coordination agents
+  Task("Security Auditor", "Security review, vulnerability assessment, compliance.", "security-manager")
+  Task("DevOps Engineer", "CI/CD, deployment, monitoring, infrastructure.", "cicd-engineer")
+  Task("Documentation Agent", "API docs, technical documentation, guides.", "api-docs")
+  Task("Integration Coordinator", "Ensure all components work together seamlessly.", "task-orchestrator")
+  
+  // Batch ALL todos in ONE call (10-15 recommended)
   TodoWrite { todos: [
-    {id: "1", content: "Research API patterns", status: "in_progress", priority: "high"},
-    {id: "2", content: "Design database schema", status: "in_progress", priority: "high"},
-    {id: "3", content: "Implement authentication", status: "pending", priority: "high"},
-    {id: "4", content: "Build REST endpoints", status: "pending", priority: "high"},
-    {id: "5", content: "Write unit tests", status: "pending", priority: "medium"},
-    {id: "6", content: "Integration tests", status: "pending", priority: "medium"},
-    {id: "7", content: "API documentation", status: "pending", priority: "low"},
-    {id: "8", content: "Performance optimization", status: "pending", priority: "low"}
+    {content: "Research API patterns and best practices", status: "in_progress", activeForm: "Researching API patterns and best practices"},
+    {content: "Design system architecture and data flows", status: "in_progress", activeForm: "Designing system architecture and data flows"},
+    {content: "Implement backend REST API endpoints", status: "pending", activeForm: "Implementing backend REST API endpoints"},
+    {content: "Build frontend UI components and interactions", status: "pending", activeForm: "Building frontend UI components and interactions"},
+    {content: "Design and optimize database schema", status: "pending", activeForm: "Designing and optimizing database schema"},
+    {content: "Create comprehensive test suite (95%+ coverage)", status: "pending", activeForm: "Creating comprehensive test suite"},
+    {content: "Perform security audit and vulnerability assessment", status: "pending", activeForm: "Performing security audit and vulnerability assessment"},
+    {content: "Analyze and optimize performance bottlenecks", status: "pending", activeForm: "Analyzing and optimizing performance bottlenecks"},
+    {content: "Set up CI/CD pipeline and deployment", status: "pending", activeForm: "Setting up CI/CD pipeline and deployment"},
+    {content: "Generate API documentation and guides", status: "pending", activeForm: "Generating API documentation and guides"},
+    {content: "Review code quality and best practices", status: "pending", activeForm: "Reviewing code quality and best practices"},
+    {content: "Integrate all components and test workflows", status: "pending", activeForm: "Integrating all components and testing workflows"},
+    {content: "Monitor system performance and optimization", status: "pending", activeForm: "Monitoring system performance and optimization"},
+    {content: "Validate deployment readiness and documentation", status: "pending", activeForm: "Validating deployment readiness and documentation"}
   ]}
   
   // Parallel file operations
