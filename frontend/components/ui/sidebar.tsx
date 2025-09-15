@@ -193,30 +193,31 @@ const Sidebar = React.forwardRef<
     )
   }
 
-  if (isMobile) {
-    return (
-      <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-        <SheetContent
-          data-sidebar="sidebar"
-          data-mobile="true"
-          className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
-          style={
-            {
-              "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
-            } as React.CSSProperties
-          }
-          side={side}
-        >
-          <div className="flex h-full w-full flex-col">{children}</div>
-        </SheetContent>
-      </Sheet>
-    )
-  }
-
   return (
-    <div
-      ref={ref}
-      className="group peer hidden lg:block shrink-0 text-sidebar-foreground"
+    <>
+      {/* Mobile version using Sheet */}
+      <div className="lg:hidden">
+        <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
+          <SheetContent
+            data-sidebar="sidebar"
+            data-mobile="true"
+            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+            style={
+              {
+                "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
+              } as React.CSSProperties
+            }
+            side={side}
+          >
+            <div className="flex h-full w-full flex-col">{children}</div>
+          </SheetContent>
+        </Sheet>
+      </div>
+      
+      {/* Desktop version */}
+      <div
+        ref={ref}
+        className="group peer hidden lg:block shrink-0 text-sidebar-foreground"
       data-state={state}
       data-collapsible={state === "closed" ? collapsible : ""}
       data-variant={variant}
@@ -254,7 +255,8 @@ const Sidebar = React.forwardRef<
           {children}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   )
 })
 Sidebar.displayName = "Sidebar"
@@ -318,13 +320,7 @@ const SidebarInset = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div">
 >(({ className, style, ...props }, ref) => {
-  // Read sidebar state directly to drive padding, avoiding reliance on peer selectors
   const { state, isMobile } = useSidebar()
-  // When the sidebar is fully closed (offcanvas), remove all left padding to avoid a visual gap.
-  // Otherwise, when open, use the full sidebar width. On mobile we let the Sheet handle layout.
-  const paddingLeft = !isMobile
-    ? (state === "open" ? "var(--sidebar-width)" : "0")
-    : undefined
 
   return (
     <main
@@ -334,6 +330,7 @@ const SidebarInset = React.forwardRef<
         "peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
         className
       )}
+      style={style}
       {...props}
     />
   )
@@ -449,7 +446,7 @@ const SidebarGroupLabel = React.forwardRef<
       ref={ref}
       data-sidebar="group-label"
       className={cn(
-        "duration-200 flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opa] ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        "duration-200 flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opacity] ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
         "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
         className
       )}

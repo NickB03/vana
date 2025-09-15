@@ -133,7 +133,18 @@
 
 /* Focus ring for accessibility */
 .focus-ring-vana:focus-visible {
-  outline: none;
-  ring: 2px solid rgb(147 51 234 / 0.5);
-  ring-offset: 2px;
+  outline: 2px solid rgb(147 51 234 / 0.5);
+  outline-offset: 2px;
+}
+
+/* Respect prefers-reduced-motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer,
+  .animate-gradient-shift,
+  .animate-float,
+  .animate-pulse-glow,
+  .animate-fade-in-up,
+  .animate-scale-in {
+    animation: none !important;
+  }
 }

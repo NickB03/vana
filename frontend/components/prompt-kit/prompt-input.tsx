@@ -56,7 +56,9 @@ const PromptTextarea = React.forwardRef<HTMLTextAreaElement, PromptTextareaProps
           // Prompt-kit specific styling
           "flex w-full min-h-[44px] resize-none rounded-lg border bg-transparent px-3 py-2.5 text-base shadow-xs transition-[color,box-shadow,height] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
           // Remove default borders for embedded use
-          "border-0 shadow-none focus-visible:ring-0 focus-visible:border-0",
+          "border-0 shadow-none",
+          // Keep an accessible focus indicator:
+          "focus-visible:ring-[3px] focus-visible:border-input",
           // Better mobile experience
           "field-sizing-content scroll-smooth",
           className

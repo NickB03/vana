@@ -54,9 +54,9 @@ export default function ChatPage() {
           <div className="max-w-4xl mx-auto space-y-4">
             {/* Suggestions */}
             <div className="flex flex-wrap gap-2 justify-center">
-              {suggestions.map((suggestion, index) => (
+              {suggestions.map((suggestion) => (
                 <PromptSuggestion
-                  key={index}
+                  key={suggestion}
                   variant="outline"
                   size="sm"
                   onClick={() => handleSuggestionClick(suggestion)}
@@ -74,6 +74,7 @@ export default function ChatPage() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask me anything..."
+                aria-label="Chat input"
                 className="min-h-[60px] pr-12 resize-none rounded-lg border-border focus:border-primary/50"
                 rows={2}
               />

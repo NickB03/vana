@@ -11,7 +11,7 @@ import {
 import { usePathname } from "next/navigation"
 
 export function UnifiedChatHeader() {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ""
   const title = React.useMemo(() => {
     return getDynamicTitle(pathname, "Vana AI")
   }, [pathname])
@@ -32,7 +32,7 @@ interface UnifiedChatLayoutProps {
 }
 
 export function UnifiedChatLayout({ children, headerTitle }: UnifiedChatLayoutProps) {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ""
   const dynamicTitle = React.useMemo(() => {
     return getDynamicTitle(pathname, headerTitle || "Vana AI")
   }, [pathname, headerTitle])

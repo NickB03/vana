@@ -13,7 +13,7 @@ interface NavbarProps extends AdminNavbarProps {
 
 export function Navbar({ title, pathname: propPathname }: NavbarProps) {
   const routerPathname = usePathname();
-  const pathname = propPathname || routerPathname;
+  const pathname = (propPathname ?? routerPathname ?? "");
   
   const dynamicTitle = React.useMemo(() => {
     if (title) return title;

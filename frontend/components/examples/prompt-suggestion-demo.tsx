@@ -183,7 +183,7 @@ export function PromptSuggestionDemo() {
 
               {filteredSuggestions.length === 0 && searchTerm && (
                 <div className="text-center py-8 text-muted-foreground">
-                  No suggestions found matching "{searchTerm}"
+                  No suggestions found matching &quot;{searchTerm}&quot;
                 </div>
               )}
             </CardContent>
