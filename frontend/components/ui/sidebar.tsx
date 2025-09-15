@@ -320,8 +320,10 @@ const SidebarInset = React.forwardRef<
 >(({ className, style, ...props }, ref) => {
   // Read sidebar state directly to drive padding, avoiding reliance on peer selectors
   const { state, isMobile } = useSidebar()
+  // When the sidebar is fully closed (offcanvas), remove all left padding to avoid a visual gap.
+  // Otherwise, when open, use the full sidebar width. On mobile we let the Sheet handle layout.
   const paddingLeft = !isMobile
-    ? (state === "open" ? "var(--sidebar-width)" : "var(--sidebar-width-icon)")
+    ? (state === "open" ? "var(--sidebar-width)" : "0")
     : undefined
 
   return (
