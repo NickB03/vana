@@ -152,7 +152,7 @@ function UnifiedChatHistory() {
       {/* New Chat Button (Prompt Kit style) */}
       <div className="group-data-[collapsible=icon]:hidden px-2 pb-2">
         <Button asChild variant="outline" size="sm" className="w-full justify-start gap-2 font-normal">
-          <Link href="/chat/new">
+          <Link href="/chat">
             <Plus className="h-4 w-4" />
             <span>New Chat</span>
           </Link>
