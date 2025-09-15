@@ -8,7 +8,7 @@ export default function AdminPanelLayout({
   children: React.ReactNode;
 }) {
   return (
-    <UnifiedChatLayout headerTitle="Admin Panel">
+    <UnifiedChatLayout>
       {children}
     </UnifiedChatLayout>
   );

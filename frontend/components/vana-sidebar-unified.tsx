@@ -47,7 +47,7 @@ import { cn } from "@/lib/utils"
 import { ChevronRight } from "lucide-react"
 
 // Enhanced chat data with proper time grouping
-const getChatData = () => {
+export const getChatData = () => {
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
@@ -204,7 +204,6 @@ function UnifiedNavMain({
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton tooltip={item.title}>
-                    {item.icon && <item.icon />}
                     <span>{item.title}</span>
                     <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                   </SidebarMenuButton>
@@ -228,7 +227,6 @@ function UnifiedNavMain({
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild>
                 <a href={item.url}>
-                  {item.icon && <item.icon className="h-4 w-4" />}
                   <span>{item.title}</span>
                 </a>
               </SidebarMenuButton>
@@ -247,6 +245,16 @@ function UnifiedChatHistory() {
 
   return (
     <>
+      {/* New Chat Button (Prompt Kit style) */}
+      <div className="group-data-[collapsible=icon]:hidden px-2 pb-2">
+        <Button asChild variant="outline" size="sm" className="w-full justify-start gap-2 font-normal">
+          <a href="/chat/new">
+            <Plus className="h-4 w-4" />
+            <span>New Chat</span>
+          </a>
+        </Button>
+      </div>
+
       {chatData.map((group) => (
         <SidebarGroup key={group.id} className="group-data-[collapsible=icon]:hidden">
           <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
@@ -262,7 +270,6 @@ function UnifiedChatHistory() {
                   )}
                 >
                   <a href={chat.url}>
-                    <MessageCircle className="h-4 w-4" />
                     <span className="truncate flex-1">{chat.title}</span>
                   </a>
                 </SidebarMenuButton>
@@ -302,17 +309,6 @@ function UnifiedChatHistory() {
       {/* Platform section moved below chat history */}
       <UnifiedNavMain items={data.navMain} className="group-data-[collapsible=icon]:hidden mt-2" />
 
-      {/* New Chat Button */}
-      <SidebarGroup className="group-data-[collapsible=icon]:hidden mt-2">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton className="text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
-              <Plus className="text-sidebar-foreground/70" />
-              <span>New Chat</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarGroup>
     </>
   )
 }

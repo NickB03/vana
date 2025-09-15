@@ -8,6 +8,9 @@ import {
   LogOut,
   Sparkles,
   User,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-react"
 
 import {
@@ -23,6 +26,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu"
 import {
   SidebarMenu,
@@ -32,6 +37,7 @@ import {
 } from "@/components/ui/sidebar"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
+import { useTheme } from "next-themes"
 
 interface User {
   name: string
@@ -47,6 +53,8 @@ export function NavUser({ user }: NavUserProps) {
   const { isMobile } = useSidebar()
   const { logout } = useAuth()
   const router = useRouter()
+  const { theme, setTheme } = useTheme()
+
 
   const handleLogout = async () => {
     try {
@@ -121,6 +129,23 @@ export function NavUser({ user }: NavUserProps) {
                 Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Theme</DropdownMenuLabel>
+            <DropdownMenuRadioGroup value={theme ?? "system"} onValueChange={(value) => setTheme(value as "light" | "dark" | "system")}
+            >
+              <DropdownMenuRadioItem value="light">
+                <Sun className="text-muted-foreground" />
+                <span>Light</span>
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="dark">
+                <Moon className="text-muted-foreground" />
+                <span>Dark</span>
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="system">
+                <Monitor className="text-muted-foreground" />
+                <span>Auto</span>
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut />
