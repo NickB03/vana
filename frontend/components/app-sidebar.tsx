@@ -58,7 +58,7 @@ const data: {
   user: {
     name: "Vana User",
     email: "user@vana.ai",
-    avatar: "/avatars/user.jpg",
+    avatar: "/avatars/user.svg",
   },
   teams: [
     {
@@ -149,9 +149,9 @@ function UnifiedChatHistory() {
 
   return (
     <>
-      {/* New Chat Button (Prompt Kit style) */}
-      <div className="group-data-[collapsible=icon]:hidden px-2 pb-2">
-        <Button asChild variant="outline" size="sm" className="w-full justify-start gap-2 font-normal">
+      {/* New Chat Button - Prompt Kit style with better spacing */}
+      <div className="group-data-[collapsible=icon]:hidden px-3 py-2">
+        <Button asChild variant="outline" size="sm" className="w-full justify-start gap-2 h-8 font-normal border-border">
           <Link href="/chat">
             <Plus className="h-4 w-4" />
             <span>New Chat</span>
@@ -160,17 +160,17 @@ function UnifiedChatHistory() {
       </div>
 
       {chatData.map((group) => (
-        <SidebarGroup key={group.id} className="group-data-[collapsible=icon]:hidden">
-          <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-          <SidebarMenu>
+        <SidebarGroup key={group.id} className="group-data-[collapsible=icon]:hidden px-3">
+          <SidebarGroupLabel className="px-0 text-xs font-medium text-muted-foreground">{group.label}</SidebarGroupLabel>
+          <SidebarMenu className="space-y-1">
             {group.chats.map((chat) => (
               <SidebarMenuItem key={chat.id}>
                 <SidebarMenuButton
                   asChild
                   isActive={chat.isActive}
                   className={cn(
-                    "w-full justify-start",
-                    chat.isActive && "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                    "w-full justify-start h-8 px-2 rounded-md",
+                    chat.isActive && "bg-accent text-accent-foreground font-medium"
                   )}
                 >
                   <Link href={chat.url}>
@@ -217,8 +217,8 @@ function UnifiedChatHistory() {
   )
 }
 
-// Main unified sidebar component
-export function VanaSidebarUnified({ ...props }: React.ComponentProps<typeof Sidebar>) {
+// Main app sidebar component
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isAuthenticated, user } = useAuth()
 
   // Use authenticated user data if available, fallback to sample data
@@ -227,7 +227,7 @@ export function VanaSidebarUnified({ ...props }: React.ComponentProps<typeof Sid
       return {
         name: user.name || user.email || "Vana User",
         email: user.email || "user@vana.ai",
-        avatar: user.avatar || "/avatars/user.jpg",
+        avatar: user.avatar || "/avatars/user.svg",
       }
     }
     return data.user
@@ -236,9 +236,15 @@ export function VanaSidebarUnified({ ...props }: React.ComponentProps<typeof Sid
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
-        {/* Logo and Search */}
-        <div className="flex items-center justify-between px-2 py-1">
-          <Image src="/vana-logo.png" alt="Vana AI logo" width={32} height={32} className="h-8 w-auto rounded-md" priority />
+        {/* Logo and Search - Clean prompt-kit style */}
+        <div className="flex items-center justify-between p-2">
+          <div className="flex items-center gap-3">
+            <Image src="/vana-logo.svg" alt="Vana AI logo" width={32} height={32} className="h-8 w-8 rounded-md" priority />
+            <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+              <span className="text-sm font-medium">Vana AI</span>
+              <span className="text-xs text-muted-foreground">Research Platform</span>
+            </div>
+          </div>
           <Button
             variant="ghost"
             size="icon"
@@ -248,8 +254,6 @@ export function VanaSidebarUnified({ ...props }: React.ComponentProps<typeof Sid
             <span className="sr-only">Search</span>
           </Button>
         </div>
-
-
       </SidebarHeader>
 
       <SidebarContent>

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { VanaSidebarUnified } from "@/components/vana-sidebar-unified"
+import { AppSidebar } from "@/components/app-sidebar"
 import { getDynamicTitle } from "@/lib/chat-data"
 import {
   SidebarInset,
@@ -41,21 +41,19 @@ export function UnifiedChatLayout({ children, headerTitle }: UnifiedChatLayoutPr
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full">
-        <VanaSidebarUnified />
-        <SidebarInset className="flex flex-1 flex-col">
-          <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
-            <SidebarTrigger className="-ml-1" />
-            <div className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4 text-muted-foreground" />
-              <h1 className="text-lg font-semibold">{dynamicTitle}</h1>
-            </div>
-          </header>
-          <main className="flex flex-1 flex-col overflow-hidden">
-            {children}
-          </main>
-        </SidebarInset>
-      </div>
+      <AppSidebar />
+      <SidebarInset>
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background px-4">
+          <SidebarTrigger className="-ml-1" />
+          <div className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            <h1 className="text-lg font-semibold tracking-tight">{dynamicTitle}</h1>
+          </div>
+        </header>
+        <main className="flex flex-1 flex-col overflow-hidden">
+          {children}
+        </main>
+      </SidebarInset>
     </SidebarProvider>
   )
 }
