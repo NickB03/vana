@@ -8,6 +8,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { MessageSquare } from "lucide-react"
 import { usePathname } from "next/navigation"
 
 export function UnifiedChatHeader() {
@@ -20,6 +21,7 @@ export function UnifiedChatHeader() {
     <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
       <SidebarTrigger className="-ml-1" />
       <div className="flex items-center gap-2">
+        <MessageSquare className="h-4 w-4 text-muted-foreground" />
         <h1 className="text-lg font-semibold">{title}</h1>
       </div>
     </header>
@@ -45,6 +47,7 @@ export function UnifiedChatLayout({ children, headerTitle }: UnifiedChatLayoutPr
           <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
             <SidebarTrigger className="-ml-1" />
             <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
               <h1 className="text-lg font-semibold tracking-tight">{dynamicTitle}</h1>
             </div>
           </header>
