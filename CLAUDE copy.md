@@ -27,6 +27,8 @@ mcp__claude-flow__memory_usage --action retrieve --key "knowledge/project-config
 **❌ NEVER claim you "don't know" without checking memory first**  
 **✅ ALWAYS retrieve stored knowledge before file searches**
 
+### ⚡ GOLDEN RULE: "1 MESSAGE = ALL RELATED OPERATIONS"
+
 **MANDATORY PATTERNS:**
 - **Memory First**: ALWAYS check memory before any other operations
 - **Memory Writing**: ALWAYS store discoveries, progress, and results during work
@@ -55,12 +57,6 @@ mcp__claude-flow__memory_usage --action store --key "progress/api-build" --value
 # Store final results
 mcp__claude-flow__memory_usage --action store --key "results/api-build" --value "Successfully implemented REST API with JWT auth"
 ```
-**Essential Data Stored in Memory:** **NEED TO CONFIRM IF DIRS MATCH CURRENT SETUP**
-- `project/current-state` - Current project architecture and status
-- `knowledge/project-config` - Project configuration and settings
-- `instructions/development-guide` - Development guidelines and procedures
-- `project/post-cleanup-status` - System status and cleanup info
-- `environment/variables` - Environment-specific configuration
 
 ### 🎯 CRITICAL: Claude Code Task Tool for Agent Execution
 
@@ -90,7 +86,7 @@ mcp__claude-flow__memory_usage --action store --key "results/api-build" --value 
 - `/scripts` - Utility scripts
 - `/examples` - Example code
 
-## Dev environment overview
+## Project Overview
 
 This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Completion) methodology with Claude-Flow orchestration for systematic Test-Driven Development.
 
@@ -128,6 +124,26 @@ This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Co
 - **Test-First**: Write tests before implementation
 - **Clean Architecture**: Separate concerns
 - **Documentation**: Keep updated
+
+### Component Naming & Organization
+
+**React Component Naming Convention:**
+- Use PascalCase for component names and file names
+- Components should be descriptive and indicate their purpose
+- Avoid vendor prefixes (e.g., "Vana") in component names
+- Use standard React naming patterns
+
+**Current Sidebar Architecture:**
+- **Primary**: `AppSidebar` (`components/app-sidebar.tsx`) - Main application sidebar
+- **Layout**: `UnifiedChatLayout` (`components/layouts/unified-chat-layout.tsx`) - Layout wrapper with AppSidebar
+- **Usage**: Import `AppSidebar` directly or use `UnifiedChatLayout` for full page layouts
+
+**Component Organization Rules:**
+- Core UI components: `/components/ui/`
+- Layout components: `/components/layouts/`
+- Feature-specific components: `/components/[feature]/`
+- Shared utilities: `/lib/`
+- Never nest layout providers (avoid dual sidebar rendering)
 
 ## 🚀 Available Agents (54 Total)
 
@@ -209,6 +225,9 @@ claude mcp add flow-nexus npx flow-nexus@latest mcp start  # Optional: Cloud fea
 ### System
 `benchmark_run`, `features_detect`, `swarm_monitor`
 
+### Flow-Nexus MCP Tools (Optional Advanced Features)
+Flow-Nexus extends MCP capabilities with 70+ cloud-based orchestration tools:
+
 **Key MCP Tool Categories:**
 - **Swarm & Agents**: `swarm_init`, `swarm_scale`, `agent_spawn`, `task_orchestrate`
 - **Sandboxes**: `sandbox_create`, `sandbox_execute`, `sandbox_upload` (cloud execution)
@@ -217,6 +236,11 @@ claude mcp add flow-nexus npx flow-nexus@latest mcp start  # Optional: Cloud fea
 - **GitHub**: `github_repo_analyze`, `github_pr_manage` (repository management)
 - **Real-time**: `execution_stream_subscribe`, `realtime_subscribe` (live monitoring)
 - **Storage**: `storage_upload`, `storage_list` (cloud file management)
+
+**Authentication Required:**
+- Register: `mcp__flow-nexus__user_register` or `npx flow-nexus@latest register`
+- Login: `mcp__flow-nexus__user_login` or `npx flow-nexus@latest login`
+- Access 70+ specialized MCP tools for advanced orchestration
 
 ## 🚀 Agent Execution Flow with Claude Code
 
@@ -352,6 +376,47 @@ Message 4: Write "file.js"
 // This breaks parallel coordination!
 ```
 
+## Performance Benefits
+
+- **84.8% SWE-Bench solve rate**
+- **32.3% token reduction**
+- **2.8-4.4x speed improvement**
+- **27+ neural models**
+
+## Hooks Integration
+
+### Pre-Operation
+- Auto-assign agents by file type
+- Validate commands for safety
+- Prepare resources automatically
+- Optimize topology by complexity
+- Cache searches
+
+### Post-Operation
+- Auto-format code
+- Train neural patterns
+- Update memory
+- Analyze performance
+- Track token usage
+
+### Session Management
+- Generate summaries
+- Persist state
+- Track metrics
+- Restore context
+- Export workflows
+
+## Advanced Features (v2.0.0)
+
+- 🚀 Automatic Topology Selection
+- ⚡ Parallel Execution (2.8-4.4x speed)
+- 🧠 Neural Training
+- 📊 Bottleneck Analysis
+- 🤖 Smart Auto-Spawning
+- 🛡️ Self-Healing Workflows
+- 💾 Cross-Session Memory
+- 🔗 GitHub Integration
+
 ## Integration Tips
 
 1. Start with basic swarm init
@@ -362,6 +427,22 @@ Message 4: Write "file.js"
 6. Enable hooks automation
 7. Use GitHub tools first
 
+## 🗝️ Key Memory Keys (Cross-Session Knowledge)
+
+**Essential Data Stored in Memory:**
+- `project/current-state` - Current project architecture and status
+- `knowledge/project-config` - Project configuration and settings
+- `instructions/development-guide` - Development guidelines and procedures
+- `project/post-cleanup-status` - System status and cleanup info
+- `environment/variables` - Environment-specific configuration
+
+**Project Key Facts:**
+- **Debug Endpoints**: Use `${DEBUG_ENDPOINT}` environment variable
+- **API Keys**: Stored in environment variables (never hardcoded)
+- **Performance**: Hook automation = 32.3% token reduction, 2.8-4.4x speed
+- **Memory Location**: `${PROJECT_ROOT}/.swarm/memory.db`
+- **AI Models**: Google Gemini 2.5 Pro/Flash + OpenRouter fallback
+- **Backend**: Python FastAPI with Google ADK 1.8.0
 - **Session Stats**: Tracked in memory for performance monitoring
 
 **🚨 CRITICAL FOR NEW SESSIONS:**
