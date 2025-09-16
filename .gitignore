@@ -290,6 +290,7 @@ uv.lock
 runner.md
 frontend/tsconfig.tsbuildinfo
 
+
 # Claude Flow generated files
 .claude/settings.local.json
 .mcp.json
