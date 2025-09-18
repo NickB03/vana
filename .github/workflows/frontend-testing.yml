@@ -1,0 +1,480 @@
+name: Frontend Testing Pipeline
+
+on:
+  push:
+    branches: [main, develop, feat/frontend-rebuild-clean-slate]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-testing.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-testing.yml'
+  workflow_dispatch: # Allow manual triggers
+
+# Ensure only one workflow runs at a time for the same ref
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '18'
+  FRONTEND_DIR: './frontend'
+
+jobs:
+  # Static Analysis and Linting
+  lint-and-typecheck:
+    name: 'Lint & Type Check'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+          
+      - name: Install dependencies
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm ci
+        
+      - name: Run ESLint
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm run lint -- --format=json --output-file=eslint-report.json
+        continue-on-error: true
+        
+      - name: Run TypeScript type checking
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm run type-check
+        
+      - name: Upload lint results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lint-results
+          path: ${{ env.FRONTEND_DIR }}/eslint-report.json
+          retention-days: 7
+
+  # Unit Testing
+  unit-tests:
+    name: 'Unit Tests'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    strategy:
+      matrix:
+        node-version: ['18', '20']
+        
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+          
+      - name: Install dependencies
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm ci
+        
+      - name: Run unit tests with coverage
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm run test:unit
+        env:
+          CI: true
+          
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          files: ${{ env.FRONTEND_DIR }}/coverage/lcov.info
+          flags: frontend-unit
+          name: frontend-unit-${{ matrix.node-version }}
+          fail_ci_if_error: false
+          
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-results-node-${{ matrix.node-version }}
+          path: |
+            ${{ env.FRONTEND_DIR }}/tests/reports/
+            ${{ env.FRONTEND_DIR }}/coverage/
+          retention-days: 7
+
+  # Integration Testing
+  integration-tests:
+    name: 'Integration Tests'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [lint-and-typecheck]
+    
+    services:
+      # Mock backend service for integration tests
+      mock-backend:
+        image: node:18-alpine
+        ports:
+          - 8000:8000
+        options: >-
+          --health-cmd "wget --no-verbose --tries=1 --spider http://localhost:8000/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+          
+      - name: Install dependencies
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm ci
+        
+      - name: Start mock backend
+        run: |
+          cd ${{ env.FRONTEND_DIR }}
+          npm run test:integration:setup &
+          sleep 5
+          
+      - name: Run integration tests
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm run test:integration
+        env:
+          CI: true
+          TEST_BACKEND_URL: http://localhost:8000
+          
+      - name: Upload integration test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results
+          path: ${{ env.FRONTEND_DIR }}/tests/reports/integration/
+          retention-days: 7
+
+  # Accessibility Testing
+  accessibility-tests:
+    name: 'Accessibility Tests'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [lint-and-typecheck]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+          
+      - name: Install dependencies
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm ci
+        
+      - name: Run accessibility tests
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm run test:accessibility
+        env:
+          CI: true
+          
+      - name: Upload accessibility test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: accessibility-test-results
+          path: ${{ env.FRONTEND_DIR }}/tests/reports/accessibility/
+          retention-days: 7
+
+  # Performance Testing
+  performance-tests:
+    name: 'Performance Tests'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [unit-tests]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+          
+      - name: Install dependencies
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm ci
+        
+      - name: Run performance tests
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm run test:performance
+        env:
+          CI: true
+          
+      - name: Upload performance test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-test-results
+          path: ${{ env.FRONTEND_DIR }}/tests/reports/performance/
+          retention-days: 7
+          
+      - name: Performance budget check
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: |
+          if [ -f "tests/reports/performance/budget-violations.json" ]; then
+            echo "Performance budget violations found:"
+            cat tests/reports/performance/budget-violations.json
+            exit 1
+          fi
+
+  # Build Testing
+  build-test:
+    name: 'Build Test'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [lint-and-typecheck]
+    
+    strategy:
+      matrix:
+        build-mode: ['development', 'production']
+        
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+          
+      - name: Install dependencies
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm ci
+        
+      - name: Build application (${{ matrix.build-mode }})
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: |
+          if [ "${{ matrix.build-mode }}" = "production" ]; then
+            npm run build
+          else
+            npm run build:dev
+          fi
+        env:
+          NODE_ENV: ${{ matrix.build-mode }}
+          
+      - name: Analyze bundle size
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: |
+          if [ -d ".next" ]; then
+            npx @next/bundle-analyzer .next
+          fi
+        continue-on-error: true
+        
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: matrix.build-mode == 'production'
+        with:
+          name: production-build
+          path: ${{ env.FRONTEND_DIR }}/.next/
+          retention-days: 7
+
+  # End-to-End Testing
+  e2e-tests:
+    name: 'E2E Tests'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build-test]
+    
+    strategy:
+      matrix:
+        browser: ['chromium', 'firefox', 'webkit']
+        
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+          
+      - name: Install dependencies
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm ci
+        
+      - name: Install Playwright browsers
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npx playwright install ${{ matrix.browser }} --with-deps
+        
+      - name: Download production build
+        uses: actions/download-artifact@v4
+        with:
+          name: production-build
+          path: ${{ env.FRONTEND_DIR }}/.next/
+          
+      - name: Start application
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: |
+          npm run start &
+          npx wait-on http://localhost:3000 --timeout 60000
+        env:
+          PORT: 3000
+          
+      - name: Run E2E tests
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npx playwright test --project=${{ matrix.browser }}
+        env:
+          CI: true
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-results-${{ matrix.browser }}
+          path: |
+            ${{ env.FRONTEND_DIR }}/test-results/
+            ${{ env.FRONTEND_DIR }}/playwright-report/
+          retention-days: 7
+
+  # Security Testing
+  security-scan:
+    name: 'Security Scan'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [lint-and-typecheck]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+          
+      - name: Install dependencies
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm ci
+        
+      - name: Run npm audit
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+        
+      - name: Run CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          languages: typescript, javascript
+          source-root: ${{ env.FRONTEND_DIR }}
+
+  # Test Results Summary
+  test-summary:
+    name: 'Test Summary'
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [
+      unit-tests,
+      integration-tests,
+      accessibility-tests,
+      performance-tests,
+      e2e-tests,
+      security-scan
+    ]
+    
+    steps:
+      - name: Download all test artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: test-artifacts/
+          
+      - name: Generate test summary
+        run: |
+          echo "# Frontend Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Unit Tests
+          echo "## Unit Tests" >> $GITHUB_STEP_SUMMARY
+          echo "Status: ${{ needs.unit-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Integration Tests
+          echo "## Integration Tests" >> $GITHUB_STEP_SUMMARY
+          echo "Status: ${{ needs.integration-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Accessibility Tests
+          echo "## Accessibility Tests" >> $GITHUB_STEP_SUMMARY
+          echo "Status: ${{ needs.accessibility-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Performance Tests
+          echo "## Performance Tests" >> $GITHUB_STEP_SUMMARY
+          echo "Status: ${{ needs.performance-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # E2E Tests
+          echo "## E2E Tests" >> $GITHUB_STEP_SUMMARY
+          echo "Status: ${{ needs.e2e-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Security Scan
+          echo "## Security Scan" >> $GITHUB_STEP_SUMMARY
+          echo "Status: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Check overall test status
+        run: |
+          if [[ "${{ needs.unit-tests.result }}" != "success" ]] || 
+             [[ "${{ needs.integration-tests.result }}" != "success" ]] || 
+             [[ "${{ needs.accessibility-tests.result }}" != "success" ]] || 
+             [[ "${{ needs.performance-tests.result }}" != "success" ]] || 
+             [[ "${{ needs.e2e-tests.result }}" != "success" ]]; then
+            echo "One or more test suites failed"
+            exit 1
+          fi
+          echo "All tests passed successfully!"
+
+  # Deployment Readiness Check
+  deployment-ready:
+    name: 'Deployment Ready'
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [test-summary]
+    
+    steps:
+      - name: Deployment readiness confirmation
+        run: |
+          echo "✅ All tests passed - Frontend is ready for deployment"
+          echo "🚀 Branch: ${{ github.ref }}"
+          echo "📦 Commit: ${{ github.sha }}"
+          
+      - name: Notify deployment system
+        run: |
+          # In a real setup, this would trigger deployment
+          echo "Ready for deployment to production"

@@ -1,103 +1,158 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { Suspense, useState, useRef } from 'react'
+import { useChatState } from '@/hooks/useChatState'
+import VanaHomePage from '@/components/vana/VanaHomePage'
+import { ChatContainer } from '@/components/chat/chat-container'
+import { Message } from '@/components/chat/message'
+import { PromptInput } from '@/components/chat/prompt-input'
+import { ScrollButton } from '@/components/chat/scroll-button'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+
+// Enhanced chat interface with Prompt-Kit components
+function VanaChatInterface() {
+  const { messages, endChat, sendMessage } = useChatState()
+  const [inputValue, setInputValue] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const chatContainerRef = useRef<HTMLDivElement>(null)
+
+  const handleSubmit = async (value: string) => {
+    if (!value.trim()) return
+    
+    setIsLoading(true)
+    try {
+      await sendMessage(value)
+      setInputValue('')
+    } catch (error) {
+      console.error('Failed to send message:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleCopyMessage = (content: string) => {
+    navigator.clipboard.writeText(content)
+  }
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="flex flex-col h-full" ref={chatContainerRef}>
+      {/* Chat Header */}
+      <div className="border-b p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+              <span className="text-sm font-bold text-primary-foreground">V</span>
+            </div>
+            <div>
+              <h2 className="font-semibold">Chat with Vana</h2>
+              <p className="text-xs text-muted-foreground">AI Assistant Platform</p>
+            </div>
+          </div>
+          <Button 
+            variant="ghost"
+            size="sm"
+            onClick={endChat}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            Back to Home
+          </Button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+      
+      {/* Messages Area */}
+      <ChatContainer.Root className="flex-1">
+        <ChatContainer.Content>
+          {messages.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              <div className="text-center max-w-sm">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-2xl">💬</span>
+                </div>
+                <h3 className="font-semibold mb-2">Ready to start our conversation!</h3>
+                <p className="text-sm">Ask me anything or choose from the suggestions below.</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {messages.map((message) => (
+                <Message 
+                  key={message.id} 
+                  variant={message.role === 'user' ? 'user' : 'assistant'}
+                >
+                  <Message.Avatar 
+                    variant={message.role === 'user' ? 'user' : 'assistant'}
+                  />
+                  <Message.Content variant={message.role === 'user' ? 'user' : 'assistant'}>
+                    {message.content}
+                  </Message.Content>
+                  {message.role === 'assistant' && (
+                    <Message.Actions 
+                      onCopy={() => handleCopyMessage(message.content)}
+                    />
+                  )}
+                </Message>
+              ))}
+              <ChatContainer.ScrollAnchor />
+            </>
+          )}
+        </ChatContainer.Content>
+      </ChatContainer.Root>
+      
+      {/* Scroll to Bottom Button */}
+      <ScrollButton.Floating 
+        position="bottom-right"
+        offset={{ bottom: 140, right: 24 }}
+      />
+      
+      {/* Input Area */}
+      <PromptInput
+        value={inputValue}
+        onValueChange={setInputValue}
+        onSubmit={handleSubmit}
+        isLoading={isLoading}
+        placeholder="Type your message..."
+        maxHeight={200}
+      />
     </div>
-  );
+  )
+}
+
+function ChatLoadingSkeleton() {
+  return (
+    <div className="flex items-center justify-center h-full">
+      <div className="text-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-muted-foreground">Loading chat...</p>
+      </div>
+    </div>
+  )
+}
+
+export default function HomePage() {
+  const { isActive } = useChatState()
+  
+  // Layout-first conditional rendering based on chat state
+  const layoutClasses = cn(
+    "h-full transition-all duration-300",
+    {
+      // Home page layout - centered content
+      "flex items-center justify-center": !isActive,
+      // Chat interface layout - full height
+      "flex flex-col": isActive,
+    }
+  )
+  
+  return (
+    <div className={layoutClasses}>
+      {isActive ? (
+        // Chat Interface - Conditional rendering
+        <Suspense fallback={<ChatLoadingSkeleton />}>
+          <VanaChatInterface />
+        </Suspense>
+      ) : (
+        // Home Page - Always available when not in chat
+        <VanaHomePage />
+      )}
+    </div>
+  )
 }
