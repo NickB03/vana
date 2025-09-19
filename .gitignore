@@ -315,3 +315,13 @@ claude-flow
 claude-flow.bat
 claude-flow.ps1
 hive-mind-prompt-*.txt
+
+# Temporary directories and files
+.gemini-clipboard/
+.playwright-mcp/
+*-broken-backup/
+full-chat-app-sourcecode.md
+tests/performance-memory-test.js
+
+# Vitest configuration backups
+frontend-backup/vitest.*.config.ts
