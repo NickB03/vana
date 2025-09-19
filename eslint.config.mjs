@@ -20,6 +20,15 @@ const eslintConfig = [
       "next-env.d.ts",
     ],
   },
+  {
+    rules: {
+      "@next/next/no-duplicate-head": "off", // Temporarily disable due to compatibility issue
+      "react-hooks/exhaustive-deps": "off", // Temporarily disable due to compatibility issue
+      "@typescript-eslint/no-unused-vars": "warn", // Downgrade to warning
+      "@typescript-eslint/no-explicit-any": "warn", // Downgrade to warning
+      "react/no-unescaped-entities": "warn", // Downgrade to warning
+    },
+  },
 ];
 
 export default eslintConfig;

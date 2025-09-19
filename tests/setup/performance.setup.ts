@@ -5,11 +5,13 @@
 
 // Mock Performance Observer for testing
 if (!global.PerformanceObserver) {
-  global.PerformanceObserver = jest.fn().mockImplementation(() => ({
+  const MockPerformanceObserver: any = jest.fn().mockImplementation(() => ({
     observe: jest.fn(),
     disconnect: jest.fn(),
     takeRecords: jest.fn(() => []),
-  }))
+  }));
+  (MockPerformanceObserver as any).supportedEntryTypes = ['mark', 'measure', 'navigation', 'resource'];
+  global.PerformanceObserver = MockPerformanceObserver;
 }
 
 // Mock performance.measure for testing

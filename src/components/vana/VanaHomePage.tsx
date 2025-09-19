@@ -1,50 +1,47 @@
 'use client'
 
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { PromptSuggestion } from '@/components/chat/prompt-suggestion'
+import { PromptSuggestion } from '@/components/ui/prompt-suggestion'
+import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from '@/components/ui/prompt-input'
+import { useChatState } from '@/hooks/useChatState'
+import { Send, Plus, Globe, MoreHorizontal, Mic, ArrowUp } from 'lucide-react'
 
 interface VanaHomePageProps {
   onStartChat?: (prompt: string) => void
 }
 
 const capabilities = [
-  {
-    title: "Content Creation",
-    description: "Generate articles, creative writing, and marketing content",
-    prompt: "Help me create engaging content for my project"
-  },
-  {
-    title: "Data Analysis", 
-    description: "Analyze business data and generate insights",
-    prompt: "I need help analyzing data and finding patterns"
-  },
-  {
-    title: "Code Review",
-    description: "Review code quality and suggest improvements", 
-    prompt: "Please review my code and suggest improvements"
-  },
-  {
-    title: "Project Planning",
-    description: "Create roadmaps and strategic plans",
-    prompt: "Help me plan and organize my project roadmap"
-  },
-  {
-    title: "Research Synthesis",
-    description: "Gather and synthesize information from multiple sources",
-    prompt: "I need comprehensive research on a specific topic"
-  },
-  {
-    title: "Problem Solving",
-    description: "Break down complex problems and find solutions",
-    prompt: "Help me solve a complex problem step by step"
-  }
+  "Content Creation",
+  "Data Analysis", 
+  "Code Review",
+  "Project Planning",
+  "Research Synthesis",
+  "Problem Solving"
 ]
 
 export function VanaHomePage({ onStartChat }: VanaHomePageProps) {
+  const [promptValue, setPromptValue] = useState('')
+  const { startChat } = useChatState()
+
+  const handlePromptSubmit = () => {
+    if (promptValue.trim()) {
+      startChat(promptValue)
+      onStartChat?.(promptValue)
+      setPromptValue('')
+    }
+  }
+
+  const handleSuggestionClick = (suggestion: string) => {
+    const prompt = `Help me with ${suggestion.toLowerCase()}`
+    startChat(prompt)
+    onStartChat?.(prompt)
+  }
+
   return (
-    <div className="h-full flex flex-col items-center justify-center p-8" data-testid="vana-home-page">
+    <div className="min-h-full flex flex-col items-center justify-center p-8 max-w-4xl mx-auto" data-testid="vana-home-page">
       {/* Welcome Section */}
-      <div className="text-center mb-12 max-w-2xl">
+      <div className="text-center mb-8">
         <div className="mb-6">
           <div className="w-16 h-16 mx-auto mb-4 bg-primary rounded-full flex items-center justify-center">
             <span className="text-2xl font-bold text-primary-foreground">V</span>
@@ -52,48 +49,99 @@ export function VanaHomePage({ onStartChat }: VanaHomePageProps) {
           <h1 className="text-4xl font-bold text-foreground mb-4">
             Hi, I'm Vana
           </h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Your AI assistant platform powered by multiple specialized agents. 
             I can help you with a wide range of tasks through intelligent coordination.
           </p>
         </div>
       </div>
       
-      {/* Capability Suggestions */}
-      <div className="w-full max-w-4xl">
-        <h2 className="text-2xl font-semibold text-center mb-8">How can I help you today?</h2>
+      {/* Main Prompt Input */}
+      <div className="w-full max-w-2xl mb-8">
+        <PromptInput
+          value={promptValue}
+          onValueChange={setPromptValue}
+          onSubmit={handlePromptSubmit}
+          className="border-input bg-popover relative z-10 w-full rounded-3xl border p-0 pt-1 shadow-xs"
+        >
+          <div className="flex flex-col">
+            <PromptInputTextarea
+              placeholder="What can I help you with today?"
+              className="min-h-[44px] pt-3 pl-4 text-base leading-[1.3] sm:text-base md:text-base"
+            />
+
+            <PromptInputActions className="mt-5 flex w-full items-center justify-between gap-2 px-3 pb-3">
+              <div className="flex items-center gap-2">
+                <PromptInputAction tooltip="Add a new action">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="size-9 rounded-full"
+                  >
+                    <Plus size={18} />
+                  </Button>
+                </PromptInputAction>
+
+                <PromptInputAction tooltip="Search">
+                  <Button variant="outline" className="rounded-full">
+                    <Globe size={18} />
+                    Search
+                  </Button>
+                </PromptInputAction>
+
+                <PromptInputAction tooltip="More actions">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="size-9 rounded-full"
+                  >
+                    <MoreHorizontal size={18} />
+                  </Button>
+                </PromptInputAction>
+              </div>
+              <div className="flex items-center gap-2">
+                <PromptInputAction tooltip="Voice input">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="size-9 rounded-full"
+                  >
+                    <Mic size={18} />
+                  </Button>
+                </PromptInputAction>
+
+                <Button
+                  size="icon"
+                  disabled={!promptValue.trim()}
+                  onClick={handlePromptSubmit}
+                  className="size-9 rounded-full"
+                >
+                  <ArrowUp size={18} />
+                </Button>
+              </div>
+            </PromptInputActions>
+          </div>
+        </PromptInput>
+      </div>
+      
+      {/* Compact Capability Suggestions */}
+      <div className="w-full max-w-2xl">
+        <p className="text-sm text-muted-foreground text-center mb-4">
+          Or try one of these:
+        </p>
         
-        <PromptSuggestion.Grid columns={3} className="mb-8">
+        <div className="flex flex-wrap gap-2 justify-center">
           {capabilities.map((capability, index) => (
             <PromptSuggestion
               key={index}
+              size="sm"
               variant="outline"
-              onClick={() => onStartChat?.(capability.prompt)}
-              className="h-auto p-6 text-left flex flex-col items-start space-y-2 border-2 border-dashed hover:border-solid hover:shadow-md transition-all duration-200"
+              onClick={() => handleSuggestionClick(capability)}
+              className="text-sm"
             >
-              <h3 className="font-semibold text-card-foreground">{capability.title}</h3>
-              <p className="text-sm text-muted-foreground flex-1">{capability.description}</p>
-              <div className="w-full pt-2">
-                <Button variant="ghost" size="sm" className="w-full text-xs">
-                  Get Started →
-                </Button>
-              </div>
+              {capability}
             </PromptSuggestion>
           ))}
-        </PromptSuggestion.Grid>
-        
-        {/* Quick Start Section */}
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground mb-4">
-            Or start with a custom prompt
-          </p>
-          <Button 
-            size="lg"
-            onClick={() => onStartChat?.("Hello Vana, I'd like to start a conversation.")}
-            data-testid="start-chat-button"
-          >
-            Start New Conversation
-          </Button>
         </div>
       </div>
     </div>

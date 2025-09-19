@@ -76,14 +76,14 @@ export function MessageContent({
   return (
     <div className={cn(
       "flex-1 space-y-2",
-      variant === 'user' && "text-right",
+      variant === 'user' && "flex justify-end",
       className
     )}>
       <div className={cn(
-        "inline-block max-w-[80%] rounded-lg px-4 py-2 text-sm",
+        "inline-block max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed",
         variant === 'user' 
-          ? "bg-primary text-primary-foreground ml-auto" 
-          : "bg-muted",
+          ? "bg-gray-800 text-white" 
+          : "bg-gray-100 text-gray-900",
         variant === 'system' && "bg-yellow-50 border border-yellow-200 text-yellow-800"
       )}>
         {children}
