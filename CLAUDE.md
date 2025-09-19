@@ -9,6 +9,23 @@
 4. **USE CLAUDE CODE'S TASK TOOL** for spawning agents concurrently, not just MCP
 5. **🔥 ALWAYS CHECK MEMORY FIRST** before searching files or claiming ignorance
 
+#### Technology Stack
+- **Framework**: React 18+ with TypeScript
+- **UI Library**: shadcn/ui components via CLI and MCP tools
+- **Component Library**: Prompt-Kit (shadcn registry) https://www.prompt-kit.com/llms-full.txt
+- **Icons**: Lucide React
+- **Styling**: Tailwind CSS v4
+- **State Management**: Zustand or React Query
+- **Real-time**: EventSource API for SSE
+- **Build Tool**: Turbopack
+- **Testing**: React Testing Library
+
+- **Architecture Patterns**:
+  - **Tailwind Configuration**: Ensure `tailwind.config.js` is properly configured with all necessary utility classes enabled and scanning the correct files for style generation
+  - **Global Styles**: Include any global CSS or base styles recommended by ShadCN, such as importing required global CSS files or Tailwind base layers that components depend on
+  - **Style Conflicts**: Avoid conflicting CSS or other UI frameworks that may override Tailwind/ShadCN styles. Keep the stylesheet stack minimal by using only Tailwind and ShadCN to prevent style conflicts
+  - **Version Compatibility**: Verify that React and Next.js versions are compatible with ShadCN components and meet any documented version requirements
+
 ### 🧠 CRITICAL: Cross-Session Memory Protocol
 
 **EVERY NEW SESSION MUST START WITH MEMORY CHECK:**
@@ -366,6 +383,93 @@ Message 4: Write "file.js"
 
 **🚨 CRITICAL FOR NEW SESSIONS:**
 Before claiming you don't know something about the project, ALWAYS check these memory keys!
+
+## CodeRabbit CLI Integration
+
+### VS Code Tasks for CodeRabbit
+
+The following VS Code tasks are available via **Cmd+Shift+P** → "Tasks: Run Task":
+
+**AI Workflow (Recommended):**
+- **CodeRabbit: Prompt Only (AI Workflow)** - AI prompts for Claude Code integration
+- **CodeRabbit: AI Analysis (Uncommitted)** - AI prompts for uncommitted changes only
+
+**Interactive Workflow:**
+- **CodeRabbit: Interactive Review** - Full interactive mode
+- **CodeRabbit: Plain Text Review** - Non-interactive plain text output
+- **CodeRabbit: Uncommitted Changes** - Review only uncommitted changes
+- **CodeRabbit: Committed Changes** - Review only committed changes  
+- **CodeRabbit: Custom Config** - Use CLAUDE.md as configuration
+
+### Claude Code Commands
+
+Use these commands to trigger CodeRabbit via VS Code terminal:
+
+```bash
+# Direct script execution (recommended)
+./scripts/coderabbit-helper.sh plain          # Plain text review
+./scripts/coderabbit-helper.sh interactive    # Interactive review
+./scripts/coderabbit-helper.sh uncommitted    # Uncommitted changes only
+./scripts/coderabbit-helper.sh --help         # Show all options
+
+# Alternative: VS Code task commands
+code --command workbench.action.tasks.runTask "CodeRabbit: Plain Text Review"
+code --command workbench.action.tasks.runTask "CodeRabbit: Interactive Review"
+code --command workbench.action.tasks.runTask "CodeRabbit: Uncommitted Changes"
+```
+
+### Workflow Integration
+
+**Two workflow modes available:**
+
+#### AI-Driven Workflow (Preferred for Claude Code)
+1. **User types**: `/cr-prompt` (or variations) in Claude Code
+2. **Claude Code runs**: CodeRabbit `--prompt-only` automatically
+3. **Claude Code**: Processes CodeRabbit analysis and implements fixes
+4. **Benefit**: Seamless AI-to-AI knowledge transfer without terminal switching
+
+#### Interactive Workflow (For complex issues)
+1. **Claude Code**: Suggests running CodeRabbit via helper script
+2. **Terminal**: CodeRabbit analyzes code in new VS Code terminal
+3. **User**: Reviews CodeRabbit output and shares relevant findings
+4. **Claude Code**: Works with CodeRabbit findings to implement fixes
+
+**CRITICAL**: Use CodeRabbit `--prompt-only` for AI workflow integration!
+**NEVER perform manual code analysis when CodeRabbit CLI is available!**
+
+### Quick Commands
+
+#### AI Workflow (Recommended)
+
+**NEW: Claude Code Slash Commands** 🎉
+```bash
+/cr-prompt              # Analyze all changes
+/cr-prompt uncommitted  # Only uncommitted changes
+/cr-prompt committed    # Only committed changes
+/cr-config              # Use CLAUDE.md configuration
+/cr-help                # Show all CodeRabbit commands
+```
+
+**Manual Terminal Commands** (fallback)
+```bash
+# User runs in terminal, shares output with Claude Code
+coderabbit --prompt-only                    # AI analysis prompts for Claude Code
+coderabbit --prompt-only --type uncommitted # Only uncommitted changes  
+coderabbit --prompt-only --config CLAUDE.md # Use project configuration
+```
+
+#### Interactive Workflow (Helper Scripts)
+```bash
+# Preferred: Use Node.js helper (better error handling)
+node scripts/claude-coderabbit.js plain
+
+# Alternative: Use shell script directly  
+./scripts/coderabbit-helper.sh plain
+
+# For specific scenarios
+node scripts/claude-coderabbit.js uncommitted  # Review only uncommitted changes
+node scripts/claude-coderabbit.js config       # Use CLAUDE.md configuration
+```
 
 ## Support
 
