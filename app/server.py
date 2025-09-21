@@ -37,6 +37,7 @@ if os.getenv("NODE_ENV") == "development":
 # imported and the health endpoint exercised without the optional dependencies.
 from fastapi import Body, FastAPI, Header, HTTPException
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 try:  # pragma: no cover - simple import shim
     import google.auth  # type: ignore
@@ -85,6 +86,7 @@ from app.utils.sse_broadcaster import (
     get_agent_network_event_history,
     get_sse_broadcaster,
 )
+from app.utils.session_store import session_store
 from app.utils.tracing import CloudTraceLoggingSpanExporter
 from app.utils.typing import Feedback
 from app.config import initialize_google_config
@@ -748,6 +750,23 @@ async def phoenix_debug_endpoint(
         }
 
 
+class SessionUpdatePayload(BaseModel):
+    """Payload for updating session metadata."""
+
+    title: str | None = None
+    status: str | None = None
+
+
+class SessionMessagePayload(BaseModel):
+    """Payload for persisting chat messages to the session store."""
+
+    id: str | None = None
+    role: str = "assistant"
+    content: str
+    timestamp: datetime
+    metadata: dict[str, Any] | None = None
+
+
 @app.post("/api/run_sse/{session_id}")
 async def run_research_sse(
     session_id: str,
@@ -773,13 +792,31 @@ async def run_research_sse(
         if not research_query:
             raise HTTPException(status_code=400, detail="Research query is required")
         
-        # Store session info
+        # Store session info for legacy consumers
         research_sessions[session_id] = {
-            'status': 'starting',
-            'query': research_query,
-            'created_at': datetime.now(),
-            'user_id': current_user.id if current_user else None
+            "status": "starting",
+            "query": research_query,
+            "created_at": datetime.now(),
+            "user_id": current_user.id if current_user else None,
         }
+
+        # Persist the session in the shared session store so the frontend can
+        # reload historical transcripts.
+        session_store.ensure_session(
+            session_id,
+            user_id=current_user.id if current_user else None,
+            title=research_query[:60],
+            status="starting",
+        )
+        session_store.add_message(
+            session_id,
+            {
+                "id": f"msg_{uuid.uuid4()}_user",
+                "role": "user",
+                "content": research_query,
+                "timestamp": datetime.now().isoformat(),
+            },
+        )
         
         # Log research session start
         access_info = {
@@ -860,6 +897,82 @@ async def get_research_sse(
         }
     )
 
+
+@app.get("/api/sessions")
+async def list_chat_sessions(
+    current_user: User | None = current_user_for_sse_dep,
+) -> dict[str, Any]:
+    """Return the list of known chat sessions sorted by recency."""
+
+    sessions = session_store.list_sessions()
+    return {
+        "sessions": sessions,
+        "count": len(sessions),
+        "timestamp": datetime.now().isoformat(),
+        "authenticated": current_user is not None,
+    }
+
+
+@app.get("/api/sessions/{session_id}")
+async def get_chat_session(
+    session_id: str,
+    current_user: User | None = current_user_for_sse_dep,
+) -> dict[str, Any]:
+    """Return a session record including its persisted messages."""
+
+    session = session_store.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    session["authenticated"] = current_user is not None
+    return session
+
+
+@app.put("/api/sessions/{session_id}")
+async def update_chat_session(
+    session_id: str,
+    payload: SessionUpdatePayload,
+    current_user: User | None = current_user_for_sse_dep,
+) -> dict[str, Any]:
+    """Update session metadata such as title or status."""
+
+    updates = {key: value for key, value in payload.model_dump().items() if value is not None}
+    record = session_store.update_session(session_id, **updates)
+    response = record.to_dict(include_messages=False)
+    response["authenticated"] = current_user is not None
+    return response
+
+
+@app.post("/api/sessions/{session_id}/messages")
+async def append_chat_message(
+    session_id: str,
+    payload: SessionMessagePayload,
+    current_user: User | None = current_user_for_sse_dep,
+) -> dict[str, Any]:
+    """Persist a single message into the session store."""
+
+    stored = session_store.add_message(
+        session_id,
+        {
+            "id": payload.id,
+            "role": payload.role,
+            "content": payload.content,
+            "timestamp": payload.timestamp.isoformat(),
+            "metadata": payload.metadata,
+        },
+    )
+
+    session_store.update_session(
+        session_id,
+        status="running",
+        user_id=current_user.id if current_user else None,
+        title=payload.content[:60] if payload.role == "user" else None,
+    )
+
+    response = stored.to_dict()
+    response["sessionId"] = session_id
+    response["authenticated"] = current_user is not None
+    return response
 
 @app.get("/agent_network_history")
 async def get_agent_network_history(

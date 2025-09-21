@@ -105,22 +105,16 @@ jobs:
             echo "No ESLint config found, skipping frontend linting"
           fi
 
-      - name: Python Unit Tests (Sequential)
+      - name: Python Unit Tests
         run: |
-          echo "🧪 Running Python unit tests (sequential for memory optimization)..."
-          # Run tests sequentially to manage memory
-          uv run pytest tests/ -x --tb=short --maxfail=5 || echo "Python tests completed - some may have failed during optimization"
+          echo "🧪 Running Python unit tests and enforcing coverage..."
+          uv run pytest --cov=app tests/unit
 
-      - name: Frontend Tests (Essential Only)
+      - name: Frontend Tests
         run: |
-          echo "🧪 Running essential frontend tests..."
+          echo "🧪 Running frontend tests and enforcing coverage..."
           cd frontend
-          # Run Jest/React tests if they exist, with memory constraints
-          if [ -f jest.config.js ] || [ -f jest.config.ts ] || grep -q '"test"' package.json; then
-            npm test -- --watchAll=false --maxWorkers=1 --coverage=false || echo "Frontend tests completed with warnings"
-          else
-            echo "No frontend tests found, skipping..."
-          fi
+          npm test -- --coverage --watchAll=false --maxWorkers=1
         
       - name: Build Validation
         if: github.ref == 'refs/heads/main'  # Only on main branch
