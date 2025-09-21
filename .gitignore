@@ -325,3 +325,6 @@ tests/performance-memory-test.js
 
 # Vitest configuration backups
 frontend-backup/vitest.*.config.ts
+
+# Lighthouse performance reports
+.lighthouse/
