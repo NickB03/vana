@@ -22,7 +22,7 @@ support, and comprehensive field documentation.
 Key Models:
     - Request: Chat request data with optional configuration
     - Feedback: User feedback collection with structured logging
-    
+
 Features:
     - Automatic UUID generation for user and session IDs
     - Optional Google ADK and GenAI dependency handling
@@ -34,6 +34,7 @@ Dependencies:
     The module gracefully handles optional Google ADK and GenAI dependencies
     using fallback type imports when packages are not available.
 """
+
 import uuid
 from typing import (
     Literal,
@@ -58,22 +59,22 @@ from pydantic import (
 
 class Request(BaseModel):
     """Pydantic model for chat request data with optional configuration.
-    
+
     Represents a complete chat request including the message content, event history,
     and session tracking information. Automatically generates UUIDs for user and
     session identification when not provided.
-    
+
     Attributes:
         message: The chat message content (Google GenAI Content type)
         events: List of previous events in the conversation history
         user_id: Unique identifier for the user (auto-generated UUID if not provided)
         session_id: Unique identifier for the chat session (auto-generated UUID if not provided)
-        
+
     Configuration:
         - Allows extra fields for future extensibility
         - Supports arbitrary types for Google ADK integration
         - Automatic JSON serialization for API responses
-        
+
     Example:
         >>> # Basic request with auto-generated IDs
         >>> request = Request(
@@ -81,7 +82,7 @@ class Request(BaseModel):
         ...     events=[]
         ... )
         >>> print(request.user_id)  # Auto-generated UUID
-        >>> 
+        >>>
         >>> # Request with specific IDs
         >>> request = Request(
         ...     message=content_object,
@@ -101,11 +102,11 @@ class Request(BaseModel):
 
 class Feedback(BaseModel):
     """Pydantic model for structured user feedback collection.
-    
+
     Represents user feedback on conversation quality with structured logging
     support for analytics and improvement tracking. Includes scoring,
     optional text feedback, and metadata for proper categorization.
-    
+
     Attributes:
         score: Numerical feedback score (integer or float)
         text: Optional text feedback from user (empty string if not provided)
@@ -113,18 +114,18 @@ class Feedback(BaseModel):
         log_type: Fixed value \"feedback\" for log categorization
         service_name: Fixed value \"vana\" for service identification
         user_id: Identifier for the user providing feedback (empty string if not provided)
-        
+
     Logging Integration:
         This model is designed for structured logging systems that categorize
         feedback data for analytics, quality monitoring, and improvement tracking.
-        
+
     Example:
         >>> # Basic feedback with score only
         >>> feedback = Feedback(
         ...     score=5,
         ...     invocation_id="conv_123"
         ... )
-        >>> 
+        >>>
         >>> # Detailed feedback with text
         >>> feedback = Feedback(
         ...     score=4.5,
@@ -132,7 +133,7 @@ class Feedback(BaseModel):
         ...     invocation_id="conv_456",
         ...     user_id="user_789"
         ... )
-        >>> 
+        >>>
         >>> # Feedback data ready for logging
         >>> log_data = feedback.model_dump()
         >>> print(log_data[\"log_type\"])  # \"feedback\"

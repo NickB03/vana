@@ -36,13 +36,38 @@ except ModuleNotFoundError:  # pragma: no cover
     google_cloud_logging = types.SimpleNamespace(Client=object)  # type: ignore
 
     class CloudTraceSpanExporter:  # type: ignore
-        def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: D401
+        """Stub implementation of CloudTraceSpanExporter when OpenTelemetry is unavailable.
+
+        This class provides a fallback implementation that raises an informative
+        error when tracing dependencies are not installed. Used during testing
+        or in environments where OpenTelemetry is not required.
+
+        Raises:
+            RuntimeError: Always raised on instantiation to indicate tracing is unavailable
+        """
+
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
             raise RuntimeError("OpenTelemetry tracing is unavailable")
 
     class ReadableSpan:  # type: ignore
+        """Stub implementation of ReadableSpan when OpenTelemetry is unavailable.
+
+        This class provides a minimal fallback when the OpenTelemetry SDK
+        is not installed. Used for type hints and testing scenarios.
+        """
+
         pass
 
     class SpanExportResult:  # type: ignore
+        """Stub implementation of SpanExportResult when OpenTelemetry is unavailable.
+
+        Provides the SUCCESS constant that may be referenced by code even
+        when OpenTelemetry dependencies are not available.
+
+        Attributes:
+            SUCCESS: Constant indicating successful span export (value: 0)
+        """
+
         SUCCESS = 0
 
 

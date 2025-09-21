@@ -99,7 +99,11 @@ class UserCreate(UserBase):
         ... )
     """
 
-    password: str = Field(..., min_length=8, description="User password (min 8 chars, will be validated for strength)")
+    password: str = Field(
+        ...,
+        min_length=8,
+        description="User password (min 8 chars, will be validated for strength)",
+    )
 
 
 class UserUpdate(BaseModel):
@@ -166,13 +170,15 @@ class Token(BaseModel):
         ...     token_type="bearer",
         ...     expires_in=1800  # 30 minutes
         ... )
-        >>> 
+        >>>
         >>> # Client usage
         >>> headers = {"Authorization": f"Bearer {tokens.access_token}"}
     """
 
     access_token: str = Field(..., description="JWT access token for API authorization")
-    refresh_token: str = Field(..., description="Refresh token for obtaining new access tokens")
+    refresh_token: str = Field(
+        ..., description="Refresh token for obtaining new access tokens"
+    )
     token_type: str = Field("bearer", description="Token type (always 'bearer')")
     expires_in: int = Field(..., description="Access token expiration time in seconds")
 
@@ -295,8 +301,12 @@ class AuthResponse(BaseModel):
         ... )
     """
 
-    user: UserResponse = Field(..., description="Authenticated user profile and permissions")
-    tokens: Token = Field(..., description="JWT access and refresh tokens for session management")
+    user: UserResponse = Field(
+        ..., description="Authenticated user profile and permissions"
+    )
+    tokens: Token = Field(
+        ..., description="JWT access and refresh tokens for session management"
+    )
 
 
 class GoogleOAuthCallbackRequest(BaseModel):

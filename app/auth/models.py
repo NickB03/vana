@@ -119,7 +119,7 @@ class User(Base):
             >>> user.first_name = "John"
             >>> user.last_name = "Doe"
             >>> print(user.full_name)  # "John Doe"
-            >>> 
+            >>>
             >>> user_no_names.first_name = None
             >>> print(user_no_names.full_name)  # "john_doe" (username)
         """
@@ -145,7 +145,7 @@ class User(Base):
         Permission Format:
             Permissions follow "resource:action" pattern:
             - "users:read" - Read user data
-            - "users:update" - Modify user accounts  
+            - "users:update" - Modify user accounts
             - "admin:manage" - Administrative functions
             - "sessions:delete" - Delete user sessions
 
@@ -153,7 +153,7 @@ class User(Base):
             >>> if user.has_permission("users:update"):
             ...     # Allow user modification
             ...     update_user_profile(user_id, new_data)
-            >>> 
+            >>>
             >>> # Superuser check
             >>> admin_user.is_superuser = True
             >>> assert admin_user.has_permission("any:permission")  # Always True
@@ -180,7 +180,7 @@ class User(Base):
 
         Role Hierarchy:
             - "admin" - Full system access
-            - "user" - Standard user operations  
+            - "user" - Standard user operations
             - "viewer" - Read-only access
             - Custom roles can be defined as needed
 
@@ -188,7 +188,7 @@ class User(Base):
             >>> if user.has_role("admin"):
             ...     # Allow administrative operations
             ...     show_admin_panel()
-            >>> 
+            >>>
             >>> # Multiple role check
             >>> if user.has_role("admin") or user.has_role("moderator"):
             ...     # Allow moderation actions
@@ -431,7 +431,7 @@ class RefreshToken(Base):
         Example:
             >>> if not refresh_token.is_valid:
             ...     raise HTTPException(401, "Invalid refresh token")
-            >>> 
+            >>>
             >>> # Token is valid, generate new access token
             >>> user = refresh_token.user
             >>> new_token = create_access_token({"sub": str(user.id)})

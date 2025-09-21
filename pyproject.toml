@@ -127,7 +127,7 @@ addopts = [
     "--cov=app",
     "--cov-report=term-missing:skip-covered",
     "--cov-report=xml",
-    "--cov-fail-under=5",
+    "--cov-fail-under=85",
     "--junit-xml=pytest-report.xml",
     "-v",
     "--tb=short",

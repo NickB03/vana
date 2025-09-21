@@ -46,14 +46,14 @@ def get_auth_db() -> Generator[Session, None, None]:
 
     Usage:
         This function is designed to be used as a FastAPI dependency:
-        
+
         >>> @app.get("/users/me")
         >>> async def get_user(db: Session = Depends(get_auth_db)):
         ...     return db.query(User).filter(User.id == user_id).first()
 
     Example:
         >>> db_dependency = Depends(get_auth_db)
-        >>> 
+        >>>
         >>> def some_function(db: Session = db_dependency):
         ...     users = db.query(User).all()
         ...     return users
@@ -79,7 +79,7 @@ def create_tables() -> None:
     Tables Created:
         - users: User accounts and authentication data
         - roles: Role definitions for RBAC
-        - permissions: Fine-grained permission definitions  
+        - permissions: Fine-grained permission definitions
         - refresh_tokens: Session management tokens
         - user_roles: Many-to-many user-role associations
         - role_permissions: Many-to-many role-permission associations
@@ -152,7 +152,7 @@ def init_auth_db() -> None:
         >>> # Set environment variables first
         >>> os.environ["ADMIN_EMAIL"] = "admin@company.com"
         >>> os.environ["ADMIN_PASSWORD"] = "SecureAdminPass123!"
-        >>> 
+        >>>
         >>> # Initialize database
         >>> init_auth_db()
         >>> print("Authentication database initialized successfully")

@@ -59,6 +59,14 @@
 - [ ] Configure CI/CD pipeline
 - [ ] Performance monitoring setup
 
+#### Cloud Run Prelaunch
+- [ ] Build and push production container image for Cloud Run deployment
+- [ ] Provision Cloud Run service account with least-privilege IAM roles
+- [ ] Configure secrets and environment variables via Secret Manager bindings
+- [ ] Validate HTTPS ingress, HSTS, and CSP enforcement behind Cloud Load Balancer
+- [ ] Run Lighthouse security/performance baseline against Cloud Run staging URL
+- [ ] Set up Cloud Monitoring dashboards and error alerting for the service
+
 ### 📚 Documentation Tasks
 - [ ] Update API documentation
 - [ ] Component library documentation

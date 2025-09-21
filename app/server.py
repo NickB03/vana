@@ -35,7 +35,7 @@ if os.getenv("NODE_ENV") == "development":
 # available in the execution environment for these kata tests.  Import them
 # conditionally and fall back to minimal functionality so that the module can be
 # imported and the health endpoint exercised without the optional dependencies.
-from fastapi import Body, FastAPI, Header, HTTPException
+from fastapi import Body, FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -59,6 +59,7 @@ except ModuleNotFoundError:  # pragma: no cover
 
         return FastAPI()
 
+
 # Only import cloud logging if we have a real project
 try:
     from google.cloud import logging as google_cloud_logging
@@ -76,20 +77,21 @@ except ModuleNotFoundError:  # pragma: no cover
     TracerProvider = None  # type: ignore
     export = None  # type: ignore
 
+from app.config import initialize_google_config
+from app.models import SessionMessagePayload
 from app.utils.gcs import create_bucket_if_not_exists
 from app.utils.session_backup import (
     create_periodic_backup_job,
     restore_session_db_from_gcs,
     setup_session_persistence_for_cloud_run,
 )
+from app.utils.session_store import session_store
 from app.utils.sse_broadcaster import (
     get_agent_network_event_history,
     get_sse_broadcaster,
 )
-from app.utils.session_store import session_store
 from app.utils.tracing import CloudTraceLoggingSpanExporter
 from app.utils.typing import Feedback
-from app.config import initialize_google_config
 
 # Initialize Google Cloud configuration
 project_id = initialize_google_config(silent=False)
@@ -367,7 +369,7 @@ async def health_check() -> dict:
     import time
 
     start_time = time.time()
-    
+
     # Get environment info - use simple string in CI environment
     is_ci = os.getenv("CI") == "true"
 
@@ -436,14 +438,14 @@ async def health_check() -> dict:
         else:
             system_metrics = {"error": "psutil not installed"}
     except Exception as e:
-        system_metrics = {"error": f"Could not retrieve system metrics: {str(e)}"}
+        system_metrics = {"error": f"Could not retrieve system metrics: {e!s}"}
 
     # Check dependencies
     dependencies = {
         "google_api_configured": bool(os.getenv("GOOGLE_API_KEY")),
         "session_storage": session_service_uri is not None,
         "cloud_logging": USE_CLOUD_LOGGING,
-        "project_id": project_id
+        "project_id": project_id,
     }
 
     # Calculate response time
@@ -462,7 +464,7 @@ async def health_check() -> dict:
         "dependencies": dependencies,
         "response_time_ms": response_time_ms,
         "active_adk_sessions": 0,  # TODO: replace with real count when ADK session tracking is wired
-        "uptime_check": "operational"
+        "uptime_check": "operational",
     }
 
 
@@ -492,9 +494,9 @@ def collect_feedback(
 
 @app.get("/agent_network_sse/{session_id}")
 async def agent_network_sse(
-    session_id: str, current_user: User | None = current_user_for_sse_dep
+    session_id: str, current_user: User = current_active_user_dep
 ) -> StreamingResponse:
-    """Enhanced SSE endpoint for agent network events with optional authentication.
+    """Enhanced SSE endpoint for agent network events with required authentication.
 
     This endpoint streams real-time agent network events including:
     - Agent start/completion events
@@ -619,179 +621,53 @@ async def agent_network_sse(
     )
 
 
-
-
-
-
-
-
-
-
-
-
-@app.get("/api/debug/phoenix")
-async def phoenix_debug_endpoint(
-    current_user: User = current_superuser_dep,
-    access_code: str = Header(None, alias="X-Phoenix-Code")
-) -> dict[str, Any]:
-    """
-    Secret debugging endpoint for internal system metrics.
-    Requires superuser authentication and valid access code.
-    Disabled in production environment for security.
-    Access code must be provided via X-Phoenix-Code header.
-    """
-    import psutil
-    import time
-    
-    # Security check: Disable in production environment
-    if os.getenv("NODE_ENV") == "production":
-        logger.warning(f"Phoenix debug endpoint accessed in production by superuser {current_user.id}")
-        raise HTTPException(
-            status_code=503, 
-            detail="Debug endpoint disabled in production environment"
-        )
-    
-    # Get the required access code from environment variable
-    required_access_code = os.getenv("PHOENIX_DEBUG_CODE")
-    
-    # Security check: Ensure access code is configured and provided
-    if not required_access_code:
-        logger.warning(f"Phoenix debug endpoint accessed but PHOENIX_DEBUG_CODE not configured. User: {current_user.id}")
-        raise HTTPException(
-            status_code=503, 
-            detail="Debug endpoint not available - configuration required"
-        )
-    
-    if not access_code or access_code != required_access_code:
-        # Log security event for failed access attempts
-        security_event = {
-            "message": "Phoenix debug endpoint unauthorized access attempt",
-            "user_id": current_user.id,
-            "user_email": current_user.email,
-            "provided_code": access_code[:8] + "***" if access_code else None,
-            "ip_address": "unknown",  # Could be extracted from request if needed
-            "timestamp": datetime.utcnow().isoformat(),
-            "severity": "SECURITY_ALERT"
-        }
-        
-        if hasattr(logger, "log_struct"):
-            logger.log_struct(security_event, severity="WARNING")
-        else:
-            logger.warning(f"Phoenix debug unauthorized access: {security_event}")
-            
-        raise HTTPException(
-            status_code=403, 
-            detail="Invalid or missing access code"
-        )
-    
-    try:
-        # Log successful access for audit trail
-        access_event = {
-            "message": "Phoenix debug endpoint accessed successfully",
-            "user_id": current_user.id,
-            "user_email": current_user.email,
-            "timestamp": datetime.utcnow().isoformat(),
-        }
-        
-        if hasattr(logger, "log_struct"):
-            logger.log_struct(access_event, severity="INFO")
-        else:
-            logger.info(f"Phoenix debug endpoint accessed by user {current_user.id}")
-        
-        # Comprehensive system diagnostics
-        process = psutil.Process()
-        memory_info = process.memory_info()
-        
-        debug_metrics = {
-            "access_granted": True,
-            "accessed_by": {
-                "user_id": current_user.id,
-                "email": current_user.email
-            },
-            "service_info": {
-                "pid": os.getpid(),
-                "memory_rss": memory_info.rss,
-                "memory_vms": memory_info.vms,
-                "cpu_percent": process.cpu_percent(),
-                "create_time": process.create_time(),
-                "num_threads": process.num_threads()
-            },
-            "system_diagnostics": {
-                "cpu_count": psutil.cpu_count(),
-                "boot_time": psutil.boot_time(),
-                "disk_io": psutil.disk_io_counters()._asdict() if psutil.disk_io_counters() else None,
-                "network_io": psutil.net_io_counters()._asdict() if psutil.net_io_counters() else None
-            },
-            "application_state": {
-                "adk_agents_active": True,
-                "active_connections": "monitoring",
-                "session_storage_uri": "***REDACTED***" if session_service_uri else None,
-                "bucket_name": "***REDACTED***" if bucket_name else None,
-                "project_id": "***REDACTED***" if project_id else None
-            },
-            "environment_info": {
-                "google_api_configured": bool(os.getenv("GOOGLE_API_KEY")),
-                "cloud_logging_enabled": USE_CLOUD_LOGGING,
-                "node_env": os.getenv("NODE_ENV", "unknown"),
-                "ci_environment": os.getenv("CI") == "true"
-            },
-            "timestamp": datetime.utcnow().isoformat(),
-            "debug_session": f"phoenix-{int(time.time())}"
-        }
-        
-        return debug_metrics
-        
-    except Exception as e:
-        logger.error(f"Error in phoenix debug endpoint: {e}")
-        return {
-            "error": "Debug metrics unavailable",
-            "message": str(e),
-            "timestamp": datetime.utcnow().isoformat()
-        }
-
-
 class SessionUpdatePayload(BaseModel):
-    """Payload for updating session metadata."""
+    """Payload for updating session metadata.
+
+    This model defines the structure for updating session information such as
+    title and status. All fields are optional to allow partial updates.
+
+    Attributes:
+        title: Optional new title for the session. If provided, updates the
+               session's display title. None values are ignored.
+        status: Optional new status for the session. Common values include
+                'pending', 'running', 'completed', 'error'. None values are ignored.
+
+    Example:
+        >>> payload = SessionUpdatePayload(title="New Research Session", status="running")
+        >>> # Only update title
+        >>> payload = SessionUpdatePayload(title="Updated Title")
+    """
 
     title: str | None = None
     status: str | None = None
-
-
-class SessionMessagePayload(BaseModel):
-    """Payload for persisting chat messages to the session store."""
-
-    id: str | None = None
-    role: str = "assistant"
-    content: str
-    timestamp: datetime
-    metadata: dict[str, Any] | None = None
 
 
 @app.post("/api/run_sse/{session_id}")
 async def run_research_sse(
     session_id: str,
     request: dict = Body(...),
-    current_user: User | None = current_user_for_sse_dep
+    current_user: User = current_active_user_dep,
 ) -> dict:
     """Start multi-agent research session and return success response.
-    
+
     This endpoint triggers the start of multi-agent research and stores the session.
     The actual SSE streaming is handled by the GET endpoint to avoid conflicts.
-    
+
     Args:
         session_id: Unique session identifier for the research task
         request: Research request containing the query/topic
         current_user: Optional authenticated user
-        
+
     Returns:
         Success response indicating research has started
     """
-    
+
     try:
         research_query = request.get("query") or request.get("message", "")
         if not research_query:
             raise HTTPException(status_code=400, detail="Research query is required")
-        
+
         # Store session info for legacy consumers
         research_sessions[session_id] = {
             "status": "starting",
@@ -817,90 +693,97 @@ async def run_research_sse(
                 "timestamp": datetime.now().isoformat(),
             },
         )
-        
+
         # Log research session start
         access_info = {
             "message": "Multi-agent research session triggered",
             "session_id": session_id,
             "user_id": current_user.id if current_user else None,
-            "query": research_query[:100] + "..." if len(research_query) > 100 else research_query,
+            "query": research_query[:100] + "..."
+            if len(research_query) > 100
+            else research_query,
             "timestamp": datetime.now().isoformat(),
         }
-        
+
         if hasattr(logger, "log_struct"):
             logger.log_struct(access_info, severity="INFO")
         else:
             logger.info(f"Research session triggered: {access_info}")
-        
+
         # Start research in background using SSE broadcaster
         from app.research_agents import get_research_orchestrator
+
         orchestrator = get_research_orchestrator()
-        
+
         # Trigger research start (non-blocking)
         asyncio.create_task(
             orchestrator.start_research_with_broadcasting(session_id, research_query)
         )
-        
+
         return {
             "success": True,
             "session_id": session_id,
             "message": "Research session started successfully",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error starting research session {session_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to start research session: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to start research session: {e!s}"
+        )
 
 
 @app.get("/api/run_sse/{session_id}")
 async def get_research_sse(
-    session_id: str,
-    current_user: User | None = current_user_for_sse_dep
+    session_id: str, current_user: User = current_active_user_dep
 ) -> StreamingResponse:
     """GET endpoint for EventSource SSE connection.
-    
+
     This endpoint provides SSE streaming for research progress events.
     It connects to the SSE broadcaster to receive real-time updates.
-    
+
     Args:
         session_id: Unique session identifier
         current_user: Optional authenticated user for access control
-    
+
     Returns:
         StreamingResponse with SSE events for the research session
     """
-    
+
     # Import SSE utilities
     from app.utils.sse_broadcaster import agent_network_event_stream
-    
+
     # Log SSE connection
     if hasattr(logger, "log_struct"):
-        logger.log_struct({
-            "message": "SSE connection established",
-            "session_id": session_id,
-            "user_id": current_user.id if current_user else None,
-            "timestamp": datetime.now().isoformat()
-        }, severity="INFO")
+        logger.log_struct(
+            {
+                "message": "SSE connection established",
+                "session_id": session_id,
+                "user_id": current_user.id if current_user else None,
+                "timestamp": datetime.now().isoformat(),
+            },
+            severity="INFO",
+        )
     else:
         logger.info(f"SSE connection established for session {session_id}")
-    
+
     return StreamingResponse(
         agent_network_event_stream(session_id),
         media_type="text/event-stream",
         headers={
-            "Cache-Control": "no-cache", 
+            "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
-        }
+        },
     )
 
 
 @app.get("/api/sessions")
 async def list_chat_sessions(
-    current_user: User | None = current_user_for_sse_dep,
+    current_user: User = current_active_user_dep,
 ) -> dict[str, Any]:
     """Return the list of known chat sessions sorted by recency."""
 
@@ -916,7 +799,7 @@ async def list_chat_sessions(
 @app.get("/api/sessions/{session_id}")
 async def get_chat_session(
     session_id: str,
-    current_user: User | None = current_user_for_sse_dep,
+    current_user: User = current_active_user_dep,
 ) -> dict[str, Any]:
     """Return a session record including its persisted messages."""
 
@@ -932,11 +815,13 @@ async def get_chat_session(
 async def update_chat_session(
     session_id: str,
     payload: SessionUpdatePayload,
-    current_user: User | None = current_user_for_sse_dep,
+    current_user: User = current_active_user_dep,
 ) -> dict[str, Any]:
     """Update session metadata such as title or status."""
 
-    updates = {key: value for key, value in payload.model_dump().items() if value is not None}
+    updates = {
+        key: value for key, value in payload.model_dump().items() if value is not None
+    }
     record = session_store.update_session(session_id, **updates)
     response = record.to_dict(include_messages=False)
     response["authenticated"] = current_user is not None
@@ -947,7 +832,7 @@ async def update_chat_session(
 async def append_chat_message(
     session_id: str,
     payload: SessionMessagePayload,
-    current_user: User | None = current_user_for_sse_dep,
+    current_user: User = current_active_user_dep,
 ) -> dict[str, Any]:
     """Persist a single message into the session store."""
 
@@ -974,9 +859,10 @@ async def append_chat_message(
     response["authenticated"] = current_user is not None
     return response
 
+
 @app.get("/agent_network_history")
 async def get_agent_network_history(
-    limit: int = 50, current_user: User | None = current_user_for_sse_dep
+    limit: int = 50, current_user: User = current_active_user_dep
 ) -> dict[str, str | bool | int | list[dict[str, Any]] | None]:
     """Get recent agent network event history with optional authentication.
 

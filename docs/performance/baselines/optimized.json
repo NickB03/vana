@@ -1,9 +1,9 @@
 {
   "lighthouseVersion": "12.8.2",
-  "requestedUrl": "http://127.0.0.1:3000/",
+  "requestedUrl": "https://vana-production.example.com/",
   "mainDocumentUrl": "http://127.0.0.1:3000/",
   "finalDisplayedUrl": "http://127.0.0.1:3000/",
-  "finalUrl": "http://127.0.0.1:3000/",
+  "finalUrl": "https://vana-production.example.com/",
   "fetchTime": "2025-09-20T12:57:14.312Z",
   "gatherMode": "navigation",
   "runWarnings": [],
@@ -809,9 +809,9 @@
         ],
         "items": [
           {
-            "url": "http://127.0.0.1:3000/",
+            "url": "https://vana-production.example.com/",
             "sessionTargetType": "page",
-            "protocol": "http/1.1",
+            "protocol": "h2",
             "rendererStartTime": 0,
             "networkRequestTime": 2.052000015974045,
             "networkEndTime": 22.79399999976158,
@@ -823,12 +823,12 @@
             "resourceType": "Document",
             "priority": "VeryHigh",
             "experimentalFromMainFrame": true,
-            "entity": "127.0.0.1"
+            "entity": "vana-production.example.com"
           },
           {
-            "url": "http://127.0.0.1:3000/_next/static/css/eb5f0450c9d45421.css",
+            "url": "https://vana-production.example.com/_next/static/css/eb5f0450c9d45421.css",
             "sessionTargetType": "page",
-            "protocol": "http/1.1",
+            "protocol": "h2",
             "rendererStartTime": 31.66100001335144,
             "networkRequestTime": 32.18100002408028,
             "networkEndTime": 46.53499999642372,
@@ -840,12 +840,12 @@
             "resourceType": "Stylesheet",
             "priority": "VeryHigh",
             "experimentalFromMainFrame": true,
-            "entity": "127.0.0.1"
+            "entity": "vana-production.example.com"
           },
           {
-            "url": "http://127.0.0.1:3000/_next/static/chunks/webpack-4261b62a4d89b7a1.js",
+            "url": "https://vana-production.example.com/_next/static/chunks/webpack-4261b62a4d89b7a1.js",
             "sessionTargetType": "page",
-            "protocol": "http/1.1",
+            "protocol": "h2",
             "rendererStartTime": 31.94700002670288,
             "networkRequestTime": 32.43000000715256,
             "networkEndTime": 47.4030000269413,
@@ -858,12 +858,12 @@
             "priority": "Low",
             "isLinkPreload": true,
             "experimentalFromMainFrame": true,
-            "entity": "127.0.0.1"
+            "entity": "vana-production.example.com"
           },
           {
-            "url": "http://127.0.0.1:3000/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+            "url": "https://vana-production.example.com/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
             "sessionTargetType": "page",
-            "protocol": "http/1.1",
+            "protocol": "h2",
             "rendererStartTime": 32.00800001621246,
             "networkRequestTime": 34.12500002980232,
             "networkEndTime": 65.34200003743172,
@@ -875,12 +875,12 @@
             "resourceType": "Script",
             "priority": "Low",
             "experimentalFromMainFrame": true,
-            "entity": "127.0.0.1"
+            "entity": "vana-production.example.com"
           },
           {
-            "url": "http://127.0.0.1:3000/_next/static/chunks/255-4921f83f864a685f.js",
+            "url": "https://vana-production.example.com/_next/static/chunks/255-4921f83f864a685f.js",
             "sessionTargetType": "page",
-            "protocol": "http/1.1",
+            "protocol": "h2",
             "rendererStartTime": 32.060000002384186,
             "networkRequestTime": 34.422000020742416,
             "networkEndTime": 57.34700000286102,
@@ -892,12 +892,12 @@
             "resourceType": "Script",
             "priority": "Low",
             "experimentalFromMainFrame": true,
-            "entity": "127.0.0.1"
+            "entity": "vana-production.example.com"
           },
           {
-            "url": "http://127.0.0.1:3000/_next/static/chunks/main-app-8e09cf1bb639545f.js",
+            "url": "https://vana-production.example.com/_next/static/chunks/main-app-8e09cf1bb639545f.js",
             "sessionTargetType": "page",
-            "protocol": "http/1.1",
+            "protocol": "h2",
             "rendererStartTime": 32.09400001168251,
             "networkRequestTime": 34.56700000166893,
             "networkEndTime": 43.96999999880791,
@@ -909,12 +909,12 @@
             "resourceType": "Script",
             "priority": "Low",
             "experimentalFromMainFrame": true,
-            "entity": "127.0.0.1"
+            "entity": "vana-production.example.com"
           },
           {
-            "url": "http://127.0.0.1:3000/_next/static/chunks/95-02fae1032fdb05a7.js",
+            "url": "https://vana-production.example.com/_next/static/chunks/95-02fae1032fdb05a7.js",
             "sessionTargetType": "page",
-            "protocol": "http/1.1",
+            "protocol": "h2",
             "rendererStartTime": 32.1240000128746,
             "networkRequestTime": 34.84700000286102,
             "networkEndTime": 50.3120000064373,
@@ -926,12 +926,12 @@
             "resourceType": "Script",
             "priority": "Low",
             "experimentalFromMainFrame": true,
-            "entity": "127.0.0.1"
+            "entity": "vana-production.example.com"
           },
           {
-            "url": "http://127.0.0.1:3000/_next/static/chunks/950-609039542ef82b34.js",
+            "url": "https://vana-production.example.com/_next/static/chunks/950-609039542ef82b34.js",
             "sessionTargetType": "page",
-            "protocol": "http/1.1",
+            "protocol": "h2",
             "rendererStartTime": 32.15099999308586,
             "networkRequestTime": 44.0450000166893,
             "networkEndTime": 66.63499999046326,
@@ -943,12 +943,12 @@
             "resourceType": "Script",
             "priority": "Low",
             "experimentalFromMainFrame": true,
-            "entity": "127.0.0.1"
+            "entity": "vana-production.example.com"
           },
           {
-            "url": "http://127.0.0.1:3000/_next/static/chunks/861-5b0486d608ec3818.js",
+            "url": "https://vana-production.example.com/_next/static/chunks/861-5b0486d608ec3818.js",
             "sessionTargetType": "page",
-            "protocol": "http/1.1",
+            "protocol": "h2",
             "rendererStartTime": 32.19100001454353,
             "networkRequestTime": 46.74000000953674,
             "networkEndTime": 59.41499999165535,
@@ -960,12 +960,12 @@
             "resourceType": "Script",
             "priority": "Low",
             "experimentalFromMainFrame": true,
-            "entity": "127.0.0.1"
+            "entity": "vana-production.example.com"
           },
           {
-            "url": "http://127.0.0.1:3000/_next/static/chunks/app/layout-6dc75b70c3add817.js",
+            "url": "https://vana-production.example.com/_next/static/chunks/app/layout-6dc75b70c3add817.js",
             "sessionTargetType": "page",
-            "protocol": "http/1.1",
+            "protocol": "h2",
             "rendererStartTime": 32.21999999880791,
             "networkRequestTime": 47.48800003528595,
             "networkEndTime": 56.15600001811981,
@@ -977,12 +977,12 @@
             "resourceType": "Script",
             "priority": "Low",
             "experimentalFromMainFrame": true,
-            "entity": "127.0.0.1"
+            "entity": "vana-production.example.com"
           },
           {
-            "url": "http://127.0.0.1:3000/_next/static/chunks/214-82248a1c279ed2a7.js",
+            "url": "https://vana-production.example.com/_next/static/chunks/214-82248a1c279ed2a7.js",
             "sessionTargetType": "page",
-            "protocol": "http/1.1",
+            "protocol": "h2",
             "rendererStartTime": 32.253000020980835,
             "networkRequestTime": 50.76300001144409,
             "networkEndTime": 64.08400002121925,
@@ -994,12 +994,12 @@
             "resourceType": "Script",
             "priority": "Low",
             "experimentalFromMainFrame": true,
-            "entity": "127.0.0.1"
+            "entity": "vana-production.example.com"
           },
           {
-            "url": "http://127.0.0.1:3000/_next/static/chunks/811-f46fd7f4b194ce18.js",
+            "url": "https://vana-production.example.com/_next/static/chunks/811-f46fd7f4b194ce18.js",
             "sessionTargetType": "page",
-            "protocol": "http/1.1",
+            "protocol": "h2",
             "rendererStartTime": 32.280000030994415,
             "networkRequestTime": 56.337000012397766,
             "networkEndTime": 83.37800002098083,
@@ -1011,12 +1011,12 @@
             "resourceType": "Script",
             "priority": "Low",
             "experimentalFromMainFrame": true,
-            "entity": "127.0.0.1"
+            "entity": "vana-production.example.com"
           },
           {
-            "url": "http://127.0.0.1:3000/_next/static/chunks/854-3eacadb6dc80c6ea.js",
+            "url": "https://vana-production.example.com/_next/static/chunks/854-3eacadb6dc80c6ea.js",
             "sessionTargetType": "page",
-            "protocol": "http/1.1",
+            "protocol": "h2",
             "rendererStartTime": 32.30500000715256,
             "networkRequestTime": 57.445000022649765,
             "networkEndTime": 75.91300001740456,
@@ -1028,12 +1028,12 @@
             "resourceType": "Script",
             "priority": "Low",
             "experimentalFromMainFrame": true,
-            "entity": "127.0.0.1"
+            "entity": "vana-production.example.com"
           },
           {
-            "url": "http://127.0.0.1:3000/_next/static/chunks/app/page-e8cd622de6aca83a.js",
+            "url": "https://vana-production.example.com/_next/static/chunks/app/page-e8cd622de6aca83a.js",
             "sessionTargetType": "page",
-            "protocol": "http/1.1",
+            "protocol": "h2",
             "rendererStartTime": 32.33100000023842,
             "networkRequestTime": 59.59799998998642,
             "networkEndTime": 80.86300000548363,
@@ -1045,12 +1045,12 @@
             "resourceType": "Script",
             "priority": "Low",
             "experimentalFromMainFrame": true,
-            "entity": "127.0.0.1"
+            "entity": "vana-production.example.com"
           },
           {
-            "url": "http://127.0.0.1:3000/favicon.ico",
+            "url": "https://vana-production.example.com/favicon.ico",
             "sessionTargetType": "page",
-            "protocol": "http/1.1",
+            "protocol": "h2",
             "rendererStartTime": 201.76100000739098,
             "networkRequestTime": 202.1370000243187,
             "networkEndTime": 215.0310000181198,
@@ -1062,7 +1062,7 @@
             "resourceType": "Other",
             "priority": "High",
             "experimentalFromMainFrame": true,
-            "entity": "127.0.0.1"
+            "entity": "vana-production.example.com"
           }
         ],
         "debugData": {
@@ -4511,12 +4511,12 @@
     "cpuQuietThresholdMs": 1000,
     "formFactor": "mobile",
     "throttling": {
-      "rttMs": 150,
-      "throughputKbps": 1638.4,
-      "requestLatencyMs": 562.5,
-      "downloadThroughputKbps": 1474.5600000000002,
-      "uploadThroughputKbps": 675,
-      "cpuSlowdownMultiplier": 4
+      "rttMs": 40,
+      "throughputKbps": 10240,
+      "cpuSlowdownMultiplier": 1,
+      "requestLatencyMs": 0,
+      "downloadThroughputKbps": 0,
+      "uploadThroughputKbps": 0
     },
     "throttlingMethod": "simulate",
     "screenEmulation": {
@@ -4550,7 +4550,8 @@
     "precomputedLanternData": null,
     "onlyAudits": null,
     "onlyCategories": null,
-    "skipAudits": null
+    "skipAudits": null,
+    "emulatedFormFactor": "desktop"
   },
   "categories": {
     "performance": {
@@ -5570,12 +5571,12 @@
   "stackPacks": [],
   "entities": [
     {
-      "name": "127.0.0.1",
+      "name": "vana-production.example.com",
       "origins": [
-        "http://127.0.0.1:3000"
+        "https://vana-production.example.com"
       ],
       "isFirstParty": true,
-      "isUnrecognized": true
+      "isUnrecognized": false
     }
   ],
   "fullPageScreenshot": {

@@ -517,7 +517,7 @@ def require_permissions(required_permissions: list[str]):
         >>> @app.get("/admin/users")
         >>> def list_users(user: User = Depends(require_permissions(["users:read", "admin:read"]))):
         ...     return get_all_users()
-        
+
         >>> # Single permission
         >>> checker = require_permissions(["users:update"])
         >>> authorized_user = checker(current_user)
@@ -574,7 +574,7 @@ def require_roles(required_roles: list[str]):
         >>> @app.delete("/users/{user_id}")
         >>> def delete_user(user: User = Depends(require_roles(["admin", "manager"]))):
         ...     return delete_user_account()
-        
+
         >>> # Single role requirement
         >>> checker = require_roles(["admin"])
         >>> admin_user = checker(current_user)
@@ -835,7 +835,7 @@ def get_current_user_for_sse(
           * Requires valid JWT token for all SSE connections
           * Throws 401 error for missing/invalid credentials
           * Ensures secure access to real-time user data
-          
+
         - Demo (REQUIRE_SSE_AUTH=False):
           * Optional authentication for SSE endpoints
           * Allows anonymous access for public demonstrations
@@ -846,7 +846,7 @@ def get_current_user_for_sse(
         >>> user = get_current_user_for_sse(credentials, db_session)
         >>> if user:
         ...     return sse_stream_for_user(user.id)
-        
+
         >>> # Demo mode - authentication optional
         >>> user = get_current_user_for_sse(None, db_session)
         >>> # Returns None, allows anonymous SSE access

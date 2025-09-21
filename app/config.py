@@ -38,21 +38,21 @@ _project_id: str | None = None
 def initialize_google_config(silent: bool = False) -> str:
     """
     Initialize Google Cloud configuration.
-    
+
     This function should be called explicitly during application startup
     to avoid import-time side effects.
-    
+
     Args:
         silent: If True, suppress logging output
-        
+
     Returns:
         The resolved project ID
     """
     global _project_id
-    
+
     if _project_id is not None:
         return _project_id
-    
+
     # Handle CI environment where credentials might not be available
     if os.environ.get("CI") == "true":
         # In CI environment, skip authentication and use environment variable
@@ -91,19 +91,19 @@ def initialize_google_config(silent: bool = False) -> str:
                 _project_id = "analystai-454200"
                 if not silent:
                     print(f"Using fallback project ID: {_project_id}")
-    
+
     # Set environment defaults
     os.environ.setdefault("GOOGLE_CLOUD_PROJECT", _project_id)
     os.environ.setdefault("GOOGLE_CLOUD_LOCATION", "global")
     os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "True")
-    
+
     return _project_id
 
 
 def get_project_id() -> str:
     """
     Get the current project ID.
-    
+
     Returns:
         The project ID if initialized, otherwise initializes and returns it
     """

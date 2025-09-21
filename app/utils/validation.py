@@ -16,10 +16,10 @@ Key Security Features:
 
 Usage:
     >>> from app.utils.validation import validate_session_id, sanitize_user_input
-    >>> 
+    >>>
     >>> # Validate session ID for security
     >>> safe_session = validate_session_id(user_session_id)
-    >>> 
+    >>>
     >>> # Sanitize user input to prevent XSS
     >>> clean_input = sanitize_user_input(user_message, max_length=500)
 
@@ -63,7 +63,7 @@ def validate_session_id(session_id: str) -> str:
         >>> # Valid session IDs
         >>> validate_session_id("user_123")  # Returns "user_123"
         >>> validate_session_id("session-abc-def")  # Returns "session-abc-def"
-        >>> 
+        >>>
         >>> # Invalid session IDs (raise HTTPException)
         >>> validate_session_id("../etc/passwd")  # Raises 400 error
         >>> validate_session_id("'; DROP TABLE users; --")  # Raises 400 error
@@ -110,14 +110,14 @@ def sanitize_user_input(input_str: str, max_length: int = 1000) -> str:
     Example:
         >>> # Basic sanitization
         >>> sanitize_user_input("Hello World")  # Returns "Hello World"
-        >>> 
+        >>>
         >>> # XSS prevention
         >>> malicious = "<script>alert('xss')</script>Hello"
         >>> sanitize_user_input(malicious)  # Returns "Hello"
-        >>> 
+        >>>
         >>> # Special character escaping
         >>> sanitize_user_input('Say "Hello"')  # Returns "Say &quot;Hello&quot;"
-        >>> 
+        >>>
         >>> # Length limiting
         >>> long_text = "A" * 2000
         >>> result = sanitize_user_input(long_text, max_length=100)
@@ -182,11 +182,11 @@ def validate_limit_parameter(limit: int, max_limit: int = 100) -> int:
         >>> # Valid limits
         >>> validate_limit_parameter(10)  # Returns 10
         >>> validate_limit_parameter(50, max_limit=200)  # Returns 50
-        >>> 
+        >>>
         >>> # Invalid limits (raise HTTPException)
         >>> validate_limit_parameter(0)  # Raises 400: "Limit must be at least 1"
         >>> validate_limit_parameter(500)  # Raises 400: "Limit cannot exceed 100"
-        >>> 
+        >>>
         >>> # Custom max limit
         >>> validate_limit_parameter(150, max_limit=200)  # Returns 150
         >>> validate_limit_parameter(250, max_limit=200)  # Raises 400 error
@@ -238,10 +238,10 @@ def validate_json_payload(
         >>> payload = {"name": "John", "email": "john@example.com"}
         >>> required = ["name", "email"]
         >>> result = validate_json_payload(payload, required)  # Returns payload
-        >>> 
+        >>>
         >>> # Invalid structure (raises HTTPException)
         >>> validate_json_payload("not a dict")  # 400: "Invalid JSON payload"
-        >>> 
+        >>>
         >>> # Missing required fields (raises HTTPException)
         >>> incomplete = {"name": "John"}
         >>> validate_json_payload(incomplete, ["name", "email"])
@@ -251,7 +251,7 @@ def validate_json_payload(
         >>> @app.post("/users")
         >>> async def create_user(payload: dict):
         ...     validated = validate_json_payload(
-        ...         payload, 
+        ...         payload,
         ...         required_fields=["name", "email", "password"]
         ...     )
         ...     return create_user_account(validated)

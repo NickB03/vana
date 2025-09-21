@@ -207,7 +207,7 @@ async def login_user(
         AuthResponse containing authenticated user data and tokens.
 
     Raises:
-        HTTPException: 
+        HTTPException:
             - 400 Bad Request for malformed requests or unsupported content types
             - 401 Unauthorized for invalid credentials or inactive accounts
 
@@ -225,7 +225,7 @@ async def login_user(
            - username: Username or email address
            - password: User password
            - grant_type: Must be "password" if provided
-           
+
         2. application/json (backward compatibility):
            - username OR email: Username or email address
            - password: User password
@@ -242,7 +242,7 @@ async def login_user(
         ...     "password": "password123",
         ...     "grant_type": "password"
         ... })
-        
+
         >>> # JSON data (backward compatibility)
         >>> response = requests.post("/auth/login", json={
         ...     "email": "user@example.com",
@@ -469,7 +469,7 @@ async def logout_user(
         Success message confirming logout.
 
     Raises:
-        HTTPException: 
+        HTTPException:
             - 403 Forbidden if token doesn't belong to current user
             - 400 Bad Request if refresh token is invalid
 

@@ -47,16 +47,16 @@ API calls to Brave Search.
 
 async def get_http_session() -> aiohttp.ClientSession:
     """Get or create a global HTTP session with optimized connection pooling.
-    
+
     Creates a singleton aiohttp ClientSession with performance optimizations:
     - Connection pooling (100 total, 20 per host)
     - DNS caching with 5-minute TTL
     - Keepalive connections for 30 seconds
     - Appropriate timeout configurations
-    
+
     Returns:
         Configured aiohttp.ClientSession instance with connection pooling
-        
+
     Note:
         This function maintains a global session to enable connection reuse
         across multiple search requests for improved performance.
@@ -98,10 +98,10 @@ async def get_http_session() -> aiohttp.ClientSession:
 
 async def cleanup_http_session() -> None:
     """Clean up the global HTTP session and release resources.
-    
+
     Properly closes the global aiohttp session and sets it to None to ensure
     clean resource management. Should be called during application shutdown.
-    
+
     Note:
         This function is safe to call multiple times and will only close
         sessions that are still open.
@@ -118,41 +118,41 @@ async def brave_web_search_async(
     query: str, count: int = 5, **kwargs
 ) -> dict[str, Any]:
     """Perform asynchronous web search using Brave Search API.
-    
+
     Executes a web search query through Brave's Search API with connection pooling
     and proper error handling. Results are formatted for consistency with ADK
     tool requirements.
-    
+
     Args:
         query: The search query string to execute
         count: Maximum number of results to return (default: 5, max: 20)
         **kwargs: Additional parameters including optional 'api_key'
-        
+
     Returns:
         Dictionary containing search results with structure:
             {
                 "results": [{
                     "title": str,
-                    "link": str, 
+                    "link": str,
                     "snippet": str
                 }],
                 "query": str,
                 "source": "brave_search"
             }
-            
+
         On error, returns:
             {
                 "error": str,
                 "query": str,
                 "results": []
             }
-            
+
     Environment Variables:
         BRAVE_API_KEY: Brave Search API subscription token (required)
-        
+
     Raises:
         No exceptions are raised; errors are returned in the response dictionary
-        
+
     Example:
         >>> results = await brave_web_search_async("Python tutorials", count=3)
         >>> print(f"Found {len(results['results'])} results")
@@ -210,26 +210,26 @@ async def brave_web_search_async(
 # Create the Brave search function - synchronous version for ADK compatibility
 def brave_web_search_function(query: str, count: int = 5, **kwargs) -> dict[str, Any]:
     """Synchronous wrapper for Brave Search API compatible with ADK tools.
-    
+
     Provides a synchronous interface to the async Brave Search implementation,
     handling event loop management automatically. This function is designed
     for use with Google ADK FunctionTool which expects synchronous interfaces.
-    
+
     Args:
         query: The search query string to execute
         count: Maximum number of results to return (default: 5, max: 20)
         **kwargs: Additional parameters including optional 'api_key'
-        
+
     Returns:
         Dictionary containing search results in the same format as
         brave_web_search_async()
-        
+
     Implementation Details:
         - Detects existing event loops and uses ThreadPoolExecutor if needed
         - Creates new event loop in separate thread when called from async context
         - Falls back to asyncio.run() when no event loop is running
         - Includes 60-second timeout for search operations
-        
+
     Example:
         >>> # Use in ADK tool
         >>> search_tool = FunctionTool(brave_web_search_function)
@@ -243,6 +243,21 @@ def brave_web_search_function(query: str, count: int = 5, **kwargs) -> dict[str,
             import concurrent.futures
 
             def run_async():
+                """Run async Brave search in a separate thread with new event loop.
+
+                Creates a new event loop in the current thread to run the async
+                Brave search function. This is necessary when calling async code
+                from a sync context that already has a running event loop.
+
+                Returns:
+                    dict: Search results from brave_web_search_async, or error dict
+                          with 'error', 'query', and empty 'results' list on failure
+
+                Note:
+                    This function is designed to be executed in a thread pool to
+                    avoid blocking the main event loop while still allowing async
+                    operations.
+                """
                 # Create new event loop for this thread
                 new_loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(new_loop)

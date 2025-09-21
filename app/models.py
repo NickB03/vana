@@ -28,6 +28,24 @@ class ResearchRequest(BaseModel):
     @field_validator("query")
     @classmethod
     def validate_query(cls, v):
+        """Validate and clean the research query.
+
+        Ensures the query is not empty or whitespace-only and strips
+        leading/trailing whitespace.
+
+        Args:
+            v: The query string to validate
+
+        Returns:
+            str: The cleaned query string
+
+        Raises:
+            ValueError: If the query is empty or contains only whitespace
+
+        Example:
+            >>> ResearchRequest.validate_query("  What is AI?  ")
+            "What is AI?"
+        """
         if not v or not v.strip():
             raise ValueError("Query cannot be empty")
         return v.strip()
@@ -63,6 +81,24 @@ class SessionInfo(BaseModel):
     results: dict[str, Any] | None = Field(None, description="Session results")
 
 
+class SessionMessagePayload(BaseModel):
+    """Payload for persisting chat messages to the session store.
+
+    Messages can originate from users, assistants, or system components and are
+    stored for later retrieval. All fields except ``content`` and
+    ``timestamp`` are optional to support partial payloads created by legacy
+    clients.
+    """
+
+    id: str | None = Field(None, description="Optional message identifier")
+    role: str = Field("assistant", description="Role of the message author")
+    content: str = Field(..., description="Message body")
+    timestamp: datetime = Field(..., description="Message creation time")
+    metadata: dict[str, Any] | None = Field(
+        None, description="Additional structured metadata for the message"
+    )
+
+
 class ErrorResponse(BaseModel):
     """Error response model."""
 
@@ -88,18 +124,22 @@ class EnvironmentInfo(BaseModel):
 
 class SystemMetrics(BaseModel):
     """System metrics model for health checks."""
-    
+
     memory: dict[str, Any] | None = Field(None, description="Memory usage statistics")
     disk: dict[str, Any] | None = Field(None, description="Disk usage statistics")
     cpu_percent: float | None = Field(None, description="CPU usage percentage")
-    load_average: tuple[float, float, float] | None = Field(None, description="System load average")
+    load_average: tuple[float, float, float] | None = Field(
+        None, description="System load average"
+    )
     error: str | None = Field(None, description="Error message if metrics unavailable")
 
 
 class DependencyStatus(BaseModel):
     """Dependency status model."""
-    
-    google_api_configured: bool = Field(..., description="Google API configuration status")
+
+    google_api_configured: bool = Field(
+        ..., description="Google API configuration status"
+    )
     session_storage: bool = Field(..., description="Session storage availability")
     cloud_logging: bool = Field(..., description="Cloud logging status")
     project_id: str = Field(..., description="Project ID")
@@ -112,7 +152,9 @@ class HealthResponse(BaseModel):
     timestamp: str = Field(..., description="Check timestamp")
     service: str = Field("vana", description="Service name")
     version: str = Field("1.0.0", description="API version")
-    environment: EnvironmentInfo | str = Field(..., description="Environment information")
+    environment: EnvironmentInfo | str = Field(
+        ..., description="Environment information"
+    )
     session_storage_enabled: bool | None = Field(
         None, description="Session storage availability"
     )
@@ -120,10 +162,18 @@ class HealthResponse(BaseModel):
     session_storage_bucket: str | None = Field(
         None, description="Session storage bucket"
     )
-    system_metrics: SystemMetrics | None = Field(None, description="System performance metrics")
-    dependencies: DependencyStatus | None = Field(None, description="Dependency status checks")
-    response_time_ms: float | None = Field(None, description="Health check response time in milliseconds")
-    active_chat_tasks: int | None = Field(None, description="Number of active chat tasks")
+    system_metrics: SystemMetrics | None = Field(
+        None, description="System performance metrics"
+    )
+    dependencies: DependencyStatus | None = Field(
+        None, description="Dependency status checks"
+    )
+    response_time_ms: float | None = Field(
+        None, description="Health check response time in milliseconds"
+    )
+    active_chat_tasks: int | None = Field(
+        None, description="Number of active chat tasks"
+    )
     uptime_check: str | None = Field(None, description="Uptime status check")
     uptime: float | None = Field(None, description="Uptime in seconds")
 

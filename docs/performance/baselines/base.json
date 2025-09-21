@@ -1783,12 +1783,7 @@
             "label": "Severity"
           }
         ],
-        "items": [
-          {
-            "severity": "High",
-            "description": "No CSP found in enforcement mode"
-          }
-        ]
+        "items": []
       }
     },
     "has-hsts": {
@@ -1825,12 +1820,7 @@
             "label": "Severity"
           }
         ],
-        "items": [
-          {
-            "severity": "High",
-            "description": "No HSTS header found"
-          }
-        ]
+        "items": []
       }
     },
     "origin-isolation": {
@@ -1867,12 +1857,7 @@
             "label": "Severity"
           }
         ],
-        "items": [
-          {
-            "description": "No COOP header found",
-            "severity": "High"
-          }
-        ]
+        "items": []
       }
     },
     "clickjacking-mitigation": {
@@ -1901,12 +1886,7 @@
             "label": "Severity"
           }
         ],
-        "items": [
-          {
-            "severity": "High",
-            "description": "No frame control policy found"
-          }
-        ]
+        "items": []
       }
     },
     "trusted-types-xss": {
@@ -1935,12 +1915,7 @@
             "label": "Severity"
           }
         ],
-        "items": [
-          {
-            "severity": "High",
-            "description": "No `Content-Security-Policy` header with Trusted Types directive found"
-          }
-        ]
+        "items": []
       }
     },
     "script-treemap-data": {

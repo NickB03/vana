@@ -38,7 +38,7 @@ class AuthSettings(BaseSettings):
     Example:
         >>> settings = AuthSettings()
         >>> print(f"Token expires in: {settings.access_token_expire_minutes} minutes")
-        >>> 
+        >>>
         >>> # Override via environment
         >>> os.environ["AUTH_ACCESS_TOKEN_EXPIRE_MINUTES"] = "60"
         >>> settings = AuthSettings()
