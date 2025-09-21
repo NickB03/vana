@@ -18,10 +18,10 @@ logger = logging.getLogger(__name__)
 
 class Environment(Enum):
     """Environment types.
-    
+
     Defines the different deployment environments supported by the application.
     Each environment may have different configuration requirements and validation rules.
-    
+
     Attributes:
         DEVELOPMENT: Local development environment with relaxed settings.
         TESTING: Automated testing environment with test-specific configurations.
@@ -37,10 +37,10 @@ class Environment(Enum):
 
 class ConfigScope(Enum):
     """Configuration scope levels.
-    
+
     Defines the hierarchical scope levels for configuration values, allowing
     for inheritance and override behavior.
-    
+
     Attributes:
         GLOBAL: Global configuration values that apply across all environments.
         ENVIRONMENT: Environment-specific configuration values.
@@ -57,10 +57,10 @@ class ConfigScope(Enum):
 @dataclass
 class ConfigValue:
     """Configuration value with metadata.
-    
+
     Represents a single configuration value with associated metadata including
     scope, environment, validation rules, and source information.
-    
+
     Attributes:
         key: Configuration key identifier.
         value: The actual configuration value.
@@ -89,10 +89,10 @@ class ConfigValue:
 
     def validate_value(self) -> bool:
         """Validate the configuration value against requirements.
-        
+
         Checks if the configuration value meets basic validation requirements
         including required field validation and pattern matching.
-        
+
         Returns:
             True if the value is valid, False otherwise.
         """
@@ -115,11 +115,11 @@ class ConfigValue:
 
 class EnvironmentConfig(BaseSettings):
     """Base environment configuration with validation.
-    
+
     Pydantic-based configuration class that provides type validation,
     environment variable loading, and configuration management for
     different deployment environments.
-    
+
     This class serves as the foundation for all environment-specific
     configuration settings with built-in validation and sensible defaults.
     """
@@ -180,10 +180,10 @@ class EnvironmentConfig(BaseSettings):
     @validator("environment", pre=True)
     def validate_environment(cls, v):
         """Validate and normalize environment value.
-        
+
         Args:
             v: Raw environment value from configuration source.
-            
+
         Returns:
             Validated Environment enum value.
         """
@@ -198,10 +198,10 @@ class EnvironmentConfig(BaseSettings):
     @validator("log_level")
     def validate_log_level(cls, v):
         """Validate log level against standard logging levels.
-        
+
         Args:
             v: Log level string to validate.
-            
+
         Returns:
             Uppercase log level string if valid, 'INFO' as fallback.
         """
@@ -212,13 +212,13 @@ class EnvironmentConfig(BaseSettings):
     @validator("app_port", "metrics_port")
     def validate_port(cls, v):
         """Validate port numbers are within valid range.
-        
+
         Args:
             v: Port number to validate.
-            
+
         Returns:
             Valid port number.
-            
+
         Raises:
             ValueError: If port is outside valid range (1-65535).
         """
@@ -229,7 +229,7 @@ class EnvironmentConfig(BaseSettings):
 
     def is_production(self) -> bool:
         """Check if running in production environment.
-        
+
         Returns:
             True if environment is production, False otherwise.
         """
@@ -237,7 +237,7 @@ class EnvironmentConfig(BaseSettings):
 
     def is_development(self) -> bool:
         """Check if running in development environment.
-        
+
         Returns:
             True if environment is development, False otherwise.
         """
@@ -245,7 +245,7 @@ class EnvironmentConfig(BaseSettings):
 
     def is_testing(self) -> bool:
         """Check if running in testing environment.
-        
+
         Returns:
             True if environment is testing or testing flag is set, False otherwise.
         """
@@ -254,11 +254,11 @@ class EnvironmentConfig(BaseSettings):
 
 class EnvironmentManager:
     """Advanced environment configuration manager.
-    
+
     Provides comprehensive environment-specific configuration management
     with support for multiple environments, configuration inheritance,
     validation, and file-based persistence.
-    
+
     Attributes:
         config_dir: Directory path for configuration files.
         environments_file: Path to environments configuration file.
@@ -271,7 +271,7 @@ class EnvironmentManager:
         self, config_dir: str = "config", environments_file: str = "environments.yaml"
     ):
         """Initialize the environment manager.
-        
+
         Args:
             config_dir: Directory for storing configuration files.
             environments_file: Filename for environments configuration.
@@ -290,10 +290,10 @@ class EnvironmentManager:
 
     def get_config(self, environment: Environment | None = None) -> EnvironmentConfig:
         """Get configuration for specified environment.
-        
+
         Args:
             environment: Target environment, uses current if None.
-            
+
         Returns:
             EnvironmentConfig instance for the specified environment.
         """
@@ -314,14 +314,14 @@ class EnvironmentManager:
         **kwargs,
     ) -> None:
         """Set a configuration value with metadata.
-        
+
         Args:
             key: Configuration key identifier.
             value: Configuration value to set.
             scope: Scope level for the configuration.
             environment: Target environment, uses current if None.
             **kwargs: Additional metadata for the ConfigValue.
-            
+
         Raises:
             ValueError: If the configuration value fails validation.
         """
@@ -347,18 +347,18 @@ class EnvironmentManager:
         self, key: str, environment: Environment | None = None, default: Any = None
     ) -> Any:
         """Get a configuration value with scope inheritance.
-        
+
         Searches for configuration values in order of specificity:
         1. Environment-specific values
         2. Global values
         3. Environment config object attributes
         4. Default value
-        
+
         Args:
             key: Configuration key to retrieve.
             environment: Target environment, uses current if None.
             default: Default value if key not found.
-            
+
         Returns:
             Configuration value or default if not found.
         """
@@ -385,7 +385,7 @@ class EnvironmentManager:
         self, file_path: str, environment: Environment, format: str = "auto"
     ) -> None:
         """Load configuration from file.
-        
+
         Args:
             file_path: Path to configuration file.
             environment: Target environment for loaded values.
@@ -433,7 +433,7 @@ class EnvironmentManager:
         include_sensitive: bool = False,
     ) -> None:
         """Save configuration to file.
-        
+
         Args:
             file_path: Output file path.
             environment: Environment configuration to save.
@@ -467,7 +467,7 @@ class EnvironmentManager:
 
     def load_from_environment_variables(self, prefix: str = "VANA_") -> None:
         """Load configuration from environment variables.
-        
+
         Args:
             prefix: Environment variable prefix to filter by.
         """
@@ -494,10 +494,10 @@ class EnvironmentManager:
         self, environment: Environment | None = None
     ) -> list[str]:
         """Validate configuration and return issues.
-        
+
         Args:
             environment: Environment to validate, uses current if None.
-            
+
         Returns:
             List of validation issue descriptions.
         """
@@ -699,7 +699,7 @@ _environment_manager: EnvironmentManager | None = None
 
 def get_environment_manager() -> EnvironmentManager:
     """Get the global environment manager singleton.
-    
+
     Returns:
         The global EnvironmentManager instance, creating it if needed.
     """
@@ -711,7 +711,7 @@ def get_environment_manager() -> EnvironmentManager:
 
 def reset_environment_manager() -> None:
     """Reset the global environment manager.
-    
+
     Clears the global singleton instance, useful for testing scenarios
     where a fresh environment manager is needed.
     """
@@ -721,10 +721,10 @@ def reset_environment_manager() -> None:
 
 def get_current_config() -> EnvironmentConfig:
     """Get configuration for current environment.
-    
+
     Convenience function that returns the configuration for the
     currently active environment.
-    
+
     Returns:
         EnvironmentConfig for the current environment.
     """

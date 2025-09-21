@@ -203,7 +203,7 @@ class GoogleCloudIAM:
         Example:
             >>> roles = iam.get_user_roles("admin@company.com")
             >>> print(roles)  # ["roles/owner", "roles/compute.admin"]
-            >>> 
+            >>>
             >>> # Check for specific role
             >>> if "roles/owner" in roles:
             ...     grant_admin_access()
@@ -249,7 +249,7 @@ class GoogleCloudIAM:
             >>> if iam.has_role("user@example.com", "roles/owner"):
             ...     # User is project owner
             ...     allow_billing_changes()
-            >>> 
+            >>>
             >>> # Check for editor access
             >>> is_editor = iam.has_role("dev@company.com", "roles/editor")
         """

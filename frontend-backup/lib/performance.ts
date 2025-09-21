@@ -3,6 +3,8 @@
  * Implements Core Web Vitals tracking and performance optimization strategies
  */
 
+import type { Metric, ReportHandler } from 'web-vitals';
+
 // Types for performance monitoring
 export interface PerformanceMetric {
   name: string;
@@ -206,15 +208,15 @@ class PerformanceMonitor {
   private async initializeWebVitals() {
     try {
       // Dynamic import with type assertion for web-vitals
-      const webVitals = await import('web-vitals') as any;
+      const webVitals: typeof import('web-vitals') = await import('web-vitals');
       const { getCLS, getFID, getFCP, getLCP, getTTFB } = webVitals;
       
       // Track Core Web Vitals
-      getCLS(this.handleWebVital.bind(this));
-      getFID(this.handleWebVital.bind(this));
-      getFCP(this.handleWebVital.bind(this));
-      getLCP(this.handleWebVital.bind(this));
-      getTTFB(this.handleWebVital.bind(this));
+      getCLS(this.handleWebVital);
+      getFID(this.handleWebVital);
+      getFCP(this.handleWebVital);
+      getLCP(this.handleWebVital);
+      getTTFB(this.handleWebVital);
       
     } catch (error) {
       console.warn('Web Vitals library not available:', error);
@@ -226,30 +228,34 @@ class PerformanceMonitor {
   /**
    * Handle Web Vitals metrics
    */
-  private handleWebVital(metric: any) {
-    const rating = this.getRating(metric.name, metric.value);
-    
+  private handleWebVital: ReportHandler = (metric: Metric) => {
+    this.recordPerformanceMetric(metric.name, metric.value, metric.delta, metric.id);
+  };
+
+  private recordPerformanceMetric(metricName: string, value: number, delta: number, id: string) {
+    const rating = this.getRating(metricName, value);
+
     const performanceMetric: PerformanceMetric = {
-      name: metric.name,
-      value: metric.value,
+      name: metricName,
+      value,
       rating,
-      delta: metric.delta,
-      id: metric.id,
+      delta,
+      id,
       timestamp: Date.now(),
     };
-    
+
     // Store metric with bounded storage
-    this.addPerformanceMetric(metric.name, performanceMetric);
-    
+    this.addPerformanceMetric(metricName, performanceMetric);
+
     // Send to analytics
     this.sendToAnalytics('core_web_vital', performanceMetric);
-    
+
     // Log performance issues
     if (rating === 'poor') {
-      console.warn(`Poor ${metric.name} performance: ${metric.value}ms`);
+      console.warn(`Poor ${metricName} performance: ${value}ms`);
     }
   }
-  
+
   /**
    * Get performance rating based on thresholds
    */
@@ -272,12 +278,7 @@ class PerformanceMonitor {
       const entries = list.getEntries();
       const fcpEntry = entries.find(entry => entry.name === 'first-contentful-paint');
       if (fcpEntry) {
-        this.handleWebVital({
-          name: 'FCP',
-          value: fcpEntry.startTime,
-          delta: fcpEntry.startTime,
-          id: 'manual-fcp',
-        });
+        this.recordPerformanceMetric('FCP', fcpEntry.startTime, fcpEntry.startTime, 'manual-fcp');
       }
     });
 
@@ -294,12 +295,7 @@ class PerformanceMonitor {
       const entries = list.getEntries();
       const lastEntry = entries[entries.length - 1];
       if (lastEntry) {
-        this.handleWebVital({
-          name: 'LCP',
-          value: lastEntry.startTime,
-          delta: lastEntry.startTime,
-          id: 'manual-lcp',
-        });
+        this.recordPerformanceMetric('LCP', lastEntry.startTime, lastEntry.startTime, 'manual-lcp');
       }
     });
 
@@ -320,21 +316,11 @@ class PerformanceMonitor {
       
       // Calculate TTFB
       const ttfb = navigation.responseStart - navigation.requestStart;
-      this.handleWebVital({
-        name: 'TTFB',
-        value: ttfb,
-        delta: ttfb,
-        id: 'navigation-ttfb',
-      });
+      this.recordPerformanceMetric('TTFB', ttfb, ttfb, 'navigation-ttfb');
       
       // Calculate TTI (simplified) - using fetchStart as fallback for navigationStart
       const tti = navigation.domInteractive - (navigation.fetchStart || 0);
-      this.handleWebVital({
-        name: 'TTI',
-        value: tti,
-        delta: tti,
-        id: 'navigation-tti',
-      });
+      this.recordPerformanceMetric('TTI', tti, tti, 'navigation-tti');
     }
   }
   
@@ -456,9 +442,23 @@ class PerformanceMonitor {
   /**
    * Get memory usage information
    */
-  private getMemoryUsage() {
-    if ('memory' in performance) {
-      const memory = (performance as any).memory;
+  private getMemoryUsage(): { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } | null {
+    // TypeScript doesn't have built-in types for performance.memory
+    // This is a Chrome-specific extension to the Performance API
+    interface PerformanceMemory {
+      usedJSHeapSize: number;
+      totalJSHeapSize: number;
+      jsHeapSizeLimit: number;
+    }
+    
+    interface ExtendedPerformance extends Performance {
+      memory?: PerformanceMemory;
+    }
+    
+    const extendedPerformance = performance as ExtendedPerformance;
+    
+    if (extendedPerformance.memory) {
+      const memory = extendedPerformance.memory;
       return {
         usedJSHeapSize: memory.usedJSHeapSize,
         totalJSHeapSize: memory.totalJSHeapSize,

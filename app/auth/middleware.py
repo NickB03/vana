@@ -31,16 +31,16 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """ASGI middleware implementing rate limiting for authentication endpoints.
-    
+
     Provides configurable rate limiting specifically for authentication routes
     to prevent brute force attacks and abuse. Uses a sliding window algorithm
     with in-memory storage of client request timestamps.
-    
+
     Attributes:
         calls: Maximum number of requests allowed per time period
         period: Time window in seconds for rate limiting
         clients: Dictionary tracking request timestamps by client IP
-        
+
     Example:
         >>> app.add_middleware(
         ...     RateLimitMiddleware,
@@ -51,7 +51,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app, calls: int = 100, period: int = 60):
         """Initialize rate limiting middleware.
-        
+
         Args:
             app: The ASGI application instance
             calls: Maximum number of requests allowed per period (default: 100)
@@ -64,14 +64,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         """Process request with rate limiting for auth endpoints.
-        
+
         Applies rate limiting only to paths starting with '/auth/'. For other
         paths, requests pass through without rate limiting.
-        
+
         Args:
             request: The incoming HTTP request
             call_next: The next middleware or application handler
-            
+
         Returns:
             HTTP response, potentially with 429 status if rate limit exceeded
         """
@@ -106,16 +106,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def get_client_ip(self, request: Request) -> str:
         """Extract client IP address from request headers and connection info.
-        
+
         Checks various headers in order of preference to handle proxies and
         load balancers correctly:
         1. X-Forwarded-For (takes first IP if comma-separated)
         2. X-Real-IP
         3. Direct connection IP
-        
+
         Args:
             request: The HTTP request to extract IP from
-            
+
         Returns:
             Client IP address as string, or "unknown" if unavailable
         """
@@ -136,17 +136,17 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
 class AuthenticationMiddleware(BaseHTTPMiddleware):
     """ASGI middleware for JWT token authentication and path traversal protection.
-    
+
     Provides authentication enforcement for protected endpoints while allowing
     public access to specified excluded paths. Includes security features:
     - JWT Bearer token validation
     - Path traversal attack detection
     - Configurable excluded paths for public endpoints
     - CORS preflight request handling
-    
+
     Attributes:
         excluded_paths: List of path prefixes that bypass authentication
-        
+
     Example:
         >>> app.add_middleware(
         ...     AuthenticationMiddleware,
@@ -156,7 +156,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app, excluded_paths: list | None = None):
         """Initialize authentication middleware.
-        
+
         Args:
             app: The ASGI application instance
             excluded_paths: List of path prefixes to exclude from authentication.
@@ -177,18 +177,18 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         """Process request with authentication and security checks.
-        
+
         Performs the following security checks in order:
         1. Path traversal attack detection
         2. Excluded path verification (bypasses auth if matched)
         3. CORS preflight handling (OPTIONS requests)
         4. Bearer token validation
         5. Basic token format and content verification
-        
+
         Args:
             request: The incoming HTTP request
             call_next: The next middleware or application handler
-            
+
         Returns:
             HTTP response with appropriate status:
             - 200: Successful authentication or excluded path
@@ -257,20 +257,20 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
 
     def _is_path_traversal_attempt(self, path: str) -> bool:
         """Detect and prevent path traversal attack attempts.
-        
+
         Analyzes the URL path for common path traversal patterns that could
         be used to access files outside the intended directory structure.
-        
+
         Args:
             path: The URL path to analyze for traversal patterns
-            
+
         Returns:
             True if path contains traversal attack patterns, False otherwise
-            
+
         Detected Patterns:
             - Directory traversal: "../", "..\\" and URL-encoded variants
             - Null byte injection: "\\x00", "%00"
-            - Single dot traversal: "/./", "/.\\" 
+            - Single dot traversal: "/./", "/.\\"
             - Case manipulation on protected paths
         """
         # Check for common path traversal patterns
@@ -306,21 +306,21 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
 
 class AuditLogMiddleware(BaseHTTPMiddleware):
     """ASGI middleware for comprehensive audit logging of security-sensitive operations.
-    
+
     Provides detailed logging for specified endpoint categories with request
     metadata, timing information, and user context. Useful for security
     monitoring, compliance, and incident investigation.
-    
+
     Attributes:
         log_paths: List of path prefixes that trigger audit logging
-        
+
     Logged Information:
         - Request method, path, and query parameters
         - Client IP address and User-Agent
         - User identification (when available)
         - Response status code and request duration
         - Timestamp and unique request correlation
-        
+
     Example:
         >>> app.add_middleware(
         ...     AuditLogMiddleware,
@@ -330,7 +330,7 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app, log_paths: list | None = None):
         """Initialize audit logging middleware.
-        
+
         Args:
             app: The ASGI application instance
             log_paths: List of path prefixes to audit log. Defaults to
@@ -341,17 +341,17 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         """Process request with comprehensive audit logging.
-        
+
         Captures detailed request/response metadata for security-sensitive
         endpoints while allowing other requests to pass through unlogged.
-        
+
         Args:
             request: The incoming HTTP request
             call_next: The next middleware or application handler
-            
+
         Returns:
             HTTP response with audit log data attached to request state
-            
+
         Note:
             Audit logs are stored in request.state.audit_logs for retrieval
             by downstream components or external logging systems.
@@ -416,23 +416,23 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
 
 class CORSMiddleware(BaseHTTPMiddleware):
     """ASGI middleware for Cross-Origin Resource Sharing (CORS) with security controls.
-    
+
     Implements CORS handling with configurable origin validation, method restrictions,
     and header controls. Includes security-focused defaults and proper preflight
     request handling.
-    
+
     Attributes:
         allowed_origins: List of permitted origin domains
         allowed_methods: List of permitted HTTP methods
         allowed_headers: List of permitted request headers
-        
+
     Security Features:
         - Origin validation against whitelist
         - Credentials support configuration
         - Method and header restrictions
         - Preflight request handling
         - Cache control for preflight responses
-        
+
     Example:
         >>> app.add_middleware(
         ...     CORSMiddleware,
@@ -450,7 +450,7 @@ class CORSMiddleware(BaseHTTPMiddleware):
         allowed_headers: list | None = None,
     ):
         """Initialize CORS middleware with security-focused defaults.
-        
+
         Args:
             app: The ASGI application instance
             allowed_origins: List of permitted origin domains. Defaults to
@@ -478,17 +478,17 @@ class CORSMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         """Process request with CORS header validation and injection.
-        
+
         Handles both preflight OPTIONS requests and actual CORS requests,
         adding appropriate headers only for validated origins.
-        
+
         Args:
             request: The incoming HTTP request
             call_next: The next middleware or application handler
-            
+
         Returns:
             HTTP response with CORS headers added for valid origins
-            
+
         CORS Headers Added:
             - Access-Control-Allow-Origin: Validated origin
             - Access-Control-Allow-Credentials: "true"

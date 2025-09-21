@@ -32,7 +32,7 @@ Dependencies:
 
 Example:
     >>> from app.utils.gcs import create_bucket_if_not_exists
-    >>> 
+    >>>
     >>> # Create bucket for application storage
     >>> create_bucket_if_not_exists(
     ...     bucket_name="my-app-data",
@@ -54,30 +54,43 @@ except ModuleNotFoundError:  # pragma: no cover
     storage = None  # type: ignore
 
     class exceptions:  # type: ignore
+        """Stub implementation of google.api_core.exceptions when not available.
+
+        Provides fallback exception classes that can be used in exception
+        handling when the google-api-core package is not installed.
+        """
+
         class NotFound(Exception):
+            """Stub implementation of google.api_core.exceptions.NotFound.
+
+            Raised when a requested Google Cloud resource is not found.
+            This stub allows exception handling code to work even when
+            google-api-core is not available.
+            """
+
             pass
 
 
 def create_bucket_if_not_exists(bucket_name: str, project: str, location: str) -> None:
     """Create a Google Cloud Storage bucket if it doesn't already exist.
-    
+
     Safely creates a new GCS bucket with the specified name and configuration.
     If the bucket already exists, the function logs this information and returns
     without error. Handles the google-cloud-storage dependency gracefully when
     not available.
-    
+
     Args:
         bucket_name: Name of the bucket to create. Can include \"gs://\" prefix
                     which will be automatically stripped.
         project: Google Cloud project ID where the bucket should be created
         location: GCS location/region for the bucket (e.g., \"us-central1\",
                  \"europe-west1\", \"asia-east1\")
-                 
+
     Raises:
         google.api_core.exceptions.Conflict: If bucket name is already taken
         google.api_core.exceptions.Forbidden: If insufficient permissions
         google.cloud.exceptions.GoogleCloudError: For other GCS-related errors
-        
+
     Example:
         >>> # Create bucket in default US region
         >>> create_bucket_if_not_exists(
@@ -85,19 +98,19 @@ def create_bucket_if_not_exists(bucket_name: str, project: str, location: str) -
         ...     project=\"my-gcp-project\",
         ...     location=\"us-central1\"
         ... )
-        >>> 
+        >>>
         >>> # Handle gs:// prefix automatically
         >>> create_bucket_if_not_exists(
         ...     bucket_name=\"gs://my-app-logs\",
-        ...     project=\"my-gcp-project\", 
+        ...     project=\"my-gcp-project\",
         ...     location=\"europe-west1\"
         ... )
-        
+
     Note:
         If google-cloud-storage is not installed, the function logs a warning
         and returns without error to support environments where GCS is not
         required (such as testing).
-        
+
     Security Considerations:
         - Bucket names must be globally unique across all GCS
         - Consider bucket naming conventions for security and organization

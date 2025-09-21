@@ -15,10 +15,10 @@ logger = logging.getLogger(__name__)
 
 class ValidationSeverity(Enum):
     """Validation issue severity levels.
-    
+
     Defines the severity levels for validation issues to help prioritize
     and categorize configuration problems.
-    
+
     Attributes:
         INFO: Informational messages that don't require action.
         WARNING: Issues that should be addressed but don't prevent operation.
@@ -34,10 +34,10 @@ class ValidationSeverity(Enum):
 
 class ValidationType(Enum):
     """Types of validation rules.
-    
+
     Categorizes different types of validation checks that can be applied
     to configuration values.
-    
+
     Attributes:
         REQUIRED: Validates that required fields are present.
         TYPE_CHECK: Validates that values match expected types.
@@ -62,10 +62,10 @@ class ValidationType(Enum):
 @dataclass
 class ValidationResult:
     """Result of a validation check.
-    
+
     Contains detailed information about a validation issue including
     the rule that failed, severity, and suggestions for resolution.
-    
+
     Attributes:
         rule_name: Name of the validation rule that generated this result.
         field_name: Name of the field that was validated.
@@ -90,7 +90,7 @@ class ValidationResult:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert validation result to dictionary format.
-        
+
         Returns:
             Dictionary representation of the validation result with all
             fields serialized to JSON-compatible types.
@@ -110,11 +110,11 @@ class ValidationResult:
 
 class ValidationRule(ABC):
     """Abstract base class for validation rules.
-    
+
     Defines the interface that all validation rules must implement.
     Subclasses should override the validate method to provide specific
     validation logic.
-    
+
     Attributes:
         name: Unique name identifier for the rule.
         severity: Default severity level for validation failures.
@@ -130,7 +130,7 @@ class ValidationRule(ABC):
         description: str = "",
     ):
         """Initialize the validation rule.
-        
+
         Args:
             name: Unique identifier for the rule.
             severity: Default severity level for failures.
@@ -147,12 +147,12 @@ class ValidationRule(ABC):
         self, field_name: str, value: Any, context: dict[str, Any]
     ) -> ValidationResult | None:
         """Validate a field value and return result if validation fails.
-        
+
         Args:
             field_name: Name of the field being validated.
             value: The value to validate.
             context: Full configuration context for dependency checking.
-            
+
         Returns:
             ValidationResult if validation fails, None if validation passes.
         """
@@ -161,14 +161,14 @@ class ValidationRule(ABC):
 
 class RequiredFieldRule(ValidationRule):
     """Rule to check if required fields are present and not empty.
-    
+
     Validates that required configuration fields have non-null, non-empty
     values. Empty strings and None values are considered invalid.
     """
 
     def __init__(self, name: str = "required_field", **kwargs):
         """Initialize the required field rule.
-        
+
         Args:
             name: Name of the validation rule.
             **kwargs: Additional arguments passed to parent ValidationRule.
@@ -179,12 +179,12 @@ class RequiredFieldRule(ValidationRule):
         self, field_name: str, value: Any, context: dict[str, Any]
     ) -> ValidationResult | None:
         """Validate that the field has a non-empty value.
-        
+
         Args:
             field_name: Name of the field being validated.
             value: The value to check for presence.
             context: Full configuration context (unused in this rule).
-            
+
         Returns:
             ValidationResult if field is missing/empty, None if valid.
         """
@@ -203,10 +203,10 @@ class RequiredFieldRule(ValidationRule):
 
 class TypeCheckRule(ValidationRule):
     """Rule to check if field value matches expected type.
-    
+
     Validates that configuration values match the expected Python type.
     Supports checking against multiple acceptable types.
-    
+
     Attributes:
         expected_type: List of acceptable types for the field.
     """
@@ -215,7 +215,7 @@ class TypeCheckRule(ValidationRule):
         self, expected_type: type | list[type], name: str = "type_check", **kwargs
     ):
         """Initialize the type check rule.
-        
+
         Args:
             expected_type: Single type or list of acceptable types.
             name: Name of the validation rule.
@@ -230,12 +230,12 @@ class TypeCheckRule(ValidationRule):
         self, field_name: str, value: Any, context: dict[str, Any]
     ) -> ValidationResult | None:
         """Validate that the value matches one of the expected types.
-        
+
         Args:
             field_name: Name of the field being validated.
             value: The value to type-check.
             context: Full configuration context (unused in this rule).
-            
+
         Returns:
             ValidationResult if type is incorrect, None if valid.
         """
@@ -258,10 +258,10 @@ class TypeCheckRule(ValidationRule):
 
 class RangeRule(ValidationRule):
     """Rule to check if numeric value is within specified range.
-    
+
     Validates that numeric configuration values fall within acceptable
     minimum and maximum bounds.
-    
+
     Attributes:
         min_value: Minimum acceptable value (inclusive).
         max_value: Maximum acceptable value (inclusive).
@@ -275,7 +275,7 @@ class RangeRule(ValidationRule):
         **kwargs,
     ):
         """Initialize the range validation rule.
-        
+
         Args:
             min_value: Minimum acceptable value (inclusive). None for no minimum.
             max_value: Maximum acceptable value (inclusive). None for no maximum.
@@ -290,12 +290,12 @@ class RangeRule(ValidationRule):
         self, field_name: str, value: Any, context: dict[str, Any]
     ) -> ValidationResult | None:
         """Validate that the numeric value is within the specified range.
-        
+
         Args:
             field_name: Name of the field being validated.
             value: The numeric value to range-check.
             context: Full configuration context (unused in this rule).
-            
+
         Returns:
             ValidationResult if value is out of range, None if valid.
         """

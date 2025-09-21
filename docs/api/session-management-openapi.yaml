@@ -1,0 +1,927 @@
+openapi: 3.0.3
+info:
+  title: Vana Session Management API
+  description: |
+    Comprehensive API for managing research sessions, real-time streaming, and message persistence in the Vana platform.
+    
+    **PR200 Changes Summary:**
+    - New session store implementation with thread-safe operations
+    - Enhanced SSE broadcaster with memory leak prevention
+    - Comprehensive session lifecycle management
+    - Real-time message persistence and streaming
+    - Improved error handling and validation
+    
+  version: 2.0.0
+  contact:
+    name: Vana API Team
+    email: support@vana.com
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: http://localhost:8000
+    description: Development server
+  - url: https://api.vana.com
+    description: Production server
+
+paths:
+  # Session Management Endpoints
+  /api/sessions:
+    get:
+      summary: List chat sessions
+      description: |
+        Retrieve a list of all chat sessions sorted by most recent activity.
+        Returns session metadata without message content for performance.
+      operationId: listChatSessions
+      tags:
+        - Sessions
+      security:
+        - BearerAuth: []
+        - {}  # Optional authentication
+      responses:
+        '200':
+          description: List of sessions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SessionSummary'
+                  count:
+                    type: integer
+                    description: Total number of sessions
+                    example: 5
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: Response timestamp
+                    example: "2025-09-21T17:30:00Z"
+                  authenticated:
+                    type: boolean
+                    description: Whether request was authenticated
+                    example: true
+              example:
+                sessions:
+                  - id: "session-123"
+                    title: "AI Research Project"
+                    status: "completed"
+                    created_at: "2025-09-21T10:00:00Z"
+                    updated_at: "2025-09-21T12:30:00Z"
+                    user_id: 42
+                    progress: 1.0
+                    current_phase: "analysis_complete"
+                    final_report: "Research completed successfully"
+                    error: null
+                count: 1
+                timestamp: "2025-09-21T17:30:00Z"
+                authenticated: true
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/sessions/{session_id}:
+    get:
+      summary: Get session details
+      description: |
+        Retrieve a specific session including all messages and metadata.
+        Includes complete message history for the session.
+      operationId: getChatSession
+      tags:
+        - Sessions
+      security:
+        - BearerAuth: []
+        - {}  # Optional authentication
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          description: Unique session identifier
+          schema:
+            type: string
+            example: "session-123"
+      responses:
+        '200':
+          description: Session retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SessionDetails'
+                  - type: object
+                    properties:
+                      authenticated:
+                        type: boolean
+                        description: Whether request was authenticated
+                        example: true
+              example:
+                id: "session-123"
+                title: "AI Research Project"
+                status: "completed"
+                created_at: "2025-09-21T10:00:00Z"
+                updated_at: "2025-09-21T12:30:00Z"
+                user_id: 42
+                progress: 1.0
+                current_phase: "analysis_complete"
+                final_report: "Research completed successfully"
+                error: null
+                messages:
+                  - id: "msg-1"
+                    role: "user"
+                    content: "Research latest AI trends"
+                    timestamp: "2025-09-21T10:00:00Z"
+                    metadata: null
+                  - id: "msg-2"
+                    role: "assistant"
+                    content: "Starting research on AI trends..."
+                    timestamp: "2025-09-21T10:01:00Z"
+                    metadata:
+                      kind: "assistant-progress"
+                authenticated: true
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                detail: "Session not found"
+                error_code: "SESSION_NOT_FOUND"
+                timestamp: "2025-09-21T17:30:00Z"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      summary: Update session metadata
+      description: |
+        Update session metadata such as title or status.
+        Only provided fields will be updated, null values are ignored.
+      operationId: updateChatSession
+      tags:
+        - Sessions
+      security:
+        - BearerAuth: []
+        - {}  # Optional authentication
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          description: Unique session identifier
+          schema:
+            type: string
+            example: "session-123"
+      requestBody:
+        description: Session update payload
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionUpdatePayload'
+            examples:
+              updateTitle:
+                summary: Update session title
+                value:
+                  title: "Updated Research Session"
+              updateStatus:
+                summary: Update session status
+                value:
+                  status: "completed"
+              updateMultiple:
+                summary: Update multiple fields
+                value:
+                  title: "Finalized AI Research"
+                  status: "completed"
+      responses:
+        '200':
+          description: Session updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SessionSummary'
+                  - type: object
+                    properties:
+                      authenticated:
+                        type: boolean
+                        description: Whether request was authenticated
+                        example: true
+              example:
+                id: "session-123"
+                title: "Updated Research Session"
+                status: "completed"
+                created_at: "2025-09-21T10:00:00Z"
+                updated_at: "2025-09-21T17:30:00Z"
+                user_id: 42
+                progress: 1.0
+                current_phase: "analysis_complete"
+                final_report: "Research completed successfully"
+                error: null
+                authenticated: true
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/sessions/{session_id}/messages:
+    post:
+      summary: Add message to session
+      description: |
+        Append a new message to the session. Messages are deduplicated by ID.
+        If message ID already exists, content and metadata will be updated.
+        User messages may update the session title automatically.
+      operationId: appendChatMessage
+      tags:
+        - Messages
+      security:
+        - BearerAuth: []
+        - {}  # Optional authentication
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          description: Unique session identifier
+          schema:
+            type: string
+            example: "session-123"
+      requestBody:
+        description: Message payload
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionMessagePayload'
+            examples:
+              userMessage:
+                summary: User message
+                value:
+                  id: "msg-user-1"
+                  role: "user"
+                  content: "What are the latest AI developments?"
+                  timestamp: "2025-09-21T17:30:00Z"
+                  metadata: null
+              assistantMessage:
+                summary: Assistant response
+                value:
+                  id: "msg-assistant-1"
+                  role: "assistant"
+                  content: "I'll research the latest AI developments for you."
+                  timestamp: "2025-09-21T17:31:00Z"
+                  metadata:
+                    type: "response"
+                    confidence: 0.95
+              autoId:
+                summary: Message without ID (auto-generated)
+                value:
+                  role: "user"
+                  content: "Follow-up question"
+                  timestamp: "2025-09-21T17:32:00Z"
+      responses:
+        '200':
+          description: Message added successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StoredMessage'
+                  - type: object
+                    properties:
+                      sessionId:
+                        type: string
+                        description: Session ID the message was added to
+                        example: "session-123"
+                      authenticated:
+                        type: boolean
+                        description: Whether request was authenticated
+                        example: true
+              example:
+                id: "msg-user-1"
+                role: "user"
+                content: "What are the latest AI developments?"
+                timestamp: "2025-09-21T17:30:00Z"
+                metadata: null
+                sessionId: "session-123"
+                authenticated: true
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                detail:
+                  - loc: ["body", "timestamp"]
+                    msg: "field required"
+                    type: "value_error.missing"
+                  - loc: ["body", "content"]
+                    msg: "field required"
+                    type: "value_error.missing"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # SSE and Real-time Endpoints
+  /api/run_sse/{session_id}:
+    post:
+      summary: Start research session
+      description: |
+        Trigger the start of a multi-agent research session.
+        This endpoint initiates the research process and stores the session.
+        Actual progress is streamed via the GET endpoint.
+      operationId: runResearchSSE
+      tags:
+        - Research
+        - SSE
+      security:
+        - BearerAuth: []
+        - {}  # Optional authentication
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          description: Unique session identifier for the research task
+          schema:
+            type: string
+            example: "research-session-456"
+      requestBody:
+        description: Research request payload
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  description: Research query or topic
+                  example: "Analyze the impact of AI on healthcare"
+                message:
+                  type: string
+                  description: Alternative field for research query
+                  example: "Research renewable energy trends"
+              anyOf:
+                - required: [query]
+                - required: [message]
+            examples:
+              researchQuery:
+                summary: Research query
+                value:
+                  query: "Analyze the impact of AI on healthcare"
+              messageFormat:
+                summary: Using message field
+                value:
+                  message: "Research renewable energy trends"
+      responses:
+        '200':
+          description: Research session started successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  session_id:
+                    type: string
+                    example: "research-session-456"
+                  message:
+                    type: string
+                    example: "Research session started successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2025-09-21T17:30:00Z"
+        '400':
+          description: Bad request - missing research query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                detail: "Research query is required"
+                error_code: "MISSING_QUERY"
+                timestamp: "2025-09-21T17:30:00Z"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    get:
+      summary: Get research SSE stream
+      description: |
+        Server-Sent Events endpoint for real-time research progress updates.
+        Connects to the SSE broadcaster to receive live updates on research progress.
+        Compatible with EventSource API.
+      operationId: getResearchSSE
+      tags:
+        - Research
+        - SSE
+      security:
+        - BearerAuth: []
+        - {}  # Optional authentication
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          description: Unique session identifier
+          schema:
+            type: string
+            example: "research-session-456"
+      responses:
+        '200':
+          description: SSE stream established
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                format: binary
+                description: |
+                  Server-Sent Events stream with research progress updates.
+                  Events include connection status, research progress, agent updates,
+                  and completion notifications.
+              examples:
+                sseStream:
+                  summary: Sample SSE events
+                  value: |
+                    data: {"type":"connection","status":"connected","sessionId":"research-session-456","timestamp":"2025-09-21T17:30:00Z"}
+                    
+                    data: {"type":"research_started","status":"running","query":"AI healthcare impact","timestamp":"2025-09-21T17:30:01Z"}
+                    
+                    data: {"type":"research_progress","overall_progress":25,"current_phase":"data_collection","timestamp":"2025-09-21T17:30:30Z"}
+                    
+                    data: {"type":"research_complete","status":"completed","final_report":"Analysis complete...","timestamp":"2025-09-21T17:35:00Z"}
+          headers:
+            Cache-Control:
+              description: Prevent caching of SSE stream
+              schema:
+                type: string
+                example: "no-cache"
+            Connection:
+              description: Keep connection alive
+              schema:
+                type: string
+                example: "keep-alive"
+            X-Accel-Buffering:
+              description: Disable nginx buffering
+              schema:
+                type: string
+                example: "no"
+
+  /agent_network_sse/{session_id}:
+    get:
+      summary: Agent network SSE stream
+      description: |
+        Server-Sent Events endpoint for real-time agent network monitoring.
+        Provides updates on agent lifecycle, network topology, and performance metrics.
+        Includes heartbeat messages for connection maintenance.
+      operationId: agentNetworkSSE
+      tags:
+        - Agents
+        - SSE
+      security:
+        - BearerAuth: []
+        - {}  # Optional authentication (configurable)
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          description: Session ID to monitor agent network events
+          schema:
+            type: string
+            example: "agent-session-789"
+      responses:
+        '200':
+          description: Agent network SSE stream established
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                format: binary
+                description: |
+                  Server-Sent Events stream with agent network updates.
+                  Events include agent lifecycle, topology changes, performance metrics,
+                  and heartbeat messages.
+              examples:
+                agentEvents:
+                  summary: Sample agent network events
+                  value: |
+                    data: {"type":"connection","status":"connected","sessionId":"agent-session-789","authenticated":true,"userId":42}
+                    
+                    data: {"type":"agent_start","agentId":"agent_001","sessionId":"agent-session-789","metadata":{"name":"Research Agent","capabilities":["search","analysis"]}}
+                    
+                    data: {"type":"heartbeat","timestamp":"2025-09-21T17:30:30Z"}
+                    
+                    data: {"type":"agent_complete","agentId":"agent_001","result":"success","output":"Task completed successfully"}
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: "no-cache"
+            Connection:
+              schema:
+                type: string
+                example: "keep-alive"
+            X-Accel-Buffering:
+              schema:
+                type: string
+                example: "no"
+
+  /agent_network_history:
+    get:
+      summary: Get agent network history
+      description: |
+        Retrieve recent agent network event history.
+        Provides historical data for agent lifecycle events, performance metrics,
+        and network topology changes across all active sessions.
+      operationId: getAgentNetworkHistory
+      tags:
+        - Agents
+      security:
+        - BearerAuth: []
+        - {}  # Optional authentication (configurable)
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of events to return
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 1000
+            example: 100
+      responses:
+        '200':
+          description: Agent network history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AgentNetworkEvent'
+                  authenticated:
+                    type: boolean
+                    description: Whether request was authenticated
+                    example: true
+                  user_id:
+                    type: integer
+                    nullable: true
+                    description: User ID if authenticated
+                    example: 42
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: Response timestamp
+                    example: "2025-09-21T17:30:00Z"
+              example:
+                events:
+                  - type: "agent_start"
+                    agentId: "agent_001"
+                    sessionId: "session-123"
+                    timestamp: "2025-09-21T17:25:00Z"
+                    metadata:
+                      name: "Research Agent"
+                      capabilities: ["search", "analysis"]
+                  - type: "agent_complete"
+                    agentId: "agent_001"
+                    sessionId: "session-123"
+                    timestamp: "2025-09-21T17:29:00Z"
+                    result: "success"
+                    output: "Research completed successfully"
+                authenticated: true
+                user_id: 42
+                timestamp: "2025-09-21T17:30:00Z"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authentication
+
+  schemas:
+    SessionSummary:
+      type: object
+      description: Session metadata without messages
+      properties:
+        id:
+          type: string
+          description: Unique session identifier
+          example: "session-123"
+        title:
+          type: string
+          nullable: true
+          description: Session title (auto-generated from first user message)
+          example: "AI Research Project"
+        status:
+          type: string
+          description: Current session status
+          enum: [pending, starting, running, completed, error, failed]
+          example: "completed"
+        created_at:
+          type: string
+          format: date-time
+          description: Session creation timestamp
+          example: "2025-09-21T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2025-09-21T12:30:00Z"
+        user_id:
+          type: integer
+          nullable: true
+          description: Associated user ID if authenticated
+          example: 42
+        progress:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+          description: Session progress (0.0 to 1.0)
+          example: 1.0
+        current_phase:
+          type: string
+          nullable: true
+          description: Current processing phase
+          example: "analysis_complete"
+        final_report:
+          type: string
+          nullable: true
+          description: Final research report (if completed)
+          example: "Research completed successfully with comprehensive findings..."
+        error:
+          type: string
+          nullable: true
+          description: Error message if session failed
+          example: null
+      required:
+        - id
+        - status
+        - created_at
+        - updated_at
+
+    SessionDetails:
+      allOf:
+        - $ref: '#/components/schemas/SessionSummary'
+        - type: object
+          properties:
+            messages:
+              type: array
+              description: All messages in the session
+              items:
+                $ref: '#/components/schemas/StoredMessage'
+          required:
+            - messages
+
+    SessionUpdatePayload:
+      type: object
+      description: Payload for updating session metadata
+      properties:
+        title:
+          type: string
+          nullable: true
+          description: New session title
+          example: "Updated Research Session"
+        status:
+          type: string
+          nullable: true
+          description: New session status
+          enum: [pending, starting, running, completed, error, failed]
+          example: "completed"
+      additionalProperties: false
+
+    SessionMessagePayload:
+      type: object
+      description: Payload for adding a message to session
+      properties:
+        id:
+          type: string
+          description: Message ID (auto-generated if not provided)
+          example: "msg-user-1"
+        role:
+          type: string
+          description: Message role
+          enum: [user, assistant, system]
+          example: "user"
+        content:
+          type: string
+          description: Message content
+          example: "What are the latest AI developments?"
+        timestamp:
+          type: string
+          format: date-time
+          description: Message timestamp
+          example: "2025-09-21T17:30:00Z"
+        metadata:
+          type: object
+          nullable: true
+          description: Additional message metadata
+          example:
+            type: "response"
+            confidence: 0.95
+      required:
+        - role
+        - content
+        - timestamp
+      additionalProperties: false
+
+    StoredMessage:
+      type: object
+      description: A message stored in the session
+      properties:
+        id:
+          type: string
+          description: Unique message identifier
+          example: "msg-user-1"
+        role:
+          type: string
+          description: Message role
+          enum: [user, assistant, system]
+          example: "user"
+        content:
+          type: string
+          description: Message content
+          example: "What are the latest AI developments?"
+        timestamp:
+          type: string
+          format: date-time
+          description: Message timestamp in ISO format
+          example: "2025-09-21T17:30:00Z"
+        metadata:
+          type: object
+          nullable: true
+          description: Additional message metadata
+          example:
+            type: "response"
+            confidence: 0.95
+      required:
+        - id
+        - role
+        - content
+        - timestamp
+
+    AgentNetworkEvent:
+      type: object
+      description: Agent network event data
+      properties:
+        type:
+          type: string
+          description: Event type
+          enum: 
+            - agent_start
+            - agent_complete
+            - agent_network_update
+            - agent_network_snapshot
+            - connection
+            - heartbeat
+            - error
+          example: "agent_start"
+        agentId:
+          type: string
+          description: Agent identifier (for agent-specific events)
+          example: "agent_001"
+        sessionId:
+          type: string
+          description: Session identifier
+          example: "session-123"
+        timestamp:
+          type: string
+          format: date-time
+          description: Event timestamp
+          example: "2025-09-21T17:25:00Z"
+        metadata:
+          type: object
+          nullable: true
+          description: Event-specific metadata
+          example:
+            name: "Research Agent"
+            capabilities: ["search", "analysis"]
+        result:
+          type: string
+          description: Result status for completion events
+          enum: [success, failure, timeout, cancelled]
+          example: "success"
+        output:
+          type: string
+          description: Output data for completion events
+          example: "Research completed successfully"
+        data:
+          type: object
+          description: Additional event data
+          additionalProperties: true
+      required:
+        - type
+        - sessionId
+        - timestamp
+
+    Error:
+      type: object
+      description: Standard error response
+      properties:
+        detail:
+          type: string
+          description: Error message
+          example: "Session not found"
+        error_code:
+          type: string
+          description: Specific error code
+          example: "SESSION_NOT_FOUND"
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+          example: "2025-09-21T17:30:00Z"
+      required:
+        - detail
+
+    ValidationError:
+      type: object
+      description: Validation error response
+      properties:
+        detail:
+          type: array
+          description: List of validation errors
+          items:
+            type: object
+            properties:
+              loc:
+                type: array
+                description: Error location path
+                items:
+                  oneOf:
+                    - type: string
+                    - type: integer
+                example: ["body", "timestamp"]
+              msg:
+                type: string
+                description: Error message
+                example: "field required"
+              type:
+                type: string
+                description: Error type
+                example: "value_error.missing"
+      required:
+        - detail
+
+  responses:
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            detail: "Internal server error occurred"
+            error_code: "INTERNAL_ERROR"
+            timestamp: "2025-09-21T17:30:00Z"
+
+  examples:
+    ResearchSessionComplete:
+      summary: Complete research session
+      value:
+        id: "research-session-456"
+        title: "AI Healthcare Impact Analysis"
+        status: "completed"
+        created_at: "2025-09-21T10:00:00Z"
+        updated_at: "2025-09-21T12:30:00Z"
+        user_id: 42
+        progress: 1.0
+        current_phase: "analysis_complete"
+        final_report: "Comprehensive analysis of AI impact on healthcare sector completed..."
+        error: null
+        messages:
+          - id: "msg-1"
+            role: "user"
+            content: "Analyze the impact of AI on healthcare"
+            timestamp: "2025-09-21T10:00:00Z"
+            metadata: null
+          - id: "msg-2"
+            role: "assistant"
+            content: "Starting comprehensive analysis of AI impact on healthcare..."
+            timestamp: "2025-09-21T10:01:00Z"
+            metadata:
+              kind: "assistant-progress"
+          - id: "msg-3"
+            role: "assistant"
+            content: "Comprehensive analysis of AI impact on healthcare sector completed..."
+            timestamp: "2025-09-21T12:30:00Z"
+            metadata:
+              kind: "assistant-progress"
+              completed: true
+
+tags:
+  - name: Sessions
+    description: Session lifecycle management and metadata operations
+  - name: Messages
+    description: Message persistence and retrieval operations  
+  - name: Research
+    description: Multi-agent research orchestration and progress tracking
+  - name: SSE
+    description: Server-Sent Events for real-time streaming
+  - name: Agents
+    description: Agent network monitoring and event tracking
+
+externalDocs:
+  description: Vana Platform Documentation
+  url: https://docs.vana.com/api

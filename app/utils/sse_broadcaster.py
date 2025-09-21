@@ -524,13 +524,34 @@ class EnhancedSSEBroadcaster:
             # Get subscribers for this session
             subscribers = list(self._subscribers.get(session_id, []))
 
-        # Persist event snapshots so sessions can be resumed later. Wrap in a
-        # broad exception handler to avoid breaking the broadcast path if
-        # persistence fails for any reason.
+        # Persist event snapshots so sessions can be resumed later. Use specific
+        # exception handling to provide better debugging while avoiding breaking
+        # the broadcast path if persistence fails.
         try:
             session_store.ingest_event(session_id, event_data)
-        except Exception as exc:  # pragma: no cover - defensive logging only
-            logger.debug("Failed to persist SSE event for session %s: %s", session_id, exc)
+        except (KeyError, ValueError, TypeError) as exc:
+            # Data validation or formatting errors
+            logger.warning(
+                "Session persistence failed due to invalid data format for session %s: %s",
+                session_id,
+                exc,
+                extra={"session_id": session_id, "event_type": event_data.get("type")},
+            )
+        except MemoryError as exc:
+            # Memory pressure - important to track
+            logger.error(
+                "Session persistence failed due to memory pressure for session %s: %s",
+                session_id,
+                exc,
+                extra={"session_id": session_id, "memory_critical": True},
+            )
+        except Exception as exc:  # pragma: no cover - catch-all for unexpected errors
+            logger.error(
+                "Unexpected error in session persistence for session %s: %s",
+                session_id,
+                exc,
+                extra={"session_id": session_id, "error_type": type(exc).__name__},
+            )
 
         # Broadcast to subscribers (outside lock)
         if subscribers:

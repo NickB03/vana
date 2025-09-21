@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 
 class MigrationPhase(Enum):
     """Enumeration of environment variable migration phases.
-    
+
     Tracks the current state of migration from legacy environment variables
     (ENVIRONMENT/ENV) to the standardized NODE_ENV variable.
-    
+
     Values:
         NOT_STARTED: Only legacy variables are set, NODE_ENV not present
         IN_PROGRESS: Both NODE_ENV and legacy variables exist with same values
@@ -34,11 +34,11 @@ class MigrationPhase(Enum):
 @dataclass
 class MigrationStatus:
     """Comprehensive status information for environment variable migration.
-    
+
     Contains detailed information about the current migration state including
     detected environment values, source analysis, conflict detection, and
     actionable recommendations for completing the migration.
-    
+
     Attributes:
         current_env: The currently active environment value (normalized to lowercase)
         source: Which environment variable is being used (NODE_ENV, ENVIRONMENT, ENV, or default)
@@ -46,7 +46,7 @@ class MigrationStatus:
         conflicts: List of detected conflicts between environment variables
         recommendations: List of suggested actions to complete migration
         migration_complete: Boolean indicating if migration is fully complete
-        
+
     Example:
         >>> status = EnvironmentMigrationHelper.get_migration_status()
         >>> if status.phase == MigrationPhase.CONFLICTED:
@@ -65,12 +65,12 @@ class MigrationStatus:
 
     def to_dict(self) -> dict[str, any]:
         """Convert migration status to dictionary format for JSON serialization.
-        
+
         Returns:
             Dictionary representation of the migration status with all fields
             serialized to JSON-compatible types. Enum values are converted to
             their string representations.
-            
+
         Example:
             >>> status = EnvironmentMigrationHelper.get_migration_status()
             >>> json_data = status.to_dict()
@@ -89,11 +89,11 @@ class MigrationStatus:
 
 class EnvironmentMigrationHelper:
     """Comprehensive utility class for managing environment variable migration.
-    
+
     Provides tools and utilities to safely migrate from legacy environment variables
     (ENVIRONMENT, ENV) to the standardized NODE_ENV variable while maintaining
     backward compatibility and providing clear migration guidance.
-    
+
     Key Features:
         - Automatic conflict detection between environment variables
         - Phase-based migration tracking with detailed status reporting
@@ -101,23 +101,23 @@ class EnvironmentMigrationHelper:
         - Actionable recommendations for completing migration
         - Safe environment value retrieval with fallback logic
         - Comprehensive logging and monitoring capabilities
-        
+
     Standard Environment Values:
         - development: Local development environment
         - testing: Automated testing environment
         - staging: Pre-production testing environment
         - production: Live production environment
         - local: Local development (alias for development)
-        
+
     Example:
         >>> # Check current migration status
         >>> status = EnvironmentMigrationHelper.get_migration_status()
         >>> print(f"Current: {status.current_env} from {status.source}")
-        >>> 
+        >>>
         >>> # Validate and log status
         >>> if EnvironmentMigrationHelper.validate_migration():
         ...     print("Migration validation passed")
-        >>> 
+        >>>
         >>> # Get normalized environment value
         >>> env = EnvironmentMigrationHelper.get_normalized_environment()
         >>> print(f"Using environment: {env}")
@@ -129,11 +129,11 @@ class EnvironmentMigrationHelper:
     @staticmethod
     def get_migration_status() -> MigrationStatus:
         """Analyze and return comprehensive migration status information.
-        
+
         Performs complete analysis of current environment variable configuration,
         including conflict detection, phase determination, and recommendation
         generation for safe migration completion.
-        
+
         Returns:
             MigrationStatus object containing:
                 - Current active environment value and source
@@ -141,7 +141,7 @@ class EnvironmentMigrationHelper:
                 - List of any detected conflicts
                 - Actionable recommendations for next steps
                 - Boolean flag indicating if migration is complete
-                
+
         Example:
             >>> status = EnvironmentMigrationHelper.get_migration_status()
             >>> print(f"Environment: {status.current_env}")
@@ -361,27 +361,27 @@ class EnvironmentMigrationHelper:
     @staticmethod
     def get_normalized_environment() -> str:
         """Get current environment value with migration-aware fallback logic.
-        
+
         Returns the current environment value using the migration priority order:
         NODE_ENV (preferred) → ENVIRONMENT → ENV → \"development\" (default).
         Automatically logs usage of legacy variables to encourage migration.
-        
+
         Returns:
             Normalized environment string in lowercase. Always returns a valid
             environment value, defaulting to \"development\" if no variables are set.
-            
+
         Example:
             >>> # With NODE_ENV set
             >>> os.environ[\"NODE_ENV\"] = \"production\"
             >>> env = EnvironmentMigrationHelper.get_normalized_environment()
             >>> print(env)  # \"production\"
-            >>> 
-            >>> # With only legacy ENVIRONMENT set  
+            >>>
+            >>> # With only legacy ENVIRONMENT set
             >>> del os.environ[\"NODE_ENV\"]
             >>> os.environ[\"ENVIRONMENT\"] = \"staging\"
             >>> env = EnvironmentMigrationHelper.get_normalized_environment()
             >>> print(env)  # \"staging\" (with migration warning logged)
-            
+
         Note:
             This method provides informational logging when legacy variables
             are used to help track migration progress.
@@ -460,13 +460,13 @@ class EnvironmentMigrationHelper:
 # Convenience functions for easy importing
 def get_environment() -> str:
     """Get the current environment with migration-aware fallback logic.
-    
+
     Convenience wrapper around EnvironmentMigrationHelper.get_normalized_environment()
     that returns the current environment value using NODE_ENV preference.
-    
+
     Returns:
         Current environment string (development, testing, staging, production, local)
-        
+
     Example:
         >>> from app.utils.migration_helper import get_environment
         >>> current_env = get_environment()
@@ -478,14 +478,14 @@ def get_environment() -> str:
 
 def is_migration_complete() -> bool:
     """Check if environment variable migration to NODE_ENV is complete.
-    
+
     Convenience function to quickly determine if the migration from legacy
     environment variables (ENVIRONMENT, ENV) to NODE_ENV is finished.
-    
+
     Returns:
         True if only NODE_ENV is set and no legacy variables remain,
         False if migration is incomplete or conflicts exist
-        
+
     Example:
         >>> from app.utils.migration_helper import is_migration_complete
         >>> if not is_migration_complete():
@@ -497,14 +497,14 @@ def is_migration_complete() -> bool:
 
 def validate_environment_config() -> bool:
     """Validate current environment variable configuration for conflicts.
-    
+
     Convenience wrapper around EnvironmentMigrationHelper.validate_migration()
     that performs comprehensive validation of environment variable setup.
-    
+
     Returns:
         True if environment configuration is valid and conflict-free,
         False if conflicts exist that require manual resolution
-        
+
     Example:
         >>> from app.utils.migration_helper import validate_environment_config
         >>> if not validate_environment_config():
