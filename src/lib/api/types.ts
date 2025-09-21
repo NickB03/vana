@@ -140,7 +140,20 @@ export interface SSEEvent {
 }
 
 export interface AgentNetworkEvent extends SSEEvent {
-  type: 'agent_network_update' | 'agent_network_snapshot' | 'agent_start' | 'agent_complete' | 'agent_network_connection' | 'keepalive' | 'error' | 'message_chunk' | 'message_complete';
+  type:
+    | 'agent_network_update'
+    | 'agent_network_snapshot'
+    | 'agent_start'
+    | 'agent_complete'
+    | 'agent_network_connection'
+    | 'keepalive'
+    | 'connection'
+    | 'error'
+    | 'message_chunk'
+    | 'message_complete'
+    | 'research_started'
+    | 'research_progress'
+    | 'research_complete';
   data: {
     sessionId?: string;
     status?: string;
@@ -216,6 +229,31 @@ export interface SessionInfo {
   created_at: string;
   last_activity: string;
   status: 'active' | 'inactive' | 'expired';
+}
+
+export interface SessionSummary {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  status?: string;
+  title?: string | null;
+  user_id?: number | null;
+  progress?: number | null;
+  current_phase?: string | null;
+  final_report?: string | null;
+  error?: string | null;
+}
+
+export interface SessionDetail extends SessionSummary {
+  messages: ChatMessage[];
+  authenticated?: boolean;
+}
+
+export interface SessionListResponse {
+  sessions: SessionSummary[];
+  count: number;
+  timestamp: string;
+  authenticated?: boolean;
 }
 
 // Chat Integration Types

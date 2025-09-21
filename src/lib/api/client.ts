@@ -21,8 +21,13 @@ import {
   User,
   APIConfig,
   AgentNetworkEvent,
-  Token
+  Token,
+  SessionListResponse,
+  SessionSummary,
+  SessionDetail,
+  ChatMessage,
 } from './types';
+import { syncTokensToCookies } from '../auth-cookies';
 
 /**
  * API Client for Vana backend integration
@@ -81,6 +86,7 @@ export class VanaAPIClient {
         sessionStorage.setItem('vana_access_token', tokens.access_token);
         sessionStorage.setItem('vana_refresh_token', tokens.refresh_token);
         sessionStorage.setItem('vana_token_expiration', this.tokenExpirationTime.toString());
+        syncTokensToCookies();
       }
     } catch (error) {
       console.warn('Failed to save tokens to storage:', error);
@@ -99,6 +105,8 @@ export class VanaAPIClient {
       sessionStorage.removeItem('vana_access_token');
       sessionStorage.removeItem('vana_refresh_token');
       sessionStorage.removeItem('vana_token_expiration');
+      syncTokensToCookies();
+      fetch('/api/auth/sync-cookies', { method: 'DELETE' }).catch(() => {});
     }
   }
 
@@ -438,6 +446,54 @@ export class VanaAPIClient {
    */
   async getAgentNetworkHistory(limit: number = 50): Promise<{ events: AgentNetworkEvent[]; authenticated: boolean; user_id?: number; timestamp: string }> {
     return this.makeRequestWithRetry(`/agent_network_history?limit=${limit}`);
+  }
+
+  /**
+   * List persisted chat sessions from the backend store
+   */
+  async listSessions(): Promise<SessionSummary[]> {
+    const response = await this.makeRequestWithRetry<SessionListResponse>('/api/sessions');
+    return response.sessions ?? [];
+  }
+
+  /**
+   * Retrieve a single session including its message history
+   */
+  async getSession(sessionId: string): Promise<SessionDetail> {
+    return this.makeRequestWithRetry<SessionDetail>(`/api/sessions/${sessionId}`);
+  }
+
+  /**
+   * Update stored session metadata
+   */
+  async updateSession(
+    sessionId: string,
+    payload: Partial<Pick<SessionSummary, 'title' | 'status' | 'progress' | 'current_phase' | 'final_report' | 'error'>>,
+  ): Promise<SessionSummary> {
+    const response = await this.makeRequestWithRetry<SessionSummary & { authenticated?: boolean }>(
+      `/api/sessions/${sessionId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      }
+    );
+
+    return response;
+  }
+
+  /**
+   * Append a message to a persisted session
+   */
+  async appendSessionMessage(sessionId: string, message: ChatMessage): Promise<ChatMessage> {
+    const response = await this.makeRequestWithRetry<ChatMessage & { authenticated?: boolean }>(
+      `/api/sessions/${sessionId}/messages`,
+      {
+        method: 'POST',
+        body: JSON.stringify(message),
+      }
+    );
+
+    return response;
   }
 
   // Utility Methods

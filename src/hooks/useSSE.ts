@@ -3,8 +3,8 @@
  * Handles EventSource connections with reconnection logic and error handling
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { AgentNetworkEvent, ConnectionEvent } from '@/lib/api/types';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { AgentNetworkEvent } from '@/lib/api/types';
 import { apiClient } from '@/lib/api/client';
 
 export type SSEConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error' | 'reconnecting';
@@ -14,6 +14,8 @@ export interface SSEOptions {
   sessionId?: string;
   /** Whether to automatically reconnect on connection loss */
   autoReconnect?: boolean;
+  /** Whether the SSE connection should be active */
+  enabled?: boolean;
   /** Maximum number of reconnection attempts */
   maxReconnectAttempts?: number;
   /** Initial reconnection delay in milliseconds */
@@ -52,19 +54,38 @@ export interface SSEHookReturn {
   reconnectAttempt: number;
 }
 
-const DEFAULT_OPTIONS: Required<Omit<SSEOptions, 'sessionId' | 'onConnect' | 'onDisconnect' | 'onError' | 'onReconnect'>> = {
+const DEFAULT_OPTIONS = {
   autoReconnect: true,
   maxReconnectAttempts: 5,
   reconnectDelay: 1000,
   maxReconnectDelay: 30000,
   withCredentials: true,
-};
+  enabled: true,
+} as const;
 
 /**
  * Custom hook for managing Server-Sent Events connections
  */
 export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
+  const opts = useMemo(
+    () => ({
+      ...DEFAULT_OPTIONS,
+      ...options,
+    }),
+    [
+      options?.autoReconnect,
+      options?.enabled,
+      options?.maxReconnectAttempts,
+      options?.reconnectDelay,
+      options?.maxReconnectDelay,
+      options?.withCredentials,
+      options?.onConnect,
+      options?.onDisconnect,
+      options?.onError,
+      options?.onReconnect,
+      options?.sessionId,
+    ]
+  );
   
   const [connectionState, setConnectionState] = useState<SSEConnectionState>('disconnected');
   const [lastEvent, setLastEvent] = useState<AgentNetworkEvent | null>(null);
@@ -118,11 +139,11 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
   }, [url]);
 
   // Parse SSE event data
-  const parseEventData = useCallback((data: string): AgentNetworkEvent | null => {
+  const parseEventData = useCallback((data: string, fallbackType?: string): AgentNetworkEvent | null => {
     try {
       const parsed = JSON.parse(data);
       return {
-        type: parsed.type || 'unknown',
+        type: parsed.type || fallbackType || 'unknown',
         data: {
           timestamp: new Date().toISOString(),
           ...parsed.data,
@@ -137,6 +158,12 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
 
   // Connect to SSE stream with secure authentication
   const connect = useCallback(() => {
+    if (!opts.enabled || !url) {
+      shouldReconnectRef.current = false;
+      setConnectionState('disconnected');
+      return;
+    }
+
     if (eventSourceRef.current || !mountedRef.current) {
       return;
     }
@@ -181,6 +208,36 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
           const reader = response.body.getReader();
           const decoder = new TextDecoder();
 
+          let buffer = '';
+
+          const processEventBlock = (block: string) => {
+            const lines = block.split('\n');
+            let eventType: string | undefined;
+            const dataLines: string[] = [];
+
+            for (const rawLine of lines) {
+              const line = rawLine.trim();
+              if (!line) continue;
+
+              if (line.startsWith('event:')) {
+                eventType = line.slice(6).trim() || undefined;
+              } else if (line.startsWith('data:')) {
+                dataLines.push(line.slice(5).trim());
+              }
+            }
+
+            if (!dataLines.length) {
+              return;
+            }
+
+            const payload = dataLines.join('\n');
+            const parsedEvent = parseEventData(payload, eventType);
+            if (parsedEvent) {
+              setLastEvent(parsedEvent);
+              setEvents(prev => [...prev, parsedEvent]);
+            }
+          };
+
           const readStream = async () => {
             try {
               while (true) {
@@ -189,20 +246,22 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
                 if (done) break;
                 
                 const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split('\n');
-                
-                for (const line of lines) {
-                  if (line.startsWith('data: ')) {
-                    const data = line.slice(6);
-                    if (data.trim()) {
-                      const parsedEvent = parseEventData(data);
-                      if (parsedEvent) {
-                        setLastEvent(parsedEvent);
-                        setEvents(prev => [...prev, parsedEvent]);
-                      }
-                    }
+                buffer += chunk;
+
+                let separatorIndex = buffer.indexOf('\n\n');
+                while (separatorIndex !== -1) {
+                  const rawEvent = buffer.slice(0, separatorIndex);
+                  buffer = buffer.slice(separatorIndex + 2);
+                  if (rawEvent.trim()) {
+                    processEventBlock(rawEvent);
                   }
+                  separatorIndex = buffer.indexOf('\n\n');
                 }
+              }
+
+              if (buffer.trim()) {
+                processEventBlock(buffer);
+                buffer = '';
               }
             } catch (error) {
               if (!controller.signal.aborted) {
@@ -421,15 +480,20 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
 
   // Auto-connect on mount if URL is provided
   useEffect(() => {
-    if (url) {
+    const isEnabled = Boolean(url) && opts.enabled;
+
+    if (isEnabled) {
       connect();
+    } else {
+      disconnect();
+      setConnectionState('disconnected');
     }
 
     return () => {
       mountedRef.current = false;
       disconnect();
     };
-  }, [url, connect, disconnect]);
+  }, [url, opts.enabled, connect, disconnect]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -439,7 +503,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
     };
   }, [disconnect]);
 
-  return {
+  return useMemo(() => ({
     connectionState,
     lastEvent,
     events,
@@ -450,7 +514,17 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
     reconnect,
     clearEvents,
     reconnectAttempt,
-  };
+  }), [
+    connectionState,
+    lastEvent,
+    events,
+    error,
+    connect,
+    disconnect,
+    reconnect,
+    clearEvents,
+    reconnectAttempt,
+  ]);
 }
 
 /**

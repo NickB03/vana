@@ -1,14 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { PromptSuggestion } from '@/components/ui/prompt-suggestion'
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from '@/components/ui/prompt-input'
-import { useChatState } from '@/hooks/useChatState'
-import { Send, Plus, Globe, MoreHorizontal, Mic, ArrowUp } from 'lucide-react'
+import { Plus, Globe, MoreHorizontal, Mic, ArrowUp } from 'lucide-react'
 
 interface VanaHomePageProps {
-  onStartChat?: (prompt: string) => void
+  onStartChat: (prompt: string) => void
+  isBusy?: boolean
 }
 
 const capabilities = [
@@ -20,23 +20,24 @@ const capabilities = [
   "Problem Solving"
 ]
 
-export function VanaHomePage({ onStartChat }: VanaHomePageProps) {
+export function VanaHomePage({ onStartChat, isBusy = false }: VanaHomePageProps) {
   const [promptValue, setPromptValue] = useState('')
-  const { startChat } = useChatState()
 
-  const handlePromptSubmit = () => {
+  // Use ref to access onStartChat without dependency
+  const onStartChatRef = useRef(onStartChat)
+  onStartChatRef.current = onStartChat
+  
+  const handlePromptSubmit = useCallback(() => {
     if (promptValue.trim()) {
-      startChat(promptValue)
-      onStartChat?.(promptValue)
+      onStartChatRef.current(promptValue)
       setPromptValue('')
     }
-  }
+  }, [promptValue])
 
-  const handleSuggestionClick = (suggestion: string) => {
+  const handleSuggestionClick = useCallback((suggestion: string) => {
     const prompt = `Help me with ${suggestion.toLowerCase()}`
-    startChat(prompt)
-    onStartChat?.(prompt)
-  }
+    onStartChatRef.current(prompt)
+  }, [])
 
   return (
     <div className="min-h-full flex flex-col items-center justify-center p-8 max-w-4xl mx-auto" data-testid="vana-home-page">
@@ -112,7 +113,7 @@ export function VanaHomePage({ onStartChat }: VanaHomePageProps) {
 
                 <Button
                   size="icon"
-                  disabled={!promptValue.trim()}
+                  disabled={!promptValue.trim() || isBusy}
                   onClick={handlePromptSubmit}
                   className="size-9 rounded-full"
                 >

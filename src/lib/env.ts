@@ -3,72 +3,53 @@
  * Handles environment variables with validation and type safety
  */
 
-import { z } from 'zod';
+// Removed Zod import and schema to stop infinite loop
 
-// Environment schema with validation
-const envSchema = z.object({
-  // API Configuration
-  NEXT_PUBLIC_API_URL: z.string().url().optional().default('http://localhost:8000'),
-  NEXT_PUBLIC_API_TIMEOUT: z.string().transform(Number).pipe(z.number().positive()).optional().default(30000),
-  
-  // Authentication
-  NEXT_PUBLIC_AUTH_DOMAIN: z.string().optional(),
-  NEXT_PUBLIC_GOOGLE_CLIENT_ID: z.string().optional(),
-  NEXT_PUBLIC_GOOGLE_OAUTH_REDIRECT_URI: z.string().url().optional(),
-  
-  // Application Settings
-  NEXT_PUBLIC_APP_NAME: z.string().optional().default('Vana'),
-  NEXT_PUBLIC_APP_VERSION: z.string().optional().default('1.0.0'),
-  
-  // Feature Flags
-  NEXT_PUBLIC_ENABLE_GOOGLE_AUTH: z.string().transform(val => val === 'true').optional().default(false),
-  NEXT_PUBLIC_ENABLE_SSE_AUTO_RECONNECT: z.string().transform(val => val === 'true').optional().default(true),
-  NEXT_PUBLIC_ENABLE_ANALYTICS: z.string().transform(val => val === 'true').optional().default(false),
-  NEXT_PUBLIC_ENABLE_DEBUG_MODE: z.string().transform(val => val === 'true').optional().default(false),
-  
-  // SSE Configuration
-  NEXT_PUBLIC_SSE_MAX_RECONNECT_ATTEMPTS: z.string().transform(Number).pipe(z.number().min(1)).optional().default(5),
-  NEXT_PUBLIC_SSE_RECONNECT_DELAY: z.string().transform(Number).pipe(z.number().min(100)).optional().default(1000),
-  NEXT_PUBLIC_SSE_MAX_RECONNECT_DELAY: z.string().transform(Number).pipe(z.number().min(1000)).optional().default(30000),
-  
-  // Chat Configuration
-  NEXT_PUBLIC_CHAT_MAX_MESSAGES: z.string().transform(Number).pipe(z.number().min(10)).optional().default(100),
-  NEXT_PUBLIC_CHAT_PERSIST_SESSIONS: z.string().transform(val => val === 'true').optional().default(true),
-  
-  // Development Settings
-  NODE_ENV: z.enum(['development', 'test', 'production']).optional().default('development'),
-});
-
-// Parse and validate environment variables
+// Parse and validate environment variables - simplified to stop infinite loop
 function parseEnv() {
-  const env = {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-    NEXT_PUBLIC_API_TIMEOUT: process.env.NEXT_PUBLIC_API_TIMEOUT,
-    NEXT_PUBLIC_AUTH_DOMAIN: process.env.NEXT_PUBLIC_AUTH_DOMAIN,
-    NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-    NEXT_PUBLIC_GOOGLE_OAUTH_REDIRECT_URI: process.env.NEXT_PUBLIC_GOOGLE_OAUTH_REDIRECT_URI,
-    NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME,
-    NEXT_PUBLIC_APP_VERSION: process.env.NEXT_PUBLIC_APP_VERSION,
-    NEXT_PUBLIC_ENABLE_GOOGLE_AUTH: process.env.NEXT_PUBLIC_ENABLE_GOOGLE_AUTH,
-    NEXT_PUBLIC_ENABLE_SSE_AUTO_RECONNECT: process.env.NEXT_PUBLIC_ENABLE_SSE_AUTO_RECONNECT,
-    NEXT_PUBLIC_ENABLE_ANALYTICS: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS,
-    NEXT_PUBLIC_ENABLE_DEBUG_MODE: process.env.NEXT_PUBLIC_ENABLE_DEBUG_MODE,
-    NEXT_PUBLIC_SSE_MAX_RECONNECT_ATTEMPTS: process.env.NEXT_PUBLIC_SSE_MAX_RECONNECT_ATTEMPTS,
-    NEXT_PUBLIC_SSE_RECONNECT_DELAY: process.env.NEXT_PUBLIC_SSE_RECONNECT_DELAY,
-    NEXT_PUBLIC_SSE_MAX_RECONNECT_DELAY: process.env.NEXT_PUBLIC_SSE_MAX_RECONNECT_DELAY,
-    NEXT_PUBLIC_CHAT_MAX_MESSAGES: process.env.NEXT_PUBLIC_CHAT_MAX_MESSAGES,
-    NEXT_PUBLIC_CHAT_PERSIST_SESSIONS: process.env.NEXT_PUBLIC_CHAT_PERSIST_SESSIONS,
-    NODE_ENV: process.env.NODE_ENV,
-  };
-
   try {
-    return envSchema.parse(env);
+    // Simplified parsing without strict validation to prevent infinite loop
+    return {
+      NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+      NEXT_PUBLIC_API_TIMEOUT: Number(process.env.NEXT_PUBLIC_API_TIMEOUT) || 30000,
+      NEXT_PUBLIC_AUTH_DOMAIN: process.env.NEXT_PUBLIC_AUTH_DOMAIN,
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+      NEXT_PUBLIC_GOOGLE_OAUTH_REDIRECT_URI: process.env.NEXT_PUBLIC_GOOGLE_OAUTH_REDIRECT_URI || '',
+      NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME || 'Vana',
+      NEXT_PUBLIC_APP_VERSION: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
+      NEXT_PUBLIC_ENABLE_GOOGLE_AUTH: process.env.NEXT_PUBLIC_ENABLE_GOOGLE_AUTH === 'true',
+      NEXT_PUBLIC_ENABLE_SSE_AUTO_RECONNECT: process.env.NEXT_PUBLIC_ENABLE_SSE_AUTO_RECONNECT !== 'false',
+      NEXT_PUBLIC_ENABLE_ANALYTICS: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === 'true',
+      NEXT_PUBLIC_ENABLE_DEBUG_MODE: process.env.NEXT_PUBLIC_ENABLE_DEBUG_MODE === 'true',
+      NEXT_PUBLIC_SSE_MAX_RECONNECT_ATTEMPTS: Number(process.env.NEXT_PUBLIC_SSE_MAX_RECONNECT_ATTEMPTS) || 5,
+      NEXT_PUBLIC_SSE_RECONNECT_DELAY: Number(process.env.NEXT_PUBLIC_SSE_RECONNECT_DELAY) || 1000,
+      NEXT_PUBLIC_SSE_MAX_RECONNECT_DELAY: Number(process.env.NEXT_PUBLIC_SSE_MAX_RECONNECT_DELAY) || 30000,
+      NEXT_PUBLIC_CHAT_MAX_MESSAGES: Number(process.env.NEXT_PUBLIC_CHAT_MAX_MESSAGES) || 100,
+      NEXT_PUBLIC_CHAT_PERSIST_SESSIONS: process.env.NEXT_PUBLIC_CHAT_PERSIST_SESSIONS !== 'false',
+      NODE_ENV: process.env.NODE_ENV || 'development',
+    };
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      const missingVars = error.errors.map(err => `${err.path.join('.')}: ${err.message}`);
-      throw new Error(`Invalid environment configuration:\n${missingVars.join('\n')}`);
-    }
-    throw error;
+    console.warn('Environment parsing error (non-fatal):', error);
+    // Return safe defaults to prevent application crash
+    return {
+      NEXT_PUBLIC_API_URL: 'http://localhost:8000',
+      NEXT_PUBLIC_API_TIMEOUT: 30000,
+      NEXT_PUBLIC_AUTH_DOMAIN: undefined,
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: undefined,
+      NEXT_PUBLIC_GOOGLE_OAUTH_REDIRECT_URI: '',
+      NEXT_PUBLIC_APP_NAME: 'Vana',
+      NEXT_PUBLIC_APP_VERSION: '1.0.0',
+      NEXT_PUBLIC_ENABLE_GOOGLE_AUTH: false,
+      NEXT_PUBLIC_ENABLE_SSE_AUTO_RECONNECT: true,
+      NEXT_PUBLIC_ENABLE_ANALYTICS: false,
+      NEXT_PUBLIC_ENABLE_DEBUG_MODE: false,
+      NEXT_PUBLIC_SSE_MAX_RECONNECT_ATTEMPTS: 5,
+      NEXT_PUBLIC_SSE_RECONNECT_DELAY: 1000,
+      NEXT_PUBLIC_SSE_MAX_RECONNECT_DELAY: 30000,
+      NEXT_PUBLIC_CHAT_MAX_MESSAGES: 100,
+      NEXT_PUBLIC_CHAT_PERSIST_SESSIONS: true,
+      NODE_ENV: 'development',
+    };
   }
 }
 

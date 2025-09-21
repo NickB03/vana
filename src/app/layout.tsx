@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { SidebarProvider } from '@/components/ui/sidebar'
-import { VanaSidebar } from '@/components/vana/VanaSidebar'
 
 export const metadata: Metadata = {
   title: "Vana - Virtual Autonomous Network Agent",
@@ -16,10 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased h-screen overflow-hidden font-sans">
-        <SidebarProvider>
-          <VanaSidebar />
-          {children}
-        </SidebarProvider>
+        <SidebarProvider>{children}</SidebarProvider>
       </body>
     </html>
   );

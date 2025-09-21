@@ -28,6 +28,19 @@ export const axe = configureAxe({
   },
 })
 
+const announcements: string[] = []
+
+export const accessibility = {
+  axe,
+  recordAnnouncement: (message: string) => {
+    announcements.push(message)
+  },
+  clearAnnouncements: () => {
+    announcements.length = 0
+  },
+  getAnnouncements: () => [...announcements],
+}
+
 // Mock IntersectionObserver if not available
 if (!global.IntersectionObserver) {
   global.IntersectionObserver = class IntersectionObserver {

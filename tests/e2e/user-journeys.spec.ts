@@ -149,7 +149,7 @@ test.describe('Complete User Journeys', () => {
       await expect(page.locator('[data-testid="chat-interface"]')).toBeVisible()
       
       // Simulate network going offline
-      await page.setOffline(true)
+      await page.context().setOffline(true)
       
       // Try to send a message
       await page.fill('[data-testid="message-input"]', 'This message should fail')
@@ -159,7 +159,7 @@ test.describe('Complete User Journeys', () => {
       await expect(page.locator('[data-testid="connection-status"]')).toHaveAttribute('data-connected', 'false')
       
       // Restore network
-      await page.setOffline(false)
+      await page.context().setOffline(false)
       
       // Should reconnect
       await expect(page.locator('[data-testid="connection-status"]')).toHaveAttribute('data-connected', 'true', { timeout: 10000 })

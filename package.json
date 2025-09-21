@@ -7,7 +7,7 @@
     "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -15,6 +15,9 @@
     "test:e2e": "playwright test",
     "analyze": "ANALYZE=true npm run build",
     "performance:audit": "lighthouse http://localhost:3000 --output=json --output-path=./reports/lighthouse.json",
+    "performance:audit:prod": "lighthouse https://vana-frontend.vercel.app --output=json --output-path=./reports/lighthouse-prod.json",
+    "performance:baseline:regenerate": "node ../scripts/regenerate-performance-baselines.js",
+    "performance:baseline:update": "node ../scripts/update-baseline-urls.js",
     "performance:budget": "bundlesize",
     "precommit": "npm run typecheck && npm run lint && npm run test:coverage"
   },
@@ -50,7 +53,7 @@
     "use-stick-to-bottom": "^1.1.1",
     "uuid": "^13.0.0",
     "web-vitals": "^3.5.0",
-    "zod": "^4.1.9",
+    "zod": "^3.25.76",
     "zustand": "^4.5.7"
   },
   "devDependencies": {
@@ -79,6 +82,8 @@
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
     "ts-node": "^10.9.2",
+    "vitest": "^1.6.0",
+    "msw": "^2.5.1",
     "webpack-bundle-analyzer": "^4.10.2"
   },
   "bundlesize": [

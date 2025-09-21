@@ -14,6 +14,8 @@ import React, {
   useEffect,
   useRef,
   useState,
+  useMemo,
+  useCallback,
 } from "react"
 
 type PromptInputContextType = {
@@ -66,23 +68,32 @@ function PromptInput({
   const [internalValue, setInternalValue] = useState(value || "")
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
-  const handleChange = (newValue: string) => {
+  // Use ref to maintain stable callback reference
+  const onValueChangeRef = useRef(onValueChange)
+  onValueChangeRef.current = onValueChange
+
+  // Create stable setValue function to prevent infinite re-renders
+  const setValue = useCallback((newValue: string) => {
     setInternalValue(newValue)
-    onValueChange?.(newValue)
-  }
+    onValueChangeRef.current?.(newValue)
+  }, [])
+
+  const contextValue = useMemo(
+    () => ({
+      isLoading,
+      value: value ?? internalValue,
+      setValue,
+      maxHeight,
+      onSubmit,
+      disabled: isLoading,
+      textareaRef,
+    }),
+    [isLoading, value, internalValue, maxHeight, onSubmit]
+  )
 
   return (
     <TooltipProvider>
-      <PromptInputContext.Provider
-        value={{
-          isLoading,
-          value: value ?? internalValue,
-          setValue: onValueChange ?? handleChange,
-          maxHeight,
-          onSubmit,
-          textareaRef,
-        }}
-      >
+      <PromptInputContext.Provider value={contextValue}>
         <div
           className={cn(
             "border-input bg-background cursor-text rounded-3xl border p-2 shadow-xs",

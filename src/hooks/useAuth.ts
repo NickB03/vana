@@ -357,7 +357,7 @@ export function useAuth() {
   // Initialize auth state on mount
   useEffect(() => {
     store.initialize();
-  }, [store]);
+  }, []); // Remove store dependency to prevent infinite loop
 
   // Helper functions
   const hasRole = useCallback((roleName: string): boolean => {
