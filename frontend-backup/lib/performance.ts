@@ -52,6 +52,8 @@ class PerformanceMonitor {
   private componentMetrics: Map<string, ComponentRenderMetric[]> = new Map();
   private sseMetrics: SSEPerformanceMetric[] = [];
   private cleanupInterval: NodeJS.Timeout | null = null;
+  private fcpObserver: PerformanceObserver | null = null;
+  private lcpObserver: PerformanceObserver | null = null;
   
   constructor() {
     if (typeof window !== 'undefined') {
@@ -189,6 +191,10 @@ class PerformanceMonitor {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = null;
     }
+    this.fcpObserver?.disconnect();
+    this.fcpObserver = null;
+    this.lcpObserver?.disconnect();
+    this.lcpObserver = null;
     this.metrics.clear();
     this.componentMetrics.clear();
     this.sseMetrics = [];
@@ -261,6 +267,7 @@ class PerformanceMonitor {
    */
   private measureManualWebVitals() {
     // Measure FCP manually
+    this.fcpObserver?.disconnect();
     const fcpObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
       const fcpEntry = entries.find(entry => entry.name === 'first-contentful-paint');
@@ -273,14 +280,16 @@ class PerformanceMonitor {
         });
       }
     });
-    
+
     try {
       fcpObserver.observe({ entryTypes: ['paint'] });
+      this.fcpObserver = fcpObserver;
     } catch (error) {
       console.warn('Paint timing not supported');
     }
-    
+
     // Measure LCP manually
+    this.lcpObserver?.disconnect();
     const lcpObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
       const lastEntry = entries[entries.length - 1];
@@ -293,9 +302,10 @@ class PerformanceMonitor {
         });
       }
     });
-    
+
     try {
       lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
+      this.lcpObserver = lcpObserver;
     } catch (error) {
       console.warn('LCP timing not supported');
     }
@@ -354,6 +364,7 @@ class PerformanceMonitor {
     
     try {
       observer.observe({ entryTypes: ['resource'] });
+      this.observers.push(observer);
     } catch (error) {
       console.warn('Resource timing not supported');
     }

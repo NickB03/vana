@@ -99,7 +99,15 @@ Closes #123
    make typecheck
    ```
 
-3. **Create Pull Request**
+3. **CI Enforcement**
+   All pull requests are subject to automated checks via our GitHub Actions CI pipeline. Your PR must pass these checks before it can be merged. The pipeline enforces:
+
+   - **Test Success:** All backend (Python) and frontend (TypeScript) unit tests must pass.
+   - **Code Coverage:**
+     - The Python backend must meet or exceed **85%** test coverage.
+     - The frontend test suite is run with coverage reporting enabled.
+
+4. **Create Pull Request**
    - Use a clear, descriptive title
    - Reference any related issues
    - Describe what changes were made and why

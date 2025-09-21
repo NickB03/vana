@@ -43,6 +43,8 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from typing import Any
 
+from app.utils.session_store import session_store
+
 # Optional import for memory monitoring
 try:
     import psutil  # type: ignore
@@ -521,6 +523,14 @@ class EnhancedSSEBroadcaster:
 
             # Get subscribers for this session
             subscribers = list(self._subscribers.get(session_id, []))
+
+        # Persist event snapshots so sessions can be resumed later. Wrap in a
+        # broad exception handler to avoid breaking the broadcast path if
+        # persistence fails for any reason.
+        try:
+            session_store.ingest_event(session_id, event_data)
+        except Exception as exc:  # pragma: no cover - defensive logging only
+            logger.debug("Failed to persist SSE event for session %s: %s", session_id, exc)
 
         # Broadcast to subscribers (outside lock)
         if subscribers:
