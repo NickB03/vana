@@ -1,9 +1,9 @@
 {
   "lighthouseVersion": "12.8.2",
-  "requestedUrl": "http://127.0.0.1:3000/",
-  "mainDocumentUrl": "http://127.0.0.1:3000/",
-  "finalDisplayedUrl": "http://127.0.0.1:3000/",
-  "finalUrl": "http://127.0.0.1:3000/",
+  "requestedUrl": "https://vana-frontend.vercel.app/",
+  "mainDocumentUrl": "https://vana-frontend.vercel.app/",
+  "finalDisplayedUrl": "https://vana-frontend.vercel.app/",
+  "finalUrl": "https://vana-frontend.vercel.app/",
   "fetchTime": "2025-09-20T12:38:19.866Z",
   "gatherMode": "navigation",
   "runWarnings": [],
