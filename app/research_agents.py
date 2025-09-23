@@ -123,7 +123,6 @@ class MultiAgentResearchOrchestrator:
                 raise ValueError("GOOGLE_API_KEY not configured")
             self.api_key = google_api_key
             genai.configure(api_key=google_api_key)
-        self.active_sessions: dict[str, ResearchProgress] = {}
 
     def create_agent_status(self, agent_type: str) -> AgentStatus:
         """Create initial agent status"""

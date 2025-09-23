@@ -275,6 +275,7 @@ try:  # pragma: no cover - optional auth dependencies
     from app.auth.database import init_auth_db  # type: ignore
     from app.auth.middleware import (  # type: ignore
         AuditLogMiddleware,
+        CircuitBreakerMiddleware,
         CORSMiddleware,
         RateLimitMiddleware,
     )
@@ -315,6 +316,9 @@ except ModuleNotFoundError:  # pragma: no cover
     class CORSMiddleware(AuditLogMiddleware):  # type: ignore
         pass
 
+    class CircuitBreakerMiddleware(AuditLogMiddleware):  # type: ignore
+        pass
+
     class RateLimitMiddleware(AuditLogMiddleware):  # type: ignore
         pass
 
@@ -345,12 +349,13 @@ app.include_router(users_router)
 app.include_router(admin_router)
 
 
-# Add security middleware (order matters - security headers first, then CORS)
+# Add security middleware (order matters - security headers first, then circuit breaker)
 # Determine if we're in production for HSTS
 is_production = os.getenv("NODE_ENV") == "production"
 app.add_middleware(SecurityHeadersMiddleware, enable_hsts=is_production)
 app.add_middleware(CORSMiddleware, allowed_origins=allow_origins)
-app.add_middleware(RateLimitMiddleware, calls=100, period=60)
+app.add_middleware(CircuitBreakerMiddleware)  # Circuit breaker for auth protection
+app.add_middleware(RateLimitMiddleware, calls=100, period=60)  # General rate limiting
 app.add_middleware(AuditLogMiddleware)
 
 

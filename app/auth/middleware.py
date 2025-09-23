@@ -29,12 +29,123 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 
-class RateLimitMiddleware(BaseHTTPMiddleware):
-    """ASGI middleware implementing rate limiting for authentication endpoints.
+class CircuitBreakerMiddleware(BaseHTTPMiddleware):
+    """ASGI middleware implementing circuit breaker pattern for authentication security.
 
-    Provides configurable rate limiting specifically for authentication routes
-    to prevent brute force attacks and abuse. Uses a sliding window algorithm
-    with in-memory storage of client request timestamps.
+    Provides advanced protection against brute force attacks using a circuit breaker
+    pattern that progressively blocks IPs based on failed authentication attempts.
+    Integrates with the AuthenticationCircuitBreaker for sophisticated threat protection.
+
+    Features:
+        - Progressive blocking: warning -> temporary -> extended -> long-term
+        - IP-based tracking with automatic cleanup
+        - Whitelist support for trusted IPs  
+        - Comprehensive audit logging
+        - Integration with authentication endpoints
+
+    Example:
+        >>> app.add_middleware(CircuitBreakerMiddleware)
+    """
+
+    def __init__(self, app):
+        """Initialize circuit breaker middleware.
+
+        Args:
+            app: The ASGI application instance
+        """
+        super().__init__(app)
+        # Import here to avoid circular dependencies
+        from .circuit_breaker import get_circuit_breaker
+        self.circuit_breaker = get_circuit_breaker()
+
+    async def dispatch(self, request: Request, call_next):
+        """Process request with circuit breaker protection.
+
+        Checks circuit breaker state before allowing authentication attempts
+        and records failures after processing.
+
+        Args:
+            request: The incoming HTTP request
+            call_next: The next middleware or application handler
+
+        Returns:
+            HTTP response, potentially with 429 status if circuit is open
+        """
+        # Only apply circuit breaker to auth endpoints
+        if not request.url.path.startswith("/auth/"):
+            return await call_next(request)
+
+        client_ip = self.get_client_ip(request)
+        user_agent = request.headers.get("User-Agent", "Unknown")
+        endpoint = request.url.path
+
+        # Check if request should be blocked
+        should_block, reason, retry_after = self.circuit_breaker.should_block_request(
+            ip_address=client_ip
+        )
+
+        if should_block:
+            # Log blocked request for security monitoring
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                f"Circuit breaker blocked request from IP {client_ip}: "
+                f"reason={reason}, endpoint={endpoint}, user_agent={user_agent[:100]}"
+            )
+            
+            headers = {"X-Circuit-Breaker": "blocked"}
+            if retry_after:
+                headers["Retry-After"] = str(retry_after)
+            
+            return JSONResponse(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                content={
+                    "detail": "Too many failed authentication attempts. Please try again later.",
+                    "retry_after": retry_after,
+                    "reason": "security_protection"
+                },
+                headers=headers
+            )
+
+        # Store request info for potential failure recording
+        request.state.circuit_breaker_ip = client_ip
+        request.state.circuit_breaker_user_agent = user_agent
+        request.state.circuit_breaker_endpoint = endpoint
+
+        return await call_next(request)
+
+    def get_client_ip(self, request: Request) -> str:
+        """Extract client IP address from request headers and connection info.
+
+        Checks various headers in order of preference to handle proxies and
+        load balancers correctly:
+        1. X-Forwarded-For (takes first IP if comma-separated)
+        2. X-Real-IP
+        3. Direct connection IP
+
+        Args:
+            request: The HTTP request to extract IP from
+
+        Returns:
+            Client IP address as string, or "unknown" if unavailable
+        """
+        forwarded_for = request.headers.get("X-Forwarded-For")
+        if forwarded_for:
+            return forwarded_for.split(",")[0].strip()
+
+        real_ip = request.headers.get("X-Real-IP")
+        if real_ip:
+            return real_ip
+
+        return request.client.host if request.client else "unknown"
+
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    """ASGI middleware implementing basic rate limiting for general endpoints.
+
+    Provides simple rate limiting for non-authentication endpoints using a 
+    sliding window algorithm. For authentication endpoints, use CircuitBreakerMiddleware
+    which provides more sophisticated protection.
 
     Attributes:
         calls: Maximum number of requests allowed per time period
@@ -44,8 +155,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     Example:
         >>> app.add_middleware(
         ...     RateLimitMiddleware,
-        ...     calls=10,  # 10 requests
-        ...     period=60  # per minute
+        ...     calls=100,  # 100 requests
+        ...     period=60   # per minute
         ... )
     """
 
@@ -63,10 +174,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.clients: dict[str, list] = defaultdict(list)
 
     async def dispatch(self, request: Request, call_next):
-        """Process request with rate limiting for auth endpoints.
+        """Process request with basic rate limiting.
 
-        Applies rate limiting only to paths starting with '/auth/'. For other
-        paths, requests pass through without rate limiting.
+        Applies rate limiting to all endpoints except authentication endpoints
+        (which are handled by CircuitBreakerMiddleware).
 
         Args:
             request: The incoming HTTP request
@@ -75,8 +186,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         Returns:
             HTTP response, potentially with 429 status if rate limit exceeded
         """
-        # Only apply rate limiting to auth endpoints
-        if not request.url.path.startswith("/auth/"):
+        # Skip rate limiting for auth endpoints (handled by CircuitBreakerMiddleware)
+        if request.url.path.startswith("/auth/"):
             return await call_next(request)
 
         client_ip = self.get_client_ip(request)

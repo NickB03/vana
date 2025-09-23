@@ -1,0 +1,53 @@
+# Simplified CodeRabbit Configuration
+# Focus: Clear, actionable suggestions in standard format
+
+version: 1
+language: en
+
+reviews:
+  # Core settings
+  request_changes_on_critical: true
+  high_level_summary: true
+  
+  # Focus areas (simplified)
+  areas:
+    - security
+    - type_safety
+    - best_practices
+    - error_handling
+  
+  # Path-specific checks
+  path_instructions:
+    - path: "app/**/*.py"
+      instructions: |
+        - Check MyPy type annotations
+        - Verify async/await patterns
+        - Validate error handling
+    
+    - path: "frontend/**/*.tsx"
+      instructions: |
+        - Check TypeScript types
+        - Verify React best practices
+        - Validate accessibility
+
+# Commands
+commands:
+  - trigger: "review"
+    description: "Perform code review"
+    response: "Running comprehensive review..."
+  
+  - trigger: "mypy"
+    description: "Check type annotations"
+    response: "Checking MyPy compliance..."
+
+# Ignore patterns
+ignore:
+  - "*.lock"
+  - "node_modules/**"
+  - ".venv/**"
+  - "__pycache__/**"
+  - ".claude_workspace/**"
+
+# Disable auto-approval for safety
+auto_approve:
+  enabled: false

@@ -1,0 +1,111 @@
+{
+  "timestamp": "2025-09-23T12:07:59.959Z",
+  "summary": {
+    "passed": 16,
+    "failed": 4,
+    "successRate": "80.0"
+  },
+  "tests": [
+    {
+      "testName": "VanaAgentStatus file exists",
+      "passed": true,
+      "details": "File found"
+    },
+    {
+      "testName": "VanaAgentStatus has safety patterns",
+      "passed": false,
+      "details": "Missing patterns: agent && typeof agent === 'object'"
+    },
+    {
+      "testName": "VanaSidebar file exists",
+      "passed": true,
+      "details": "File found"
+    },
+    {
+      "testName": "VanaSidebar has safety patterns",
+      "passed": false,
+      "details": "Missing patterns: session && typeof session === 'object', messages\\.reverse\\(\\)"
+    },
+    {
+      "testName": "useChatStream file exists",
+      "passed": true,
+      "details": "File found"
+    },
+    {
+      "testName": "useChatStream has SSE safety patterns",
+      "passed": false,
+      "details": "Missing patterns: useMemo.*stableResearchEvent, useMemo.*stableAgentEvent"
+    },
+    {
+      "testName": "useSSE file exists",
+      "passed": true,
+      "details": "File found"
+    },
+    {
+      "testName": "useSSE has infinite loop prevention",
+      "passed": true,
+      "details": "All patterns found"
+    },
+    {
+      "testName": "react-performance file exists",
+      "passed": true,
+      "details": "File found"
+    },
+    {
+      "testName": "Performance utilities have optimization patterns",
+      "passed": true,
+      "details": "All patterns found"
+    },
+    {
+      "testName": "performance-monitor file exists",
+      "passed": true,
+      "details": "File found"
+    },
+    {
+      "testName": "Performance monitor has React integration",
+      "passed": true,
+      "details": "All patterns found"
+    },
+    {
+      "testName": "array-safety test file exists",
+      "passed": true,
+      "details": "File found"
+    },
+    {
+      "testName": "Array safety tests cover edge cases",
+      "passed": false,
+      "details": "Missing patterns: should handle null arrays safely, should handle undefined values, should handle malformed objects"
+    },
+    {
+      "testName": "package.json exists",
+      "passed": true,
+      "details": "File found"
+    },
+    {
+      "testName": "Package.json has required scripts",
+      "passed": true,
+      "details": "All patterns found"
+    },
+    {
+      "testName": "VanaAgentStatus.tsx has performance optimizations",
+      "passed": true,
+      "details": "Found 6 optimization patterns"
+    },
+    {
+      "testName": "VanaSidebar.tsx has performance optimizations",
+      "passed": true,
+      "details": "Found 3 optimization patterns"
+    },
+    {
+      "testName": "useChatStream.ts has performance optimizations",
+      "passed": true,
+      "details": "Found 20 optimization patterns"
+    },
+    {
+      "testName": "useSSE.ts has performance optimizations",
+      "passed": true,
+      "details": "Found 9 optimization patterns"
+    }
+  ],
+  "conclusion": "Some tests failed - additional work may be needed"
+}

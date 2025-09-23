@@ -8,6 +8,7 @@ be swapped for a database-backed implementation in the future.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -163,7 +164,11 @@ class SessionStore:
         self._sessions: dict[str, SessionRecord] = {}
         self._lock = RLock()
         self._config = config or SessionStoreConfig()
-        self._cleanup_timer: threading.Timer | None = None
+        
+        # Async cleanup management
+        self._cleanup_task: asyncio.Task | None = None
+        self._shutdown_event = asyncio.Event()
+        self._loop: asyncio.AbstractEventLoop | None = None
 
         # Security components
         self._security_validator = None
@@ -179,45 +184,101 @@ class SessionStore:
                 security_config
             )
 
-        self._start_cleanup_timer()
+        self._start_cleanup_task()
 
         # Initialize logging
         self._logger = logging.getLogger(__name__)
 
     def __del__(self) -> None:
         """Clean up resources when store is destroyed."""
-        self._stop_cleanup_timer()
+        self._stop_cleanup_task()
 
     # ------------------------------------------------------------------
     # Memory management
     # ------------------------------------------------------------------
-    def _start_cleanup_timer(self) -> None:
-        """Start the periodic cleanup timer."""
-        if self._cleanup_timer is not None:
+    def _start_cleanup_task(self) -> None:
+        """Start the async cleanup task with proper error handling."""
+        if self._cleanup_task is not None and not self._cleanup_task.done():
             return
 
-        interval_seconds = self._config.cleanup_interval_minutes * 60
-        self._cleanup_timer = threading.Timer(interval_seconds, self._periodic_cleanup)
-        self._cleanup_timer.daemon = True
-        self._cleanup_timer.start()
-
-    def _stop_cleanup_timer(self) -> None:
-        """Stop the periodic cleanup timer."""
-        if self._cleanup_timer is not None:
-            self._cleanup_timer.cancel()
-            self._cleanup_timer = None
-
-    def _periodic_cleanup(self) -> None:
-        """Periodic cleanup callback that removes expired sessions."""
         try:
-            self.cleanup_expired_sessions()
-        except Exception:
-            # Ignore cleanup errors to prevent timer issues
-            pass
-        finally:
-            # Restart the timer for next cleanup
-            self._cleanup_timer = None
-            self._start_cleanup_timer()
+            # Get or create event loop
+            try:
+                self._loop = asyncio.get_running_loop()
+            except RuntimeError:
+                # No running loop, try to get the event loop
+                try:
+                    self._loop = asyncio.get_event_loop()
+                except RuntimeError:
+                    # Create new event loop if none exists
+                    self._loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(self._loop)
+            
+            # Schedule the cleanup task
+            self._cleanup_task = self._loop.create_task(self._async_cleanup_loop())
+            
+        except Exception as e:
+            self._logger.warning(f"Failed to start async cleanup task: {e}")
+            # Fallback to sync cleanup if async fails
+            self._fallback_sync_cleanup()
+
+    def _stop_cleanup_task(self) -> None:
+        """Stop the async cleanup task gracefully."""
+        self._shutdown_event.set()
+        if self._cleanup_task is not None and not self._cleanup_task.done():
+            self._cleanup_task.cancel()
+            # Don't set to None immediately to allow proper cleanup
+
+    async def _async_cleanup_loop(self) -> None:
+        """Async cleanup loop that runs periodically."""
+        interval_seconds = self._config.cleanup_interval_minutes * 60
+        
+        while not self._shutdown_event.is_set():
+            try:
+                # Wait for the interval or shutdown event
+                await asyncio.wait_for(
+                    self._shutdown_event.wait(), 
+                    timeout=interval_seconds
+                )
+                # If we get here, shutdown was requested
+                break
+            except asyncio.TimeoutError:
+                # Timeout means it's time for cleanup
+                try:
+                    await self._async_cleanup_expired_sessions()
+                except Exception as e:
+                    self._logger.warning(f"Async cleanup failed: {e}")
+            except Exception as e:
+                self._logger.error(f"Cleanup loop error: {e}")
+                # Wait a bit before retrying to avoid tight error loops
+                try:
+                    await asyncio.sleep(min(60, interval_seconds // 10))
+                except asyncio.CancelledError:
+                    break
+
+    async def _async_cleanup_expired_sessions(self) -> int:
+        """Async version of cleanup_expired_sessions."""
+        # Run the actual cleanup in a thread to avoid blocking
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, self.cleanup_expired_sessions)
+
+    def _fallback_sync_cleanup(self) -> None:
+        """Fallback synchronous cleanup using threading.Thread (not Timer)."""
+        def cleanup_worker():
+            interval_seconds = self._config.cleanup_interval_minutes * 60
+            while not self._shutdown_event.is_set():
+                try:
+                    self.cleanup_expired_sessions()
+                except Exception as e:
+                    self._logger.warning(f"Sync cleanup failed: {e}")
+                
+                # Use event.wait() with timeout instead of time.sleep
+                if self._shutdown_event.wait(timeout=interval_seconds):
+                    break  # Shutdown requested
+        
+        # Start cleanup thread
+        cleanup_thread = threading.Thread(target=cleanup_worker, daemon=True)
+        cleanup_thread.start()
 
     def cleanup_expired_sessions(self) -> int:
         """Remove expired sessions based on TTL and size limits with race condition protection.
@@ -341,6 +402,13 @@ class SessionStore:
                 len(record.messages) for record in self._sessions.values()
             )
 
+            cleanup_status = "stopped"
+            if self._cleanup_task is not None:
+                if self._cleanup_task.done():
+                    cleanup_status = "completed" if not self._cleanup_task.cancelled() else "cancelled"
+                else:
+                    cleanup_status = "running"
+
             return {
                 "total_sessions": len(self._sessions),
                 "max_sessions": self._config.max_sessions,
@@ -348,6 +416,7 @@ class SessionStore:
                 "avg_messages_per_session": total_messages / len(self._sessions)
                 if self._sessions
                 else 0,
+                "cleanup_status": cleanup_status,
                 "config": {
                     "max_sessions": self._config.max_sessions,
                     "session_ttl_hours": self._config.session_ttl_hours,
@@ -355,6 +424,46 @@ class SessionStore:
                     "max_messages_per_session": self._config.max_messages_per_session,
                 },
             }
+
+    async def shutdown(self) -> None:
+        """Gracefully shutdown the session store and cleanup resources."""
+        self._logger.info("Shutting down session store...")
+        
+        # Signal shutdown
+        self._shutdown_event.set()
+        
+        # Wait for cleanup task to finish
+        if self._cleanup_task is not None and not self._cleanup_task.done():
+            try:
+                await asyncio.wait_for(self._cleanup_task, timeout=5.0)
+            except asyncio.TimeoutError:
+                self._logger.warning("Cleanup task did not finish within timeout, cancelling...")
+                self._cleanup_task.cancel()
+                try:
+                    await self._cleanup_task
+                except asyncio.CancelledError:
+                    pass
+            except Exception as e:
+                self._logger.warning(f"Error during cleanup task shutdown: {e}")
+        
+        # Mark task as None after proper cleanup
+        self._cleanup_task = None
+        
+        # Final cleanup
+        try:
+            self.cleanup_expired_sessions()
+        except Exception as e:
+            self._logger.warning(f"Final cleanup failed: {e}")
+        
+        self._logger.info("Session store shutdown complete")
+
+    def force_cleanup_now(self) -> int:
+        """Force immediate cleanup of expired sessions.
+        
+        Returns:
+            Number of sessions removed.
+        """
+        return self.cleanup_expired_sessions()
 
     # ------------------------------------------------------------------
     # Security validation methods
