@@ -63,6 +63,91 @@ auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
 users_router = APIRouter(prefix="/users", tags=["User Management"])
 admin_router = APIRouter(prefix="/admin", tags=["Administration"])
 
+# Circuit breaker monitoring endpoint
+@admin_router.get("/circuit-breaker/stats")
+async def get_circuit_breaker_stats(
+    current_user: User = current_superuser_dep
+) -> dict:
+    """Get circuit breaker statistics for security monitoring.
+    
+    Args:
+        current_user: Authenticated superuser (required for access)
+        
+    Returns:
+        Dictionary containing circuit breaker statistics and configuration
+        
+    Security:
+        - Requires superuser privileges
+        - Provides insights into current threat landscape
+        - Useful for security monitoring and incident response
+    """
+    from .circuit_breaker import get_circuit_breaker
+    from .circuit_breaker_config import get_circuit_breaker_config
+    
+    circuit_breaker = get_circuit_breaker()
+    config = get_circuit_breaker_config()
+    
+    stats = circuit_breaker.get_stats()
+    config_summary = config.get_environment_summary()
+    
+    return {
+        "stats": stats,
+        "config": config_summary,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "monitoring": {
+            "total_ips_tracked": stats.get("total_tracked_ips", 0),
+            "active_blocks": stats.get("circuits_open", 0),
+            "warning_states": stats.get("circuits_half_open", 0),
+            "normal_states": stats.get("circuits_closed", 0),
+            "most_failed_attempts": stats.get("most_failures", 0),
+            "most_problematic_ip": stats.get("most_failed_ip")
+        }
+    }
+
+
+@admin_router.post("/circuit-breaker/reset/{ip_address}")
+async def reset_circuit_breaker_for_ip(
+    ip_address: str,
+    current_user: User = current_superuser_dep
+) -> dict:
+    """Manually reset circuit breaker state for a specific IP address.
+    
+    Args:
+        ip_address: IP address to reset circuit breaker for
+        current_user: Authenticated superuser (required for access)
+        
+    Returns:
+        Dictionary indicating success/failure of reset operation
+        
+    Security:
+        - Requires superuser privileges
+        - Logs the manual reset for audit trails
+        - Useful for resolving false positives or helping legitimate users
+    """
+    from .circuit_breaker import get_circuit_breaker
+    
+    circuit_breaker = get_circuit_breaker()
+    success = circuit_breaker.reset_ip(ip_address)
+    
+    if success:
+        logger.info(
+            f"Circuit breaker manually reset for IP {ip_address} by admin user {current_user.id}"
+        )
+        return {
+            "success": True,
+            "message": f"Circuit breaker reset for IP {ip_address}",
+            "ip_address": ip_address,
+            "reset_by": current_user.email,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    else:
+        return {
+            "success": False,
+            "message": f"No circuit breaker state found for IP {ip_address}",
+            "ip_address": ip_address,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
 # Create dependency instances to avoid B008 violations (function calls in argument defaults)
 auth_db_dependency = Depends(get_auth_db)
 
@@ -343,7 +428,24 @@ async def login_user(
     # Authenticate user
     user = authenticate_user(username, password, db)
 
+    # Import circuit breaker for failure tracking
+    from .circuit_breaker import get_circuit_breaker
+    circuit_breaker = get_circuit_breaker()
+    
+    # Get client IP for circuit breaker tracking
+    client_ip = getattr(request.state, 'circuit_breaker_ip', 'unknown')
+    user_agent = getattr(request.state, 'circuit_breaker_user_agent', None)
+    endpoint = getattr(request.state, 'circuit_breaker_endpoint', request.url.path)
+
     if not user:
+        # Record failed authentication attempt
+        circuit_breaker.record_failed_attempt(
+            ip_address=client_ip,
+            user_identifier=username,
+            user_agent=user_agent,
+            endpoint=endpoint
+        )
+        
         # OAuth2 compliant error response
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -356,11 +458,25 @@ async def login_user(
         )
 
     if not user.is_active:
+        # Record failed attempt for inactive account
+        circuit_breaker.record_failed_attempt(
+            ip_address=client_ip,
+            user_identifier=username,
+            user_agent=user_agent,
+            endpoint=endpoint
+        )
+        
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="invalid_grant",
             headers={"Content-Type": "application/json", "Cache-Control": "no-store"},
         )
+
+    # Successful authentication - record success and reset circuit breaker
+    circuit_breaker.record_successful_attempt(
+        ip_address=client_ip,
+        user_identifier=username
+    )
 
     # Update last login
     user.last_login = datetime.now(timezone.utc)

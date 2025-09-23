@@ -88,7 +88,13 @@ class SessionSecurityValidator:
         # For now, we'll generate a consistent key based on environment
         import os
 
-        key_seed = os.getenv("SESSION_INTEGRITY_KEY", TAMPERING_DETECTION_KEY)
+        # Load from secure key management service or generate securely
+        key_seed = os.getenv("SESSION_INTEGRITY_KEY")
+        if not key_seed:
+            raise ValueError("SESSION_INTEGRITY_KEY must be configured securely")
+        # Ensure key has sufficient entropy (at least 256 bits)
+        if len(key_seed) < 32:
+            raise ValueError("SESSION_INTEGRITY_KEY must be at least 32 characters")
         return hashlib.sha256(key_seed.encode()).digest()
 
     def validate_session_id(self, session_id: str) -> SessionValidationResult:
