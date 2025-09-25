@@ -3,7 +3,7 @@
  * Shows agent progress, status, and coordination information
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
@@ -26,9 +26,10 @@ import {
 } from 'lucide-react';
 import { AgentStatus, ResearchProgress } from '../../lib/api/types';
 import { cn } from '../../lib/utils';
+import { memoWithTracking, useStableArray } from '../../lib/react-performance';
 
 interface VanaAgentStatusProps {
-  agents: AgentStatus[];
+  agents?: AgentStatus[] | null;
   progress?: ResearchProgress | null;
   className?: string;
 }
@@ -68,9 +69,19 @@ const STATUS_ICONS = {
 /**
  * Individual agent card component
  */
-function AgentCard({ agent, className }: AgentCardProps) {
-  const IconComponent = AGENT_ICONS[agent.agent_type] || AGENT_ICONS.default;
-  const StatusIcon = STATUS_ICONS[agent.status] || STATUS_ICONS.current;
+const AgentCard = memoWithTracking(({ agent, className }: AgentCardProps) => {
+  // Defensive programming: ensure agent data is valid
+  if (!agent || typeof agent !== 'object' || !agent.agent_id || !agent.name) {
+    return null;
+  }
+
+  // Safe property access with fallbacks
+  const agentType = agent.agent_type || 'default';
+  const status = agent.status || 'current';
+  const progress = typeof agent.progress === 'number' && !isNaN(agent.progress) ? agent.progress : 0;
+  
+  const IconComponent = AGENT_ICONS[agentType] || AGENT_ICONS.default;
+  const StatusIcon = STATUS_ICONS[status] || STATUS_ICONS.current;
   
   const formatTime = (timestamp?: string) => {
     if (!timestamp) return null;
@@ -106,15 +117,15 @@ function AgentCard({ agent, className }: AgentCardProps) {
             </Avatar>
             <div>
               <CardTitle className="text-sm font-medium">{agent.name}</CardTitle>
-              <p className="text-xs text-muted-foreground">{agent.agent_type.replace('_', ' ')}</p>
+              <p className="text-xs text-muted-foreground">{agentType.replace('_', ' ')}</p>
             </div>
           </div>
           <Badge 
             variant="secondary" 
-            className={cn('flex items-center space-x-1', STATUS_COLORS[agent.status])}
+            className={cn('flex items-center space-x-1', STATUS_COLORS[status])}
           >
             <StatusIcon className="h-3 w-3" />
-            <span className="capitalize">{agent.status}</span>
+            <span className="capitalize">{status}</span>
           </Badge>
         </div>
       </CardHeader>
@@ -124,12 +135,12 @@ function AgentCard({ agent, className }: AgentCardProps) {
         <div className="space-y-2">
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>Progress</span>
-            <span>{Math.round(agent.progress * 100)}%</span>
+            <span>{Math.round(progress * 100)}%</span>
           </div>
           <Progress 
-            value={agent.progress * 100} 
+            value={progress * 100} 
             className="h-2"
-            aria-label={`${agent.name} progress: ${Math.round(agent.progress * 100)}%`}
+            aria-label={`${agent.name} progress: ${Math.round(progress * 100)}%`}
           />
         </div>
 
@@ -163,20 +174,48 @@ function AgentCard({ agent, className }: AgentCardProps) {
         )}
 
         {/* Results Preview */}
-        {agent.results && Object.keys(agent.results).length > 0 && (
+        {agent.results && typeof agent.results === 'object' && Object.keys(agent.results).length > 0 && (
           <div className="mt-3">
             <p className="text-xs font-medium text-muted-foreground mb-1">Results</p>
             <div className="text-xs bg-gray-50 p-2 rounded border">
-              {Object.entries(agent.results).slice(0, 2).map(([key, value]) => (
-                <div key={key} className="flex justify-between">
-                  <span className="font-medium">{key}:</span>
-                  <span className="truncate ml-2">
-                    {typeof value === 'string' ? value.slice(0, 30) + (value.length > 30 ? '...' : '') : JSON.stringify(value)}
-                  </span>
-                </div>
-              ))}
-              {Object.keys(agent.results).length > 2 && (
-                <p className="text-center text-muted-foreground">+{Object.keys(agent.results).length - 2} more</p>
+              {Object.entries(agent.results || {}).slice(0, 2).map(([key, value]) => {
+                // Safe key and value handling with circular reference protection
+                const safeKey = String(key || 'unknown');
+                let safeValue: string;
+                
+                try {
+                  if (value == null) {
+                    safeValue = 'null';
+                  } else if (typeof value === 'string') {
+                    safeValue = value.slice(0, 30) + (value.length > 30 ? '...' : '');
+                  } else if (typeof value === 'number' || typeof value === 'boolean') {
+                    safeValue = String(value);
+                  } else {
+                    // Handle objects/arrays with circular reference protection
+                    const stringified = JSON.stringify(value, (k, v) => {
+                      if (typeof v === 'object' && v !== null) {
+                        // Simple circular reference detection
+                        if (k && typeof v === 'object') {
+                          return '[Object]';
+                        }
+                      }
+                      return v;
+                    });
+                    safeValue = stringified.slice(0, 30) + (stringified.length > 30 ? '...' : '');
+                  }
+                } catch {
+                  safeValue = '[Complex Object]';
+                }
+                
+                return (
+                  <div key={safeKey} className="flex justify-between">
+                    <span className="font-medium">{safeKey}:</span>
+                    <span className="truncate ml-2">{safeValue}</span>
+                  </div>
+                );
+              })}
+              {Object.keys(agent.results || {}).length > 2 && (
+                <p className="text-center text-muted-foreground">+{Object.keys(agent.results || {}).length - 2} more</p>
               )}
             </div>
           </div>
@@ -184,21 +223,54 @@ function AgentCard({ agent, className }: AgentCardProps) {
       </CardContent>
     </Card>
   );
-}
+}, (prevProps, nextProps) => {
+  // Only re-render if agent data actually changes
+  return prevProps.agent.agent_id === nextProps.agent.agent_id &&
+         prevProps.agent.status === nextProps.agent.status &&
+         prevProps.agent.progress === nextProps.agent.progress &&
+         prevProps.agent.current_task === nextProps.agent.current_task &&
+         prevProps.agent.error === nextProps.agent.error &&
+         prevProps.className === nextProps.className;
+}, 'AgentCard');
 
 /**
  * Main agent status component
  */
-export function VanaAgentStatus({ agents, progress, className }: VanaAgentStatusProps) {
-  const activeAgents = agents.filter(agent => agent.status === 'current');
-  const completedAgents = agents.filter(agent => agent.status === 'completed');
-  const waitingAgents = agents.filter(agent => agent.status === 'waiting');
-  const errorAgents = agents.filter(agent => agent.status === 'error');
+function VanaAgentStatus({ agents, progress, className }: VanaAgentStatusProps) {
+  // Memoized safe array operations with defensive checks
+  const safeAgents = useMemo(() => {
+    if (!Array.isArray(agents)) return [];
+    return agents.filter(agent => 
+      agent && 
+      typeof agent === 'object' && 
+      agent.agent_id && 
+      agent.name &&
+      typeof agent.name === 'string'
+    );
+  }, [agents]);
+
+  const { activeAgents, completedAgents, waitingAgents, errorAgents } = useMemo(() => {
+    const safeFilter = (predicate: (agent: AgentStatus) => boolean) => 
+      safeAgents.filter(agent => {
+        try {
+          return predicate(agent);
+        } catch {
+          return false;
+        }
+      });
+
+    return {
+      activeAgents: safeFilter(agent => agent.status === 'current'),
+      completedAgents: safeFilter(agent => agent.status === 'completed'),
+      waitingAgents: safeFilter(agent => agent.status === 'waiting'),
+      errorAgents: safeFilter(agent => agent.status === 'error')
+    };
+  }, [safeAgents]);
 
   const overallProgress = progress?.overall_progress || 0;
   const currentPhase = progress?.current_phase || 'Initializing';
 
-  if (agents.length === 0) {
+  if (safeAgents.length === 0) {
     return (
       <Card className={cn('w-full', className)}>
         <CardContent className="flex items-center justify-center py-6">
@@ -282,9 +354,10 @@ export function VanaAgentStatus({ agents, progress, className }: VanaAgentStatus
                   <Activity className="h-4 w-4" />
                   <span>Currently Active</span>
                 </h4>
-                {activeAgents.map((agent) => (
-                  <AgentCard key={agent.agent_id} agent={agent} />
-                ))}
+                {activeAgents.map((agent) => {
+                  const safeKey = agent?.agent_id || `active-${Math.random()}`;
+                  return <AgentCard key={safeKey} agent={agent} />;
+                })}
               </>
             )}
 
@@ -296,9 +369,10 @@ export function VanaAgentStatus({ agents, progress, className }: VanaAgentStatus
                   <Clock className="h-4 w-4" />
                   <span>Waiting</span>
                 </h4>
-                {waitingAgents.map((agent) => (
-                  <AgentCard key={agent.agent_id} agent={agent} />
-                ))}
+                {waitingAgents.map((agent) => {
+                  const safeKey = agent?.agent_id || `waiting-${Math.random()}`;
+                  return <AgentCard key={safeKey} agent={agent} />;
+                })}
               </>
             )}
 
@@ -310,9 +384,10 @@ export function VanaAgentStatus({ agents, progress, className }: VanaAgentStatus
                   <AlertCircle className="h-4 w-4" />
                   <span>Errors</span>
                 </h4>
-                {errorAgents.map((agent) => (
-                  <AgentCard key={agent.agent_id} agent={agent} />
-                ))}
+                {errorAgents.map((agent) => {
+                  const safeKey = agent?.agent_id || `error-${Math.random()}`;
+                  return <AgentCard key={safeKey} agent={agent} />;
+                })}
               </>
             )}
 
@@ -324,9 +399,10 @@ export function VanaAgentStatus({ agents, progress, className }: VanaAgentStatus
                   <CheckCircle2 className="h-4 w-4" />
                   <span>Completed</span>
                 </h4>
-                {completedAgents.map((agent) => (
-                  <AgentCard key={agent.agent_id} agent={agent} />
-                ))}
+                {completedAgents.map((agent) => {
+                  const safeKey = agent?.agent_id || `completed-${Math.random()}`;
+                  return <AgentCard key={safeKey} agent={agent} />;
+                })}
               </>
             )}
           </div>
@@ -336,4 +412,21 @@ export function VanaAgentStatus({ agents, progress, className }: VanaAgentStatus
   );
 }
 
-export default VanaAgentStatus;
+// Memoize the main component to prevent unnecessary re-renders from agent array changes
+const MemoizedVanaAgentStatus = memoWithTracking(
+  VanaAgentStatus,
+  (prevProps, nextProps) => {
+    // Safe custom comparison for performance - only re-render if array length or progress changes
+    const prevAgents = Array.isArray(prevProps.agents) ? prevProps.agents : [];
+    const nextAgents = Array.isArray(nextProps.agents) ? nextProps.agents : [];
+    
+    return prevAgents.length === nextAgents.length &&
+           prevProps.progress?.overall_progress === nextProps.progress?.overall_progress &&
+           prevProps.progress?.current_phase === nextProps.progress?.current_phase &&
+           prevProps.className === nextProps.className;
+  },
+  'VanaAgentStatus'
+);
+
+export { MemoizedVanaAgentStatus as VanaAgentStatus };
+export default MemoizedVanaAgentStatus;

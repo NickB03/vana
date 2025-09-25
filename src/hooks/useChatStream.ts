@@ -618,12 +618,41 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
       void ensureSessionHistory(currentSessionId);
     }
   }, [currentSessionId, ensureSessionHistory]);
+  // Memoize stable event data to prevent infinite loops
+  const stableResearchEvent = useMemo(() => {
+    if (!researchSSE.lastEvent || !currentSessionId) return null;
+    
+    try {
+      const { type, data } = researchSSE.lastEvent;
+      
+      // Defensive null checking
+      if (!type) return null;
+      
+      const payload = (data ?? {}) as Record<string, any>;
+      
+      return {
+        type,
+        payload,
+        timestamp: data?.timestamp || new Date().toISOString(),
+      };
+    } catch (error) {
+      console.warn('Error processing SSE research event:', error);
+      return null;
+    }
+  }, [
+    researchSSE.lastEvent?.type,
+    researchSSE.lastEvent?.data?.timestamp,
+    researchSSE.lastEvent?.data?.current_phase,
+    researchSSE.lastEvent?.data?.overall_progress,
+    researchSSE.lastEvent?.data?.status,
+    currentSessionId,
+  ]);
+
   // Handle SSE events for research progress
   useEffect(() => {
-    if (!researchSSE.lastEvent || !currentSessionId) return;
+    if (!stableResearchEvent || !currentSessionId) return;
 
-    const { type, data } = researchSSE.lastEvent;
-    const payload = (data ?? {}) as Record<string, any>;
+    const { type, payload } = stableResearchEvent;
     const session = currentSession;
     if (!session) return;
 
@@ -764,7 +793,7 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
         break;
     }
   }, [
-    researchSSE.lastEvent,
+    stableResearchEvent,
     currentSessionId,
     currentSession,
     addMessageInStore,
@@ -776,17 +805,48 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
     setSessionErrorInStore,
   ]);
 
+  // Memoize stable agent event data to prevent infinite loops
+  const stableAgentEvent = useMemo(() => {
+    if (!agentSSE.lastEvent || !currentSessionId) return null;
+    
+    try {
+      const event = agentSSE.lastEvent;
+      
+      // Defensive checks for event structure
+      if (!event.type || !event.data) return null;
+      
+      // Only process relevant agent events with proper data structure
+      if (event.type === 'agent_network_update' && Array.isArray(event.data.agents)) {
+        return {
+          type: event.type,
+          agents: event.data.agents,
+          timestamp: event.data.timestamp || new Date().toISOString(),
+        };
+      }
+    } catch (error) {
+      console.warn('Error processing SSE agent event:', error);
+    }
+    
+    return null;
+  }, [
+    agentSSE.lastEvent?.type,
+    agentSSE.lastEvent?.data?.timestamp,
+    JSON.stringify(agentSSE.lastEvent?.data?.agents), // Serialize array for stable comparison
+    currentSessionId,
+  ]);
+
   // Handle SSE events for agent coordination
   useEffect(() => {
-    if (!agentSSE.lastEvent || !currentSessionId) return;
+    if (!stableAgentEvent || !currentSessionId) return;
 
-    const event = agentSSE.lastEvent;
+    const { agents } = stableAgentEvent;
     
-    if (event.type === 'agent_network_update' && event.data.agents) {
+    // Defensive check to ensure agents is an array
+    if (Array.isArray(agents)) {
       // Update agent status in current session using store action
-      updateAgentsInStore(currentSessionId, event.data.agents);
+      updateAgentsInStore(currentSessionId, agents);
     }
-  }, [agentSSE.lastEvent, currentSessionId]);
+  }, [stableAgentEvent, currentSessionId, updateAgentsInStore]);
 
   // Send message and start research
   const sendMessage = useCallback(async (content: string) => {
@@ -881,10 +941,13 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
     }
   }, [
     currentSessionId,
+    currentSession?.title,
     addMessageInStore,
     setSessionStreamingInStore,
     setSessionErrorInStore,
     updateSessionMetaInStore,
+    updateStreamingMessageInStore,
+    completeStreamingMessageInStore,
   ]);
 
   // Create new session
@@ -943,25 +1006,49 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
     agentSSE.disconnect();
   }, [researchSSE.disconnect, agentSSE.disconnect]);
 
+  // Memoize stable arrays and objects to prevent re-render loops
+  const stableMessages = useMemo(() => {
+    return Array.isArray(currentSession?.messages) ? currentSession.messages : [];
+  }, [currentSession?.messages]);
+
+  const stableAgents = useMemo(() => {
+    return Array.isArray(currentSession?.agents) ? currentSession.agents : [];
+  }, [currentSession?.agents]);
+
+  const stableConnectionState = useMemo(() => ({
+    research: researchSSE.connectionState,
+    agents: agentSSE.connectionState,
+    isConnected: researchSSE.isConnected && agentSSE.isConnected,
+  }), [
+    researchSSE.connectionState,
+    researchSSE.isConnected,
+    agentSSE.connectionState,
+    agentSSE.isConnected,
+  ]);
+
+  const stableError = useMemo(() => {
+    return error || researchSSE.error || agentSSE.error || currentSession?.error || null;
+  }, [error, researchSSE.error, agentSSE.error, currentSession?.error]);
+
   return useMemo(() => ({
     // Session state
     currentSession,
     sessionId: currentSessionId,
     isStreaming: isStreaming || currentSession?.isStreaming || false,
     
-    // Messages
-    messages: currentSession?.messages || [],
+    // Messages (memoized array)
+    messages: stableMessages,
     
-    // Agent coordination
-    agents: currentSession?.agents || [],
+    // Agent coordination (memoized array)
+    agents: stableAgents,
     progress: currentSession?.progress || null,
     
-    // SSE connection state
-    connectionState: researchSSE.connectionState,
-    isConnected: researchSSE.isConnected && agentSSE.isConnected,
+    // SSE connection state (memoized object)
+    connectionState: stableConnectionState.research,
+    isConnected: stableConnectionState.isConnected,
     
-    // Error state
-    error: error || researchSSE.error || agentSSE.error || currentSession?.error || null,
+    // Error state (memoized)
+    error: stableError,
     
     // Actions
     sendMessage,
@@ -981,12 +1068,10 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
     currentSession,
     currentSessionId,
     isStreaming,
-    researchSSE.connectionState,
-    researchSSE.isConnected,
-    researchSSE.error,
-    agentSSE.isConnected,
-    agentSSE.error,
-    error,
+    stableMessages,
+    stableAgents,
+    stableConnectionState,
+    stableError,
     sendMessage,
     createNewSession,
     switchSession,

@@ -1,8 +1,9 @@
 'use client'
 
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
+import { memoWithTracking, useThrottledCallback } from '@/lib/react-performance'
 
 interface ChatContainerRootProps {
   children: React.ReactNode
@@ -11,16 +12,16 @@ interface ChatContainerRootProps {
   scrollThreshold?: number
 }
 
-export function ChatContainerRoot({ 
+const ChatContainerRoot = memoWithTracking(({ 
   children, 
   className,
   autoScroll = true,
   scrollThreshold = 100
-}: ChatContainerRootProps) {
+}: ChatContainerRootProps) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const [isNearBottom, setIsNearBottom] = useState(true)
 
-  const scrollToBottom = (smooth = true) => {
+  const scrollToBottom = useCallback((smooth = true) => {
     const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
     if (scrollElement) {
       scrollElement.scrollTo({
@@ -28,22 +29,28 @@ export function ChatContainerRoot({
         behavior: smooth ? 'smooth' : 'instant'
       })
     }
-  }
+  }, [])
 
-  const checkScrollPosition = () => {
+  // Throttle scroll position checks to prevent excessive re-renders
+  const checkScrollPosition = useThrottledCallback(() => {
     const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
     if (scrollElement) {
       const { scrollTop, scrollHeight, clientHeight } = scrollElement
       const distanceFromBottom = scrollHeight - scrollTop - clientHeight
       setIsNearBottom(distanceFromBottom < scrollThreshold)
     }
-  }
+  }, 100)
 
-  useEffect(() => {
+  // Use callback to prevent effect re-runs
+  const autoScrollEffect = useCallback(() => {
     if (autoScroll && isNearBottom) {
       scrollToBottom(true)
     }
-  })
+  }, [autoScroll, isNearBottom, scrollToBottom])
+
+  useEffect(() => {
+    autoScrollEffect()
+  }, [autoScrollEffect])
 
   useEffect(() => {
     const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
@@ -51,7 +58,7 @@ export function ChatContainerRoot({
       scrollElement.addEventListener('scroll', checkScrollPosition)
       return () => scrollElement.removeEventListener('scroll', checkScrollPosition)
     }
-  }, [])
+  }, [checkScrollPosition])
 
   return (
     <ScrollArea 
@@ -61,18 +68,29 @@ export function ChatContainerRoot({
       {children}
     </ScrollArea>
   )
-}
+}, (prevProps, nextProps) => {
+  return prevProps.children === nextProps.children &&
+         prevProps.className === nextProps.className &&
+         prevProps.autoScroll === nextProps.autoScroll &&
+         prevProps.scrollThreshold === nextProps.scrollThreshold;
+}, 'ChatContainerRoot');
 
 interface ChatContainerContentProps {
   children: React.ReactNode
   className?: string
 }
 
-export function ChatContainerContent({ children, className }: ChatContainerContentProps) {
+const ChatContainerContent = memoWithTracking(({ children, className }: ChatContainerContentProps) => {
   return (
     <div className={cn("space-y-0 px-5 py-12", className)}>
       {children}
     </div>
   )
-}
+}, (prevProps, nextProps) => {
+  return prevProps.children === nextProps.children &&
+         prevProps.className === nextProps.className;
+}, 'ChatContainerContent');
+
+// Export all components
+export { ChatContainerRoot, ChatContainerContent };
 

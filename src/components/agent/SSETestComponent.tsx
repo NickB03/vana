@@ -5,51 +5,93 @@
 
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useSSE } from '../../hooks/useSSE';
 import { apiClient } from '../../lib/api/client';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription } from '../ui/alert';
+import { memoWithTracking, useStableCallback, useStableArray } from '../../lib/react-performance';
 
-export function SSETestComponent() {
+// Memoized component for displaying SSE events to prevent re-render loops
+interface EventDisplayProps {
+  events: any[];
+  maxEvents?: number;
+  className?: string;
+}
+
+const EventDisplay = memoWithTracking(({ events, maxEvents = 5, className }: EventDisplayProps) => {
+  // Stabilize the events array slice to prevent unnecessary re-renders
+  const recentEvents = useMemo(() => 
+    events.slice(-maxEvents), 
+    [events.length, maxEvents, events[events.length - 1]]
+  );
+
+  return (
+    <div className={className}>
+      {recentEvents.map((event, index) => (
+        <div key={`${event.type}-${event.data.timestamp || index}`} className="mb-1">
+          <strong>{event.type}:</strong> {JSON.stringify(event.data).substring(0, 100)}...
+        </div>
+      ))}
+    </div>
+  );
+}, (prevProps, nextProps) => {
+  // Only re-render if events array length changes or maxEvents changes
+  return prevProps.events.length === nextProps.events.length && 
+         prevProps.maxEvents === nextProps.maxEvents &&
+         prevProps.className === nextProps.className;
+}, 'EventDisplay');
+
+function SSETestComponent() {
   const [sessionId, setSessionId] = useState('test-session-123');
   const [isConnected, setIsConnected] = useState(false);
+
+  // Memoize SSE options to prevent re-creation on every render
+  const agentNetworkOptions = useMemo(() => ({
+    autoReconnect: true,
+    onConnect: () => console.log('Agent Network SSE connected'),
+    onDisconnect: () => console.log('Agent Network SSE disconnected'),
+    onError: (error: Event) => console.error('Agent Network SSE error:', error),
+  }), []);
+
+  const researchOptions = useMemo(() => ({
+    autoReconnect: true,
+    onConnect: () => console.log('Research SSE connected'),
+    onDisconnect: () => console.log('Research SSE disconnected'),
+    onError: (error: Event) => console.error('Research SSE error:', error),
+  }), []);
 
   // Test different SSE endpoints
   const agentNetworkSSE = useSSE(
     isConnected ? `/agent_network_sse/${sessionId}` : '',
-    {
-      autoReconnect: true,
-      onConnect: () => console.log('Agent Network SSE connected'),
-      onDisconnect: () => console.log('Agent Network SSE disconnected'),
-      onError: (error) => console.error('Agent Network SSE error:', error),
-    }
+    agentNetworkOptions
   );
 
   const researchSSE = useSSE(
     isConnected ? `/api/run_sse/${sessionId}` : '',
-    {
-      autoReconnect: true,
-      onConnect: () => console.log('Research SSE connected'),
-      onDisconnect: () => console.log('Research SSE disconnected'),
-      onError: (error) => console.error('Research SSE error:', error),
-    }
+    researchOptions
   );
 
-  const toggleConnection = useCallback(() => {
+  const toggleConnection = useStableCallback(() => {
     if (isConnected) {
       agentNetworkSSE.disconnect();
       researchSSE.disconnect();
     }
     setIsConnected(!isConnected);
-  }, [isConnected, agentNetworkSSE, researchSSE]);
+  }, [isConnected, agentNetworkSSE.disconnect, researchSSE.disconnect]);
 
-  const clearEvents = useCallback(() => {
+  const clearEvents = useStableCallback(() => {
     agentNetworkSSE.clearEvents();
     researchSSE.clearEvents();
-  }, [agentNetworkSSE, researchSSE]);
+  }, [agentNetworkSSE.clearEvents, researchSSE.clearEvents]);
+
+  // Memoize authentication status to prevent unnecessary re-renders
+  const authStatus = useMemo(() => ({
+    isAuthenticated: apiClient.isAuthenticated(),
+    token: apiClient.getAccessToken()?.substring(0, 20) + '...' || null
+  }), []);
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -96,12 +138,12 @@ export function SSETestComponent() {
 
             <div className="space-y-2">
               <h4 className="font-medium">Authentication Status:</h4>
-              <Badge variant={apiClient.isAuthenticated() ? "default" : "destructive"}>
-                {apiClient.isAuthenticated() ? '✓ Authenticated' : '✗ Not Authenticated'}
+              <Badge variant={authStatus.isAuthenticated ? "default" : "destructive"}>
+                {authStatus.isAuthenticated ? '✓ Authenticated' : '✗ Not Authenticated'}
               </Badge>
-              {apiClient.isAuthenticated() && (
+              {authStatus.isAuthenticated && authStatus.token && (
                 <p className="text-xs text-gray-600">
-                  Token: {apiClient.getAccessToken()?.substring(0, 20)}...
+                  Token: {authStatus.token}
                 </p>
               )}
             </div>
@@ -176,13 +218,11 @@ export function SSETestComponent() {
               </div>
             )}
 
-            <div className="max-h-32 overflow-y-auto bg-gray-50 p-2 rounded text-xs">
-              {agentNetworkSSE.events.slice(-5).map((event, index) => (
-                <div key={index} className="mb-1">
-                  <strong>{event.type}:</strong> {JSON.stringify(event.data).substring(0, 100)}...
-                </div>
-              ))}
-            </div>
+            <EventDisplay 
+              events={agentNetworkSSE.events} 
+              maxEvents={5}
+              className="max-h-32 overflow-y-auto bg-gray-50 p-2 rounded text-xs"
+            />
           </CardContent>
         </Card>
 
@@ -220,16 +260,24 @@ export function SSETestComponent() {
               </div>
             )}
 
-            <div className="max-h-32 overflow-y-auto bg-gray-50 p-2 rounded text-xs">
-              {researchSSE.events.slice(-5).map((event, index) => (
-                <div key={index} className="mb-1">
-                  <strong>{event.type}:</strong> {JSON.stringify(event.data).substring(0, 100)}...
-                </div>
-              ))}
-            </div>
+            <EventDisplay 
+              events={researchSSE.events} 
+              maxEvents={5}
+              className="max-h-32 overflow-y-auto bg-gray-50 p-2 rounded text-xs"
+            />
           </CardContent>
         </Card>
       </div>
     </div>
   );
 }
+
+// Memoize the main component to prevent unnecessary re-renders
+const MemoizedSSETestComponent = memoWithTracking(
+  SSETestComponent,
+  () => true, // No props, so never re-render unless forced
+  'SSETestComponent'
+);
+
+export { MemoizedSSETestComponent as SSETestComponent };
+export default MemoizedSSETestComponent;

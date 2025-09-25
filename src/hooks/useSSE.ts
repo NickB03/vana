@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { AgentNetworkEvent } from '@/lib/api/types';
 import { apiClient } from '@/lib/api/client';
+import { useStableCallback, createRenderCounter } from '@/lib/react-performance';
 
 export type SSEConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error' | 'reconnecting';
 
@@ -67,23 +68,26 @@ const DEFAULT_OPTIONS = {
  * Custom hook for managing Server-Sent Events connections
  */
 export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
+  // Performance tracking for development
+  const renderCounter = createRenderCounter('useSSE');
+  renderCounter();
+
+  // Stabilize options object to prevent unnecessary re-renders
   const opts = useMemo(
     () => ({
       ...DEFAULT_OPTIONS,
       ...options,
     }),
     [
-      options?.autoReconnect,
-      options?.enabled,
-      options?.maxReconnectAttempts,
-      options?.reconnectDelay,
-      options?.maxReconnectDelay,
-      options?.withCredentials,
-      options?.onConnect,
-      options?.onDisconnect,
-      options?.onError,
-      options?.onReconnect,
-      options?.sessionId,
+      options.autoReconnect,
+      options.enabled,
+      options.maxReconnectAttempts,
+      options.reconnectDelay,
+      options.maxReconnectDelay,
+      options.withCredentials,
+      options.sessionId,
+      // Note: Intentionally exclude callback functions from dependencies
+      // They will be handled via refs to prevent unnecessary reconnections
     ]
   );
   
@@ -111,16 +115,34 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
     customHandlers: new Map()
   });
 
-  // Calculate exponential backoff delay
-  const getReconnectDelay = useCallback((attempt: number): number => {
+  // Store callback refs to prevent unnecessary reconnections
+  const callbacksRef = useRef({
+    onConnect: options.onConnect,
+    onDisconnect: options.onDisconnect,
+    onError: options.onError,
+    onReconnect: options.onReconnect,
+  });
+  
+  // Update callback refs when options change
+  useEffect(() => {
+    callbacksRef.current = {
+      onConnect: options.onConnect,
+      onDisconnect: options.onDisconnect,
+      onError: options.onError,
+      onReconnect: options.onReconnect,
+    };
+  }, [options.onConnect, options.onDisconnect, options.onError, options.onReconnect]);
+
+  // Calculate exponential backoff delay - stabilized
+  const getReconnectDelay = useStableCallback((attempt: number): number => {
     const delay = opts.reconnectDelay * Math.pow(2, attempt);
     return Math.min(delay, opts.maxReconnectDelay);
   }, [opts.reconnectDelay, opts.maxReconnectDelay]);
 
-  // Build SSE URL through secure proxy (no token exposure)
+  // Build SSE URL through secure proxy (no token exposure) - stabilized
   // SECURITY ENHANCEMENT: This function was updated to prevent JWT token exposure
   // in browser URLs by routing through server-side proxy endpoints
-  const buildSSEUrl = useCallback((): string => {
+  const buildSSEUrl = useStableCallback((): string => {
     // Use Next.js API route proxy to avoid exposing JWT tokens in URLs
     let proxyPath: string;
     
@@ -284,7 +306,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
           setReconnectAttempt(0);
           setError(null);
           shouldReconnectRef.current = true;
-          opts.onConnect?.();
+          callbacksRef.current.onConnect?.();
           
           // Store cleanup function
           eventSourceRef.current = {
@@ -324,7 +346,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
         shouldReconnectRef.current = true;
         
         console.log('SSE connection established:', sseUrl);
-        opts.onConnect?.();
+        callbacksRef.current.onConnect?.();
       };
 
       const handleMessage = (event: MessageEvent) => {
@@ -387,7 +409,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
         setError(errorMessage);
         setConnectionState('error');
         
-        opts.onError?.(event);
+        callbacksRef.current.onError?.(event);
 
         // Attempt reconnection if enabled
         if (opts.autoReconnect && shouldReconnectRef.current && reconnectAttempt < opts.maxReconnectAttempts) {
@@ -443,7 +465,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
 
     if (mountedRef.current) {
       setConnectionState('disconnected');
-      opts.onDisconnect?.();
+      callbacksRef.current.onDisconnect?.();
     }
   }, [opts]);
 
@@ -462,7 +484,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
     const delay = getReconnectDelay(newAttempt - 1);
     
     console.log(`SSE reconnecting in ${delay}ms (attempt ${newAttempt}/${opts.maxReconnectAttempts})`);
-    opts.onReconnect?.(newAttempt);
+    callbacksRef.current.onReconnect?.(newAttempt);
 
     reconnectTimeoutRef.current = setTimeout(() => {
       if (shouldReconnectRef.current && mountedRef.current) {

@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import React, { useState, useCallback, useRef, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { PromptSuggestion } from '@/components/ui/prompt-suggestion'
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from '@/components/ui/prompt-input'
 import { Plus, Globe, MoreHorizontal, Mic, ArrowUp } from 'lucide-react'
+import { memoWithTracking, useStableCallback, useStableArray } from '@/lib/react-performance'
 
 interface VanaHomePageProps {
   onStartChat: (prompt: string) => void
@@ -20,24 +21,40 @@ const capabilities = [
   "Problem Solving"
 ]
 
-export function VanaHomePage({ onStartChat, isBusy = false }: VanaHomePageProps) {
+function VanaHomePage({ onStartChat, isBusy = false }: VanaHomePageProps) {
   const [promptValue, setPromptValue] = useState('')
 
-  // Use ref to access onStartChat without dependency
-  const onStartChatRef = useRef(onStartChat)
-  onStartChatRef.current = onStartChat
-  
-  const handlePromptSubmit = useCallback(() => {
+  // Stabilize the capabilities array to prevent re-renders
+  const stableCapabilities = useStableArray(capabilities)
+
+  // Use stable callback to prevent re-renders from function identity changes
+  const handlePromptSubmit = useStableCallback(() => {
     if (promptValue.trim()) {
-      onStartChatRef.current(promptValue)
+      onStartChat(promptValue)
       setPromptValue('')
     }
-  }, [promptValue])
+  }, [promptValue, onStartChat])
 
-  const handleSuggestionClick = useCallback((suggestion: string) => {
+  const handleSuggestionClick = useStableCallback((suggestion: string) => {
     const prompt = `Help me with ${suggestion.toLowerCase()}`
-    onStartChatRef.current(prompt)
-  }, [])
+    onStartChat(prompt)
+  }, [onStartChat])
+
+  // Memoize input props to prevent PromptInput re-renders
+  const promptInputProps = useMemo(() => ({
+    value: promptValue,
+    onValueChange: setPromptValue,
+    onSubmit: handlePromptSubmit,
+    className: "border-input bg-popover relative z-10 w-full rounded-3xl border p-0 pt-1 shadow-xs"
+  }), [promptValue, handlePromptSubmit])
+
+  // Memoize button props
+  const submitButtonProps = useMemo(() => ({
+    size: "icon" as const,
+    disabled: !promptValue.trim() || isBusy,
+    onClick: handlePromptSubmit,
+    className: "size-9 rounded-full"
+  }), [promptValue, isBusy, handlePromptSubmit])
 
   return (
     <div className="min-h-full flex flex-col items-center justify-center p-8 max-w-4xl mx-auto" data-testid="vana-home-page">
@@ -59,12 +76,7 @@ export function VanaHomePage({ onStartChat, isBusy = false }: VanaHomePageProps)
       
       {/* Main Prompt Input */}
       <div className="w-full max-w-2xl mb-8">
-        <PromptInput
-          value={promptValue}
-          onValueChange={setPromptValue}
-          onSubmit={handlePromptSubmit}
-          className="border-input bg-popover relative z-10 w-full rounded-3xl border p-0 pt-1 shadow-xs"
-        >
+        <PromptInput {...promptInputProps}>
           <div className="flex flex-col">
             <PromptInputTextarea
               placeholder="What can I help you with today?"
@@ -111,12 +123,7 @@ export function VanaHomePage({ onStartChat, isBusy = false }: VanaHomePageProps)
                   </Button>
                 </PromptInputAction>
 
-                <Button
-                  size="icon"
-                  disabled={!promptValue.trim() || isBusy}
-                  onClick={handlePromptSubmit}
-                  className="size-9 rounded-full"
-                >
+                <Button {...submitButtonProps}>
                   <ArrowUp size={18} />
                 </Button>
               </div>
@@ -132,9 +139,9 @@ export function VanaHomePage({ onStartChat, isBusy = false }: VanaHomePageProps)
         </p>
         
         <div className="flex flex-wrap gap-2 justify-center">
-          {capabilities.map((capability, index) => (
+          {stableCapabilities.map((capability, index) => (
             <PromptSuggestion
-              key={index}
+              key={capability} // Use capability as key instead of index for better React reconciliation
               size="sm"
               variant="outline"
               onClick={() => handleSuggestionClick(capability)}
@@ -149,4 +156,16 @@ export function VanaHomePage({ onStartChat, isBusy = false }: VanaHomePageProps)
   )
 }
 
-export default VanaHomePage
+// Memoize the component to prevent unnecessary re-renders
+const MemoizedVanaHomePage = memoWithTracking(
+  VanaHomePage,
+  (prevProps, nextProps) => {
+    // Custom comparison: only re-render if onStartChat function identity or isBusy changes
+    return prevProps.onStartChat === nextProps.onStartChat && 
+           prevProps.isBusy === nextProps.isBusy;
+  },
+  'VanaHomePage'
+);
+
+export { MemoizedVanaHomePage as VanaHomePage };
+export default MemoizedVanaHomePage;
