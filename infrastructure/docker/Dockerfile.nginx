@@ -1,0 +1,30 @@
+# Nginx load balancer configuration
+FROM nginx:1.25-alpine
+
+# Install security updates
+RUN apk --no-cache upgrade
+
+# Remove default nginx configuration
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copy custom nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY conf.d/ /etc/nginx/conf.d/
+
+# Copy SSL certificates (if available)
+COPY certs/ /etc/nginx/certs/ 2>/dev/null || true
+
+# Create nginx user and set permissions
+RUN adduser -D -s /bin/sh nginx || true && \
+    mkdir -p /var/cache/nginx /var/log/nginx && \
+    chown -R nginx:nginx /var/cache/nginx /var/log/nginx
+
+# Expose ports
+EXPOSE 80 443
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:80/health || exit 1
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

@@ -1,83 +1,21 @@
 # Claude Code Configuration - SPARC Development Environment
 
-## 🚨 CRITICAL: CONCURRENT EXECUTION & CROSS-SESSION MEMORY
+## 🚨 CRITICAL: CONCURRENT EXECUTION & FILE MANAGEMENT
 
 **ABSOLUTE RULES**:
 1. ALL operations MUST be concurrent/parallel in a single message
 2. **NEVER save working files, text/mds and tests to the root folder**
 3. ALWAYS organize files in appropriate subdirectories
 4. **USE CLAUDE CODE'S TASK TOOL** for spawning agents concurrently, not just MCP
-5. **🔥 ALWAYS CHECK MEMORY FIRST** before searching files or claiming ignorance
 
-#### Technology Stack
-- **Framework**: React 18+ with TypeScript
-- **UI Library**: shadcn/ui components via CLI and MCP tools
-- **Component Library**: Prompt-Kit (shadcn registry) https://www.prompt-kit.com/llms-full.txt
-- **Icons**: Lucide React
-- **Styling**: Tailwind CSS v4
-- **State Management**: Zustand or React Query
-- **Real-time**: EventSource API for SSE
-- **Build Tool**: Turbopack
-- **Testing**: React Testing Library
-
-- **Architecture Patterns**:
-  - **Tailwind Configuration**: Ensure `tailwind.config.js` is properly configured with all necessary utility classes enabled and scanning the correct files for style generation
-  - **Global Styles**: Include any global CSS or base styles recommended by ShadCN, such as importing required global CSS files or Tailwind base layers that components depend on
-  - **Style Conflicts**: Avoid conflicting CSS or other UI frameworks that may override Tailwind/ShadCN styles. Keep the stylesheet stack minimal by using only Tailwind and ShadCN to prevent style conflicts
-  - **Version Compatibility**: Verify that React and Next.js versions are compatible with ShadCN components and meet any documented version requirements
-
-### 🧠 CRITICAL: Cross-Session Memory Protocol
-
-**EVERY NEW SESSION MUST START WITH MEMORY CHECK:**
-```bash
-# 1. List all stored memory
-mcp__claude-flow__memory_usage --action list
-
-# 2. Search for relevant knowledge
-mcp__claude-flow__memory_search --pattern "knowledge|project|architecture"
-
-# 3. Retrieve key project data
-mcp__claude-flow__memory_usage --action retrieve --key "project/current-state"
-mcp__claude-flow__memory_usage --action retrieve --key "knowledge/project-config"
-```
-
-**❌ NEVER claim you "don't know" without checking memory first**  
-**✅ ALWAYS retrieve stored knowledge before file searches**
+### ⚡ GOLDEN RULE: "1 MESSAGE = ALL RELATED OPERATIONS"
 
 **MANDATORY PATTERNS:**
-- **Memory First**: ALWAYS check memory before any other operations
-- **Memory Writing**: ALWAYS store discoveries, progress, and results during work
 - **TodoWrite**: ALWAYS batch ALL todos in ONE call (5-10+ todos minimum)
 - **Task tool (Claude Code)**: ALWAYS spawn ALL agents in ONE message with full instructions
 - **File operations**: ALWAYS batch ALL reads/writes/edits in ONE message
 - **Bash commands**: ALWAYS batch ALL terminal operations in ONE message
 - **Memory operations**: ALWAYS batch ALL memory store/retrieve in ONE message
-
-### 💾 CRITICAL: Proactive Memory Writing Protocol
-
-**EVERY AGENT MUST STORE:**
-- **Discoveries**: `discoveries/[timestamp]` - Real-time findings
-- **Progress**: `progress/[task-id]` - Current status updates
-- **Results**: `results/[task-id]` - Final outcomes  
-- **Learnings**: `learnings/[topic]` - Knowledge for future agents
-
-**Example Memory Storage:**
-```bash
-# Store discoveries immediately
-mcp__claude-flow__memory_usage --action store --key "discoveries/$(date +%s)" --value "Found OAuth implementation in app/auth/"
-
-# Store progress during work
-mcp__claude-flow__memory_usage --action store --key "progress/api-build" --value "Completed user endpoints, working on admin"
-
-# Store final results
-mcp__claude-flow__memory_usage --action store --key "results/api-build" --value "Successfully implemented REST API with JWT auth"
-```
-**Essential Data Stored in Memory:** **NEED TO CONFIRM IF DIRS MATCH CURRENT SETUP**
-- `project/current-state` - Current project architecture and status
-- `knowledge/project-config` - Project configuration and settings
-- `instructions/development-guide` - Development guidelines and procedures
-- `project/post-cleanup-status` - System status and cleanup info
-- `environment/variables` - Environment-specific configuration
 
 ### 🎯 CRITICAL: Claude Code Task Tool for Agent Execution
 
@@ -107,7 +45,7 @@ mcp__claude-flow__memory_usage --action store --key "results/api-build" --value 
 - `/scripts` - Utility scripts
 - `/examples` - Example code
 
-## Dev environment overview
+## Project Overview
 
 This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Completion) methodology with Claude-Flow orchestration for systematic Test-Driven Development.
 
@@ -226,6 +164,9 @@ claude mcp add flow-nexus npx flow-nexus@latest mcp start  # Optional: Cloud fea
 ### System
 `benchmark_run`, `features_detect`, `swarm_monitor`
 
+### Flow-Nexus MCP Tools (Optional Advanced Features)
+Flow-Nexus extends MCP capabilities with 70+ cloud-based orchestration tools:
+
 **Key MCP Tool Categories:**
 - **Swarm & Agents**: `swarm_init`, `swarm_scale`, `agent_spawn`, `task_orchestrate`
 - **Sandboxes**: `sandbox_create`, `sandbox_execute`, `sandbox_upload` (cloud execution)
@@ -234,6 +175,11 @@ claude mcp add flow-nexus npx flow-nexus@latest mcp start  # Optional: Cloud fea
 - **GitHub**: `github_repo_analyze`, `github_pr_manage` (repository management)
 - **Real-time**: `execution_stream_subscribe`, `realtime_subscribe` (live monitoring)
 - **Storage**: `storage_upload`, `storage_list` (cloud file management)
+
+**Authentication Required:**
+- Register: `mcp__flow-nexus__user_register` or `npx flow-nexus@latest register`
+- Login: `mcp__flow-nexus__user_login` or `npx flow-nexus@latest login`
+- Access 70+ specialized MCP tools for advanced orchestration
 
 ## 🚀 Agent Execution Flow with Claude Code
 
@@ -273,83 +219,51 @@ claude mcp add flow-nexus npx flow-nexus@latest mcp start  # Optional: Cloud fea
 ```bash
 npx claude-flow@alpha hooks pre-task --description "[task]"
 npx claude-flow@alpha hooks session-restore --session-id "swarm-[id]"
-# AUTO-LOAD CROSS-SESSION KNOWLEDGE:
-mcp__claude-flow__memory_usage --action retrieve --key "knowledge/project-config"
-mcp__claude-flow__memory_usage --action retrieve --key "project/current-state"
-mcp__claude-flow__memory_search --pattern "project|architecture|config"
 ```
 
 **2️⃣ DURING Work:**
 ```bash
 npx claude-flow@alpha hooks post-edit --file "[file]" --memory-key "swarm/[agent]/[step]"
 npx claude-flow@alpha hooks notify --message "[what was done]"
-# MANDATORY: Store discoveries and progress in memory
-mcp__claude-flow__memory_usage --action store --key "discoveries/[timestamp]" --value "[findings]"
-mcp__claude-flow__memory_usage --action store --key "progress/[task-id]" --value "[current_status]"
 ```
 
 **3️⃣ AFTER Work:**
 ```bash
 npx claude-flow@alpha hooks post-task --task-id "[task]"
 npx claude-flow@alpha hooks session-end --export-metrics true
-# MANDATORY: Store final results and learnings
-mcp__claude-flow__memory_usage --action store --key "results/[task-id]" --value "[final_outcome]"
-mcp__claude-flow__memory_usage --action store --key "learnings/[session-id]" --value "[what_was_learned]"
 ```
 
 ## 🎯 Concurrent Execution Examples
 
-### ✅ OPTIMIZED WORKFLOW: Maximum Parallel Efficiency (8-12 Agents)
+### ✅ CORRECT WORKFLOW: MCP Coordinates, Claude Code Executes
 
 ```javascript
-// Step 1: MCP tools set up adaptive coordination (recommended)
+// Step 1: MCP tools set up coordination (optional, for complex tasks)
 [Single Message - Coordination Setup]:
-  mcp__claude-flow__swarm_init { topology: "adaptive", maxAgents: 12 }
+  mcp__claude-flow__swarm_init { topology: "mesh", maxAgents: 6 }
   mcp__claude-flow__agent_spawn { type: "researcher" }
-  mcp__claude-flow__agent_spawn { type: "system-architect" }
-  mcp__claude-flow__agent_spawn { type: "backend-dev" }
-  mcp__claude-flow__agent_spawn { type: "frontend-dev" }
+  mcp__claude-flow__agent_spawn { type: "coder" }
   mcp__claude-flow__agent_spawn { type: "tester" }
-  mcp__claude-flow__agent_spawn { type: "reviewer" }
-  mcp__claude-flow__agent_spawn { type: "perf-analyzer" }
-  mcp__claude-flow__agent_spawn { type: "security-manager" }
 
-// Step 2: Claude Code Task tool spawns ACTUAL agents (MAXIMUM PARALLEL)
-[Single Message - 8-12 Agent Parallel Execution]:
-  // Primary development agents
-  Task("Research Specialist", "Analyze requirements, patterns, and best practices. Store findings in memory.", "researcher")
-  Task("System Architect", "Design overall architecture and data flows. Document decisions.", "system-architect")
-  Task("Backend Developer", "Implement REST API, authentication, and business logic.", "backend-dev")
-  Task("Frontend Developer", "Build UI components and user interactions. Follow shadcn patterns.", "coder")
-  Task("Database Engineer", "Design schema, optimize queries, handle migrations.", "code-analyzer")
+// Step 2: Claude Code Task tool spawns ACTUAL agents that do the work
+[Single Message - Parallel Agent Execution]:
+  // Claude Code's Task tool spawns real agents concurrently
+  Task("Research agent", "Analyze API requirements and best practices. Check memory for prior decisions.", "researcher")
+  Task("Coder agent", "Implement REST endpoints with authentication. Coordinate via hooks.", "coder")
+  Task("Database agent", "Design and implement database schema. Store decisions in memory.", "code-analyzer")
+  Task("Tester agent", "Create comprehensive test suite with 90% coverage.", "tester")
+  Task("Reviewer agent", "Review code quality and security. Document findings.", "reviewer")
   
-  // Quality assurance agents
-  Task("Test Engineer", "Create comprehensive test suite with 95%+ coverage.", "tester")
-  Task("Code Reviewer", "Review code quality, security, and best practices.", "reviewer")
-  Task("Performance Analyst", "Analyze and optimize performance bottlenecks.", "perf-analyzer")
-  
-  // Specialized coordination agents
-  Task("Security Auditor", "Security review, vulnerability assessment, compliance.", "security-manager")
-  Task("DevOps Engineer", "CI/CD, deployment, monitoring, infrastructure.", "cicd-engineer")
-  Task("Documentation Agent", "API docs, technical documentation, guides.", "api-docs")
-  Task("Integration Coordinator", "Ensure all components work together seamlessly.", "task-orchestrator")
-  
-  // Batch ALL todos in ONE call (10-15 recommended)
+  // Batch ALL todos in ONE call
   TodoWrite { todos: [
-    {content: "Research API patterns and best practices", status: "in_progress", activeForm: "Researching API patterns and best practices"},
-    {content: "Design system architecture and data flows", status: "in_progress", activeForm: "Designing system architecture and data flows"},
-    {content: "Implement backend REST API endpoints", status: "pending", activeForm: "Implementing backend REST API endpoints"},
-    {content: "Build frontend UI components and interactions", status: "pending", activeForm: "Building frontend UI components and interactions"},
-    {content: "Design and optimize database schema", status: "pending", activeForm: "Designing and optimizing database schema"},
-    {content: "Create comprehensive test suite (95%+ coverage)", status: "pending", activeForm: "Creating comprehensive test suite"},
-    {content: "Perform security audit and vulnerability assessment", status: "pending", activeForm: "Performing security audit and vulnerability assessment"},
-    {content: "Analyze and optimize performance bottlenecks", status: "pending", activeForm: "Analyzing and optimizing performance bottlenecks"},
-    {content: "Set up CI/CD pipeline and deployment", status: "pending", activeForm: "Setting up CI/CD pipeline and deployment"},
-    {content: "Generate API documentation and guides", status: "pending", activeForm: "Generating API documentation and guides"},
-    {content: "Review code quality and best practices", status: "pending", activeForm: "Reviewing code quality and best practices"},
-    {content: "Integrate all components and test workflows", status: "pending", activeForm: "Integrating all components and testing workflows"},
-    {content: "Monitor system performance and optimization", status: "pending", activeForm: "Monitoring system performance and optimization"},
-    {content: "Validate deployment readiness and documentation", status: "pending", activeForm: "Validating deployment readiness and documentation"}
+    {id: "1", content: "Research API patterns", status: "in_progress", priority: "high"},
+    {id: "2", content: "Design database schema", status: "in_progress", priority: "high"},
+    {id: "3", content: "Implement authentication", status: "pending", priority: "high"},
+    {id: "4", content: "Build REST endpoints", status: "pending", priority: "high"},
+    {id: "5", content: "Write unit tests", status: "pending", priority: "medium"},
+    {id: "6", content: "Integration tests", status: "pending", priority: "medium"},
+    {id: "7", content: "API documentation", status: "pending", priority: "low"},
+    {id: "8", content: "Performance optimization", status: "pending", priority: "low"}
   ]}
   
   // Parallel file operations
@@ -369,6 +283,47 @@ Message 4: Write "file.js"
 // This breaks parallel coordination!
 ```
 
+## Performance Benefits
+
+- **84.8% SWE-Bench solve rate**
+- **32.3% token reduction**
+- **2.8-4.4x speed improvement**
+- **27+ neural models**
+
+## Hooks Integration
+
+### Pre-Operation
+- Auto-assign agents by file type
+- Validate commands for safety
+- Prepare resources automatically
+- Optimize topology by complexity
+- Cache searches
+
+### Post-Operation
+- Auto-format code
+- Train neural patterns
+- Update memory
+- Analyze performance
+- Track token usage
+
+### Session Management
+- Generate summaries
+- Persist state
+- Track metrics
+- Restore context
+- Export workflows
+
+## Advanced Features (v2.0.0)
+
+- 🚀 Automatic Topology Selection
+- ⚡ Parallel Execution (2.8-4.4x speed)
+- 🧠 Neural Training
+- 📊 Bottleneck Analysis
+- 🤖 Smart Auto-Spawning
+- 🛡️ Self-Healing Workflows
+- 💾 Cross-Session Memory
+- 🔗 GitHub Integration
+
 ## Integration Tips
 
 1. Start with basic swarm init
@@ -379,98 +334,6 @@ Message 4: Write "file.js"
 6. Enable hooks automation
 7. Use GitHub tools first
 
-- **Session Stats**: Tracked in memory for performance monitoring
-
-**🚨 CRITICAL FOR NEW SESSIONS:**
-Before claiming you don't know something about the project, ALWAYS check these memory keys!
-
-## CodeRabbit CLI Integration
-
-### VS Code Tasks for CodeRabbit
-
-The following VS Code tasks are available via **Cmd+Shift+P** → "Tasks: Run Task":
-
-**AI Workflow (Recommended):**
-- **CodeRabbit: Prompt Only (AI Workflow)** - AI prompts for Claude Code integration
-- **CodeRabbit: AI Analysis (Uncommitted)** - AI prompts for uncommitted changes only
-
-**Interactive Workflow:**
-- **CodeRabbit: Interactive Review** - Full interactive mode
-- **CodeRabbit: Plain Text Review** - Non-interactive plain text output
-- **CodeRabbit: Uncommitted Changes** - Review only uncommitted changes
-- **CodeRabbit: Committed Changes** - Review only committed changes  
-- **CodeRabbit: Custom Config** - Use CLAUDE.md as configuration
-
-### Claude Code Commands
-
-Use these commands to trigger CodeRabbit via VS Code terminal:
-
-```bash
-# Direct script execution (recommended)
-./scripts/coderabbit-helper.sh plain          # Plain text review
-./scripts/coderabbit-helper.sh interactive    # Interactive review
-./scripts/coderabbit-helper.sh uncommitted    # Uncommitted changes only
-./scripts/coderabbit-helper.sh --help         # Show all options
-
-# Alternative: VS Code task commands
-code --command workbench.action.tasks.runTask "CodeRabbit: Plain Text Review"
-code --command workbench.action.tasks.runTask "CodeRabbit: Interactive Review"
-code --command workbench.action.tasks.runTask "CodeRabbit: Uncommitted Changes"
-```
-
-### Workflow Integration
-
-**Two workflow modes available:**
-
-#### AI-Driven Workflow (Preferred for Claude Code)
-1. **User types**: `/cr-prompt` (or variations) in Claude Code
-2. **Claude Code runs**: CodeRabbit `--prompt-only` automatically
-3. **Claude Code**: Processes CodeRabbit analysis and implements fixes
-4. **Benefit**: Seamless AI-to-AI knowledge transfer without terminal switching
-
-#### Interactive Workflow (For complex issues)
-1. **Claude Code**: Suggests running CodeRabbit via helper script
-2. **Terminal**: CodeRabbit analyzes code in new VS Code terminal
-3. **User**: Reviews CodeRabbit output and shares relevant findings
-4. **Claude Code**: Works with CodeRabbit findings to implement fixes
-
-**CRITICAL**: Use CodeRabbit `--prompt-only` for AI workflow integration!
-**NEVER perform manual code analysis when CodeRabbit CLI is available!**
-
-### Quick Commands
-
-#### AI Workflow (Recommended)
-
-**NEW: Claude Code Slash Commands** 🎉
-```bash
-/cr-prompt              # Analyze all changes
-/cr-prompt uncommitted  # Only uncommitted changes
-/cr-prompt committed    # Only committed changes
-/cr-config              # Use CLAUDE.md configuration
-/cr-help                # Show all CodeRabbit commands
-```
-
-**Manual Terminal Commands** (fallback)
-```bash
-# User runs in terminal, shares output with Claude Code
-coderabbit --prompt-only                    # AI analysis prompts for Claude Code
-coderabbit --prompt-only --type uncommitted # Only uncommitted changes  
-coderabbit --prompt-only --config CLAUDE.md # Use project configuration
-```
-
-#### Interactive Workflow (Helper Scripts)
-```bash
-# Preferred: Use Node.js helper (better error handling)
-node scripts/claude-coderabbit.js plain
-
-# Alternative: Use shell script directly  
-./scripts/coderabbit-helper.sh plain
-
-# For specific scenarios
-node scripts/claude-coderabbit.js uncommitted  # Review only uncommitted changes
-node scripts/claude-coderabbit.js config       # Use CLAUDE.md configuration
-```
-
 ## Support
 
 - Documentation: https://github.com/ruvnet/claude-flow
@@ -479,7 +342,7 @@ node scripts/claude-coderabbit.js config       # Use CLAUDE.md configuration
 
 ---
 
-Remember: **Memory First, Claude Flow coordinates, Claude Code creates!**
+Remember: **Claude Flow coordinates, Claude Code creates!**
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.

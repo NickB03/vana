@@ -1,0 +1,51 @@
+{
+  "PostToolUse": [
+    {
+      "name": "bash-error-recovery",
+      "matcher": "^Bash$",
+      "command": "npx claude-flow@alpha hooks post-bash --exit-code '${tool.result.exitCode}' --auto-recover",
+      "enabled": true
+    },
+    {
+      "name": "missing-dependency-fix",
+      "matcher": "Cannot find module|Module not found",
+      "command": "npx claude-flow@alpha hooks auto-install --analyze '${tool.result.error}'",
+      "enabled": true
+    },
+    {
+      "name": "syntax-error-fix",
+      "matcher": "SyntaxError|Unexpected token",
+      "command": "npx claude-flow@alpha hooks syntax-fix --file '${tool.result.file}' --line '${tool.result.line}'",
+      "enabled": true
+    }
+  ],
+  "TestFailure": [
+    {
+      "name": "test-auto-repair",
+      "matcher": "Test failed|FAIL",
+      "command": "npx claude-flow@alpha hooks test-repair --test '${test.name}' --error '${test.error}'",
+      "enabled": true
+    }
+  ],
+  "ErrorPatterns": {
+    "dependency": {
+      "patterns": ["Cannot find module", "Module not found", "no such file or directory"],
+      "recovery": "npm install || pip install -r requirements.txt"
+    },
+    "syntax": {
+      "patterns": ["SyntaxError", "Unexpected token", "IndentationError"],
+      "recovery": "analyze-and-fix"
+    },
+    "test": {
+      "patterns": ["AssertionError", "Expected .* to", "FAIL"],
+      "recovery": "debug-and-repair"
+    }
+  },
+  "RecoverySettings": {
+    "maxRetries": 3,
+    "retryDelay": 2000,
+    "autoLearn": true,
+    "storePatterns": true,
+    "neuralTraining": true
+  }
+}
