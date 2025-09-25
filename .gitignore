@@ -328,3 +328,8 @@ frontend-backup/vitest.*.config.ts
 
 # Lighthouse performance reports
 .lighthouse/
+
+# Transfer directory contains sensitive environment files and setup data
+transfer/
+transfer.zip
+*.transfer.zip
