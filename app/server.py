@@ -281,6 +281,7 @@ try:  # pragma: no cover - optional auth dependencies
     )
     from app.auth.models import User  # type: ignore
     from app.auth.routes import admin_router, auth_router, users_router  # type: ignore
+    from app.routes.chat_actions import router as chat_actions_router  # Chat action endpoints
     from app.auth.security import (  # type: ignore
         current_active_user_dep,
         current_superuser_dep,
@@ -322,7 +323,7 @@ except ModuleNotFoundError:  # pragma: no cover
     class RateLimitMiddleware(AuditLogMiddleware):  # type: ignore
         pass
 
-    auth_router = users_router = admin_router = APIRouter()
+    auth_router = users_router = admin_router = chat_actions_router = APIRouter()
 
 from app.middleware import SecurityHeadersMiddleware  # noqa: E402
 
@@ -333,10 +334,14 @@ try:
 except Exception as e:
     print(f"Warning: Could not initialize auth database: {e}")
 
+# Skip GCS artifact service for local development
+is_dev = os.getenv("ENVIRONMENT", "development") == "development"
+artifact_uri = None if is_dev else f"gs://{bucket_name}" if bucket_name else None
+
 app: FastAPI = get_fast_api_app(
     agents_dir=AGENTS_DIR,  # Use the agents subdirectory for proper ADK UI discovery
     web=True,
-    artifact_service_uri=f"gs://{bucket_name}" if bucket_name else None,
+    artifact_service_uri=artifact_uri,
     allow_origins=allow_origins,
     session_service_uri=session_service_uri,
 )
@@ -347,6 +352,9 @@ app.description = "API for interacting with the Agent vana"
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(admin_router)
+
+# Add chat actions router for message operations
+app.include_router(chat_actions_router)
 
 
 # Add security middleware (order matters - security headers first, then circuit breaker)
