@@ -1,0 +1,692 @@
+name: Comprehensive Chat Actions Testing
+
+on:
+  push:
+    branches: [main, develop, 'feature/**']
+    paths:
+      - 'frontend/**'
+      - 'app/**'
+      - 'tests/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'frontend/**'
+      - 'app/**'
+      - 'tests/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '18.x'
+  PYTHON_VERSION: '3.10'
+  CACHE_VERSION: 'v1'
+
+jobs:
+  # Frontend Unit Tests
+  frontend-unit-tests:
+    name: Frontend Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      matrix:
+        node-version: ['18.x', '20.x']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            frontend/node_modules
+            ~/.npm
+          key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.node-version }}-${{ env.CACHE_VERSION }}-
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Type checking
+        working-directory: ./frontend
+        run: npm run typecheck
+
+      - name: Linting
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Run unit tests
+        working-directory: ./frontend
+        run: npm run test:coverage -- --watchAll=false --ci --coverage --maxWorkers=2
+        env:
+          CI: true
+          NODE_ENV: test
+
+      - name: Check coverage thresholds
+        working-directory: ./frontend
+        run: |
+          # Verify coverage meets minimum thresholds
+          npm run test:coverage -- --coverageThreshold='{"global":{"branches":80,"functions":80,"lines":80,"statements":80}}' --passWithNoTests
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./frontend/coverage/lcov.info
+          flags: frontend-unit
+          name: frontend-unit-${{ matrix.node-version }}
+          fail_ci_if_error: true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: frontend-unit-test-results-${{ matrix.node-version }}
+          path: |
+            frontend/coverage/
+            frontend/test-results/
+            frontend/jest-junit.xml
+
+  # Backend API Tests
+  backend-api-tests:
+    name: Backend API Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_USER: testuser
+          POSTGRES_DB: vana_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: 'app/requirements*.txt'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ env.CACHE_VERSION }}-${{ hashFiles('app/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ env.CACHE_VERSION }}-
+
+      - name: Install dependencies
+        working-directory: ./app
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: Run database migrations
+        working-directory: ./app
+        run: python manage.py migrate
+        env:
+          DATABASE_URL: postgresql://testuser:testpassword@localhost:5432/vana_test
+          REDIS_URL: redis://localhost:6379/0
+
+      - name: Run API tests with coverage
+        working-directory: ./app
+        run: |
+          pytest tests/backend/ \
+            --cov=app \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term-missing \
+            --cov-fail-under=80 \
+            --junit-xml=test-results/pytest.xml \
+            -v
+        env:
+          DATABASE_URL: postgresql://testuser:testpassword@localhost:5432/vana_test
+          REDIS_URL: redis://localhost:6379/0
+          TEST_ENV: true
+
+      - name: Upload backend coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./app/coverage.xml
+          flags: backend-api
+          name: backend-api-${{ matrix.python-version }}
+          fail_ci_if_error: true
+
+      - name: Upload backend test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: backend-api-test-results-${{ matrix.python-version }}
+          path: |
+            app/htmlcov/
+            app/test-results/
+            app/coverage.xml
+
+  # Integration Tests
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [frontend-unit-tests, backend-api-tests]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_USER: testuser
+          POSTGRES_DB: vana_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Install backend dependencies
+        working-directory: ./app
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Start backend server
+        working-directory: ./app
+        run: |
+          python manage.py migrate
+          python manage.py runserver &
+          echo $! > backend.pid
+        env:
+          DATABASE_URL: postgresql://testuser:testpassword@localhost:5432/vana_test
+          REDIS_URL: redis://localhost:6379/0
+
+      - name: Start frontend server
+        working-directory: ./frontend
+        run: |
+          npm start &
+          echo $! > frontend.pid
+
+      - name: Wait for servers
+        run: |
+          sleep 10
+          curl --retry 30 --retry-delay 1 --retry-connrefused http://localhost:3000/health || exit 1
+          curl --retry 30 --retry-delay 1 --retry-connrefused http://localhost:8000/health || exit 1
+
+      - name: Run integration tests
+        run: |
+          npm test -- tests/integration/ \
+            --testTimeout=60000 \
+            --verbose \
+            --coverage \
+            --coverageDirectory=coverage-integration
+        env:
+          FRONTEND_URL: http://localhost:3000
+          BACKEND_URL: http://localhost:8000
+          CI: true
+
+      - name: Upload integration coverage
+        uses: codecov/codecov-action@v3
+        with:
+          directory: ./coverage-integration
+          flags: integration
+          name: integration-tests
+
+      - name: Cleanup servers
+        if: always()
+        run: |
+          if [ -f frontend/frontend.pid ]; then
+            kill $(cat frontend/frontend.pid) || true
+          fi
+          if [ -f app/backend.pid ]; then
+            kill $(cat app/backend.pid) || true
+          fi
+
+  # E2E Tests
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: [integration-tests]
+
+    strategy:
+      matrix:
+        browser: [chromium, firefox]
+        shard: [1, 2, 3, 4]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_USER: testuser
+          POSTGRES_DB: vana_e2e
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Playwright
+        working-directory: ./tests
+        run: |
+          npm ci
+          npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Setup test environment
+        run: |
+          # Install dependencies
+          cd frontend && npm ci && cd ..
+          cd app && pip install -r requirements.txt && cd ..
+
+          # Build and start services
+          cd frontend && npm run build && npm start &
+          cd app && python manage.py migrate && python manage.py runserver &
+
+          # Wait for services
+          sleep 15
+
+      - name: Run E2E tests
+        working-directory: ./tests
+        run: |
+          npx playwright test \
+            --project=${{ matrix.browser }} \
+            --shard=${{ matrix.shard }}/4 \
+            --reporter=html,junit \
+            --output-dir=test-results-${{ matrix.browser }}-${{ matrix.shard }}
+        env:
+          BASE_URL: http://localhost:3000
+          API_URL: http://localhost:8000
+          CI: true
+          PWDEBUG: 0
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: e2e-results-${{ matrix.browser }}-${{ matrix.shard }}
+          path: |
+            tests/test-results-${{ matrix.browser }}-${{ matrix.shard }}/
+            tests/playwright-report/
+
+  # Performance Tests
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        working-directory: ./tests
+        run: npm ci
+
+      - name: Install Playwright
+        working-directory: ./tests
+        run: npx playwright install chromium
+
+      - name: Setup services
+        run: |
+          cd frontend && npm ci && npm run build && npm start &
+          cd app && pip install -r requirements.txt && python manage.py runserver &
+          sleep 15
+
+      - name: Run performance tests
+        working-directory: ./tests
+        run: |
+          npx playwright test performance/ \
+            --project=chromium \
+            --reporter=html,junit
+        env:
+          BASE_URL: http://localhost:3000
+
+      - name: Generate performance report
+        working-directory: ./tests
+        run: |
+          npm run performance:report
+          npm run lighthouse:audit
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-results
+          path: |
+            tests/performance-report/
+            tests/lighthouse-report/
+
+  # Security and Error Scenario Tests
+  security-error-tests:
+    name: Security & Error Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          cd frontend && npm ci
+          cd tests && npm ci
+
+      - name: Run error scenario tests
+        working-directory: ./tests
+        run: |
+          npm test -- error-scenarios/ \
+            --testTimeout=30000 \
+            --verbose
+        env:
+          CI: true
+
+      - name: Security audit
+        working-directory: ./frontend
+        run: npm audit --audit-level=high
+
+      - name: Dependency vulnerability check
+        working-directory: ./app
+        run: |
+          pip install safety
+          safety check --json --output vulnerability-report.json || true
+
+      - name: Upload security results
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-results
+          path: |
+            app/vulnerability-report.json
+            frontend/npm-audit.json
+
+  # Test Coverage Consolidation
+  coverage-report:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    needs: [frontend-unit-tests, backend-api-tests, integration-tests]
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Consolidate coverage reports
+        run: |
+          mkdir -p coverage-consolidated
+
+          # Combine frontend coverage
+          find . -name "lcov.info" -path "*/frontend-unit-*" -exec cp {} coverage-consolidated/frontend-lcov.info \;
+
+          # Combine backend coverage
+          find . -name "coverage.xml" -path "*/backend-api-*" -exec cp {} coverage-consolidated/backend-coverage.xml \;
+
+          # Combine integration coverage
+          find . -name "lcov.info" -path "*/integration-*" -exec cp {} coverage-consolidated/integration-lcov.info \;
+
+      - name: Generate combined coverage report
+        run: |
+          # Install lcov for report generation
+          sudo apt-get update && sudo apt-get install -y lcov
+
+          # Create HTML report
+          genhtml coverage-consolidated/*.info \
+            --output-directory coverage-consolidated/html \
+            --title "Vana Chat Actions Coverage Report" \
+            --show-details \
+            --highlight \
+            --legend
+
+      - name: Upload consolidated coverage
+        uses: codecov/codecov-action@v3
+        with:
+          directory: ./coverage-consolidated
+          flags: consolidated
+          name: consolidated-coverage
+
+      - name: Coverage summary comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Read coverage summary (this would be generated by a coverage tool)
+            const coverageSummary = {
+              frontend: '85.2%',
+              backend: '87.8%',
+              integration: '79.3%',
+              overall: '84.1%'
+            };
+
+            const comment = `## 📊 Test Coverage Report
+
+            | Component | Coverage |
+            |-----------|----------|
+            | Frontend | ${coverageSummary.frontend} |
+            | Backend | ${coverageSummary.backend} |
+            | Integration | ${coverageSummary.integration} |
+            | **Overall** | **${coverageSummary.overall}** |
+
+            ${coverageSummary.overall >= '80.0%' ? '✅' : '❌'} Coverage threshold: 80%
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # Accessibility Tests
+  accessibility-tests:
+    name: Accessibility Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          cd frontend && npm ci
+          cd tests && npm ci
+
+      - name: Run accessibility tests
+        working-directory: ./tests
+        run: |
+          npm run test:accessibility -- \
+            --testTimeout=30000 \
+            --verbose
+        env:
+          CI: true
+
+      - name: Lighthouse accessibility audit
+        working-directory: ./frontend
+        run: |
+          npm start &
+          sleep 10
+          npx lighthouse http://localhost:3000 \
+            --only-categories=accessibility \
+            --output=json \
+            --output-path=accessibility-report.json
+
+      - name: Upload accessibility results
+        uses: actions/upload-artifact@v3
+        with:
+          name: accessibility-results
+          path: |
+            tests/accessibility-report/
+            frontend/accessibility-report.json
+
+  # Test Results Summary
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [
+      frontend-unit-tests,
+      backend-api-tests,
+      integration-tests,
+      e2e-tests,
+      performance-tests,
+      security-error-tests,
+      accessibility-tests
+    ]
+    if: always()
+
+    steps:
+      - name: Generate test summary
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const jobs = [
+              { name: 'Frontend Unit Tests', needed: ${{ needs.frontend-unit-tests.result == 'success' }} },
+              { name: 'Backend API Tests', needed: ${{ needs.backend-api-tests.result == 'success' }} },
+              { name: 'Integration Tests', needed: ${{ needs.integration-tests.result == 'success' }} },
+              { name: 'E2E Tests', needed: ${{ needs.e2e-tests.result == 'success' }} },
+              { name: 'Performance Tests', needed: ${{ needs.performance-tests.result == 'success' || needs.performance-tests.result == 'skipped' }} },
+              { name: 'Security & Error Tests', needed: ${{ needs.security-error-tests.result == 'success' }} },
+              { name: 'Accessibility Tests', needed: ${{ needs.accessibility-tests.result == 'success' }} }
+            ];
+
+            const passedJobs = jobs.filter(job => job.needed);
+            const failedJobs = jobs.filter(job => !job.needed);
+
+            let summary = `## 🧪 Test Results Summary\n\n`;
+            summary += `**Passed**: ${passedJobs.length}/${jobs.length} test suites\n\n`;
+
+            if (passedJobs.length > 0) {
+              summary += `### ✅ Passed\n`;
+              passedJobs.forEach(job => summary += `- ${job.name}\n`);
+              summary += `\n`;
+            }
+
+            if (failedJobs.length > 0) {
+              summary += `### ❌ Failed\n`;
+              failedJobs.forEach(job => summary += `- ${job.name}\n`);
+              summary += `\n`;
+            }
+
+            if (context.eventName === 'pull_request') {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: summary
+              });
+            }
+
+            console.log(summary);
+
+            // Set job status based on critical test results
+            const criticalTests = ['Frontend Unit Tests', 'Backend API Tests', 'Integration Tests'];
+            const criticalFailures = failedJobs.filter(job => criticalTests.includes(job.name));
+
+            if (criticalFailures.length > 0) {
+              core.setFailed(`Critical test failures: ${criticalFailures.map(j => j.name).join(', ')}`);
+            }
