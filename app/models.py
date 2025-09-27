@@ -237,9 +237,9 @@ ResponseData = Union[dict[str, Any], list[Any], str, int, float, bool]
 ModelType = str  # Model type alias for AI models
 HealthResponseData = dict[str, str | bool | int | float | EnvironmentInfo | None]
 
-# Model constants
-CRITIC_MODEL = "gemini-2.5-pro-latest"
-WORKER_MODEL = "gemini-2.5-flash-latest"
+# Model constants - Updated to use Gemini 2.5 Flash
+CRITIC_MODEL = "gemini-2.5-flash"  # Gemini 2.5 Flash
+WORKER_MODEL = "gemini-2.5-flash"  # Gemini 2.5 Flash
 
 # Constants
 DEFAULT_SESSION_TIMEOUT = 3600  # 1 hour

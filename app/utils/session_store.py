@@ -850,6 +850,17 @@ class SessionStore:
             record.updated_at = _iso(_now())
             return record
 
+    def delete_session(
+        self,
+        session_id: str,
+    ) -> bool:
+        """Delete a session and all its messages."""
+        with self._lock:
+            if session_id in self._sessions:
+                del self._sessions[session_id]
+                return True
+            return False
+
     # ------------------------------------------------------------------
     # Message management
     # ------------------------------------------------------------------

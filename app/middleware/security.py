@@ -164,8 +164,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Secure nonce-based policy without unsafe-inline
         return f"""
             default-src 'self';
-            script-src 'self' 'nonce-{nonce}';
-            style-src 'self' 'nonce-{nonce}';
+            script-src 'self' 'nonce-{nonce}' 'unsafe-inline' 'unsafe-eval';
+            style-src 'self' 'nonce-{nonce}' 'unsafe-inline';
             img-src 'self' data: https:;
             font-src 'self' data:;
             connect-src {self.csp_connect_domains};

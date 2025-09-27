@@ -5,7 +5,7 @@ from typing import Any
 
 from google.auth import default
 from google.auth.transport import requests
-from google.cloud import iam_admin_v1
+# from google.cloud import iam_admin_v1  # Optional dependency
 from google.oauth2 import id_token
 
 
@@ -406,7 +406,7 @@ def _should_initialize_iam() -> bool:
     return True
 
 
-google_iam = GoogleCloudIAM() if _should_initialize_iam() else None
+google_iam = None  # Disabled for local development without Google Cloud credentials
 
 
 def get_google_iam() -> GoogleCloudIAM | None:

@@ -113,6 +113,55 @@ def get_project_id() -> str:
 
 
 @dataclass
+class RedisConfiguration:
+    """Configuration for Redis-based session and memory storage.
+
+    Attributes:
+        redis_enabled (bool): Whether Redis is enabled.
+        redis_url (str): Redis connection URL.
+        redis_db (int): Redis database number.
+        redis_password (str): Redis password (optional).
+        redis_max_connections (int): Maximum connections in Redis pool.
+        redis_retry_attempts (int): Number of retry attempts for Redis operations.
+        redis_fallback_to_memory (bool): Fallback to in-memory on Redis failure.
+        memory_ttl_hours (int): TTL for user context and agent memory.
+        knowledge_ttl_hours (int): TTL for shared knowledge base.
+        history_ttl_hours (int): TTL for session history.
+    """
+
+    redis_enabled: bool = field(
+        default_factory=lambda: os.getenv("REDIS_ENABLED", "true").lower() == "true"
+    )
+    redis_url: str = field(
+        default_factory=lambda: os.getenv("REDIS_URL", "redis://localhost:6379")
+    )
+    redis_db: int = field(
+        default_factory=lambda: int(os.getenv("REDIS_DB", "0"))
+    )
+    redis_password: str | None = field(
+        default_factory=lambda: os.getenv("REDIS_PASSWORD")
+    )
+    redis_max_connections: int = field(
+        default_factory=lambda: int(os.getenv("REDIS_MAX_CONNECTIONS", "10"))
+    )
+    redis_retry_attempts: int = field(
+        default_factory=lambda: int(os.getenv("REDIS_RETRY_ATTEMPTS", "3"))
+    )
+    redis_fallback_to_memory: bool = field(
+        default_factory=lambda: os.getenv("REDIS_FALLBACK_TO_MEMORY", "true").lower() == "true"
+    )
+    memory_ttl_hours: int = field(
+        default_factory=lambda: int(os.getenv("MEMORY_TTL_HOURS", "72"))
+    )
+    knowledge_ttl_hours: int = field(
+        default_factory=lambda: int(os.getenv("KNOWLEDGE_TTL_HOURS", "168"))
+    )
+    history_ttl_hours: int = field(
+        default_factory=lambda: int(os.getenv("HISTORY_TTL_HOURS", "720"))
+    )
+
+
+@dataclass
 class ResearchConfiguration:
     """Configuration for research-related models and parameters.
 
@@ -122,6 +171,7 @@ class ResearchConfiguration:
         max_search_iterations (int): Maximum search iterations allowed.
         session_storage_enabled (bool): Whether persistent session storage is enabled.
         session_storage_bucket (str): GCS bucket name for session storage.
+        redis_config (RedisConfiguration): Redis configuration for session persistence.
     """
 
     critic_model: ModelType = field(default_factory=lambda: CRITIC_MODEL)
@@ -132,6 +182,7 @@ class ResearchConfiguration:
         default_factory=lambda: f"{get_project_id()}-vana-session-storage"
     )
     session_backup_interval_hours: int = field(default=6)
+    redis_config: RedisConfiguration = field(default_factory=RedisConfiguration)
 
 
 config = ResearchConfiguration()

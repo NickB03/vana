@@ -1,0 +1,133 @@
+registry:
+  chrome-devtools:
+    description: "Chrome DevTools MCP server providing browser automation, performance analysis, and debugging capabilities"
+    title: "Chrome DevTools"
+    type: "server"
+    image: "chrome-devtools-mcp:latest"
+
+    tools:
+      # Input Automation
+      - name: "click"
+        description: "Click on page elements"
+      - name: "type"
+        description: "Type text into inputs"
+      - name: "select"
+        description: "Select dropdown options"
+      - name: "check"
+        description: "Check/uncheck checkboxes"
+      - name: "focus"
+        description: "Focus elements"
+      - name: "hover"
+        description: "Hover over elements"
+      - name: "scroll"
+        description: "Scroll page"
+
+      # Navigation Automation
+      - name: "goto"
+        description: "Navigate to URL"
+      - name: "goBack"
+        description: "Go back in history"
+      - name: "goForward"
+        description: "Go forward in history"
+      - name: "reload"
+        description: "Reload page"
+      - name: "waitForSelector"
+        description: "Wait for element"
+      - name: "waitForNavigation"
+        description: "Wait for navigation"
+      - name: "setViewport"
+        description: "Set viewport size"
+
+      # Emulation
+      - name: "emulateDevice"
+        description: "Emulate mobile device"
+      - name: "setUserAgent"
+        description: "Set user agent"
+      - name: "setGeolocation"
+        description: "Set geolocation"
+
+      # Performance Analysis
+      - name: "startTracing"
+        description: "Start performance trace"
+      - name: "stopTracing"
+        description: "Stop and get trace"
+      - name: "metrics"
+        description: "Get performance metrics"
+
+      # Network Inspection
+      - name: "interceptRequests"
+        description: "Intercept network requests"
+      - name: "getCookies"
+        description: "Get browser cookies"
+
+      # Debugging
+      - name: "screenshot"
+        description: "Take screenshot"
+      - name: "pdf"
+        description: "Generate PDF"
+      - name: "evaluate"
+        description: "Execute JavaScript"
+      - name: "console"
+        description: "Access console logs"
+
+    env:
+      - name: "CHROME_HEADLESS"
+        value: "{{chrome-devtools.headless}}"
+      - name: "CHROME_ISOLATED"
+        value: "{{chrome-devtools.isolated}}"
+      - name: "CHROME_CHANNEL"
+        value: "{{chrome-devtools.channel}}"
+      - name: "CHROME_EXECUTABLE_PATH"
+        value: "{{chrome-devtools.executablePath}}"
+      - name: "LOG_FILE"
+        value: "{{chrome-devtools.logFile}}"
+      - name: "BROWSER_URL"
+        value: "{{chrome-devtools.browserUrl}}"
+
+    config:
+      - name: "chrome-devtools"
+        properties:
+          headless:
+            type: "boolean"
+            default: false
+            description: "Run Chrome in headless mode"
+          isolated:
+            type: "boolean"
+            default: true
+            description: "Use temporary user data directory"
+          channel:
+            type: "string"
+            default: "stable"
+            enum: ["stable", "beta", "canary", "dev"]
+            description: "Chrome channel to use"
+          executablePath:
+            type: "string"
+            required: false
+            description: "Path to Chrome executable"
+          logFile:
+            type: "string"
+            required: false
+            description: "Path to debug log file"
+          browserUrl:
+            type: "string"
+            required: false
+            description: "Connect to existing Chrome instance"
+
+    metadata:
+      author: "Chrome DevTools Team"
+      homepage: "https://github.com/ChromeDevTools/chrome-devtools-mcp"
+      license: "Apache-2.0"
+      categories:
+        - "automation"
+        - "debugging"
+        - "performance"
+        - "testing"
+      tags:
+        - "chrome"
+        - "devtools"
+        - "browser"
+        - "automation"
+        - "puppeteer"
+      requirements:
+        - "Node.js 22.12.0+"
+        - "Chrome browser"

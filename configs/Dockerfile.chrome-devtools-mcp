@@ -1,0 +1,83 @@
+FROM node:22-slim
+
+# Install Chrome dependencies and Chrome itself
+RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg \
+    ca-certificates \
+    fonts-liberation \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libatspi2.0-0 \
+    libc6 \
+    libcairo2 \
+    libcups2 \
+    libdbus-1-3 \
+    libdrm2 \
+    libexpat1 \
+    libfontconfig1 \
+    libgbm1 \
+    libgcc1 \
+    libglib2.0-0 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libstdc++6 \
+    libx11-6 \
+    libx11-xcb1 \
+    libxcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxi6 \
+    libxrandr2 \
+    libxrender1 \
+    libxss1 \
+    libxtst6 \
+    lsb-release \
+    xdg-utils \
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Chrome DevTools MCP
+RUN npm install -g chrome-devtools-mcp@latest
+
+# Create a non-root user
+RUN groupadd -r mcp && useradd -r -g mcp -G audio,video mcp \
+    && mkdir -p /home/mcp/Downloads \
+    && chown -R mcp:mcp /home/mcp
+
+# Switch to non-root user
+USER mcp
+WORKDIR /home/mcp
+
+# Environment variables with defaults
+ENV CHROME_HEADLESS=${CHROME_HEADLESS:-false}
+ENV CHROME_ISOLATED=${CHROME_ISOLATED:-true}
+ENV CHROME_CHANNEL=${CHROME_CHANNEL:-stable}
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
+
+# Expose MCP server port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD node -e "console.log('healthy')" || exit 1
+
+# Run Chrome DevTools MCP with environment variables
+ENTRYPOINT ["sh", "-c", "chrome-devtools-mcp \
+    ${CHROME_HEADLESS:+--headless} \
+    ${CHROME_ISOLATED:+--isolated} \
+    ${CHROME_CHANNEL:+--channel $CHROME_CHANNEL} \
+    ${CHROME_EXECUTABLE_PATH:+--executablePath $CHROME_EXECUTABLE_PATH} \
+    ${LOG_FILE:+--logFile $LOG_FILE} \
+    ${BROWSER_URL:+--browserUrl $BROWSER_URL}"]
