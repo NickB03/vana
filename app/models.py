@@ -238,8 +238,8 @@ ModelType = str  # Model type alias for AI models
 HealthResponseData = dict[str, str | bool | int | float | EnvironmentInfo | None]
 
 # Model constants - Updated to use Gemini 2.5 Flash
-CRITIC_MODEL = "gemini-2.5-flash"  # Gemini 2.5 Flash
-WORKER_MODEL = "gemini-2.5-flash"  # Gemini 2.5 Flash
+CRITIC_MODEL = "gemini-2.5-flash"  # Gemini 2.5 Flash (stable)
+WORKER_MODEL = "gemini-2.5-flash"  # Gemini 2.5 Flash (stable)
 
 # Constants
 DEFAULT_SESSION_TIMEOUT = 3600  # 1 hour

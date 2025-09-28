@@ -300,13 +300,19 @@ class MultiAgentResearchOrchestrator:
                             self.choices = [type('obj', (object,), {'message': type('obj', (object,), {'content': f"Test response for: {prompt[:100]}..."})()})]
                     response = MockResponse()
             else:
-                # Google Gemini 2.5 Flash (Phase 3 update)
+                # Google Gemini 2.5 Flash (stable version with enhanced error handling)
                 try:
-                    # Mock response for testing - bypass Gemini API
-                    class MockResponse:
-                        def __init__(self):
-                            self.text = f"Test response for: {prompt[:100]}..."
-                    response = MockResponse()
+                    model = genai.GenerativeModel("gemini-2.5-flash")  # Use stable version
+                    response = await asyncio.to_thread(
+                        model.generate_content,
+                        prompt,
+                        generation_config=genai.types.GenerationConfig(
+                            temperature=0.7,
+                            top_p=0.8,
+                            top_k=40,
+                            max_output_tokens=1500,
+                        ),
+                    )
                 except Exception as gemini_error:
                     # Enhanced Gemini-specific error handling
                     error_msg = str(gemini_error)

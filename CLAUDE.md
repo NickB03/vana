@@ -1,88 +1,118 @@
-# Claude Code Configuration - SPARC Development Environment
+# CLAUDE.md
 
-## 🚨 CRITICAL: CONCURRENT EXECUTION & FILE MANAGEMENT
-
-**ABSOLUTE RULES**:
-1. ALL operations MUST be concurrent/parallel in a single message
-2. **NEVER save working files, text/mds and tests to the root folder**
-3. ALWAYS organize files in appropriate subdirectories
-4. **USE CLAUDE CODE'S TASK TOOL** for spawning agents concurrently, not just MCP
-
-### ⚡ GOLDEN RULE: "1 MESSAGE = ALL RELATED OPERATIONS"
-
-**MANDATORY PATTERNS:**
-- **TodoWrite**: ALWAYS batch ALL todos in ONE call (5-10+ todos minimum)
-- **Task tool (Claude Code)**: ALWAYS spawn ALL agents in ONE message with full instructions
-- **File operations**: ALWAYS batch ALL reads/writes/edits in ONE message
-- **Bash commands**: ALWAYS batch ALL terminal operations in ONE message
-- **Memory operations**: ALWAYS batch ALL memory store/retrieve in ONE message
-
-### 🎯 CRITICAL: Claude Code Task Tool for Agent Execution
-
-**Claude Code's Task tool is the PRIMARY way to spawn agents:**
-```javascript
-// ✅ CORRECT: Use Claude Code's Task tool for parallel agent execution
-[Single Message]:
-  Task("Research agent", "Analyze requirements and patterns...", "researcher")
-  Task("Coder agent", "Implement core features...", "coder")
-  Task("Tester agent", "Create comprehensive tests...", "tester")
-  Task("Reviewer agent", "Review code quality...", "reviewer")
-  Task("Architect agent", "Design system architecture...", "system-architect")
-```
-
-**MCP tools are ONLY for coordination setup:**
-- `mcp__claude-flow__swarm_init` - Initialize coordination topology
-- `mcp__claude-flow__agent_spawn` - Define agent types for coordination
-- `mcp__claude-flow__task_orchestrate` - Orchestrate high-level workflows
-
-### 📁 File Organization Rules
-
-**NEVER save to root folder. Use these directories:**
-- `/src` - Source code files
-- `/tests` - Test files
-- `/docs` - Documentation and markdown files
-- `/config` - Configuration files
-- `/scripts` - Utility scripts
-- `/examples` - Example code
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
-This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Completion) methodology with Claude-Flow orchestration for systematic Test-Driven Development.
+Vana is a multi-agent AI research platform built on Google's Agent Development Kit (ADK) that transforms complex research questions into comprehensive reports. It consists of a FastAPI backend with 8 specialized AI agents and a Next.js frontend for real-time interaction.
 
-## SPARC Commands
+## Key Architecture
 
-### Core Commands
-- `npx claude-flow sparc modes` - List available modes
-- `npx claude-flow sparc run <mode> "<task>"` - Execute specific mode
-- `npx claude-flow sparc tdd "<feature>"` - Run complete TDD workflow
-- `npx claude-flow sparc info <mode>` - Get mode details
+**Backend** (`/app`): FastAPI + Google ADK + LiteLLM/Gemini models
+- Multi-agent system with 8 specialized research agents
+- Real-time streaming via Server-Sent Events (SSE)
+- Session management with GCS persistence
+- Authentication: JWT/OAuth2/Firebase/development modes
 
-### Batchtools Commands
-- `npx claude-flow sparc batch <modes> "<task>"` - Parallel execution
-- `npx claude-flow sparc pipeline "<task>"` - Full pipeline processing
-- `npx claude-flow sparc concurrent <mode> "<tasks-file>"` - Multi-task processing
+**Frontend** (`/frontend`): Next.js + React + TypeScript + shadcn/ui
+- Real-time chat interface with SSE streaming
+- Performance-optimized React patterns
+- Responsive design with Tailwind CSS
 
-### Build Commands
-- `npm run build` - Build project
-- `npm run test` - Run tests
-- `npm run lint` - Linting
-- `npm run typecheck` - Type checking
+## Common Development Commands
 
-## SPARC Workflow Phases
+### Backend Development
+```bash
+# Install dependencies (uses uv package manager)
+make install
 
-1. **Specification** - Requirements analysis (`sparc run spec-pseudocode`)
-2. **Pseudocode** - Algorithm design (`sparc run spec-pseudocode`)
-3. **Architecture** - System design (`sparc run architect`)
-4. **Refinement** - TDD implementation (`sparc tdd`)
-5. **Completion** - Integration (`sparc run integration`)
+# Start backend development server (port 8000)
+make dev-backend
+# Alternative: uv run --env-file .env.local uvicorn app.server:app --reload --port 8000
 
-## Code Style & Best Practices
+# Run backend tests
+make test                    # All tests
+make test-unit              # Unit tests only
+make test-integration       # Integration tests only
+uv run pytest tests/unit/test_specific.py -v  # Single test file
 
-- **Modular Design**: Files under 500 lines
-- **Environment Safety**: Never hardcode secrets
-- **Test-First**: Write tests before implementation
-- **Clean Architecture**: Separate concerns
-- **Documentation**: Keep updated
+# Code quality
+make lint                   # Run all linters (codespell, ruff, mypy)
+make typecheck             # Type checking only
+uv run ruff check . --fix  # Auto-fix linting issues
+```
+
+### Frontend Development
+```bash
+# Start frontend development server (port 3000)
+make dev-frontend
+# Alternative: npm --prefix frontend run dev
+
+# Frontend commands (run from frontend/ directory)
+npm run build              # Production build
+npm run lint               # ESLint
+npm run typecheck          # TypeScript checking
+npm run test               # Jest tests
+npm run test:e2e           # Playwright E2E tests
+```
+
+### Full Stack Development
+```bash
+# Start both backend and frontend
+make dev                   # Runs both servers concurrently
+
+# ADK Playground (for testing agents)
+make playground            # Launches on port 8501
+```
+
+## Project Structure
+
+```
+/app                      # Backend (FastAPI + ADK)
+  /auth                   # Authentication modules
+  /models                 # Data models
+  /routes                 # API endpoints
+  /integration           # ADK integration
+  /tools                 # Agent tools
+  server.py              # Main FastAPI app
+  agent.py               # ADK agent definition
+  research_agents.py     # 8 specialized agents
+
+/frontend                 # Frontend (Next.js)
+  /src
+    /components          # React components
+    /hooks              # Custom React hooks
+    /services           # API services
+    /stores             # State management (Zustand)
+    /types              # TypeScript types
+  /tests                # Frontend tests
+
+/tests                   # Backend test suite
+  /unit                 # Unit tests
+  /integration          # Integration tests
+  /performance          # Performance tests
+```
+
+## AI Model Configuration
+
+The system uses a two-tier model approach:
+1. **PRIMARY**: OpenRouter with Qwen 3 Coder (FREE) - Set `OPENROUTER_API_KEY` in `.env.local`
+2. **FALLBACK**: Google Gemini 2.5 Pro/Flash - Requires Google Cloud auth
+
+## Testing Strategy
+
+- **Backend**: 342+ tests covering auth, SSE, agents, sessions
+- **Frontend**: Jest unit tests + Playwright E2E tests
+- **Coverage requirement**: 85% minimum
+- Run `make test` before committing changes
+
+## Environment Configuration
+
+Required `.env.local` variables:
+- `BRAVE_API_KEY` - For web search capabilities
+- `GOOGLE_CLOUD_PROJECT` - GCP project ID
+- `OPENROUTER_API_KEY` - For free AI model (recommended)
+- `JWT_SECRET_KEY` - For authentication (or set `AUTH_REQUIRE_SSE_AUTH=false` for dev)
 
 ## 🚀 Available Agents (54 Total)
 

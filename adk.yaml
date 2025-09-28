@@ -1,0 +1,24 @@
+name: vana
+version: 1.0.0
+description: Multi-agent AI research platform with specialized research agents
+agent:
+  module: app
+  export_name: root_agent
+  name: Vana Research Assistant
+  description: An intelligent research assistant that helps create comprehensive research reports
+settings:
+  port: 8080
+  models:
+    default: gemini-2.5-flash-preview-09-2025
+    worker: gemini-2.5-flash-preview-09-2025
+    orchestrator: gemini-2.5-flash-preview-09-2025
+tools:
+  - brave_search
+agents:
+  - interactive_planner_agent
+  - research_pipeline
+  - section_planner
+  - section_researcher
+  - research_evaluator
+  - enhanced_search_executor
+  - report_composer
