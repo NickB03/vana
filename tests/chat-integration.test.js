@@ -40,7 +40,7 @@ test.describe('Chat Integration Test', () => {
     // Check browser console for SSE connection logs
     page.on('console', msg => {
       if (msg.text().includes('EventSource') || msg.text().includes('SSE')) {
-        console.log('SSE Log:', msg.text());
+        // SSE Log captured for debugging
       }
     });
 

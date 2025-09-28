@@ -283,7 +283,7 @@ function fibonacci(n) {
 }
 
 const result = fibonacci(10);
-console.log(result);
+// Debug output removed - use proper test assertions instead
       `.trim(),
 
       python: `
@@ -322,7 +322,7 @@ This is a **markdown** document with *various* formatting.
 ## Code Block
 
 \`\`\`javascript
-console.log("Hello, world!");
+// Debug output removed - use proper test assertions instead
 \`\`\`
 
 ## List
