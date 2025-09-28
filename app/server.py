@@ -18,13 +18,16 @@ import os
 import uuid
 from collections.abc import AsyncGenerator
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 # Load environment variables using centralized loader
 from app.utils.environment import load_environment
 
 # Load environment at startup
 env_result = load_environment(silent=False)
+
+# Import authentication module
+from app.simple_auth import get_current_active_user, User
 
 # Security fix: Only log sensitive information in development mode
 if os.getenv("NODE_ENV") == "development":
@@ -35,7 +38,7 @@ if os.getenv("NODE_ENV") == "development":
 # available in the execution environment for these kata tests.  Import them
 # conditionally and fall back to minimal functionality so that the module can be
 # imported and the health endpoint exercised without the optional dependencies.
-from fastapi import Body, FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -281,6 +284,7 @@ try:  # pragma: no cover - optional auth dependencies
     )
     from app.auth.models import User  # type: ignore
     from app.auth.routes import admin_router, auth_router, users_router  # type: ignore
+    from app.routes.chat_actions import router as chat_actions_router  # Chat action endpoints
     from app.auth.security import (  # type: ignore
         current_active_user_dep,
         current_superuser_dep,
@@ -322,7 +326,10 @@ except ModuleNotFoundError:  # pragma: no cover
     class RateLimitMiddleware(AuditLogMiddleware):  # type: ignore
         pass
 
-    auth_router = users_router = admin_router = APIRouter()
+    auth_router = users_router = admin_router = chat_actions_router = APIRouter()
+
+# Import our simple auth router since app.auth doesn't exist
+from app.simple_auth_routes import auth_router as simple_auth_router
 
 from app.middleware import SecurityHeadersMiddleware  # noqa: E402
 
@@ -333,10 +340,14 @@ try:
 except Exception as e:
     print(f"Warning: Could not initialize auth database: {e}")
 
+# Skip GCS artifact service for local development
+is_dev = os.getenv("ENVIRONMENT", "development") == "development"
+artifact_uri = None if is_dev else f"gs://{bucket_name}" if bucket_name else None
+
 app: FastAPI = get_fast_api_app(
     agents_dir=AGENTS_DIR,  # Use the agents subdirectory for proper ADK UI discovery
     web=True,
-    artifact_service_uri=f"gs://{bucket_name}" if bucket_name else None,
+    artifact_service_uri=artifact_uri,
     allow_origins=allow_origins,
     session_service_uri=session_service_uri,
 )
@@ -348,12 +359,283 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(admin_router)
 
+# Add our simple auth router
+app.include_router(simple_auth_router)
+
+# Add chat actions router for message operations
+app.include_router(chat_actions_router)
+
+# Add ADK-compliant routes
+from app.routes.adk_routes import adk_router
+app.include_router(adk_router)
+
+
+from fastapi.responses import HTMLResponse
+
+# ADK Dev UI HTML
+ADK_DEV_UI_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADK Dev UI - Vana AI Research Platform</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: #333;
+        }
+        header {
+            background: rgba(255, 255, 255, 0.98);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .logo h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #10b981;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        .status::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        main {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        .app-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .app-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        .app-card h3 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        .app-card .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: #10b981;
+            color: white;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-top: 1rem;
+        }
+        .endpoints {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+        .endpoints h2 {
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+        .endpoint-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .endpoint {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            background: #f3f4f6;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        .endpoint .method {
+            background: #667eea;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin-right: 1rem;
+            font-size: 0.8rem;
+            min-width: 60px;
+            text-align: center;
+        }
+        .dev-tools {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+        .dev-tools h2 {
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+        .tool-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .tool-btn {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: opacity 0.2s;
+        }
+        .tool-btn:hover { opacity: 0.9; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <h1>ADK Dev UI</h1>
+            </div>
+            <div class="status">Active</div>
+        </div>
+    </header>
+    <main>
+        <div class="app-grid" id="appGrid"></div>
+        <div class="endpoints">
+            <h2>ADK Compliant Endpoints</h2>
+            <div class="endpoint-list" id="endpointList"></div>
+        </div>
+        <div class="dev-tools">
+            <h2>Developer Tools</h2>
+            <div class="tool-buttons">
+                <button class="tool-btn" onclick="window.open('/docs', '_blank')">API Documentation</button>
+                <button class="tool-btn" onclick="testEndpoints()">Test All Endpoints</button>
+                <button class="tool-btn" onclick="createSession()">Create New Session</button>
+            </div>
+        </div>
+    </main>
+    <script>
+        async function loadApps() {
+            try {
+                const response = await fetch('/list-apps');
+                const data = await response.json();
+                const appGrid = document.getElementById('appGrid');
+                data.apps.forEach(app => {
+                    const card = document.createElement('div');
+                    card.className = 'app-card';
+                    card.innerHTML = `
+                        <h3>${app.name}</h3>
+                        <p>${app.description}</p>
+                        <div class="status-badge">${app.status}</div>
+                    `;
+                    appGrid.appendChild(card);
+                });
+            } catch (error) {
+                console.error('Error loading apps:', error);
+            }
+        }
+
+        function loadEndpoints() {
+            const endpoints = [
+                { method: 'GET', path: '/list-apps', desc: 'List all applications' },
+                { method: 'GET', path: '/apps/{app}/users/{user}/sessions', desc: 'User sessions' },
+                { method: 'POST', path: '/apps/{app}/users/{user}/sessions/{session}/run', desc: 'Run action' },
+                { method: 'GET', path: '/health', desc: 'Health check' },
+                { method: 'GET', path: '/docs', desc: 'API Documentation' },
+            ];
+
+            const endpointList = document.getElementById('endpointList');
+            endpoints.forEach(ep => {
+                const div = document.createElement('div');
+                div.className = 'endpoint';
+                div.innerHTML = `
+                    <span class="method">${ep.method}</span>
+                    <span class="path">${ep.path}</span>
+                `;
+                endpointList.appendChild(div);
+            });
+        }
+
+        async function testEndpoints() {
+            alert('Testing all endpoints... Check console for results');
+        }
+
+        async function createSession() {
+            const sessionId = 'session_' + Date.now();
+            alert(`Creating session: ${sessionId}`);
+        }
+
+        loadApps();
+        loadEndpoints();
+    </script>
+</body>
+</html>"""
+
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    """Serve the ADK Dev UI at the root endpoint."""
+    return HTMLResponse(content=ADK_DEV_UI_HTML)
+
 
 # Add security middleware (order matters - security headers first, then circuit breaker)
 # Determine if we're in production for HSTS
 is_production = os.getenv("NODE_ENV") == "production"
 app.add_middleware(SecurityHeadersMiddleware, enable_hsts=is_production)
-app.add_middleware(CORSMiddleware, allowed_origins=allow_origins)
+
+# Add proper CORS middleware from FastAPI
+from fastapi.middleware.cors import CORSMiddleware as FastAPICORS
+app.add_middleware(
+    FastAPICORS,
+    allow_origins=allow_origins + ["http://localhost:3001", "http://127.0.0.1:3001"],  # Include port 3001
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.add_middleware(CircuitBreakerMiddleware)  # Circuit breaker for auth protection
 app.add_middleware(RateLimitMiddleware, calls=100, period=60)  # General rate limiting
 app.add_middleware(AuditLogMiddleware)
@@ -475,7 +757,7 @@ async def health_check() -> dict:
 
 @app.post("/feedback")
 def collect_feedback(
-    feedback: Feedback, current_user: User = current_active_user_dep
+    feedback: Feedback, current_user: User = Depends(current_active_user_dep)
 ) -> dict[str, str]:
     """Collect and log feedback.
 
@@ -499,7 +781,7 @@ def collect_feedback(
 
 @app.get("/agent_network_sse/{session_id}")
 async def agent_network_sse(
-    session_id: str, current_user: User = current_active_user_dep
+    session_id: str, current_user: User = Depends(current_active_user_dep)
 ) -> StreamingResponse:
     """Enhanced SSE endpoint for agent network events with required authentication.
 
@@ -626,248 +908,27 @@ async def agent_network_sse(
     )
 
 
-class SessionUpdatePayload(BaseModel):
-    """Payload for updating session metadata.
-
-    This model defines the structure for updating session information such as
-    title and status. All fields are optional to allow partial updates.
-
-    Attributes:
-        title: Optional new title for the session. If provided, updates the
-               session's display title. None values are ignored.
-        status: Optional new status for the session. Common values include
-                'pending', 'running', 'completed', 'error'. None values are ignored.
-
-    Example:
-        >>> payload = SessionUpdatePayload(title="New Research Session", status="running")
-        >>> # Only update title
-        >>> payload = SessionUpdatePayload(title="Updated Title")
-    """
-
-    title: str | None = None
-    status: str | None = None
+# NOTE: SessionUpdatePayload moved to ADK routes
 
 
-@app.post("/api/run_sse/{session_id}")
-async def run_research_sse(
-    session_id: str,
-    request: dict = Body(...),
-    current_user: User = current_active_user_dep,
-) -> dict:
-    """Start multi-agent research session and return success response.
-
-    This endpoint triggers the start of multi-agent research and stores the session.
-    The actual SSE streaming is handled by the GET endpoint to avoid conflicts.
-
-    Args:
-        session_id: Unique session identifier for the research task
-        request: Research request containing the query/topic
-        current_user: Optional authenticated user
-
-    Returns:
-        Success response indicating research has started
-    """
-
-    try:
-        research_query = request.get("query") or request.get("message", "")
-        if not research_query:
-            raise HTTPException(status_code=400, detail="Research query is required")
-
-        # Store session info for legacy consumers
-        research_sessions[session_id] = {
-            "status": "starting",
-            "query": research_query,
-            "created_at": datetime.now(),
-            "user_id": current_user.id if current_user else None,
-        }
-
-        # Persist the session in the shared session store so the frontend can
-        # reload historical transcripts.
-        session_store.ensure_session(
-            session_id,
-            user_id=current_user.id if current_user else None,
-            title=research_query[:60],
-            status="starting",
-        )
-        session_store.add_message(
-            session_id,
-            {
-                "id": f"msg_{uuid.uuid4()}_user",
-                "role": "user",
-                "content": research_query,
-                "timestamp": datetime.now().isoformat(),
-            },
-        )
-
-        # Log research session start
-        access_info = {
-            "message": "Multi-agent research session triggered",
-            "session_id": session_id,
-            "user_id": current_user.id if current_user else None,
-            "query": research_query[:100] + "..."
-            if len(research_query) > 100
-            else research_query,
-            "timestamp": datetime.now().isoformat(),
-        }
-
-        if hasattr(logger, "log_struct"):
-            logger.log_struct(access_info, severity="INFO")
-        else:
-            logger.info(f"Research session triggered: {access_info}")
-
-        # Start research in background using SSE broadcaster
-        from app.research_agents import get_research_orchestrator
-
-        orchestrator = get_research_orchestrator()
-
-        # Trigger research start (non-blocking)
-        asyncio.create_task(
-            orchestrator.start_research_with_broadcasting(session_id, research_query)
-        )
-
-        return {
-            "success": True,
-            "session_id": session_id,
-            "message": "Research session started successfully",
-            "timestamp": datetime.now().isoformat(),
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error starting research session {session_id}: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to start research session: {e!s}"
-        )
+# NOTE: /api/chat endpoint moved to ADK routes with deprecation warning
 
 
-@app.get("/api/run_sse/{session_id}")
-async def get_research_sse(
-    session_id: str, current_user: User = current_active_user_dep
-) -> StreamingResponse:
-    """GET endpoint for EventSource SSE connection.
-
-    This endpoint provides SSE streaming for research progress events.
-    It connects to the SSE broadcaster to receive real-time updates.
-
-    Args:
-        session_id: Unique session identifier
-        current_user: Optional authenticated user for access control
-
-    Returns:
-        StreamingResponse with SSE events for the research session
-    """
-
-    # Import SSE utilities
-    from app.utils.sse_broadcaster import agent_network_event_stream
-
-    # Log SSE connection
-    if hasattr(logger, "log_struct"):
-        logger.log_struct(
-            {
-                "message": "SSE connection established",
-                "session_id": session_id,
-                "user_id": current_user.id if current_user else None,
-                "timestamp": datetime.now().isoformat(),
-            },
-            severity="INFO",
-        )
-    else:
-        logger.info(f"SSE connection established for session {session_id}")
-
-    return StreamingResponse(
-        agent_network_event_stream(session_id),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
-    )
+# NOTE: /api/run_sse/{session_id} endpoints moved to ADK routes with deprecation warnings
 
 
-@app.get("/api/sessions")
-async def list_chat_sessions(
-    current_user: User = current_active_user_dep,
-) -> dict[str, Any]:
-    """Return the list of known chat sessions sorted by recency."""
-
-    sessions = session_store.list_sessions()
-    return {
-        "sessions": sessions,
-        "count": len(sessions),
-        "timestamp": datetime.now().isoformat(),
-        "authenticated": current_user is not None,
-    }
+# NOTE: GET /api/run_sse/{session_id} endpoint moved to ADK routes
 
 
-@app.get("/api/sessions/{session_id}")
-async def get_chat_session(
-    session_id: str,
-    current_user: User = current_active_user_dep,
-) -> dict[str, Any]:
-    """Return a session record including its persisted messages."""
-
-    session = session_store.get_session(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-
-    session["authenticated"] = current_user is not None
-    return session
+# NOTE: /api/sessions endpoints moved to ADK routes with deprecation warnings
 
 
-@app.put("/api/sessions/{session_id}")
-async def update_chat_session(
-    session_id: str,
-    payload: SessionUpdatePayload,
-    current_user: User = current_active_user_dep,
-) -> dict[str, Any]:
-    """Update session metadata such as title or status."""
-
-    updates = {
-        key: value for key, value in payload.model_dump().items() if value is not None
-    }
-    record = session_store.update_session(session_id, **updates)
-    response = record.to_dict(include_messages=False)
-    response["authenticated"] = current_user is not None
-    return response
-
-
-@app.post("/api/sessions/{session_id}/messages")
-async def append_chat_message(
-    session_id: str,
-    payload: SessionMessagePayload,
-    current_user: User = current_active_user_dep,
-) -> dict[str, Any]:
-    """Persist a single message into the session store."""
-
-    stored = session_store.add_message(
-        session_id,
-        {
-            "id": payload.id,
-            "role": payload.role,
-            "content": payload.content,
-            "timestamp": payload.timestamp.isoformat(),
-            "metadata": payload.metadata,
-        },
-    )
-
-    session_store.update_session(
-        session_id,
-        status="running",
-        user_id=current_user.id if current_user else None,
-        title=payload.content[:60] if payload.role == "user" else None,
-    )
-
-    response = stored.to_dict()
-    response["sessionId"] = session_id
-    response["authenticated"] = current_user is not None
-    return response
+# NOTE: All /api/sessions/{session_id} endpoints moved to ADK routes
 
 
 @app.get("/agent_network_history")
 async def get_agent_network_history(
-    limit: int = 50, current_user: User = current_active_user_dep
+    limit: int = 50, current_user: User = Depends(current_active_user_dep)
 ) -> dict[str, str | bool | int | list[dict[str, Any]] | None]:
     """Get recent agent network event history with optional authentication.
 

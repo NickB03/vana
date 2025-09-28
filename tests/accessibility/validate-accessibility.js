@@ -1,13 +1,28 @@
 #!/usr/bin/env node
 /**
  * Simple Accessibility Validation Script
- * 
+ *
  * Validates accessibility improvements in chat button components
  * by analyzing source code for proper aria-labels and patterns.
  */
 
 const fs = require('fs');
 const path = require('path');
+
+// Simple output utilities for test reporting
+const output = {
+  info: (msg) => process.stdout.write(`🔍 ${msg}\n`),
+  success: (msg) => process.stdout.write(`✅ ${msg}\n`),
+  warning: (msg) => process.stdout.write(`⚠️  ${msg}\n`),
+  error: (msg) => process.stdout.write(`❌ ${msg}\n`),
+  header: (msg) => {
+    process.stdout.write(`\n📊 ${msg}\n`);
+    process.stdout.write('='.repeat(50) + '\n');
+  },
+  section: (msg) => process.stdout.write(`\n${msg}:\n`),
+  result: (msg) => process.stdout.write(`  ${msg}\n`),
+  final: (msg) => process.stdout.write(`\n🎯 ${msg}\n`)
+};
 
 // ============================================================================
 // Configuration
@@ -94,8 +109,8 @@ function analyzeComponent(componentName, componentConfig) {
     match.match(/aria-label=["']([^"']+)["']/)[1]
   );
   
-  console.log(`\n🔍 Analyzing ${componentName}:`);
-  console.log(`Found aria-labels: ${foundLabels.length > 0 ? foundLabels.join(', ') : 'None'}`);
+  output.info(`Analyzing ${componentName}:`);
+  output.result(`Found aria-labels: ${foundLabels.length > 0 ? foundLabels.join(', ') : 'None'}`);
   
   // Check for expected aria-labels
   componentConfig.expectedAriaLabels.forEach(expectedLabel => {
@@ -107,7 +122,7 @@ function analyzeComponent(componentName, componentConfig) {
       issues.push(`❌ Missing expected aria-label: "${expectedLabel}"`);
       score -= 20;
     } else {
-      console.log(`✅ Found required aria-label: "${expectedLabel}"`);
+      output.success(`Found required aria-label: "${expectedLabel}"`);
     }
   });
   
@@ -175,19 +190,18 @@ function analyzeComponent(componentName, componentConfig) {
  * Generates a summary report
  */
 function generateReport(results) {
-  console.log('\n📊 ACCESSIBILITY VALIDATION REPORT');
-  console.log('='.repeat(50));
-  
+  output.header('ACCESSIBILITY VALIDATION REPORT');
+
   const totalComponents = results.length;
   const passedComponents = results.filter(r => r.passed).length;
   const overallScore = Math.round(
     results.reduce((sum, r) => sum + r.score, 0) / totalComponents
   );
-  
-  console.log(`\nSummary:`);
-  console.log(`- Components tested: ${totalComponents}`);
-  console.log(`- Components passed: ${passedComponents}`);
-  console.log(`- Overall score: ${overallScore}/100`);
+
+  output.section('Summary');
+  output.result(`Components tested: ${totalComponents}`);
+  output.result(`Components passed: ${passedComponents}`);
+  output.result(`Overall score: ${overallScore}/100`);
   
   let reportContent = `# Accessibility Validation Report\n\n`;
   reportContent += `Generated: ${new Date().toISOString()}\n\n`;
@@ -197,30 +211,30 @@ function generateReport(results) {
   reportContent += `- **Overall Score**: ${overallScore}/100\n\n`;
   
   results.forEach(result => {
-    console.log(`\n${result.component}:`);
-    console.log(`  Status: ${result.passed ? '✅ PASSED' : '❌ FAILED'}`);
-    console.log(`  Score: ${result.score}/100`);
-    
+    output.section(`${result.component}`);
+    output.result(`Status: ${result.passed ? '✅ PASSED' : '❌ FAILED'}`);
+    output.result(`Score: ${result.score}/100`);
+
     reportContent += `## ${result.component}\n`;
     reportContent += `- **Status**: ${result.passed ? '✅ PASSED' : '❌ FAILED'}\n`;
     reportContent += `- **Score**: ${result.score}/100\n`;
     reportContent += `- **Found Labels**: ${result.foundLabels.length > 0 ? result.foundLabels.join(', ') : 'None'}\n\n`;
-    
+
     if (result.issues.length > 0) {
-      console.log(`  Issues:`);
-      result.issues.forEach(issue => console.log(`    ${issue}`));
-      
+      output.result('Issues:');
+      result.issues.forEach(issue => output.result(`  ${issue}`));
+
       reportContent += `**Issues**:\n`;
       result.issues.forEach(issue => {
         reportContent += `- ${issue}\n`;
       });
       reportContent += `\n`;
     }
-    
+
     if (result.recommendations.length > 0) {
-      console.log(`  Recommendations:`);
-      result.recommendations.forEach(rec => console.log(`    💡 ${rec}`));
-      
+      output.result('Recommendations:');
+      result.recommendations.forEach(rec => output.result(`  💡 ${rec}`));
+
       reportContent += `**Recommendations**:\n`;
       result.recommendations.forEach(rec => {
         reportContent += `- ${rec}\n`;
@@ -238,7 +252,7 @@ function generateReport(results) {
   const reportPath = path.join(reportsDir, `accessibility-report-${Date.now()}.md`);
   fs.writeFileSync(reportPath, reportContent);
   
-  console.log(`\n📄 Report saved: ${reportPath}`);
+  output.success(`Report saved: ${reportPath}`);
   
   return {
     overallScore,
@@ -253,37 +267,37 @@ function generateReport(results) {
 // ============================================================================
 
 function main() {
-  console.log('🚀 Starting Accessibility Validation');
-  console.log('Testing chat button components for proper aria-labels...\n');
-  
+  output.info('Starting Accessibility Validation');
+  output.info('Testing chat button components for proper aria-labels...');
+
   const results = [];
-  
+
   // Analyze each component
   for (const [componentName, config] of Object.entries(COMPONENTS)) {
     const result = analyzeComponent(componentName, config);
     results.push(result);
   }
-  
+
   // Generate report
   const summary = generateReport(results);
-  
+
   // Final assessment
-  console.log('\n🎯 FINAL ASSESSMENT:');
+  output.final('FINAL ASSESSMENT:');
   if (summary.overallScore >= 90) {
-    console.log('🎉 Excellent! Accessibility improvements are well implemented.');
+    output.success('Excellent! Accessibility improvements are well implemented.');
   } else if (summary.overallScore >= 70) {
-    console.log('👍 Good progress! Some improvements still needed.');
+    output.warning('Good progress! Some improvements still needed.');
   } else {
-    console.log('⚠️  Significant accessibility improvements required.');
+    output.error('Significant accessibility improvements required.');
   }
-  
-  console.log('\nKey findings:');
-  console.log('✅ All major components have been enhanced with aria-labels');
-  console.log('✅ Mode toggle buttons properly labeled');
-  console.log('✅ Control buttons have descriptive labels');
-  console.log('✅ Menu items follow accessibility best practices');
-  console.log('✅ Navigation elements are properly labeled');
-  
+
+  output.section('Key findings');
+  output.success('All major components have been enhanced with aria-labels');
+  output.success('Mode toggle buttons properly labeled');
+  output.success('Control buttons have descriptive labels');
+  output.success('Menu items follow accessibility best practices');
+  output.success('Navigation elements are properly labeled');
+
   return summary.overallScore >= 70 ? 0 : 1;
 }
 

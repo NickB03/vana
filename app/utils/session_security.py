@@ -91,7 +91,11 @@ class SessionSecurityValidator:
         # Load from secure key management service or generate securely
         key_seed = os.getenv("SESSION_INTEGRITY_KEY")
         if not key_seed:
-            raise ValueError("SESSION_INTEGRITY_KEY must be configured securely")
+            # In development, use a default key
+            if os.getenv("ENVIRONMENT", "production") == "development":
+                key_seed = "development-key-f5c142e23b664619697dce493483bd9ec09dfc9779bca2e418caf864606ede4d"
+            else:
+                raise ValueError("SESSION_INTEGRITY_KEY must be configured securely")
         # Ensure key has sufficient entropy (at least 256 bits)
         if len(key_seed) < 32:
             raise ValueError("SESSION_INTEGRITY_KEY must be at least 32 characters")
@@ -244,17 +248,32 @@ class SessionSecurityValidator:
         Returns:
             True if session ID is weak or predictable.
         """
-        weak_patterns = [
-            r"^[0]+$",  # All zeros
-            r"^[1]+$",  # All ones
-            r"^test",  # Starts with 'test'
-            r"^demo",  # Starts with 'demo'
-            r"^admin",  # Starts with 'admin'
-            r"^session",  # Starts with 'session'
-            r"password",  # Contains 'password'
-            r"secret",  # Contains 'secret'
-            r"^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-000000000000$",  # Weak UUID
-        ]
+        import os
+
+        # In development mode, allow test sessions and UUIDs
+        if os.getenv("ENVIRONMENT", "production") == "development":
+            # Still reject very weak patterns
+            weak_patterns = [
+                r"^[0]+$",  # All zeros
+                r"^[1]+$",  # All ones
+                r"^admin",  # Starts with 'admin'
+                r"password",  # Contains 'password'
+                r"secret",  # Contains 'secret'
+                r"^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-000000000000$",  # Weak UUID
+            ]
+        else:
+            # Production mode - strict validation
+            weak_patterns = [
+                r"^[0]+$",  # All zeros
+                r"^[1]+$",  # All ones
+                r"^test",  # Starts with 'test'
+                r"^demo",  # Starts with 'demo'
+                r"^admin",  # Starts with 'admin'
+                r"^session",  # Starts with 'session'
+                r"password",  # Contains 'password'
+                r"secret",  # Contains 'secret'
+                r"^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-000000000000$",  # Weak UUID
+            ]
 
         session_lower = session_id.lower()
         return any(re.search(pattern, session_lower) for pattern in weak_patterns)

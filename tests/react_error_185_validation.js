@@ -165,7 +165,7 @@ const testScenarios = [
       });
       
       if (!initialMemory) {
-        console.log('Memory monitoring not available in this browser');
+        // Memory monitoring not available - using fallback
         return;
       }
       

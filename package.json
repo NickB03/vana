@@ -27,6 +27,10 @@
   "author": "Vana Team",
   "license": "MIT",
   "devDependencies": {
+    "@playwright/test": "^1.55.1",
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "playwright": "^1.55.1"
   }
 }
