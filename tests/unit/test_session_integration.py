@@ -37,17 +37,12 @@ class TestSessionLifecycleIntegration:
             # 1. Start research session via POST
             research_query = "Analyze climate change impact on agriculture"
 
-            with patch(
-                "app.research_agents.get_research_orchestrator"
-            ) as mock_orchestrator:
-                mock_orch_instance = Mock()
-                mock_orchestrator.return_value = mock_orch_instance
+            # FIXED: ADK agents run on port 8080, no orchestrator needed
+            response = client.post(
+                f"/api/run_sse/{session_id}", json={"query": research_query}
+            )
 
-                response = client.post(
-                    f"/api/run_sse/{session_id}", json={"query": research_query}
-                )
-
-                assert response.status_code == 200
+            assert response.status_code == 200
                 data = response.json()
                 assert data["success"] is True
                 assert data["session_id"] == session_id
@@ -156,13 +151,12 @@ class TestSessionLifecycleIntegration:
                 """Create and process a session in a thread."""
                 session_id = f"concurrent-session-{session_index}"
 
-                # Start session
-                with patch("app.research_agents.get_research_orchestrator"):
-                    response = client.post(
-                        f"/api/run_sse/{session_id}",
-                        json={"query": f"Research topic {session_index}"},
-                    )
-                    assert response.status_code == 200
+                # Start session (ADK agents handle the research)
+                response = client.post(
+                    f"/api/run_sse/{session_id}",
+                    json={"query": f"Research topic {session_index}"},
+                )
+                assert response.status_code == 200
 
                 # Process events
                 for progress in [25, 50, 75, 100]:
@@ -235,12 +229,11 @@ class TestSessionLifecycleIntegration:
             client = TestClient(app)
             session_id = f"error-workflow-{uuid.uuid4()}"
 
-            # Start session
-            with patch("app.research_agents.get_research_orchestrator"):
-                response = client.post(
-                    f"/api/run_sse/{session_id}", json={"query": "Test error handling"}
-                )
-                assert response.status_code == 200
+            # Start session (ADK agents handle the research)
+            response = client.post(
+                f"/api/run_sse/{session_id}", json={"query": "Test error handling"}
+            )
+            assert response.status_code == 200
 
             # Simulate initial progress
             test_store.ingest_event(
@@ -320,13 +313,12 @@ class TestSessionLifecycleIntegration:
             client = TestClient(app)
             session_id = f"auth-workflow-{uuid.uuid4()}"
 
-            # Start authenticated session
-            with patch("app.research_agents.get_research_orchestrator"):
-                response = client.post(
-                    f"/api/run_sse/{session_id}",
-                    json={"query": "Authenticated research query"},
-                )
-                assert response.status_code == 200
+            # Start authenticated session (ADK agents handle the research)
+            response = client.post(
+                f"/api/run_sse/{session_id}",
+                json={"query": "Authenticated research query"},
+            )
+            assert response.status_code == 200
 
             # Add authenticated message
             response = client.post(
@@ -680,21 +672,7 @@ def integration_test_client():
         yield TestClient(app)
 
 
-@pytest.fixture
-def mock_research_orchestrator():
-    """Mock research orchestrator for integration testing."""
-    with patch("app.research_agents.get_research_orchestrator") as mock:
-        orchestrator = Mock()
-        orchestrator.start_research_with_broadcasting = Mock()
-        mock.return_value = orchestrator
-        yield orchestrator
-
-
-def test_integration_fixtures(integration_test_client, mock_research_orchestrator):
+def test_integration_fixtures(integration_test_client):
     """Test that integration fixtures work correctly."""
     response = integration_test_client.get("/health")
     assert response.status_code == 200
-
-    # Test mock orchestrator
-    assert mock_research_orchestrator is not None
-    assert hasattr(mock_research_orchestrator, "start_research_with_broadcasting")
