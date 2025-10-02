@@ -26,8 +26,8 @@ from app.utils.environment import load_environment
 # Load environment at startup
 env_result = load_environment(silent=False)
 
-# Import authentication module
-from app.simple_auth import get_current_active_user, User
+# Authentication is imported later in try/except block
+# Simple auth has been deprecated in favor of app.auth.security
 
 # Security fix: Only log sensitive information in development mode
 if os.getenv("NODE_ENV") == "development":
@@ -133,7 +133,11 @@ else:
     if os.getenv("NODE_ENV") == "production":
         allow_origins = []  # No wildcards in production
     else:
-        allow_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+        allow_origins = [
+            "http://localhost:3000", "http://127.0.0.1:3000",
+            "http://localhost:3001", "http://127.0.0.1:3001",
+            "http://localhost:3002", "http://127.0.0.1:3002"
+        ]
 
 # Create bucket name for the project
 # Skip bucket creation in CI environment
@@ -328,9 +332,6 @@ except ModuleNotFoundError:  # pragma: no cover
 
     auth_router = users_router = admin_router = chat_actions_router = APIRouter()
 
-# Import our simple auth router since app.auth doesn't exist
-from app.simple_auth_routes import auth_router as simple_auth_router
-
 from app.middleware import SecurityHeadersMiddleware  # noqa: E402
 
 # Initialize auth database
@@ -339,6 +340,22 @@ try:
     print("Authentication database initialized")
 except Exception as e:
     print(f"Warning: Could not initialize auth database: {e}")
+
+# CRIT-003: Validate JWT secret key configuration
+from app.auth.config import get_auth_settings
+auth_settings = get_auth_settings()
+environment = os.getenv("ENVIRONMENT", "development")
+
+if environment == "production" and not auth_settings.secret_key:
+    raise RuntimeError(
+        "CRITICAL: JWT_SECRET_KEY or AUTH_SECRET_KEY must be set in production environment. "
+        "This is required for secure token signing and user session persistence. "
+        "Generate a secure key with: openssl rand -hex 32"
+    )
+
+if not auth_settings.secret_key:
+    print("WARNING: JWT_SECRET_KEY not set. Using insecure defaults for development only.")
+    print("Generate a secure key with: openssl rand -hex 32")
 
 # Skip GCS artifact service for local development
 is_dev = os.getenv("ENVIRONMENT", "development") == "development"
@@ -354,13 +371,14 @@ app: FastAPI = get_fast_api_app(
 app.title = "vana"
 app.description = "API for interacting with the Agent vana"
 
+# Store ADK configuration for route access
+app.state.agents_dir = AGENTS_DIR
+app.state.session_service_uri = session_service_uri
+
 # Add authentication routers
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(admin_router)
-
-# Add our simple auth router
-app.include_router(simple_auth_router)
 
 # Add chat actions router for message operations
 app.include_router(chat_actions_router)
@@ -630,7 +648,7 @@ app.add_middleware(SecurityHeadersMiddleware, enable_hsts=is_production)
 from fastapi.middleware.cors import CORSMiddleware as FastAPICORS
 app.add_middleware(
     FastAPICORS,
-    allow_origins=allow_origins + ["http://localhost:3001", "http://127.0.0.1:3001"],  # Include port 3001
+    allow_origins=allow_origins,  # Already includes ports 3000, 3001, 3002
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -961,7 +979,7 @@ async def get_agent_network_history(
         logger.log_struct(access_info, severity="INFO")
     else:
         logger.info(f"Agent network history accessed: {access_info}")
-    history = get_agent_network_event_history(limit)
+    history = await get_agent_network_event_history(limit)
 
     # Add user context to response if available
     return {
