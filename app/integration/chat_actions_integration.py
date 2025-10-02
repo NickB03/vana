@@ -37,8 +37,8 @@ class ChatActionsIntegrator:
         existing research orchestrator for actual AI-powered regeneration.
         """
         try:
-            # Import research agents (this may not be available in all environments)
-            from app.research_agents import get_research_orchestrator
+            # FIXED: Use ADK agents instead of orchestrator
+            # ADK agents are defined in app/agent.py and run on port 8080
 
             # Create progress tracker for real-time updates
             progress_tracker = ProgressTracker(
@@ -55,9 +55,6 @@ class ChatActionsIntegrator:
                 task.id,
                 self.broadcaster
             )
-
-            # Get research orchestrator
-            orchestrator = get_research_orchestrator()
 
             # Start thought process
             await thought_tracker.start_thinking(

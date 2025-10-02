@@ -1,102 +1,34 @@
-# Available Agents - Claude Code & MCP Integration
+# Repository Guidelines
 
-## Core Development Agents (Claude Code Task Tool)
-- `coder` - Implementation specialist for writing clean, efficient code
-- `reviewer` - Code review and quality assurance specialist  
-- `tester` - Comprehensive testing and quality assurance specialist
-- `planner` - Strategic planning and task orchestration agent
-- `researcher` - Deep research and information gathering specialist
+## Project Structure & Module Organization
+- `app/` FastAPI backend with ADK orchestration, auth, routes, and monitoring utilities.
+- `agents/` reusable agent personas and coordination hooks imported by the backend.
+- `frontend/` Next.js + TypeScript client under `frontend/src`, plus Storybook, docs, and lint configs.
+- `tests/` shared pytest, Playwright, and JS suites (unit, integration, security, performance).
+- `scripts/` automation for coverage and baselines; `docs/` reference diagrams and runbooks.
 
-## Specialized Development Agents
-- `backend-dev` - Backend API development, REST and GraphQL endpoints
-- `mobile-dev` - React Native mobile application development
-- `ml-developer` - Machine learning model development, training, deployment
-- `cicd-engineer` - GitHub Actions CI/CD pipeline creation and optimization
-- `api-docs` - OpenAPI/Swagger documentation specialist
-- `system-architect` - System architecture design and technical decisions
+## Build, Test, and Development Commands
+- Bootstrap with `make setup-local-env`; it installs Python deps via `uv` and frontend packages.
+- `make dev` or `npm run dev` starts FastAPI (`localhost:8000`) and Next.js (`localhost:3000`) with hot reload.
+- Quality gates: `make test`, `make lint`, `make typecheck`. Run all before pushing.
+- Focused checks: `uv run pytest tests/unit -v`, `uv run pytest tests/integration -v`, `npm --prefix frontend run test:coverage`, `npm --prefix frontend run lint`.
+- For docker parity use `make docker-up` / `make docker-down`.
 
-## SPARC Methodology Agents
-- `sparc-coord` - SPARC methodology orchestrator for systematic development
-- `sparc-coder` - Transform specifications into working code with TDD
-- `specification` - Requirements analysis specialist
-- `pseudocode` - Algorithm design specialist  
-- `architecture` - System design specialist
-- `refinement` - Iterative improvement specialist
+## Coding Style & Naming Conventions
+- Python uses Ruff formatting (line length 88, 4-space indents); snake_case modules/functions, PascalCase classes, typed FastAPI signatures.
+- Run `uv run ruff check .`, `uv run ruff format .`, and `uv run mypy .` to satisfy linting and type gates.
+- TypeScript components live in PascalCase under `frontend/src`; hooks follow `useThing` camelCase. ESLint + Tailwind conventions are enforced via `npm --prefix frontend run lint` and `npm --prefix frontend run typecheck`.
 
-## Repository & GitHub Management
-- `github-modes` - GitHub integration workflow orchestration
-- `pr-manager` - Pull request management with swarm coordination
-- `code-review-swarm` - Specialized AI agents for comprehensive code reviews
-- `issue-tracker` - Intelligent issue management and project coordination
-- `release-manager` - Automated release coordination and deployment
-- `workflow-automation` - GitHub Actions workflow automation
-- `repo-architect` - Repository structure optimization
-- `multi-repo-swarm` - Cross-repository orchestration
+## Testing Guidelines
+- Pytest configuration enforces 85% coverage (see `pyproject.toml`); use markers like `@pytest.mark.integration` and share fixtures via `tests/utils`.
+- End-to-end flows live in `tests/e2e`; export `PLAYWRIGHT=True` then run `npx playwright test --config tests/playwright.config.ts`.
+- Frontend Jest suites reside in `frontend/tests`; keep filenames descriptive (`component.behavior.test.tsx`) and commit updated snapshots.
 
-## Performance & Analysis
-- `perf-analyzer` - Performance bottleneck identification and resolution
-- `performance-benchmarker` - Comprehensive performance benchmarking
-- `code-analyzer` - Advanced code quality analysis and improvements
-- `production-validator` - Production validation ensuring deployment readiness
+## Commit & Pull Request Guidelines
+- Follow Conventional Commits (`feat:`, `fix:`, etc.) as in current history.
+- PRs should describe scope, list verification commands, link issues, and attach UI screenshots or API samples when behaviour changes.
+- Rebase before opening, confirm CI is green, and flag breaking changes explicitly.
 
-## Swarm Coordination (MCP Tools)
-- `hierarchical-coordinator` - Queen-led hierarchical swarm coordination
-- `mesh-coordinator` - Peer-to-peer mesh network swarm
-- `adaptive-coordinator` - Dynamic topology switching coordinator
-- `byzantine-coordinator` - Byzantine fault-tolerant consensus protocols
-- `gossip-coordinator` - Gossip-based consensus for scalable systems
-
-## Memory & Intelligence
-- `memory-coordinator` - Persistent memory across sessions and agent sharing
-- `smart-agent` - Intelligent agent coordination and dynamic spawning
-- `task-orchestrator` - Central coordination for task decomposition
-
-## Testing & Validation
-- `tdd-london-swarm` - TDD London School specialist for mock-driven development
-- `production-validator` - Production validation specialist
-
-## Utility & Templates
-- `base-template-generator` - Create foundational templates and boilerplate code
-- `migration-planner` - Comprehensive migration planning
-- `swarm-init` - Swarm initialization and topology optimization
-
-## Usage Examples
-
-### Frontend Development with Swarm
-```javascript
-// Parallel agent execution via Claude Code Task tool
-Task("React Developer", "Build UI components with shadcn/ui", "coder")
-Task("Test Engineer", "Create Jest/Vitest test suite", "tester") 
-Task("Performance Analyst", "Optimize bundle and runtime performance", "perf-analyzer")
-Task("Code Reviewer", "Review code quality and best practices", "reviewer")
-```
-
-### Backend API Development
-```javascript
-Task("Backend Developer", "Implement REST API with Express/FastAPI", "backend-dev")
-Task("Database Architect", "Design schema and optimize queries", "system-architect")
-Task("API Documentation", "Generate OpenAPI/Swagger docs", "api-docs")
-Task("Security Auditor", "Review authentication and authorization", "reviewer")
-```
-
-### SPARC Methodology Workflow
-```javascript
-Task("Requirements Analyst", "Analyze and document requirements", "specification")
-Task("Algorithm Designer", "Create pseudocode and logic design", "pseudocode")
-Task("System Architect", "Design overall system architecture", "architecture")
-Task("TDD Implementer", "Implement with test-driven development", "sparc-coder")
-Task("Quality Refiner", "Iterative improvement and optimization", "refinement")
-```
-
-## Coordination Best Practices
-
-1. **Memory First**: Always check cross-session memory before starting work
-2. **Parallel Execution**: Use single messages with multiple Task calls
-3. **Hooks Integration**: Use Claude Flow hooks for agent coordination
-4. **Progress Tracking**: Store discoveries and results in memory
-5. **Quality Focus**: Always include reviewer and tester agents in workflows
-
-## Agent Limits
-- Maximum concurrent agents: 12 per swarm
-- Recommended parallel execution: 5-8 agents for optimal performance
-- Always include at least one reviewer/tester agent in development workflows
+## Security & Configuration Tips
+- Load secrets from `.env.local`; `pydantic-settings` wires them into the backend. Never commit real credentials.
+- Store long-lived keys in secret managers or redacted templates in `config/`, and update docs when policies change.
