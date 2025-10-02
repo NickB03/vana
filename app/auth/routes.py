@@ -54,6 +54,11 @@ from .security import (
     verify_password_reset_token,
     verify_refresh_token,
 )
+from .session_rotation import (
+    rotate_session_on_login,
+    rotate_session_on_oauth,
+    rotate_session_on_registration,
+)
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -249,6 +254,15 @@ async def register_user(
 
         db.commit()
         db.refresh(db_user)
+
+        # CRIT-007: Invalidate any existing session and rotate session ID
+        # to prevent session fixation attacks
+        rotation_result = rotate_session_on_registration(request, db_user.id, db=db)
+        if not rotation_result.success:
+            logger.warning(
+                f"Session rotation failed during registration for user {db_user.id}: "
+                f"{rotation_result.error_message}"
+            )
 
         # Create tokens for immediate login after registration
         access_token = create_access_token(
@@ -481,6 +495,15 @@ async def login_user(
     # Update last login
     user.last_login = datetime.now(timezone.utc)
     db.commit()
+
+    # CRIT-007: Invalidate any existing session and rotate session ID
+    # to prevent session fixation attacks on login
+    rotation_result = rotate_session_on_login(request, user.id, db=db)
+    if not rotation_result.success:
+        logger.warning(
+            f"Session rotation failed during login for user {user.id}: "
+            f"{rotation_result.error_message}"
+        )
 
     # Create tokens
     access_token = create_access_token(data={"sub": str(user.id), "email": user.email})
@@ -1009,6 +1032,15 @@ async def google_login(
         # Update last login
         user.last_login = datetime.now(timezone.utc)
         db.commit()
+
+        # CRIT-007: Invalidate any existing session and rotate session ID
+        # to prevent session fixation attacks on OAuth authentication
+        rotation_result = rotate_session_on_oauth(request, user.id, db=db, provider="google")
+        if not rotation_result.success:
+            logger.warning(
+                f"Session rotation failed during OAuth login for user {user.id}: "
+                f"{rotation_result.error_message}"
+            )
 
         # Create tokens
         access_token = create_access_token(

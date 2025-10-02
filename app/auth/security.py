@@ -21,7 +21,12 @@ from .models import RefreshToken, User
 from .schemas import TokenData
 
 # Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+auth_settings = get_auth_settings()
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__rounds=auth_settings.bcrypt_rounds,
+)
 
 # JWT token scheme
 security = HTTPBearer()

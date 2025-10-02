@@ -47,8 +47,7 @@ class AuthSettings(BaseSettings):
 
     # JWT Settings
     secret_key: str = Field(
-        default_factory=lambda: os.urandom(32).hex(),
-        description="Secret key for JWT token signing",
+        description="Secret key for JWT token signing - MUST be set via JWT_SECRET_KEY or AUTH_SECRET_KEY environment variable",
     )
     algorithm: str = Field(default="HS256", description="JWT algorithm")
     access_token_expire_minutes: int = Field(
