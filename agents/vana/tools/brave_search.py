@@ -27,6 +27,7 @@ Exports:
 import asyncio
 import logging
 import os
+import threading
 from typing import Any
 
 import aiohttp
@@ -35,20 +36,19 @@ from google.adk.tools.function_tool import FunctionTool
 logger = logging.getLogger(__name__)
 
 
-# Global HTTP client session with connection pooling for performance optimization
-_http_session: aiohttp.ClientSession | None = None
-"""Global aiohttp.ClientSession instance for connection reuse.
+# Thread-local storage for HTTP sessions to avoid event loop conflicts
+_thread_local = threading.local()
+"""Thread-local storage for aiohttp.ClientSession instances.
 
-Maintains a singleton HTTP session to enable connection pooling across
-multiple search requests, significantly improving performance for repeated
-API calls to Brave Search.
+Each thread gets its own session to avoid event loop conflicts when
+running searches in different thread contexts (e.g., from sync wrapper).
 """
 
 
 async def get_http_session() -> aiohttp.ClientSession:
-    """Get or create a global HTTP session with optimized connection pooling.
+    """Get or create a thread-local HTTP session with optimized connection pooling.
 
-    Creates a singleton aiohttp ClientSession with performance optimizations:
+    Creates a thread-local aiohttp ClientSession with performance optimizations:
     - Connection pooling (100 total, 20 per host)
     - DNS caching with 5-minute TTL
     - Keepalive connections for 30 seconds
@@ -58,12 +58,11 @@ async def get_http_session() -> aiohttp.ClientSession:
         Configured aiohttp.ClientSession instance with connection pooling
 
     Note:
-        This function maintains a global session to enable connection reuse
-        across multiple search requests for improved performance.
+        This function maintains a thread-local session to avoid event loop
+        conflicts when running searches in different thread contexts.
     """
-    global _http_session
-
-    if _http_session is None or _http_session.closed:
+    # Check if we have a session for this thread
+    if not hasattr(_thread_local, 'session') or _thread_local.session is None or _thread_local.session.closed:
         # Configure connection pooling for optimal performance
         connector = aiohttp.TCPConnector(
             limit=100,  # Total connection pool size
@@ -81,7 +80,7 @@ async def get_http_session() -> aiohttp.ClientSession:
             sock_read=20,  # Socket read timeout
         )
 
-        _http_session = aiohttp.ClientSession(
+        _thread_local.session = aiohttp.ClientSession(
             connector=connector,
             timeout=timeout,
             headers={
@@ -91,27 +90,25 @@ async def get_http_session() -> aiohttp.ClientSession:
             },
         )
 
-        logger.info("Created new HTTP session with connection pooling")
+        logger.info(f"Created new HTTP session for thread {threading.current_thread().name}")
 
-    return _http_session
+    return _thread_local.session
 
 
 async def cleanup_http_session() -> None:
-    """Clean up the global HTTP session and release resources.
+    """Clean up the thread-local HTTP session and release resources.
 
-    Properly closes the global aiohttp session and sets it to None to ensure
+    Properly closes the thread-local aiohttp session and sets it to None to ensure
     clean resource management. Should be called during application shutdown.
 
     Note:
         This function is safe to call multiple times and will only close
         sessions that are still open.
     """
-    global _http_session
-
-    if _http_session and not _http_session.closed:
-        await _http_session.close()
-        _http_session = None
-        logger.info("Cleaned up HTTP session")
+    if hasattr(_thread_local, 'session') and _thread_local.session and not _thread_local.session.closed:
+        await _thread_local.session.close()
+        _thread_local.session = None
+        logger.info(f"Cleaned up HTTP session for thread {threading.current_thread().name}")
 
 
 async def brave_web_search_async(
@@ -207,13 +204,68 @@ async def brave_web_search_async(
         return {"error": str(e), "query": query, "results": []}
 
 
+# Synchronous search function that doesn't reuse sessions across calls
+def _sync_brave_search(query: str, count: int, api_key: str) -> dict[str, Any]:
+    """Perform synchronous Brave search without connection pooling.
+
+    Creates a fresh session for each search to avoid event loop conflicts.
+    Trade-off: Slightly slower but more reliable across different execution contexts.
+
+    Args:
+        query: Search query string
+        count: Number of results (1-20)
+        api_key: Brave API key
+
+    Returns:
+        Search results dictionary
+    """
+    import requests
+
+    try:
+        base_url = "https://api.search.brave.com/res/v1"
+        headers = {
+            "X-Subscription-Token": api_key,
+            "Accept": "application/json",
+        }
+        params = {
+            "q": query,
+            "count": min(max(1, count), 20),
+            "text_decorations": "false",
+            "search_lang": "en",
+        }
+
+        response = requests.get(
+            f"{base_url}/web/search",
+            headers=headers,
+            params=params,
+            timeout=30
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        # Format results
+        formatted_results = []
+        for item in data.get("web", {}).get("results", []):
+            formatted_results.append({
+                "title": item.get("title", ""),
+                "link": item.get("url", ""),
+                "snippet": item.get("description", ""),
+            })
+
+        return {"results": formatted_results, "query": query, "source": "brave_search"}
+
+    except Exception as e:
+        logger.error(f"Brave sync search error: {e}")
+        return {"error": str(e), "query": query, "results": []}
+
+
 # Create the Brave search function - synchronous version for ADK compatibility
 def brave_web_search_function(query: str, count: int = 5, **kwargs) -> dict[str, Any]:
     """Synchronous wrapper for Brave Search API compatible with ADK tools.
 
-    Provides a synchronous interface to the async Brave Search implementation,
-    handling event loop management automatically. This function is designed
-    for use with Google ADK FunctionTool which expects synchronous interfaces.
+    Provides a synchronous interface using requests library to avoid
+    event loop complexity. This function is designed for use with Google ADK
+    FunctionTool which expects synchronous interfaces.
 
     Args:
         query: The search query string to execute
@@ -225,10 +277,9 @@ def brave_web_search_function(query: str, count: int = 5, **kwargs) -> dict[str,
         brave_web_search_async()
 
     Implementation Details:
-        - Detects existing event loops and uses ThreadPoolExecutor if needed
-        - Creates new event loop in separate thread when called from async context
-        - Falls back to asyncio.run() when no event loop is running
-        - Includes 60-second timeout for search operations
+        - Uses requests library for synchronous HTTP calls
+        - No connection pooling to avoid event loop conflicts
+        - Reliable across different execution contexts (threads, async, sync)
 
     Example:
         >>> # Use in ADK tool
@@ -236,52 +287,16 @@ def brave_web_search_function(query: str, count: int = 5, **kwargs) -> dict[str,
         >>> results = search_tool.invoke("AI research papers")
     """
     try:
-        # Check if we're already in an async context
-        try:
-            loop = asyncio.get_running_loop()
-            # We're in an async context, need to run in thread pool
-            import concurrent.futures
+        # Retrieve API key
+        api_key = kwargs.get("api_key") or os.getenv("BRAVE_API_KEY")
+        if not api_key:
+            return {
+                "error": "BRAVE_API_KEY environment variable is not set",
+                "query": query,
+                "results": []
+            }
 
-            def run_async():
-                """Run async Brave search in a separate thread with new event loop.
-
-                Creates a new event loop in the current thread to run the async
-                Brave search function. This is necessary when calling async code
-                from a sync context that already has a running event loop.
-
-                Returns:
-                    dict: Search results from brave_web_search_async, or error dict
-                          with 'error', 'query', and empty 'results' list on failure
-
-                Note:
-                    This function is designed to be executed in a thread pool to
-                    avoid blocking the main event loop while still allowing async
-                    operations.
-                """
-                # Create new event loop for this thread
-                new_loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(new_loop)
-                try:
-                    result = new_loop.run_until_complete(
-                        brave_web_search_async(query, count, **kwargs)
-                    )
-                    return result
-                except Exception as e:
-                    logger.error(f"Brave async search thread error: {e}")
-                    return {"error": str(e), "query": query, "results": []}
-                finally:
-                    try:
-                        new_loop.close()
-                    except Exception:
-                        pass  # Ignore close errors
-
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(run_async)
-                return future.result(timeout=60)  # 60 second timeout
-
-        except RuntimeError:
-            # No running loop, safe to use asyncio.run
-            return asyncio.run(brave_web_search_async(query, count, **kwargs))
+        return _sync_brave_search(query, count, api_key)
 
     except Exception as e:
         logger.error(f"Brave search wrapper error: {e}")
