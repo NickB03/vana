@@ -98,7 +98,7 @@ MEMORY_PROTOCOL:
 #### Agent Coordination Protocol:
 ```bash
 # Before Work (Auto-load cross-session knowledge)
-npx claude-flow@alpha hooks pre-task
+npx claude-flow@latest hooks pre-task
 mcp__claude-flow__memory_usage --action retrieve --key "project/current-state"
 
 # During Work (Store discoveries and progress)
@@ -145,7 +145,7 @@ export interface SessionState {
 #### Multi-Server Setup:
 ```bash
 # Core claude-flow (required)
-claude mcp add claude-flow npx claude-flow@alpha mcp start
+claude mcp add claude-flow npx claude-flow@latest mcp start
 
 # Enhanced coordination (optional)
 claude mcp add ruv-swarm npx ruv-swarm mcp start

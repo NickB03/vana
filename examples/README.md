@@ -23,8 +23,8 @@ examples/
 
 1. **Claude-Flow MCP Server**: Ensure you have the Claude-Flow MCP server installed and running
 ```bash
-npm install claude-flow@alpha
-claude mcp add claude-flow npx claude-flow@alpha mcp start
+npm install claude-flow@latest
+claude mcp add claude-flow npx claude-flow@latest mcp start
 ```
 
 2. **Node.js Environment**: Examples are written in JavaScript/Node.js
