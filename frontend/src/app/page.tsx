@@ -1,11 +1,16 @@
 'use client'
 
-import { Suspense, useEffect, useRef, useState, useCallback } from 'react'
+import { Suspense, useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { useChatStream, ChatStreamReturn, useChatStore } from '@/hooks/useChatStream'
 import { apiClient } from '@/lib/api/client'
 import VanaHomePage from '@/components/vana/VanaHomePage'
 import VanaSidebar from '@/components/vana/VanaSidebar'
+import {
+  validateChatInput,
+  getCharacterStatus,
+  RateLimitTracker
+} from '@/lib/validation/chat-validation'
 import {
   ChatContainerContent,
   ChatContainerRoot,
@@ -56,7 +61,15 @@ function ChatView({ chat, onExit }: { chat: ChatStreamReturn; onExit: () => void
     status: null,
     isVisible: false
   })
+  const [validationError, setValidationError] = useState<string | null>(null)
+  const rateLimiter = useRef(new RateLimitTracker())
   const chatContainerRef = useRef<HTMLDivElement>(null)
+
+  // Memoized character count status for performance
+  const characterStatus = useMemo(
+    () => getCharacterStatus(inputValue.length),
+    [inputValue.length]
+  )
 
   // Console log to verify state initialization - removed to prevent infinite re-renders
   // Only log once on mount
@@ -71,15 +84,42 @@ function ChatView({ chat, onExit }: { chat: ChatStreamReturn; onExit: () => void
     }
   }, [messages.length])
 
-  const handleSubmit = async () => {
-    if (!inputValue.trim()) return
+  const handleSubmit = async (submittedValue?: string) => {
+    // Use provided value or fall back to state (fixes Enter key bypass)
+    const valueToValidate = submittedValue !== undefined ? submittedValue : inputValue
+
+    // Clear previous validation errors
+    setValidationError(null)
+
+    // Validate input
+    const validationResult = validateChatInput(valueToValidate)
+    if (!validationResult.success) {
+      const errorMessage = validationResult.error?.message || 'Invalid input'
+      setValidationError(errorMessage)
+      console.error('[Validation Failed]', errorMessage, 'Input:', valueToValidate.substring(0, 100))
+      return
+    }
+
+    // Check rate limit (client-side UX)
+    if (!rateLimiter.current.canSend()) {
+      const secondsRemaining = rateLimiter.current.getSecondsUntilReset()
+      const rateLimitMessage = `Rate limit reached. Please wait ${secondsRemaining} second${secondsRemaining !== 1 ? 's' : ''} before sending another message.`
+      setValidationError(rateLimitMessage)
+      console.warn('[Rate Limited]', rateLimitMessage)
+      return
+    }
 
     setIsSubmitting(true)
     try {
-      await sendMessage(inputValue.trim())
+      const trimmedValue = valueToValidate.trim()
+      console.log('[Sending Message]', trimmedValue.substring(0, 100))
+      await sendMessage(trimmedValue)
+      rateLimiter.current.incrementCount()
       setInputValue('')
+      setValidationError(null)
     } catch (error) {
-      console.error('Failed to send message:', error)
+      console.error('[Send Failed]', error)
+      setValidationError('Failed to send message. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -527,12 +567,47 @@ function ChatView({ chat, onExit }: { chat: ChatStreamReturn; onExit: () => void
 
       <div className="bg-background z-10 shrink-0 px-3 pb-3 md:px-5 md:pb-5">
         <div className="mx-auto max-w-3xl">
+          {/* Validation Error Display */}
+          {validationError && validationError.trim() && (
+            <div
+              className="mb-2 rounded-lg bg-destructive/10 px-4 py-2 text-sm text-destructive"
+              role="alert"
+              aria-live="polite"
+              data-testid="validation-error"
+            >
+              <span className="font-medium">⚠️ Validation Error:</span> {validationError}
+            </div>
+          )}
+
+          {/* Character Counter */}
+          {inputValue.length > 3500 && (
+            <div className="mb-2 flex items-center justify-end gap-2 px-2 text-sm">
+              <span
+                className={cn(
+                  'font-medium',
+                  characterStatus.status === 'error' && 'text-red-600',
+                  characterStatus.status === 'caution' && 'text-orange-600',
+                  characterStatus.status === 'warning' && 'text-yellow-600',
+                  characterStatus.status === 'safe' && 'text-green-600'
+                )}
+              >
+                {characterStatus.message}
+              </span>
+              <span className="text-muted-foreground">
+                {inputValue.length}/4000
+              </span>
+            </div>
+          )}
+
           <PromptInput
             isLoading={disableInput}
             value={inputValue}
             onValueChange={setInputValue}
             onSubmit={handleSubmit}
-            className="border-input bg-popover relative z-10 w-full rounded-3xl border p-0 pt-1 shadow-xs"
+            className={cn(
+              "border-input bg-popover relative z-10 w-full rounded-3xl border p-0 pt-1 shadow-xs",
+              validationError && "border-destructive"
+            )}
           >
             <div className="flex flex-col">
               <PromptInputTextarea

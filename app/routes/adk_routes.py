@@ -23,6 +23,7 @@ import httpx
 from app.models import SessionMessagePayload
 from app.utils.session_store import session_store
 from app.utils.sse_broadcaster import get_sse_broadcaster, agent_network_event_stream
+from app.utils.input_validation import validate_chat_input, get_validation_error_response
 
 # Import authentication dependencies
 try:
@@ -381,6 +382,18 @@ async def run_session_sse(
         research_query = request.get("query") or request.get("message", "")
         if not research_query:
             raise HTTPException(status_code=400, detail="Research query is required")
+
+        # Server-side input validation (CRITICAL SECURITY FIX)
+        is_valid, error_message = validate_chat_input(research_query)
+        if not is_valid:
+            logger.warning(
+                f"Input validation failed for session {session_id}: {error_message}. "
+                f"Query preview: {research_query[:100]}"
+            )
+            raise HTTPException(
+                status_code=400,
+                detail=get_validation_error_response(error_message)
+            )
 
         # Ensure session exists in store
         session_store.ensure_session(

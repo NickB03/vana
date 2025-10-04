@@ -151,6 +151,35 @@ npm run test               # Jest tests
 npm run test:e2e           # Playwright E2E tests
 ```
 
+### Input Validation
+
+All user inputs are validated using Zod schemas for security and UX:
+
+**Location**: `frontend/src/lib/validation/`
+
+**Features**:
+- ✅ XSS prevention: Blocks HTML tags, JavaScript protocols, event handlers
+- ✅ SQL injection prevention: Blocks SQL keywords (basic layer)
+- ✅ Length validation: 1-4000 characters
+- ✅ Real-time feedback: Character counter with color-coded warnings
+- ✅ Rate limiting: 5 messages per minute (client-side UX, server-side pending Phase 3)
+
+**Usage**:
+```typescript
+import { validateChatInput } from '@/lib/validation/chat-validation'
+
+const result = validateChatInput(userMessage)
+if (result.success) {
+  // Send to backend
+} else {
+  // Show error: result.error.message
+}
+```
+
+**Documentation**: See [`frontend/docs/validation.md`](/Users/nick/Projects/vana/frontend/docs/validation.md) for complete guide
+
+**Security Note**: Client-side validation is for UX only. Server-side validation and rate limiting will be added in Phase 3 (see [`IMPLEMENTATION_PLAN.md`](/Users/nick/Projects/vana/IMPLEMENTATION_PLAN.md#phase-3-incremental-service-layer-implementation-weeks-3-4)).
+
 ### Full Stack Development
 ```bash
 # Start both backend and frontend
