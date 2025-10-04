@@ -646,7 +646,7 @@ function ChatView({ chat, onExit }: { chat: ChatStreamReturn; onExit: () => void
                   <Button
                     size="icon"
                     disabled={!inputValue.trim() || disableInput}
-                    onClick={handleSubmit}
+                    onClick={() => handleSubmit()}
                     className="size-9 rounded-full"
                   >
                     <ArrowUp size={18} />
