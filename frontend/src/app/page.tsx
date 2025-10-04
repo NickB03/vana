@@ -34,9 +34,7 @@ import { cn } from '@/lib/utils'
 import {
   ArrowUp,
   Copy,
-  Globe,
   Mic,
-  MoreHorizontal,
   Pencil,
   Plus,
   RefreshCw,
@@ -44,6 +42,8 @@ import {
   ThumbsUp,
   Trash,
 } from 'lucide-react'
+import { Loader } from '@/components/prompt-kit/loader'
+import { Steps, StepsTrigger, StepsContent, StepsItem } from '@/components/prompt-kit/steps'
 
 function ChatView({ chat, onExit }: { chat: ChatStreamReturn; onExit: () => void }) {
   const { messages, sendMessage, isStreaming, currentSession, error } = chat
@@ -61,6 +61,37 @@ function ChatView({ chat, onExit }: { chat: ChatStreamReturn; onExit: () => void
     status: null,
     isVisible: false
   })
+  const [agentSteps, setAgentSteps] = useState<string[]>([])
+
+  // Simulate agent progress steps when streaming
+  useEffect(() => {
+    if (isStreaming && messages.length > 0) {
+      const steps = [
+        'Initializing research agents...',
+        'Analyzing query context...',
+        'Delegating to specialized agents...',
+        'Team Leader coordinating research...',
+        'Gathering information...',
+        'Synthesizing results...',
+      ]
+
+      let currentStep = 0
+      const stepInterval = setInterval(() => {
+        if (currentStep < steps.length) {
+          setAgentSteps(prev => [...prev, steps[currentStep]])
+          currentStep++
+        } else {
+          clearInterval(stepInterval)
+        }
+      }, 800)
+
+      return () => {
+        clearInterval(stepInterval)
+      }
+    } else {
+      setAgentSteps([])
+    }
+  }, [isStreaming, messages.length])
   const [validationError, setValidationError] = useState<string | null>(null)
   const rateLimiter = useRef(new RateLimitTracker())
   const chatContainerRef = useRef<HTMLDivElement>(null)
@@ -396,167 +427,187 @@ function ChatView({ chat, onExit }: { chat: ChatStreamReturn; onExit: () => void
                 </div>
               </div>
             ) : (
-              messages.map((message, index) => {
-                const isAssistant = message.role === 'assistant'
-                const isLastMessage = index === messages.length - 1
+              <>
+                {messages.map((message, index) => {
+                  const isAssistant = message.role === 'assistant'
+                  const isLastMessage = index === messages.length - 1
 
-                return (
-                  <Message
-                    key={message.id}
-                    className={cn(
-                      'mx-auto flex w-full max-w-3xl flex-col gap-2 px-6',
-                      isAssistant ? 'items-start' : 'items-end'
-                    )}
-                  >
-                    {isAssistant ? (
-                      <div className="group flex w-full flex-col gap-0">
-                        {/* Thought process display */}
-                        {thoughtProcess &&
-                         thoughtProcess.messageId === message.id &&
-                         thoughtProcess.isVisible && (
-                          <MessageContent className="text-muted-foreground italic mb-2 opacity-80">
-                            <div className="flex items-center gap-2 text-sm">
-                              <div className="flex space-x-1">
-                                <span className="animate-pulse">●</span>
-                                <span className="animate-pulse" style={{ animationDelay: '0.2s' }}>●</span>
-                                <span className="animate-pulse" style={{ animationDelay: '0.4s' }}>●</span>
-                              </div>
-                              <span>{thoughtProcess.status === 'thinking' ? 'Regenerating response...' : 'Processing...'}</span>
-                            </div>
-                          </MessageContent>
-                        )}
-                        <MessageContent className="prose flex-1 rounded-lg bg-transparent p-0" markdown>
-                          {message.content}
-                        </MessageContent>
-                        <MessageActions
-                          className={cn(
-                            '-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100',
-                            isLastMessage && 'opacity-100'
-                          )}
-                        >
-                          <MessageAction tooltip="Copy" delayDuration={100}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="rounded-full"
-                              onClick={() => handleCopyMessage(message.content)}
-                            >
-                              <Copy />
-                            </Button>
-                          </MessageAction>
-                          <MessageAction tooltip="Regenerate response" delayDuration={100}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="rounded-full"
-                              onClick={() => handleRegenerateMessage(message.id)}
-                              disabled={isStreaming}
-                            >
-                              <RefreshCw />
-                            </Button>
-                          </MessageAction>
-                          <MessageAction tooltip="Upvote" delayDuration={100}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className={cn(
-                                "rounded-full",
-                                messagesFeedback[message.id] === 'upvote' && "text-green-600 bg-green-50"
-                              )}
-                              onClick={() => handleUpvote(message.id)}
-                            >
-                              <ThumbsUp />
-                            </Button>
-                          </MessageAction>
-                          <MessageAction tooltip="Downvote" delayDuration={100}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className={cn(
-                                "rounded-full",
-                                messagesFeedback[message.id] === 'downvote' && "text-red-600 bg-red-50"
-                              )}
-                              onClick={() => handleDownvote(message.id)}
-                            >
-                              <ThumbsDown />
-                            </Button>
-                          </MessageAction>
-                        </MessageActions>
-                      </div>
-                    ) : (
-                      <div className="group flex flex-col items-end gap-1">
-                        {/* Edit mode UI switching */}
-                        {editingMessageId === message.id ? (
-                          <div className="w-full max-w-[85%] sm:max-w-[75%]">
-                            <PromptInput
-                              value={editContent}
-                              onValueChange={setEditContent}
-                              onSubmit={() => handleSaveEdit(message.id, editContent)}
-                              className="rounded-2xl"
-                            >
-                              <PromptInputTextarea
-                                placeholder="Edit your message"
-                                className="min-h-[40px] px-4 py-2"
+                  return (
+                    <Message
+                      key={message.id}
+                      className={cn(
+                        'mx-auto flex w-full max-w-3xl flex-col gap-2 px-6',
+                        isAssistant ? 'items-start' : 'items-end'
+                      )}
+                    >
+                      {isAssistant ? (
+                        <div className="group flex w-full flex-col gap-0">
+                          {/* Thought process display */}
+                          {thoughtProcess &&
+                           thoughtProcess.messageId === message.id &&
+                           thoughtProcess.isVisible && (
+                            <MessageContent className="text-muted-foreground italic mb-2 opacity-80">
+                              <Loader
+                                variant="text-shimmer"
+                                text={thoughtProcess.status === 'thinking' ? 'Thinking...' : 'Processing...'}
                               />
-                              <PromptInputActions>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={handleCancelEdit}
-                                >
-                                  Cancel
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleSaveEdit(message.id, editContent)}
-                                >
-                                  Save
-                                </Button>
-                              </PromptInputActions>
-                            </PromptInput>
-                          </div>
-                        ) : (
-                          <MessageContent className="max-w-[85%] rounded-3xl bg-muted px-5 py-2.5 text-primary sm:max-w-[75%]">
+                            </MessageContent>
+                          )}
+                          <MessageContent className="prose flex-1 rounded-lg bg-transparent p-0" markdown>
                             {message.content}
                           </MessageContent>
-                        )}
-                        <MessageActions className="flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-                          <MessageAction tooltip="Edit" delayDuration={100}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="rounded-full"
-                              onClick={() => handleEditMessage(message.id)}
+                          <MessageActions
+                            className={cn(
+                              '-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100',
+                              isLastMessage && 'opacity-100'
+                            )}
+                          >
+                            <MessageAction tooltip="Copy" delayDuration={100}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="rounded-full"
+                                onClick={() => handleCopyMessage(message.content)}
+                              >
+                                <Copy />
+                              </Button>
+                            </MessageAction>
+                            <MessageAction tooltip="Regenerate response" delayDuration={100}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="rounded-full"
+                                onClick={() => handleRegenerateMessage(message.id)}
+                                disabled={isStreaming}
+                              >
+                                <RefreshCw />
+                              </Button>
+                            </MessageAction>
+                            <MessageAction tooltip="Upvote" delayDuration={100}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn(
+                                  "rounded-full",
+                                  messagesFeedback[message.id] === 'upvote' && "text-green-600 bg-green-50"
+                                )}
+                                onClick={() => handleUpvote(message.id)}
+                              >
+                                <ThumbsUp />
+                              </Button>
+                            </MessageAction>
+                            <MessageAction tooltip="Downvote" delayDuration={100}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn(
+                                  "rounded-full",
+                                  messagesFeedback[message.id] === 'downvote' && "text-red-600 bg-red-50"
+                                )}
+                                onClick={() => handleDownvote(message.id)}
+                              >
+                                <ThumbsDown />
+                              </Button>
+                            </MessageAction>
+                          </MessageActions>
+                        </div>
+                      ) : (
+                        <div className="group flex flex-col items-end gap-1">
+                          {/* Edit mode UI switching */}
+                          {editingMessageId === message.id ? (
+                            <div className="w-full max-w-[85%] sm:max-w-[75%]">
+                              <PromptInput
+                                value={editContent}
+                                onValueChange={setEditContent}
+                                onSubmit={() => handleSaveEdit(message.id, editContent)}
+                                className="rounded-2xl"
+                              >
+                                <PromptInputTextarea
+                                  placeholder="Edit your message"
+                                  className="min-h-[40px] px-4 py-2"
+                                />
+                                <PromptInputActions>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleCancelEdit}
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleSaveEdit(message.id, editContent)}
+                                  >
+                                    Save
+                                  </Button>
+                                </PromptInputActions>
+                              </PromptInput>
+                            </div>
+                          ) : (
+                            <MessageContent className="max-w-[85%] rounded-3xl bg-muted px-5 py-2.5 text-primary sm:max-w-[75%]">
+                              {message.content}
+                            </MessageContent>
+                          )}
+                          <MessageActions className="flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+                            <MessageAction tooltip="Edit" delayDuration={100}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="rounded-full"
+                                onClick={() => handleEditMessage(message.id)}
+                              >
+                                <Pencil />
+                              </Button>
+                            </MessageAction>
+                            <MessageAction tooltip="Delete" delayDuration={100}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="rounded-full"
+                                onClick={() => handleDeleteMessage(message.id)}
+                              >
+                                <Trash />
+                              </Button>
+                            </MessageAction>
+                            <MessageAction tooltip="Copy" delayDuration={100}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="rounded-full"
+                                onClick={() => handleCopyMessage(message.content)}
+                              >
+                                <Copy />
+                              </Button>
+                            </MessageAction>
+                          </MessageActions>
+                        </div>
+                      )}
+                    </Message>
+                  )
+                })}
+                {/* Show loading indicator when streaming without thought process */}
+                {isStreaming && !thoughtProcess.isVisible && (
+                  <Message className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 items-start">
+                    <MessageContent className="w-full">
+                      <Steps defaultOpen className="border-l-2 border-primary/30">
+                        <StepsTrigger>
+                          <Loader variant="text-shimmer" text="Vana Agents Working..." />
+                        </StepsTrigger>
+                        <StepsContent>
+                          {agentSteps.map((step, index) => (
+                            <StepsItem
+                              key={index}
+                              isLoading={index === agentSteps.length - 1}
                             >
-                              <Pencil />
-                            </Button>
-                          </MessageAction>
-                          <MessageAction tooltip="Delete" delayDuration={100}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="rounded-full"
-                              onClick={() => handleDeleteMessage(message.id)}
-                            >
-                              <Trash />
-                            </Button>
-                          </MessageAction>
-                          <MessageAction tooltip="Copy" delayDuration={100}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="rounded-full"
-                              onClick={() => handleCopyMessage(message.content)}
-                            >
-                              <Copy />
-                            </Button>
-                          </MessageAction>
-                        </MessageActions>
-                      </div>
-                    )}
+                              {step}
+                            </StepsItem>
+                          ))}
+                        </StepsContent>
+                      </Steps>
+                    </MessageContent>
                   </Message>
-                )
-              })
+                )}
+              </>
             )}
           </ChatContainerContent>
           <div className="absolute bottom-4 left-1/2 flex w-full max-w-3xl -translate-x-1/2 justify-end px-5">
@@ -620,19 +671,6 @@ function ChatView({ chat, onExit }: { chat: ChatStreamReturn; onExit: () => void
                   <PromptInputAction tooltip="Add a new action">
                     <Button variant="outline" size="icon" className="size-9 rounded-full" disabled>
                       <Plus size={18} />
-                    </Button>
-                  </PromptInputAction>
-
-                  <PromptInputAction tooltip="Search">
-                    <Button variant="outline" className="rounded-full" disabled>
-                      <Globe size={18} />
-                      Search
-                    </Button>
-                  </PromptInputAction>
-
-                  <PromptInputAction tooltip="More actions">
-                    <Button variant="outline" size="icon" className="size-9 rounded-full" disabled>
-                      <MoreHorizontal size={18} />
                     </Button>
                   </PromptInputAction>
                 </div>

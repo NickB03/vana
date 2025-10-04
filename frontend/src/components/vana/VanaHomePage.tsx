@@ -4,7 +4,8 @@ import React, { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { PromptSuggestion } from '@/components/ui/prompt-suggestion'
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from '@/components/ui/prompt-input'
-import { Plus, Globe, MoreHorizontal, Mic, ArrowUp } from 'lucide-react'
+import { FileUpload, FileUploadTrigger } from '@/components/ui/file-upload'
+import { Plus, Mic, ArrowUp } from 'lucide-react'
 import { memoWithTracking, useStableCallback, useStableArray } from '@/lib/react-performance'
 
 interface VanaHomePageProps {
@@ -37,8 +38,16 @@ function VanaHomePage({ onStartChat, isBusy = false }: VanaHomePageProps) {
 
   const handleSuggestionClick = useStableCallback((suggestion: string) => {
     const prompt = `Help me with ${suggestion.toLowerCase()}`
-    onStartChat(prompt)
-  }, [onStartChat])
+    setPromptValue(prompt)
+  }, [])
+
+  const handleFilesAdded = useStableCallback((files: File[]) => {
+    // For now, just log the files - in a real implementation, you'd upload them
+    console.log('Files added:', files)
+    // You could append file names to the prompt or handle upload logic here
+    const fileNames = files.map(f => f.name).join(', ')
+    setPromptValue(prev => prev ? `${prev}\n\nFiles: ${fileNames}` : `Files: ${fileNames}`)
+  }, [])
 
   // Memoize input props to prevent PromptInput re-renders
   const promptInputProps = useMemo(() => ({
@@ -85,32 +94,19 @@ function VanaHomePage({ onStartChat, isBusy = false }: VanaHomePageProps) {
 
             <PromptInputActions className="mt-5 flex w-full items-center justify-between gap-2 px-3 pb-3">
               <div className="flex items-center gap-2">
-                <PromptInputAction tooltip="Add a new action">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="size-9 rounded-full"
-                  >
-                    <Plus size={18} />
-                  </Button>
-                </PromptInputAction>
-
-                <PromptInputAction tooltip="Search">
-                  <Button variant="outline" className="rounded-full">
-                    <Globe size={18} />
-                    Search
-                  </Button>
-                </PromptInputAction>
-
-                <PromptInputAction tooltip="More actions">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="size-9 rounded-full"
-                  >
-                    <MoreHorizontal size={18} />
-                  </Button>
-                </PromptInputAction>
+                <FileUpload onFilesAdded={handleFilesAdded} accept="*">
+                  <FileUploadTrigger>
+                    <PromptInputAction tooltip="Upload files">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="size-9 rounded-full"
+                      >
+                        <Plus size={18} />
+                      </Button>
+                    </PromptInputAction>
+                  </FileUploadTrigger>
+                </FileUpload>
               </div>
               <div className="flex items-center gap-2">
                 <PromptInputAction tooltip="Voice input">
