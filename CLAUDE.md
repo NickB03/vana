@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Vana is a multi-agent AI research platform built on Google's Agent Development Kit (ADK) that transforms complex research questions into comprehensive reports. It consists of a FastAPI backend with 8 specialized AI agents and a Next.js frontend for real-time interaction.
+Vana is a multi-agent AI platform built on Google's Agent Development Kit (ADK). It consists of a FastAPI backend with specialized AI agents and a Next.js frontend for real-time interaction.
 
 ## ⚠️ CRITICAL: Browser Verification Required
 
@@ -28,34 +28,11 @@ When working on ANY frontend code (`/frontend` directory):
 
 See [Chrome DevTools MCP section](#-chrome-devtools-mcp---critical-debugging--verification-tool) for detailed usage.
 
-## ⚠️ CRITICAL ARCHITECTURE ISSUE (MUST FIX)
-
-**INCORRECT IMPLEMENTATION (Current Problem)**:
-- `/app/research_agents.py` contains `MultiAgentResearchOrchestrator` that incorrectly simulates agents
-- This orchestrator tries to use its own LLM calls (OpenRouter/Gemini) instead of ADK
-- **This is WRONG and causes the "no response" issue**
-
-**CORRECT IMPLEMENTATION**:
+**CORRECT GOOGLE ADK CHAT IMPLEMENTATION**:
 - The 8 research agents (Team Leader, Plan Generator, Section Planner, etc.) are **ADK agents on port 8080**
 - FastAPI backend (port 8000) should **proxy requests to ADK**, not run its own orchestrator
 - Flow: Frontend → FastAPI → ADK Agents (port 8080) → Response via SSE
 
-**TO FIX THE ISSUE**:
-Replace orchestrator calls in `/app/routes/adk_routes.py` (lines 340-370) with:
-```python
-import httpx
-async with httpx.AsyncClient() as client:
-    response = await client.post(
-        "http://localhost:8080/run",
-        json={
-            "appName": "vana",
-            "userId": user_id,
-            "sessionId": session_id,
-            "newMessage": {"parts": [{"text": research_query}]},
-            "streaming": True
-        }
-    )
-```
 
 ## Key Architecture
 
@@ -151,35 +128,6 @@ npm run test               # Jest tests
 npm run test:e2e           # Playwright E2E tests
 ```
 
-### Input Validation
-
-All user inputs are validated using Zod schemas for security and UX:
-
-**Location**: `frontend/src/lib/validation/`
-
-**Features**:
-- ✅ XSS prevention: Blocks HTML tags, JavaScript protocols, event handlers
-- ✅ SQL injection prevention: Blocks SQL keywords (basic layer)
-- ✅ Length validation: 1-4000 characters
-- ✅ Real-time feedback: Character counter with color-coded warnings
-- ✅ Rate limiting: 5 messages per minute (client-side UX, server-side pending Phase 3)
-
-**Usage**:
-```typescript
-import { validateChatInput } from '@/lib/validation/chat-validation'
-
-const result = validateChatInput(userMessage)
-if (result.success) {
-  // Send to backend
-} else {
-  // Show error: result.error.message
-}
-```
-
-**Documentation**: See [`frontend/docs/validation.md`](/Users/nick/Projects/vana/frontend/docs/validation.md) for complete guide
-
-**Security Note**: Client-side validation is for UX only. Server-side validation and rate limiting will be added in Phase 3 (see [`IMPLEMENTATION_PLAN.md`](/Users/nick/Projects/vana/IMPLEMENTATION_PLAN.md#phase-3-incremental-service-layer-implementation-weeks-3-4)).
-
 ### Full Stack Development
 ```bash
 # Start both backend and frontend
@@ -188,6 +136,109 @@ make dev                   # Runs both servers concurrently
 # ADK Playground (for testing agents)
 make playground            # Launches on port 8501
 ```
+
+## Code Style Guidelines
+
+### Python (Backend)
+```python
+# Follow PEP 8 with project-specific conventions
+# Linting: Ruff (configured in pyproject.toml)
+# Formatting: Ruff format
+# Type checking: mypy
+
+# Type hints required for all functions
+def process_message(message: str, user_id: int) -> dict[str, Any]:
+    """Process user message and return response.
+
+    Args:
+        message: The user's input message
+        user_id: Unique user identifier
+
+    Returns:
+        Dict containing processed response
+    """
+    return {"status": "success", "data": message}
+
+# Use descriptive variable names
+user_session_data = get_session(user_id)  # ✅ Good
+usd = get_session(user_id)                # ❌ Bad
+
+# Max line length: 100 characters
+# Use trailing commas in multi-line structures
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://app.vana.com",  # ✅ Trailing comma
+]
+```
+
+### TypeScript/React (Frontend)
+```typescript
+// ESLint + Prettier configured in .eslintrc
+// Use functional components with hooks
+// Props interfaces defined before components
+
+// ✅ Correct pattern
+interface ChatMessageProps {
+  message: string;
+  timestamp: Date;
+  userId: string;
+}
+
+export function ChatMessage({ message, timestamp, userId }: ChatMessageProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <div className="chat-message">
+      {message}
+    </div>
+  );
+}
+
+// Import order (enforced by ESLint):
+// 1. React imports
+import { useState, useEffect } from 'react';
+// 2. Third-party libraries
+import { format } from 'date-fns';
+// 3. Local components
+import { Button } from '@/components/ui/button';
+// 4. Types
+import type { Message } from '@/types';
+
+// Naming conventions:
+// - Components: PascalCase (ChatMessage)
+// - Hooks: camelCase with 'use' prefix (useMessages)
+// - Constants: UPPER_SNAKE_CASE (API_URL)
+// - Functions: camelCase (handleSubmit)
+```
+
+### General Standards
+- **DRY Principle**: Extract repeated logic into reusable functions
+- **KISS Principle**: Keep implementations simple and readable
+- **Comments**: Only for complex logic; code should be self-documenting
+- **Error Handling**: Always handle errors explicitly, never silent failures
+- **Async/Await**: Prefer over raw promises for readability
+- **Security**: Never commit secrets, use environment variables
+
+### File Organization
+```
+Backend:
+  app/
+    routes/        # API endpoint handlers
+    models/        # Data models and schemas
+    services/      # Business logic
+    utils/         # Helper functions
+
+Frontend:
+  src/
+    components/    # React components
+    hooks/         # Custom hooks
+    services/      # API client code
+    stores/        # State management
+    types/         # TypeScript definitions
+    utils/         # Helper functions
+```
+
 
 ## Project Structure
 
@@ -220,8 +271,8 @@ make playground            # Launches on port 8501
 ## AI Model Configuration
 
 The system uses a two-tier model approach:
-1. **PRIMARY**: OpenRouter with Qwen 3 Coder (FREE) - Set `OPENROUTER_API_KEY` in `.env.local`
-2. **FALLBACK**: Google Gemini 2.5 Pro/Flash - Requires Google Cloud auth
+1. **PRIMARY**: Google Gemini 2.5 Pro Flash requires Google AI Studio API key in `.env.local`
+2. **FALLBACK**: OpenRouter with Qwen 3 Coder (FREE) - Set `OPENROUTER_API_KEY` in `.env.local`
 
 ## Testing Strategy
 
@@ -230,245 +281,184 @@ The system uses a two-tier model approach:
 - **Coverage requirement**: 85% minimum
 - Run `make test` before committing changes
 
-## 🔍 Chrome DevTools MCP - Critical Debugging & Verification Tool
 
-**⚠️ CRITICAL REQUIREMENT**: Agents MUST use Chrome DevTools MCP to verify frontend changes work in real browsers. **NEVER assume something works just because tests pass.**
+## Test-Driven Development (TDD)
 
-### What It Does
-Chrome DevTools MCP provides live browser control and inspection capabilities, enabling agents to:
-- Debug web applications in real-time
-- Verify UI changes and interactions
-- Analyze performance and network behavior
-- Capture detailed browser insights
+### TDD Workflow: Red-Green-Refactor
 
-### When to Use (MANDATORY for Frontend Work)
-
-**ALWAYS use Chrome DevTools MCP when:**
-1. Making frontend UI changes
-2. Debugging SSE streaming connections
-3. Testing authentication flows
-4. Verifying API integrations
-5. Analyzing performance issues
-6. Debugging browser console errors
-7. Testing responsive designs
-8. Validating form submissions
-9. Checking network requests
-10. **ANY TIME you make changes to `/frontend` directory**
-
-**NEVER:**
-- Assume tests passing means it works in browser
-- Skip browser verification for "simple" changes
-- Rely solely on unit tests for UI verification
-
-**IF Chrome DevTools MCP Fails:**
-If you get a "Chrome Canary not found" error:
-1. **DO NOT give up on browser verification**
-2. Check the [Configuration section](#configuration) for solutions
-3. Inform the user they need to reconfigure Chrome DevTools MCP
-4. Provide the specific command to fix: `claude mcp remove chrome-devtools && claude mcp add chrome-devtools npx chrome-devtools-mcp@latest --channel stable`
-5. Continue with other verification methods (check test output, review code for obvious errors)
-6. Document that browser verification was skipped due to configuration issue
-
-### Available Tools
-
-#### Input Automation
-- `mcp__chrome-devtools__click` - Click elements
-- `mcp__chrome-devtools__fill` - Fill form fields
-- `mcp__chrome-devtools__fill_form` - Fill multiple fields at once
-- `mcp__chrome-devtools__hover` - Hover over elements
-- `mcp__chrome-devtools__drag` - Drag and drop
-- `mcp__chrome-devtools__upload_file` - File uploads
-- `mcp__chrome-devtools__handle_dialog` - Handle browser dialogs
-
-#### Navigation & Page Management
-- `mcp__chrome-devtools__navigate_page` - Navigate to URL
-- `mcp__chrome-devtools__navigate_page_history` - Back/forward navigation
-- `mcp__chrome-devtools__new_page` - Open new tab
-- `mcp__chrome-devtools__close_page` - Close tab
-- `mcp__chrome-devtools__select_page` - Switch between tabs
-- `mcp__chrome-devtools__list_pages` - List all open tabs
-- `mcp__chrome-devtools__wait_for` - Wait for text/elements
-
-#### Debugging & Inspection
-- `mcp__chrome-devtools__take_snapshot` - Capture page structure (PREFER THIS over screenshots)
-- `mcp__chrome-devtools__take_screenshot` - Visual screenshots
-- `mcp__chrome-devtools__evaluate_script` - Execute JavaScript
-- `mcp__chrome-devtools__list_console_messages` - View console logs
-- `mcp__chrome-devtools__list_network_requests` - View network activity
-- `mcp__chrome-devtools__get_network_request` - Get specific request details
-
-#### Performance Analysis
-- `mcp__chrome-devtools__performance_start_trace` - Start performance recording
-- `mcp__chrome-devtools__performance_stop_trace` - Stop recording
-- `mcp__chrome-devtools__performance_analyze_insight` - Analyze performance insights
-- `mcp__chrome-devtools__emulate_cpu` - Throttle CPU (1-20x slowdown)
-- `mcp__chrome-devtools__emulate_network` - Throttle network (3G/4G)
-- `mcp__chrome-devtools__resize_page` - Test responsive layouts
-
-### Integration with Development Workflow
-
-#### Typical Frontend Verification Flow:
-```javascript
-// 1. Make code changes
-Write "frontend/src/components/Chat.tsx"
-
-// 2. Start services if not running
-Bash "make dev-backend &"
-Bash "make dev-frontend &"
-
-// 3. Navigate to application
-mcp__chrome-devtools__navigate_page { url: "http://localhost:3000" }
-
-// 4. Take snapshot to see page structure
-mcp__chrome-devtools__take_snapshot
-
-// 5. Interact with UI
-mcp__chrome-devtools__fill { uid: "search-input", value: "test query" }
-mcp__chrome-devtools__click { uid: "submit-button" }
-
-// 6. Wait for response
-mcp__chrome-devtools__wait_for { text: "Results", timeout: 5000 }
-
-// 7. Check console for errors
-mcp__chrome-devtools__list_console_messages
-
-// 8. Verify network requests
-mcp__chrome-devtools__list_network_requests { resourceTypes: ["xhr", "fetch"] }
-
-// 9. Take screenshot for documentation (if needed)
-mcp__chrome-devtools__take_screenshot { filePath: "verification.png" }
+**1. RED**: Write failing test first
+```bash
+# Backend example
+uv run pytest tests/unit/test_new_feature.py -v
+# Should fail - feature doesn't exist yet
 ```
 
-#### SSE Stream Debugging Example:
+```python
+# tests/unit/test_message_processor.py
+def test_process_message_returns_formatted_response():
+    processor = MessageProcessor()
+    result = processor.process("Hello")
+    assert result["status"] == "success"
+    assert result["data"] == "Hello"
+    assert "timestamp" in result
+```
+
+**2. GREEN**: Implement minimal code to pass
+```python
+# app/services/message_processor.py
+from datetime import datetime
+
+class MessageProcessor:
+    def process(self, message: str) -> dict[str, Any]:
+        return {
+            "status": "success",
+            "data": message,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+```
+
+**3. REFACTOR**: Clean up while keeping tests green
+```python
+# Refactor for better structure
+class MessageProcessor:
+    def process(self, message: str) -> dict[str, Any]:
+        return self._create_response(message)
+
+    def _create_response(self, data: str) -> dict[str, Any]:
+        return {
+            "status": "success",
+            "data": data,
+            "timestamp": self._get_timestamp()
+        }
+
+    def _get_timestamp(self) -> str:
+        return datetime.utcnow().isoformat()
+```
+
+### Frontend TDD Example
+```typescript
+// tests/components/ChatMessage.test.tsx
+describe('ChatMessage', () => {
+  it('renders message content', () => {
+    render(<ChatMessage message="Hello" timestamp={new Date()} userId="1" />);
+    expect(screen.getByText('Hello')).toBeInTheDocument();
+  });
+});
+
+// Then implement component to pass test
+export function ChatMessage({ message }: ChatMessageProps) {
+  return <div>{message}</div>;
+}
+```
+
+### TDD Agents
+- Use `tdd-london-swarm` for mock-driven development
+- Use `tester` agent for comprehensive test suites
+- Use `production-validator` for deployment readiness
+
+### Best Practices
+1. Write tests before implementation
+2. Keep tests small and focused (one assertion per test preferred)
+3. Use descriptive test names that explain the behavior
+4. Mock external dependencies
+5. Run tests frequently during development
+6. Aim for >85% code coverage
+
+## 🔍 Chrome DevTools MCP - Browser Verification Tool
+
+**⚠️ CRITICAL**: Agents MUST verify frontend changes in real browsers. **NEVER assume tests passing = working UI.**
+
+### When to Use (MANDATORY)
+**ALWAYS use for**: Frontend changes, SSE debugging, auth flows, API integrations, performance issues, responsive design, network requests
+**NEVER**: Assume tests alone verify browser behavior
+
+### Essential Tools
+
+**Input**: `click`, `fill`, `fill_form`, `hover`, `drag`, `upload_file`, `handle_dialog`
+**Navigation**: `navigate_page`, `new_page`, `close_page`, `wait_for`
+**Debugging**: `take_snapshot` (prefer over screenshot), `take_screenshot`, `evaluate_script`, `list_console_messages`, `list_network_requests`
+**Performance**: `performance_start_trace`, `performance_stop_trace`, `emulate_cpu`, `emulate_network`, `resize_page`
+
+### Core Verification Workflow
 ```javascript
-// 1. Navigate to chat interface
-mcp__chrome-devtools__navigate_page { url: "http://localhost:3000/chat" }
+// 1. Start services & navigate
+Bash "make dev &"
+mcp__chrome-devtools__navigate_page { url: "http://localhost:3000" }
 
-// 2. Start performance trace
-mcp__chrome-devtools__performance_start_trace { reload: true, autoStop: false }
+// 2. Inspect & interact
+mcp__chrome-devtools__take_snapshot
+mcp__chrome-devtools__fill { uid: "input-id", value: "test" }
+mcp__chrome-devtools__click { uid: "button-id" }
 
-// 3. Send message to trigger SSE
-mcp__chrome-devtools__fill { uid: "message-input", value: "test research query" }
-mcp__chrome-devtools__click { uid: "send-button" }
-
-// 4. Monitor network for SSE connection
-mcp__chrome-devtools__list_network_requests { resourceTypes: ["eventsource"] }
-
-// 5. Check console for SSE events
+// 3. Verify results
+mcp__chrome-devtools__wait_for { text: "Success", timeout: 5000 }
 mcp__chrome-devtools__list_console_messages
+mcp__chrome-devtools__list_network_requests { resourceTypes: ["xhr", "fetch"] }
+```
 
-// 6. Stop trace and analyze
+### Visual Iteration Workflow (Screenshot-Based UI Development)
+
+**Pattern**: Design → Implement → Screenshot → Compare → Iterate
+
+```javascript
+// 1. Take baseline screenshot of target design
+mcp__chrome-devtools__navigate_page { url: "http://localhost:3000/design" }
+mcp__chrome-devtools__take_screenshot { filePath: "/tmp/design-target.png" }
+
+// 2. Implement UI changes
+Write "frontend/src/components/Feature.tsx"
+
+// 3. Capture implementation screenshot
+mcp__chrome-devtools__navigate_page { url: "http://localhost:3000/feature" }
+mcp__chrome-devtools__take_screenshot { filePath: "/tmp/feature-v1.png" }
+
+// 4. Compare visually and iterate
+Read "/tmp/design-target.png"
+Read "/tmp/feature-v1.png"
+// Analyze differences, make adjustments
+
+// 5. Test responsive layouts
+mcp__chrome-devtools__resize_page { width: 375, height: 667 }  // Mobile
+mcp__chrome-devtools__take_screenshot { filePath: "/tmp/feature-mobile.png" }
+mcp__chrome-devtools__resize_page { width: 1920, height: 1080 }  // Desktop
+mcp__chrome-devtools__take_screenshot { filePath: "/tmp/feature-desktop.png" }
+```
+
+**Use Cases**:
+- Match design mockups pixel-perfectly
+- Verify component styling across viewports
+- Document UI states (loading, error, success)
+- Capture before/after for refactoring
+- Create visual regression tests
+
+### SSE/Real-Time Debugging
+```javascript
+mcp__chrome-devtools__navigate_page { url: "http://localhost:3000/chat" }
+mcp__chrome-devtools__performance_start_trace { reload: true, autoStop: false }
+mcp__chrome-devtools__fill { uid: "message-input", value: "test query" }
+mcp__chrome-devtools__click { uid: "send-button" }
+mcp__chrome-devtools__list_network_requests { resourceTypes: ["eventsource"] }
+mcp__chrome-devtools__list_console_messages
 mcp__chrome-devtools__performance_stop_trace
 ```
 
-### Best Practices
-
-1. **Always take snapshots first** - Use `take_snapshot` over `take_screenshot` for element interaction
-2. **Check console errors** - Always call `list_console_messages` after interactions
-3. **Verify network requests** - Use `list_network_requests` to ensure API calls succeed
-4. **Use performance tracing** - For debugging slow loads or SSE issues
-5. **Test responsive designs** - Use `resize_page` to test different viewports
-6. **Emulate slow conditions** - Use CPU/network throttling to catch performance issues
-
-### Common Debugging Scenarios
-
-#### Debug SSE Connection Issues:
-1. Navigate to app
-2. Open network monitoring
-3. Send message
-4. Check for SSE connection in network requests
-5. Verify console for errors
-6. Check if auth tokens are present
-
-#### Debug UI Rendering Issues:
-1. Take snapshot of page
-2. Check console for React errors
-3. Verify element UIDs are correct
-4. Take screenshot for visual verification
-
-#### Debug Performance:
-1. Start performance trace
-2. Perform user actions
-3. Stop trace
-4. Analyze insights for bottlenecks
-5. Check Core Web Vitals
-
 ### Configuration
 
-Chrome DevTools MCP requires proper Chrome installation and configuration.
-
-#### Common Error: Chrome Canary Not Found
-
-**Error**: `Could not find Google Chrome executable for channel 'canary'`
-
-**Root Cause**: Chrome DevTools MCP is configured to use Chrome Canary channel, but it's not installed.
-
-**Solutions** (choose one):
-
-**Option 1: Use Stable Chrome (Recommended)**
+**Quick Setup**:
 ```bash
-# Check MCP server configuration
-claude mcp list
+claude mcp add chrome-devtools npx chrome-devtools-mcp@latest --channel stable --headless false
+```
 
-# If chrome-devtools is configured with canary channel, reconfigure:
+**If "Chrome Canary not found" error**:
+```bash
 claude mcp remove chrome-devtools
 claude mcp add chrome-devtools npx chrome-devtools-mcp@latest --channel stable
 ```
 
-**Option 2: Install Chrome Canary**
-1. Download from https://www.google.com/chrome/canary/
-2. Install to `/Applications/Google Chrome Canary.app`
-3. Restart Claude Code
+**Channels**: `stable` (recommended), `canary`, `beta`, `dev`
+**Options**: `--headless true/false`, `--isolated`, `--executablePath <path>`
 
-**Option 3: Specify Custom Chrome Path**
-```bash
-# Use your system's Chrome installation
-claude mcp remove chrome-devtools
-claude mcp add chrome-devtools npx chrome-devtools-mcp@latest \
-  --executablePath "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-```
-
-#### Recommended MCP Configuration
-
-For Claude Code, configure Chrome DevTools MCP with stable channel:
-
-```bash
-# Add Chrome DevTools MCP with stable Chrome
-claude mcp add chrome-devtools npx chrome-devtools-mcp@latest --channel stable --headless false
-```
-
-**Available Channels:**
-- `stable` - Regular Chrome (recommended)
-- `canary` - Chrome Canary (cutting-edge features)
-- `beta` - Chrome Beta
-- `dev` - Chrome Dev
-
-**Useful Options:**
-- `--headless true` - Run without visible browser window
-- `--headless false` - Show browser window (better for debugging)
-- `--isolated` - Use temporary profile (clean state each time)
-- `--executablePath <path>` - Custom Chrome location
-
-#### Verify Configuration
-
-After configuring, test that Chrome DevTools MCP works:
-```bash
-# List MCP servers to confirm configuration
-claude mcp list
-
-# The chrome-devtools entry should show --channel stable or your custom path
-```
-
-#### Requirements
-
-Before using Chrome DevTools MCP:
-```bash
-# Ensure services are running
-make dev  # Starts both backend and frontend
-
-# Confirm Chrome is installed
-which "Google Chrome" || open -a "Google Chrome"
-```
+For detailed configuration, see: https://github.com/salesforce/chrome-devtools-mcp
 
 ## Environment Configuration
 
@@ -478,7 +468,7 @@ Required `.env.local` variables:
 - `OPENROUTER_API_KEY` - For free AI model (recommended)
 - `JWT_SECRET_KEY` - For authentication (or set `AUTH_REQUIRE_SSE_AUTH=false` for dev)
 
-## 🚀 Available Agents (54 Total)
+## 🚀 Available Claude Flow Agents (54 Total)
 
 ### Core Development
 `coder`, `reviewer`, `tester`, `planner`, `researcher`
@@ -546,12 +536,9 @@ Required `.env.local` variables:
 
 ```bash
 # Add MCP servers (Claude Flow required, others optional)
-claude mcp add claude-flow npx claude-flow@latest mcp start  # v3.0+ with Claude Agent SDK
-claude mcp add ruv-swarm npx ruv-swarm@latest mcp start  # Optional: Enhanced coordination
+claude mcp add claude-flow npx claude-flow@latest mcp start
+claude mcp add ruv-swarm npx ruv-swarm mcp start  # Optional: Enhanced coordination
 claude mcp add flow-nexus npx flow-nexus@latest mcp start  # Optional: Cloud features
-
-# Install Claude Agent SDK (required for v3.0+)
-npm install @anthropic-ai/claude-code@latest --save
 ```
 
 ## MCP Tool Categories
@@ -576,23 +563,6 @@ npm install @anthropic-ai/claude-code@latest --save
 
 ### System
 `benchmark_run`, `features_detect`, `swarm_monitor`
-
-### Flow-Nexus MCP Tools (Optional Advanced Features)
-Flow-Nexus extends MCP capabilities with 70+ cloud-based orchestration tools:
-
-**Key MCP Tool Categories:**
-- **Swarm & Agents**: `swarm_init`, `swarm_scale`, `agent_spawn`, `task_orchestrate`
-- **Sandboxes**: `sandbox_create`, `sandbox_execute`, `sandbox_upload` (cloud execution)
-- **Templates**: `template_list`, `template_deploy` (pre-built project templates)
-- **Neural AI**: `neural_train`, `neural_patterns`, `seraphina_chat` (AI assistant)
-- **GitHub**: `github_repo_analyze`, `github_pr_manage` (repository management)
-- **Real-time**: `execution_stream_subscribe`, `realtime_subscribe` (live monitoring)
-- **Storage**: `storage_upload`, `storage_list` (cloud file management)
-
-**Authentication Required:**
-- Register: `mcp__flow-nexus__user_register` or `npx flow-nexus@latest register`
-- Login: `mcp__flow-nexus__user_login` or `npx flow-nexus@latest login`
-- Access 70+ specialized MCP tools for advanced orchestration
 
 ## 🚀 Agent Execution Flow with Claude Code
 
@@ -708,16 +678,15 @@ Message 4: Write "file.js"
 // This breaks parallel coordination!
 ```
 
-## Performance Benefits
+## Performance Benefits (v3.0.0)
 
-With v3.0 Claude Agent SDK integration:
 - **84.8% SWE-Bench solve rate**
 - **32.3% token reduction**
-- **2.8-4.4x speed improvement** (up to 4x with batch operations)
-- **30% faster retry operations**
-- **73% faster memory operations**
-- **50% faster checkpoint creation**
+- **2.8-4.4x speed improvement**
 - **27+ neural models**
+- **Advanced WASM SIMD acceleration**
+- **Real-time swarm coordination**
+- **Cross-session memory persistence**
 
 ## Hooks Integration
 
@@ -742,7 +711,7 @@ With v3.0 Claude Agent SDK integration:
 - Restore context
 - Export workflows
 
-## Advanced Features (v2.0.0)
+## Advanced Features (v3.0.0)
 
 - 🚀 Automatic Topology Selection
 - ⚡ Parallel Execution (2.8-4.4x speed)
@@ -766,61 +735,267 @@ With v3.0 Claude Agent SDK integration:
 9. **Check console errors and network requests** after every frontend change
 10. **Use performance tracing** to debug SSE and real-time features
 
-## Migration to v3.0 with Claude Agent SDK
 
-### Key Changes
+## Recommended Workflow (Anthropic Best Practices)
 
-**API Method Updates:**
-- `client.executeWithRetry(request)` → `client.makeRequest(request)`
-- `memory.persistToDisk()` → `memory.store(key, value)`
-- `checkpoints.executeValidations()` → `checkpoints.create()`
+### Explore-Plan-Code-Commit Pattern
 
-**Configuration Updates:**
-```json
-// Old (v2.x)
-{
-  "retryAttempts": 3,
-  "retryDelay": 1000
-}
-
-// New (v3.0+)
-{
-  "retryPolicy": {
-    "maxAttempts": 3,
-    "initialDelay": 1000,
-    "backoffMultiplier": 2
-  }
-}
-```
-
-**Required Dependencies:**
+**Phase 1: EXPLORE**
 ```bash
-npm install @anthropic-ai/claude-code@latest --save
+# Before coding, explore the codebase
+Read "relevant-file.py"
+Glob "**/*.tsx"  # Find relevant files
+Grep "class MessageProcessor" --output_mode content
+
+# Understand the architecture
+Read "app/server.py"
+Read "frontend/src/App.tsx"
 ```
 
-**Configuration File Version:**
-Update `.claude-flow.config.json` version to `"3.0.0"` and add SDK integration:
-```json
-{
-  "version": "3.0.0",
-  "sdk": {
-    "anthropic": {
-      "enabled": true,
-      "integration": "@anthropic-ai/claude-code",
-      "mode": "orchestration"
-    }
-  }
-}
+**Phase 2: PLAN**
+```bash
+# Create implementation plan
+TodoWrite { todos: [
+  {content: "Analyze existing authentication flow", status: "in_progress"},
+  {content: "Design new OAuth integration", status: "pending"},
+  {content: "Implement OAuth client", status: "pending"},
+  {content: "Write tests for OAuth flow", status: "pending"},
+  {content: "Update documentation", status: "pending"}
+]}
 ```
 
-### Migration Checklist
-- [x] Update MCP servers to latest versions
-- [x] Install @anthropic-ai/claude-code SDK
-- [x] Update .claude-flow.config.json to v3.0
-- [x] Add retryPolicy configuration
-- [x] Update SDK integration settings
-- [ ] Test all workflows and swarm coordination
-- [ ] Validate performance improvements
+**Phase 3: CODE**
+```bash
+# Implement incrementally, testing at each step
+Write "app/auth/oauth.py"  # Implement
+Bash "uv run pytest tests/unit/test_oauth.py"  # Test
+Edit "app/server.py"  # Integrate
+Bash "uv run pytest tests/integration/"  # Verify
+
+# For frontend
+Write "frontend/src/auth/OAuthButton.tsx"
+Bash "npm --prefix frontend test"
+mcp__chrome-devtools__navigate_page { url: "http://localhost:3000" }
+mcp__chrome-devtools__take_snapshot
+```
+
+**Phase 4: VERIFY**
+```bash
+# Verify reasonableness at each step
+Bash "make test"  # All tests pass
+Bash "make lint"  # No linting errors
+mcp__chrome-devtools__list_console_messages  # No browser errors
+```
+
+**Phase 5: COMMIT**
+```bash
+# Commit with clear message
+Bash "git add app/auth/oauth.py tests/unit/test_oauth.py"
+Bash "git commit -m 'feat: add OAuth authentication support
+
+- Implement OAuth 2.0 client
+- Add tests for OAuth flow
+- Update server integration
+
+🤖 Generated with Claude Code
+Co-Authored-By: Claude <noreply@anthropic.com>'"
+```
+
+### Think Modes
+- Use `planner` agent for complex architectural decisions
+- Use `researcher` agent to investigate best practices
+- Use `reviewer` agent for code quality checks
+- Break complex problems into smaller, manageable tasks
+
+### Course-Correction
+- If tests fail unexpectedly, stop and investigate
+- If implementation becomes complex, revisit the plan
+- Ask for clarification when requirements are ambiguous
+- Don't continue if something seems fundamentally wrong
+
+## Context Management
+
+### When to Use /clear
+Context accumulates during long sessions and can affect Claude's performance. Use `/clear` to reset:
+
+**Clear context when:**
+1. Completing a major feature (entire workflow done)
+2. Switching to an unrelated task
+3. Claude seems confused or gives unexpected responses
+4. Context has grown very large (20+ file reads)
+5. Starting a new day of work
+
+**Don't clear context when:**
+- In the middle of implementing a feature
+- Debugging an ongoing issue
+- Need recent conversation history
+- Working on related tasks
+
+### How /clear Works
+- Removes conversation history
+- Preserves CLAUDE.md instructions
+- Keeps important files in context (you can re-read if needed)
+- Resets to fresh state
+
+### Best Practices
+```bash
+# After completing authentication feature
+/clear
+
+# New task: "Now let's implement the chat interface"
+Read "frontend/src/App.tsx"  # Re-establish context
+TodoWrite { todos: [...] }  # New task list
+```
+
+### Alternative: /compact
+Use `/compact` instead of `/clear` when you want to:
+- Compress context without losing history
+- Keep working on the same feature
+- Maintain conversation flow
+
+## Advanced Techniques
+
+### Git Worktrees (Parallel Development)
+Work on multiple features simultaneously without branch switching:
+
+```bash
+# Create worktree for new feature
+git worktree add ../vana-oauth-feature feature/oauth-integration
+
+# Now you have two directories:
+# ~/Projects/vana          (main branch)
+# ~/Projects/vana-oauth-feature  (feature/oauth-integration branch)
+
+# Use Case 1: Multiple Claude instances
+# Terminal 1 (main development)
+cd ~/Projects/vana
+claude  # Instance 1 working on main
+
+# Terminal 2 (feature branch)
+cd ~/Projects/vana-oauth-feature
+claude  # Instance 2 working on OAuth
+
+# Use Case 2: Parallel testing
+# One worktree for development, another for testing
+git worktree add ../vana-test main  # Clean testing environment
+```
+
+**Benefits:**
+- No branch switching disruption
+- Run tests on main while developing on feature
+- Multiple Claude instances on different branches
+- Faster context switching
+
+### Multiple Claude Instances
+Run several Claude Code instances for specialized tasks:
+
+**Pattern 1: Role Separation**
+```bash
+# Terminal 1: Backend Development
+cd ~/Projects/vana
+claude
+# Task: "Implement new API endpoints"
+
+# Terminal 2: Frontend Development
+cd ~/Projects/vana
+claude
+# Task: "Build UI components for new feature"
+
+# Terminal 3: Testing & QA
+cd ~/Projects/vana
+claude
+# Task: "Write tests and verify functionality"
+```
+
+**Pattern 2: Feature Isolation (with worktrees)**
+```bash
+# Instance 1: Feature A
+cd ~/Projects/vana-feature-a
+claude  # Working on authentication
+
+# Instance 2: Feature B
+cd ~/Projects/vana-feature-b
+claude  # Working on chat interface
+
+# Instance 3: Bug Fixes
+cd ~/Projects/vana
+claude  # Fixing production issues on main
+```
+
+**Pattern 3: Review & Development**
+```bash
+# Instance 1: Development
+claude  # Implementing features
+
+# Instance 2: Code Review
+claude  # Reviewing and testing changes
+# Use: reviewer agent, run tests, check code quality
+
+# Instance 3: Documentation
+claude  # Writing docs and updating README
+```
+
+### Headless Mode (Automation)
+Use Claude Code in scripts and CI/CD pipelines:
+
+```bash
+# Automated code review
+claude --headless "Review all changes in app/routes/ for security issues"
+
+# Automated testing
+claude --headless "Run all tests and report failures"
+
+# Automated refactoring
+claude --headless "Refactor app/services/message_processor.py to use async/await"
+
+# CI/CD Integration
+# .github/workflows/claude-review.yml
+- name: Claude Code Review
+  run: |
+    claude --headless "Review PR changes for:
+    1. Security vulnerabilities
+    2. Code quality issues
+    3. Test coverage
+    4. Performance concerns"
+```
+
+**Use Cases:**
+- Automated code reviews in CI/CD
+- Batch processing tasks
+- Scheduled refactoring
+- Test generation
+- Documentation updates
+
+### Custom Slash Commands
+Create reusable workflows for common tasks:
+
+**Available in this project:**
+- `/sparc` - SPARC methodology workflows
+- `/cr-config` - CodeRabbit integration
+- `/batchtools` - Parallel batch operations
+- `/claude-flow-swarm` - Multi-agent coordination
+
+**Creating Custom Commands:**
+1. Add files to `.claude/commands/` directory
+2. Define command behavior in markdown
+3. Use for repetitive workflows
+
+**Example: Custom testing command**
+```markdown
+# .claude/commands/full-test.md
+---
+name: full-test
+description: Run complete test suite with coverage
+---
+
+Run the following commands in sequence:
+1. Backend tests: `make test`
+2. Frontend tests: `npm --prefix frontend test`
+3. E2E tests: `npm --prefix frontend run test:e2e`
+4. Check coverage: `make coverage-report`
+```
+
+Usage: `/full-test`
 
 ## Support
 
