@@ -200,7 +200,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
 
       // Otherwise, type comes from SSE event field (current backend format)
       return {
-        type: fallbackType || 'unknown',
+        type: (fallbackType as AgentNetworkEvent['type']) || 'connection',
         data: {
           timestamp: new Date().toISOString(),
           ...parsed  // Spread all fields from the flat data
@@ -326,30 +326,49 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
           const processEventBlock = (block: string) => {
             const lines = block.split('\n');
             let eventType: string | undefined;
+            let eventId: string | undefined;
             const dataLines: string[] = [];
 
+            // Parse all SSE fields from the event block
             for (const rawLine of lines) {
               const line = rawLine.trim();
               if (!line) continue;
 
               if (line.startsWith('event:')) {
-                eventType = line.slice(6).trim() || undefined;
+                const extractedType = line.slice(6).trim();
+                if (extractedType) {
+                  eventType = extractedType;
+                }
+              } else if (line.startsWith('id:')) {
+                eventId = line.slice(3).trim();
               } else if (line.startsWith('data:')) {
                 dataLines.push(line.slice(5).trim());
               }
             }
 
+            // Validate we have data before processing
             if (!dataLines.length) {
+              console.warn('[useSSE] Event block missing data, skipping:', block.substring(0, 100));
               return;
             }
 
             const payload = dataLines.join('\n');
-            console.log('[useSSE] Received event:', eventType, 'payload length:', payload.length);
+
+            // Enhanced logging for debugging
+            if (!eventType) {
+              console.warn('[useSSE] Event block missing event type - raw block:', block.substring(0, 200));
+              console.log('[useSSE] Received event: NO_EVENT_TYPE, payload length:', payload.length, 'id:', eventId);
+            } else {
+              console.log('[useSSE] Received event:', eventType, 'payload length:', payload.length, 'id:', eventId);
+            }
+
             const parsedEvent = parseEventData(payload, eventType);
             if (parsedEvent) {
               console.log('[useSSE] Parsed event type:', parsedEvent.type);
               stateRefs.current.setLastEvent(parsedEvent);
               stateRefs.current.setEvents(prev => [...prev, parsedEvent]);
+            } else {
+              console.warn('[useSSE] Failed to parse event - eventType:', eventType, 'payload preview:', payload.substring(0, 100));
             }
           };
 

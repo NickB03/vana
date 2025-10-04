@@ -274,7 +274,7 @@ const OptimizedChatExample: React.FC<OptimizedChatExampleProps> = memoWithTracki
         {bottlenecks.length > 0 && (
           <div className="bottlenecks">
             <h4>Performance Bottlenecks</h4>
-            {bottlenecks.slice(0, 3).map((bottleneck, index) => (
+            {bottlenecks.slice(0, 3).map((bottleneck: any, index: number) => (
               <div key={index} className={`bottleneck ${bottleneck.severity}`}>
                 <strong>{bottleneck.description}</strong>
                 <p>{bottleneck.impact}</p>
@@ -287,7 +287,7 @@ const OptimizedChatExample: React.FC<OptimizedChatExampleProps> = memoWithTracki
         {queryOptimizations.length > 0 && (
           <div className="query-optimizations">
             <h4>Query Optimizations</h4>
-            {queryOptimizations.slice(0, 3).map((opt, index) => (
+            {queryOptimizations.slice(0, 3).map((opt: any, index: number) => (
               <div key={index} className={`optimization ${opt.impact}`}>
                 <strong>{opt.description}</strong>
                 <p>{opt.implementation}</p>

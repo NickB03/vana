@@ -453,6 +453,16 @@ async def run_session_sse(
                 try:
                     logger.info(f"Starting agent execution for session {session_id}")
 
+                    # CRITICAL FIX: Broadcast research_update IMMEDIATELY so frontend subscribers receive it
+                    await broadcaster.broadcast_event(session_id, {
+                        "type": "research_update",
+                        "data": {
+                            "content": "Connecting to research agents...",
+                            "status": "initializing",
+                            "timestamp": datetime.now().isoformat()
+                        }
+                    })
+
                     # Send initial agent status
                     await broadcaster.broadcast_event(session_id, {
                         "type": "agent_network_update",
@@ -485,6 +495,16 @@ async def run_session_sse(
                                 raise Exception(error_msg)
                             else:
                                 logger.info(f"Session {session_id} created successfully")
+
+                            # Broadcast status: ADK session ready
+                            await broadcaster.broadcast_event(session_id, {
+                                "type": "research_update",
+                                "data": {
+                                    "content": "Research session initialized, preparing agents...",
+                                    "status": "session_ready",
+                                    "timestamp": datetime.now().isoformat()
+                                }
+                            })
                         except httpx.TimeoutException:
                             error_msg = f"Timeout creating session {session_id} in ADK"
                             logger.error(error_msg)
@@ -511,6 +531,16 @@ async def run_session_sse(
                         logger.info(f"Calling ADK /run_sse for session {session_id}")
                         logger.debug(f"ADK request payload: {adk_request}")
 
+                        # CRITICAL FIX: Broadcast status BEFORE calling ADK so frontend knows we're making progress
+                        await broadcaster.broadcast_event(session_id, {
+                            "type": "research_update",
+                            "data": {
+                                "content": "Sending request to research agents...",
+                                "status": "calling_adk",
+                                "timestamp": datetime.now().isoformat()
+                            }
+                        })
+
                         async with client.stream(
                             "POST",
                             "http://127.0.0.1:8080/run_sse",
@@ -518,6 +548,16 @@ async def run_session_sse(
                             timeout=httpx.Timeout(300.0, read=None)
                         ) as response:
                             logger.info(f"ADK responded with status {response.status_code} for session {session_id}")
+
+                            # CRITICAL FIX: Broadcast when ADK connection established
+                            await broadcaster.broadcast_event(session_id, {
+                                "type": "research_update",
+                                "data": {
+                                    "content": "Connected to research agents, receiving data...",
+                                    "status": "streaming_started",
+                                    "timestamp": datetime.now().isoformat()
+                                }
+                            })
 
                             response.raise_for_status()
                             logger.debug(f"Starting SSE stream iteration for session {session_id}")

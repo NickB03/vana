@@ -381,7 +381,7 @@ export function useOptimizedSSE(url: string, options: OptimizedSSEOptions = {}):
 
       // Otherwise, type comes from SSE event field (current backend format)
       return {
-        type: fallbackType || 'unknown',
+        type: (fallbackType as AgentNetworkEvent['type']) || 'connection',
         data: {
           timestamp: new Date().toISOString(),
           ...parsed  // Spread all fields from the flat data

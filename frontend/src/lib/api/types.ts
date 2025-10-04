@@ -153,11 +153,13 @@ export interface AgentNetworkEvent extends SSEEvent {
     | 'message_complete'
     | 'research_started'
     | 'research_progress'
+    | 'research_update'
     | 'research_complete'
     | 'message_edited'
     | 'message_deleted'
     | 'feedback_received'
-    | 'regeneration_progress';
+    | 'regeneration_progress'
+    | 'stream_complete';
   data: {
     sessionId?: string;
     status?: string;
