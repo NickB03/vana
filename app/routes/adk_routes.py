@@ -508,15 +508,23 @@ async def run_session_sse(
                         # SSE streams need special timeout config:
                         # - No read timeout (allow gaps between chunks while LLM processes)
                         # - Overall timeout of 300s (5 min) to match asyncio.wait_for
+                        logger.info(f"Calling ADK /run_sse for session {session_id}")
+                        logger.debug(f"ADK request payload: {adk_request}")
+
                         async with client.stream(
                             "POST",
                             "http://127.0.0.1:8080/run_sse",
                             json=adk_request,
                             timeout=httpx.Timeout(300.0, read=None)
                         ) as response:
-                            response.raise_for_status()
+                            logger.info(f"ADK responded with status {response.status_code} for session {session_id}")
 
+                            response.raise_for_status()
+                            logger.debug(f"Starting SSE stream iteration for session {session_id}")
+
+                            line_count = 0
                             async for line in response.aiter_lines():
+                                line_count += 1
                                 if line.strip() and line.startswith("data: "):
                                     data_str = line[6:].strip()
                                     if data_str and data_str != "[DONE]":
@@ -551,6 +559,8 @@ async def run_session_sse(
                                             logger.warning(f"Could not parse SSE data: {data_str[:100]} - {e}")
                                         except Exception as e:
                                             logger.warning(f"Error processing SSE event: {e}")
+
+                            logger.info(f"ADK stream completed for session {session_id}: {line_count} events processed")
 
                         # Send final response
                         final_content = "".join(accumulated_content) if accumulated_content else "Research completed."
