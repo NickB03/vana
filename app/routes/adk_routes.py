@@ -899,8 +899,12 @@ async def deprecated_run_research_sse(
 
     This endpoint is kept for backwards compatibility.
     """
+    print(f"[DEBUG] POST /api/run_sse/{session_id} called!", flush=True)
+    print(f"[DEBUG] Request body: {request}", flush=True)
     logger.warning(f"DEPRECATED: /api/run_sse/{session_id} endpoint used. Please migrate to ADK format")
-    return await run_session_sse(DEFAULT_APP_NAME, DEFAULT_USER_ID, session_id, request, current_user)
+    result = await run_session_sse(DEFAULT_APP_NAME, DEFAULT_USER_ID, session_id, request, current_user)
+    print(f"[DEBUG] run_session_sse returned: {result}", flush=True)
+    return result
 
 
 @adk_router.get("/api/run_sse/{session_id}")

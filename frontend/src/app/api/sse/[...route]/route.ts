@@ -6,6 +6,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { extractAuthTokens } from '@/lib/auth-cookies';
 
+// Edge Runtime Configuration
+export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
+
 // Environment configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -95,34 +99,41 @@ export async function GET(
       const stream = new ReadableStream({
         async start(controller) {
           const decoder = new TextDecoder();
+          const encoder = new TextEncoder();
+
+          // Send initial connection event
+          controller.enqueue(encoder.encode(': connected\n\n'));
+
+          let lastActivityTime = Date.now();
+          const keepAliveInterval = setInterval(() => {
+            if (Date.now() - lastActivityTime > 15000) {
+              controller.enqueue(encoder.encode(': keepalive\n\n'));
+              lastActivityTime = Date.now();
+            }
+          }, 15000);
 
           try {
             while (true) {
               const { done, value } = await reader.read();
+              if (done) break;
 
-              if (done) {
-                break;
-              }
-
-              // Forward SSE data to client
+              lastActivityTime = Date.now();
               const chunk = decoder.decode(value, { stream: true });
               console.log('[SSE Proxy] Forwarding chunk:', chunk.substring(0, 100));
-              controller.enqueue(new TextEncoder().encode(chunk));
+              controller.enqueue(encoder.encode(chunk));
             }
           } catch (error) {
             console.error('SSE proxy stream error:', error);
-            // Send error event to client
             const errorEvent = `event: error\ndata: ${JSON.stringify({ error: String(error) })}\n\n`;
-            controller.enqueue(new TextEncoder().encode(errorEvent));
+            controller.enqueue(encoder.encode(errorEvent));
           } finally {
+            clearInterval(keepAliveInterval);
             controller.close();
             reader.releaseLock();
           }
         },
 
         cancel() {
-          // Cleanup when client disconnects
-          // SSE proxy stream cancelled - use proper logger if needed
           reader.cancel();
         }
       });
@@ -131,9 +142,11 @@ export async function GET(
       return new Response(stream, {
         status: 200,
         headers: {
-          'Content-Type': 'text/event-stream',
+          'Content-Type': 'text/event-stream; charset=utf-8',
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Connection': 'keep-alive',
+          'Transfer-Encoding': 'chunked',
+          'X-Content-Type-Options': 'nosniff',
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET',
           'Access-Control-Allow-Headers': 'Content-Type, x-auth-token',
