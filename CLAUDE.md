@@ -538,7 +538,6 @@ Required `.env.local` variables:
 # Add MCP servers (Claude Flow required, others optional)
 claude mcp add claude-flow npx claude-flow@latest mcp start
 claude mcp add ruv-swarm npx ruv-swarm mcp start  # Optional: Enhanced coordination
-claude mcp add flow-nexus npx flow-nexus@latest mcp start  # Optional: Cloud features
 ```
 
 ## MCP Tool Categories
@@ -1001,7 +1000,6 @@ Usage: `/full-test`
 
 - Documentation: https://github.com/ruvnet/claude-flow
 - Issues: https://github.com/ruvnet/claude-flow/issues
-- Flow-Nexus Platform: https://flow-nexus.ruv.io (registration required for cloud features)
 
 ---
 

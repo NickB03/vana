@@ -287,6 +287,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
         const headers: HeadersInit = {
           'Accept': 'text/event-stream',
           'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
         };
 
         // Only add auth header if token exists

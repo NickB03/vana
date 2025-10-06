@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react'
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarHeader,
@@ -12,7 +13,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Button } from '@/components/ui/button'
 import { ChatSession } from '@/hooks/useChatStream'
-import { Search, Plus, MoreHorizontal, Share, Pen, Archive, Trash2 } from 'lucide-react'
+import { Search, Plus, MoreHorizontal, Share, Pen, Archive, Trash2, Settings } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -244,38 +245,81 @@ export function VanaSidebar({
   onRenameSession,
   onArchiveSession
 }: VanaSidebarProps) {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isSearching, setIsSearching] = useState(false)
+
   const handleNewChat = () => {
     const newSessionId = onCreateSession()
     onSelectSession(newSessionId)
   }
 
+  const toggleSearch = () => {
+    setIsSearching(!isSearching)
+    if (isSearching) {
+      setSearchQuery('')
+    }
+  }
+
   // Memoized safe sessions processing
   const safeSessions = useMemo(() => {
     if (!Array.isArray(sessions)) return []
-    return sessions.filter(session => 
-      session && 
-      typeof session === 'object' && 
+    return sessions.filter(session =>
+      session &&
+      typeof session === 'object' &&
       session.id
     )
   }, [sessions])
 
-  const groupedSessions = useMemo(() => 
-    groupSessionsByDate(safeSessions), 
-    [safeSessions]
+  // Filter sessions by search query
+  const filteredSessions = useMemo(() => {
+    if (!searchQuery.trim()) return safeSessions
+
+    const query = searchQuery.toLowerCase()
+    return safeSessions.filter(session => {
+      const title = getSessionTitle(session).toLowerCase()
+      const messages = Array.isArray(session.messages) ? session.messages : []
+      const hasMatchingMessage = messages.some(msg =>
+        msg && msg.content && msg.content.toLowerCase().includes(query)
+      )
+      return title.includes(query) || hasMatchingMessage
+    })
+  }, [safeSessions, searchQuery])
+
+  const groupedSessions = useMemo(() =>
+    groupSessionsByDate(filteredSessions),
+    [filteredSessions]
   )
 
   return (
     <Sidebar>
       <SidebarHeader className="flex flex-row items-center justify-between gap-2 px-2 py-4">
-        <div className="flex flex-row items-center gap-2 px-2">
-          <div className="bg-primary/10 size-8 rounded-md"></div>
-          <div className="text-md font-base text-primary tracking-tight">
-            Vana
+        {isSearching ? (
+          <div className="flex flex-1 items-center gap-2 px-2">
+            <input
+              type="text"
+              placeholder="Search chats..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 bg-transparent border-none outline-none text-sm"
+              autoFocus
+            />
+            <Button variant="ghost" size="sm" className="size-8" onClick={toggleSearch}>
+              <span className="text-xs">✕</span>
+            </Button>
           </div>
-        </div>
-        <Button variant="ghost" className="size-8">
-          <Search className="size-4" />
-        </Button>
+        ) : (
+          <>
+            <div className="flex flex-row items-center gap-2 px-2">
+              <div className="bg-primary/10 size-8 rounded-md"></div>
+              <div className="text-md font-base text-primary tracking-tight">
+                Vana
+              </div>
+            </div>
+            <Button variant="ghost" className="size-8" onClick={toggleSearch}>
+              <Search className="size-4" />
+            </Button>
+          </>
+        )}
       </SidebarHeader>
       <SidebarContent className="pt-4">
         <div className="px-4">
@@ -329,6 +373,19 @@ export function VanaSidebar({
           }).filter(Boolean)
         )}
       </SidebarContent>
+      <SidebarFooter className="border-t p-4">
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-2"
+          onClick={() => {
+            // TODO: Implement settings navigation
+            console.log('Settings clicked')
+          }}
+        >
+          <Settings className="size-4" />
+          <span>Settings</span>
+        </Button>
+      </SidebarFooter>
     </Sidebar>
   )
 }
