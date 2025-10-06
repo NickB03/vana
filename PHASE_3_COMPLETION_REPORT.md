@@ -48,7 +48,7 @@ Response: 200 OK
 ```
 
 **Logs Visible** ✅:
-```
+```text
 [DEBUG] POST /api/run_sse/session_verification_test_2025 called!
 [DEBUG] Request body: {'query': 'test verification'}
 WARNING: DEPRECATED: /api/run_sse/session_verification_test_2025 endpoint used
@@ -61,7 +61,7 @@ INFO: ADK responded with status 200 for session session_verification_test_2025
 ### ADK Integration ✅
 
 **SSE Event Streaming**:
-```
+```text
 INFO: Broadcasting research_update for session ..., content length: 18
 INFO: Broadcasting research_update for session ..., content length: 106
 INFO: Broadcasting research_update for session ..., content length: 394
@@ -85,7 +85,7 @@ INFO: Agent execution completed for session ...
 **Test Query**: "Tell me about artificial intelligence"
 
 **Frontend Console Logs** (Zero Errors):
-```
+```text
 [useSSE] Connecting to SSE: /api/sse/api/run_sse/session_bf792ea4-...
 [useSSE] SSE connection established successfully ✅
 [useSSE] Received event: research_update payload length: 116 ✅
@@ -109,7 +109,7 @@ INFO: Agent execution completed for session ...
 
 ### Architecture Flow (Verified Working)
 
-```
+```text
 ┌─────────────┐         ┌─────────────┐         ┌─────────────┐
 │   Frontend  │────────▶│   FastAPI   │────────▶│     ADK     │
 │ (Port 3001) │         │ (Port 8000) │         │ (Port 8080) │
