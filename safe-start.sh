@@ -28,8 +28,9 @@ list_pids() {
   if command -v lsof >/dev/null 2>&1; then
     lsof -t -iTCP:"$1" -sTCP:LISTEN 2>/dev/null || true
   else
-    # fuser outputs "8080/tcp: 1234 5678" - extract only numeric PIDs
-    fuser -n tcp "$1" 2>/dev/null | tr -cs '0-9\n' '\n' || true
+    # fuser outputs "8080/tcp: 1234 5678" - keep only pure numeric PIDs
+    fuser -n tcp "$1" 2>/dev/null \
+      | awk '{ for (i = 1; i <= NF; i++) if ($i ~ /^[0-9]+$/) print $i }' || true
   fi
 }
 
