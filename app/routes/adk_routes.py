@@ -351,6 +351,43 @@ async def get_all_task_status(
 # ADK SESSION ACTIONS
 # ============================================================================
 
+@adk_router.options("/apps/{app_name}/users/{user_id}/sessions/{session_id}/run")
+async def options_session_run(
+    app_name: str,
+    user_id: str,
+    session_id: str
+) -> dict[str, str]:
+    """
+    Handle CORS preflight OPTIONS requests for session run endpoint.
+
+    This is critical because browser sends OPTIONS before POST for CORS preflight.
+    Without this, the browser receives 405 Method Not Allowed from ADK.
+
+    Returns:
+        Dictionary indicating allowed methods and successful preflight
+    """
+    return {
+        "allow": "POST, OPTIONS",
+        "message": "CORS preflight successful"
+    }
+
+@adk_router.options("/apps/{app_name}/users/{user_id}/sessions/{session_id}")
+async def options_session_detail(
+    app_name: str,
+    user_id: str,
+    session_id: str
+) -> dict[str, str]:
+    """
+    Handle CORS preflight OPTIONS requests for session detail endpoints.
+
+    Returns:
+        Dictionary indicating allowed methods and successful preflight
+    """
+    return {
+        "allow": "GET, PUT, DELETE, OPTIONS",
+        "message": "CORS preflight successful"
+    }
+
 @adk_router.post("/apps/{app_name}/users/{user_id}/sessions/{session_id}/run")
 async def run_session_sse(
     app_name: str,
@@ -571,8 +608,22 @@ async def run_session_sse(
                                         try:
                                             data = json.loads(data_str)
 
+                                            # DEBUG: Log the actual ADK response structure
+                                            logger.info(f"ADK SSE data keys: {list(data.keys())}")
+                                            # Use INFO level to ensure we see the full data
+                                            try:
+                                                logger.info(f"Full ADK SSE data: {json.dumps(data, indent=2)[:1000]}")
+                                            except Exception as e:
+                                                logger.warning(f"Could not serialize data: {e}")
+
                                             # Extract content from ADK Event structure
-                                            # Event has: content.parts[].text
+                                            # ADK Event structure may have different formats:
+                                            # 1. content.parts[].text (Gemini format)
+                                            # 2. Direct text field
+                                            # 3. response.text or similar
+                                            text_content = None
+
+                                            # Try content.parts[].text structure
                                             content_obj = data.get("content")
                                             if content_obj and isinstance(content_obj, dict):
                                                 parts = content_obj.get("parts", [])
@@ -580,21 +631,37 @@ async def run_session_sse(
                                                     if isinstance(part, dict):
                                                         text = part.get("text")
                                                         if text:
-                                                            accumulated_content.append(text)
+                                                            text_content = text
+                                                            break
 
-                                                            # Broadcast update
-                                                            logger.info(f"Broadcasting research_update for session {session_id}, content length: {len(''.join(accumulated_content))}")
-                                                            await broadcaster.broadcast_event(session_id, {
-                                                                "type": "research_update",
-                                                                "data": {
-                                                                    "content": "".join(accumulated_content),
-                                                                    "timestamp": datetime.now().isoformat()
-                                                                }
-                                                            })
+                                            # Try direct text field
+                                            if not text_content:
+                                                text_content = data.get("text")
+
+                                            # Try response field
+                                            if not text_content and "response" in data:
+                                                response_obj = data.get("response")
+                                                if isinstance(response_obj, str):
+                                                    text_content = response_obj
+                                                elif isinstance(response_obj, dict):
+                                                    text_content = response_obj.get("text")
+
+                                            if text_content:
+                                                accumulated_content.append(text_content)
+
+                                                # Broadcast update
+                                                logger.info(f"Broadcasting research_update for session {session_id}, content length: {len(''.join(accumulated_content))}")
+                                                await broadcaster.broadcast_event(session_id, {
+                                                    "type": "research_update",
+                                                    "data": {
+                                                        "content": "".join(accumulated_content),
+                                                        "timestamp": datetime.now().isoformat()
+                                                    }
+                                                })
                                             else:
                                                 # Log non-content events for debugging
-                                                event_type = data.get("invocationId") or data.get("id") or "unknown"
-                                                logger.debug(f"ADK event (no text content): type={event_type}")
+                                                event_type = data.get("invocationId") or data.get("id") or data.get("type") or "unknown"
+                                                logger.debug(f"ADK event (no text content): type={event_type}, keys={list(data.keys())}")
                                         except json.JSONDecodeError as e:
                                             logger.warning(f"Could not parse SSE data: {data_str[:100]} - {e}")
                                         except Exception as e:
@@ -795,139 +862,8 @@ async def append_session_message(
 
 
 # ============================================================================
-# MAIN SSE ENDPOINT (Replaces /api/chat)
-# ============================================================================
-
-@adk_router.post("/run_sse")
-async def main_chat_sse(
-    request_data: dict = Body(...),
-    current_user: Optional[User] = Depends(get_current_active_user_optional()),
-) -> StreamingResponse:
-    """
-    Main SSE endpoint for chat (ADK-compliant replacement for /api/chat).
-
-    This is the primary chat endpoint that handles messages and returns SSE stream.
-
-    Args:
-        request_data: Request containing message and optional session_id
-        current_user: Current authenticated user
-
-    Returns:
-        StreamingResponse with SSE events for the chat session
-    """
-    # Extract message and session_id from request
-    message = request_data.get("message", "")
-    session_id = request_data.get("session_id", str(uuid.uuid4()))
-
-    logger.info(f"Main SSE endpoint called with message: {message[:50]}...")
-
-    # Ensure session exists in store
-    session_store.ensure_session(
-        session_id,
-        user_id=current_user.id if current_user else None,
-        title=message[:60] if message else "New Chat",
-        status="active"
-    )
-
-    # Create SSE response
-    async def generate():
-        try:
-            # Send initial status
-            yield f"data: {json.dumps({'type': 'status', 'content': 'Initializing chat...'})}\n\n"
-            await asyncio.sleep(0.1)
-
-            # Send processing status
-            yield f"data: {json.dumps({'type': 'agent', 'content': 'Processing your request...'})}\n\n"
-            await asyncio.sleep(0.5)
-
-            # Mock response content
-            mock_response = f"I understand you're asking about: '{message}'. This is a mock response to verify the chat flow is working. The actual AI integration is currently being configured."
-
-            # Send the response in chunks to simulate streaming
-            words = mock_response.split()
-            chunk_size = 5
-            for i in range(0, len(words), chunk_size):
-                chunk = ' '.join(words[i:i+chunk_size])
-                yield f"data: {json.dumps({'type': 'result', 'content': chunk})}\n\n"
-                await asyncio.sleep(0.1)
-
-            # Send completion
-            yield f"data: {json.dumps({'type': 'complete', 'content': 'Response complete'})}\n\n"
-            yield "data: [DONE]\n\n"
-
-        except Exception as e:
-            logger.error(f"Error in main SSE generation: {e}")
-            yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
-
-    return StreamingResponse(
-        generate(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        }
-    )
-
-
-# ============================================================================
 # BACKWARDS COMPATIBILITY ENDPOINTS WITH DEPRECATION WARNINGS
 # ============================================================================
-
-@adk_router.post("/api/chat")
-async def deprecated_chat_endpoint(
-    request_data: dict = Body(...),
-    current_user: Optional[User] = Depends(get_current_active_user_optional()),
-) -> StreamingResponse:
-    """
-    DEPRECATED: Use /run_sse instead.
-
-    This endpoint is kept for backwards compatibility but should be migrated to /run_sse.
-    """
-    logger.warning("DEPRECATED: /api/chat endpoint used. Please migrate to /run_sse")
-    return await main_chat_sse(request_data, current_user)
-
-
-@adk_router.post("/api/run_sse/{session_id}")
-async def deprecated_run_research_sse(
-    session_id: str,
-    request: dict = Body(...),
-    current_user: Optional[User] = Depends(get_current_active_user_optional()),
-) -> dict:
-    """
-    DEPRECATED: Use /apps/{app_name}/users/{user_id}/sessions/{session_id}/run instead.
-
-    This endpoint is kept for backwards compatibility.
-    """
-    logger.warning(f"DEPRECATED: /api/run_sse/{session_id} endpoint used. Please migrate to ADK format")
-    return await run_session_sse(DEFAULT_APP_NAME, DEFAULT_USER_ID, session_id, request, current_user)
-
-
-@adk_router.get("/api/run_sse/{session_id}")
-async def deprecated_get_research_sse(
-    session_id: str,
-    prompt: str | None = None,
-    query: str | None = None,
-    current_user: Optional[User] = Depends(get_current_active_user_optional())
-) -> StreamingResponse:
-    """
-    DEPRECATED: Use /apps/{app_name}/users/{user_id}/sessions/{session_id}/run instead.
-
-    This endpoint is kept for backwards compatibility.
-    If a prompt or query is provided, it will trigger research before establishing SSE.
-    """
-    logger.warning(f"DEPRECATED: GET /api/run_sse/{session_id} endpoint used. Please migrate to ADK format")
-
-    # If a prompt/query is provided, trigger the research first
-    research_query = prompt or query
-    if research_query:
-        logger.info(f"Processing query from GET request: {research_query[:100]}")
-        # Trigger research (same logic as POST endpoint)
-        request_body = {"query": research_query, "message": research_query}
-        await run_session_sse(DEFAULT_APP_NAME, DEFAULT_USER_ID, session_id, request_body, current_user)
-
-    return await get_session_sse(DEFAULT_APP_NAME, DEFAULT_USER_ID, session_id, current_user)
-
 
 @adk_router.get("/api/sessions")
 async def deprecated_list_chat_sessions(

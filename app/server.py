@@ -375,6 +375,18 @@ app.description = "API for interacting with the Agent vana"
 app.state.agents_dir = AGENTS_DIR
 app.state.session_service_uri = session_service_uri
 
+# Add CORS middleware BEFORE including routers (critical for proper OPTIONS handling)
+from fastapi.middleware.cors import CORSMiddleware as FastAPICORS
+app.add_middleware(
+    FastAPICORS,
+    allow_origins=allow_origins,  # Already includes ports 3000, 3001, 3002
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Explicit methods
+    allow_headers=["*"],
+    expose_headers=["*"],  # Allow clients to read all response headers
+    max_age=3600,  # Cache preflight for 1 hour
+)
+
 # Add authentication routers
 app.include_router(auth_router)
 app.include_router(users_router)
@@ -644,15 +656,7 @@ async def root():
 is_production = os.getenv("NODE_ENV") == "production"
 app.add_middleware(SecurityHeadersMiddleware, enable_hsts=is_production)
 
-# Add proper CORS middleware from FastAPI
-from fastapi.middleware.cors import CORSMiddleware as FastAPICORS
-app.add_middleware(
-    FastAPICORS,
-    allow_origins=allow_origins,  # Already includes ports 3000, 3001, 3002
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS middleware already added earlier (before routers) for proper OPTIONS handling
 
 app.add_middleware(CircuitBreakerMiddleware)  # Circuit breaker for auth protection
 app.add_middleware(RateLimitMiddleware, calls=100, period=60)  # General rate limiting

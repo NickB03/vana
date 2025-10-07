@@ -69,21 +69,20 @@ The system consists of three main services that must be running:
    - Connects to FastAPI backend on port 8000
    - Real-time SSE streaming for chat updates
 
-### Starting All Services
+### Starting All Services (Recommended)
+To prevent port conflicts and ensure a clean startup, use the dedicated script to launch all Vana services concurrently. This script will automatically terminate any old processes before starting new ones.
+
+**This is the recommended way to start the development environment.**
+
 ```bash
-# 1. Start FastAPI backend (port 8000)
-make dev-backend
-# OR
-ENVIRONMENT=development AUTH_REQUIRE_SSE_AUTH=false uv run --env-file .env.local uvicorn app.server:app --reload --port 8000
-
-# 2. Start ADK web UI (port 8080) - if needed
-adk web agents/ --port 8080
-
-# 3. Start frontend (port 3000)
-make dev-frontend
-# OR
-cd frontend && npm run dev
+# Starts backend, frontend, and ADK services safely
+./start_all_services.sh
 ```
+
+This script handles:
+- **Backend API** (Port 8000)
+- **Google ADK** (Port 8080)
+- **Frontend UI** (Port 3000) - The frontend is now pinned to port 3000 to guarantee stability.
 
 ### Important Configuration
 - Frontend `.env.local` must have: `NEXT_PUBLIC_API_URL=http://127.0.0.1:8000`

@@ -4,7 +4,7 @@
   "description": "High-performance frontend for Vana AI platform with optimized React patterns",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbo",
+    "dev": "next dev --port 3000 --turbo",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
