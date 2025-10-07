@@ -351,6 +351,43 @@ async def get_all_task_status(
 # ADK SESSION ACTIONS
 # ============================================================================
 
+@adk_router.options("/apps/{app_name}/users/{user_id}/sessions/{session_id}/run")
+async def options_session_run(
+    app_name: str,
+    user_id: str,
+    session_id: str
+) -> dict[str, str]:
+    """
+    Handle CORS preflight OPTIONS requests for session run endpoint.
+
+    This is critical because browser sends OPTIONS before POST for CORS preflight.
+    Without this, the browser receives 405 Method Not Allowed from ADK.
+
+    Returns:
+        Dictionary indicating allowed methods and successful preflight
+    """
+    return {
+        "allow": "POST, OPTIONS",
+        "message": "CORS preflight successful"
+    }
+
+@adk_router.options("/apps/{app_name}/users/{user_id}/sessions/{session_id}")
+async def options_session_detail(
+    app_name: str,
+    user_id: str,
+    session_id: str
+) -> dict[str, str]:
+    """
+    Handle CORS preflight OPTIONS requests for session detail endpoints.
+
+    Returns:
+        Dictionary indicating allowed methods and successful preflight
+    """
+    return {
+        "allow": "GET, PUT, DELETE, OPTIONS",
+        "message": "CORS preflight successful"
+    }
+
 @adk_router.post("/apps/{app_name}/users/{user_id}/sessions/{session_id}/run")
 async def run_session_sse(
     app_name: str,
@@ -571,8 +608,22 @@ async def run_session_sse(
                                         try:
                                             data = json.loads(data_str)
 
+                                            # DEBUG: Log the actual ADK response structure
+                                            logger.info(f"ADK SSE data keys: {list(data.keys())}")
+                                            # Use INFO level to ensure we see the full data
+                                            try:
+                                                logger.info(f"Full ADK SSE data: {json.dumps(data, indent=2)[:1000]}")
+                                            except Exception as e:
+                                                logger.warning(f"Could not serialize data: {e}")
+
                                             # Extract content from ADK Event structure
-                                            # Event has: content.parts[].text
+                                            # ADK Event structure may have different formats:
+                                            # 1. content.parts[].text (Gemini format)
+                                            # 2. Direct text field
+                                            # 3. response.text or similar
+                                            text_content = None
+
+                                            # Try content.parts[].text structure
                                             content_obj = data.get("content")
                                             if content_obj and isinstance(content_obj, dict):
                                                 parts = content_obj.get("parts", [])
@@ -580,21 +631,37 @@ async def run_session_sse(
                                                     if isinstance(part, dict):
                                                         text = part.get("text")
                                                         if text:
-                                                            accumulated_content.append(text)
+                                                            text_content = text
+                                                            break
 
-                                                            # Broadcast update
-                                                            logger.info(f"Broadcasting research_update for session {session_id}, content length: {len(''.join(accumulated_content))}")
-                                                            await broadcaster.broadcast_event(session_id, {
-                                                                "type": "research_update",
-                                                                "data": {
-                                                                    "content": "".join(accumulated_content),
-                                                                    "timestamp": datetime.now().isoformat()
-                                                                }
-                                                            })
+                                            # Try direct text field
+                                            if not text_content:
+                                                text_content = data.get("text")
+
+                                            # Try response field
+                                            if not text_content and "response" in data:
+                                                response_obj = data.get("response")
+                                                if isinstance(response_obj, str):
+                                                    text_content = response_obj
+                                                elif isinstance(response_obj, dict):
+                                                    text_content = response_obj.get("text")
+
+                                            if text_content:
+                                                accumulated_content.append(text_content)
+
+                                                # Broadcast update
+                                                logger.info(f"Broadcasting research_update for session {session_id}, content length: {len(''.join(accumulated_content))}")
+                                                await broadcaster.broadcast_event(session_id, {
+                                                    "type": "research_update",
+                                                    "data": {
+                                                        "content": "".join(accumulated_content),
+                                                        "timestamp": datetime.now().isoformat()
+                                                    }
+                                                })
                                             else:
                                                 # Log non-content events for debugging
-                                                event_type = data.get("invocationId") or data.get("id") or "unknown"
-                                                logger.debug(f"ADK event (no text content): type={event_type}")
+                                                event_type = data.get("invocationId") or data.get("id") or data.get("type") or "unknown"
+                                                logger.debug(f"ADK event (no text content): type={event_type}, keys={list(data.keys())}")
                                         except json.JSONDecodeError as e:
                                             logger.warning(f"Could not parse SSE data: {data_str[:100]} - {e}")
                                         except Exception as e:
