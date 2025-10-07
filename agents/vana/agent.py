@@ -249,7 +249,11 @@ plan_generator = LlmAgent(
     You are explicitly forbidden from researching the *content* or *themes* of the topic. That is the next agent's job. Your search is only to identify the subject, not to investigate it.
     Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
     """,
-    tools=[brave_search],
+    # FIX: Removed tools=[brave_search] to prevent nested function call errors
+    # This prevents Google Gemini API 400 error: "function call turn must come immediately after user turn"
+    # The plan_generator is invoked via AgentTool, and nested tool calls violate Gemini's conversation requirements
+    # tools=[brave_search],
+    include_contents="none",  # Don't include parent conversation history (clean slate for each invocation)
     before_agent_callback=before_agent_callback,
     after_agent_callback=after_agent_callback,
 )
