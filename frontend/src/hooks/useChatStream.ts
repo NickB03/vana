@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { useResearchSSE, useAgentNetworkSSE } from './useSSE';
+import { useResearchSSE } from './useSSE';
 import { useAuth } from './useAuth';
 import { apiClient } from '../lib/api/client';
 
@@ -69,9 +69,9 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
     };
   }, [currentSessionId, hasAuthToken, isDevelopment]);
 
-  // SSE connections for research and agent updates
+  // Single SSE connection for all events (research + agent status)
+  // Following Google ADK best practices: all events flow through one stream
   const researchSSE = useResearchSSE(currentSessionId || '', sseOptions);
-  const agentSSE = useAgentNetworkSSE(currentSessionId || '', sseOptions);
 
   // Get message handlers
   const { sendMessage, retryLastMessage } = useMessageHandlers({
@@ -80,7 +80,7 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
     setIsStreaming,
     setError,
     researchSSE,
-    agentSSE,
+    agentSSE: researchSSE, // Use same stream for agent events
   });
 
   // Auto-create session if needed
@@ -156,25 +156,22 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
 
   // Use refs to avoid dependency issues in cleanup
   const researchSSERef = useRef(researchSSE);
-  const agentSSERef = useRef(agentSSE);
   researchSSERef.current = researchSSE;
-  agentSSERef.current = agentSSE;
 
-  // Setup SSE event handlers
+  // Setup SSE event handlers (single stream handles all event types)
   useSSEEventHandlers({
     currentSessionId,
     currentSession,
     researchSSE,
-    agentSSE,
+    agentSSE: researchSSE, // Same stream for agent events
     setIsStreaming,
     setError,
   });
 
-  // Cleanup SSE connections on unmount or sessionId change
+  // Cleanup SSE connection on unmount or sessionId change
   useEffect(() => {
     return () => {
       researchSSERef.current.disconnect();
-      agentSSERef.current.disconnect();
     };
   }, [currentSessionId]);
 
@@ -219,13 +216,11 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
   // Memoize connection management functions
   const connectSSE = useCallback(() => {
     researchSSE.connect();
-    agentSSE.connect();
-  }, [researchSSE.connect, agentSSE.connect]);
+  }, [researchSSE.connect]);
 
   const disconnectSSE = useCallback(() => {
     researchSSE.disconnect();
-    agentSSE.disconnect();
-  }, [researchSSE.disconnect, agentSSE.disconnect]);
+  }, [researchSSE.disconnect]);
 
   // Memoize stable arrays and objects to prevent re-render loops
   const stableMessages = useMemo(() => {
@@ -238,18 +233,16 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
 
   const stableConnectionState = useMemo(() => ({
     research: researchSSE.connectionState,
-    agents: agentSSE.connectionState,
-    isConnected: researchSSE.isConnected && agentSSE.isConnected,
+    agents: researchSSE.connectionState, // Same stream
+    isConnected: researchSSE.isConnected,
   }), [
     researchSSE.connectionState,
     researchSSE.isConnected,
-    agentSSE.connectionState,
-    agentSSE.isConnected,
   ]);
 
   const stableError = useMemo(() => {
-    return error || researchSSE.error || agentSSE.error || currentSession?.error || null;
-  }, [error, researchSSE.error, agentSSE.error, currentSession?.error]);
+    return error || researchSSE.error || currentSession?.error || null;
+  }, [error, researchSSE.error, currentSession?.error]);
 
   return useMemo(() => ({
     // Session state

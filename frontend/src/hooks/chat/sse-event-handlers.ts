@@ -341,73 +341,23 @@ export function useSSEEventHandlers({
     setError,
   ]);
 
-  // Handle SSE events for agent coordination and chat actions
+  // Handle SSE events for agent coordination (consolidated stream)
+  // NOTE: Removed duplicate event handling - since agentSSE === researchSSE (same stream),
+  // processing agent events separately was causing duplicate message content.
+  // Agent events (agent_status) are now handled in the research event handler above.
   useEffect(() => {
     if (!stableAgentEvent || !currentSessionId) return;
 
-    const { type, agents, payload } = stableAgentEvent;
+    const { type, agents } = stableAgentEvent;
 
-    // Handle agent network updates
-    if (type === 'agent_network_update' && Array.isArray(agents)) {
+    // Only handle agent_status events (previously agent_network_update)
+    if (type === 'agent_status' && Array.isArray(agents)) {
       updateAgentsInStore(currentSessionId, agents);
-      return;
-    }
-
-    // Handle chat action events that come through agent SSE
-    if (payload) {
-      switch (type) {
-        case 'message_edited': {
-          const { messageId, newContent } = payload;
-          if (messageId && newContent !== undefined) {
-            updateMessageInStore(currentSessionId, messageId, (message) => ({
-              ...message,
-              content: newContent,
-              timestamp: new Date().toISOString(),
-            }));
-          }
-          break;
-        }
-        case 'message_deleted': {
-          const { messageId } = payload;
-          if (messageId) {
-            deleteMessageAndSubsequentInStore(currentSessionId, messageId);
-          }
-          break;
-        }
-        case 'feedback_received': {
-          const { messageId, feedback } = payload;
-          if (messageId && feedback !== undefined) {
-            updateFeedbackInStore(currentSessionId, messageId, feedback);
-          }
-          break;
-        }
-        case 'regeneration_progress': {
-          const { messageId, thoughtProcess, regenerationStep } = payload;
-          if (messageId && thoughtProcess) {
-            updateThoughtProcessInStore(currentSessionId, messageId, thoughtProcess);
-
-            if (regenerationStep) {
-              updateSessionMetaInStore(currentSessionId, {
-                regeneratingMessageId: messageId,
-                current_phase: regenerationStep,
-              });
-            }
-          }
-          break;
-        }
-        default:
-          break;
-      }
     }
   }, [
     stableAgentEvent,
     currentSessionId,
     updateAgentsInStore,
-    updateMessageInStore,
-    deleteMessageAndSubsequentInStore,
-    updateFeedbackInStore,
-    updateThoughtProcessInStore,
-    updateSessionMetaInStore,
   ]);
 
   return {

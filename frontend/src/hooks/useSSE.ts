@@ -679,12 +679,13 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
 }
 
 /**
- * Hook specifically for agent network SSE streams
+ * DEPRECATED: useAgentNetworkSSE hook removed
+ *
+ * Following Google ADK best practices, all events (research + agent status)
+ * now flow through a single SSE stream via useResearchSSE.
+ *
+ * The /agent_network_sse endpoint has been removed. Use useResearchSSE instead.
  */
-export function useAgentNetworkSSE(sessionId: string, options: Omit<SSEOptions, 'sessionId'> = {}) {
-  const url = `/agent_network_sse/${sessionId}`;
-  return useSSE(url, { ...options, sessionId });
-}
 
 /**
  * Hook specifically for research task SSE streams
