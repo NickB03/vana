@@ -34,7 +34,7 @@ test.describe('SSE Connection and Event Streaming', () => {
     // Capture network requests
     page.on('request', request => {
       const url = request.url();
-      if (url.includes('/api/sse/') || url.includes('/api/run_sse/')) {
+      if (url.includes('/api/sse/') || url.includes('/apps/vana/users/')) {
         networkRequests.push(url);
         console.log(`→ Network Request: ${request.method()} ${url}`);
       }

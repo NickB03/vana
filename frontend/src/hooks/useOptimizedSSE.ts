@@ -732,8 +732,12 @@ export function useOptimizedAgentNetworkSSE(sessionId: string, options: Omit<Opt
 
 /**
  * Optimized hook specifically for research task SSE streams
+ * Uses ADK-compliant endpoint: /apps/{appName}/users/{userId}/sessions/{sessionId}/run
  */
 export function useOptimizedResearchSSE(sessionId: string, options: Omit<OptimizedSSEOptions, 'sessionId'> = {}) {
-  const url = `/api/sse/api/run_sse/${sessionId}`;
+  // ADK-compliant endpoint structure with Next.js proxy prefix
+  const ADK_APP_NAME = process.env.NEXT_PUBLIC_ADK_APP_NAME || 'vana';
+  const ADK_DEFAULT_USER = process.env.NEXT_PUBLIC_ADK_DEFAULT_USER || 'default';
+  const url = `/api/sse/apps/${ADK_APP_NAME}/users/${ADK_DEFAULT_USER}/sessions/${sessionId}/run`;
   return useOptimizedSSE(url, { ...options, sessionId });
 }

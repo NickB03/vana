@@ -30,7 +30,7 @@ interface ProfileMetrics {
 
 export function SSERenderProfilerTest() {
   const [sessionId] = useState(() => `test-${Date.now()}`);
-  const [url] = useState(`/api/run_sse/${sessionId}`);
+  const [url] = useState(`/apps/vana/users/default/sessions/${sessionId}/run`);
   const metricsRef = useRef<ProfileMetrics>({
     renderCount: 0,
     totalRenderTime: 0,

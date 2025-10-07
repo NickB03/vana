@@ -31,6 +31,16 @@ import {
 import { syncTokensToCookies } from '../auth-cookies';
 
 /**
+ * ADK Configuration Constants
+ * These define the ADK-compliant endpoint structure:
+ * /apps/{appName}/users/{userId}/sessions/{sessionId}/run
+ */
+const ADK_CONFIG = {
+  APP_NAME: process.env.NEXT_PUBLIC_ADK_APP_NAME || 'vana',
+  DEFAULT_USER: process.env.NEXT_PUBLIC_ADK_DEFAULT_USER || 'default',
+} as const;
+
+/**
  * API Client for Vana backend integration
  */
 export class VanaAPIClient {
@@ -438,12 +448,34 @@ export class VanaAPIClient {
 
   /**
    * Start research session
+   * Uses ADK-compliant endpoint: /apps/{appName}/users/{userId}/sessions/{sessionId}/run
+   * Falls back to legacy endpoint for backward compatibility
    */
   async startResearch(sessionId: string, request: ResearchRequest): Promise<ResearchResponse> {
-    return this.makeRequestWithRetry<ResearchResponse>(`/api/run_sse/${sessionId}`, {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
+    // ADK-compliant endpoint structure
+    const adkEndpoint = `/apps/${ADK_CONFIG.APP_NAME}/users/${ADK_CONFIG.DEFAULT_USER}/sessions/${sessionId}/run`;
+
+    // Legacy endpoint for backward compatibility during transition
+    const legacyEndpoint = `/api/run_sse/${sessionId}`;
+
+    // Try ADK endpoint first, fall back to legacy if it fails
+    try {
+      return await this.makeRequestWithRetry<ResearchResponse>(adkEndpoint, {
+        method: 'POST',
+        body: JSON.stringify(request),
+      });
+    } catch (error) {
+      // If ADK endpoint fails with 404, try legacy endpoint
+      if (error instanceof APIError && error.status_code === 404) {
+        console.warn('ADK endpoint not found, falling back to legacy endpoint');
+        return await this.makeRequestWithRetry<ResearchResponse>(legacyEndpoint, {
+          method: 'POST',
+          body: JSON.stringify(request),
+        });
+      }
+      // Re-throw other errors
+      throw error;
+    }
   }
 
   /**
