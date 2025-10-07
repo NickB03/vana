@@ -23,25 +23,27 @@ if ! command -v lsof >/dev/null 2>&1 && ! command -v fuser >/dev/null 2>&1; then
   exit 1
 fi
 
+# Helper to normalize PID lookup across lsof and fuser
+list_pids() {
+  if command -v lsof >/dev/null 2>&1; then
+    lsof -t -iTCP:"$1" -sTCP:LISTEN 2>/dev/null || true
+  else
+    # fuser outputs "8080/tcp: 1234 5678" - extract only numeric PIDs
+    fuser -n tcp "$1" 2>/dev/null | tr -cs '0-9\n' '\n' || true
+  fi
+}
+
 # Get PIDs listening on the port (avoid established connections)
-if command -v lsof >/dev/null 2>&1; then
-  PIDS=$(lsof -t -iTCP:$PORT -sTCP:LISTEN 2>/dev/null || true)
-else
-  PIDS=$(fuser -n tcp "$PORT" 2>/dev/null || true)
-fi
+PIDS=$(list_pids "$PORT")
 
 if [ -n "$PIDS" ]; then
   echo "Processes on port $PORT: $PIDS"
   # Try graceful shutdown first
   kill $PIDS 2>/dev/null || true
   # Wait up to 5s for port to free
-  for i in {1..10}; do
+  for _ in {1..10}; do
     sleep 0.5
-    if command -v lsof >/dev/null 2>&1; then
-      STILL=$(lsof -t -iTCP:$PORT -sTCP:LISTEN 2>/dev/null || true)
-    else
-      STILL=$(fuser -n tcp "$PORT" 2>/dev/null || true)
-    fi
+    STILL=$(list_pids "$PORT")
     [ -z "$STILL" ] && break
   done
   # Force kill if still present
