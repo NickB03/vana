@@ -178,7 +178,7 @@ const OptimizedChatExample: React.FC<OptimizedChatExampleProps> = memoWithTracki
         'INSERT INTO messages (session_id, content, role) VALUES (?, ?, ?)',
         responseTime,
         1,
-        '/api/run_sse'
+        `/apps/vana/users/default/sessions/${sessionId}/run`
       );
 
     } catch (error) {

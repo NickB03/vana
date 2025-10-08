@@ -13,23 +13,25 @@ import json
 import logging
 import uuid
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Request
+from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-import httpx
 
 from app.models import SessionMessagePayload
+from app.utils.input_validation import (
+    get_validation_error_response,
+    validate_chat_input,
+)
 from app.utils.session_store import session_store
-from app.utils.sse_broadcaster import get_sse_broadcaster, agent_network_event_stream
-from app.utils.input_validation import validate_chat_input, get_validation_error_response
+from app.utils.sse_broadcaster import agent_network_event_stream, get_sse_broadcaster
 
 # Import authentication dependencies
 try:
-    from app.auth.security import current_active_user_dep, get_current_user_optional
-    from app.auth.models import User
     from app.auth.database import get_auth_db
+    from app.auth.models import User
+    from app.auth.security import current_active_user_dep, get_current_user_optional
 
     # Create a dependency for optional authentication
     def get_current_active_user_optional():
@@ -94,7 +96,7 @@ class AppInfo(BaseModel):
 
 @adk_router.get("/list-apps")
 async def list_apps(
-    current_user: Optional[User] = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional())
 ) -> dict[str, Any]:
     """
     List available applications for ADK compliance.
@@ -125,7 +127,7 @@ async def list_apps(
 async def list_user_sessions(
     app_name: str,
     user_id: str,
-    current_user: Optional[User] = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional())
 ) -> dict[str, Any]:
     """
     List sessions for a specific app and user (ADK-compliant).
@@ -167,7 +169,7 @@ async def get_user_session(
     app_name: str,
     user_id: str,
     session_id: str,
-    current_user: Optional[User] = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional())
 ) -> dict[str, Any]:
     """
     Get a specific session for a user in an app (ADK-compliant).
@@ -204,7 +206,7 @@ async def update_user_session(
     user_id: str,
     session_id: str,
     payload: SessionUpdatePayload,
-    current_user: Optional[User] = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional())
 ) -> dict[str, Any]:
     """
     Update session metadata for a user in an app (ADK-compliant).
@@ -242,7 +244,7 @@ async def delete_user_session(
     app_name: str,
     user_id: str,
     session_id: str,
-    current_user: Optional[User] = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional())
 ) -> dict[str, Any]:
     """
     Delete a session for a user in an app (ADK-compliant).
@@ -295,7 +297,7 @@ async def get_session_task_status(
     app_name: str,
     user_id: str,
     session_id: str,
-    current_user: Optional[User] = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional())
 ) -> dict[str, Any]:
     """
     Get background task status for a session (CRIT-006 debugging endpoint).
@@ -326,7 +328,7 @@ async def get_session_task_status(
 
 @adk_router.get("/task-status")
 async def get_all_task_status(
-    current_user: Optional[User] = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional())
 ) -> dict[str, Any]:
     """
     Get status of all background tasks (CRIT-006 debugging endpoint).
@@ -351,50 +353,13 @@ async def get_all_task_status(
 # ADK SESSION ACTIONS
 # ============================================================================
 
-@adk_router.options("/apps/{app_name}/users/{user_id}/sessions/{session_id}/run")
-async def options_session_run(
-    app_name: str,
-    user_id: str,
-    session_id: str
-) -> dict[str, str]:
-    """
-    Handle CORS preflight OPTIONS requests for session run endpoint.
-
-    This is critical because browser sends OPTIONS before POST for CORS preflight.
-    Without this, the browser receives 405 Method Not Allowed from ADK.
-
-    Returns:
-        Dictionary indicating allowed methods and successful preflight
-    """
-    return {
-        "allow": "POST, OPTIONS",
-        "message": "CORS preflight successful"
-    }
-
-@adk_router.options("/apps/{app_name}/users/{user_id}/sessions/{session_id}")
-async def options_session_detail(
-    app_name: str,
-    user_id: str,
-    session_id: str
-) -> dict[str, str]:
-    """
-    Handle CORS preflight OPTIONS requests for session detail endpoints.
-
-    Returns:
-        Dictionary indicating allowed methods and successful preflight
-    """
-    return {
-        "allow": "GET, PUT, DELETE, OPTIONS",
-        "message": "CORS preflight successful"
-    }
-
 @adk_router.post("/apps/{app_name}/users/{user_id}/sessions/{session_id}/run")
 async def run_session_sse(
     app_name: str,
     user_id: str,
     session_id: str,
     request: dict = Body(...),
-    current_user: Optional[User] = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional())
 ) -> dict:
     """
     Start session research and return success response (ADK-compliant).
@@ -470,6 +435,7 @@ async def run_session_sse(
         # Try to call ADK service
         try:
             import httpx
+
             from app.utils.sse_broadcaster import get_sse_broadcaster
 
             broadcaster = get_sse_broadcaster()
@@ -490,19 +456,9 @@ async def run_session_sse(
                 try:
                     logger.info(f"Starting agent execution for session {session_id}")
 
-                    # CRITICAL FIX: Broadcast research_update IMMEDIATELY so frontend subscribers receive it
+                    # Send initial agent status to ADK SSE stream
                     await broadcaster.broadcast_event(session_id, {
-                        "type": "research_update",
-                        "data": {
-                            "content": "Connecting to research agents...",
-                            "status": "initializing",
-                            "timestamp": datetime.now().isoformat()
-                        }
-                    })
-
-                    # Send initial agent status
-                    await broadcaster.broadcast_event(session_id, {
-                        "type": "agent_network_update",
+                        "type": "agent_status",
                         "data": {
                             "agents": [{
                                 "agent_id": "team_leader",
@@ -533,15 +489,6 @@ async def run_session_sse(
                             else:
                                 logger.info(f"Session {session_id} created successfully")
 
-                            # Broadcast status: ADK session ready
-                            await broadcaster.broadcast_event(session_id, {
-                                "type": "research_update",
-                                "data": {
-                                    "content": "Research session initialized, preparing agents...",
-                                    "status": "session_ready",
-                                    "timestamp": datetime.now().isoformat()
-                                }
-                            })
                         except httpx.TimeoutException:
                             error_msg = f"Timeout creating session {session_id} in ADK"
                             logger.error(error_msg)
@@ -552,11 +499,15 @@ async def run_session_sse(
                                 raise
 
                         # Call ADK's /run_sse endpoint
+                        # Format must match ADK Event structure with role field
                         adk_request = {
                             "appName": app_name,
                             "userId": user_id,
                             "sessionId": session_id,
-                            "newMessage": {"parts": [{"text": research_query}]},
+                            "newMessage": {
+                                "parts": [{"text": research_query}],
+                                "role": "user"
+                            },
                             "streaming": True
                         }
 
@@ -568,16 +519,6 @@ async def run_session_sse(
                         logger.info(f"Calling ADK /run_sse for session {session_id}")
                         logger.debug(f"ADK request payload: {adk_request}")
 
-                        # CRITICAL FIX: Broadcast status BEFORE calling ADK so frontend knows we're making progress
-                        await broadcaster.broadcast_event(session_id, {
-                            "type": "research_update",
-                            "data": {
-                                "content": "Sending request to research agents...",
-                                "status": "calling_adk",
-                                "timestamp": datetime.now().isoformat()
-                            }
-                        })
-
                         async with client.stream(
                             "POST",
                             "http://127.0.0.1:8080/run_sse",
@@ -585,16 +526,6 @@ async def run_session_sse(
                             timeout=httpx.Timeout(300.0, read=None)
                         ) as response:
                             logger.info(f"ADK responded with status {response.status_code} for session {session_id}")
-
-                            # CRITICAL FIX: Broadcast when ADK connection established
-                            await broadcaster.broadcast_event(session_id, {
-                                "type": "research_update",
-                                "data": {
-                                    "content": "Connected to research agents, receiving data...",
-                                    "status": "streaming_started",
-                                    "timestamp": datetime.now().isoformat()
-                                }
-                            })
 
                             response.raise_for_status()
                             logger.debug(f"Starting SSE stream iteration for session {session_id}")
@@ -608,22 +539,8 @@ async def run_session_sse(
                                         try:
                                             data = json.loads(data_str)
 
-                                            # DEBUG: Log the actual ADK response structure
-                                            logger.info(f"ADK SSE data keys: {list(data.keys())}")
-                                            # Use INFO level to ensure we see the full data
-                                            try:
-                                                logger.info(f"Full ADK SSE data: {json.dumps(data, indent=2)[:1000]}")
-                                            except Exception as e:
-                                                logger.warning(f"Could not serialize data: {e}")
-
                                             # Extract content from ADK Event structure
-                                            # ADK Event structure may have different formats:
-                                            # 1. content.parts[].text (Gemini format)
-                                            # 2. Direct text field
-                                            # 3. response.text or similar
-                                            text_content = None
-
-                                            # Try content.parts[].text structure
+                                            # Event has: content.parts[].text
                                             content_obj = data.get("content")
                                             if content_obj and isinstance(content_obj, dict):
                                                 parts = content_obj.get("parts", [])
@@ -631,37 +548,21 @@ async def run_session_sse(
                                                     if isinstance(part, dict):
                                                         text = part.get("text")
                                                         if text:
-                                                            text_content = text
-                                                            break
+                                                            accumulated_content.append(text)
 
-                                            # Try direct text field
-                                            if not text_content:
-                                                text_content = data.get("text")
-
-                                            # Try response field
-                                            if not text_content and "response" in data:
-                                                response_obj = data.get("response")
-                                                if isinstance(response_obj, str):
-                                                    text_content = response_obj
-                                                elif isinstance(response_obj, dict):
-                                                    text_content = response_obj.get("text")
-
-                                            if text_content:
-                                                accumulated_content.append(text_content)
-
-                                                # Broadcast update
-                                                logger.info(f"Broadcasting research_update for session {session_id}, content length: {len(''.join(accumulated_content))}")
-                                                await broadcaster.broadcast_event(session_id, {
-                                                    "type": "research_update",
-                                                    "data": {
-                                                        "content": "".join(accumulated_content),
-                                                        "timestamp": datetime.now().isoformat()
-                                                    }
-                                                })
+                                                            # Broadcast update
+                                                            logger.info(f"Broadcasting research_update for session {session_id}, content length: {len(''.join(accumulated_content))}")
+                                                            await broadcaster.broadcast_event(session_id, {
+                                                                "type": "research_update",
+                                                                "data": {
+                                                                    "content": "".join(accumulated_content),
+                                                                    "timestamp": datetime.now().isoformat()
+                                                                }
+                                                            })
                                             else:
                                                 # Log non-content events for debugging
-                                                event_type = data.get("invocationId") or data.get("id") or data.get("type") or "unknown"
-                                                logger.debug(f"ADK event (no text content): type={event_type}, keys={list(data.keys())}")
+                                                event_type = data.get("invocationId") or data.get("id") or "unknown"
+                                                logger.debug(f"ADK event (no text content): type={event_type}")
                                         except json.JSONDecodeError as e:
                                             logger.warning(f"Could not parse SSE data: {data_str[:100]} - {e}")
                                         except Exception as e:
@@ -670,15 +571,11 @@ async def run_session_sse(
                             logger.info(f"ADK stream completed for session {session_id}: {line_count} events processed")
 
                         # Send final response
+                        # NOTE: Don't add a new message here - the frontend already created
+                        # a progress message that has been updated via research_update events.
+                        # Adding a new message here would create a duplicate.
                         final_content = "".join(accumulated_content) if accumulated_content else "Research completed."
 
-                        assistant_message = {
-                            "id": f"msg_{uuid.uuid4()}_assistant",
-                            "role": "assistant",
-                            "content": final_content,
-                            "timestamp": datetime.now().isoformat(),
-                        }
-                        session_store.add_message(session_id, assistant_message)
                         session_store.update_session(session_id, status="completed")
 
                         await broadcaster.broadcast_event(session_id, {
@@ -703,7 +600,7 @@ async def run_session_sse(
                     assistant_message = {
                         "id": f"msg_{uuid.uuid4()}_assistant",
                         "role": "assistant",
-                        "content": f"An error occurred during research: {str(e)}",
+                        "content": f"An error occurred during research: {e!s}",
                         "timestamp": datetime.now().isoformat(),
                     }
                     session_store.add_message(session_id, assistant_message)
@@ -743,7 +640,7 @@ async def run_session_sse(
             logger.info(f"ADK request task created and registered for session {session_id}")
 
         except Exception as e:
-            logger.error(f"Failed to initiate ADK call: {str(e)}", exc_info=True)
+            logger.error(f"Failed to initiate ADK call: {e!s}", exc_info=True)
             research_started = False
 
         # If research didn't start, log the error but don't send mock data
@@ -773,7 +670,7 @@ async def get_session_sse(
     app_name: str,
     user_id: str,
     session_id: str,
-    current_user: Optional[User] = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional())
 ) -> StreamingResponse:
     """
     GET endpoint for EventSource SSE connection (ADK-compliant).
@@ -815,7 +712,7 @@ async def append_session_message(
     user_id: str,
     session_id: str,
     payload: SessionMessagePayload,
-    current_user: Optional[User] = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional())
 ) -> dict[str, Any]:
     """
     Persist a single message into the session store (ADK-compliant).
@@ -862,12 +759,143 @@ async def append_session_message(
 
 
 # ============================================================================
+# MAIN SSE ENDPOINT (Replaces /api/chat)
+# ============================================================================
+
+@adk_router.post("/run_sse")
+async def main_chat_sse(
+    request_data: dict = Body(...),
+    current_user: User | None = Depends(get_current_active_user_optional()),
+) -> StreamingResponse:
+    """
+    Main SSE endpoint for chat (ADK-compliant replacement for /api/chat).
+
+    This is the primary chat endpoint that handles messages and returns SSE stream.
+
+    Args:
+        request_data: Request containing message and optional session_id
+        current_user: Current authenticated user
+
+    Returns:
+        StreamingResponse with SSE events for the chat session
+    """
+    # Extract message and session_id from request
+    message = request_data.get("message", "")
+    session_id = request_data.get("session_id", str(uuid.uuid4()))
+
+    logger.info(f"Main SSE endpoint called with message: {message[:50]}...")
+
+    # Ensure session exists in store
+    session_store.ensure_session(
+        session_id,
+        user_id=current_user.id if current_user else None,
+        title=message[:60] if message else "New Chat",
+        status="active"
+    )
+
+    # Create SSE response
+    async def generate():
+        try:
+            # Send initial status
+            yield f"data: {json.dumps({'type': 'status', 'content': 'Initializing chat...'})}\n\n"
+            await asyncio.sleep(0.1)
+
+            # Send processing status
+            yield f"data: {json.dumps({'type': 'agent', 'content': 'Processing your request...'})}\n\n"
+            await asyncio.sleep(0.5)
+
+            # Mock response content
+            mock_response = f"I understand you're asking about: '{message}'. This is a mock response to verify the chat flow is working. The actual AI integration is currently being configured."
+
+            # Send the response in chunks to simulate streaming
+            words = mock_response.split()
+            chunk_size = 5
+            for i in range(0, len(words), chunk_size):
+                chunk = ' '.join(words[i:i+chunk_size])
+                yield f"data: {json.dumps({'type': 'result', 'content': chunk})}\n\n"
+                await asyncio.sleep(0.1)
+
+            # Send completion
+            yield f"data: {json.dumps({'type': 'complete', 'content': 'Response complete'})}\n\n"
+            yield "data: [DONE]\n\n"
+
+        except Exception as e:
+            logger.error(f"Error in main SSE generation: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        }
+    )
+
+
+# ============================================================================
 # BACKWARDS COMPATIBILITY ENDPOINTS WITH DEPRECATION WARNINGS
 # ============================================================================
 
+@adk_router.post("/api/chat")
+async def deprecated_chat_endpoint(
+    request_data: dict = Body(...),
+    current_user: User | None = Depends(get_current_active_user_optional()),
+) -> StreamingResponse:
+    """
+    DEPRECATED: Use /run_sse instead.
+
+    This endpoint is kept for backwards compatibility but should be migrated to /run_sse.
+    """
+    logger.warning("DEPRECATED: /api/chat endpoint used. Please migrate to /run_sse")
+    return await main_chat_sse(request_data, current_user)
+
+
+@adk_router.post("/api/run_sse/{session_id}")
+async def deprecated_run_research_sse(
+    session_id: str,
+    request: dict = Body(...),
+    current_user: User | None = Depends(get_current_active_user_optional()),
+) -> dict:
+    """
+    DEPRECATED: Use /apps/{app_name}/users/{user_id}/sessions/{session_id}/run instead.
+
+    This endpoint is kept for backwards compatibility.
+    """
+    logger.warning(f"DEPRECATED: /api/run_sse/{session_id} endpoint used. Please migrate to ADK format")
+    return await run_session_sse(DEFAULT_APP_NAME, DEFAULT_USER_ID, session_id, request, current_user)
+
+
+@adk_router.get("/api/run_sse/{session_id}")
+async def deprecated_get_research_sse(
+    session_id: str,
+    prompt: str | None = None,
+    query: str | None = None,
+    current_user: User | None = Depends(get_current_active_user_optional())
+) -> StreamingResponse:
+    """
+    DEPRECATED: Use /apps/{app_name}/users/{user_id}/sessions/{session_id}/run instead.
+
+    This endpoint is kept for backwards compatibility.
+    If a prompt or query is provided, it will trigger research before establishing SSE.
+    """
+    logger.warning(f"DEPRECATED: GET /api/run_sse/{session_id} endpoint used. Please migrate to ADK format")
+
+    # If a prompt/query is provided, trigger the research first
+    research_query = prompt or query
+    if research_query:
+        logger.info(f"Processing query from GET request: {research_query[:100]}")
+        # Trigger research (same logic as POST endpoint)
+        request_body = {"query": research_query, "message": research_query}
+        await run_session_sse(DEFAULT_APP_NAME, DEFAULT_USER_ID, session_id, request_body, current_user)
+
+    return await get_session_sse(DEFAULT_APP_NAME, DEFAULT_USER_ID, session_id, current_user)
+
+
 @adk_router.get("/api/sessions")
 async def deprecated_list_chat_sessions(
-    current_user: Optional[User] = Depends(get_current_active_user_optional()),
+    current_user: User | None = Depends(get_current_active_user_optional()),
 ) -> dict[str, Any]:
     """
     DEPRECATED: Use /apps/{app_name}/users/{user_id}/sessions instead.
@@ -881,7 +909,7 @@ async def deprecated_list_chat_sessions(
 @adk_router.get("/api/sessions/{session_id}")
 async def deprecated_get_chat_session(
     session_id: str,
-    current_user: Optional[User] = Depends(get_current_active_user_optional()),
+    current_user: User | None = Depends(get_current_active_user_optional()),
 ) -> dict[str, Any]:
     """
     DEPRECATED: Use /apps/{app_name}/users/{user_id}/sessions/{session_id} instead.
@@ -896,7 +924,7 @@ async def deprecated_get_chat_session(
 async def deprecated_update_chat_session(
     session_id: str,
     payload: SessionUpdatePayload,
-    current_user: Optional[User] = Depends(get_current_active_user_optional()),
+    current_user: User | None = Depends(get_current_active_user_optional()),
 ) -> dict[str, Any]:
     """
     DEPRECATED: Use /apps/{app_name}/users/{user_id}/sessions/{session_id} instead.
@@ -910,7 +938,7 @@ async def deprecated_update_chat_session(
 @adk_router.delete("/api/sessions/{session_id}")
 async def deprecated_delete_chat_session(
     session_id: str,
-    current_user: Optional[User] = Depends(get_current_active_user_optional()),
+    current_user: User | None = Depends(get_current_active_user_optional()),
 ) -> dict[str, Any]:
     """
     DEPRECATED: Use /apps/{app_name}/users/{user_id}/sessions/{session_id} instead.
@@ -925,7 +953,7 @@ async def deprecated_delete_chat_session(
 async def deprecated_append_chat_message(
     session_id: str,
     payload: SessionMessagePayload,
-    current_user: Optional[User] = Depends(get_current_active_user_optional()),
+    current_user: User | None = Depends(get_current_active_user_optional()),
 ) -> dict[str, Any]:
     """
     DEPRECATED: Use /apps/{app_name}/users/{user_id}/sessions/{session_id}/messages instead.

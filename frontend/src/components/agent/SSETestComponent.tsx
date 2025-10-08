@@ -78,7 +78,7 @@ function SSETestComponent() {
   );
 
   const researchSSE = useSSE(
-    isConnected ? `/api/run_sse/${sessionId}` : '',
+    isConnected ? `/apps/vana/users/default/sessions/${sessionId}/run` : '',
     researchOptions
   );
 
@@ -181,7 +181,7 @@ function SSETestComponent() {
                 <h4 className="font-medium text-blue-800 mb-2">Proxy Endpoints:</h4>
                 <ul className="text-sm text-blue-700 space-y-1">
                   <li>• <code>/api/sse/agent_network_sse/{sessionId}</code></li>
-                  <li>• <code>/api/sse/api/run_sse/{sessionId}</code></li>
+                  <li>• <code>/api/sse/apps/vana/users/default/sessions/{sessionId}/run</code></li>
                   <li>• <code>/api/sse?path=encoded_url</code></li>
                 </ul>
               </AlertDescription>
