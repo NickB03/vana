@@ -244,10 +244,10 @@ export function useSSEEventHandlers({
       }
       case 'research_complete': {
         const messageId = ensureProgressMessage();
-        const finalReport = payload.final_report || payload.message || 'Research complete. (No report returned)';
 
+        // NOTE: Don't update message content here - the final research_update
+        // already contains the complete content. Only mark as complete.
         if (messageId) {
-          updateStreamingMessageInStore(currentSessionId, messageId, finalReport);
           completeStreamingMessageInStore(currentSessionId, messageId);
         }
         setSessionStreamingInStore(currentSessionId, false);
@@ -255,7 +255,6 @@ export function useSSEEventHandlers({
           status: 'completed',
           overall_progress: 1,
           current_phase: payload.current_phase ?? 'Research complete',
-          final_report: finalReport,
         });
         setIsStreaming(false);
         break;
