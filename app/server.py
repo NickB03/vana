@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
+import json
 import os
+import uuid
+from collections.abc import AsyncGenerator
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 # Load environment variables using centralized loader
 from app.utils.environment import load_environment
@@ -34,7 +38,8 @@ if os.getenv("NODE_ENV") == "development":
 # available in the execution environment for these kata tests.  Import them
 # conditionally and fall back to minimal functionality so that the module can be
 # imported and the health endpoint exercised without the optional dependencies.
-from fastapi import Depends, FastAPI
+from fastapi import Body, FastAPI, HTTPException, Depends
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 try:  # pragma: no cover - simple import shim
@@ -76,17 +81,18 @@ except ModuleNotFoundError:  # pragma: no cover
     export = None  # type: ignore
 
 from app.config import initialize_google_config
+from app.models import SessionMessagePayload
 from app.utils.gcs import create_bucket_if_not_exists
 from app.utils.session_backup import (
     create_periodic_backup_job,
     restore_session_db_from_gcs,
     setup_session_persistence_for_cloud_run,
 )
+from app.utils.session_store import session_store
 from app.utils.sse_broadcaster import (
     get_agent_network_event_history,
     get_sse_broadcaster,
 )
-from app.utils.session_store import session_store
 from app.utils.tracing import CloudTraceLoggingSpanExporter
 from app.utils.typing import Feedback
 
@@ -282,13 +288,11 @@ try:  # pragma: no cover - optional auth dependencies
     )
     from app.auth.models import User  # type: ignore
     from app.auth.routes import admin_router, auth_router, users_router  # type: ignore
+    from app.routes.chat_actions import router as chat_actions_router  # Chat action endpoints
     from app.auth.security import (  # type: ignore
         current_active_user_dep,
         current_superuser_dep,
         current_user_for_sse_dep,
-    )
-    from app.routes.chat_actions import (
-        router as chat_actions_router,  # Chat action endpoints
     )
 except ModuleNotFoundError:  # pragma: no cover
     from fastapi import APIRouter
@@ -339,7 +343,6 @@ except Exception as e:
 
 # CRIT-003: Validate JWT secret key configuration
 from app.auth.config import get_auth_settings
-
 auth_settings = get_auth_settings()
 environment = os.getenv("ENVIRONMENT", "development")
 
@@ -372,6 +375,18 @@ app.description = "API for interacting with the Agent vana"
 app.state.agents_dir = AGENTS_DIR
 app.state.session_service_uri = session_service_uri
 
+# Add CORS middleware BEFORE including routers (critical for proper OPTIONS handling)
+from fastapi.middleware.cors import CORSMiddleware as FastAPICORS
+app.add_middleware(
+    FastAPICORS,
+    allow_origins=allow_origins,  # Already includes ports 3000, 3001, 3002
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Explicit methods
+    allow_headers=["*"],
+    expose_headers=["*"],  # Allow clients to read all response headers
+    max_age=3600,  # Cache preflight for 1 hour
+)
+
 # Add authentication routers
 app.include_router(auth_router)
 app.include_router(users_router)
@@ -382,7 +397,6 @@ app.include_router(chat_actions_router)
 
 # Add ADK-compliant routes
 from app.routes.adk_routes import adk_router
-
 app.include_router(adk_router)
 
 
@@ -642,16 +656,7 @@ async def root():
 is_production = os.getenv("NODE_ENV") == "production"
 app.add_middleware(SecurityHeadersMiddleware, enable_hsts=is_production)
 
-# Add proper CORS middleware from FastAPI
-from fastapi.middleware.cors import CORSMiddleware as FastAPICORS
-
-app.add_middleware(
-    FastAPICORS,
-    allow_origins=allow_origins,  # Already includes ports 3000, 3001, 3002
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS middleware already added earlier (before routers) for proper OPTIONS handling
 
 app.add_middleware(CircuitBreakerMiddleware)  # Circuit breaker for auth protection
 app.add_middleware(RateLimitMiddleware, calls=100, period=60)  # General rate limiting
@@ -796,8 +801,133 @@ def collect_feedback(
     return {"status": "success"}
 
 
-# NOTE: /agent_network_sse endpoint removed - consolidated into ADK SSE stream
-# All events (research + agent status) now flow through /apps/{app}/users/{user}/sessions/{session}/run
+@app.get("/agent_network_sse/{session_id}")
+async def agent_network_sse(
+    session_id: str, current_user: User = Depends(current_active_user_dep)
+) -> StreamingResponse:
+    """Enhanced SSE endpoint for agent network events with required authentication.
+
+    This endpoint streams real-time agent network events including:
+    - Agent start/completion events
+    - Network topology changes
+    - Performance metrics updates
+    - Relationship and data flow tracking
+    - Heartbeat/keepalive messages
+
+    Authentication behavior depends on REQUIRE_SSE_AUTH environment variable:
+    - True (production): Requires valid JWT token
+    - False (demo): Optional authentication, logs access regardless
+
+    Args:
+        session_id: The session ID to stream events for
+        current_user: Optional authenticated user (required in production mode)
+
+    Returns:
+        StreamingResponse with text/event-stream media type
+    """
+
+    async def event_generator() -> AsyncGenerator[str, None]:
+        """Generate SSE events for the session."""
+        broadcaster = get_sse_broadcaster()
+        queue = await broadcaster.add_subscriber(session_id)
+
+        try:
+            # Log SSE access for audit trail
+            auth_settings = get_auth_settings()
+            user_info = {
+                "user_id": current_user.id if current_user else None,
+                "user_email": current_user.email if current_user else None,
+                "authenticated": current_user is not None,
+                "auth_required": auth_settings.require_sse_auth,
+                "session_id": session_id,
+                "timestamp": datetime.now().isoformat(),
+                "access_type": "sse_connection",
+            }
+
+            if hasattr(logger, "log_struct"):
+                logger.log_struct(
+                    {"message": "SSE connection established", **user_info},
+                    severity="INFO",
+                )
+            else:
+                logger.info(f"SSE connection established: {user_info}")
+
+            # Send initial connection event with user context
+            connection_data = {
+                "type": "connection",
+                "status": "connected",
+                "sessionId": session_id,
+                "timestamp": datetime.now().isoformat(),
+                "authenticated": current_user is not None,
+                "userId": current_user.id if current_user else None,
+            }
+            yield f"data: {json.dumps(connection_data)}\n\n"
+
+            while True:
+                try:
+                    # Wait for events with timeout to send heartbeat
+                    event = await asyncio.wait_for(queue.get(), timeout=30)
+                    if isinstance(event, str):
+                        yield event
+                    else:
+                        yield (
+                            event.to_sse_format()
+                            if hasattr(event, "to_sse_format")
+                            else str(event)
+                        )
+
+                except asyncio.TimeoutError:
+                    # Send heartbeat to keep connection alive
+                    yield f"data: {json.dumps({'type': 'heartbeat', 'timestamp': datetime.now().isoformat()})}\n\n"
+
+        except asyncio.CancelledError:
+            logger.info(
+                f"SSE connection cancelled for session {session_id}, user: {current_user.id if current_user else 'anonymous'}"
+            )
+        except Exception as e:
+            error_info = {
+                "message": "SSE stream error",
+                "session_id": session_id,
+                "user_id": current_user.id if current_user else None,
+                "error": str(e),
+                "timestamp": datetime.now().isoformat(),
+            }
+
+            if hasattr(logger, "log_struct"):
+                logger.log_struct(error_info, severity="ERROR")
+            else:
+                logger.error(f"Error in SSE stream: {error_info}")
+
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e), 'timestamp': datetime.now().isoformat()})}\n\n"
+        finally:
+            await broadcaster.remove_subscriber(session_id, queue)
+
+            # Log disconnection
+            disconnect_info = {
+                "message": "SSE connection closed",
+                "session_id": session_id,
+                "user_id": current_user.id if current_user else None,
+                "timestamp": datetime.now().isoformat(),
+            }
+
+            if hasattr(logger, "log_struct"):
+                logger.log_struct(disconnect_info, severity="INFO")
+            else:
+                logger.info(f"SSE connection closed: {disconnect_info}")
+
+            yield f"data: {json.dumps({'type': 'connection', 'status': 'disconnected', 'sessionId': session_id, 'timestamp': datetime.now().isoformat()})}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+            # Security fix: Use proper origin validation instead of wildcard
+            # CORS headers are handled by middleware - don't override here
+        },
+    )
 
 
 # NOTE: SessionUpdatePayload moved to ADK routes
