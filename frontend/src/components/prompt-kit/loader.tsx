@@ -125,13 +125,14 @@ export function Loader({
     return (
       <div
         className={cn(
-          loaderVariants({ variant }),
+          // Remove loaderVariants to avoid fixed h-6 w-6 dimensions
+          "inline-flex items-center justify-center",
           "text-sm font-medium",
           className
         )}
         {...props}
       >
-        <span className="relative inline-block">
+        <span className="relative inline-block overflow-hidden">
           {text || "Loading..."}
           <span className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white/50 to-transparent" />
         </span>
