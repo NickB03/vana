@@ -37,9 +37,10 @@ class TestSessionLifecycleIntegration:
             # 1. Start research session via POST
             research_query = "Analyze climate change impact on agriculture"
 
-            # FIXED: ADK agents run on port 8080, no orchestrator needed
+            # Use ADK-compliant endpoint
             response = client.post(
-                f"/api/run_sse/{session_id}", json={"query": research_query}
+                f"/apps/vana/users/default/sessions/{session_id}/run",
+                json={"query": research_query}
             )
 
             assert response.status_code == 200
@@ -151,9 +152,9 @@ class TestSessionLifecycleIntegration:
                 """Create and process a session in a thread."""
                 session_id = f"concurrent-session-{session_index}"
 
-                # Start session (ADK agents handle the research)
+                # Start session using ADK-compliant endpoint
                 response = client.post(
-                    f"/api/run_sse/{session_id}",
+                    f"/apps/vana/users/default/sessions/{session_id}/run",
                     json={"query": f"Research topic {session_index}"},
                 )
                 assert response.status_code == 200
@@ -229,9 +230,10 @@ class TestSessionLifecycleIntegration:
             client = TestClient(app)
             session_id = f"error-workflow-{uuid.uuid4()}"
 
-            # Start session (ADK agents handle the research)
+            # Start session using ADK-compliant endpoint
             response = client.post(
-                f"/api/run_sse/{session_id}", json={"query": "Test error handling"}
+                f"/apps/vana/users/default/sessions/{session_id}/run",
+                json={"query": "Test error handling"}
             )
             assert response.status_code == 200
 
@@ -313,9 +315,9 @@ class TestSessionLifecycleIntegration:
             client = TestClient(app)
             session_id = f"auth-workflow-{uuid.uuid4()}"
 
-            # Start authenticated session (ADK agents handle the research)
+            # Start authenticated session using ADK-compliant endpoint
             response = client.post(
-                f"/api/run_sse/{session_id}",
+                f"/apps/vana/users/default/sessions/{session_id}/run",
                 json={"query": "Authenticated research query"},
             )
             assert response.status_code == 200
