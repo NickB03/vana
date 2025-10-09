@@ -244,18 +244,23 @@ export function useSSEEventHandlers({
       }
       case 'research_complete': {
         const messageId = ensureProgressMessage();
-        const finalReport = payload.final_report || payload.message || 'Research complete. (No report returned)';
 
         if (messageId) {
-          updateStreamingMessageInStore(currentSessionId, messageId, finalReport);
+          // Don't update content - it's already complete from research_update events
+          // Just mark the message as completed
           completeStreamingMessageInStore(currentSessionId, messageId);
         }
+
+        // Get existing message content for final_report
+        const existingMessage = currentSession?.messages.find(msg => msg.id === messageId);
+        const finalContent = existingMessage?.content || 'Research complete. (No report returned)';
+
         setSessionStreamingInStore(currentSessionId, false);
         mergeProgressSnapshot({
           status: 'completed',
           overall_progress: 1,
           current_phase: payload.current_phase ?? 'Research complete',
-          final_report: finalReport,
+          final_report: finalContent,
         });
         setIsStreaming(false);
         break;
