@@ -571,9 +571,9 @@ async def run_session_sse(
                             logger.info(f"ADK stream completed for session {session_id}: {line_count} events processed")
 
                         # Send final response
-                        # NOTE: Don't add a new message here - the frontend already created
-                        # a progress message that has been updated via research_update events.
-                        # Adding a new message here would create a duplicate.
+                        # NOTE: Don't send content in research_complete - the frontend message
+                        # already contains the complete content from research_update events.
+                        # This event signals completion status only, not content delivery.
                         final_content = "".join(accumulated_content) if accumulated_content else "Research completed."
 
                         session_store.update_session(session_id, status="completed")
@@ -581,7 +581,7 @@ async def run_session_sse(
                         await broadcaster.broadcast_event(session_id, {
                             "type": "research_complete",
                             "data": {
-                                "message": final_content,
+                                "status": "completed",
                                 "timestamp": datetime.now().isoformat()
                             }
                         })

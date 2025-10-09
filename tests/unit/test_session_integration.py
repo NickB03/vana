@@ -44,12 +44,12 @@ class TestSessionLifecycleIntegration:
             )
 
             assert response.status_code == 200
-                data = response.json()
-                assert data["success"] is True
-                assert data["session_id"] == session_id
+            data = response.json()
+            assert data["success"] is True
+            assert data["session_id"] == session_id
 
-                # Verify orchestrator was called
-                mock_orch_instance.start_research_with_broadcasting.assert_called_once()
+            # Verify orchestrator was called
+            mock_orch_instance.start_research_with_broadcasting.assert_called_once()
 
             # 2. Simulate SSE events coming in
             events = [
