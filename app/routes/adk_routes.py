@@ -521,6 +521,7 @@ async def run_session_sse(
                         logger.debug(f"ADK request payload: {adk_request}")
 
                         # Use rate limiter to prevent overwhelming the Gemini API
+                        rate_limit_hit = False
                         async with gemini_rate_limiter:
                             logger.info(f"Rate limiter acquired for session {session_id}")
                             stats = await gemini_rate_limiter.get_stats()
@@ -584,29 +585,34 @@ async def run_session_sse(
                                                         }
                                                     })
                                                     session_store.update_session(session_id, status="error")
+                                                    rate_limit_hit = True
                                                     break
                                             except Exception as e:
                                                 logger.warning(f"Error processing SSE event: {e}")
 
                                 logger.info(f"ADK stream completed for session {session_id}: {line_count} events processed")
 
-                        # Send final response
-                        # NOTE: Don't send content in research_complete - the frontend message
-                        # already contains the complete content from research_update events.
-                        # This event signals completion status only, not content delivery.
-                        final_content = "".join(accumulated_content) if accumulated_content else "Research completed."
+                        # Only send completion events if rate limit was NOT hit
+                        if not rate_limit_hit:
+                            # Send final response
+                            # NOTE: Don't send content in research_complete - the frontend message
+                            # already contains the complete content from research_update events.
+                            # This event signals completion status only, not content delivery.
+                            final_content = "".join(accumulated_content) if accumulated_content else "Research completed."
 
-                        session_store.update_session(session_id, status="completed")
+                            session_store.update_session(session_id, status="completed")
 
-                        await broadcaster.broadcast_event(session_id, {
-                            "type": "research_complete",
-                            "data": {
-                                "status": "completed",
-                                "timestamp": datetime.now().isoformat()
-                            }
-                        })
+                            await broadcaster.broadcast_event(session_id, {
+                                "type": "research_complete",
+                                "data": {
+                                    "status": "completed",
+                                    "timestamp": datetime.now().isoformat()
+                                }
+                            })
 
-                        logger.info(f"Agent execution completed for session {session_id}")
+                            logger.info(f"Agent execution completed for session {session_id}")
+                        else:
+                            logger.warning(f"Agent execution terminated due to rate limit for session {session_id}")
 
                 except asyncio.CancelledError:
                     # CRIT-006: Handle task cancellation gracefully
