@@ -445,6 +445,15 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
       }
 
       // Use standard EventSource for non-proxy routes
+      // MEMORY LEAK FIX: Clean up old event handlers before creating new EventSource
+      if (eventSourceRef.current) {
+        eventHandlersRef.current.customHandlers.forEach((handler, eventType) => {
+          eventSourceRef.current?.removeEventListener(eventType, handler);
+        });
+        eventHandlersRef.current.customHandlers.clear();
+        eventSourceRef.current.close();
+      }
+
       const eventSource = new EventSource(sseUrl, {
         withCredentials: opts.withCredentials,
       });
@@ -650,6 +659,13 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
     // Single cleanup on unmount
     return () => {
       mountedRef.current = false;
+
+      // MEMORY LEAK FIX: Clear reconnection timeout to prevent state updates after unmount
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+
       disconnect();
     };
   }, [connect, disconnect]); // Stable dependencies only
