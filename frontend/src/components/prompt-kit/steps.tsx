@@ -97,7 +97,7 @@ export function StepsItem({ children, icon, className, isLoading = false }: Step
   return (
     <div className={cn("flex items-start gap-2 text-sm text-muted-foreground", className)}>
       {icon && <span className="mt-0.5 flex-shrink-0">{icon}</span>}
-      <span className={cn(isLoading && "animate-pulse")}>{children}</span>
+      <span className={cn("break-words", isLoading && "animate-pulse")}>{children}</span>
     </div>
   )
 }

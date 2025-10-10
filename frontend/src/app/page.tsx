@@ -88,35 +88,22 @@ function ChatView({
   });
   const [agentSteps, setAgentSteps] = useState<string[]>([]);
 
-  // Simulate agent progress steps when streaming
+  // Show agent progress steps when streaming
+  // Following Prompt Kit patterns: show all steps immediately, no manual animation
   useEffect(() => {
-    if (isStreaming && messages.length > 0) {
-      const steps = [
+    if (isStreaming) {
+      setAgentSteps([
         "Thinking...",
         "Analyzing query context...",
         "Delegating to specialized agents...",
         "Team Leader coordinating research...",
         "Gathering information...",
         "Synthesizing results...",
-      ];
-
-      let currentStep = 0;
-      const stepInterval = setInterval(() => {
-        if (currentStep < steps.length) {
-          setAgentSteps((prev) => [...prev, steps[currentStep]]);
-          currentStep++;
-        } else {
-          clearInterval(stepInterval);
-        }
-      }, 800);
-
-      return () => {
-        clearInterval(stepInterval);
-      };
+      ]);
     } else {
       setAgentSteps([]);
     }
-  }, [isStreaming, messages.length]);
+  }, [isStreaming]);
   const [validationError, setValidationError] = useState<string | null>(null);
   const rateLimiter = useRef(new RateLimitTracker());
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -619,7 +606,7 @@ function ChatView({
                                 </PromptInput>
                               </div>
                             ) : (
-                              <MessageContent className="max-w-[85%] rounded-3xl bg-muted px-5 py-2.5 text-primary sm:max-w-[75%]">
+                              <MessageContent className="min-w-fit max-w-[95%] rounded-3xl bg-muted px-5 py-2.5 text-primary sm:max-w-[90%] md:max-w-[85%]">
                                 {message.content}
                               </MessageContent>
                             )}
@@ -684,8 +671,8 @@ function ChatView({
                           <StepsContent>
                             {agentSteps.map((step, index) => (
                               <StepsItem
-                                key={index}
-                                isLoading={index === agentSteps.length - 1}
+                                key={step}
+                                isLoading={index === agentSteps.length - 1 && isStreaming}
                               >
                                 {step === "Thinking..." ? (
                                   <Loader

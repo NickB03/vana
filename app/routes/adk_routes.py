@@ -24,6 +24,7 @@ from app.utils.input_validation import (
     get_validation_error_response,
     validate_chat_input,
 )
+from app.utils.rate_limiter import gemini_rate_limiter
 from app.utils.session_store import session_store
 from app.utils.sse_broadcaster import agent_network_event_stream, get_sse_broadcaster
 
@@ -519,74 +520,99 @@ async def run_session_sse(
                         logger.info(f"Calling ADK /run_sse for session {session_id}")
                         logger.debug(f"ADK request payload: {adk_request}")
 
-                        async with client.stream(
-                            "POST",
-                            "http://127.0.0.1:8080/run_sse",
-                            json=adk_request,
-                            timeout=httpx.Timeout(300.0, read=None)
-                        ) as response:
-                            logger.info(f"ADK responded with status {response.status_code} for session {session_id}")
+                        # Use rate limiter to prevent overwhelming the Gemini API
+                        rate_limit_hit = False
+                        async with gemini_rate_limiter:
+                            logger.info(f"Rate limiter acquired for session {session_id}")
+                            stats = await gemini_rate_limiter.get_stats()
+                            logger.debug(f"Rate limiter stats: {stats}")
 
-                            response.raise_for_status()
-                            logger.debug(f"Starting SSE stream iteration for session {session_id}")
+                            async with client.stream(
+                                "POST",
+                                "http://127.0.0.1:8080/run_sse",
+                                json=adk_request,
+                                timeout=httpx.Timeout(300.0, read=None)
+                            ) as response:
+                                logger.info(f"ADK responded with status {response.status_code} for session {session_id}")
 
-                            line_count = 0
-                            async for line in response.aiter_lines():
-                                line_count += 1
-                                if line.strip() and line.startswith("data: "):
-                                    data_str = line[6:].strip()
-                                    if data_str and data_str != "[DONE]":
-                                        try:
-                                            data = json.loads(data_str)
+                                response.raise_for_status()
+                                logger.debug(f"Starting SSE stream iteration for session {session_id}")
 
-                                            # Extract content from ADK Event structure
-                                            # Event has: content.parts[].text
-                                            content_obj = data.get("content")
-                                            if content_obj and isinstance(content_obj, dict):
-                                                parts = content_obj.get("parts", [])
-                                                for part in parts:
-                                                    if isinstance(part, dict):
-                                                        text = part.get("text")
-                                                        if text:
-                                                            accumulated_content.append(text)
+                                line_count = 0
+                                async for line in response.aiter_lines():
+                                    line_count += 1
+                                    if line.strip() and line.startswith("data: "):
+                                        data_str = line[6:].strip()
+                                        if data_str and data_str != "[DONE]":
+                                            try:
+                                                data = json.loads(data_str)
 
-                                                            # Broadcast update
-                                                            logger.info(f"Broadcasting research_update for session {session_id}, content length: {len(''.join(accumulated_content))}")
-                                                            await broadcaster.broadcast_event(session_id, {
-                                                                "type": "research_update",
-                                                                "data": {
-                                                                    "content": "".join(accumulated_content),
-                                                                    "timestamp": datetime.now().isoformat()
-                                                                }
-                                                            })
-                                            else:
-                                                # Log non-content events for debugging
-                                                event_type = data.get("invocationId") or data.get("id") or "unknown"
-                                                logger.debug(f"ADK event (no text content): type={event_type}")
-                                        except json.JSONDecodeError as e:
-                                            logger.warning(f"Could not parse SSE data: {data_str[:100]} - {e}")
-                                        except Exception as e:
-                                            logger.warning(f"Error processing SSE event: {e}")
+                                                # Extract content from ADK Event structure
+                                                # Event has: content.parts[].text
+                                                content_obj = data.get("content")
+                                                if content_obj and isinstance(content_obj, dict):
+                                                    parts = content_obj.get("parts", [])
+                                                    for part in parts:
+                                                        if isinstance(part, dict):
+                                                            text = part.get("text")
+                                                            if text:
+                                                                accumulated_content.append(text)
 
-                            logger.info(f"ADK stream completed for session {session_id}: {line_count} events processed")
+                                                                # Broadcast update
+                                                                logger.info(f"Broadcasting research_update for session {session_id}, content length: {len(''.join(accumulated_content))}")
+                                                                await broadcaster.broadcast_event(session_id, {
+                                                                    "type": "research_update",
+                                                                    "data": {
+                                                                        "content": "".join(accumulated_content),
+                                                                        "timestamp": datetime.now().isoformat()
+                                                                    }
+                                                                })
+                                                else:
+                                                    # Log non-content events for debugging
+                                                    event_type = data.get("invocationId") or data.get("id") or "unknown"
+                                                    logger.debug(f"ADK event (no text content): type={event_type}")
+                                            except json.JSONDecodeError as e:
+                                                logger.warning(f"Could not parse SSE data: {data_str[:100]} - {e}")
+                                                # Check for rate limit errors in JSON parsing exceptions
+                                                if "429" in data_str or "Too Many Requests" in data_str or "rate limit" in data_str.lower():
+                                                    user_friendly_msg = "⚠️ API rate limit reached. The AI service is temporarily unavailable. Please try again in a few minutes or contact support if this persists."
+                                                    await broadcaster.broadcast_event(session_id, {
+                                                        "type": "error",
+                                                        "data": {
+                                                            "message": user_friendly_msg,
+                                                            "error_code": "RATE_LIMIT_EXCEEDED",
+                                                            "timestamp": datetime.now().isoformat()
+                                                        }
+                                                    })
+                                                    session_store.update_session(session_id, status="error")
+                                                    rate_limit_hit = True
+                                                    break
+                                            except Exception as e:
+                                                logger.warning(f"Error processing SSE event: {e}")
 
-                        # Send final response
-                        # NOTE: Don't send content in research_complete - the frontend message
-                        # already contains the complete content from research_update events.
-                        # This event signals completion status only, not content delivery.
-                        final_content = "".join(accumulated_content) if accumulated_content else "Research completed."
+                                logger.info(f"ADK stream completed for session {session_id}: {line_count} events processed")
 
-                        session_store.update_session(session_id, status="completed")
+                        # Only send completion events if rate limit was NOT hit
+                        if not rate_limit_hit:
+                            # Send final response
+                            # NOTE: Don't send content in research_complete - the frontend message
+                            # already contains the complete content from research_update events.
+                            # This event signals completion status only, not content delivery.
+                            final_content = "".join(accumulated_content) if accumulated_content else "Research completed."
 
-                        await broadcaster.broadcast_event(session_id, {
-                            "type": "research_complete",
-                            "data": {
-                                "status": "completed",
-                                "timestamp": datetime.now().isoformat()
-                            }
-                        })
+                            session_store.update_session(session_id, status="completed")
 
-                        logger.info(f"Agent execution completed for session {session_id}")
+                            await broadcaster.broadcast_event(session_id, {
+                                "type": "research_complete",
+                                "data": {
+                                    "status": "completed",
+                                    "timestamp": datetime.now().isoformat()
+                                }
+                            })
+
+                            logger.info(f"Agent execution completed for session {session_id}")
+                        else:
+                            logger.warning(f"Agent execution terminated due to rate limit for session {session_id}")
 
                 except asyncio.CancelledError:
                     # CRIT-006: Handle task cancellation gracefully
