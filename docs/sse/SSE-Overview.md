@@ -1,5 +1,17 @@
 # Server-Sent Events (SSE) Implementation Overview
 
+## Storage Architecture Clarification
+
+**IMPORTANT**: The Vana system uses different storage technologies for different components:
+
+| Component | Storage Technology | File Location | Persistence |
+|-----------|-------------------|---------------|-------------|
+| **SSE Session Store** | Python dict (in-memory) | `app/utils/session_store.py` | Optional GCS backup |
+| **ADK Agent Sessions** | SQLite | `app/services/adk_services.py` | `/tmp/vana_sessions.db` |
+| **Authentication** | SQLite (default) | `app/auth/database.py` | `./auth.db` |
+
+**This document** describes the **SSE Session Store** (in-memory). When "session store" is mentioned without qualification, it refers to SSE chat sessions, NOT ADK agent sessions.
+
 ## Executive Summary
 
 Vana implements a production-grade Server-Sent Events (SSE) system for real-time, unidirectional communication from backend to frontend. The architecture is designed with enterprise requirements in mind: memory leak prevention, automatic resource cleanup, session persistence, and horizontal scalability.
@@ -102,10 +114,10 @@ Vana implements a production-grade Server-Sent Events (SSE) system for real-time
 │  └─────────────────────────────────────────────────────┘   │
 │                     │                                        │
 │  ┌──────────────────▼──────────────────────────────────┐   │
-│  │  Session Store (GCS-backed SQLite)                  │   │
-│  │  - Persistent session data                          │   │
+│  │  Session Store (In-Memory with Optional GCS Backup) │   │
+│  │  - In-memory Python dict (session_store.py)        │   │
 │  │  - Event snapshots for recovery                     │   │
-│  │  - Periodic GCS backups                             │   │
+│  │  - Optional periodic GCS backups                    │   │
 │  └─────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
 ```

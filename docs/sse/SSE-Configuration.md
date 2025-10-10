@@ -1,5 +1,17 @@
 # SSE Configuration Guide
 
+## Storage Architecture Note
+
+**IMPORTANT**: Vana uses different storage technologies for different components:
+
+| Component | Storage | Configuration Variable | File Location |
+|-----------|---------|----------------------|---------------|
+| **SSE Sessions** | In-memory dict | N/A (hardcoded) | `app/utils/session_store.py` |
+| **ADK Sessions** | SQLite | `ADK_SESSION_DB_URI` | `app/services/adk_services.py` |
+| **Authentication** | SQLite/PostgreSQL | `AUTH_DATABASE_URL` | `app/auth/database.py` |
+
+This guide configures all three layers. SSE-specific settings are prefixed with `SSE_*`.
+
 ## Environment Variables
 
 ### Backend Configuration
@@ -239,8 +251,8 @@ spec:
               value: "true"
             - name: SSE_MAX_QUEUE_SIZE
               value: "2000"
-            - name: SESSION_DB_URI
-              value: "sqlite:////var/data/sessions.db"
+            - name: ADK_SESSION_DB_URI
+              value: "sqlite:////var/data/sessions.db"  # For ADK sessions
           volumeMounts:
             - name: session-storage
               mountPath: /var/data
