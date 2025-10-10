@@ -37,19 +37,19 @@ Vana is a comprehensive multi-agent AI research platform that transforms complex
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/NickB03/vana.git
-    cd vana
+git clone https://github.com/NickB03/vana.git
+cd vana
     ```
 
 2.  **Install all dependencies:**
     ```bash
-    make install
+make install
     ```
 
 3.  **Set up Google Cloud authentication:**
     ```bash
-    gcloud auth application-default login
-    gcloud config set project your-project-id
+gcloud auth application-default login
+gcloud config set project your-project-id
     ```
 
 ### Configuration
@@ -66,19 +66,19 @@ Then, edit the `.env.local` file with your settings, including API keys for Brav
 
 *   **Run the full stack (backend and frontend):**
     ```bash
-    make dev
+make dev
     ```
     *   Backend API will be available at `http://localhost:8000`
     *   Frontend will be available at `http://localhost:3000`
 
 *   **Run only the backend:**
     ```bash
-    make dev-backend
+make dev-backend
     ```
 
 *   **Run only the frontend:**
     ```bash
-    make dev-frontend
+make dev-frontend
     ```
 
 ## Development Conventions
@@ -87,7 +87,7 @@ Then, edit the `.env.local` file with your settings, including API keys for Brav
 
 *   **Run all tests:**
     ```bash
-    make test
+make test
     ```
 
 *   **Run specific test categories:**
@@ -103,17 +103,17 @@ Then, edit the `.env.local` file with your settings, including API keys for Brav
 
 *   **Run all quality checks (linting, type checking, tests):**
     ```bash
-    make test && make lint && make typecheck
+make test && make lint && make typecheck
     ```
 
 *   **Run linting only:**
     ```bash
-    make lint
+make lint
     ```
 
 *   **Run type checking only:**
     ```bash
-    make typecheck
+make typecheck
     ```
 
 ### CI/CD
