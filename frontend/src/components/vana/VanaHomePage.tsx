@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { PromptSuggestion } from '@/components/ui/prompt-suggestion'
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from '@/components/ui/prompt-input'
@@ -11,6 +11,7 @@ import { memoWithTracking, useStableCallback, useStableArray } from '@/lib/react
 interface VanaHomePageProps {
   onStartChat: (prompt: string) => void
   isBusy?: boolean
+  autoFocus?: boolean
 }
 
 const capabilities = [
@@ -22,8 +23,20 @@ const capabilities = [
   "Problem Solving"
 ]
 
-function VanaHomePage({ onStartChat, isBusy = false }: VanaHomePageProps) {
+function VanaHomePage({ onStartChat, isBusy = false, autoFocus = false }: VanaHomePageProps) {
   const [promptValue, setPromptValue] = useState('')
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Auto-focus the textarea when autoFocus prop is true
+  useEffect(() => {
+    if (autoFocus && textareaRef.current) {
+      // Small delay to ensure the component is fully rendered
+      const timeoutId = setTimeout(() => {
+        textareaRef.current?.focus()
+      }, 100)
+      return () => clearTimeout(timeoutId)
+    }
+  }, [autoFocus])
 
   // Stabilize the capabilities array to prevent re-renders
   const stableCapabilities = useStableArray(capabilities)
@@ -88,6 +101,7 @@ function VanaHomePage({ onStartChat, isBusy = false }: VanaHomePageProps) {
         <PromptInput {...promptInputProps}>
           <div className="flex flex-col">
             <PromptInputTextarea
+              ref={textareaRef}
               placeholder="What can I help you with today?"
               className="min-h-[44px] pt-3 pl-4 text-base leading-[1.3] sm:text-base md:text-base"
             />
@@ -156,9 +170,10 @@ function VanaHomePage({ onStartChat, isBusy = false }: VanaHomePageProps) {
 const MemoizedVanaHomePage = memoWithTracking(
   VanaHomePage,
   (prevProps, nextProps) => {
-    // Custom comparison: only re-render if onStartChat function identity or isBusy changes
-    return prevProps.onStartChat === nextProps.onStartChat && 
-           prevProps.isBusy === nextProps.isBusy;
+    // Custom comparison: only re-render if onStartChat function identity, isBusy, or autoFocus changes
+    return prevProps.onStartChat === nextProps.onStartChat &&
+           prevProps.isBusy === nextProps.isBusy &&
+           prevProps.autoFocus === nextProps.autoFocus;
   },
   'VanaHomePage'
 );

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
+import { ThemeProvider } from '@/components/providers/theme-provider'
 
 export const metadata: Metadata = {
   title: "Vana - Virtual Autonomous Network Agent",
@@ -14,16 +15,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="antialiased h-screen overflow-hidden font-sans">
-        <ErrorBoundary
-          componentName="RootLayout"
-          showHomeButton={true}
-          allowRetry={true}
-          showErrorDetails={true}
-        >
-          <SidebarProvider>{children}</SidebarProvider>
-        </ErrorBoundary>
+        <ThemeProvider defaultTheme="system" storageKey="vana-ui-theme">
+          <ErrorBoundary
+            componentName="RootLayout"
+            showHomeButton={true}
+            allowRetry={true}
+            showErrorDetails={true}
+          >
+            <SidebarProvider>{children}</SidebarProvider>
+          </ErrorBoundary>
+        </ThemeProvider>
       </body>
     </html>
   );
