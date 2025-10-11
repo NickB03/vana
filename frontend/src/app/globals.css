@@ -101,7 +101,7 @@
   }
   
   .vana-sidebar {
-    @apply w-64 border-r border-sidebar-border bg-sidebar flex-shrink-0;
+    @apply w-64 bg-sidebar flex-shrink-0;
   }
   
   .vana-main {
@@ -110,7 +110,7 @@
 
   /* Chat Components */
   .vana-chat-header {
-    @apply border-b border-border p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60;
+    @apply p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60;
   }
   
   .vana-chat-messages {

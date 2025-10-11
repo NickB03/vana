@@ -21,7 +21,9 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { useTheme } from '@/components/providers/theme-provider'
-import { Monitor, Moon, Sun } from 'lucide-react'
+import { useThemePreset } from '@/hooks/useThemePreset'
+import { getThemePresets } from '@/lib/themes'
+import { Monitor, Moon, Sun, Palette } from 'lucide-react'
 
 interface SettingsModalProps {
   open: boolean
@@ -30,6 +32,8 @@ interface SettingsModalProps {
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const { theme, setTheme } = useTheme()
+  const { preset, setPreset } = useThemePreset()
+  const themePresets = getThemePresets()
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -80,6 +84,33 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               </Select>
               <p className="text-xs text-muted-foreground">
                 Select your preferred theme or use system settings
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="theme-preset">Color Scheme</Label>
+              <Select value={preset} onValueChange={setPreset}>
+                <SelectTrigger id="theme-preset" className="w-full">
+                  <SelectValue placeholder="Select color scheme" />
+                </SelectTrigger>
+                <SelectContent>
+                  {themePresets.map((themePreset) => (
+                    <SelectItem key={themePreset.id} value={themePreset.id}>
+                      <div className="flex items-center gap-2">
+                        <Palette className="h-4 w-4" />
+                        <div className="flex flex-col">
+                          <span>{themePreset.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {themePreset.description}
+                          </span>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Choose a color scheme that suits your style
               </p>
             </div>
           </div>
