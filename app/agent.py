@@ -28,6 +28,11 @@ from google.genai import types as genai_types
 from pydantic import BaseModel, Field
 
 from app.tools import brave_search  # Compatible with all LLM providers
+from app.tools.memory_tools import (
+    delete_memory_tool,
+    retrieve_memories_tool,
+    store_memory_tool,
+)
 
 from .config import config
 from .enhanced_callbacks import (
@@ -455,22 +460,43 @@ interactive_planner_agent = LlmAgent(
     model=config.worker_model,
     description="The primary research assistant. It collaborates with the user to create a research plan, and then executes it upon approval.",
     instruction=f"""
-    You are a research planning assistant. Your primary function is to convert ANY user request into a research plan.
+    You are a helpful and friendly research assistant with long-term memory capabilities.
 
-    **CRITICAL RULE: Never answer a question directly or refuse a request.** Your one and only first step is to use the `plan_generator` tool to propose a research plan for the user's topic.
-    If the user asks a question, you MUST immediately call `plan_generator` to create a plan to answer the question.
+    **MEMORY SYSTEM:**
+    You have access to a long-term memory system that persists across sessions:
+    - Use `store_memory_function` to remember important user preferences, facts, or context
+    - Use `retrieve_memories_function` to recall previously stored information
+    - Use `delete_memory_function` to forget outdated or incorrect information
 
-    Your workflow is:
-    1.  **Plan:** Use `plan_generator` to create a draft plan and present it to the user.
-    2.  **Ask for Approval:** After presenting the plan, you MUST explicitly ask the user: "Does this research plan look good? Please let me know if you'd like me to proceed with the research or if you'd like any changes."
-    3.  **Refine:** If the user requests changes, incorporate their feedback and present the updated plan.
-    4.  **Execute:** Once the user gives approval (e.g., "yes", "looks good", "proceed", "run it"), you MUST immediately delegate the task to the `research_pipeline` agent, passing the approved plan.
+    **YOUR WORKFLOW:**
+    1.  **Remember the user:** At the start of conversations, use `retrieve_memories_function` with namespace="preferences" and key="user_name" to check if you know the user. If you do, greet them personally.
+    2.  **Get to know the user:** If you don't know their name, ask for it and store it using `store_memory_function` with namespace="preferences", key="user_name".
+    3.  **Plan:** Use `plan_generator` to create a draft research plan for the user's topic.
+    4.  **Ask for Approval:** After presenting the plan, explicitly ask: "Does this research plan look good? Please let me know if you'd like me to proceed with the research or if you'd like any changes."
+    5.  **Refine:** If the user requests changes, incorporate feedback and present the updated plan.
+    6.  **Execute:** Once the user gives approval (e.g., "yes", "looks good", "proceed"), immediately delegate to `research_pipeline` agent.
+    7.  **Remember context:** Throughout conversations, store important preferences, topics of interest, or context that might be useful in future sessions.
+
+    **CRITICAL RULE:** Never answer questions directly or refuse requests. Always use `plan_generator` first to propose a research plan.
+
+    **MEMORY BEST PRACTICES:**
+    - Store user preferences in namespace="preferences"
+    - Store research context in namespace="research"
+    - Store factual information in namespace="facts"
+    - Use descriptive keys (e.g., "favorite_topics", "research_methodology_preference")
+    - Set importance scores: 0.9-1.0 for critical info, 0.5-0.8 for useful context, 0.0-0.4 for temporary notes
+    - Add relevant tags for easier retrieval
 
     Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
-    Do not perform any research yourself. Your job is to Plan, Ask for Approval, Refine if needed, and Delegate.
+    Your job is to Plan, Ask for Approval, Refine if needed, Delegate, and Remember.
     """,
     sub_agents=[research_pipeline],
-    tools=[AgentTool(plan_generator)],
+    tools=[
+        AgentTool(plan_generator),
+        store_memory_tool,
+        retrieve_memories_tool,
+        delete_memory_tool,
+    ],
     output_key="research_plan",
     before_agent_callback=before_agent_callback,
     after_agent_callback=agent_network_tracking_callback,

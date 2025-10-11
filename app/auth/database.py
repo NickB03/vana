@@ -1,7 +1,7 @@
 """Database configuration and utilities for authentication."""
 
 import os
-from collections.abc import Generator
+from collections.abc import AsyncGenerator, Generator
 
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -30,6 +30,47 @@ else:
 
 # Create sessionmaker
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Async database support for long-term memory
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
+
+# Create async engine
+async_engine: AsyncEngine | None = None
+
+if AUTH_DATABASE_URL.startswith("sqlite"):
+    # SQLite async URL needs +aiosqlite driver
+    async_url = AUTH_DATABASE_URL.replace("sqlite:///", "sqlite+aiosqlite:///")
+    async_engine = create_async_engine(
+        async_url,
+        connect_args={"check_same_thread": False},
+        pool_size=10,
+        max_overflow=20,
+        echo=os.getenv("AUTH_DB_ECHO", "false").lower() == "true",
+    )
+else:
+    # PostgreSQL async URL needs +asyncpg driver
+    async_url = AUTH_DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+    async_engine = create_async_engine(
+        async_url,
+        pool_size=10,
+        max_overflow=20,
+        pool_pre_ping=True,
+        echo=os.getenv("AUTH_DB_ECHO", "false").lower() == "true",
+    )
+
+
+async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
+    """Get async database session for memory operations.
+
+    Yields:
+        AsyncSession: Async database session for long-term memory operations.
+
+    Usage:
+        async with get_async_session() as session:
+            result = await session.execute(select(LongTermMemory))
+    """
+    async with AsyncSession(async_engine, expire_on_commit=False) as session:
+        yield session
 
 
 def get_auth_db() -> Generator[Session, None, None]:

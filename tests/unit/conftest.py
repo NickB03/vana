@@ -8,10 +8,19 @@ This file provides:
 - Test utilities and helpers
 """
 
+import os
 import tempfile
 import uuid
 from datetime import datetime, timezone
 from unittest.mock import Mock
+
+# Set up test environment BEFORE importing app modules
+os.environ["ENVIRONMENT"] = "development"
+os.environ["JWT_SECRET_KEY"] = "test_secret_key_for_unit_testing_do_not_use_in_production_32_chars_long"
+os.environ["AUTH_SECRET_KEY"] = "test_secret_key_for_unit_testing_do_not_use_in_production_32_chars_long"
+os.environ["AUTH_REQUIRE_SSE_AUTH"] = "false"
+os.environ["SESSION_INTEGRITY_KEY"] = "test_secret_key_for_unit_testing_do_not_use_in_production_32_chars_long"
+os.environ["CI"] = "true"  # Skip GCS operations
 
 import pytest
 
