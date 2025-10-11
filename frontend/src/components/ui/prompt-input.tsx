@@ -16,6 +16,8 @@ import React, {
   useState,
   useMemo,
   useCallback,
+  useImperativeHandle,
+  forwardRef,
 } from "react"
 
 type PromptInputContextType = {
@@ -26,6 +28,7 @@ type PromptInputContextType = {
   onSubmit?: () => void
   disabled?: boolean
   textareaRef: React.RefObject<HTMLTextAreaElement | null>
+  focusInput: () => void
 }
 
 const PromptInputContext = createContext<PromptInputContextType>({
@@ -36,6 +39,7 @@ const PromptInputContext = createContext<PromptInputContextType>({
   onSubmit: undefined,
   disabled: false,
   textareaRef: React.createRef<HTMLTextAreaElement>(),
+  focusInput: () => {},
 })
 
 function usePromptInput() {
@@ -78,6 +82,11 @@ function PromptInput({
     onValueChangeRef.current?.(newValue)
   }, [])
 
+  // Create stable focusInput function
+  const focusInput = useCallback(() => {
+    textareaRef.current?.focus()
+  }, [])
+
   const contextValue = useMemo(
     () => ({
       isLoading,
@@ -87,8 +96,9 @@ function PromptInput({
       onSubmit,
       disabled: isLoading,
       textareaRef,
+      focusInput,
     }),
-    [isLoading, value, internalValue, maxHeight, onSubmit]
+    [isLoading, value, internalValue, maxHeight, onSubmit, focusInput]
   )
 
   return (
@@ -97,6 +107,9 @@ function PromptInput({
         <div
           className={cn(
             "border-input bg-background cursor-text rounded-3xl border p-2 shadow-xs",
+            "transition-all duration-200",
+            "focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary/60",
+            "focus-within:shadow-[0_0_0_1px_hsl(var(--primary)/0.3),0_0_20px_hsl(var(--primary)/0.15)]",
             className
           )}
           onClick={() => textareaRef.current?.focus()}
@@ -204,4 +217,5 @@ export {
   PromptInputTextarea,
   PromptInputActions,
   PromptInputAction,
+  usePromptInput,
 }

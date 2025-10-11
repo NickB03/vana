@@ -8,6 +8,7 @@ import {
   useCallback,
   useMemo,
 } from "react";
+import { useSearchParams } from "next/navigation";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import {
   useChatStream,
@@ -61,6 +62,7 @@ import {
   StepsContent,
   StepsItem,
 } from "@/components/prompt-kit/steps";
+import { PageTransition } from "@/components/transitions/PageTransition";
 
 function ChatView({
   chat,
@@ -426,7 +428,8 @@ function ChatView({
       allowRetry={true}
       showErrorDetails={false}
     >
-      <main className="flex h-screen flex-col overflow-hidden">
+      <PageTransition transitionKey={`chat-${currentSession?.id || 'loading'}`}>
+        <main className="flex h-screen flex-col overflow-hidden">
         <header className="bg-background z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
           <div className="text-foreground truncate" title={conversationTitle}>
@@ -792,6 +795,7 @@ function ChatView({
           </div>
         </div>
       </main>
+      </PageTransition>
     </ErrorBoundary>
   );
 }
@@ -810,9 +814,11 @@ function ChatLoadingSkeleton() {
 function HomeView({
   onStartChat,
   isBusy,
+  autoFocus,
 }: {
   onStartChat: (prompt: string) => void;
   isBusy: boolean;
+  autoFocus: boolean;
 }) {
   return (
     <ErrorBoundary
@@ -820,22 +826,28 @@ function HomeView({
       allowRetry={true}
       showErrorDetails={false}
     >
-      <div className="flex h-full flex-col">
+      <PageTransition transitionKey="home">
+        <div className="flex h-full flex-col">
         <header className="bg-background z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
           <div className="text-foreground">Home</div>
         </header>
         <div className="flex flex-1 items-center justify-center overflow-auto">
-          <VanaHomePage onStartChat={onStartChat} isBusy={isBusy} />
+          <VanaHomePage onStartChat={onStartChat} isBusy={isBusy} autoFocus={autoFocus} />
         </div>
       </div>
+      </PageTransition>
     </ErrorBoundary>
   );
 }
 
-export default function HomePage() {
+function HomePageContent() {
   const chat = useChatStream();
   const sessions = chat.getAllSessions();
+  const searchParams = useSearchParams();
+
+  // Check if we should auto-focus the input (e.g., from "New Chat" button)
+  const shouldAutoFocus = searchParams.get('focus') === 'true';
 
   // Clear session on mount to always show home page when navigating to /
   useEffect(() => {
@@ -886,6 +898,10 @@ export default function HomePage() {
     chat.switchSession(null);
   };
 
+  const handleClearSession = () => {
+    chat.switchSession(null);
+  };
+
   const isChatActive = Boolean(chat.sessionId);
 
   return (
@@ -907,6 +923,7 @@ export default function HomePage() {
             onSelectSession={handleSelectSession}
             onCreateSession={handleCreateSession}
             onDeleteSession={handleDeleteSession}
+            onClearSession={handleClearSession}
           />
         </ErrorBoundary>
         <SidebarInset>
@@ -915,10 +932,19 @@ export default function HomePage() {
               <ChatView chat={chat} onExit={handleExitChat} />
             </Suspense>
           ) : (
-            <HomeView onStartChat={handleStartChat} isBusy={chat.isStreaming} />
+            <HomeView onStartChat={handleStartChat} isBusy={chat.isStreaming} autoFocus={shouldAutoFocus} />
           )}
         </SidebarInset>
       </div>
     </ErrorBoundary>
+  );
+}
+
+// Wrap with Suspense for useSearchParams() compatibility
+export default function HomePage() {
+  return (
+    <Suspense fallback={<ChatLoadingSkeleton />}>
+      <HomePageContent />
+    </Suspense>
   );
 }

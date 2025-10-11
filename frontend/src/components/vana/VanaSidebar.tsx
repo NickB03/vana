@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Sidebar,
   SidebarContent,
@@ -14,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { ChatSession } from '@/hooks/useChatStream'
 import { Search, Plus, MoreHorizontal, Share, Pen, Archive, Trash2, Settings } from 'lucide-react'
+import { SettingsModal } from '@/components/settings/SettingsModal'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +42,7 @@ interface VanaSidebarProps {
   onDeleteSession?: (sessionId: string) => void
   onRenameSession?: (sessionId: string, newTitle: string) => void
   onArchiveSession?: (sessionId: string) => void
+  onClearSession?: () => void
 }
 
 function getSessionTitle(session: ChatSession): string {
@@ -161,6 +164,7 @@ function SessionMenuItem({
 }) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
 
   const handleDelete = () => {
     setShowDeleteDialog(false)
@@ -171,7 +175,11 @@ function SessionMenuItem({
 
   return (
     <>
-      <div className="group relative flex items-center">
+      <div
+        className="group/session relative flex items-center"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
         <SidebarMenuButton
           isActive={isActive}
           onClick={onSelect}
@@ -185,10 +193,13 @@ function SessionMenuItem({
             <Button
               variant="ghost"
               size="sm"
-              className="absolute right-1 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+              className={`absolute right-1 transition-opacity h-6 w-6 p-0 border-0 focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:opacity-100 ${
+                isHovered || dropdownOpen ? 'opacity-100' : 'opacity-0'
+              }`}
               onClick={(e) => e.stopPropagation()}
             >
               <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">Session options</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
@@ -243,14 +254,19 @@ export function VanaSidebar({
   onCreateSession,
   onDeleteSession,
   onRenameSession,
-  onArchiveSession
+  onArchiveSession,
+  onClearSession
 }: VanaSidebarProps) {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearching, setIsSearching] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const handleNewChat = () => {
-    const newSessionId = onCreateSession()
-    onSelectSession(newSessionId)
+    // Clear the active session before navigating to ensure clean state
+    onClearSession?.()
+    // Navigate to homepage with auto-focus parameter
+    router.push('/?focus=true')
   }
 
   const toggleSearch = () => {
@@ -310,7 +326,19 @@ export function VanaSidebar({
         ) : (
           <>
             <div className="flex flex-row items-center gap-2 px-2">
-              <div className="bg-primary/10 size-8 rounded-md"></div>
+              <div className="size-8 flex items-center justify-center">
+                {/* Option 1: Use PNG with CSS blending */}
+                <img
+                  src="/vana-logo.png"
+                  alt="Vana Logo"
+                  className="size-6 object-contain mix-blend-multiply dark:mix-blend-screen dark:invert"
+                />
+                {/* Option 2: Use SVG (uncomment when you have SVG version)
+                <svg className="size-6" viewBox="0 0 100 100" fill="currentColor">
+                  <path d="your-svg-path-here" />
+                </svg>
+                */}
+              </div>
               <div className="text-md font-base text-primary tracking-tight">
                 Vana
               </div>
@@ -377,15 +405,14 @@ export function VanaSidebar({
         <Button
           variant="ghost"
           className="w-full justify-start gap-2"
-          onClick={() => {
-            // TODO: Implement settings navigation
-            console.log('Settings clicked')
-          }}
+          onClick={() => setSettingsOpen(true)}
         >
           <Settings className="size-4" />
           <span>Settings</span>
         </Button>
       </SidebarFooter>
+
+      <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
     </Sidebar>
   )
 }
