@@ -430,7 +430,7 @@ function ChatView({
     >
       <PageTransition transitionKey={`chat-${currentSession?.id || 'loading'}`}>
         <main className="flex h-screen flex-col overflow-hidden">
-        <header className="bg-background z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b px-4">
+        <header className="bg-background z-10 flex h-16 w-full shrink-0 items-center gap-2 px-4 shadow-none">
           <SidebarTrigger className="-ml-1" />
           <div className="text-foreground truncate" title={conversationTitle}>
             {conversationTitle}
@@ -443,7 +443,7 @@ function ChatView({
         </header>
 
         {error ? (
-          <div className="border-b border-destructive/40 bg-destructive/5 px-4 py-2 text-sm text-destructive">
+          <div className="bg-destructive/5 px-4 py-2 text-sm text-destructive">
             {error}
           </div>
         ) : null}
@@ -828,7 +828,7 @@ function HomeView({
     >
       <PageTransition transitionKey="home">
         <div className="flex h-full flex-col">
-        <header className="bg-background z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b px-4">
+        <header className="bg-background z-10 flex h-16 w-full shrink-0 items-center gap-2 px-4 shadow-none">
           <SidebarTrigger className="-ml-1" />
           <div className="text-foreground">Home</div>
         </header>

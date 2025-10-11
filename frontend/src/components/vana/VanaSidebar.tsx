@@ -325,24 +325,13 @@ export function VanaSidebar({
           </div>
         ) : (
           <>
-            <div className="flex flex-row items-center gap-2 px-2">
-              <div className="size-8 flex items-center justify-center">
-                {/* Option 1: Use PNG with CSS blending */}
-                <img
-                  src="/vana-logo.png"
-                  alt="Vana Logo"
-                  className="size-6 object-contain mix-blend-multiply dark:mix-blend-screen dark:invert"
-                />
-                {/* Option 2: Use SVG (uncomment when you have SVG version)
-                <svg className="size-6" viewBox="0 0 100 100" fill="currentColor">
-                  <path d="your-svg-path-here" />
-                </svg>
-                */}
-              </div>
-              <div className="text-md font-base text-primary tracking-tight">
-                Vana
-              </div>
-            </div>
+            <Button
+              variant="ghost"
+              className="size-8"
+              onClick={() => setSettingsOpen(true)}
+            >
+              <Settings className="size-5" />
+            </Button>
             <Button variant="ghost" className="size-8" onClick={toggleSearch}>
               <Search className="size-4" />
             </Button>
@@ -401,16 +390,6 @@ export function VanaSidebar({
           }).filter(Boolean)
         )}
       </SidebarContent>
-      <SidebarFooter className="border-t p-4">
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-2"
-          onClick={() => setSettingsOpen(true)}
-        >
-          <Settings className="size-4" />
-          <span>Settings</span>
-        </Button>
-      </SidebarFooter>
 
       <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
     </Sidebar>
