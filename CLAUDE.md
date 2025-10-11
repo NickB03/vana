@@ -33,11 +33,13 @@ See [Chrome DevTools MCP section](#-chrome-devtools-mcp---critical-debugging--ve
 - FastAPI backend (port 8000) should **proxy requests to ADK**, not run its own orchestrator
 - Flow: Frontend → FastAPI → ADK Agents (port 8080) → Response via SSE
 
+⚠️ **CRITICAL ADK BUG**: When processing ADK events, extract from **BOTH** `parts[].text` AND `parts[].functionResponse` - research plans come from `functionResponse`, not `text`. See `docs/adk/ADK-Event-Extraction-Guide.md`
+
 
 ## Key Architecture
 
 **Backend** (`/app`): FastAPI + Google ADK + LiteLLM/Gemini models
-- Multi-agent system with 8 specialized research agents
+- Multi-agent system with specialized AI agents
 - Real-time streaming via Server-Sent Events (SSE)
 - Session management with GCS persistence
 - Authentication: JWT/OAuth2/Firebase/development modes
@@ -249,8 +251,7 @@ Frontend:
   /integration           # ADK integration
   /tools                 # Agent tools
   server.py              # Main FastAPI app
-  agent.py               # ADK agent definition
-  research_agents.py     # 8 specialized agents
+  agent.py               # ADK agent definitions
 
 /frontend                 # Frontend (Next.js)
   /src
@@ -362,6 +363,46 @@ export function ChatMessage({ message }: ChatMessageProps) {
 4. Mock external dependencies
 5. Run tests frequently during development
 6. Aim for >85% code coverage
+
+## Google ADK Agent Starter Pack Guidance
+
+### Core Principles
+- Modify only the code tied to the requested change; keep surrounding structure, comments, and formatting intact.
+- Mirror the repository's existing patterns before introducing new logic. Inspect nearby modules to match naming, templating, and directory placement.
+- Search across `src/base_template/`, `src/deployment_targets/`, `.github/`, `.cloudbuild/`, and `docs/` so configuration, CI/CD, and documentation stay aligned.
+
+### Architecture Snapshot
+- **Templating Pipeline:** Cookiecutter variable substitution, Jinja2 logic execution, and templated file/directory names. A failure in any phase breaks project generation.
+- **Key Directories:** `src/base_template/` (global defaults), `src/deployment_targets/` (environment overrides), `agents/` (self-contained templates with `.template/templateconfig.yaml`), and `src/cli/commands` for CLI entry points such as `create.py` and `setup_cicd.py`.
+- **Template Processing Flow:** `src/cli/utils/template.py` copies the base template, overlays deployment target files, then applies agent-specific files.
+
+### Jinja2 Rules of Thumb
+- Close every `{% if %}`, `{% for %}`, and `{% raw %}` block to avoid generation failures.
+- Use `{{ }}` for substitutions and `{% %}` for control flow logic.
+- Trim whitespace with `{%-` / `-%}` when rendered output should not include extra newlines.
+
+### Terraform and CI/CD Expectations
+- Maintain a single `app_sa` service account across deployment targets; assign roles via `app_sa_roles` and reference the account consistently.
+- Keep GitHub Actions (`.github/workflows/`) and Cloud Build (`.cloudbuild/`) workflows in sync, including variable naming (`${{ vars.X }}` vs. `${_X}`) and Terraform-managed secrets.
+
+### Layer Overrides and Cross-File Dependencies
+- Respect the four-layer order: base template → deployment target → frontend type → agent template. Place edits in the minimal layer and propagate overrides where necessary.
+- Coordinate updates across `templateconfig.yaml`, `cookiecutter.json`, rendered templates, and CI/CD manifests to prevent drift.
+- Wrap agent- or target-specific logic in conditionals such as `{% if cookiecutter.agent_name == "adk_live" %}`.
+
+### Testing and Validation
+- Exercise multiple combinations: agent types (`adk_live`, `adk_base`), deployment targets (`cloud_run`, `agent_engine`), and feature flags (`data_ingestion`, frontend options).
+- Example scaffold command:
+    ```bash
+    uv run agent-starter-pack create myagent-$(date +%s) --output-dir target
+    ```
+- Watch for hardcoded URLs, missing conditionals, or dependency mismatches when introducing new extras.
+
+### Pre-Submit Checklist
+- Jinja blocks balanced and variables spelled correctly?
+- Deployment target overrides reviewed?
+- GitHub Actions and Cloud Build kept in sync?
+- Tested across representative agent and feature combinations?
 
 ## 🔍 Chrome DevTools MCP - Browser Verification Tool
 

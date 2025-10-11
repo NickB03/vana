@@ -547,30 +547,67 @@ async def run_session_sse(
                                             try:
                                                 data = json.loads(data_str)
 
-                                                # Extract content from ADK Event structure
-                                                # Event has: content.parts[].text
+                                                # DEBUG: Log event (debug level)
+                                                logger.debug(
+                                                    f"[ADK] {session_id}: {json.dumps(data)[:500]}"
+                                                )
+
+                                                # ═══════════════════════════════════════════════════════════════════
+                                                # CRITICAL: ADK Event Content Extraction
+                                                # ═══════════════════════════════════════════════════════════════════
+                                                # MUST extract from BOTH text AND functionResponse parts!
+                                                #
+                                                # ⚠️  COMMON BUG: Only extracting from text breaks research plans
+                                                #    Research plans come from plan_generator via functionResponse
+                                                #
+                                                # Event structure:
+                                                #   content.parts[] = [
+                                                #     {text: "..."} ← Model streaming output
+                                                #     {functionResponse: {response: {result: "..."}}} ← Agent tool outputs (CRITICAL!)
+                                                #     {functionCall: {...}} ← Tool invocation request
+                                                #   ]
+                                                #
+                                                # See: docs/adk/ADK-Event-Extraction-Guide.md
+                                                # ═══════════════════════════════════════════════════════════════════
                                                 content_obj = data.get("content")
                                                 if content_obj and isinstance(content_obj, dict):
                                                     parts = content_obj.get("parts", [])
                                                     for part in parts:
                                                         if isinstance(part, dict):
+                                                            # PART 1: Extract regular text streaming
+                                                            # Used for: Model responses, status updates, explanations
                                                             text = part.get("text")
                                                             if text:
                                                                 accumulated_content.append(text)
 
-                                                                # Broadcast update
-                                                                logger.info(f"Broadcasting research_update for session {session_id}, content length: {len(''.join(accumulated_content))}")
-                                                                await broadcaster.broadcast_event(session_id, {
-                                                                    "type": "research_update",
-                                                                    "data": {
-                                                                        "content": "".join(accumulated_content),
-                                                                        "timestamp": datetime.now().isoformat()
-                                                                    }
-                                                                })
+                                                            # PART 2: Extract functionResponse (CRITICAL!)
+                                                            # Used for: Research plans, agent tool outputs, analysis results
+                                                            # DO NOT REMOVE THIS SECTION - It extracts plan_generator output!
+                                                            function_response = part.get("functionResponse")
+                                                            if function_response and isinstance(function_response, dict):
+                                                                response_data = function_response.get("response", {})
+                                                                result_text = response_data.get("result")
+                                                                if result_text:
+                                                                    accumulated_content.append(result_text)
+                                                                    logger.info(f"Extracted functionResponse content: {len(result_text)} chars")
+
+                                                    # Broadcast update if we have content
+                                                    if accumulated_content:
+                                                        logger.info(f"Broadcasting research_update for session {session_id}, content length: {len(''.join(accumulated_content))}")
+                                                        await broadcaster.broadcast_event(session_id, {
+                                                            "type": "research_update",
+                                                            "data": {
+                                                                "content": "".join(accumulated_content),
+                                                                "timestamp": datetime.now().isoformat()
+                                                            }
+                                                        })
                                                 else:
-                                                    # Log non-content events for debugging
+                                                    # Log non-content events
                                                     event_type = data.get("invocationId") or data.get("id") or "unknown"
-                                                    logger.debug(f"ADK event (no text content): type={event_type}")
+                                                    logger.debug(
+                                                        f"ADK event (no content): {event_type}, "
+                                                        f"keys={list(data.keys())[:10]}"
+                                                    )
                                             except json.JSONDecodeError as e:
                                                 logger.warning(f"Could not parse SSE data: {data_str[:100]} - {e}")
                                                 # Check for rate limit errors in JSON parsing exceptions
