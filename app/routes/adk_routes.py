@@ -547,8 +547,10 @@ async def run_session_sse(
                                             try:
                                                 data = json.loads(data_str)
 
-                                                # DEBUG: Log complete event structure
-                                                logger.info(f"[ADK_EVENT] Session {session_id}: {json.dumps(data)[:1000]}")
+                                                # DEBUG: Log event (debug level)
+                                                logger.debug(
+                                                    f"[ADK] {session_id}: {json.dumps(data)[:500]}"
+                                                )
 
                                                 # ═══════════════════════════════════════════════════════════════════
                                                 # CRITICAL: ADK Event Content Extraction
@@ -600,9 +602,12 @@ async def run_session_sse(
                                                             }
                                                         })
                                                 else:
-                                                    # Log non-content events for debugging
+                                                    # Log non-content events
                                                     event_type = data.get("invocationId") or data.get("id") or "unknown"
-                                                    logger.info(f"ADK event (no text): type={event_type}, keys={list(data.keys())[:10]}")
+                                                    logger.debug(
+                                                        f"ADK event (no content): {event_type}, "
+                                                        f"keys={list(data.keys())[:10]}"
+                                                    )
                                             except json.JSONDecodeError as e:
                                                 logger.warning(f"Could not parse SSE data: {data_str[:100]} - {e}")
                                                 # Check for rate limit errors in JSON parsing exceptions
