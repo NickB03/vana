@@ -33,6 +33,8 @@ See [Chrome DevTools MCP section](#-chrome-devtools-mcp---critical-debugging--ve
 - FastAPI backend (port 8000) should **proxy requests to ADK**, not run its own orchestrator
 - Flow: Frontend → FastAPI → ADK Agents (port 8080) → Response via SSE
 
+⚠️ **CRITICAL ADK BUG**: When processing ADK events, extract from **BOTH** `parts[].text` AND `parts[].functionResponse` - research plans come from `functionResponse`, not `text`. See `docs/adk/ADK-Event-Extraction-Guide.md`
+
 
 ## Key Architecture
 
