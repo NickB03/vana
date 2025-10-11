@@ -547,30 +547,44 @@ async def run_session_sse(
                                             try:
                                                 data = json.loads(data_str)
 
+                                                # DEBUG: Log complete event structure
+                                                logger.info(f"[ADK_EVENT] Session {session_id}: {json.dumps(data)[:1000]}")
+
                                                 # Extract content from ADK Event structure
-                                                # Event has: content.parts[].text
+                                                # Event has: content.parts[] with either text or functionResponse
                                                 content_obj = data.get("content")
                                                 if content_obj and isinstance(content_obj, dict):
                                                     parts = content_obj.get("parts", [])
                                                     for part in parts:
                                                         if isinstance(part, dict):
+                                                            # Extract text from regular text parts
                                                             text = part.get("text")
                                                             if text:
                                                                 accumulated_content.append(text)
 
-                                                                # Broadcast update
-                                                                logger.info(f"Broadcasting research_update for session {session_id}, content length: {len(''.join(accumulated_content))}")
-                                                                await broadcaster.broadcast_event(session_id, {
-                                                                    "type": "research_update",
-                                                                    "data": {
-                                                                        "content": "".join(accumulated_content),
-                                                                        "timestamp": datetime.now().isoformat()
-                                                                    }
-                                                                })
+                                                            # Extract text from functionResponse parts (e.g., plan_generator results)
+                                                            function_response = part.get("functionResponse")
+                                                            if function_response and isinstance(function_response, dict):
+                                                                response_data = function_response.get("response", {})
+                                                                result_text = response_data.get("result")
+                                                                if result_text:
+                                                                    accumulated_content.append(result_text)
+                                                                    logger.info(f"Extracted functionResponse content: {len(result_text)} chars")
+
+                                                    # Broadcast update if we have content
+                                                    if accumulated_content:
+                                                        logger.info(f"Broadcasting research_update for session {session_id}, content length: {len(''.join(accumulated_content))}")
+                                                        await broadcaster.broadcast_event(session_id, {
+                                                            "type": "research_update",
+                                                            "data": {
+                                                                "content": "".join(accumulated_content),
+                                                                "timestamp": datetime.now().isoformat()
+                                                            }
+                                                        })
                                                 else:
                                                     # Log non-content events for debugging
                                                     event_type = data.get("invocationId") or data.get("id") or "unknown"
-                                                    logger.debug(f"ADK event (no text content): type={event_type}")
+                                                    logger.info(f"ADK event (no text): type={event_type}, keys={list(data.keys())[:10]}")
                                             except json.JSONDecodeError as e:
                                                 logger.warning(f"Could not parse SSE data: {data_str[:100]} - {e}")
                                                 # Check for rate limit errors in JSON parsing exceptions
