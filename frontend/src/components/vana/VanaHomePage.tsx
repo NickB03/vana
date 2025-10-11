@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useState, useMemo, useRef, useEffect } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { PromptSuggestion } from '@/components/ui/prompt-suggestion'
-import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from '@/components/ui/prompt-input'
+import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction, usePromptInput } from '@/components/ui/prompt-input'
 import { FileUpload, FileUploadTrigger } from '@/components/ui/file-upload'
 import { Plus, Mic, ArrowUp } from 'lucide-react'
 import { memoWithTracking, useStableCallback, useStableArray } from '@/lib/react-performance'
@@ -16,27 +16,77 @@ interface VanaHomePageProps {
 
 const capabilities = [
   "Content Creation",
-  "Data Analysis", 
+  "Data Analysis",
   "Code Review",
   "Project Planning",
   "Research Synthesis",
   "Problem Solving"
 ]
 
-function VanaHomePage({ onStartChat, isBusy = false, autoFocus = false }: VanaHomePageProps) {
-  const [promptValue, setPromptValue] = useState('')
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+// Inner component that uses the PromptInput context to handle auto-focus
+function PromptInputContent({ autoFocus, handleFilesAdded, submitButtonProps }: {
+  autoFocus: boolean
+  handleFilesAdded: (files: File[]) => void
+  submitButtonProps: any
+}) {
+  const { focusInput } = usePromptInput()
 
   // Auto-focus the textarea when autoFocus prop is true
   useEffect(() => {
-    if (autoFocus && textareaRef.current) {
+    if (autoFocus) {
       // Small delay to ensure the component is fully rendered
       const timeoutId = setTimeout(() => {
-        textareaRef.current?.focus()
+        focusInput()
       }, 100)
       return () => clearTimeout(timeoutId)
     }
-  }, [autoFocus])
+  }, [autoFocus, focusInput])
+
+  return (
+    <div className="flex flex-col">
+      <PromptInputTextarea
+        placeholder="What can I help you with today?"
+        className="min-h-[44px] pt-3 pl-4 text-base leading-[1.3] sm:text-base md:text-base"
+      />
+
+      <PromptInputActions className="mt-5 flex w-full items-center justify-between gap-2 px-3 pb-3">
+        <div className="flex items-center gap-2">
+          <FileUpload onFilesAdded={handleFilesAdded} accept="*">
+            <FileUploadTrigger>
+              <PromptInputAction tooltip="Upload files">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="size-9 rounded-full"
+                >
+                  <Plus size={18} />
+                </Button>
+              </PromptInputAction>
+            </FileUploadTrigger>
+          </FileUpload>
+        </div>
+        <div className="flex items-center gap-2">
+          <PromptInputAction tooltip="Voice input">
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-9 rounded-full"
+            >
+              <Mic size={18} />
+            </Button>
+          </PromptInputAction>
+
+          <Button {...submitButtonProps}>
+            <ArrowUp size={18} />
+          </Button>
+        </div>
+      </PromptInputActions>
+    </div>
+  )
+}
+
+function VanaHomePage({ onStartChat, isBusy = false, autoFocus = false }: VanaHomePageProps) {
+  const [promptValue, setPromptValue] = useState('')
 
   // Stabilize the capabilities array to prevent re-renders
   const stableCapabilities = useStableArray(capabilities)
@@ -90,64 +140,29 @@ function VanaHomePage({ onStartChat, isBusy = false, autoFocus = false }: VanaHo
             Hi, I'm Vana
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Your AI assistant platform powered by multiple specialized agents. 
+            Your AI assistant platform powered by multiple specialized agents.
             I can help you with a wide range of tasks through intelligent coordination.
           </p>
         </div>
       </div>
-      
+
       {/* Main Prompt Input */}
       <div className="w-full max-w-2xl mb-8">
         <PromptInput {...promptInputProps}>
-          <div className="flex flex-col">
-            <PromptInputTextarea
-              ref={textareaRef}
-              placeholder="What can I help you with today?"
-              className="min-h-[44px] pt-3 pl-4 text-base leading-[1.3] sm:text-base md:text-base"
-            />
-
-            <PromptInputActions className="mt-5 flex w-full items-center justify-between gap-2 px-3 pb-3">
-              <div className="flex items-center gap-2">
-                <FileUpload onFilesAdded={handleFilesAdded} accept="*">
-                  <FileUploadTrigger>
-                    <PromptInputAction tooltip="Upload files">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="size-9 rounded-full"
-                      >
-                        <Plus size={18} />
-                      </Button>
-                    </PromptInputAction>
-                  </FileUploadTrigger>
-                </FileUpload>
-              </div>
-              <div className="flex items-center gap-2">
-                <PromptInputAction tooltip="Voice input">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="size-9 rounded-full"
-                  >
-                    <Mic size={18} />
-                  </Button>
-                </PromptInputAction>
-
-                <Button {...submitButtonProps}>
-                  <ArrowUp size={18} />
-                </Button>
-              </div>
-            </PromptInputActions>
-          </div>
+          <PromptInputContent
+            autoFocus={autoFocus}
+            handleFilesAdded={handleFilesAdded}
+            submitButtonProps={submitButtonProps}
+          />
         </PromptInput>
       </div>
-      
+
       {/* Compact Capability Suggestions */}
       <div className="w-full max-w-2xl">
         <p className="text-sm text-muted-foreground text-center mb-4">
           Or try one of these:
         </p>
-        
+
         <div className="flex flex-wrap gap-2 justify-center">
           {stableCapabilities.map((capability) => (
             <PromptSuggestion

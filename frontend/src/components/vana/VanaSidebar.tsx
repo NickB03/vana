@@ -193,11 +193,10 @@ function SessionMenuItem({
             <Button
               variant="ghost"
               size="sm"
-              className={`absolute right-1 transition-opacity h-6 w-6 p-0 border-0 focus-visible:ring-2 focus-visible:ring-offset-0 ${
+              className={`absolute right-1 transition-opacity h-6 w-6 p-0 border-0 focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:opacity-100 ${
                 isHovered || dropdownOpen ? 'opacity-100' : 'opacity-0'
               }`}
               onClick={(e) => e.stopPropagation()}
-              tabIndex={isHovered || dropdownOpen ? 0 : -1}
             >
               <MoreHorizontal className="h-4 w-4" />
               <span className="sr-only">Session options</span>
@@ -327,7 +326,19 @@ export function VanaSidebar({
         ) : (
           <>
             <div className="flex flex-row items-center gap-2 px-2">
-              <div className="bg-primary/10 size-8 rounded-md"></div>
+              <div className="size-8 flex items-center justify-center">
+                {/* Option 1: Use PNG with CSS blending */}
+                <img
+                  src="/vana-logo.png"
+                  alt="Vana Logo"
+                  className="size-6 object-contain mix-blend-multiply dark:mix-blend-screen dark:invert"
+                />
+                {/* Option 2: Use SVG (uncomment when you have SVG version)
+                <svg className="size-6" viewBox="0 0 100 100" fill="currentColor">
+                  <path d="your-svg-path-here" />
+                </svg>
+                */}
+              </div>
               <div className="text-md font-base text-primary tracking-tight">
                 Vana
               </div>
