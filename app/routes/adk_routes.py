@@ -550,19 +550,37 @@ async def run_session_sse(
                                                 # DEBUG: Log complete event structure
                                                 logger.info(f"[ADK_EVENT] Session {session_id}: {json.dumps(data)[:1000]}")
 
-                                                # Extract content from ADK Event structure
-                                                # Event has: content.parts[] with either text or functionResponse
+                                                # ═══════════════════════════════════════════════════════════════════
+                                                # CRITICAL: ADK Event Content Extraction
+                                                # ═══════════════════════════════════════════════════════════════════
+                                                # MUST extract from BOTH text AND functionResponse parts!
+                                                #
+                                                # ⚠️  COMMON BUG: Only extracting from text breaks research plans
+                                                #    Research plans come from plan_generator via functionResponse
+                                                #
+                                                # Event structure:
+                                                #   content.parts[] = [
+                                                #     {text: "..."} ← Model streaming output
+                                                #     {functionResponse: {response: {result: "..."}}} ← Agent tool outputs (CRITICAL!)
+                                                #     {functionCall: {...}} ← Tool invocation request
+                                                #   ]
+                                                #
+                                                # See: docs/adk/ADK-Event-Extraction-Guide.md
+                                                # ═══════════════════════════════════════════════════════════════════
                                                 content_obj = data.get("content")
                                                 if content_obj and isinstance(content_obj, dict):
                                                     parts = content_obj.get("parts", [])
                                                     for part in parts:
                                                         if isinstance(part, dict):
-                                                            # Extract text from regular text parts
+                                                            # PART 1: Extract regular text streaming
+                                                            # Used for: Model responses, status updates, explanations
                                                             text = part.get("text")
                                                             if text:
                                                                 accumulated_content.append(text)
 
-                                                            # Extract text from functionResponse parts (e.g., plan_generator results)
+                                                            # PART 2: Extract functionResponse (CRITICAL!)
+                                                            # Used for: Research plans, agent tool outputs, analysis results
+                                                            # DO NOT REMOVE THIS SECTION - It extracts plan_generator output!
                                                             function_response = part.get("functionResponse")
                                                             if function_response and isinstance(function_response, dict):
                                                                 response_data = function_response.get("response", {})
