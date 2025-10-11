@@ -30,7 +30,7 @@ from app.config import config
 generalist_agent = LlmAgent(
     model=config.worker_model,
     name="generalist_agent",
-    description="Handles simple questions, greetings, casual conversation, and thank you messages. Answers from general knowledge without research.",
+    description="ALWAYS use for: greetings (hello, hi), simple math, basic facts, pleasantries, thank you messages. NO TOOLS NEEDED - answers from general knowledge only.",
     instruction="""You are a friendly, helpful AI assistant.
 
     Answer questions directly and concisely from your general knowledge.

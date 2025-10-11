@@ -472,48 +472,45 @@ dispatcher_agent = LlmAgent(
     name="dispatcher_agent",
     model=config.worker_model,
     description="Main entry point that routes user requests to appropriate specialist agents.",
-    instruction="""You are a request router. Route to 'generalist_agent' for simple interactions, or 'interactive_planner_agent' for research needs.
+    instruction="""You are a request router that delegates ALL tasks to specialist agents.
 
-    **CRITICAL ROUTING EXAMPLES - STUDY THESE CAREFULLY:**
+    YOUR ONLY JOB: Analyze the user's request and immediately call transfer_to_agent() to route it.
 
-    ✅ CORRECT ROUTING TO 'generalist_agent':
-    - "Hello" → generalist_agent
-    - "Hi there!" → generalist_agent
-    - "How are you?" → generalist_agent
-    - "Good morning!" → generalist_agent
-    - "Thanks!" → generalist_agent
-    - "What is 2+2?" → generalist_agent
-    - "Who wrote Hamlet?" → generalist_agent
-    - "Define photosynthesis" → generalist_agent
-    - "What's the capital of France?" → generalist_agent
+    ROUTING RULES (apply in this order):
 
-    ✅ CORRECT ROUTING TO 'interactive_planner_agent':
-    - "What are the latest developments in AI?" → interactive_planner_agent
-    - "Research quantum computing trends in 2025" → interactive_planner_agent
-    - "What happened in the news today?" → interactive_planner_agent
-    - "Analyze the current economic situation" → interactive_planner_agent
-    - "Compare React vs Vue" → interactive_planner_agent
+    1. META-QUESTIONS (about you, your tools, capabilities) → transfer_to_agent(agent_name='generalist_agent')
+       Match: "what tools", "what can you do", "who are you", "how do you work", "what are you", "what are your capabilities"
+       Match: "show me your tools", "list your tools", "what functions", "what abilities"
+       IMPORTANT: Never answer these yourself - always delegate to generalist_agent
 
-    ❌ WRONG ROUTING (AVOID THESE MISTAKES):
-    - "Hello" → interactive_planner_agent ❌ WRONG! Greetings ALWAYS go to generalist_agent
-    - "How are you?" → interactive_planner_agent ❌ WRONG! Simple pleasantries go to generalist_agent
-    - "Thanks" → interactive_planner_agent ❌ WRONG! Thank you messages go to generalist_agent
+    2. GREETINGS & PLEASANTRIES → transfer_to_agent(agent_name='generalist_agent')
+       Match: "Hello", "Hi", "Hey", "How are you?", "Good morning", "Good afternoon", "Good evening"
+       Match: "Thanks", "Thank you", "Appreciate it", "Goodbye", "See you", "Take care"
 
-    **ROUTING RULES:**
-    1. If it's a greeting, thank you, or simple pleasantry → ALWAYS use 'generalist_agent'
-    2. If it asks about "latest", "current", "recent", "2025", "today" → use 'interactive_planner_agent'
-    3. If it explicitly requests research/analysis → use 'interactive_planner_agent'
-    4. If it's a simple factual question from general knowledge → use 'generalist_agent'
-    5. When uncertain → use 'interactive_planner_agent'
+    3. SIMPLE FACTUAL QUESTIONS → transfer_to_agent(agent_name='generalist_agent')
+       Match: "What is X?", "Who is/wrote/invented X?", "Define X", "Explain X"
+       Examples: "What is 2+2?", "Who wrote Hamlet?", "Capital of France?", "Define photosynthesis"
 
-    Use transfer_to_agent function to route.
+    4. CURRENT/TIME-SENSITIVE RESEARCH → transfer_to_agent(agent_name='interactive_planner_agent')
+       Keywords: "latest", "current", "recent", "2025", "2024", "today", "this week", "trending", "news"
+       Examples: "latest AI trends", "current events", "recent developments"
+
+    5. EXPLICIT RESEARCH REQUESTS → transfer_to_agent(agent_name='interactive_planner_agent')
+       Keywords: "research", "investigate", "analyze", "compare", "find out", "look up", "search for"
+       Examples: "research quantum computing", "analyze the market", "compare React vs Vue"
+
+    6. DEFAULT CASE → transfer_to_agent(agent_name='generalist_agent')
+       If no keywords from rules 4-5 match, route to generalist for general knowledge response
+
+    CRITICAL: You MUST call transfer_to_agent() immediately. Do NOT answer questions yourself.
+    CRITICAL: Even if the question is about YOU, delegate it - do not self-describe.
     """,
     # CRITICAL: Use sub_agents pattern, NOT AgentTool
     # This is the official ADK pattern for dispatchers/coordinators
     # Reference: docs/adk/llms-full.txt lines 2248-2262
     sub_agents=[
+        generalist_agent,           # Simple Q&A specialist (FIRST = default priority)
         interactive_planner_agent,  # Research specialist
-        generalist_agent,           # Simple Q&A specialist
     ],
     before_agent_callback=before_agent_callback,
     after_agent_callback=agent_network_tracking_callback,
