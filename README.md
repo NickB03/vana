@@ -1,4 +1,4 @@
-# 🚀 Vana - Virtual Autonomous Network Agents
+# Vana - Multi-Agent AI Platform
 
 <div align="center">
 
@@ -11,11 +11,10 @@
 [![Deployment](https://github.com/NickB03/vana/actions/workflows/deploy.yml/badge.svg)](https://github.com/NickB03/vana/actions/workflows/deploy.yml)
 [![Security Scan](https://github.com/NickB03/vana/actions/workflows/security-scan.yml/badge.svg)](https://github.com/NickB03/vana/actions/workflows/security-scan.yml)
 [![Dependency Check](https://github.com/NickB03/vana/actions/workflows/dependency-check.yml/badge.svg)](https://github.com/NickB03/vana/actions/workflows/dependency-check.yml)
-[![Vercel](https://vitalit.vercel.app/api/deployment-badge?projectName=vana&teamName=nickb03)](https://vercel.com/nickb03/vana)
 
-**Multi-Agent AI Research System Built on Google's Agent Development Kit**
+**Multi-Agent AI Platform Built on Google's Agent Development Kit**
 
-Transform complex research tasks into comprehensive reports with AI agents working collaboratively
+Production-ready platform that orchestrates specialized AI agents for complex tasks—research, analysis, code generation, and automation with real-time streaming.
 
 [🚀 Quick Start](#-quick-start) • [🤖 How It Works](#-how-it-works) • [✨ Features](#-key-features) • [🏗️ Architecture](#️-architecture) • [📚 Documentation](#-documentation)
 
@@ -25,30 +24,26 @@ Transform complex research tasks into comprehensive reports with AI agents worki
 
 ## 📑 Table of Contents
 
-- [🎯 Overview](#-overview)
+- [🎯 What is Vana?](#-what-is-vana)
 - [🤖 How It Works](#-how-it-works)
 - [✨ Key Features](#-key-features)
 - [🚀 Quick Start](#-quick-start)
 - [🏗️ Architecture](#️-architecture)
-- [🔐 Security Features](#-security-features)
+- [🔐 Security](#-security)
 - [📚 API Reference](#-api-reference)
 - [💻 Development](#-development)
 - [⚡ AI Model Configuration](#-ai-model-configuration)
 - [🧪 Testing](#-testing)
 - [🚢 Deployment](#-deployment)
 - [⚙️ CI/CD Pipeline](#️-cicd-pipeline)
-- [🛣️ Roadmap](#️-roadmap)
-- [📚 Documentation](#-documentation)
 - [🤝 Contributing](#-contributing)
 - [📄 License](#-license)
 
 ---
 
-## 🎯 Overview
+## 🎯 What is Vana?
 
-**Vana** is a comprehensive multi-agent AI research platform that transforms complex research questions into well-sourced reports. Built on Google's Agent Development Kit (ADK), Vana orchestrates 8 specialized AI agents that work collaboratively to deliver professional-grade research in minutes.
-
-### 🌟 What Makes Vana Special?
+**Vana** is a multi-agent AI platform that orchestrates specialized AI agents to tackle complex tasks collaboratively. Built on Google's Agent Development Kit (ADK), Vana provides a production-ready foundation for AI-powered applications requiring research, analysis, code generation, and intelligent automation.
 
 <div align="center">
 
@@ -56,25 +51,27 @@ Transform complex research tasks into comprehensive reports with AI agents worki
 
 </div>
 
-- **🧠 Google ADK Foundation**: Built on Google's enterprise-grade Agent Development Kit for reliability and scalability
-- **🤖 8 Specialized AI Agents**: Each agent has specific expertise - from planning and research to quality assurance and report generation
-- **⚡ Real-time Streaming**: Watch your research come together with live updates via Server-Sent Events (SSE)
-- **🔐 Enterprise Security**: OAuth2/JWT authentication, role-based access, and secure session management
-- **📊 Production Quality**: Comprehensive testing suite with 342+ tests ensuring reliability and performance
+### 🌟 Core Capabilities
 
-### 🎯 Perfect For
+- **🧠 Google ADK Foundation**: Built on Google's Agent Development Kit for reliability and scalability
+- **🤖 Specialized AI Agents**: Multiple agents with distinct expertise working in parallel
+- **⚡ Real-time Streaming**: Live updates via Server-Sent Events (SSE) for responsive user experiences
+- **🔐 Production Security**: Comprehensive authentication (JWT/OAuth2/Firebase) with role-based access control
+- **📊 Battle-Tested**: 342+ tests ensuring reliability and performance in production environments
 
-- **Researchers** who need comprehensive literature reviews and analysis
-- **Analysts** requiring multi-source data synthesis and reporting  
-- **Students** working on research papers and academic projects
-- **Professionals** needing market research, competitive analysis, or technical documentation
-- **Developers** building AI-powered research tools and applications
+### 🎯 Use Cases
+
+- **Research Applications** - Multi-source information gathering, synthesis, and comprehensive reporting
+- **Data Analysis** - Parallel processing of complex datasets with intelligent agent coordination
+- **Code Generation** - AI-assisted development with specialized agents for different programming tasks
+- **Content Creation** - Collaborative AI workflows for documentation, articles, and technical writing
+- **Automation Pipelines** - Intelligent task orchestration with autonomous agent coordination
 
 ---
 
 ## 🤖 How It Works
 
-Vana uses a two-phase approach that combines human oversight with AI automation for optimal results:
+Vana uses a two-phase approach combining human oversight with AI automation for optimal results:
 
 <div align="center">
 
@@ -83,18 +80,18 @@ Vana uses a two-phase approach that combines human oversight with AI automation 
 </div>
 
 ### Phase 1: Interactive Planning (1-2 minutes)
-1. **You describe** your research need in natural language
-2. **AI creates a structured plan** breaking down your request into research sections
+1. **You describe** your task in natural language
+2. **AI creates a structured plan** breaking down your request into actionable steps
 3. **You review and approve** the plan, making any adjustments needed
-4. **Research begins** with your approval
+4. **Execution begins** with your approval
 
-### Phase 2: Autonomous Research (3-5 minutes)
-1. **8 AI agents activate** - each with specialized roles and capabilities
+### Phase 2: Autonomous Execution (3-5 minutes)
+1. **Specialized agents activate** - each with distinct roles and capabilities
 2. **Parallel execution** - agents work simultaneously for maximum efficiency
 3. **Quality assurance** - built-in evaluation and refinement processes
-4. **Complete report delivered** - properly formatted with citations and sources
+4. **Complete results delivered** - properly formatted with citations and sources
 
-### Meet Your AI Research Team
+### Your AI Agent Team
 
 <div align="center">
 
@@ -102,59 +99,52 @@ Vana uses a two-phase approach that combines human oversight with AI automation 
 
 </div>
 
-**🎯 Team Leader**: Coordinates the entire research process and manages task distribution
+**🎯 Team Leader**: Coordinates the entire process and manages task distribution
 
-**📋 Planning Team**: Creates research strategies and organizes report structure
-- Plan Generator: Develops comprehensive research strategies
-- Section Planner: Structures and organizes content flow
+**📋 Planning Team**: Creates strategies and organizes workflow structure
+- Plan Generator: Develops comprehensive task strategies
+- Section Planner: Structures and organizes execution flow
 
-**🔍 Research Team**: Executes the actual information gathering and analysis
+**🔍 Execution Team**: Performs the actual information gathering and processing
 - Section Researcher: Finds and processes relevant information
-- Enhanced Search: Performs deep research using advanced search techniques
+- Enhanced Search: Performs deep analysis using advanced techniques
 
-**✅ Quality Team**: Ensures accuracy and completeness of research
+**✅ Quality Team**: Ensures accuracy and completeness
 - Research Evaluator: Validates information quality and relevance
 - Escalation Checker: Final quality control and consistency verification
 
-**📝 Report Writer**: Synthesizes all findings into a professional, well-cited report
+**📝 Report Writer**: Synthesizes all findings into professional, well-cited deliverables
 
 ---
 
 ## ✨ Key Features
 
 ### 🧠 **Powered by Google ADK & Modern AI Models**
-- **Enterprise-Grade Foundation**: Built on Google's Agent Development Kit for reliability and scale
-- **LiteLLM + OpenRouter (PRIMARY)**: Free, fast Qwen 3 Coder model for optimal performance
-- **Google Gemini (FALLBACK)**: Enterprise-grade Gemini 2.5 Pro/Flash when OpenRouter unavailable
+- **Google ADK Foundation**: Built on Google's Agent Development Kit for reliability and scale
+- **Primary Model**: Google Gemini 2.5 Flash for fast, stable AI processing
 - **Cloud-Native Design**: Seamless integration with Google Cloud Platform services
-- **Production Ready**: Comprehensive testing and monitoring for enterprise deployment
+- **Production Ready**: Comprehensive testing and monitoring for deployment
 
 ### 🤖 **Multi-Agent Intelligence**
-- **8 Specialized AI Agents**: Each agent optimized for specific research tasks
+- **Specialized AI Agents**: Each agent optimized for specific task types
 - **Parallel Processing**: Agents work simultaneously for maximum efficiency
 - **Quality Assurance**: Built-in evaluation, fact-checking, and refinement processes
 - **Intelligent Coordination**: Advanced orchestration ensures optimal task distribution
 
-### ⚡ **Smart AI Model Selection**
-- **PRIMARY: OpenRouter + Qwen 3 Coder**: Free, fast, and capable - automatically used when `OPENROUTER_API_KEY` is set
-- **FALLBACK: Google Gemini**: Enterprise-grade Gemini 2.5 Pro/Flash when OpenRouter unavailable
-- **Automatic Switching**: No configuration needed - system intelligently selects best available model
-- **Cost Optimization**: Free tier usage with OpenRouter, only uses paid Gemini models as fallback
-
-### 🔐 **Enterprise Security**
+### 🔐 **Production Security**
 - **Multiple Auth Methods**: OAuth2/JWT, Firebase Auth, API keys, or development mode
 - **Role-Based Access**: Fine-grained permissions and user isolation
 - **Data Protection**: End-to-end encryption, secure sessions, CORS protection
 - **Audit Trail**: Complete logging and monitoring of all activities
 
 ### ⚡ **Real-Time Experience**
-- **Live Updates**: Watch research progress with Server-Sent Events (SSE) streaming
-- **Interactive Planning**: Review and approve research plans before execution
+- **Live Updates**: Watch progress with Server-Sent Events (SSE) streaming
+- **Interactive Planning**: Review and approve plans before execution
 - **Session Persistence**: Resume work seamlessly across sessions and restarts
-- **Zero Memory Leaks**: Optimized for long-running production deployments
+- **Memory Optimized**: Zero memory leaks for long-running production deployments
 
 ### 📊 **Professional Output**
-- **Comprehensive Reports**: Well-structured documents with proper citations
+- **Structured Results**: Well-organized deliverables with proper citations
 - **Multiple Formats**: Support for various output formats and styles
 - **Source Tracking**: Full attribution and reference management
 - **Quality Control**: Multi-stage validation ensures accuracy and completeness
@@ -163,12 +153,12 @@ Vana uses a two-phase approach that combines human oversight with AI automation 
 
 ## 🚀 Quick Start
 
-Get Vana running locally in just a few minutes:
+Get Vana running locally in under 5 minutes:
 
 ### Prerequisites
 
 ```bash
-# Required tools (install these first)
+# Required tools
 - Python 3.10+
 - uv (Python package manager)
 - Google Cloud SDK
@@ -195,19 +185,13 @@ gcloud config set project your-project-id
 Create `.env.local` in the root directory:
 
 ```bash
-# Required API keys
+# Required: Google Cloud and search capabilities
 BRAVE_API_KEY=your-brave-search-api-key
 GOOGLE_CLOUD_PROJECT=your-project-id
-
-# PRIMARY Model Provider (Recommended - FREE tier)
-OPENROUTER_API_KEY=your-openrouter-key  # Enables free Qwen 3 Coder model
 
 # Authentication (choose one)
 JWT_SECRET_KEY=your-jwt-secret-key    # For JWT auth
 # OR set AUTH_REQUIRE_SSE_AUTH=false for development
-
-# Optional: Force Gemini instead of OpenRouter
-# USE_OPENROUTER=false  # Only if you want to use Gemini fallback
 ```
 
 ### Launch Vana
@@ -221,15 +205,11 @@ make dev-backend
 # • Interactive Docs: http://localhost:8000/docs
 # • Health Check: http://localhost:8000/health
 
-# ✨ Pro Tip: Check your model configuration
-# • With OPENROUTER_API_KEY: Uses FREE Qwen 3 Coder (recommended)
-# • Without: Falls back to Gemini models (requires Google Cloud auth)
-
-# Optional: Start ADK playground for testing
+# Optional: Start ADK playground for agent testing
 make playground  # http://localhost:8501
 ```
 
-### Your First Research Request
+### Your First Request
 
 ```bash
 # Test with curl
@@ -246,112 +226,33 @@ curl -X POST http://localhost:8000/api/run_sse \
   }'
 ```
 
-🚀 **That's it!** Your research request will be processed by 8 AI agents working in parallel.
+🚀 **That's it!** Your request will be processed by specialized AI agents working in parallel.
 
 ---
 
 ## 🏗️ Architecture
 
-### System Architecture
+### System Overview
 
-```mermaid
-graph TB
-    subgraph "Client Applications"
-        WEB[Web Interface]
-        API[API Clients]
-        SDK[SDKs]
-    end
-    
-    subgraph "Security Layer"
-        AUTH[Authentication Service]
-        OAUTH[OAuth2/JWT]
-        FB[Firebase Auth]
-        IAM[Google Cloud IAM]
-    end
-    
-    subgraph "API Gateway"
-        FAST[FastAPI Server]
-        WS[WebSocket Handler]
-        SSE[SSE Broadcaster]
-        CORS[CORS Protection]
-    end
-    
-    subgraph "Google ADK Core"
-        ADK[ADK Runtime]
-        ORCH[Agent Orchestrator]
-        TOOLS[Tool Registry]
-        MEM[Memory Store]
-    end
-    
-    subgraph "Agent Fleet"
-        RA[Research Agent]
-        PA[Planning Agent]
-        AA[Analysis Agent]
-        CA[Composer Agent]
-        EA[Evaluator Agent]
-    end
-    
-    subgraph "AI Models"
-        LITE["PRIMARY: OpenRouter/Qwen3 Coder (FREE)"]
-        GEM["FALLBACK: Gemini 2.5 Pro/Flash"]
-        EMB[Text Embeddings]
-    end
-    
-    subgraph "Data Services"
-        BRAVE[Brave Search API]
-        VS[Vector Store]
-        SS[Session Storage]
-        GCS[Cloud Storage]
-    end
-    
-    subgraph "Monitoring"
-        TRACE[Cloud Trace]
-        LOG[Cloud Logging]
-        METRIC[Cloud Monitoring]
-    end
-    
-    WEB --> AUTH
-    API --> AUTH
-    SDK --> AUTH
-    
-    AUTH --> OAUTH
-    AUTH --> FB
-    OAUTH --> IAM
-    
-    AUTH --> FAST
-    FAST --> CORS
-    FAST --> WS
-    FAST --> SSE
-    
-    FAST --> ADK
-    ADK --> ORCH
-    ADK --> TOOLS
-    ADK --> MEM
-    
-    ORCH --> RA
-    ORCH --> PA
-    ORCH --> AA
-    ORCH --> CA
-    ORCH --> EA
-    
-    RA --> LITE
-    RA --> GEM  
-    RA --> BRAVE
-    AA --> EMB
-    
-    ADK --> VS
-    ADK --> SS
-    SS --> GCS
-    
-    FAST --> TRACE
-    FAST --> LOG
-    FAST --> METRIC
-    
-    style ADK fill:#4285F4,color:#fff
-    style ORCH fill:#34A853,color:#fff
-    style AUTH fill:#EA4335,color:#fff
-    style FAST fill:#009485,color:#fff
-```
+Vana's architecture consists of three main layers:
+
+**1. API Gateway Layer** (FastAPI)
+- Request routing and validation
+- Authentication and authorization
+- SSE streaming coordination
+- Session management
+
+**2. ADK Orchestration Layer** (Google ADK)
+- Agent lifecycle management
+- Task distribution and coordination
+- Memory and state management
+- Tool registry and execution
+
+**3. Agent Execution Layer** (Specialized AI Agents)
+- Parallel task processing
+- Quality assurance and validation
+- Result synthesis and formatting
+- Real-time progress reporting
 
 ### Multi-Agent Workflow
 
@@ -362,52 +263,77 @@ sequenceDiagram
     participant API as FastAPI Gateway
     participant ADK as Google ADK
     participant Plan as Planning Agent
-    participant Research as Research Agent
+    participant Execute as Execution Agent
     participant Eval as Evaluator Agent
     participant Compose as Composer Agent
     participant Store as Storage
-    
+
     User->>Auth: Authenticate
     Auth-->>User: JWT Token
-    
-    User->>API: Research Request + JWT
+
+    User->>API: Task Request + JWT
     API->>API: Validate Token
     API->>ADK: Initialize Session
-    
-    ADK->>Plan: Create Research Plan
+
+    ADK->>Plan: Create Execution Plan
     Plan-->>User: Present Plan (via SSE)
     User->>API: Approve Plan
-    
-    loop Research Phase
-        API->>Research: Execute Research Task
-        Research->>Research: Search & Analyze
-        Research-->>User: Progress Updates (SSE)
-        Research->>Store: Save Results
+
+    loop Execution Phase
+        API->>Execute: Execute Task
+        Execute->>Execute: Process & Analyze
+        Execute-->>User: Progress Updates (SSE)
+        Execute->>Store: Save Results
     end
-    
-    Research->>Eval: Evaluate Quality
-    
+
+    Execute->>Eval: Evaluate Quality
+
     alt Quality Check Failed
-        Eval->>Research: Request Refinement
-        Research->>Research: Refine Results
+        Eval->>Execute: Request Refinement
+        Execute->>Execute: Refine Results
     else Quality Check Passed
-        Eval->>Compose: Generate Report
+        Eval->>Compose: Generate Output
     end
-    
+
     Compose->>Compose: Format & Citations
-    Compose->>Store: Save Final Report
-    Compose-->>User: Deliver Report (SSE)
-    
+    Compose->>Store: Save Final Results
+    Compose-->>User: Deliver Results (SSE)
+
     API->>Store: Persist Session
 ```
 
+### Technology Stack
+
+**Backend Services**
+```
+FastAPI (API Gateway)
+  ↓
+Google ADK (Agent Orchestration)
+  ↓
+Gemini 2.5 Flash (AI Processing)
+  ↓
+Google Cloud Platform (Infrastructure)
+```
+
+**Data Services**
+- **Cloud Storage**: Session persistence and file storage
+- **Brave Search API**: Web search capabilities
+- **Vector Store**: RAG data for context-aware responses
+- **Cloud Logging**: Centralized logging and monitoring
+
+**Security Services**
+- **OAuth2/JWT**: Token-based authentication
+- **Firebase Auth**: Managed authentication service
+- **Google Cloud IAM**: Identity and access management
+- **CORS Protection**: Cross-origin security
+
 ---
 
-## 🔐 Security Features
+## 🔐 Security
 
-Vana implements enterprise-grade security to protect your research data and ensure safe operation:
+Vana implements production-grade security to protect your data and ensure safe operation:
 
-### 🔑 **Multiple Authentication Options**
+### 🔑 **Authentication Options**
 - **OAuth2/JWT**: Industry-standard token-based authentication
 - **Firebase Auth**: Google's managed authentication service
 - **API Keys**: Simple key-based access for API clients
@@ -421,7 +347,7 @@ Vana implements enterprise-grade security to protect your research data and ensu
 
 ### 👥 **Access Control**
 - **Role-Based Permissions**: Fine-grained access control (RBAC)
-- **User Isolation**: Complete separation of user data and sessions  
+- **User Isolation**: Complete separation of user data and sessions
 - **Audit Trail**: Comprehensive logging of all activities
 - **Token Management**: Automatic refresh and secure token storage
 
@@ -434,7 +360,7 @@ Vana implements enterprise-grade security to protect your research data and ensu
 | Endpoint | Method | Auth | Description |
 |----------|--------|------|-------------|
 | `/health` | GET | ❌ | Health check and service status |
-| `/api/run_sse` | POST | ✅ | Execute research tasks with real-time streaming |
+| `/api/run_sse` | POST | ✅ | Execute tasks with real-time streaming |
 | `/api/apps/{app}/users/{user}/sessions` | GET/POST | ✅ | Manage user sessions |
 | `/auth/login` | POST | ❌ | Authenticate and receive JWT token |
 
@@ -445,7 +371,7 @@ Vana implements enterprise-grade security to protect your research data and ensu
 curl http://localhost:8000/health
 ```
 
-**Research Request:**
+**Task Request:**
 ```bash
 # With authentication
 curl -X POST http://localhost:8000/api/run_sse \
@@ -455,7 +381,7 @@ curl -X POST http://localhost:8000/api/run_sse \
     "appName": "app",
     "userId": "user123",
     "newMessage": {
-      "parts": [{"text": "Research the latest AI developments"}],
+      "parts": [{"text": "Your task description here"}],
       "role": "user"
     },
     "streaming": true
@@ -466,16 +392,16 @@ curl -X POST http://localhost:8000/api/run_sse \
 ```python
 import httpx
 
-# Simple research request
+# Simple task request
 response = httpx.post("http://localhost:8000/api/run_sse", json={
-    "appName": "app", 
+    "appName": "app",
     "userId": "user123",
-    "newMessage": {"parts": [{"text": "Your research topic"}], "role": "user"},
+    "newMessage": {"parts": [{"text": "Your task description"}], "role": "user"},
     "streaming": True
 })
 ```
 
-📖 **Complete API documentation available at:** `http://localhost:8000/docs` when running locally
+📖 **Complete API documentation:** `http://localhost:8000/docs` when running locally
 
 ---
 
@@ -487,7 +413,7 @@ response = httpx.post("http://localhost:8000/api/run_sse", json={
    ```bash
    # Install uv (Python package manager)
    curl -LsSf https://astral.sh/uv/install.sh | sh
-   
+
    # Install other tools
    brew install google-cloud-sdk node
    ```
@@ -502,7 +428,7 @@ response = httpx.post("http://localhost:8000/api/run_sse", json={
    ```bash
    # Copy example environment file
    cp .env.example .env.local
-   
+
    # Edit .env.local with your settings
    vim .env.local
    ```
@@ -515,12 +441,12 @@ make install
 
 # Run development server
 make dev-backend    # Backend only
-make dev-frontend   # Frontend only (when available)
+make dev-frontend   # Frontend only
 make dev           # Full stack
 
 # Development URLs
 # Backend API: http://localhost:8000
-# Frontend: http://localhost:3000 (under development)
+# Frontend: http://localhost:3000
 # API Docs: http://localhost:8000/docs
 # Health: http://localhost:8000/health
 ```
@@ -545,88 +471,41 @@ make test && make lint && make typecheck
 
 ## ⚡ AI Model Configuration
 
-Vana uses an intelligent two-tier AI model system that automatically selects the best available model for optimal performance and cost efficiency.
-
-### 🔄 How Model Selection Works
-
-The system automatically chooses models based on available configuration:
-
-1. **PRIMARY (Recommended)**: When `OPENROUTER_API_KEY` is set → Uses **LiteLLM + OpenRouter with Qwen 3 Coder (FREE)**
-2. **FALLBACK**: When no OpenRouter key → Uses **Google Gemini 2.5 Pro/Flash** (requires Google Cloud auth)
-
-### ⚙️ Configuration Options
-
-**Option 1: OpenRouter (Recommended - FREE)**
-```bash
-# .env.local
-OPENROUTER_API_KEY=sk-or-v1-your-key-here
-# That's it! System automatically uses OpenRouter
-```
-
-**Option 2: Force Gemini Models**
-```bash
-# .env.local
-OPENROUTER_API_KEY=sk-or-v1-your-key-here
-USE_OPENROUTER=false  # Explicitly disable OpenRouter
-```
-
-**Option 3: Gemini Only (No OpenRouter)**
-```bash
-# .env.local
-# No OPENROUTER_API_KEY set
-# System automatically falls back to Gemini
-```
-
-### 🆓 Why OpenRouter is Primary
-
-| Feature | OpenRouter + Qwen 3 Coder | Google Gemini |
-|---------|---------------------------|---------------|
-| **Cost** | **FREE** (no usage limits) | Pay-per-token |
-| **Speed** | **Fast** responses | Standard speed |
-| **Setup** | Just API key needed | Google Cloud auth required |
-| **Capability** | Excellent for code & research | Enterprise-grade |
+Vana uses **Google Gemini 2.5 Flash** as the primary AI model for fast, stable processing.
 
 ### 🔍 Model Details
 
-**PRIMARY: Qwen 3 Coder via OpenRouter**
-- **Model**: `openrouter/qwen/qwen-3-coder:free`
-- **Provider**: OpenRouter (via LiteLLM)
-- **Cost**: Free tier with no usage limits
-- **Use Cases**: Code generation, research, analysis
-- **Activation**: Automatic when `OPENROUTER_API_KEY` is present
-
-**FALLBACK: Google Gemini**
-- **Critic Model**: `gemini-2.5-pro` (planning, evaluation)
-- **Worker Model**: `gemini-2.5-flash` (research, content generation)
+**Primary Model: Google Gemini 2.5 Flash**
+- **Critic Model**: `gemini-2.5-flash` (planning, evaluation)
+- **Worker Model**: `gemini-2.5-flash` (execution, content generation)
 - **Provider**: Google Cloud Vertex AI
-- **Cost**: Pay-per-token pricing
-- **Use Cases**: Enterprise applications, high-scale deployments
-- **Activation**: When OpenRouter unavailable or explicitly disabled
+- **Characteristics**: Fast response times, stable performance, production-ready
+- **Authentication**: Google Cloud credentials via `gcloud auth application-default login`
 
-### 📊 Getting OpenRouter API Key
+### ⚙️ Configuration
 
-1. Visit [OpenRouter](https://openrouter.ai/)
-2. Sign up for a free account
-3. Generate an API key
-4. Add to your `.env.local` file as `OPENROUTER_API_KEY`
-5. Restart Vana - it will automatically use OpenRouter!
+The model is configured in `app/models.py`:
 
-### 🛠️ Troubleshooting
-
-**Check Your Current Model Configuration:**
-```bash
-# Start Vana and check the logs
-make dev-backend
-
-# Look for startup messages:
-# ✅ PRIMARY: Using OpenRouter with Qwen 3 Coder model (FREE tier)
-# ⚠️ FALLBACK: Using Gemini models (OpenRouter API key not configured)
+```python
+# Model constants
+CRITIC_MODEL = "gemini-2.5-flash"  # Planning and evaluation
+WORKER_MODEL = "gemini-2.5-flash"  # Execution and generation
 ```
 
-**Common Issues:**
-- **Invalid OpenRouter Key**: System falls back to Gemini automatically
-- **No Google Cloud Auth**: Set up `gcloud auth application-default login`
-- **Environment Variables**: Ensure `.env.local` is in the project root
+### 🛠️ Requirements
+
+To use Gemini models, ensure you have:
+
+1. **Google Cloud Project** with Vertex AI API enabled
+2. **Application Default Credentials** configured:
+   ```bash
+   gcloud auth application-default login
+   gcloud config set project your-project-id
+   ```
+3. **Environment Variables** in `.env.local`:
+   ```bash
+   GOOGLE_CLOUD_PROJECT=your-project-id
+   ```
 
 ---
 
@@ -634,16 +513,15 @@ make dev-backend
 
 ### Comprehensive Test Suite
 
-Vana includes a complete testing framework designed to ensure reliability and help developers understand the codebase:
+Vana includes a complete testing framework ensuring reliability and helping developers understand the codebase:
 
 #### Test Categories
 
-| Category | Purpose | Location |
-|----------|---------|----------|
-| **Unit Tests** | Test individual components in isolation | `tests/unit/` |
-| **Integration Tests** | Test component interactions and API endpoints | `tests/integration/` |
-| **Performance Tests** | Benchmark performance and detect memory leaks | `tests/performance/` |
-| **E2E Tests** | Full workflow testing from API to agent execution | `tests/e2e/` |
+| Category | Purpose | Location | Tests |
+|----------|---------|----------|-------|
+| **Unit Tests** | Test individual components in isolation | `tests/unit/` | 200+ |
+| **Integration Tests** | Test component interactions and APIs | `tests/integration/` | 100+ |
+| **Performance Tests** | Benchmark performance and detect memory leaks | `tests/performance/` | 40+ |
 
 #### Running Tests
 
@@ -661,7 +539,7 @@ uv run pytest --cov=app --cov-report=html tests/
 open htmlcov/index.html  # View coverage report
 ```
 
-#### Key Test Files for Understanding the System
+#### Key Test Files
 
 ```bash
 # Authentication system
@@ -679,27 +557,15 @@ tests/integration/test_sse_connections.py  # SSE API tests
 # Session management
 tests/integration/test_session_management.py  # Session persistence
 
-# Memory leak prevention
-tests/unit/test_sse_memory_leak_fixes.py     # Memory management tests
+# Memory management
+tests/unit/test_sse_memory_leak_fixes.py     # Memory leak prevention
 ```
 
-#### Writing Your Own Tests
+#### Test Coverage
 
-```python
-# Example test structure
-import pytest
-from app.agent import ResearchAgent
-
-@pytest.mark.asyncio
-async def test_research_agent():
-    """Test the research agent's ability to process queries."""
-    agent = ResearchAgent()
-    result = await agent.research("test query")
-    assert result is not None
-    assert "citations" in result
-```
-
-The test suite serves as living documentation - explore the tests to understand how each component works.
+- **Current Coverage**: 85%+
+- **Minimum Required**: 85%
+- **Goal**: 90%+
 
 ---
 
@@ -718,48 +584,22 @@ make backend               # Deploy to Cloud Run
 make backend IAP=true      # Deploy with IAP authentication
 ```
 
-### Production Architecture
+### Production Deployment
 
-```mermaid
-graph TB
-    subgraph "Load Balancing"
-        GLB[Global Load Balancer]
-        CDN[Cloud CDN]
-    end
-    
-    subgraph "Compute"
-        CR1[Cloud Run Instance 1<br/>1 vCPU, 512MB RAM]
-        CR2[Cloud Run Instance 2<br/>1 vCPU, 512MB RAM]
-        CRN[Cloud Run Instance N<br/>Auto-scaling]
-    end
-    
-    subgraph "Storage"
-        GCS[Cloud Storage<br/>Sessions]
-        VS[Vector Store<br/>RAG Data]
-        FB[Firestore<br/>User Data]
-    end
-    
-    subgraph "Security"
-        IAP[Identity-Aware Proxy]
-        FW[Cloud Armor]
-        KMS[Key Management]
-    end
-    
-    GLB --> CDN
-    CDN --> IAP
-    IAP --> FW
-    FW --> CR1
-    FW --> CR2
-    FW --> CRN
-    
-    CR1 --> GCS
-    CR2 --> VS
-    CRN --> FB
-    
-    CR1 --> KMS
-    CR2 --> KMS
-    CRN --> KMS
-```
+Vana is designed for cloud-native deployment on Google Cloud Platform:
+
+**Cloud Run** (Recommended)
+- Auto-scaling with 0-to-N instances
+- Pay-per-use pricing model
+- Integrated with Cloud CDN and Load Balancing
+- Built-in HTTPS and custom domains
+
+**Deployment Features**
+- **Auto-scaling**: Scales from 0 to N based on traffic
+- **High Availability**: Multi-region deployment support
+- **Security**: Identity-Aware Proxy (IAP) for authentication
+- **Monitoring**: Cloud Logging and Cloud Monitoring integration
+- **CI/CD**: Automated deployment via GitHub Actions
 
 ### CI/CD Pipeline
 
@@ -780,244 +620,62 @@ uvx agent-starter-pack setup-cicd \
 
 [![Performance Optimized](https://img.shields.io/badge/Performance-Optimized-brightgreen?style=flat-square&logo=github-actions)](https://github.com/NickB03/vana/actions/workflows/main-ci.yml)
 [![UV Package Manager](https://img.shields.io/badge/UV-Package%20Manager-4B9CD3?style=flat-square&logo=python)](https://github.com/astral-sh/uv)
-[![Dependencies](https://img.shields.io/badge/Dependencies-Grouped%20Sync-blue?style=flat-square)](https://github.com/NickB03/vana/blob/main/.github/workflows/main-ci.yml)
 
-Vana implements a **performance-optimized CI/CD pipeline** designed for reliability, security, and speed. Recent optimizations have achieved **33% faster builds**, **97%+ success rate**, and **90%+ cache hit rate**.
+Vana implements a **performance-optimized CI/CD pipeline** ensuring reliability, security, and speed:
 
-### 🚀 Major Performance Achievements
+### 🚀 Performance Achievements
 
-**🎯 Pipeline Performance:**
+**Pipeline Metrics:**
 - ⚡ **33% faster builds** (15-18 min → 10-12 min)
 - 📦 **50% faster dependency installation** with UV package manager
 - 🎯 **97%+ success rate** (improved from 92%)
 - 💾 **90%+ cache hit rate** (improved from 70%)
-- 🔄 **140% more concurrent jobs** (2-3 → 5-7 parallel)
 
-**🛠️ Key Optimizations:**
-- **UV Package Manager Integration** - Revolutionary Python dependency management
+**Key Optimizations:**
+- **UV Package Manager** - Revolutionary Python dependency management
 - **Smart Change Detection** - Only run tests for modified components
-- **Parallel Matrix Execution** - Concurrent testing across multiple categories
+- **Parallel Matrix Execution** - Concurrent testing across categories
 - **Multi-Layer Caching** - Enhanced caching with version-based invalidation
-- **Optimized Workflows** - Frontend-focused and full-stack testing pipelines
 
-### 🔄 Active Workflow Overview
+### 🔄 Active Workflows
 
 | Workflow | Purpose | Trigger | Duration | Status |
 |----------|---------|---------|----------|--------|
-| **CI-Fixed (Primary)** | Frontend-focused validation | Push, PR | **8-10 min** ⚡ | [![CI](https://github.com/NickB03/vana/actions/workflows/ci-fixed.yml/badge.svg)](https://github.com/NickB03/vana/actions/workflows/ci-fixed.yml) |
-| **Local Build** | Full-stack development testing | Push, PR | **10-12 min** ⚡ | [![Build](https://github.com/NickB03/vana/actions/workflows/local-build.yml/badge.svg)](https://github.com/NickB03/vana/actions/workflows/local-build.yml) |
+| **CI-Fixed** | Frontend-focused validation | Push, PR | 8-10 min | [![CI](https://github.com/NickB03/vana/actions/workflows/ci-fixed.yml/badge.svg)](https://github.com/NickB03/vana/actions/workflows/ci-fixed.yml) |
+| **Local Build** | Full-stack testing | Push, PR | 10-12 min | [![Build](https://github.com/NickB03/vana/actions/workflows/local-build.yml/badge.svg)](https://github.com/NickB03/vana/actions/workflows/local-build.yml) |
 | **Security Scan** | Vulnerability detection | Weekly, Push | ~5 min | [![Security](https://github.com/NickB03/vana/actions/workflows/security-scan.yml/badge.svg)](https://github.com/NickB03/vana/actions/workflows/security-scan.yml) |
-| **Dependency Check** | Package security validation | Weekly | ~3 min | [![Dependencies](https://github.com/NickB03/vana/actions/workflows/dependency-check.yml/badge.svg)](https://github.com/NickB03/vana/actions/workflows/dependency-check.yml) |
+| **Dependency Check** | Package security | Weekly | ~3 min | [![Dependencies](https://github.com/NickB03/vana/actions/workflows/dependency-check.yml/badge.svg)](https://github.com/NickB03/vana/actions/workflows/dependency-check.yml) |
 
-### 🏗️ Optimized Pipeline Architecture
+### 🛡️ Quality Gates
 
-```mermaid
-graph TB
-    subgraph "⚡ Performance Layer"
-        CACHE[Enhanced Caching]
-        UV[UV Package Manager]
-        GROUPS[Dependency Groups]
-    end
-    
-    subgraph "🔍 Detection & Validation"
-        DETECT[Change Detection]
-        SMOKE[Smoke Tests ⚡]
-    end
-    
-    subgraph "🧪 Parallel Testing Matrix"
-        BACKEND[Backend Tests]
-        FRONTEND[Frontend Tests]
-        SECURITY[Security Scan]
-    end
-    
-    subgraph "🔗 Integration Layer"
-        INTEGRATION[Integration Tests]
-        STATUS[CI Status Report]
-    end
-    
-    CACHE --> UV
-    UV --> GROUPS
-    GROUPS --> DETECT
-    DETECT --> SMOKE
-    SMOKE --> BACKEND
-    SMOKE --> FRONTEND
-    SMOKE --> SECURITY
-    BACKEND --> INTEGRATION
-    FRONTEND --> INTEGRATION
-    SECURITY --> STATUS
-    INTEGRATION --> STATUS
-    
-    style CACHE fill:#e8f5e8
-    style UV fill:#4B9CD3,color:#fff
-    style GROUPS fill:#009485,color:#fff
-    style STATUS fill:#34A853,color:#fff
-```
+Every change must pass these production-ready quality gates:
 
-### 📦 UV Package Manager Integration
+- ✅ **Code Quality**: Ruff linting, MyPy type checking
+- ✅ **Comprehensive Testing**: 342+ unit/integration tests with parallel execution
+- ✅ **Security Scanning**: Bandit + Safety vulnerability detection
+- ✅ **Memory Safety**: SSE memory leak detection and prevention
+- ✅ **Production Verification**: Backend/frontend startup and health checks
 
-**Revolutionary dependency management with grouped sync:**
+### 📦 UV Package Manager
+
+**Revolutionary dependency management:**
 
 ```bash
-# ⚡ Optimized Commands (40% faster)
-uv sync --group dev --group lint    # Backend development + linting
-uv sync --no-dev --quiet           # Production dependencies only
-uv sync --dev                      # Full development environment
+# Fast, parallel dependency resolution
+uv sync --group dev --group lint    # 50% faster than pip
+uv sync --no-dev --quiet           # Production only
 
-# 🏗️ Dependency Groups
+# Dependency Groups
 [dependency-groups]
 dev = ["pytest", "pytest-asyncio", "pytest-cov", "httpx"]
 lint = ["ruff", "mypy", "bandit", "safety"]
-jupyter = ["jupyter", "ipykernel", "matplotlib"]
 ```
 
-**Benefits over traditional pip:**
-- **🚀 Parallel dependency resolution** vs sequential pip installs
-- **🔒 Lock file consistency** with `uv.lock` for reproducible builds
-- **💨 Native caching** eliminating pip cache configuration issues
-- **⚡ Group-based installs** only installing what's needed per job
-
-### 🎯 Pipeline Stages (Optimized Timing)
-
-#### Stage 1: Lightning-Fast Validation (< 3 minutes) ⚡
-- **🔍 Change Detection**: Smart path filtering to skip unnecessary jobs
-- **💨 Smoke Tests**: Parallel syntax validation and basic import checks
-- **📦 UV Cache Restoration**: Instant dependency cache hits
-
-#### Stage 2: Parallel Testing Matrix (5-7 minutes)
-- **🐍 Backend Tests**: 
-  - `lint`: `uv run ruff check` + `uv run mypy` (3 min)
-  - `unit`: `uv run pytest tests/unit/` (2 min)
-  - `integration`: `uv run pytest tests/integration/` (4 min)
-- **⚛️ Frontend Tests**: Node.js linting, TypeScript, build verification (6 min)
-- **🛡️ Security Scan**: Bandit + Safety vulnerability scanning (4 min)
-
-#### Stage 3: Full Integration (3-5 minutes)
-- **🔗 Integration Tests**: Live backend API testing with enhanced auth handling
-- **📊 CI Status**: Comprehensive results summary with intelligent failure detection
-
-### 🛡️ Enhanced Quality Gates
-
-Every change must pass these **optimized quality gates**:
-
-- ✅ **Fast Code Quality**: Ruff linting (30s), MyPy type checking (45s)
-- ✅ **Comprehensive Testing**: 342+ unit/integration tests with parallel execution
-- ✅ **Advanced Security**: Bandit + Safety scanning with JSON reporting
-- ✅ **Memory Leak Prevention**: SSE memory leak detection and resolution
-- ✅ **Production Readiness**: Backend/frontend startup and health verification
-
-### 📊 Performance Metrics (After Optimization)
-
-| Metric | Before | **After** | Improvement |
-|--------|--------|-----------|-------------|
-| **Pipeline Duration** | 15-18 min | **10-12 min** | ⚡ **33% faster** |
-| **Dependency Install** | 6-8 min | **3-4 min** | ⚡ **50% faster** |
-| **Success Rate** | 92% | **>97%** | 🎯 **5% higher** |
-| **Cache Hit Rate** | 70% | **>90%** | 📈 **20% better** |
-| **Test Coverage** | 78% | **>85%** | 📋 **Improved** |
-
-### 🚨 Critical Fixes Applied
-
-**Recent stability improvements:**
-
-1. **🔧 Backend Linting Dependencies**: Fixed `uv sync --group dev --group lint` for proper linting tool availability
-2. **🔐 Integration Test Auth**: Enhanced authentication error handling for CI environments  
-3. **💾 Frontend Memory Leaks**: Resolved SSE connection memory leaks in production deployments
-4. **🔍 Google Cloud Logging**: Added graceful handling for `log_struct` errors in CI
-5. **📦 UV Cache Optimization**: Removed conflicting pip cache configurations
-
-### 🔧 Local Development Commands
-
-Run the **same optimized checks** locally:
-
-```bash
-# ⚡ Quick validation (matches CI smoke tests)
-uv sync --no-dev --quiet && python -c "import app.server"
-
-# 🧪 Full backend validation (matches CI matrix)
-uv sync --group dev --group lint
-uv run ruff check . --output-format=github
-uv run mypy . --no-error-summary
-uv run pytest tests/unit/ --maxfail=5
-uv run pytest tests/integration/ -v --tb=short -x
-
-# 🛡️ Security checks (matches security workflow)  
-uv run bandit -r app/ -f json
-uv run safety check --json
-
-# 🎯 All quality gates (production-ready validation)
-make test && make lint && make typecheck
-```
-
-### 🏷️ Workflow Configuration
-
-**Smart concurrency and caching:**
-
-```yaml
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-env:
-  UV_VERSION: '0.5.11'
-  CACHE_VERSION: 'v2'  # Increment to bust caches
-  PERFORMANCE_MODE: 'true'
-```
-
-### 📚 Documentation & Troubleshooting
-
-For detailed CI/CD documentation and maintenance:
-
-- **[Pipeline Configuration](/.github/workflows/main-ci.yml)** - Complete workflow source
-- **[UV Package Manager Guide](https://docs.astral.sh/uv/)** - Official UV documentation  
-- **[Performance Optimization](CHANGELOG.md)** - Recent improvements and metrics
-- **[Troubleshooting Guide](#-development)** - Common issues and local testing
-
----
-
-## 🛣️ Roadmap
-
-### Current: Research Platform ✅
-- **Multi-Agent Research System**: 8 specialized AI agents working collaboratively
-- **Google ADK Integration**: Full compatibility with ADK 1.8.0, LiteLLM, and modern AI models
-- **Production Ready**: Comprehensive security, testing, and monitoring
-- **Real-time Streaming**: Live updates with Server-Sent Events (SSE)
-
-### Next: Enhanced Frontend 🚧
-- **Phase 2: shadcn-based multi-agent frontend** - Modern, interactive interface for seamless research experiences
-
-### Future Enhancements 🔮
-- Additional agent specializations (code, data analysis, integration)
-- Enterprise features (team workspaces, admin dashboard)
-- Plugin ecosystem and custom agent development
-- Mobile applications and multi-platform support
-
-**Want to influence our roadmap?** [Open an issue](https://github.com/NickB03/vana/issues) or [start a discussion](https://github.com/NickB03/vana/discussions) to share your ideas!
-
----
-
-## 📚 Documentation
-
-### 🚀 Getting Started
-- **[Quick Start Guide](#-quick-start)** - Get running in minutes
-- **[How It Works](#-how-it-works)** - Understand the two-phase research process
-- **[API Reference](#-api-reference)** - Essential endpoints and examples
-
-### 🔧 For Developers
-- **[Development Setup](#-development)** - Local development environment
-- **[⚡ AI Model Configuration](#-ai-model-configuration)** - Understanding the two-tier model system
-- **[Testing Framework](#-testing)** - Comprehensive test suite and coverage
-- **[Deployment Guide](#-deployment)** - Production deployment options
-- **[Contributing Guidelines](CONTRIBUTING.md)** - How to contribute to Vana
-
-### 🏗️ Architecture & Advanced Topics
-- **[System Architecture](#️-architecture)** - Technical system design
-- **[Security Implementation](#-security-features)** - Authentication and data protection
-- **[Performance Details](CHANGELOG.md)** - Performance improvements and metrics
-
-### 💬 Community & Support
-- **[GitHub Issues](https://github.com/NickB03/vana/issues)** - Bug reports and feature requests
-- **[Discussions](https://github.com/NickB03/vana/discussions)** - Community Q&A and ideas
-- **[Interactive API Docs](http://localhost:8000/docs)** - Available when running locally
+**Benefits:**
+- 🚀 Parallel dependency resolution vs sequential pip
+- 🔒 Lock file consistency with `uv.lock`
+- 💨 Native caching eliminating configuration issues
+- ⚡ Group-based installs for targeted dependencies
 
 ---
 
@@ -1028,7 +686,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 ### Quick Contribution Steps
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing`)
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
 4. Run tests (`make test`)
 5. Submit a Pull Request
@@ -1061,10 +719,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
-**🚀 Transform Your Research with AI Agents**
+**🚀 Transform Complex Tasks with AI Agents**
 
-Vana makes comprehensive research accessible to everyone. Whether you're a student, researcher, analyst, or developer, our AI agents are ready to help you discover, analyze, and synthesize information like never before.
-
+Vana makes multi-agent AI accessible to everyone. Whether you're building research tools, analysis platforms, or intelligent automation systems, Vana provides the production-ready foundation you need.
 
 **Ready to get started?** [Jump to Quick Start ⬆️](#-quick-start)
 
