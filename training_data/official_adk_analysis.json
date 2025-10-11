@@ -1,0 +1,29 @@
+{
+  "sources": [
+    {
+      "name": "google/adk-samples",
+      "url": "https://github.com/google/adk-samples",
+      "description": "Official ADK sample projects",
+      "samples_analyzed": 0
+    },
+    {
+      "name": "GoogleCloudPlatform/agent-starter-pack",
+      "url": "https://github.com/GoogleCloudPlatform/agent-starter-pack",
+      "description": "Production-ready agent templates",
+      "templates_analyzed": 0
+    }
+  ],
+  "patterns_by_type": {
+    "agent_definitions": [],
+    "tool_integrations": [],
+    "orchestration": [],
+    "structured_outputs": [],
+    "callbacks": []
+  },
+  "sample_projects": [],
+  "metadata": {
+    "extracted_at": "2025-10-10T21:16:47.100256",
+    "version": "1.0",
+    "source": "official_google_adk"
+  }
+}

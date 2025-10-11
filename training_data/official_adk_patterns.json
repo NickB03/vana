@@ -1,0 +1,118 @@
+{
+  "patterns": [
+    {
+      "name": "react_agent_pattern",
+      "category": "agent_definition",
+      "source": "official_google_adk",
+      "description": "ReAct (Reasoning + Acting) agent pattern from Google ADK",
+      "use_cases": [
+        "Interactive problem-solving",
+        "Multi-step reasoning",
+        "Tool-augmented agents"
+      ],
+      "best_practices": [
+        "Use for agents that need to reason before acting",
+        "Combine with tools for external capabilities",
+        "Implement clear thinking steps"
+      ],
+      "official_examples": [
+        "adk_base template",
+        "customer_service sample",
+        "financial_advisor sample"
+      ],
+      "official_usage_count": 3
+    },
+    {
+      "name": "rag_agent_pattern",
+      "category": "agent_definition",
+      "source": "official_google_adk",
+      "description": "Retrieval-Augmented Generation pattern for knowledge-grounded responses",
+      "use_cases": [
+        "Question answering with documents",
+        "Knowledge base integration",
+        "Context-aware responses"
+      ],
+      "best_practices": [
+        "Use Vertex AI Search for document retrieval",
+        "Implement vector search for semantic matching",
+        "Ground responses in retrieved context"
+      ],
+      "official_examples": [
+        "academic_research sample",
+        "adk_live template (multimodal RAG)"
+      ],
+      "official_usage_count": 2
+    },
+    {
+      "name": "multi_agent_orchestration",
+      "category": "orchestration",
+      "source": "official_google_adk",
+      "description": "Coordinating multiple specialized agents for complex workflows",
+      "use_cases": [
+        "Marketing agency (multiple specialist agents)",
+        "ML engineering workflows",
+        "Complex business processes"
+      ],
+      "best_practices": [
+        "Assign clear responsibilities to each agent",
+        "Use SequentialAgent for ordered workflows",
+        "Implement agent communication via state",
+        "Use AgentTool for delegation"
+      ],
+      "official_examples": [
+        "marketing_agency sample (multi-agent)",
+        "ml_engineer sample (workflow orchestration)"
+      ],
+      "official_usage_count": 2
+    },
+    {
+      "name": "live_multimodal_agent",
+      "category": "agent_definition",
+      "source": "official_google_adk",
+      "description": "Real-time multimodal agent with Gemini Live API",
+      "use_cases": [
+        "Voice interactions",
+        "Video processing",
+        "Real-time multimodal understanding"
+      ],
+      "best_practices": [
+        "Use Gemini Live API for multimodal inputs",
+        "Handle streaming audio/video",
+        "Implement real-time response generation"
+      ],
+      "official_examples": [
+        "adk_live template"
+      ],
+      "official_usage_count": 1
+    },
+    {
+      "name": "production_deployment_pattern",
+      "category": "deployment",
+      "source": "official_google_adk",
+      "description": "Production-ready deployment on Google Cloud",
+      "use_cases": [
+        "Cloud Run deployment",
+        "Agent Engine hosting",
+        "CI/CD automation"
+      ],
+      "best_practices": [
+        "Use Cloud Run for serverless deployment",
+        "Implement CI/CD with Terraform",
+        "Enable observability and monitoring",
+        "Use Vertex AI evaluation"
+      ],
+      "official_examples": [
+        "agent-starter-pack templates",
+        "All sample projects include deployment configs"
+      ],
+      "official_usage_count": 2
+    }
+  ],
+  "metadata": {
+    "source": "official_google_adk",
+    "extracted_at": "2025-10-10T21:16:50.110122",
+    "version": "1.0",
+    "repositories_analyzed": 2,
+    "samples_analyzed": 0
+  }
+}

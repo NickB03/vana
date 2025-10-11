@@ -1,0 +1,165 @@
+{
+  "core_agent_patterns": [
+    {
+      "name": "ReAct_Agent",
+      "source": "official_adk_samples",
+      "description": "Reasoning and Acting agent pattern",
+      "implementations": [
+        "customer_service",
+        "adk_base",
+        "langgraph_base_react"
+      ],
+      "key_features": [
+        "Iterative reasoning",
+        "Action execution",
+        "Observation processing",
+        "Tool usage"
+      ],
+      "best_for": [
+        "Interactive problem solving",
+        "Multi-step tasks",
+        "Tool-augmented agents"
+      ]
+    },
+    {
+      "name": "RAG_Pattern",
+      "source": "official_adk_samples",
+      "description": "Retrieval-Augmented Generation for knowledge grounding",
+      "implementations": [
+        "academic_research",
+        "rag",
+        "adk_live",
+        "agentic_rag"
+      ],
+      "key_features": [
+        "Document retrieval",
+        "Context injection",
+        "Grounded responses",
+        "Citation tracking"
+      ],
+      "best_for": [
+        "Question answering",
+        "Knowledge bases",
+        "Document-grounded agents"
+      ]
+    },
+    {
+      "name": "Multi_Agent_Collaboration",
+      "source": "official_adk_samples",
+      "description": "Multiple specialized agents working together",
+      "implementations": [
+        "marketing_agency",
+        "camel",
+        "crewai_coding_crew"
+      ],
+      "key_features": [
+        "Agent specialization",
+        "Task delegation",
+        "Collaborative problem solving",
+        "Result synthesis"
+      ],
+      "best_for": [
+        "Complex workflows",
+        "Team simulations",
+        "Multi-perspective analysis"
+      ]
+    },
+    {
+      "name": "Sequential_Orchestration",
+      "source": "official_adk_samples",
+      "description": "Sequential agent execution with state passing",
+      "implementations": [
+        "machine_learning_engineering",
+        "data_engineering"
+      ],
+      "key_features": [
+        "Ordered execution",
+        "State management",
+        "Output chaining",
+        "Dependency handling"
+      ],
+      "best_for": [
+        "Workflows",
+        "Pipelines",
+        "Multi-stage processing"
+      ]
+    },
+    {
+      "name": "Multimodal_Agent",
+      "source": "official_adk_samples",
+      "description": "Agent handling multiple input modalities",
+      "implementations": [
+        "image_scoring",
+        "adk_live",
+        "realtime_conversational_agent"
+      ],
+      "key_features": [
+        "Image understanding",
+        "Audio processing",
+        "Video analysis",
+        "Cross-modal reasoning"
+      ],
+      "best_for": [
+        "Rich media applications",
+        "Voice interfaces",
+        "Visual AI"
+      ]
+    }
+  ],
+  "integration_patterns": [
+    {
+      "name": "Vertex_AI_Search_Integration",
+      "source": "agent-starter-pack",
+      "description": "Integration with Vertex AI Search for RAG",
+      "pattern": "agentic_rag template",
+      "configuration": [
+        "Search engine setup",
+        "Index configuration",
+        "Query optimization"
+      ],
+      "best_practices": [
+        "Index structure",
+        "Query formulation",
+        "Result ranking"
+      ]
+    },
+    {
+      "name": "Cloud_Run_Deployment",
+      "source": "agent-starter-pack",
+      "description": "Serverless deployment on Cloud Run",
+      "pattern": "adk_base template",
+      "components": [
+        "Docker containerization",
+        "CI/CD pipeline",
+        "Terraform IaC"
+      ],
+      "best_practices": [
+        "Resource optimization",
+        "Auto-scaling",
+        "Cost management"
+      ]
+    },
+    {
+      "name": "Gemini_Live_API",
+      "source": "agent-starter-pack",
+      "description": "Real-time multimodal interaction with Gemini",
+      "pattern": "adk_live template",
+      "features": [
+        "Streaming audio/video",
+        "Real-time processing",
+        "Multimodal inputs"
+      ],
+      "best_practices": [
+        "Latency optimization",
+        "Error handling",
+        "State management"
+      ]
+    }
+  ],
+  "metadata": {
+    "pattern_count": 8,
+    "source": "comprehensive_official_catalog",
+    "version": "2.0",
+    "extracted_at": "2025-10-10T21:16:50.133663"
+  }
+}

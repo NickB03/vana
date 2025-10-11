@@ -40,7 +40,7 @@ graph TB
 
     subgraph "Google ADK Service (Port 8080)"
         ADKCore["ADK Core Engine"]
-        ResearchAgents["8 Research Agents<br/>- Team Leader<br/>- Plan Generator<br/>- Section Planner<br/>- Research Agent<br/>- Content Drafting<br/>- Review & Editing<br/>- Section Writer<br/>- Overall Coordinator"]
+        ResearchAgents["Research Agents<br/>- Team Leader<br/>- Plan Generator<br/>- Section Planner<br/>- Research Agent<br/>- Content Drafting<br/>- Review & Editing<br/>- Section Writer<br/>- Overall Coordinator"]
         ADKEndpoint["/run_sse Endpoint"]
     end
 
@@ -105,7 +105,7 @@ graph TB
 1. **Frontend (Port 3000)**: React hooks manage EventSource connections
 2. **Next.js Proxy**: Secure JWT handling, no tokens in URLs
 3. **FastAPI Backend (Port 8000)**: SSE broadcasting, session management
-4. **Google ADK (Port 8080)**: 8 specialized research agents
+4. **Google ADK (Port 8080)**: Specialized research agents
 5. **Storage**: SQLite for session persistence
 
 ---
@@ -492,7 +492,7 @@ graph TB
 
 **Event Categories:**
 
-1. **Agent Network**: Real-time coordination between 8 research agents
+1. **Agent Network**: Real-time coordination in multi-agent system
 2. **Research**: Content streaming from Google ADK (`research_update`, `research_complete`)
 3. **Chat Actions**: User interactions (regenerate, edit, delete, feedback)
 4. **AI Thought Process**: Transparent AI reasoning steps
@@ -506,7 +506,7 @@ graph TB
 flowchart LR
     subgraph "Data Sources"
         User[User Input]
-        ADK[ADK Agents<br/>8 Specialists]
+        ADK[ADK Agents<br/>Specialists]
     end
 
     subgraph "Transformation Layer"
@@ -661,7 +661,7 @@ graph LR
         ADKEndpoint["/run_sse"]
         ADKCore["ADK Core"]
 
-        subgraph "8 Research Agents"
+        subgraph "Research Agents"
             TL[Team Leader]
             PG[Plan Generator]
             SP[Section Planner]
@@ -727,7 +727,7 @@ graph LR
 **ADK Integration Details:**
 
 1. **Request Format**: ADK-compliant structure with `newMessage.role` and `parts`
-2. **Agent Coordination**: 8 specialized agents process research sequentially
+2. **Agent Coordination**: Multi-agent system processes research sequentially
 3. **Streaming**: SSE chunks parsed from `content.parts[].text` structure
 4. **Accumulation**: Text chunks joined into final research content
 5. **Completion**: `[DONE]` marker triggers final events
@@ -833,7 +833,7 @@ This comprehensive diagram set covers:
 5. **Event Taxonomy**: All 30+ event types categorized
 6. **Data Flow**: End-to-end data transformation pipeline
 7. **Memory Management**: Cleanup mechanisms and TTL policies
-8. **ADK Integration**: 8-agent research workflow
+8. **ADK Integration**: Multi-agent research workflow
 9. **Error Handling**: Comprehensive error recovery flows
 10. **Endpoint Reference**: Key API endpoints and ports
 

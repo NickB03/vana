@@ -1,0 +1,105 @@
+{
+  "orchestration_patterns": [
+    {
+      "name": "sequential_pipeline",
+      "type": "SequentialAgent",
+      "structure": "SequentialAgent with sub_agents=[agent1, agent2, agent3]",
+      "use_case": "Linear workflow with dependencies",
+      "example": "research_pipeline: section_planner \u2192 section_researcher \u2192 loop \u2192 report_composer",
+      "state_flow": "Each agent reads from previous agent's output_key",
+      "best_practices": [
+        "Use output_key to pass state between agents",
+        "Order matters - dependencies must execute first",
+        "Use include_contents='none' to isolate context",
+        "Name agents descriptively for debugging"
+      ],
+      "data_flow": {
+        "agent1": {
+          "output_key": "step1_result"
+        },
+        "agent2": {
+          "instruction": "Process {{ step1_result }}"
+        },
+        "agent3": {
+          "instruction": "Finalize {{ step2_result }}"
+        }
+      },
+      "example_from_vana": "research_pipeline in agents/vana/agent.py"
+    },
+    {
+      "name": "iterative_refinement_loop",
+      "type": "LoopAgent",
+      "structure": "LoopAgent with escalation control",
+      "use_case": "Iterative improvement until quality threshold met",
+      "example": "evaluator \u2192 checker (escalate if pass) \u2192 enhancer",
+      "state_flow": "Loop continues until EscalationChecker sets escalate=True",
+      "best_practices": [
+        "Set max_iterations to prevent infinite loops",
+        "Use custom BaseAgent for escalation logic",
+        "Store evaluation results in session state",
+        "Clear exit conditions"
+      ],
+      "control_flow": {
+        "step1": "Evaluate quality",
+        "step2": "Check if pass \u2192 escalate to exit",
+        "step3": "If fail \u2192 enhance and repeat"
+      },
+      "example_from_vana": "iterative_refinement_loop in research_pipeline"
+    },
+    {
+      "name": "hierarchical_delegation",
+      "type": "AgentTool",
+      "structure": "Parent agent with AgentTool wrapped sub-agents",
+      "use_case": "Parent coordinates, delegates to specialists",
+      "example": "interactive_planner_agent \u2192 AgentTool(plan_generator)",
+      "best_practices": [
+        "Parent decides WHEN to delegate",
+        "Sub-agents are specialists for specific tasks",
+        "Use AgentTool ONLY for agents, not functions",
+        "Sub-agents should have include_contents='none'"
+      ],
+      "delegation_flow": {
+        "parent": "Receives result \u2192 continues conversation",
+        "delegation": "Calls AgentTool(specialist)",
+        "specialist": "Executes task in isolation \u2192 returns result"
+      },
+      "example_from_vana": "interactive_planner_agent delegates to plan_generator"
+    },
+    {
+      "name": "multi_agent_research_workflow",
+      "type": "Composite",
+      "structure": "Combination of Sequential, Loop, and delegation patterns",
+      "use_case": "Complex research workflow with planning, execution, evaluation, refinement",
+      "architecture": {
+        "layer1": "interactive_planner_agent (delegation)",
+        "layer2": "research_pipeline (sequential)",
+        "layer3": [
+          "section_planner",
+          "section_researcher",
+          "iterative_refinement_loop (loop)",
+          "report_composer"
+        ],
+        "layer4_loop": [
+          "research_evaluator",
+          "escalation_checker",
+          "enhanced_search_executor"
+        ]
+      },
+      "data_flow": {
+        "plan": "plan_generator \u2192 research_plan",
+        "structure": "section_planner \u2192 report_sections",
+        "research": "section_researcher \u2192 section_research_findings",
+        "evaluation": "research_evaluator \u2192 research_evaluation",
+        "refinement": "enhanced_search_executor \u2192 updated findings",
+        "final": "report_composer \u2192 final_cited_report \u2192 final_report_with_citations"
+      },
+      "example_from_vana": "Complete Vana research agent system"
+    }
+  ],
+  "metadata": {
+    "source": "vana_agent_architecture",
+    "extracted_at": "2025-10-10T21:16:47.064513",
+    "version": "1.0",
+    "description": "ADK orchestration and coordination patterns"
+  }
+}

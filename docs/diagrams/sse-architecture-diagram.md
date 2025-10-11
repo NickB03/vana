@@ -59,7 +59,7 @@ graph TB
     subgraph "ADK Service - Port 8080"
         subgraph "Google Agent Development Kit"
             ADKRouter[ADK /run_sse Endpoint]
-            Agents[8 Research Agents<br/>Team Leader, Planner, etc.]
+            Agents[Research Agents<br/>Team Leader, Planner, etc.]
             LLM[Gemini 2.5 Pro Flash]
 
             ADKRouter --> Agents
@@ -181,7 +181,7 @@ stateDiagram-v2
 - **SSE Broadcaster**: Event streaming, session-based routing
 
 ### ADK Layer (Port 8080)
-- **Agent Network**: 8 specialized research agents
+- **Agent Network**: Specialized research agents
 - **LLM Integration**: Gemini 2.5 Pro Flash
 - **Streaming**: SSE response generation
 - **Orchestration**: Multi-agent coordination

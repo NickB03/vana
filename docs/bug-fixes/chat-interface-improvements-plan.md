@@ -11,7 +11,7 @@ This document provides a comprehensive investigation and implementation plan for
 ## Critical Context
 
 ### Architecture
-- **Backend:** FastAPI (port 8000) → Google ADK (port 8080) → 8 Research Agents
+- **Backend:** FastAPI (port 8000) → Google ADK (port 8080) → Research Agents
 - **Frontend:** Next.js + React + TypeScript + shadcn/ui + Prompt-Kit components
 - **Real-time:** Server-Sent Events (SSE) for streaming responses
 - **State Management:** Zustand store for chat state

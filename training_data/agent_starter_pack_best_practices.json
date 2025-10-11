@@ -1,0 +1,107 @@
+{
+  "practices": [
+    {
+      "category": "code_modification",
+      "principle": "Minimal change principle",
+      "description": "Modify only code tied to the requested change",
+      "rules": [
+        "Keep surrounding structure intact",
+        "Preserve existing comments",
+        "Maintain original formatting",
+        "Don't refactor unrelated code"
+      ]
+    },
+    {
+      "category": "pattern_matching",
+      "principle": "Mirror existing patterns",
+      "description": "Match repository's existing patterns before introducing new logic",
+      "process": [
+        "Inspect nearby modules first",
+        "Match naming conventions",
+        "Follow templating patterns",
+        "Respect directory placement conventions"
+      ],
+      "search_locations": [
+        "src/base_template/",
+        "src/deployment_targets/",
+        ".github/",
+        ".cloudbuild/",
+        "docs/"
+      ]
+    },
+    {
+      "category": "cross_file_coordination",
+      "principle": "Maintain configuration alignment",
+      "description": "Keep config, CI/CD, and docs synchronized",
+      "files_to_coordinate": [
+        "templateconfig.yaml",
+        "cookiecutter.json",
+        "Rendered templates",
+        "CI/CD manifests (GitHub Actions + Cloud Build)",
+        "Documentation"
+      ],
+      "validation": "Changes to one must propagate to related files"
+    },
+    {
+      "category": "layer_management",
+      "principle": "Respect four-layer hierarchy",
+      "description": "Place edits in minimal layer and propagate overrides",
+      "layer_order": [
+        "base template (lowest priority)",
+        "deployment target",
+        "frontend type",
+        "agent template (highest priority)"
+      ],
+      "rules": [
+        "Higher layers override lower layers",
+        "Don't duplicate logic across layers",
+        "Use conditionals for variant-specific code"
+      ]
+    },
+    {
+      "category": "testing",
+      "principle": "Multi-combination validation",
+      "description": "Test across agent types, targets, and features",
+      "test_matrix": {
+        "dimensions": [
+          "agent_types",
+          "deployment_targets",
+          "feature_flags"
+        ],
+        "minimum_coverage": "Test all primary combinations",
+        "watch_for": [
+          "Hardcoded URLs",
+          "Missing conditionals",
+          "Dependency mismatches"
+        ]
+      }
+    }
+  ],
+  "pre_submit_checklist": [
+    {
+      "item": "Jinja blocks balanced",
+      "validation": "All {% if %}, {% for %}, {% raw %} properly closed"
+    },
+    {
+      "item": "Variables spelled correctly",
+      "validation": "No typos in cookiecutter.variable_name references"
+    },
+    {
+      "item": "Deployment overrides reviewed",
+      "validation": "Check src/deployment_targets/ for conflicts"
+    },
+    {
+      "item": "CI/CD synchronization",
+      "validation": "GitHub Actions and Cloud Build workflows match"
+    },
+    {
+      "item": "Representative testing",
+      "validation": "Tested across agent and feature combinations"
+    }
+  ],
+  "metadata": {
+    "source": "agent-starter-pack-official-guidance",
+    "version": "1.0",
+    "extracted_at": "2025-10-10T21:16:50.155298"
+  }
+}

@@ -2,7 +2,7 @@
   <rect width="1200" height="700" fill="#ffffff"/>
   
   <text x="600" y="40" font-family="Arial" font-size="32" font-weight="bold" text-anchor="middle">Your AI Research Team</text>
-  <text x="600" y="70" font-family="Arial" font-size="18" text-anchor="middle" fill="#5f6368">8 specialized agents working together</text>
+  <text x="600" y="70" font-family="Arial" font-size="18" text-anchor="middle" fill="#5f6368">Specialized agents working together</text>
   
   <!-- Team Leader -->
   <g>

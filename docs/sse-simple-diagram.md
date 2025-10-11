@@ -16,7 +16,7 @@ flowchart TB
     end
 
     subgraph ADK["🤖 Google ADK (Port 8080)"]
-        Agents[8 Research Agents<br/>Team Leader, Planner, etc.]
+        Agents[Research Agents<br/>Team Leader, Planner, etc.]
         Pipeline[Research Pipeline<br/>Plan → Research → Report]
     end
 
@@ -47,7 +47,7 @@ flowchart TB
 1. **User sends message** → React component
 2. **POST request** → Creates/updates session, triggers research
 3. **Backend proxies** → ADK service starts research
-4. **Research executes** → 8 agents work through pipeline
+4. **Research executes** → Agents work through pipeline
 5. **Events stream** → ADK sends progress updates
 6. **Broadcaster distributes** → Events go to all subscribers
 7. **SSE connection** → Frontend receives real-time updates

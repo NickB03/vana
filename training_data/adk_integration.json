@@ -1,0 +1,60 @@
+{
+  "integration_patterns": [
+    {
+      "name": "fastapi_adk_proxy",
+      "category": "integration",
+      "architecture": "FastAPI backend proxies to ADK agents on port 8080",
+      "flow": "Frontend \u2192 FastAPI (8000) \u2192 ADK (8080) \u2192 SSE stream",
+      "endpoints": {
+        "run": "/apps/vana/users/{user_id}/sessions/{session_id}/run",
+        "method": "GET",
+        "response_type": "text/event-stream"
+      },
+      "implementation": {
+        "1_receive_request": "FastAPI endpoint receives GET request",
+        "2_create_session": "Create or retrieve ADK session",
+        "3_invoke_agent": "Call ADK agent with user query",
+        "4_stream_response": "Stream ADK events as SSE to frontend",
+        "5_extract_content": "Parse ADK events and extract content",
+        "6_broadcast": "Broadcast extracted content via SSE"
+      },
+      "critical_patterns": [
+        "Extract from both text and functionResponse parts",
+        "Accumulate content before broadcasting",
+        "Handle async streaming with proper error handling",
+        "Maintain session state across requests"
+      ]
+    },
+    {
+      "name": "sse_event_streaming",
+      "category": "integration",
+      "pattern": "Server-Sent Events for real-time updates",
+      "event_types": [
+        "research_update: Main content stream",
+        "research_sources: Citation sources",
+        "agent_network: Agent coordination events",
+        "error: Error messages"
+      ],
+      "implementation": {
+        "event_format": "data: {json}\\n\\n",
+        "content_type": "text/event-stream",
+        "headers": {
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive"
+        }
+      },
+      "best_practices": [
+        "Use try/except for error handling",
+        "Send heartbeat events to prevent timeout",
+        "Properly close streams on completion",
+        "Handle client disconnection gracefully"
+      ]
+    }
+  ],
+  "metadata": {
+    "source": "vana_fastapi_integration",
+    "extracted_at": "2025-10-10T21:16:47.064515",
+    "version": "1.0",
+    "description": "FastAPI + ADK + SSE integration patterns"
+  }
+}

@@ -1,0 +1,216 @@
+{
+  "patterns": [
+    {
+      "name": "basic_llm_agent",
+      "category": "agent_definition",
+      "code": "LlmAgent(\n    model=config.worker_model,\n    name=\"agent_name\",\n    description=\"Agent description\",\n    instruction=\"Detailed instructions for the agent...\"\n)",
+      "description": "Standard LLM agent with model, name, and instructions",
+      "use_cases": [
+        "Simple Q&A",
+        "Single-task execution",
+        "Tool usage"
+      ],
+      "best_practices": [
+        "Use descriptive names that explain the agent's purpose",
+        "Clear, detailed instruction prompts",
+        "Specify output_key for state management",
+        "Set include_contents='none' to isolate context when needed"
+      ],
+      "example_from_vana": "plan_generator, section_planner, research_evaluator"
+    },
+    {
+      "name": "agent_tool_wrapper",
+      "category": "tool_integration",
+      "code": "tools=[AgentTool(sub_agent)]",
+      "description": "Wrap sub-agents as tools for hierarchical execution",
+      "use_cases": [
+        "Multi-agent coordination",
+        "Delegation patterns",
+        "Parent-child agent relationships"
+      ],
+      "best_practices": [
+        "Use AgentTool ONLY for sub-agents",
+        "Use regular functions for external APIs",
+        "NEVER nest AgentTool calls (causes Gemini API errors)",
+        "Set include_contents='none' on AgentTool-wrapped agents to prevent context pollution"
+      ],
+      "antipatterns": [
+        {
+          "bad": "plan_generator = LlmAgent(tools=[AgentTool(another_agent), brave_search])",
+          "good": "plan_generator = LlmAgent(tools=[brave_search])",
+          "reason": "AgentTool wrapped agents cannot have nested tools - violates Gemini conversation requirements",
+          "error": "Google Gemini API 400: function call turn must come immediately after user turn"
+        }
+      ],
+      "example_from_vana": "interactive_planner_agent uses AgentTool(plan_generator)"
+    },
+    {
+      "name": "event_extraction_critical",
+      "category": "event_processing",
+      "code": "for part in content.get('parts', []):\n    # Extract text parts\n    text = part.get('text')\n    if text:\n        accumulated_content.append(text)\n\n    # Extract functionResponse parts (CRITICAL!)\n    function_response = part.get('functionResponse')\n    if function_response and isinstance(function_response, dict):\n        result = function_response.get('response', {}).get('result')\n        if result:\n            accumulated_content.append(result)",
+      "description": "CRITICAL: Extract from BOTH text AND functionResponse parts",
+      "use_cases": [
+        "SSE streaming",
+        "Agent tool outputs",
+        "Research plans from plan_generator",
+        "Any AgentTool wrapped function results"
+      ],
+      "best_practices": [
+        "Always check BOTH text and functionResponse",
+        "Use defensive .get() calls",
+        "Log extraction for debugging",
+        "Validate nested structure before accessing"
+      ],
+      "antipatterns": [
+        {
+          "bad": "text = part.get('text')\\nif text: content.append(text)",
+          "good": "# Check both text AND functionResponse",
+          "reason": "Research plans and agent outputs come from functionResponse, not text",
+          "symptom": "Research plans don't show up, agent outputs invisible to users",
+          "reference": "docs/adk/ADK-Event-Extraction-Guide.md"
+        }
+      ],
+      "severity": "CRITICAL",
+      "example_from_vana": "agents/vana/agent.py - plan_generator returns via functionResponse"
+    },
+    {
+      "name": "sequential_agent_pipeline",
+      "category": "orchestration",
+      "code": "research_pipeline = SequentialAgent(\n    name=\"research_pipeline\",\n    description=\"Executes research workflow\",\n    sub_agents=[\n        section_planner,\n        section_researcher,\n        iterative_refinement_loop,\n        report_composer\n    ]\n)",
+      "description": "Execute sub-agents in sequential order",
+      "use_cases": [
+        "Linear workflows with dependencies",
+        "Multi-stage processing",
+        "Pipeline orchestration"
+      ],
+      "best_practices": [
+        "Use output_key to pass state between agents",
+        "Order matters - dependencies must execute first",
+        "Name agents descriptively for debugging",
+        "Use callbacks for monitoring"
+      ],
+      "state_flow": "Each agent reads from previous agent's output_key in session state",
+      "example_from_vana": "research_pipeline in agents/vana/agent.py"
+    },
+    {
+      "name": "loop_agent_with_escalation",
+      "category": "orchestration",
+      "code": "LoopAgent(\n    name=\"iterative_refinement_loop\",\n    max_iterations=config.max_search_iterations,\n    sub_agents=[\n        research_evaluator,\n        EscalationChecker(name=\"escalation_checker\"),\n        enhanced_search_executor\n    ]\n)",
+      "description": "Iterative execution with escalation-based exit",
+      "use_cases": [
+        "Iterative refinement",
+        "Quality improvement loops",
+        "Retry with enhancement patterns"
+      ],
+      "best_practices": [
+        "Set max_iterations to prevent infinite loops",
+        "Use custom BaseAgent for escalation logic",
+        "Store evaluation results in session state",
+        "Clear escalation conditions"
+      ],
+      "escalation_pattern": "EscalationChecker yields Event(actions=EventActions(escalate=True)) to exit loop",
+      "example_from_vana": "iterative_refinement_loop in research_pipeline"
+    },
+    {
+      "name": "custom_base_agent",
+      "category": "agent_definition",
+      "code": "class EscalationChecker(BaseAgent):\n    def __init__(self, name: str):\n        super().__init__(name=name)\n\n    async def _run_async_impl(\n        self, ctx: InvocationContext\n    ) -> AsyncGenerator[Event, None]:\n        evaluation = ctx.session.state.get(\"research_evaluation\")\n        if evaluation and evaluation.get(\"grade\") == \"pass\":\n            yield Event(author=self.name, actions=EventActions(escalate=True))\n        else:\n            yield Event(author=self.name)",
+      "description": "Custom agent with specific control flow logic",
+      "use_cases": [
+        "Loop control",
+        "Conditional execution",
+        "Custom business logic",
+        "State-based decisions"
+      ],
+      "best_practices": [
+        "Inherit from BaseAgent",
+        "Implement _run_async_impl",
+        "Always yield Event (with or without actions)",
+        "Access state via ctx.session.state"
+      ],
+      "example_from_vana": "EscalationChecker for loop exit control"
+    },
+    {
+      "name": "structured_output_schema",
+      "category": "output_validation",
+      "code": "class Feedback(BaseModel):\n    grade: Literal[\"pass\", \"fail\"]\n    comment: str\n    follow_up_queries: list[SearchQuery] | None = None\n\nagent = LlmAgent(\n    output_schema=Feedback,\n    output_key=\"research_evaluation\"\n)",
+      "description": "Type-safe structured outputs with Pydantic",
+      "use_cases": [
+        "Validated outputs",
+        "Type safety",
+        "Structured data extraction",
+        "JSON schema validation"
+      ],
+      "best_practices": [
+        "Use Pydantic BaseModel",
+        "Provide Field descriptions",
+        "Use Literal for enums",
+        "Store in state with output_key"
+      ],
+      "example_from_vana": "Feedback model for research_evaluator"
+    },
+    {
+      "name": "callback_pattern",
+      "category": "state_management",
+      "code": "def collect_research_sources_callback(callback_context: CallbackContext) -> None:\n    session = callback_context._invocation_context.session\n    sources = callback_context.state.get(\"sources\", {})\n\n    for event in session.events:\n        # Process events...\n\n    callback_context.state[\"sources\"] = sources\n\nagent = LlmAgent(\n    after_agent_callback=collect_research_sources_callback\n)",
+      "description": "Process agent results and manage state via callbacks",
+      "use_cases": [
+        "Post-processing outputs",
+        "State management",
+        "Logging and monitoring",
+        "SSE broadcasting"
+      ],
+      "best_practices": [
+        "Use before_agent_callback for setup",
+        "Use after_agent_callback for processing",
+        "Access state via callback_context.state",
+        "Access session events via callback_context._invocation_context.session"
+      ],
+      "example_from_vana": "collect_research_sources_callback for citation tracking"
+    },
+    {
+      "name": "tool_integration",
+      "category": "tool_integration",
+      "code": "def brave_search(query: str) -> str:\n    '''Search the web using Brave Search API.'''\n    # Implementation...\n    return results\n\nagent = LlmAgent(\n    tools=[brave_search]\n)",
+      "description": "Integrate external tools and functions",
+      "use_cases": [
+        "Web search",
+        "API calls",
+        "Database queries",
+        "External services"
+      ],
+      "best_practices": [
+        "Use clear function names",
+        "Provide detailed docstrings",
+        "Type hints for all parameters",
+        "Return serializable data"
+      ],
+      "example_from_vana": "brave_search tool for web research"
+    },
+    {
+      "name": "state_management_pattern",
+      "category": "state_management",
+      "code": "# Agent 1 writes to state\nagent1 = LlmAgent(\n    output_key=\"research_plan\"\n)\n\n# Agent 2 reads from state via instruction template\nagent2 = LlmAgent(\n    instruction=\"Execute the plan: {{ research_plan }}\"\n)",
+      "description": "Share state between agents using output_key and template interpolation",
+      "use_cases": [
+        "Agent-to-agent data passing",
+        "Workflow coordination",
+        "Context sharing",
+        "Pipeline state management"
+      ],
+      "best_practices": [
+        "Use descriptive output_key names",
+        "Access state in instructions with {{ key }}",
+        "Optional access with {{ key? }}",
+        "Store structured data in state"
+      ],
+      "example_from_vana": "research_plan passed from plan_generator to section_researcher"
+    }
+  ],
+  "metadata": {
+    "source": "vana_codebase",
+    "extracted_at": "2025-10-10T21:16:47.064500",
+    "version": "1.0",
+    "description": "ADK agent patterns extracted from Vana project"
+  }
+}

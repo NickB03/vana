@@ -1,0 +1,122 @@
+{
+  "antipatterns": [
+    {
+      "name": "missing_functionresponse_extraction",
+      "severity": "critical",
+      "category": "event_processing",
+      "symptom": "Research plans don't show up, agent outputs invisible",
+      "cause": "Only extracting from text parts, missing functionResponse",
+      "fix": "Extract from BOTH text AND functionResponse parts",
+      "detection": "Check if AgentTool wrapped functions are used - they return via functionResponse",
+      "code_smell": "for part in parts: if 'text' in part: ...",
+      "correct_pattern": "Check both part.get('text') AND part.get('functionResponse')",
+      "impact": "User-facing bug - core functionality broken",
+      "references": [
+        "docs/adk/ADK-Event-Extraction-Guide.md"
+      ],
+      "example": "plan_generator outputs research plan via functionResponse, not text"
+    },
+    {
+      "name": "nested_agent_tool_calls",
+      "severity": "high",
+      "category": "agent_definition",
+      "symptom": "Google Gemini API 400 error: 'function call turn must come immediately after user turn'",
+      "cause": "AgentTool wrapped agent has tools parameter with nested AgentTools or any tools",
+      "fix": "Remove tools parameter from agents that will be wrapped in AgentTool",
+      "detection": "Look for tools=[...] inside an agent that is itself used in AgentTool(agent)",
+      "code_smell": "plan_generator = LlmAgent(tools=[brave_search]); parent = LlmAgent(tools=[AgentTool(plan_generator)])",
+      "correct_pattern": "plan_generator = LlmAgent(); parent = LlmAgent(tools=[AgentTool(plan_generator), brave_search])",
+      "impact": "Runtime error - prevents agent execution",
+      "references": [
+        "agents/vana/agent.py:252-258"
+      ],
+      "gemini_requirement": "Function calls must come immediately after user turn, no nested calls in AgentTool conversation"
+    },
+    {
+      "name": "missing_defensive_gets",
+      "severity": "medium",
+      "category": "error_handling",
+      "symptom": "KeyError when processing events",
+      "cause": "Assuming nested structure exists without validation",
+      "fix": "Use .get() with defaults for all nested access",
+      "detection": "Look for event['content']['parts'] or part['functionResponse']['response']['result']",
+      "code_smell": "result = part['functionResponse']['response']['result']",
+      "correct_pattern": "func_resp = part.get('functionResponse'); result = func_resp.get('response', {}).get('result') if func_resp else None",
+      "impact": "Runtime error - crashes event processing",
+      "best_practice": "Always use defensive .get() calls for nested structures"
+    },
+    {
+      "name": "broadcasting_inside_loop",
+      "severity": "low",
+      "category": "performance",
+      "symptom": "Excessive SSE events, performance degradation",
+      "cause": "Broadcasting inside the parts loop instead of after accumulation",
+      "fix": "Accumulate all content first, then broadcast once",
+      "detection": "Look for broadcast/SSE calls inside the parts iteration loop",
+      "code_smell": "for part in parts: content.append(...); await broadcast(...)",
+      "correct_pattern": "for part in parts: content.append(...); # After loop: await broadcast(...)",
+      "impact": "Performance issue - unnecessary network traffic",
+      "best_practice": "Batch updates and broadcast once per event"
+    },
+    {
+      "name": "missing_max_iterations",
+      "severity": "medium",
+      "category": "orchestration",
+      "symptom": "Infinite loops, runaway agent execution",
+      "cause": "LoopAgent without max_iterations limit",
+      "fix": "Always set max_iterations on LoopAgent",
+      "detection": "LoopAgent(...) without max_iterations parameter",
+      "code_smell": "LoopAgent(sub_agents=[...])",
+      "correct_pattern": "LoopAgent(max_iterations=10, sub_agents=[...])",
+      "impact": "Operational issue - resource exhaustion",
+      "best_practice": "Always set reasonable max_iterations for LoopAgent"
+    },
+    {
+      "name": "unclear_escalation_logic",
+      "severity": "low",
+      "category": "orchestration",
+      "symptom": "Loops don't exit when expected, unclear control flow",
+      "cause": "Complex or implicit escalation conditions",
+      "fix": "Use dedicated EscalationChecker agent with clear logic",
+      "detection": "Escalation logic buried in multi-purpose agents",
+      "code_smell": "Combined evaluation + escalation in single agent",
+      "correct_pattern": "Separate agents: evaluator + EscalationChecker + executor",
+      "impact": "Maintainability issue - unclear control flow",
+      "best_practice": "Single responsibility - dedicated agent for escalation decisions",
+      "example_from_vana": "EscalationChecker as separate agent in iterative_refinement_loop"
+    },
+    {
+      "name": "missing_output_key",
+      "severity": "medium",
+      "category": "state_management",
+      "symptom": "State not accessible to downstream agents",
+      "cause": "Agent produces output but doesn't specify output_key",
+      "fix": "Always specify output_key for agents that produce data for other agents",
+      "detection": "Agent in SequentialAgent without output_key, but next agent needs its output",
+      "code_smell": "Agent produces data but output_key not set",
+      "correct_pattern": "LlmAgent(..., output_key='result_name')",
+      "impact": "Integration issue - data not accessible",
+      "best_practice": "Use descriptive output_key names for all data-producing agents"
+    },
+    {
+      "name": "include_contents_pollution",
+      "severity": "medium",
+      "category": "state_management",
+      "symptom": "Agent has too much context, slow or confused responses",
+      "cause": "Not setting include_contents='none' on isolated agents",
+      "fix": "Set include_contents='none' for agents that should have clean context",
+      "detection": "AgentTool wrapped agents without include_contents='none'",
+      "code_smell": "LlmAgent used in AgentTool without context isolation",
+      "correct_pattern": "LlmAgent(..., include_contents='none')",
+      "impact": "Performance + quality issue",
+      "best_practice": "Isolate context for sub-agents that don't need parent conversation",
+      "example_from_vana": "plan_generator uses include_contents='none' to start fresh"
+    }
+  ],
+  "metadata": {
+    "source": "vana_codebase_bugs_and_fixes",
+    "extracted_at": "2025-10-10T21:16:47.064509",
+    "version": "1.0",
+    "description": "Common ADK anti-patterns and bugs"
+  }
+}

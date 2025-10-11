@@ -1,0 +1,271 @@
+{
+  "architecture_patterns": [
+    {
+      "name": "templating_pipeline",
+      "category": "architecture",
+      "source": "agent-starter-pack",
+      "description": "Cookiecutter variable substitution and Jinja2 logic execution for project generation",
+      "components": [
+        "Cookiecutter variable substitution",
+        "Jinja2 logic execution",
+        "Templated file/directory names"
+      ],
+      "critical_rules": [
+        "Any failure in substitution, logic, or naming breaks project generation",
+        "Close every {% if %}, {% for %}, and {% raw %} block",
+        "Use {{ }} for substitutions and {% %} for control flow"
+      ],
+      "best_practices": [
+        "Trim whitespace with {%- / -%} to avoid extra newlines",
+        "Test Jinja blocks for balance",
+        "Validate variable spelling before rendering"
+      ]
+    },
+    {
+      "name": "four_layer_architecture",
+      "category": "architecture",
+      "source": "agent-starter-pack",
+      "description": "Hierarchical template layer system for configuration inheritance",
+      "layers": [
+        {
+          "name": "base_template",
+          "path": "src/base_template/",
+          "purpose": "Global defaults for all projects",
+          "priority": 1
+        },
+        {
+          "name": "deployment_target",
+          "path": "src/deployment_targets/",
+          "purpose": "Environment-specific overrides (cloud_run, agent_engine)",
+          "priority": 2
+        },
+        {
+          "name": "frontend_type",
+          "purpose": "Frontend-specific configurations",
+          "priority": 3
+        },
+        {
+          "name": "agent_template",
+          "path": "agents/",
+          "purpose": "Self-contained agent templates with templateconfig.yaml",
+          "priority": 4
+        }
+      ],
+      "override_rules": [
+        "Place edits in the minimal layer",
+        "Propagate overrides where necessary",
+        "Respect layer priority order"
+      ],
+      "best_practices": [
+        "Coordinate updates across templateconfig.yaml, cookiecutter.json, and CI/CD",
+        "Wrap agent/target-specific logic in conditionals",
+        "Example: {% if cookiecutter.agent_name == 'adk_live' %}"
+      ]
+    },
+    {
+      "name": "template_processing_flow",
+      "category": "architecture",
+      "source": "agent-starter-pack",
+      "description": "Sequential template processing and overlay system",
+      "flow": [
+        {
+          "step": 1,
+          "action": "Copy base template",
+          "module": "src/cli/utils/template.py"
+        },
+        {
+          "step": 2,
+          "action": "Overlay deployment target files",
+          "source": "src/deployment_targets/"
+        },
+        {
+          "step": 3,
+          "action": "Apply agent-specific files",
+          "source": "agents/"
+        }
+      ],
+      "critical_files": [
+        "src/cli/utils/template.py",
+        "src/base_template/",
+        "src/deployment_targets/",
+        "agents/.template/templateconfig.yaml"
+      ]
+    }
+  ],
+  "deployment_patterns": [
+    {
+      "name": "service_account_pattern",
+      "category": "deployment",
+      "source": "agent-starter-pack",
+      "description": "Single app_sa service account with role-based permissions",
+      "pattern": {
+        "service_account": "app_sa",
+        "role_assignment": "app_sa_roles",
+        "consistency": "Reference the same account across all deployment targets"
+      },
+      "best_practices": [
+        "Maintain single app_sa across all targets",
+        "Assign roles via app_sa_roles list",
+        "Never create duplicate service accounts per target"
+      ]
+    },
+    {
+      "name": "cicd_sync_pattern",
+      "category": "deployment",
+      "source": "agent-starter-pack",
+      "description": "Synchronized GitHub Actions and Cloud Build workflows",
+      "components": {
+        "github_actions": {
+          "path": ".github/workflows/",
+          "variable_syntax": "${{ vars.X }}"
+        },
+        "cloud_build": {
+          "path": ".cloudbuild/",
+          "variable_syntax": "${_X}"
+        }
+      },
+      "sync_requirements": [
+        "Keep workflow steps synchronized",
+        "Match variable naming (account for different syntax)",
+        "Terraform-managed secrets must match in both",
+        "Test both CI/CD paths before deployment"
+      ],
+      "critical_rule": "Changes to one workflow must be mirrored in the other"
+    },
+    {
+      "name": "deployment_targets",
+      "category": "deployment",
+      "source": "agent-starter-pack",
+      "description": "Multiple deployment target support with environment-specific configs",
+      "targets": [
+        {
+          "name": "cloud_run",
+          "description": "Serverless container deployment on Cloud Run",
+          "use_case": "Scalable, serverless AI agents"
+        },
+        {
+          "name": "agent_engine",
+          "description": "Vertex AI Agent Engine deployment",
+          "use_case": "Managed agent infrastructure"
+        }
+      ],
+      "configuration": {
+        "override_directory": "src/deployment_targets/[target]/",
+        "template_variables": "cookiecutter.deployment_target",
+        "conditional_rendering": "{% if cookiecutter.deployment_target == 'cloud_run' %}"
+      }
+    }
+  ],
+  "development_patterns": [
+    {
+      "name": "cli_creation_pattern",
+      "category": "development",
+      "source": "agent-starter-pack",
+      "description": "Agent project creation via CLI",
+      "command": "uv run agent-starter-pack create <project-name>",
+      "options": {
+        "output_dir": "target directory for generated project",
+        "agent_template": "adk_base, adk_live, etc.",
+        "deployment_target": "cloud_run, agent_engine",
+        "features": "data_ingestion, frontend options"
+      },
+      "example": "uv run agent-starter-pack create myagent-$(date +%s) --output-dir target",
+      "best_practices": [
+        "Test multiple combinations of templates and targets",
+        "Validate generated project structure",
+        "Check for hardcoded URLs or missing conditionals"
+      ]
+    },
+    {
+      "name": "cicd_setup_pattern",
+      "category": "development",
+      "source": "agent-starter-pack",
+      "description": "Automated CI/CD pipeline setup",
+      "command": "agent-starter-pack setup_cicd",
+      "entry_point": "src/cli/commands/setup_cicd.py",
+      "configures": [
+        "GitHub Actions workflows",
+        "Cloud Build triggers",
+        "Terraform backend",
+        "Secret management"
+      ]
+    },
+    {
+      "name": "testing_combinations",
+      "category": "development",
+      "source": "agent-starter-pack",
+      "description": "Multi-dimensional testing strategy",
+      "test_matrix": {
+        "agent_types": [
+          "adk_live",
+          "adk_base"
+        ],
+        "deployment_targets": [
+          "cloud_run",
+          "agent_engine"
+        ],
+        "features": [
+          "data_ingestion",
+          "frontend_options"
+        ]
+      },
+      "validation_points": [
+        "Hardcoded URLs removed",
+        "Conditionals present for all variants",
+        "Dependencies match extras requirements",
+        "All Jinja blocks balanced"
+      ]
+    }
+  ],
+  "jinja2_patterns": [
+    {
+      "name": "control_flow_blocks",
+      "category": "templating",
+      "source": "agent-starter-pack",
+      "syntax": {
+        "if_block": "{% if condition %} ... {% endif %}",
+        "for_loop": "{% for item in list %} ... {% endfor %}",
+        "raw_block": "{% raw %} ... {% endraw %}"
+      },
+      "critical_rules": [
+        "ALWAYS close every block",
+        "Failure to close causes generation errors",
+        "Validate block nesting and balance"
+      ]
+    },
+    {
+      "name": "variable_substitution",
+      "category": "templating",
+      "source": "agent-starter-pack",
+      "syntax": {
+        "substitution": "{{ variable_name }}",
+        "control_flow": "{% logic %}"
+      },
+      "examples": [
+        "{{ cookiecutter.project_name }}",
+        "{{ cookiecutter.agent_name }}",
+        "{{ cookiecutter.deployment_target }}"
+      ]
+    },
+    {
+      "name": "whitespace_control",
+      "category": "templating",
+      "source": "agent-starter-pack",
+      "description": "Trim whitespace in rendered output",
+      "syntax": {
+        "trim_left": "{%-",
+        "trim_right": "-%}",
+        "trim_both": "{%- ... -%}"
+      },
+      "use_case": "Prevent extra newlines in generated files",
+      "example": "{%- if condition -%} content {%- endif -%}"
+    }
+  ],
+  "metadata": {
+    "source": "agent-starter-pack-official-guidance",
+    "extracted_from": "CLAUDE.md",
+    "extracted_at": "2025-10-10T21:16:50.155102",
+    "version": "1.0",
+    "pattern_count": 12
+  }
+}
