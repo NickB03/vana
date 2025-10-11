@@ -440,7 +440,7 @@ research_pipeline = SequentialAgent(
 interactive_planner_agent = LlmAgent(
     name="interactive_planner_agent",
     model=config.worker_model,
-    description="The primary research assistant. It collaborates with the user to create a research plan, and then executes it upon approval.",
+    description="Powerful research assistant that creates and executes detailed research plans to answer complex questions requiring web searches and current information.",
     instruction=f"""
     You are a research planning assistant. Your primary function is to convert ANY user request into a research plan.
 
@@ -463,5 +463,61 @@ interactive_planner_agent = LlmAgent(
     after_agent_callback=agent_network_tracking_callback,
 )
 
-# The root agent that ADK will load
-root_agent = interactive_planner_agent
+# Import generalist agent for dispatcher pattern
+from .generalist import generalist_agent
+
+# Official ADK Dispatcher Pattern (based on llms-full.txt lines 2235-2262)
+# This follows the exact coordinator pattern from official Google ADK documentation
+dispatcher_agent = LlmAgent(
+    name="dispatcher_agent",
+    model=config.worker_model,
+    description="Main entry point that routes user requests to appropriate specialist agents.",
+    instruction="""You are a request router. Route to 'generalist_agent' for simple interactions, or 'interactive_planner_agent' for research needs.
+
+    **CRITICAL ROUTING EXAMPLES - STUDY THESE CAREFULLY:**
+
+    ✅ CORRECT ROUTING TO 'generalist_agent':
+    - "Hello" → generalist_agent
+    - "Hi there!" → generalist_agent
+    - "How are you?" → generalist_agent
+    - "Good morning!" → generalist_agent
+    - "Thanks!" → generalist_agent
+    - "What is 2+2?" → generalist_agent
+    - "Who wrote Hamlet?" → generalist_agent
+    - "Define photosynthesis" → generalist_agent
+    - "What's the capital of France?" → generalist_agent
+
+    ✅ CORRECT ROUTING TO 'interactive_planner_agent':
+    - "What are the latest developments in AI?" → interactive_planner_agent
+    - "Research quantum computing trends in 2025" → interactive_planner_agent
+    - "What happened in the news today?" → interactive_planner_agent
+    - "Analyze the current economic situation" → interactive_planner_agent
+    - "Compare React vs Vue" → interactive_planner_agent
+
+    ❌ WRONG ROUTING (AVOID THESE MISTAKES):
+    - "Hello" → interactive_planner_agent ❌ WRONG! Greetings ALWAYS go to generalist_agent
+    - "How are you?" → interactive_planner_agent ❌ WRONG! Simple pleasantries go to generalist_agent
+    - "Thanks" → interactive_planner_agent ❌ WRONG! Thank you messages go to generalist_agent
+
+    **ROUTING RULES:**
+    1. If it's a greeting, thank you, or simple pleasantry → ALWAYS use 'generalist_agent'
+    2. If it asks about "latest", "current", "recent", "2025", "today" → use 'interactive_planner_agent'
+    3. If it explicitly requests research/analysis → use 'interactive_planner_agent'
+    4. If it's a simple factual question from general knowledge → use 'generalist_agent'
+    5. When uncertain → use 'interactive_planner_agent'
+
+    Use transfer_to_agent function to route.
+    """,
+    # CRITICAL: Use sub_agents pattern, NOT AgentTool
+    # This is the official ADK pattern for dispatchers/coordinators
+    # Reference: docs/adk/llms-full.txt lines 2248-2262
+    sub_agents=[
+        interactive_planner_agent,  # Research specialist
+        generalist_agent,           # Simple Q&A specialist
+    ],
+    before_agent_callback=before_agent_callback,
+    after_agent_callback=agent_network_tracking_callback,
+)
+
+# The root agent that ADK will load - updated to dispatcher (official pattern)
+root_agent = dispatcher_agent

@@ -15,8 +15,10 @@ settings:
 tools:
   - brave_search
 agents:
-  - interactive_planner_agent
-  - research_pipeline
+  - dispatcher_agent              # New: Main router agent (root)
+  - interactive_planner_agent     # Research coordinator
+  - generalist_agent              # New: Simple Q&A agent
+  - research_pipeline             # Research workflow
   - section_planner
   - section_researcher
   - research_evaluator
