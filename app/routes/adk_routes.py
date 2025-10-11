@@ -442,15 +442,6 @@ async def run_session_sse(
             broadcaster = get_sse_broadcaster()
             logger.info(f"Forwarding request to ADK service for session {session_id}")
 
-            # Add user message to session
-            user_message = {
-                "id": f"msg_{uuid.uuid4()}_user",
-                "role": "user",
-                "content": research_query,
-                "timestamp": datetime.now().isoformat(),
-            }
-            session_store.add_message(session_id, user_message)
-
             # Create async task to call ADK's built-in endpoint
             async def call_adk_and_stream():
                 """Call ADK's built-in /run_sse endpoint with proper error handling."""
@@ -637,7 +628,11 @@ async def run_session_sse(
                             # This event signals completion status only, not content delivery.
                             final_content = "".join(accumulated_content) if accumulated_content else "Research completed."
 
-                            session_store.update_session(session_id, status="completed")
+                            session_store.update_session(
+                                session_id,
+                                status="completed",
+                                final_report=final_content,
+                            )
 
                             await broadcaster.broadcast_event(session_id, {
                                 "type": "research_complete",
@@ -706,9 +701,13 @@ async def run_session_sse(
             logger.error(f"Failed to initiate ADK call: {e!s}", exc_info=True)
             research_started = False
 
-        # If research didn't start, log the error but don't send mock data
+        # If research didn't start, log the error and raise an exception
         if not research_started:
             logger.error(f"Failed to start ADK research for session {session_id}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to start ADK research session.",
+            )
 
         return {
             "success": True,

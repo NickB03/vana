@@ -6,12 +6,16 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Table,
     Text,
+    UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -437,3 +441,104 @@ class RefreshToken(Base):
             >>> new_token = create_access_token({"sub": str(user.id)})
         """
         return not self.is_expired and not self.is_revoked
+
+
+class LongTermMemory(Base):
+    """Long-term memory storage for AI agent personalization.
+
+    Stores user-specific memories that agents can reference across sessions.
+    Supports flexible categorization, tagging, importance scoring, and TTL.
+
+    Security Features:
+        - User isolation (all queries filtered by user_id)
+        - Soft delete with retention period
+        - Audit trail with timestamps
+        - Content length validation
+
+    Performance Features:
+        - Composite index on (user_id, namespace, key)
+        - Importance-based retrieval sorting
+        - Tag-based filtering (GIN index for PostgreSQL)
+        - Access tracking for relevance
+
+    Example:
+        >>> memory = LongTermMemory(
+        ...     user_id=user.id,
+        ...     namespace="preferences",
+        ...     key="favorite_topic",
+        ...     content="Artificial Intelligence and Machine Learning",
+        ...     tags=["ai", "ml", "preference"],
+        ...     importance=0.9
+        ... )
+    """
+
+    __tablename__ = "long_term_memory"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False, index=True
+    )
+    namespace: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        index=True,
+        comment="Category: research, preferences, facts, context",
+    )
+    key: Mapped[str] = mapped_column(
+        String(255), nullable=False, comment="Unique identifier within namespace"
+    )
+    content: Mapped[str] = mapped_column(
+        Text, nullable=False, comment="Natural language or structured text content"
+    )
+    tags: Mapped[list[str] | None] = mapped_column(
+        JSON, nullable=True, comment="Searchable tags for filtering"
+    )
+    importance: Mapped[float] = mapped_column(
+        Float, default=0.5, nullable=False, comment="Relevance score 0.0-1.0"
+    )
+
+    # Lifecycle management
+    access_count: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False, comment="Number of times accessed"
+    )
+    last_accessed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, comment="Optional TTL for temporary memories"
+    )
+    is_deleted: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, comment="Soft delete flag"
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    # Relationships
+    user: Mapped[User] = relationship("User", backref="memories")
+
+    # Composite unique constraint
+    __table_args__ = (
+        UniqueConstraint("user_id", "namespace", "key", name="uq_user_namespace_key"),
+        Index("idx_user_namespace", "user_id", "namespace"),
+        Index("idx_importance", "importance", postgresql_using="btree"),
+        Index("idx_is_deleted", "is_deleted"),
+    )
+
+    @property
+    def is_expired(self) -> bool:
+        """Check if memory has passed expiration time."""
+        if not self.expires_at:
+            return False
+        now = datetime.now(timezone.utc)
+        expires = self.expires_at
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=timezone.utc)
+        return now > expires

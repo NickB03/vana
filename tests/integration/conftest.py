@@ -4,24 +4,33 @@ Sets up environment variables and fixtures for integration testing.
 """
 
 import os
+
+# Set up test environment BEFORE importing app modules
+os.environ["ENVIRONMENT"] = "development"
+os.environ["JWT_SECRET_KEY"] = "test_secret_key_for_integration_testing_do_not_use_in_production_32_chars_long"
+os.environ["AUTH_SECRET_KEY"] = "test_secret_key_for_integration_testing_do_not_use_in_production_32_chars_long"
+os.environ["AUTH_REQUIRE_SSE_AUTH"] = "false"
+os.environ["SESSION_INTEGRITY_KEY"] = "test_secret_key_for_integration_testing_do_not_use_in_production_32_chars_long"
+os.environ["CI"] = "true"  # Skip GCS operations
+
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from app.auth.database import Base
 
 
-@pytest.fixture(scope="session", autouse=True)
-def setup_test_environment():
-    """Set up test environment variables for all integration tests."""
-    original_env = os.environ.copy()
+@pytest.fixture(scope="function")
+def db_session():
+    """Create a fresh database session for each test."""
+    # Use in-memory SQLite for testing
+    engine = create_engine("sqlite:///:memory:", echo=False)
+    Base.metadata.create_all(engine)
 
-    # Set test environment
-    os.environ["ENVIRONMENT"] = "development"
-    os.environ["JWT_SECRET_KEY"] = "test_secret_key_for_integration_testing_do_not_use_in_production_32_chars_long"
-    os.environ["AUTH_SECRET_KEY"] = "test_secret_key_for_integration_testing_do_not_use_in_production_32_chars_long"
-    os.environ["AUTH_REQUIRE_SSE_AUTH"] = "false"
-    os.environ["SESSION_INTEGRITY_KEY"] = "test_secret_key_for_integration_testing_do_not_use_in_production_32_chars_long"
-    os.environ["CI"] = "true"  # Skip GCS operations
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    session = TestingSessionLocal()
 
-    yield
+    yield session
 
-    # Restore original environment
-    os.environ.clear()
-    os.environ.update(original_env)
+    session.close()
+    Base.metadata.drop_all(engine)
