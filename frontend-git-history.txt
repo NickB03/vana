@@ -1,8 +1,0 @@
-b076ed2 fix: improve sidebar chat display to show clean titles only
-7c004ce feat: comprehensive React performance optimization and frontend validation
-3c5f19b feat: frontend rebuild with Next.js 14+ and comprehensive improvements
-79b82fb chore: add .lighthouse/ to gitignore
-3c88d81 feat: complete frontend integration with all UI and security improvements
-3a13a35 fix: CRITICAL XSS vulnerability in ReactMarkdown component
-f300fdd feat: comprehensive Vana frontend rebuild with security enhancements
-0b5b20f Initial commit from Create Next App
