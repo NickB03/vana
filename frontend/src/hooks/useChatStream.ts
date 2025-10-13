@@ -54,7 +54,7 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
                         !process.env.NEXT_PUBLIC_API_URL?.includes('production');
 
   const sseOptions = useMemo(() => {
-    const enabled = Boolean(currentSessionId) && (isDevelopment || hasAuthToken);
+    const enabled: boolean = Boolean(currentSessionId) && (isDevelopment || Boolean(hasAuthToken));
     console.log('[useChatStream] SSE options:', {
       currentSessionId,
       isDevelopment,
@@ -202,11 +202,16 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
   }, [currentSessionId, clearSessionInStore]);
 
   // Get all sessions
-  const getAllSessions = useCallback(() => {
+  // PERFORMANCE FIX: Cache sorted sessions to prevent re-sorting on every call
+  const sortedSessions = useMemo(() => {
     return Object.values(sessions).sort((a, b) =>
       new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
     );
   }, [sessions]);
+
+  const getAllSessions = useCallback(() => {
+    return sortedSessions;
+  }, [sortedSessions]);
 
   // Get session by ID
   const getSessionById = useCallback((sessionId: string) => {
@@ -223,9 +228,27 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
   }, [researchSSE.disconnect]);
 
   // Memoize stable arrays and objects to prevent re-render loops
+  // CRITICAL: Sort messages by timestamp to ensure correct display order
+  // PERFORMANCE FIX: Use message length and last message ID as dependencies
+  // instead of the entire messages array to prevent unnecessary sorts
+  // BUG FIX: Added timestamp to dependencies to detect content updates during streaming
   const stableMessages = useMemo(() => {
-    return Array.isArray(currentSession?.messages) ? currentSession.messages : [];
-  }, [currentSession?.messages]);
+    if (!Array.isArray(currentSession?.messages)) return [];
+
+    // Sort messages by timestamp (ascending - oldest first)
+    // PERFORMANCE: This only runs when message count or last message changes
+    return [...currentSession.messages].sort((a, b) => {
+      const timeA = new Date(a.timestamp || 0).getTime();
+      const timeB = new Date(b.timestamp || 0).getTime();
+      return timeA - timeB;
+    });
+  }, [
+    currentSession?.messages?.length,
+    currentSession?.messages?.[currentSession.messages.length - 1]?.id,
+    // CRITICAL FIX: Include timestamp to detect content updates (e.g., streaming messages)
+    // Without this, updateStreamingMessage changes content but memo doesn't recalculate
+    currentSession?.messages?.[currentSession.messages.length - 1]?.timestamp,
+  ]);
 
   const stableAgents = useMemo(() => {
     return Array.isArray(currentSession?.agents) ? currentSession.agents : [];

@@ -105,7 +105,10 @@ export function useSSEEventHandlers({
   }, [
     agentSSE.lastEvent?.type,
     agentSSE.lastEvent?.data?.timestamp,
-    JSON.stringify(agentSSE.lastEvent?.data?.agents), // Serialize array for stable comparison
+    // PERFORMANCE FIX: Use array length and first agent ID instead of JSON.stringify
+    // JSON.stringify is expensive and defeats memoization - use stable primitive values
+    agentSSE.lastEvent?.data?.agents?.length,
+    agentSSE.lastEvent?.data?.agents?.[0]?.agent_id,
     agentSSE.lastEvent?.data?.messageId, // For message action events
     agentSSE.lastEvent?.data?.newContent, // For message edit events
     agentSSE.lastEvent?.data?.feedback, // For feedback events
@@ -245,15 +248,30 @@ export function useSSEEventHandlers({
       case 'research_complete': {
         const messageId = ensureProgressMessage();
 
+        // CRITICAL FIX: Extract final content from the research_complete payload
+        // The ADK sends the complete report in the payload, not just in previous research_update events
+        const finalContent = payload.content ||
+                           payload.report ||
+                           payload.final_report ||
+                           payload.result ||
+                           currentSession?.messages.find(msg => msg.id === messageId)?.content ||
+                           'Research complete. (No report returned)';
+
+        console.log('[FIX] research_complete:', {
+          messageId,
+          contentLength: finalContent?.length,
+          storeMessagesCount: currentSession?.messages?.length,
+          hasPayloadContent: Boolean(payload.content),
+          hasPayloadReport: Boolean(payload.report),
+          hasPayloadFinalReport: Boolean(payload.final_report),
+        });
+
         if (messageId) {
-          // Don't update content - it's already complete from research_update events
-          // Just mark the message as completed
+          // Update message with final content from payload
+          updateStreamingMessageInStore(currentSessionId, messageId, finalContent);
+          // Mark the message as completed
           completeStreamingMessageInStore(currentSessionId, messageId);
         }
-
-        // Get existing message content for final_report
-        const existingMessage = currentSession?.messages.find(msg => msg.id === messageId);
-        const finalContent = existingMessage?.content || 'Research complete. (No report returned)';
 
         setSessionStreamingInStore(currentSessionId, false);
         mergeProgressSnapshot({

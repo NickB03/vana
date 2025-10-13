@@ -7,8 +7,8 @@ import React, {
   useRef,
   useState,
   useCallback,
-  createPortal,
 } from "react"
+import { createPortal } from "react-dom"
 
 type FileUploadContextType = {
   isDragging: boolean

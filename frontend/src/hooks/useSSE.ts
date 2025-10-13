@@ -101,7 +101,9 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const shouldReconnectRef = useRef(true);
   const mountedRef = useRef(true);
-  
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const cleaningUpRef = useRef(false); // IDEMPOTENCY FIX: Prevent duplicate cleanup
+
   // Store event handler references for cleanup
   const eventHandlersRef = useRef<{
     onOpen: (() => void) | null;
@@ -110,7 +112,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
     customHandlers: Map<string, (event: MessageEvent) => void>;
   }>({
     onOpen: null,
-    onMessage: null, 
+    onMessage: null,
     onError: null,
     customHandlers: new Map()
   });
@@ -272,7 +274,9 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
                               !process.env.NEXT_PUBLIC_API_URL?.includes('production');
 
         // Use fetch-based SSE for authenticated proxy requests
+        // CRITICAL FIX: Store controller in ref for proper cleanup
         const controller = new AbortController();
+        abortControllerRef.current = controller;
 
         // Build headers - no auth tokens, cookies handle authentication
         const headers: HeadersInit = {
@@ -362,10 +366,42 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
           const readStream = async () => {
             try {
               while (true) {
+                // MEMORY LEAK FIX: Check if still mounted before processing
+                if (!mountedRef.current || controller.signal.aborted) {
+                  console.log('[useSSE] Stream reader exiting - component unmounted or aborted');
+                  break;
+                }
+
                 const { done, value } = await reader.read();
-                
-                if (done) break;
-                
+
+                if (done) {
+                  // IDEMPOTENCY FIX: Check if already cleaning up
+                  if (cleaningUpRef.current) {
+                    console.log('[useSSE] Cleanup already in progress, skipping duplicate');
+                    break;
+                  }
+                  cleaningUpRef.current = true;
+
+                  // CRITICAL FIX: Stream completed normally - clean up to allow reconnection
+                  console.log('[useSSE] Stream completed normally, cleaning up connection state');
+                  eventSourceRef.current = null;
+                  abortControllerRef.current = null;
+
+                  if (mountedRef.current) {
+                    stateRefs.current.setConnectionState('disconnected');
+                    callbacksRef.current.onDisconnect?.();
+                  }
+
+                  cleaningUpRef.current = false;
+                  break;
+                }
+
+                // MEMORY LEAK FIX: Check mounted state before processing chunk
+                if (!mountedRef.current || controller.signal.aborted) {
+                  console.log('[useSSE] Stream reader stopping - unmounted during read');
+                  break;
+                }
+
                 const chunk = decoder.decode(value, { stream: true });
                 buffer += chunk;
 
@@ -380,28 +416,65 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
                 }
               }
 
-              if (buffer.trim()) {
+              if (buffer.trim() && mountedRef.current) {
                 processEventBlock(buffer);
                 buffer = '';
               }
             } catch (error) {
+              // IDEMPOTENCY FIX: Prevent duplicate error handling
+              if (cleaningUpRef.current) {
+                console.log('[useSSE] Cleanup already in progress, skipping error handler');
+                return;
+              }
+
               if (!controller.signal.aborted) {
+                cleaningUpRef.current = true;
                 console.error('SSE stream error:', error);
-                stateRefs.current.setError(error instanceof Error ? error.message : 'Stream error');
-                stateRefs.current.setConnectionState('error');
+
+                if (mountedRef.current) {
+                  stateRefs.current.setError(error instanceof Error ? error.message : 'Stream error');
+                  stateRefs.current.setConnectionState('error');
+                }
+
+                // CRITICAL FIX: Clean up connection state on error
+                eventSourceRef.current = null;
+                abortControllerRef.current = null;
 
                 // Attempt reconnection if enabled
-                if (opts.autoReconnect && shouldReconnectRef.current && reconnectAttempt < opts.maxReconnectAttempts) {
+                if (opts.autoReconnect && shouldReconnectRef.current && reconnectAttempt < opts.maxReconnectAttempts && mountedRef.current) {
+                  cleaningUpRef.current = false;
                   reconnect();
                 } else {
-                  stateRefs.current.setConnectionState('disconnected');
+                  if (mountedRef.current) {
+                    stateRefs.current.setConnectionState('disconnected');
+                    callbacksRef.current.onDisconnect?.();
+                  }
+                  cleaningUpRef.current = false;
+                }
+              } else {
+                // IDEMPOTENCY FIX: Single cleanup on abort
+                if (!cleaningUpRef.current) {
+                  cleaningUpRef.current = true;
+                  console.log('[useSSE] Stream aborted, cleaning up connection state');
+                  eventSourceRef.current = null;
+                  abortControllerRef.current = null;
+
+                  if (mountedRef.current) {
+                    stateRefs.current.setConnectionState('disconnected');
+                    callbacksRef.current.onDisconnect?.();
+                  }
+                  cleaningUpRef.current = false;
                 }
               }
             }
           };
 
           console.log('[useSSE] Starting SSE stream reader');
-          readStream();
+          // MEMORY LEAK FIX: Start read stream but don't await (runs in background)
+          // The stream will self-terminate on unmount via controller.signal checks
+          readStream().catch(err => {
+            console.error('[useSSE] Unhandled readStream error:', err);
+          });
           stateRefs.current.setConnectionState('connected');
           stateRefs.current.setReconnectAttempt(0);
           stateRefs.current.setError(null);
@@ -433,11 +506,16 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
       // Use standard EventSource for non-proxy routes
       // MEMORY LEAK FIX: Clean up old event handlers before creating new EventSource
       if (eventSourceRef.current) {
-        eventHandlersRef.current.customHandlers.forEach((handler, eventType) => {
-          eventSourceRef.current?.removeEventListener(eventType, handler);
-        });
-        eventHandlersRef.current.customHandlers.clear();
-        eventSourceRef.current.close();
+        try {
+          const currentEventSource = eventSourceRef.current as EventSource;
+          eventHandlersRef.current.customHandlers.forEach((handler, eventType) => {
+            currentEventSource.removeEventListener(eventType, handler);
+          });
+          eventHandlersRef.current.customHandlers.clear();
+          currentEventSource.close();
+        } catch (error) {
+          console.warn('[useSSE] Error cleaning up old EventSource:', error);
+        }
       }
 
       const eventSource = new EventSource(sseUrl, {
@@ -488,6 +566,10 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
         'connection',
         'keepalive',
         'error',
+        'research_started',
+        'research_update',
+        'research_progress',
+        'research_complete',
         'message_edited',
         'message_deleted',
         'feedback_received',
@@ -547,6 +629,13 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
 
   // Disconnect from SSE stream - stable reference with no dependencies
   const disconnect = useCallback(() => {
+    // IDEMPOTENCY FIX: Prevent duplicate disconnect operations
+    if (cleaningUpRef.current) {
+      console.log('[useSSE] disconnect() called but cleanup already in progress');
+      return;
+    }
+    cleaningUpRef.current = true;
+
     shouldReconnectRef.current = false;
 
     if (reconnectTimeoutRef.current) {
@@ -554,19 +643,42 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
       reconnectTimeoutRef.current = null;
     }
 
+    // CRITICAL FIX: Abort fetch controller if exists
+    if (abortControllerRef.current) {
+      console.log('[useSSE] Aborting fetch controller');
+      try {
+        abortControllerRef.current.abort();
+      } catch (error) {
+        console.warn('[useSSE] Error aborting controller:', error);
+      }
+      abortControllerRef.current = null;
+    }
+
     if (eventSourceRef.current) {
+      const currentEventSource = eventSourceRef.current;
+
       // Remove all custom event listeners using stored references
-      eventHandlersRef.current.customHandlers.forEach((handler, eventType) => {
-        eventSourceRef.current?.removeEventListener(eventType, handler);
-      });
+      try {
+        eventHandlersRef.current.customHandlers.forEach((handler, eventType) => {
+          currentEventSource.removeEventListener?.(eventType, handler);
+        });
+      } catch (error) {
+        console.warn('[useSSE] Error removing event listeners:', error);
+      }
 
       // Clear standard event handlers
-      eventSourceRef.current.onopen = null;
-      eventSourceRef.current.onmessage = null;
-      eventSourceRef.current.onerror = null;
+      currentEventSource.onopen = null;
+      currentEventSource.onmessage = null;
+      currentEventSource.onerror = null;
 
       // Close the connection
-      eventSourceRef.current.close();
+      try {
+        if (typeof currentEventSource.close === 'function') {
+          currentEventSource.close();
+        }
+      } catch (error) {
+        console.warn('[useSSE] Error closing EventSource:', error);
+      }
       eventSourceRef.current = null;
     }
 
@@ -582,6 +694,9 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
       stateRefs.current.setConnectionState('disconnected');
       callbacksRef.current.onDisconnect?.();
     }
+
+    // IDEMPOTENCY FIX: Reset cleanup flag
+    cleaningUpRef.current = false;
   }, []); // No dependencies - all state accessed via refs
 
   // Store reconnectAttempt in ref for stable access
@@ -694,6 +809,12 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
  * Uses ADK-compliant endpoint: /apps/{appName}/users/{userId}/sessions/{sessionId}/run
  */
 export function useResearchSSE(sessionId: string, options: Omit<SSEOptions, 'sessionId'> = {}) {
+  // Guard against empty sessionId to prevent race condition
+  // This prevents attempting connection with URL like "/apps/vana/users/default/sessions//run"
+  if (!sessionId || sessionId.trim() === '') {
+    return useSSE('', { ...options, enabled: false, sessionId: '' });
+  }
+
   // ADK-compliant endpoint structure
   const ADK_APP_NAME = process.env.NEXT_PUBLIC_ADK_APP_NAME || 'vana';
   const ADK_DEFAULT_USER = process.env.NEXT_PUBLIC_ADK_DEFAULT_USER || 'default';
