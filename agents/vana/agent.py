@@ -505,9 +505,13 @@ dispatcher_agent = LlmAgent(
     CRITICAL: You MUST call transfer_to_agent() immediately. Do NOT answer questions yourself.
     CRITICAL: Even if the question is about YOU, delegate it - do not self-describe.
     """,
-    # CRITICAL: Use sub_agents pattern, NOT AgentTool
-    # This is the official ADK pattern for dispatchers/coordinators
-    # Reference: docs/adk/llms-full.txt lines 2248-2262
+    # FIX: Add AgentTool wrappers to make sub_agents callable via transfer_to_agent()
+    # In ADK, sub_agents defines the agent hierarchy, but tools makes them invokable as functions
+    # Reference: interactive_planner_agent pattern (lines 459-460)
+    tools=[
+        AgentTool(generalist_agent),
+        AgentTool(interactive_planner_agent),
+    ],
     sub_agents=[
         generalist_agent,           # Simple Q&A specialist (FIRST = default priority)
         interactive_planner_agent,  # Research specialist
