@@ -54,7 +54,7 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
                         !process.env.NEXT_PUBLIC_API_URL?.includes('production');
 
   const sseOptions = useMemo(() => {
-    const enabled = Boolean(currentSessionId) && (isDevelopment || hasAuthToken);
+    const enabled: boolean = Boolean(currentSessionId) && (isDevelopment || Boolean(hasAuthToken));
     console.log('[useChatStream] SSE options:', {
       currentSessionId,
       isDevelopment,
@@ -223,8 +223,16 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
   }, [researchSSE.disconnect]);
 
   // Memoize stable arrays and objects to prevent re-render loops
+  // CRITICAL: Sort messages by timestamp to ensure correct display order
   const stableMessages = useMemo(() => {
-    return Array.isArray(currentSession?.messages) ? currentSession.messages : [];
+    if (!Array.isArray(currentSession?.messages)) return [];
+
+    // Sort messages by timestamp (ascending - oldest first)
+    return [...currentSession.messages].sort((a, b) => {
+      const timeA = new Date(a.timestamp || 0).getTime();
+      const timeB = new Date(b.timestamp || 0).getTime();
+      return timeA - timeB;
+    });
   }, [currentSession?.messages]);
 
   const stableAgents = useMemo(() => {

@@ -341,3 +341,16 @@ memory/memory-store.json
 # Working directories and temporary files (not for version control)
 external/
 docs/qwen3coder_system_prompt.md
+
+# Temporary debugging and investigation documentation
+*_STATUS_*.md
+*_FIX_*.md
+*_DIAGNOSIS.md
+*_REPORT.md
+*_SUMMARY.md
+*_INSTRUCTIONS.md
+*_PLAN.md
+*_APPLIED.md
+*_IMPLEMENTATION.md
+*_COMPLETE.md
+READY_FOR_*.md

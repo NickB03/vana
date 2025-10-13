@@ -55,13 +55,7 @@ import {
   ThumbsUp,
   Trash,
 } from "lucide-react";
-import { Loader } from "@/components/prompt-kit/loader";
-import {
-  Steps,
-  StepsTrigger,
-  StepsContent,
-  StepsItem,
-} from "@/components/prompt-kit/steps";
+// Removed unused imports: Steps components now data-driven from backend SSE
 import { PageTransition } from "@/components/transitions/PageTransition";
 
 function ChatView({
@@ -88,24 +82,8 @@ function ChatView({
     status: null,
     isVisible: false,
   });
-  const [agentSteps, setAgentSteps] = useState<string[]>([]);
-
-  // Show agent progress steps when streaming
-  // Following Prompt Kit patterns: show all steps immediately, no manual animation
-  useEffect(() => {
-    if (isStreaming) {
-      setAgentSteps([
-        "Thinking...",
-        "Analyzing query context...",
-        "Delegating to specialized agents...",
-        "Team Leader coordinating research...",
-        "Gathering information...",
-        "Synthesizing results...",
-      ]);
-    } else {
-      setAgentSteps([]);
-    }
-  }, [isStreaming]);
+  // Agent steps are now data-driven from backend SSE events (research_update)
+  // No hardcoded progress indicators - use real currentSession progress data
   const [validationError, setValidationError] = useState<string | null>(null);
   const rateLimiter = useRef(new RateLimitTracker());
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -657,41 +635,6 @@ function ChatView({
                       </Message>
                     );
                   })}
-                  {/* Show loading indicator when streaming without thought process */}
-                  {isStreaming && !thoughtProcess.isVisible && (
-                    <Message className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 items-start">
-                      <MessageContent className="w-full">
-                        <Steps
-                          defaultOpen
-                          className="border-l-2 border-primary/30"
-                        >
-                          <StepsTrigger>
-                            <Loader
-                              variant="text-shimmer"
-                              text="Vana Agents Working..."
-                            />
-                          </StepsTrigger>
-                          <StepsContent>
-                            {agentSteps.map((step, index) => (
-                              <StepsItem
-                                key={step}
-                                isLoading={index === agentSteps.length - 1 && isStreaming}
-                              >
-                                {step === "Thinking..." ? (
-                                  <Loader
-                                    variant="text-shimmer"
-                                    text="Thinking..."
-                                  />
-                                ) : (
-                                  step
-                                )}
-                              </StepsItem>
-                            ))}
-                          </StepsContent>
-                        </Steps>
-                      </MessageContent>
-                    </Message>
-                  )}
                 </>
               )}
             </ChatContainerContent>

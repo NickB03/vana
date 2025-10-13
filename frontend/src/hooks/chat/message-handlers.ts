@@ -14,8 +14,8 @@ interface MessageHandlerParams {
   currentSession: ChatSession | null;
   setIsStreaming: (streaming: boolean) => void;
   setError: (error: string | null) => void;
-  researchSSE?: { connect: () => void; isConnected: boolean };
-  agentSSE?: { connect: () => void; isConnected: boolean };
+  researchSSE?: { connect: () => void; disconnect: () => void; isConnected: boolean };
+  agentSSE?: { connect: () => void; disconnect: () => void; isConnected: boolean };
 }
 
 /**
@@ -64,7 +64,7 @@ export function useMessageHandlers({
       const assistantMessageId = `msg_${uuidv4()}_assistant`;
       const assistantMessage: ChatMessage = {
         id: assistantMessageId,
-        content: 'Initializing research pipeline...',
+        content: 'Thinking...',
         role: 'assistant',
         timestamp: new Date().toISOString(),
         sessionId: activeSessionId,
@@ -109,6 +109,15 @@ export function useMessageHandlers({
       // 2. startResearch handles message persistence
       // 3. This was causing timeouts for new sessions
 
+      // CRITICAL FIX: Ensure clean SSE connection state before starting new research
+      // Each message should get a fresh SSE connection, not reuse an old one
+      if (researchSSE?.isConnected) {
+        console.log('[MessageHandler] Disconnecting existing SSE before new request');
+        researchSSE.disconnect();
+        // Small delay to ensure disconnect completes
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
       const response = await apiClient.startResearch(activeSessionId, researchRequest);
 
       console.log('[MessageHandler] Research API response:', {
@@ -118,6 +127,13 @@ export function useMessageHandlers({
         researchSSEConnected: researchSSE?.isConnected,
         agentSSEConnected: agentSSE?.isConnected
       });
+
+      // CRITICAL FIX: Explicitly reconnect SSE after starting research
+      // The useSSE hook will auto-connect, but we ensure it's ready
+      if (!researchSSE?.isConnected) {
+        console.log('[MessageHandler] Reconnecting SSE for new research session');
+        researchSSE?.connect();
+      }
 
       if (!response.success) {
         throw new Error(response.message || 'Failed to start research');
@@ -159,6 +175,8 @@ export function useMessageHandlers({
     completeStreamingMessageInStore,
     setIsStreaming,
     setError,
+    researchSSE,
+    agentSSE,
   ]);
 
   /**

@@ -101,7 +101,8 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const shouldReconnectRef = useRef(true);
   const mountedRef = useRef(true);
-  
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   // Store event handler references for cleanup
   const eventHandlersRef = useRef<{
     onOpen: (() => void) | null;
@@ -110,7 +111,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
     customHandlers: Map<string, (event: MessageEvent) => void>;
   }>({
     onOpen: null,
-    onMessage: null, 
+    onMessage: null,
     onError: null,
     customHandlers: new Map()
   });
@@ -272,7 +273,9 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
                               !process.env.NEXT_PUBLIC_API_URL?.includes('production');
 
         // Use fetch-based SSE for authenticated proxy requests
+        // CRITICAL FIX: Store controller in ref for proper cleanup
         const controller = new AbortController();
+        abortControllerRef.current = controller;
 
         // Build headers - no auth tokens, cookies handle authentication
         const headers: HeadersInit = {
@@ -363,9 +366,17 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
             try {
               while (true) {
                 const { done, value } = await reader.read();
-                
-                if (done) break;
-                
+
+                if (done) {
+                  // CRITICAL FIX: Stream completed normally - clean up to allow reconnection
+                  console.log('[useSSE] Stream completed normally, cleaning up connection state');
+                  eventSourceRef.current = null;
+                  abortControllerRef.current = null;
+                  stateRefs.current.setConnectionState('disconnected');
+                  callbacksRef.current.onDisconnect?.();
+                  break;
+                }
+
                 const chunk = decoder.decode(value, { stream: true });
                 buffer += chunk;
 
@@ -390,12 +401,24 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
                 stateRefs.current.setError(error instanceof Error ? error.message : 'Stream error');
                 stateRefs.current.setConnectionState('error');
 
+                // CRITICAL FIX: Clean up connection state on error
+                eventSourceRef.current = null;
+                abortControllerRef.current = null;
+
                 // Attempt reconnection if enabled
                 if (opts.autoReconnect && shouldReconnectRef.current && reconnectAttempt < opts.maxReconnectAttempts) {
                   reconnect();
                 } else {
                   stateRefs.current.setConnectionState('disconnected');
+                  callbacksRef.current.onDisconnect?.();
                 }
+              } else {
+                // CRITICAL FIX: Stream was aborted - ensure cleanup
+                console.log('[useSSE] Stream aborted, cleaning up connection state');
+                eventSourceRef.current = null;
+                abortControllerRef.current = null;
+                stateRefs.current.setConnectionState('disconnected');
+                callbacksRef.current.onDisconnect?.();
               }
             }
           };
@@ -433,11 +456,16 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
       // Use standard EventSource for non-proxy routes
       // MEMORY LEAK FIX: Clean up old event handlers before creating new EventSource
       if (eventSourceRef.current) {
-        eventHandlersRef.current.customHandlers.forEach((handler, eventType) => {
-          eventSourceRef.current?.removeEventListener(eventType, handler);
-        });
-        eventHandlersRef.current.customHandlers.clear();
-        eventSourceRef.current.close();
+        try {
+          const currentEventSource = eventSourceRef.current as EventSource;
+          eventHandlersRef.current.customHandlers.forEach((handler, eventType) => {
+            currentEventSource.removeEventListener(eventType, handler);
+          });
+          eventHandlersRef.current.customHandlers.clear();
+          currentEventSource.close();
+        } catch (error) {
+          console.warn('[useSSE] Error cleaning up old EventSource:', error);
+        }
       }
 
       const eventSource = new EventSource(sseUrl, {
@@ -488,6 +516,10 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
         'connection',
         'keepalive',
         'error',
+        'research_started',
+        'research_update',
+        'research_progress',
+        'research_complete',
         'message_edited',
         'message_deleted',
         'feedback_received',
@@ -554,19 +586,30 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
       reconnectTimeoutRef.current = null;
     }
 
+    // CRITICAL FIX: Abort fetch controller if exists
+    if (abortControllerRef.current) {
+      console.log('[useSSE] Aborting fetch controller');
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+
     if (eventSourceRef.current) {
+      const currentEventSource = eventSourceRef.current;
+
       // Remove all custom event listeners using stored references
       eventHandlersRef.current.customHandlers.forEach((handler, eventType) => {
-        eventSourceRef.current?.removeEventListener(eventType, handler);
+        currentEventSource.removeEventListener?.(eventType, handler);
       });
 
       // Clear standard event handlers
-      eventSourceRef.current.onopen = null;
-      eventSourceRef.current.onmessage = null;
-      eventSourceRef.current.onerror = null;
+      currentEventSource.onopen = null;
+      currentEventSource.onmessage = null;
+      currentEventSource.onerror = null;
 
       // Close the connection
-      eventSourceRef.current.close();
+      if (typeof currentEventSource.close === 'function') {
+        currentEventSource.close();
+      }
       eventSourceRef.current = null;
     }
 
@@ -694,6 +737,12 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
  * Uses ADK-compliant endpoint: /apps/{appName}/users/{userId}/sessions/{sessionId}/run
  */
 export function useResearchSSE(sessionId: string, options: Omit<SSEOptions, 'sessionId'> = {}) {
+  // Guard against empty sessionId to prevent race condition
+  // This prevents attempting connection with URL like "/apps/vana/users/default/sessions//run"
+  if (!sessionId || sessionId.trim() === '') {
+    return useSSE('', { ...options, enabled: false, sessionId: '' });
+  }
+
   // ADK-compliant endpoint structure
   const ADK_APP_NAME = process.env.NEXT_PUBLIC_ADK_APP_NAME || 'vana';
   const ADK_DEFAULT_USER = process.env.NEXT_PUBLIC_ADK_DEFAULT_USER || 'default';

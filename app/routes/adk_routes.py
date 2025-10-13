@@ -513,10 +513,11 @@ async def run_session_sse(
 
                         # Use rate limiter to prevent overwhelming the Gemini API
                         rate_limit_hit = False
+                        logger.info(f"Attempting to acquire rate limiter for session {session_id}")
                         async with gemini_rate_limiter:
                             logger.info(f"Rate limiter acquired for session {session_id}")
                             stats = await gemini_rate_limiter.get_stats()
-                            logger.debug(f"Rate limiter stats: {stats}")
+                            logger.info(f"Rate limiter stats: {stats}")
 
                             async with client.stream(
                                 "POST",
@@ -622,10 +623,10 @@ async def run_session_sse(
 
                         # Only send completion events if rate limit was NOT hit
                         if not rate_limit_hit:
-                            # Send final response
-                            # NOTE: Don't send content in research_complete - the frontend message
-                            # already contains the complete content from research_update events.
-                            # This event signals completion status only, not content delivery.
+                            # Send final response with complete content
+                            # CRITICAL FIX: Include final_content in research_complete payload
+                            # The frontend now extracts the complete answer from this event
+                            # to ensure full content is displayed (not just streaming chunks)
                             final_content = "".join(accumulated_content) if accumulated_content else "Research completed."
 
                             session_store.update_session(
@@ -637,6 +638,7 @@ async def run_session_sse(
                             await broadcaster.broadcast_event(session_id, {
                                 "type": "research_complete",
                                 "data": {
+                                    "content": final_content,  # CRITICAL: Include complete content
                                     "status": "completed",
                                     "timestamp": datetime.now().isoformat()
                                 }

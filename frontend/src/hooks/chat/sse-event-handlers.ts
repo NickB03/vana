@@ -245,15 +245,21 @@ export function useSSEEventHandlers({
       case 'research_complete': {
         const messageId = ensureProgressMessage();
 
+        // CRITICAL FIX: Extract final content from the research_complete payload
+        // The ADK sends the complete report in the payload, not just in previous research_update events
+        const finalContent = payload.content ||
+                           payload.report ||
+                           payload.final_report ||
+                           payload.result ||
+                           currentSession?.messages.find(msg => msg.id === messageId)?.content ||
+                           'Research complete. (No report returned)';
+
         if (messageId) {
-          // Don't update content - it's already complete from research_update events
-          // Just mark the message as completed
+          // Update message with final content from payload
+          updateStreamingMessageInStore(currentSessionId, messageId, finalContent);
+          // Mark the message as completed
           completeStreamingMessageInStore(currentSessionId, messageId);
         }
-
-        // Get existing message content for final_report
-        const existingMessage = currentSession?.messages.find(msg => msg.id === messageId);
-        const finalContent = existingMessage?.content || 'Research complete. (No report returned)';
 
         setSessionStreamingInStore(currentSessionId, false);
         mergeProgressSnapshot({
