@@ -550,8 +550,6 @@ async def run_session_sse(
                         logger.info(f"Attempting to acquire rate limiter for session {session_id}")
                         async with gemini_rate_limiter:
                             logger.info(f"Rate limiter acquired for session {session_id}")
-                            stats = await gemini_rate_limiter.get_stats()
-                            logger.info(f"Rate limiter stats: {stats}")
 
                             async with client.stream(
                                 "POST",
