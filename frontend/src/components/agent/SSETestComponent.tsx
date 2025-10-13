@@ -95,11 +95,19 @@ function SSETestComponent() {
     researchSSE.clearEvents();
   }, [agentNetworkSSE.clearEvents, researchSSE.clearEvents]);
 
-  // Memoize authentication status to prevent unnecessary re-renders
-  const authStatus = useMemo(() => ({
-    isAuthenticated: apiClient.isAuthenticated(),
-    token: apiClient.getAccessToken()?.substring(0, 20) + '...' || null
-  }), []);
+  // Check authentication status (async)
+  const [authStatus, setAuthStatus] = useState({
+    isAuthenticated: false,
+    checking: true
+  });
+
+  React.useEffect(() => {
+    apiClient.isAuthenticated().then(isAuth => {
+      setAuthStatus({ isAuthenticated: isAuth, checking: false });
+    }).catch(() => {
+      setAuthStatus({ isAuthenticated: false, checking: false });
+    });
+  }, []);
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -146,12 +154,16 @@ function SSETestComponent() {
 
             <div className="space-y-2">
               <h4 className="font-medium">Authentication Status:</h4>
-              <Badge variant={authStatus.isAuthenticated ? "default" : "destructive"}>
-                {authStatus.isAuthenticated ? '✓ Authenticated' : '✗ Not Authenticated'}
-              </Badge>
-              {authStatus.isAuthenticated && authStatus.token && (
-                <p className="text-xs text-gray-600">
-                  Token: {authStatus.token}
+              {authStatus.checking ? (
+                <Badge variant="secondary">Checking...</Badge>
+              ) : (
+                <Badge variant={authStatus.isAuthenticated ? "default" : "destructive"}>
+                  {authStatus.isAuthenticated ? '✓ Authenticated (HttpOnly Cookies)' : '✗ Not Authenticated'}
+                </Badge>
+              )}
+              {authStatus.isAuthenticated && (
+                <p className="text-xs text-green-600">
+                  ✓ Tokens stored securely in HttpOnly cookies
                 </p>
               )}
             </div>
@@ -166,12 +178,12 @@ function SSETestComponent() {
           <CardContent className="space-y-4">
             <Alert>
               <AlertDescription>
-                <h4 className="font-medium text-green-800 mb-2">✓ Security Features Active:</h4>
+                <h4 className="font-medium text-green-800 mb-2">✓ Security Features Active (CRIT-008):</h4>
                 <ul className="text-sm text-green-700 space-y-1">
-                  <li>• JWT tokens not exposed in URLs</li>
-                  <li>• Server-side proxy authentication</li>
-                  <li>• HTTP-only cookie fallback</li>
-                  <li>• Secure header-based token transfer</li>
+                  <li>• HttpOnly cookies prevent XSS attacks</li>
+                  <li>• SameSite=lax prevents CSRF and allows OAuth</li>
+                  <li>• No tokens in JavaScript/URLs</li>
+                  <li>• Automatic cookie-based authentication</li>
                 </ul>
               </AlertDescription>
             </Alert>

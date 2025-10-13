@@ -275,7 +275,8 @@ export const useAuthStore = create<AuthState>()(
 
       // Get current user information
       getCurrentUser: async () => {
-        if (!apiClient.isAuthenticated()) {
+        const isAuth = await apiClient.isAuthenticated();
+        if (!isAuth) {
           set({
             user: null,
             isAuthenticated: false,
@@ -315,7 +316,8 @@ export const useAuthStore = create<AuthState>()(
 
       // Initialize authentication state
       initialize: async () => {
-        if (apiClient.isAuthenticated()) {
+        const isAuth = await apiClient.isAuthenticated();
+        if (isAuth) {
           await get().getCurrentUser();
         } else {
           set({

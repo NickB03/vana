@@ -28,7 +28,7 @@ import {
   MessageOperationResponse,
   MessageFeedbackResponse,
 } from './types';
-import { syncTokensToCookies } from '../auth-cookies';
+import { addCsrfHeader } from '../csrf';
 
 /**
  * ADK Configuration Constants
@@ -42,12 +42,18 @@ const ADK_CONFIG = {
 
 /**
  * API Client for Vana backend integration
+ *
+ * Security Enhancement: CRIT-008
+ * This client uses HttpOnly cookies for JWT token storage instead of sessionStorage.
+ * This prevents XSS attacks by making tokens inaccessible to JavaScript.
+ *
+ * Security Benefits:
+ * - XSS Protection: Tokens stored in HttpOnly cookies cannot be accessed by malicious scripts
+ * - CSRF Protection: SameSite=lax prevents CSRF while allowing OAuth callbacks
+ * - Reduced Attack Surface: No client-side token exposure in sessionStorage or localStorage
  */
 export class VanaAPIClient {
   private config: APIConfig;
-  private accessToken: string | null = null;
-  private refreshToken: string | null = null;
-  private tokenExpirationTime: number | null = null;
   private refreshPromise: Promise<boolean> | null = null;
 
   constructor(config: Partial<APIConfig> = {}) {
@@ -58,87 +64,60 @@ export class VanaAPIClient {
       retryDelay: config.retryDelay || 1000,
     };
 
-    // Load tokens from sessionStorage if available
-    if (typeof window !== 'undefined') {
-      this.loadTokensFromStorage();
-    }
+    // NOTE: Tokens are no longer stored in memory or sessionStorage
+    // They are managed server-side as HttpOnly cookies for security
   }
 
   /**
-   * Load authentication tokens from sessionStorage for improved security
+   * Set authentication tokens as secure HttpOnly cookies
+   *
+   * Security: This method sends tokens to the backend which stores them as HttpOnly cookies.
+   * This prevents XSS attacks since JavaScript cannot access HttpOnly cookies.
    */
-  private loadTokensFromStorage(): void {
+  private async setAuthenticationCookies(tokens: Token): Promise<void> {
     try {
-      const accessToken = sessionStorage.getItem('vana_access_token');
-      const refreshToken = sessionStorage.getItem('vana_refresh_token');
-      const expirationTime = sessionStorage.getItem('vana_token_expiration');
+      const response = await fetch(`${this.config.baseURL}/api/auth/set-tokens`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token,
+          expires_in: tokens.expires_in,
+        }),
+        credentials: 'include', // Required for cookies
+      });
 
-      if (accessToken && refreshToken) {
-        this.accessToken = accessToken;
-        this.refreshToken = refreshToken;
-        this.tokenExpirationTime = expirationTime ? parseInt(expirationTime, 10) : null;
+      if (!response.ok) {
+        throw new Error('Failed to set authentication cookies');
       }
     } catch (error) {
-      console.warn('Failed to load tokens from storage:', error);
+      console.error('Failed to set authentication cookies:', error);
+      throw error;
     }
   }
 
   /**
-   * Save authentication tokens to sessionStorage for improved security
-   * Uses session-lifetime storage to reduce XSS vulnerability compared to localStorage
+   * Clear authentication cookies (logout)
+   *
+   * Security: Clears HttpOnly cookies by calling backend endpoint
    */
-  private saveTokensToStorage(tokens: Token): void {
+  private async clearAuthenticationCookies(): Promise<void> {
     try {
-      this.accessToken = tokens.access_token;
-      this.refreshToken = tokens.refresh_token;
-      this.tokenExpirationTime = Date.now() + (tokens.expires_in * 1000);
-
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('vana_access_token', tokens.access_token);
-        sessionStorage.setItem('vana_refresh_token', tokens.refresh_token);
-        sessionStorage.setItem('vana_token_expiration', this.tokenExpirationTime.toString());
-        syncTokensToCookies();
-      }
+      await fetch(`${this.config.baseURL}/api/auth/clear-tokens`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
     } catch (error) {
-      console.warn('Failed to save tokens to storage:', error);
+      console.warn('Failed to clear authentication cookies:', error);
     }
   }
 
   /**
-   * Clear authentication tokens from sessionStorage
-   */
-  private clearTokens(): void {
-    this.accessToken = null;
-    this.refreshToken = null;
-    this.tokenExpirationTime = null;
-
-    if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('vana_access_token');
-      sessionStorage.removeItem('vana_refresh_token');
-      sessionStorage.removeItem('vana_token_expiration');
-      syncTokensToCookies();
-      fetch('/api/auth/sync-cookies', { method: 'DELETE' }).catch(() => {});
-    }
-  }
-
-  /**
-   * Check if access token is expired or will expire soon
-   */
-  private isTokenExpired(): boolean {
-    if (!this.tokenExpirationTime) return true;
-    // Consider token expired if it expires within 5 minutes
-    return Date.now() >= (this.tokenExpirationTime - 300000);
-  }
-
-  /**
-   * Refresh access token using refresh token
+   * Refresh access token using refresh token from HttpOnly cookie
+   *
+   * Security: The refresh token is automatically sent via cookie, not exposed to JavaScript
    */
   private async refreshAccessToken(): Promise<boolean> {
-    if (!this.refreshToken) {
-      this.clearTokens();
-      return false;
-    }
-
     // Prevent multiple simultaneous refresh attempts
     if (this.refreshPromise) {
       return this.refreshPromise;
@@ -152,45 +131,43 @@ export class VanaAPIClient {
 
   /**
    * Perform the actual token refresh
+   *
+   * Security: Refresh token is sent automatically via HttpOnly cookie
    */
   private async performTokenRefresh(): Promise<boolean> {
     try {
-      const response = await this.makeRequest<Token>('/api/auth/refresh', {
+      // Note: The refresh token cookie is automatically sent with credentials: 'include'
+      const response = await fetch(`${this.config.baseURL}/api/auth/refresh`, {
         method: 'POST',
-        body: JSON.stringify({ refresh_token: this.refreshToken }),
         headers: { 'Content-Type': 'application/json' },
-        skipAuth: true,
+        credentials: 'include', // Send cookies
+        body: JSON.stringify({}), // Empty body, token from cookie
       });
 
-      this.saveTokensToStorage(response);
+      if (!response.ok) {
+        throw new Error('Token refresh failed');
+      }
+
+      const tokens: Token = await response.json();
+      await this.setAuthenticationCookies(tokens);
       return true;
     } catch (error) {
       console.error('Token refresh failed:', error);
-      this.clearTokens();
+      await this.clearAuthenticationCookies();
       return false;
     }
   }
 
   /**
    * Make authenticated HTTP request with automatic token refresh
+   *
+   * Security: Uses HttpOnly cookies for authentication, tokens never exposed to JavaScript
    */
   private async makeRequest<T>(
     endpoint: string,
     options: RequestInit & { skipAuth?: boolean; skipRetry?: boolean } = {}
   ): Promise<T> {
     const { skipAuth = false, skipRetry = false, ...requestOptions } = options;
-
-    // In development mode, skip auth unless we have tokens
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    const shouldSkipAuth = skipAuth || (isDevelopment && !this.accessToken);
-
-    // Automatic token refresh for authenticated requests
-    if (!shouldSkipAuth && this.refreshToken && this.isTokenExpired()) {
-      const refreshed = await this.refreshAccessToken();
-      if (!refreshed) {
-        throw new APIError('Authentication failed - please login again', 401);
-      }
-    }
 
     // Prepare request
     const url = `${this.config.baseURL}${endpoint}`;
@@ -199,14 +176,17 @@ export class VanaAPIClient {
       ...((requestOptions.headers as Record<string, string>) || {}),
     };
 
-    // Add authorization header for authenticated requests
-    if (!shouldSkipAuth && this.accessToken) {
-      headers.Authorization = `Bearer ${this.accessToken}`;
+    // Add CSRF token for state-changing methods (POST, PUT, DELETE, PATCH)
+    // GET, HEAD, OPTIONS don't need CSRF protection per HTTP semantics
+    if (options.method && !['GET', 'HEAD', 'OPTIONS'].includes(options.method)) {
+      Object.assign(headers, addCsrfHeader(headers));
     }
 
+    // Always include credentials for cookie-based authentication
     const requestConfig: RequestInit = {
       ...requestOptions,
       headers,
+      credentials: 'include', // CRITICAL: Always send cookies
     };
 
     // Add timeout
@@ -221,7 +201,7 @@ export class VanaAPIClient {
       if (!response.ok) {
         // Handle authentication errors
         if (response.status === 401 && !skipAuth && !skipRetry) {
-          this.clearTokens();
+          await this.clearAuthenticationCookies();
           throw new APIError('Authentication required', 401);
         }
 
@@ -297,6 +277,8 @@ export class VanaAPIClient {
 
   /**
    * Register new user account
+   *
+   * Security: Tokens are stored as HttpOnly cookies, not exposed to JavaScript
    */
   async register(userData: RegisterRequest): Promise<AuthResponse> {
     const response = await this.makeRequestWithRetry<AuthResponse>('/auth/register', {
@@ -305,12 +287,15 @@ export class VanaAPIClient {
       skipAuth: true,
     });
 
-    this.saveTokensToStorage(response.tokens);
+    // Store tokens securely as HttpOnly cookies
+    await this.setAuthenticationCookies(response.tokens);
     return response;
   }
 
   /**
    * Login user with email/username and password
+   *
+   * Security: Tokens are stored as HttpOnly cookies, not exposed to JavaScript
    */
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     const response = await this.makeRequestWithRetry<AuthResponse>('/api/auth/login', {
@@ -319,12 +304,15 @@ export class VanaAPIClient {
       skipAuth: true,
     });
 
-    this.saveTokensToStorage(response.tokens);
+    // Store tokens securely as HttpOnly cookies
+    await this.setAuthenticationCookies(response.tokens);
     return response;
   }
 
   /**
    * Login with OAuth2 form data (alternative format)
+   *
+   * Security: Tokens are stored as HttpOnly cookies, not exposed to JavaScript
    */
   async loginOAuth2(username: string, password: string): Promise<AuthResponse> {
     const formData = new URLSearchParams();
@@ -339,12 +327,15 @@ export class VanaAPIClient {
       skipAuth: true,
     });
 
-    this.saveTokensToStorage(response.tokens);
+    // Store tokens securely as HttpOnly cookies
+    await this.setAuthenticationCookies(response.tokens);
     return response;
   }
 
   /**
    * Login with Google Cloud Identity
+   *
+   * Security: Tokens are stored as HttpOnly cookies, not exposed to JavaScript
    */
   async loginGoogle(googleData: GoogleCloudIdentity): Promise<AuthResponse> {
     const response = await this.makeRequestWithRetry<AuthResponse>('/auth/google', {
@@ -353,12 +344,15 @@ export class VanaAPIClient {
       skipAuth: true,
     });
 
-    this.saveTokensToStorage(response.tokens);
+    // Store tokens securely as HttpOnly cookies
+    await this.setAuthenticationCookies(response.tokens);
     return response;
   }
 
   /**
    * Handle Google OAuth callback
+   *
+   * Security: Tokens are stored as HttpOnly cookies, not exposed to JavaScript
    */
   async handleGoogleCallback(callbackData: GoogleOAuthCallbackRequest): Promise<AuthResponse> {
     const response = await this.makeRequestWithRetry<AuthResponse>('/auth/google/callback', {
@@ -367,37 +361,42 @@ export class VanaAPIClient {
       skipAuth: true,
     });
 
-    this.saveTokensToStorage(response.tokens);
+    // Store tokens securely as HttpOnly cookies
+    await this.setAuthenticationCookies(response.tokens);
     return response;
   }
 
   /**
    * Logout current session
+   *
+   * Security: Clears HttpOnly cookies and revokes refresh token
    */
   async logout(): Promise<void> {
-    if (this.refreshToken) {
-      try {
-        await this.makeRequest('/auth/logout', {
-          method: 'POST',
-          body: JSON.stringify({ refresh_token: this.refreshToken }),
-        });
-      } catch (error) {
-        console.warn('Logout request failed:', error);
-      }
+    try {
+      // Note: Refresh token is automatically sent via cookie
+      await this.makeRequest('/auth/logout', {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+    } catch (error) {
+      console.warn('Logout request failed:', error);
     }
 
-    this.clearTokens();
+    // Clear cookies regardless of backend response
+    await this.clearAuthenticationCookies();
   }
 
   /**
    * Logout from all devices
+   *
+   * Security: Revokes all refresh tokens and clears cookies
    */
   async logoutAll(): Promise<{ message: string }> {
     const response = await this.makeRequest<{ message: string }>('/auth/logout-all', {
       method: 'POST',
     });
 
-    this.clearTokens();
+    await this.clearAuthenticationCookies();
     return response;
   }
 
@@ -410,6 +409,8 @@ export class VanaAPIClient {
 
   /**
    * Change user password
+   *
+   * Security: Clears all auth cookies as password change logs out all sessions
    */
   async changePassword(passwordData: ChangePasswordRequest): Promise<{ message: string }> {
     const response = await this.makeRequest<{ message: string }>('/auth/change-password', {
@@ -417,8 +418,8 @@ export class VanaAPIClient {
       body: JSON.stringify(passwordData),
     });
 
-    // Clear tokens since password change logs out all sessions
-    this.clearTokens();
+    // Clear cookies since password change logs out all sessions
+    await this.clearAuthenticationCookies();
     return response;
   }
 
@@ -610,31 +611,37 @@ export class VanaAPIClient {
   // Authentication State Helpers
 
   /**
-   * Check if user is authenticated
+   * Check if user is authenticated by verifying cookies on backend
+   *
+   * Security: Does not expose tokens to JavaScript, checks server-side cookies
+   *
+   * @returns Promise<boolean> indicating authentication status
    */
-  isAuthenticated(): boolean {
-    return !!(this.accessToken && this.refreshToken);
+  async isAuthenticated(): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.config.baseURL}/api/auth/check`, {
+        credentials: 'include', // Send cookies
+      });
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const data: { authenticated: boolean } = await response.json();
+      return data.authenticated;
+    } catch (error) {
+      console.warn('Failed to check authentication status:', error);
+      return false;
+    }
   }
 
   /**
-   * Get current access token
+   * Manually set tokens (useful for SSR or after OAuth)
+   *
+   * Security: Stores tokens as HttpOnly cookies, not exposed to JavaScript
    */
-  getAccessToken(): string | null {
-    return this.accessToken;
-  }
-
-  /**
-   * Get current refresh token
-   */
-  getRefreshToken(): string | null {
-    return this.refreshToken;
-  }
-
-  /**
-   * Manually set tokens (useful for SSR)
-   */
-  setTokens(tokens: Token): void {
-    this.saveTokensToStorage(tokens);
+  async setTokens(tokens: Token): Promise<void> {
+    await this.setAuthenticationCookies(tokens);
   }
 }
 

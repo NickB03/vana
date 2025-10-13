@@ -288,6 +288,7 @@ try:  # pragma: no cover - optional auth dependencies
     )
     from app.auth.models import User  # type: ignore
     from app.auth.routes import admin_router, auth_router, users_router  # type: ignore
+    from app.auth.cookie_routes import cookie_router  # Secure HttpOnly cookie auth
     from app.routes.chat_actions import router as chat_actions_router  # Chat action endpoints
     from app.auth.security import (  # type: ignore
         current_active_user_dep,
@@ -330,9 +331,11 @@ except ModuleNotFoundError:  # pragma: no cover
     class RateLimitMiddleware(AuditLogMiddleware):  # type: ignore
         pass
 
-    auth_router = users_router = admin_router = chat_actions_router = APIRouter()
+    auth_router = users_router = admin_router = cookie_router = chat_actions_router = APIRouter()
 
 from app.middleware import SecurityHeadersMiddleware  # noqa: E402
+from app.middleware.csrf_middleware import CSRFMiddleware  # noqa: E402
+from app.middleware.input_validation_middleware import InputValidationMiddleware  # noqa: E402
 
 # Initialize auth database
 try:
@@ -375,20 +378,9 @@ app.description = "API for interacting with the Agent vana"
 app.state.agents_dir = AGENTS_DIR
 app.state.session_service_uri = session_service_uri
 
-# Add CORS middleware BEFORE including routers (critical for proper OPTIONS handling)
-from fastapi.middleware.cors import CORSMiddleware as FastAPICORS
-app.add_middleware(
-    FastAPICORS,
-    allow_origins=allow_origins,  # Already includes ports 3000, 3001, 3002
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Explicit methods
-    allow_headers=["*"],
-    expose_headers=["*"],  # Allow clients to read all response headers
-    max_age=3600,  # Cache preflight for 1 hour
-)
-
-# Add authentication routers
+# Add authentication routers (BEFORE middleware - critical for routing)
 app.include_router(auth_router)
+app.include_router(cookie_router)  # Secure HttpOnly cookie authentication
 app.include_router(users_router)
 app.include_router(admin_router)
 
@@ -651,16 +643,41 @@ async def root():
     return HTMLResponse(content=ADK_DEV_UI_HTML)
 
 
-# Add security middleware (order matters - security headers first, then circuit breaker)
-# Determine if we're in production for HSTS
+# Add middleware in correct order (LIFO - last added runs first)
+# Order of execution: CORS → Audit → RateLimit → CircuitBreaker → InputValidation → CSRF → SecurityHeaders
+# This ensures CORS runs early and security checks happen after routing
+
+# 1. Add CORS middleware LAST (runs FIRST in request chain)
+# CRITICAL: This must be last so it runs before all other middleware
+from fastapi.middleware.cors import CORSMiddleware as FastAPICORS
+app.add_middleware(
+    FastAPICORS,
+    allow_origins=allow_origins,  # Includes localhost:3000, 127.0.0.1:3000, etc.
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
+    allow_headers=["*"],  # Allow all headers including X-CSRF-Token, Authorization
+    expose_headers=["*"],  # Expose all response headers to client
+    max_age=3600,  # Cache preflight for 1 hour
+)
+
+# 2. Audit logging (logs all requests)
+app.add_middleware(AuditLogMiddleware)
+
+# 3. Rate limiting (after CORS, before security checks)
+app.add_middleware(RateLimitMiddleware, calls=100, period=60)
+
+# 4. Circuit breaker for auth protection
+app.add_middleware(CircuitBreakerMiddleware)
+
+# 5. Input validation middleware (validates user input)
+app.add_middleware(InputValidationMiddleware, validate_query_params=False)
+
+# 6. CSRF protection (validates CSRF tokens)
+app.add_middleware(CSRFMiddleware)
+
+# 7. Security headers (adds security headers to responses)
 is_production = os.getenv("NODE_ENV") == "production"
 app.add_middleware(SecurityHeadersMiddleware, enable_hsts=is_production)
-
-# CORS middleware already added earlier (before routers) for proper OPTIONS handling
-
-app.add_middleware(CircuitBreakerMiddleware)  # Circuit breaker for auth protection
-app.add_middleware(RateLimitMiddleware, calls=100, period=60)  # General rate limiting
-app.add_middleware(AuditLogMiddleware)
 
 
 @app.get("/health")

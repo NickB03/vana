@@ -1,6 +1,15 @@
 /**
- * Cookie Sync API Route - Secure token transfer from sessionStorage to HTTP-only cookies
- * Enables server-side authentication for SSE proxy while maintaining client-side token security
+ * Cookie Sync API Route - DEPRECATED
+ *
+ * SECURITY NOTICE: This route is deprecated as of CRIT-008 security enhancement.
+ * JWT tokens are now managed exclusively through HttpOnly cookies set by the backend.
+ *
+ * New Approach (Secure):
+ * - Backend sets HttpOnly cookies after authentication
+ * - Tokens never exposed to JavaScript (XSS protection)
+ * - Use /api/auth/set-tokens (backend) for secure cookie management
+ *
+ * This route remains for backwards compatibility but should not be used for new code.
  */
 
 import { NextRequest, NextResponse } from 'next/server';

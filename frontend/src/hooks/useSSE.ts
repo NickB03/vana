@@ -264,50 +264,36 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
 
       // For proxy routes, use fetch with custom headers since EventSource doesn't support them
       if (sseUrl.startsWith('/api/sse')) {
-        const accessToken = apiClient.getAccessToken();
+        // SECURITY: Cookies are automatically sent with credentials: 'include'
+        // No need to manually add auth headers - HttpOnly cookies handle authentication
 
         // Improved development mode detection
         const isDevelopment = process.env.NODE_ENV === 'development' ||
                               !process.env.NEXT_PUBLIC_API_URL?.includes('production');
 
-        // In development mode, allow connection without token
-        if (!isDevelopment && !accessToken) {
-          console.error('[useSSE] No authentication token in production mode');
-          stateRefs.current.setError('No authentication token available');
-          stateRefs.current.setConnectionState('error');
-          return;
-        }
-
-        console.log('[useSSE] Auth token present:', !!accessToken, 'Development mode:', isDevelopment);
-
         // Use fetch-based SSE for authenticated proxy requests
         const controller = new AbortController();
 
-        // Build headers conditionally
+        // Build headers - no auth tokens, cookies handle authentication
         const headers: HeadersInit = {
           'Accept': 'text/event-stream',
           'Cache-Control': 'no-cache',
           'Connection': 'keep-alive',
         };
 
-        // Only add auth header if token exists
-        if (accessToken) {
-          headers['x-auth-token'] = accessToken;
-        }
-
         console.log('[useSSE] Connection attempt:', {
           url: sseUrl,
           isDevelopment,
-          hasToken: !!accessToken,
           NODE_ENV: process.env.NODE_ENV,
-          enabled: opts.enabled
+          enabled: opts.enabled,
+          cookiesIncluded: opts.withCredentials
         });
         console.log('[useSSE] Fetching SSE stream with headers:', Object.keys(headers));
 
         fetch(sseUrl, {
           method: 'GET',
           headers,
-          credentials: opts.withCredentials ? 'include' : 'omit',
+          credentials: opts.withCredentials ? 'include' : 'omit', // Cookies sent automatically
           signal: controller.signal,
         }).then(response => {
           console.log('[useSSE] SSE fetch response:', response.status, response.statusText);

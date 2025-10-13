@@ -2,9 +2,11 @@
 
 from .auth_middleware import ADKPathAuthMiddleware, EnhancedAuthMiddleware
 from .security import SecurityHeadersMiddleware
+from .input_validation_middleware import InputValidationMiddleware
 
 __all__ = [
     "SecurityHeadersMiddleware",
     "ADKPathAuthMiddleware",
-    "EnhancedAuthMiddleware"
+    "EnhancedAuthMiddleware",
+    "InputValidationMiddleware"
 ]

@@ -29,9 +29,10 @@ When working on ANY frontend code (`/frontend` directory):
 See [Chrome DevTools MCP section](#-chrome-devtools-mcp---critical-debugging--verification-tool) for detailed usage.
 
 **CORRECT GOOGLE ADK CHAT IMPLEMENTATION**:
-- The 8 research agents (Team Leader, Plan Generator, Section Planner, etc.) are **ADK agents on port 8080**
+- An ADK dispatcher-led agent network runs on port 8080. The dispatcher routes to planning and research sub-agents (e.g., `plan_generator`, `section_planner`, `section_researcher`, `research_evaluator`, `enhanced_search_executor`, `report_composer`).
 - FastAPI backend (port 8000) should **proxy requests to ADK**, not run its own orchestrator
 - Flow: Frontend → FastAPI → ADK Agents (port 8080) → Response via SSE
+- See [Service Architecture & Ports](#-service-architecture--ports) for detailed configuration
 
 ⚠️ **CRITICAL ADK BUG**: When processing ADK events, extract from **BOTH** `parts[].text` AND `parts[].functionResponse` - research plans come from `functionResponse`, not `text`. See `docs/adk/ADK-Event-Extraction-Guide.md`
 
@@ -58,7 +59,7 @@ The system consists of three main services that must be running:
    - Main API server (`app.server`)
    - Handles SSE streams for chat
    - Manages sessions and authentication
-   - Provides `/health` and `/api/run_sse` endpoints
+   - Provides `/health` and `/agent_network_sse/{sessionId}`; research SSE via ADK-compliant `GET /apps/{app}/users/{user}/sessions/{session}/run`
 
 2. **Google Agent Development Kit (ADK)** (Port **8080**)
    - ADK web UI for agent management
@@ -77,20 +78,34 @@ To prevent port conflicts and ensure a clean startup, use the dedicated script t
 **This is the recommended way to start the development environment.**
 
 ```bash
-# Starts backend, frontend, and ADK services safely
-./start_all_services.sh
+# Start all services with PM2 (recommended for local dev)
+pm2 start ecosystem.config.js
+# Services:
+# - Backend:  http://localhost:8000
+# - ADK:      http://localhost:8080
+# - Frontend: http://localhost:3000
 ```
 
-This script handles:
+PM2 manages these processes:
 - **Backend API** (Port 8000)
 - **Google ADK** (Port 8080)
-- **Frontend UI** (Port 3000) - The frontend is now pinned to port 3000 to guarantee stability.
+- **Frontend UI** (Port 3000) - The frontend is pinned to port 3000 to guarantee stability.
 
 ### Important Configuration
 - Frontend `.env.local` must have: `NEXT_PUBLIC_API_URL=http://127.0.0.1:8000`
-- The frontend connects to FastAPI (port 8000), NOT to ADK (port 8080)
-- SSE endpoints: `/api/run_sse/{sessionId}` and `/agent_network_sse/{sessionId}`
-- Quick check: `curl http://127.0.0.1:8000/health` or `lsof -i :8000` to confirm the backend is running before invoking CLI agents.
+- Frontend ADK path config (optional): `NEXT_PUBLIC_ADK_APP_NAME` (default: `vana`), `NEXT_PUBLIC_ADK_DEFAULT_USER` (default: `default`)
+- The frontend connects to FastAPI (port 8000), NOT directly to ADK (port 8080)
+- SSE endpoints:
+  - Agent network: `/agent_network_sse/{sessionId}`
+  - Research run (ADK-compliant): `GET /apps/{app}/users/{user}/sessions/{session}/run`
+  - Recommended (secure) frontend proxy paths: `/api/sse/agent_network_sse/{sessionId}`, `/api/sse/apps/{app}/users/{user}/sessions/{session}/run`
+- Quick check: `curl http://127.0.0.1:8000/health` or `lsof -i :8000`
+
+#### Frontend SSE Proxy (Security)
+To prevent JWT exposure in browser URLs, the frontend provides a secure SSE proxy under `/api/sse/...` which forwards Authorization headers server‑side and streams responses:
+- Map `/api/sse/agent_network_sse/{sessionId}` → upstream `/agent_network_sse/{sessionId}`
+- Map `/api/sse/apps/{app}/users/{user}/sessions/{session}/run` → upstream `/apps/{app}/users/{user}/sessions/{session}/run`
+Use these proxy paths in the UI for all SSE connections.
 
 ## Common Development Commands
 
@@ -222,23 +237,7 @@ import type { Message } from '@/types';
 - **Security**: Never commit secrets, use environment variables
 
 ### File Organization
-```
-Backend:
-  app/
-    routes/        # API endpoint handlers
-    models/        # Data models and schemas
-    services/      # Business logic
-    utils/         # Helper functions
-
-Frontend:
-  src/
-    components/    # React components
-    hooks/         # Custom hooks
-    services/      # API client code
-    stores/        # State management
-    types/         # TypeScript definitions
-    utils/         # Helper functions
-```
+See [Project Structure](#project-structure) section below for complete directory layout.
 
 
 ## Project Structure
@@ -280,6 +279,8 @@ The system uses a two-tier model approach:
 - **Frontend**: Jest unit tests + Playwright E2E tests
 - **Coverage requirement**: 85% minimum
 - Run `make test` before committing changes
+
+See [Common Development Commands](#common-development-commands) for test execution commands and [Test-Driven Development](#test-driven-development-tdd) for TDD workflow.
 
 
 ## Test-Driven Development (TDD)
@@ -352,9 +353,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
 ```
 
 ### TDD Agents
-- Use `tdd-london-swarm` for mock-driven development
-- Use `tester` agent for comprehensive test suites
-- Use `production-validator` for deployment readiness
+See [Available Claude Flow Agents](#-available-claude-flow-agents-54-total) for complete agent list including TDD-specific agents.
 
 ### Best Practices
 1. Write tests before implementation
@@ -398,12 +397,6 @@ export function ChatMessage({ message }: ChatMessageProps) {
     ```
 - Watch for hardcoded URLs, missing conditionals, or dependency mismatches when introducing new extras.
 
-### Pre-Submit Checklist
-- Jinja blocks balanced and variables spelled correctly?
-- Deployment target overrides reviewed?
-- GitHub Actions and Cloud Build kept in sync?
-- Tested across representative agent and feature combinations?
-
 ## 🔍 Chrome DevTools MCP - Browser Verification Tool
 
 **⚠️ CRITICAL**: Agents MUST verify frontend changes in real browsers. **NEVER assume tests passing = working UI.**
@@ -418,6 +411,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
 **Navigation**: `navigate_page`, `new_page`, `close_page`, `wait_for`
 **Debugging**: `take_snapshot` (prefer over screenshot), `take_screenshot`, `evaluate_script`, `list_console_messages`, `list_network_requests`
 **Performance**: `performance_start_trace`, `performance_stop_trace`, `emulate_cpu`, `emulate_network`, `resize_page`
+
+For complete tool list, see [MCP Tool Categories](#mcp-tool-categories) section.
 
 ### Core Verification Workflow
 ```javascript
@@ -553,22 +548,7 @@ Required `.env.local` variables:
 
 ### MCP Tools Provide Specialized Capabilities:
 
-#### Coordination (Claude Flow / Ruv-Swarm)
-- Swarm initialization (topology setup)
-- Agent type definitions (coordination patterns)
-- Task orchestration (high-level planning)
-- Memory management
-- Neural features
-- Performance tracking
-- GitHub integration
-
-#### Browser Debugging & Verification (Chrome DevTools)
-- **CRITICAL**: Live browser testing and verification
-- Real-time UI debugging
-- Network and performance monitoring
-- Console error detection
-- SSE stream debugging
-- Visual verification
+See [MCP Tool Categories](#mcp-tool-categories) for complete tool listing.
 
 **KEY**: MCP coordinates strategy + verifies in browser, Claude Code's Task tool executes with real agents.
 
@@ -611,9 +591,12 @@ claude mcp add ruv-swarm npx ruv-swarm mcp start  # Optional: Enhanced coordinat
 2. **REQUIRED**: Use Claude Code's Task tool to spawn agents that do actual work
 3. **REQUIRED**: Each agent runs hooks for coordination
 4. **REQUIRED**: Batch all operations in single messages
-5. **CRITICAL**: Use Chrome DevTools MCP to verify all frontend changes in live browser
+5. **CRITICAL**: Use Chrome DevTools MCP to verify all frontend changes in live browser (see [Chrome DevTools MCP section](#-chrome-devtools-mcp---browser-verification-tool))
+
 
 ### Example Full-Stack Development:
+
+For additional workflow patterns, see [Concurrent Execution Examples](#-concurrent-execution-examples) below.
 
 ```javascript
 // Single message with all agent spawning via Claude Code's Task tool
@@ -633,16 +616,7 @@ claude mcp add ruv-swarm npx ruv-swarm mcp start  # Optional: Enhanced coordinat
   Write "frontend/App.jsx"
   Write "database/schema.sql"
 
-// CRITICAL: After implementation, verify in browser
-[Browser Verification]:
-  Bash "make dev &"  // Start services
-  mcp__chrome-devtools__navigate_page { url: "http://localhost:3000" }
-  mcp__chrome-devtools__take_snapshot  // See page structure
-  mcp__chrome-devtools__fill_form { elements: [...test data...] }
-  mcp__chrome-devtools__click { uid: "submit-button" }
-  mcp__chrome-devtools__wait_for { text: "Success" }
-  mcp__chrome-devtools__list_console_messages  // Check for errors
-  mcp__chrome-devtools__list_network_requests { resourceTypes: ["xhr", "fetch"] }
+// CRITICAL: After implementation, verify in browser (see Chrome DevTools MCP section)
 ```
 
 ## 📋 Agent Coordination Protocol
@@ -717,62 +691,15 @@ Message 4: Write "file.js"
 // This breaks parallel coordination!
 ```
 
-## Performance Benefits (v3.0.0)
-
-- **84.8% SWE-Bench solve rate**
-- **32.3% token reduction**
-- **2.8-4.4x speed improvement**
-- **27+ neural models**
-- **Advanced WASM SIMD acceleration**
-- **Real-time swarm coordination**
-- **Cross-session memory persistence**
-
-## Hooks Integration
-
-### Pre-Operation
-- Auto-assign agents by file type
-- Validate commands for safety
-- Prepare resources automatically
-- Optimize topology by complexity
-- Cache searches
-
-### Post-Operation
-- Auto-format code
-- Train neural patterns
-- Update memory
-- Analyze performance
-- Track token usage
-
-### Session Management
-- Generate summaries
-- Persist state
-- Track metrics
-- Restore context
-- Export workflows
-
-## Advanced Features (v3.0.0)
-
-- 🚀 Automatic Topology Selection
-- ⚡ Parallel Execution (2.8-4.4x speed)
-- 🧠 Neural Training
-- 📊 Bottleneck Analysis
-- 🤖 Smart Auto-Spawning
-- 🛡️ Self-Healing Workflows
-- 💾 Cross-Session Memory
-- 🔗 GitHub Integration
-
-## Integration Tips
-
-1. **ALWAYS use Chrome DevTools MCP for frontend verification** - Never assume tests pass = works in browser
-2. Start with basic swarm init
-3. Scale agents gradually
-4. Use memory for context
-5. Monitor progress regularly
-6. Train patterns from success
-7. Enable hooks automation
-8. Use GitHub tools first
-9. **Check console errors and network requests** after every frontend change
-10. **Use performance tracing** to debug SSE and real-time features
+### Best Practices
+1. Start with basic swarm init
+2. Scale agents gradually
+3. Use memory for context
+4. Monitor progress regularly
+5. Train patterns from success
+6. Enable hooks automation
+7. Use GitHub tools first
+8. Always verify frontend changes in browser (see [Chrome DevTools MCP section](#-chrome-devtools-mcp---browser-verification-tool))
 
 
 ## Recommended Workflow (Anthropic Best Practices)
@@ -811,11 +738,10 @@ Bash "uv run pytest tests/unit/test_oauth.py"  # Test
 Edit "app/server.py"  # Integrate
 Bash "uv run pytest tests/integration/"  # Verify
 
-# For frontend
+# For frontend - verify in browser after changes
 Write "frontend/src/auth/OAuthButton.tsx"
 Bash "npm --prefix frontend test"
-mcp__chrome-devtools__navigate_page { url: "http://localhost:3000" }
-mcp__chrome-devtools__take_snapshot
+# Use Chrome DevTools MCP for browser verification (see dedicated section)
 ```
 
 **Phase 4: VERIFY**
@@ -823,7 +749,7 @@ mcp__chrome-devtools__take_snapshot
 # Verify reasonableness at each step
 Bash "make test"  # All tests pass
 Bash "make lint"  # No linting errors
-mcp__chrome-devtools__list_console_messages  # No browser errors
+# For frontend: Use Chrome DevTools MCP to check browser console (see dedicated section)
 ```
 
 **Phase 5: COMMIT**
@@ -837,7 +763,7 @@ Bash "git commit -m 'feat: add OAuth authentication support
 - Update server integration
 
 🤖 Generated with Claude Code
-Co-Authored-By: Claude <noreply@anthropic.com>'"
+Co-Authored-By: Claude <noreply@anthropic.com>'
 ```
 
 ### Think Modes
@@ -1043,12 +969,6 @@ Usage: `/full-test`
 
 # Agent Development Kit (ADK)
 
-Agent Development Kit (ADK)
-
-## ADK Python Repository
-
-Agent Development Kit (ADK)
-
 An open-source, code-first Python toolkit for building, evaluating, and deploying sophisticated AI agents with flexibility and control.
 
 Agent Development Kit (ADK) is a flexible and modular framework for developing and deploying AI agents. While optimized for Gemini and the Google ecosystem, ADK is model-agnostic, deployment-agnostic, and is built for compatibility with other frameworks. ADK was designed to make agent development feel more like software development, to make it easier for developers to create, deploy, and orchestrate agentic architectures that range from simple tasks to complex workflows.
@@ -1090,7 +1010,6 @@ You can install the latest stable version of ADK using pip:
 pip install google-adk
 
 
-
 The release cadence is weekly.
 
 
@@ -1106,7 +1025,6 @@ Bug fixes and new features are merged into the main branch on GitHub first. If y
 pip install git+https://github.com/google/adk-python.git@main
 
 
-
 Note: The development version is built directly from the latest code commits. While it includes the newest fixes and features, it may also contain experimental changes or bugs not present in the stable release. Use it primarily for testing upcoming changes or accessing critical fixes before they are officially released.
 
 
@@ -1114,14 +1032,11 @@ Note: The development version is built directly from the latest code commits. Wh
 
 
 Explore the full documentation for detailed guides on building, evaluating, and
-deploying agents:
-
+  deploying agents:
 
 
 
 Documentation
-
-
 
 
 🏁 Feature Highlight
@@ -1174,8 +1089,6 @@ Development UI
 A built-in development UI to help you test, evaluate, debug, and showcase your agent(s).
 
 
-
-
 Evaluate Agents
 
 
@@ -1183,100 +1096,32 @@ adk eval \
     samples_for_testing/hello_world \
     samples_for_testing/hello_world/hello_world_eval_set_001.evalset.json
 
-
-
-🤝 Contributing
-
-
-We welcome contributions from the community! Whether it's bug reports, feature requests, documentation improvements, or code contributions, please see our
-- 
-General contribution guideline and flow
-.
-- Then if you want to contribute code, please read 
-Code Contributing Guidelines
- to get started.
-
-
-📄 License
-
-
-This project is licensed under the Apache 2.0 License - see the LICENSE file for details.
-
-
-
-
-Happy Agent Building!
-
 **Source:** [adk-python repository](https://github.com/google/adk-python)
 
-## Documentation
-- [Custom agents](https://github.com/google/adk-docs/blob/main/docs/agents/custom-agents.md)
-- [Agents](https://github.com/google/adk-docs/blob/main/docs/agents/index.md)
-- [LLM Agent](https://github.com/google/adk-docs/blob/main/docs/agents/llm-agents.md)
-- [Using Different Models with ADK](https://github.com/google/adk-docs/blob/main/docs/agents/models.md)
-- [Multi-Agent Systems in ADK](https://github.com/google/adk-docs/blob/main/docs/agents/multi-agents.md)
-- [Workflow Agents](https://github.com/google/adk-docs/blob/main/docs/agents/workflow-agents/index.md)
-- [Loop agents](https://github.com/google/adk-docs/blob/main/docs/agents/workflow-agents/loop-agents.md)
-- [Parallel agents](https://github.com/google/adk-docs/blob/main/docs/agents/workflow-agents/parallel-agents.md)
-- [Sequential agents](https://github.com/google/adk-docs/blob/main/docs/agents/workflow-agents/sequential-agents.md)
-- [API Reference](https://github.com/google/adk-docs/blob/main/docs/api-reference/index.md)
-- [Artifacts](https://github.com/google/adk-docs/blob/main/docs/artifacts/index.md)
-- [Design Patterns and Best Practices for Callbacks](https://github.com/google/adk-docs/blob/main/docs/callbacks/design-patterns-and-best-practices.md)
-- [Callbacks: Observe, Customize, and Control Agent Behavior](https://github.com/google/adk-docs/blob/main/docs/callbacks/index.md)
-- [Types of Callbacks](https://github.com/google/adk-docs/blob/main/docs/callbacks/types-of-callbacks.md)
-- [Community Resources](https://github.com/google/adk-docs/blob/main/docs/community.md)
-- [Context](https://github.com/google/adk-docs/blob/main/docs/context/index.md)
-- [1. [`google/adk-python`](https://github.com/google/adk-python)](https://github.com/google/adk-docs/blob/main/docs/contributing-guide.md)
-- [Deploy to Vertex AI Agent Engine](https://github.com/google/adk-docs/blob/main/docs/deploy/agent-engine.md)
-- [Deploy to Cloud Run](https://github.com/google/adk-docs/blob/main/docs/deploy/cloud-run.md)
-- [Deploy to GKE](https://github.com/google/adk-docs/blob/main/docs/deploy/gke.md)
-- [Deploying Your Agent](https://github.com/google/adk-docs/blob/main/docs/deploy/index.md)
-- [Why Evaluate Agents](https://github.com/google/adk-docs/blob/main/docs/evaluate/index.md)
-- [Events](https://github.com/google/adk-docs/blob/main/docs/events/index.md)
-- [Agent Development Kit (ADK)](https://github.com/google/adk-docs/blob/main/docs/get-started/about.md)
-- [Get Started](https://github.com/google/adk-docs/blob/main/docs/get-started/index.md)
-- [Installing ADK](https://github.com/google/adk-docs/blob/main/docs/get-started/installation.md)
-- [Quickstart](https://github.com/google/adk-docs/blob/main/docs/get-started/quickstart.md)
-- [Streaming Quickstarts](https://github.com/google/adk-docs/blob/main/docs/get-started/streaming/index.md)
-- [Quickstart (Streaming / Java) {#adk-streaming-quickstart-java}](https://github.com/google/adk-docs/blob/main/docs/get-started/streaming/quickstart-streaming-java.md)
-- [Quickstart (Streaming / Python) {#adk-streaming-quickstart}](https://github.com/google/adk-docs/blob/main/docs/get-started/streaming/quickstart-streaming.md)
-- [Testing your Agents](https://github.com/google/adk-docs/blob/main/docs/get-started/testing.md)
-- [What is Agent Development Kit?](https://github.com/google/adk-docs/blob/main/docs/index.md)
-- [Model Context Protocol (MCP)](https://github.com/google/adk-docs/blob/main/docs/mcp/index.md)
-- [Agent Observability with Arize AX](https://github.com/google/adk-docs/blob/main/docs/observability/arize-ax.md)
-- [Agent Observability with Phoenix](https://github.com/google/adk-docs/blob/main/docs/observability/phoenix.md)
-- [Runtime](https://github.com/google/adk-docs/blob/main/docs/runtime/index.md)
-- [Runtime Configuration](https://github.com/google/adk-docs/blob/main/docs/runtime/runconfig.md)
-- [Safety & Security for AI Agents](https://github.com/google/adk-docs/blob/main/docs/safety/index.md)
-- [Introduction to Conversational Context: Session, State, and Memory](https://github.com/google/adk-docs/blob/main/docs/sessions/index.md)
-- [Memory: Long-Term Knowledge with `MemoryService`](https://github.com/google/adk-docs/blob/main/docs/sessions/memory.md)
-- [Session: Tracking Individual Conversations](https://github.com/google/adk-docs/blob/main/docs/sessions/session.md)
-- [State: The Session's Scratchpad](https://github.com/google/adk-docs/blob/main/docs/sessions/state.md)
-- [Configurating streaming behaviour](https://github.com/google/adk-docs/blob/main/docs/streaming/configuration.md)
-- [Custom Audio Streaming app (WebSocket) {#custom-streaming-websocket}](https://github.com/google/adk-docs/blob/main/docs/streaming/custom-streaming-ws.md)
-- [Custom Audio Streaming app (SSE) {#custom-streaming}](https://github.com/google/adk-docs/blob/main/docs/streaming/custom-streaming.md)
-- [ADK Bidi-streaming development guide: Part 1 - Introduction](https://github.com/google/adk-docs/blob/main/docs/streaming/dev-guide/part1.md)
-- [Bidi-streaming(live) in ADK](https://github.com/google/adk-docs/blob/main/docs/streaming/index.md)
-- [Streaming Tools](https://github.com/google/adk-docs/blob/main/docs/streaming/streaming-tools.md)
-- [Authenticating with Tools](https://github.com/google/adk-docs/blob/main/docs/tools/authentication.md)
-- [Built-in tools](https://github.com/google/adk-docs/blob/main/docs/tools/built-in-tools.md)
-- [Function tools](https://github.com/google/adk-docs/blob/main/docs/tools/function-tools.md)
-- [Google Cloud Tools](https://github.com/google/adk-docs/blob/main/docs/tools/google-cloud-tools.md)
-- [Tools](https://github.com/google/adk-docs/blob/main/docs/tools/index.md)
-- [Model Context Protocol Tools](https://github.com/google/adk-docs/blob/main/docs/tools/mcp-tools.md)
-- [OpenAPI Integration](https://github.com/google/adk-docs/blob/main/docs/tools/openapi-tools.md)
-- [Third Party Tools](https://github.com/google/adk-docs/blob/main/docs/tools/third-party-tools.md)
-- [Build Your First Intelligent Agent Team: A Progressive Weather Bot with ADK](https://github.com/google/adk-docs/blob/main/docs/tutorials/agent-team.md)
-- [ADK Tutorials!](https://github.com/google/adk-docs/blob/main/docs/tutorials/index.md)
-- [Python API Reference](https://github.com/google/adk-docs/blob/main/docs/api-reference/python/)
+## ADK Documentation Resources
+
+Comprehensive documentation available at [ADK Docs](https://github.com/google/adk-docs):
+
+### Core Concepts
+- **Agents**: Custom agents, LLM agents, multi-agent systems, workflow agents (loop, parallel, sequential)
+- **Tools**: Built-in tools, function tools, OpenAPI integration, MCP tools, Google Cloud tools, authentication
+- **Sessions & Context**: Session tracking, state management, memory service, conversational context
+
+### Development & Deployment
+- **Getting Started**: Installation, quickstart guides, testing agents
+- **Deployment**: Cloud Run, GKE, Vertex AI Agent Engine
+- **Streaming**: SSE streaming, WebSocket streaming, bidi-streaming, streaming tools
+- **Advanced Features**: Callbacks, events, artifacts, runtime configuration
+
+### Best Practices & Resources
+- **Observability**: Arize AX integration, Phoenix integration
+- **Safety & Security**: Security guidelines for AI agents
+- **Tutorials**: Agent team building, progressive examples
+- **Community**: Community resources, contributing guide
+
+[Full documentation index →](https://github.com/google/adk-docs/blob/main/docs/)
+[Python API Reference →](https://github.com/google/adk-docs/blob/main/docs/api-reference/python/)
 
 ---
 
 Remember: **Claude Flow coordinates, Claude Code creates!**
-
-# important-instruction-reminders
-Do what has been asked; nothing more, nothing less.
-NEVER create files unless they're absolutely necessary for achieving your goal.
-ALWAYS prefer editing an existing file to creating a new one.
-NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
-Never save working files, text/mds and tests to the root folder.

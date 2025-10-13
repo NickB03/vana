@@ -52,12 +52,24 @@ export function extractAuthTokens(request: NextRequest): AuthTokens {
 
 /**
  * Set secure HTTP-only cookies for authentication
+ *
+ * SameSite=lax provides CSRF protection while allowing:
+ * - OAuth callbacks (e.g., Google OAuth redirect)
+ * - Top-level navigation with cookies
+ * - Legitimate cross-site GET requests
+ *
+ * Still blocks:
+ * - Cross-site POST/PUT/DELETE (CSRF protection)
+ * - Embedded iframes accessing cookies
+ * - Third-party tracking
+ *
+ * Industry standard for authentication cookies (OWASP recommended).
  */
 export function setAuthCookies(response: NextResponse, tokens: AuthTokens): void {
   const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict' as const,
+    sameSite: 'lax' as const,  // OAuth-friendly CSRF protection
     path: '/',
   };
 
@@ -90,7 +102,7 @@ export function clearAuthCookies(response: NextResponse): void {
   const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict' as const,
+    sameSite: 'lax' as const,  // Match setAuthCookies configuration
     path: '/',
     maxAge: 0,
   };
