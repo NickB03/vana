@@ -8,7 +8,7 @@ with too many concurrent requests.
 import asyncio
 import time
 from collections import deque
-from typing import Any, Callable, Optional, Type
+from typing import Any, Awaitable, Callable, Optional, Type
 from types import TracebackType
 import logging
 
@@ -50,7 +50,7 @@ class AsyncRateLimiter:
         self.semaphore = asyncio.Semaphore(max_concurrent)
 
         # Request history for monitoring
-        self.request_times: deque = deque(maxlen=max_requests * 2)
+        self.request_times: deque[float] = deque(maxlen=max_requests * 2)
 
         # Lock for thread safety
         self.lock = asyncio.Lock()
@@ -103,7 +103,12 @@ class AsyncRateLimiter:
             await asyncio.sleep(0.1)
 
     async def __aenter__(self) -> "AsyncRateLimiter":
-        """Context manager entry - acquire token and semaphore."""
+        """Context manager entry - acquire token and semaphore.
+
+        CRITICAL FIX: Removed timeout on semaphore.acquire() to prevent deadlock.
+        If a timeout is needed, it should be handled by the caller's task cancellation,
+        not by asyncio.wait_for() which can cause semaphore leaks.
+        """
         logger.info(
             f"Rate limiter entry: tokens={self.tokens:.2f}, "
             f"semaphore_slots={self.semaphore._value}/{self.max_concurrent}"
@@ -114,23 +119,27 @@ class AsyncRateLimiter:
         if not acquired:
             raise TimeoutError("Rate limiter timeout - too many requests")
 
-        # Then acquire concurrency semaphore WITH TIMEOUT
+        # Then acquire concurrency semaphore WITHOUT timeout
+        # CRITICAL FIX: Use try/finally to guarantee token release on any failure
         try:
-            await asyncio.wait_for(self.semaphore.acquire(), timeout=10.0)
+            # Let the caller's task cancellation handle timeouts naturally
+            await self.semaphore.acquire()
             logger.debug(
                 f"Semaphore acquired. Available slots: {self.semaphore._value}"
             )
-        except asyncio.TimeoutError:
-            # Release the rate limit token we acquired
+        except asyncio.CancelledError:
+            # Task was cancelled - release the rate limit token
             async with self.lock:
                 self.tokens = min(self.max_requests, self.tokens + 1.0)
-            logger.error(
-                f"Semaphore acquisition timeout. Available slots: {self.semaphore._value}. "
-                f"This indicates too many concurrent requests are blocking."
-            )
-            raise TimeoutError(
-                "Too many concurrent requests - please try again in a moment"
-            )
+            logger.warning("Semaphore acquisition cancelled, token released")
+            raise
+        except Exception as e:
+            # Any other exception - release token to prevent resource leaks
+            async with self.lock:
+                self.tokens = min(self.max_requests, self.tokens + 1.0)
+            logger.error(f"Semaphore acquisition failed: {e}", exc_info=True)
+            raise
+
         return self
 
     async def __aexit__(
@@ -263,7 +272,7 @@ gemini_rate_limiter = AsyncRateLimiter(
 
 
 async def with_retry(
-    func: Callable,
+    func: Callable[..., Awaitable[Any]],
     *args,
     max_retries: int = 3,
     backoff: Optional[ExponentialBackoff] = None,

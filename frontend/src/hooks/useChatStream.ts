@@ -202,11 +202,16 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
   }, [currentSessionId, clearSessionInStore]);
 
   // Get all sessions
-  const getAllSessions = useCallback(() => {
+  // PERFORMANCE FIX: Cache sorted sessions to prevent re-sorting on every call
+  const sortedSessions = useMemo(() => {
     return Object.values(sessions).sort((a, b) =>
       new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
     );
   }, [sessions]);
+
+  const getAllSessions = useCallback(() => {
+    return sortedSessions;
+  }, [sortedSessions]);
 
   // Get session by ID
   const getSessionById = useCallback((sessionId: string) => {
@@ -224,16 +229,22 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
 
   // Memoize stable arrays and objects to prevent re-render loops
   // CRITICAL: Sort messages by timestamp to ensure correct display order
+  // PERFORMANCE FIX: Use message length and last message ID as dependencies
+  // instead of the entire messages array to prevent unnecessary sorts
   const stableMessages = useMemo(() => {
     if (!Array.isArray(currentSession?.messages)) return [];
 
     // Sort messages by timestamp (ascending - oldest first)
+    // PERFORMANCE: This only runs when message count or last message changes
     return [...currentSession.messages].sort((a, b) => {
       const timeA = new Date(a.timestamp || 0).getTime();
       const timeB = new Date(b.timestamp || 0).getTime();
       return timeA - timeB;
     });
-  }, [currentSession?.messages]);
+  }, [
+    currentSession?.messages?.length,
+    currentSession?.messages?.[currentSession.messages.length - 1]?.id,
+  ]);
 
   const stableAgents = useMemo(() => {
     return Array.isArray(currentSession?.agents) ? currentSession.agents : [];

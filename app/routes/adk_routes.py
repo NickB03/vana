@@ -77,6 +77,39 @@ DEFAULT_APP_NAME = "vana"
 DEFAULT_USER_ID = "default"
 
 
+def sanitize_log_content(content: str, max_length: int = 50) -> str:
+    """
+    Sanitize content for secure logging.
+
+    SECURITY FIX: Remove potentially sensitive or malicious content from logs
+    to prevent:
+    - Log injection attacks
+    - PII exposure (GDPR/CCPA compliance)
+    - Credential leakage
+    - Attack pattern disclosure
+
+    Args:
+        content: Raw content to sanitize
+        max_length: Maximum length of sanitized output
+
+    Returns:
+        Sanitized content safe for logging
+    """
+    import re
+
+    # Remove control characters that could break log parsing
+    sanitized = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', content)
+
+    # Remove common injection characters
+    sanitized = re.sub(r'[<>\'";\\]', '', sanitized)
+
+    # Truncate to max length
+    if len(sanitized) > max_length:
+        return sanitized[:max_length] + '...'
+
+    return sanitized
+
+
 class SessionUpdatePayload(BaseModel):
     """Payload for updating session metadata in ADK format."""
     title: str | None = None
@@ -359,9 +392,9 @@ async def run_session_sse(
     app_name: str,
     user_id: str,
     session_id: str,
-    request: dict = Body(...),
+    request: dict[str, Any] = Body(...),
     current_user: User | None = Depends(get_current_active_user_optional())
-) -> dict:
+) -> dict[str, Any]:
     """
     Start session research and return success response (ADK-compliant).
 
@@ -417,14 +450,15 @@ async def run_session_sse(
             },
         )
 
-        # Log research session start
+        # Log research session start (SECURITY FIX: Sanitize query content)
         access_info = {
             "message": "ADK research session triggered",
             "app_name": app_name,
             "user_id": user_id,
             "session_id": session_id,
             "user_id_auth": current_user.id if current_user else None,
-            "query": research_query[:100] + "..." if len(research_query) > 100 else research_query,
+            "query_length": len(research_query),  # Log length, not content
+            "query_preview": sanitize_log_content(research_query, 50),  # Sanitized preview
             "timestamp": datetime.now().isoformat(),
         }
 

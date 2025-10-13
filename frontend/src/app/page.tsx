@@ -41,6 +41,7 @@ import {
 } from "@/components/prompt-kit/prompt-input";
 import { FileUpload, FileUploadTrigger } from "@/components/ui/file-upload";
 import { ScrollButton } from "@/components/prompt-kit/scroll-button";
+import { Loader } from "@/components/prompt-kit/loader";
 import { Button } from "@/components/ui/button";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";

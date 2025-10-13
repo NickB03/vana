@@ -105,7 +105,10 @@ export function useSSEEventHandlers({
   }, [
     agentSSE.lastEvent?.type,
     agentSSE.lastEvent?.data?.timestamp,
-    JSON.stringify(agentSSE.lastEvent?.data?.agents), // Serialize array for stable comparison
+    // PERFORMANCE FIX: Use array length and first agent ID instead of JSON.stringify
+    // JSON.stringify is expensive and defeats memoization - use stable primitive values
+    agentSSE.lastEvent?.data?.agents?.length,
+    agentSSE.lastEvent?.data?.agents?.[0]?.agent_id,
     agentSSE.lastEvent?.data?.messageId, // For message action events
     agentSSE.lastEvent?.data?.newContent, // For message edit events
     agentSSE.lastEvent?.data?.feedback, // For feedback events
