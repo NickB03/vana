@@ -231,6 +231,7 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
   // CRITICAL: Sort messages by timestamp to ensure correct display order
   // PERFORMANCE FIX: Use message length and last message ID as dependencies
   // instead of the entire messages array to prevent unnecessary sorts
+  // BUG FIX: Added timestamp to dependencies to detect content updates during streaming
   const stableMessages = useMemo(() => {
     if (!Array.isArray(currentSession?.messages)) return [];
 
@@ -244,6 +245,9 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
   }, [
     currentSession?.messages?.length,
     currentSession?.messages?.[currentSession.messages.length - 1]?.id,
+    // CRITICAL FIX: Include timestamp to detect content updates (e.g., streaming messages)
+    // Without this, updateStreamingMessage changes content but memo doesn't recalculate
+    currentSession?.messages?.[currentSession.messages.length - 1]?.timestamp,
   ]);
 
   const stableAgents = useMemo(() => {

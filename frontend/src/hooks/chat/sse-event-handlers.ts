@@ -257,6 +257,15 @@ export function useSSEEventHandlers({
                            currentSession?.messages.find(msg => msg.id === messageId)?.content ||
                            'Research complete. (No report returned)';
 
+        console.log('[FIX] research_complete:', {
+          messageId,
+          contentLength: finalContent?.length,
+          storeMessagesCount: currentSession?.messages?.length,
+          hasPayloadContent: Boolean(payload.content),
+          hasPayloadReport: Boolean(payload.report),
+          hasPayloadFinalReport: Boolean(payload.final_report),
+        });
+
         if (messageId) {
           // Update message with final content from payload
           updateStreamingMessageInStore(currentSessionId, messageId, finalContent);
