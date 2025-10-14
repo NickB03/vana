@@ -1,10 +1,18 @@
 /**
  * SSE Proxy Route Handler - Secure Server-Sent Events proxy
  * Prevents JWT token exposure in browser URLs by handling authentication server-side
+ *
+ * SECURITY NOTE: Authentication is required for all requests except:
+ * 1. Local development (localhost/127.0.0.1)
+ * 2. Explicitly allowlisted hosts via ALLOW_UNAUTHENTICATED_SSE
+ *
+ * WARNING: Never set ALLOW_UNAUTHENTICATED_SSE in production environments
+ * as it bypasses authentication checks and creates a security vulnerability.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { extractAuthTokens } from '@/lib/auth-cookies';
+import { validateCsrfToken, logCsrfAttempt } from '@/lib/csrf-server';
 
 // Edge Runtime Configuration
 export const runtime = 'edge';
@@ -12,6 +20,20 @@ export const dynamic = 'force-dynamic';
 
 // Environment configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+/**
+ * Security Configuration: Allowlist for unauthenticated SSE access
+ *
+ * SECURITY WARNING: Only use this for development/testing environments!
+ * Production environments should NEVER bypass authentication.
+ *
+ * Format: Comma-separated list of host:port combinations
+ * Example: "dev.example.com:3000,staging.example.com:3000"
+ *
+ * Leave empty or undefined for production to enforce authentication.
+ */
+const ALLOWED_UNAUTHENTICATED_HOSTS =
+  process.env.ALLOW_UNAUTHENTICATED_SSE?.split(',').map(h => h.trim()).filter(Boolean) || [];
 
 /**
  * GET handler for SSE proxy with dynamic route segments
@@ -22,19 +44,60 @@ export async function GET(
   { params }: { params: Promise<{ route: string[] }> }
 ) {
   try {
-    // Extract authentication tokens using secure extraction utility
-    const { accessToken } = extractAuthTokens(request);
+    // SECURITY CHECK 1: CSRF Token Validation
+    // Prevents CSRF attacks on SSE endpoints by validating double-submit cookie pattern
+    const csrfValid = validateCsrfToken(request);
+    logCsrfAttempt(request, csrfValid);
 
-    // In development mode, allow SSE without authentication
-    const isDevelopment = process.env.NODE_ENV === 'development';
-
-    if (!isDevelopment && !accessToken) {
-      return new NextResponse('Unauthorized: No access token found', {
-        status: 401,
+    if (!csrfValid) {
+      console.warn('[SSE Proxy] CSRF validation failed');
+      return new NextResponse('CSRF validation failed. Please refresh the page and try again.', {
+        status: 403,
         headers: {
           'Content-Type': 'text/plain',
         }
       });
+    }
+
+    // SECURITY CHECK 2: Authentication Token Validation
+    // Extract authentication tokens using secure extraction utility
+    const { accessToken } = extractAuthTokens(request);
+
+    // Security: Check if authentication can be bypassed
+    const requestHost = request.headers.get('host') || '';
+
+    // Local development check: Only allow localhost/127.0.0.1
+    const isLocalDevelopment =
+      requestHost.startsWith('localhost:') ||
+      requestHost.startsWith('127.0.0.1:') ||
+      requestHost === 'localhost' ||
+      requestHost === '127.0.0.1';
+
+    // Explicit allowlist check: For development/testing environments only
+    const isAllowedHost = ALLOWED_UNAUTHENTICATED_HOSTS.includes(requestHost);
+
+    // Log security check results for debugging
+    console.log('[SSE Proxy Security] Host:', requestHost);
+    console.log('[SSE Proxy Security] Is local development:', isLocalDevelopment);
+    console.log('[SSE Proxy Security] Is allowlisted host:', isAllowedHost);
+    console.log('[SSE Proxy Security] Has access token:', !!accessToken);
+
+    // Enforce authentication unless explicitly bypassed
+    if (!isLocalDevelopment && !isAllowedHost && !accessToken) {
+      console.warn('[SSE Proxy Security] Blocked unauthenticated request from:', requestHost);
+      return new NextResponse('Unauthorized: Authentication required', {
+        status: 401,
+        headers: {
+          'Content-Type': 'text/plain',
+          'WWW-Authenticate': 'Bearer realm="SSE Proxy"',
+        }
+      });
+    }
+
+    // Log warning if authentication was bypassed
+    if (!accessToken && (isLocalDevelopment || isAllowedHost)) {
+      console.warn('[SSE Proxy Security] Allowing unauthenticated access for:', requestHost);
+      console.warn('[SSE Proxy Security] Reason:', isLocalDevelopment ? 'Local development' : 'Allowlisted host');
     }
 
     // Construct upstream SSE URL
@@ -46,7 +109,6 @@ export async function GET(
     console.log('[SSE Proxy] Route:', routePath);
     console.log('[SSE Proxy] Upstream URL:', upstreamUrl);
     console.log('[SSE Proxy] Has auth token:', !!accessToken);
-    console.log('[SSE Proxy] Development mode:', isDevelopment);
 
     // Create SSE connection to upstream server with authentication
     const headers: HeadersInit = {

@@ -252,8 +252,19 @@ class SessionManager:
             return set(self._sessions.keys())
 
     async def register_task(self, session_id: str, task: asyncio.Task) -> None:
-        """Register a background task for a session."""
+        """Register a background task for a session, canceling any existing task."""
         async with self._lock:
+            # Cancel existing task if present
+            if session_id in self._tasks:
+                old_task = self._tasks[session_id]
+                if not old_task.done():
+                    old_task.cancel()
+                    try:
+                        await old_task
+                    except asyncio.CancelledError:
+                        pass  # Expected when canceling
+                    logger.info(f"Cancelled existing task for session {session_id} before registering new one")
+
             self._tasks[session_id] = task
 
     async def cancel_task(self, session_id: str) -> None:
@@ -267,8 +278,49 @@ class SessionManager:
                     pass  # Expected when cancelling
                 del self._tasks[session_id]
 
+    async def cancel_session_tasks(self, session_id: str) -> None:
+        """Alias for cancel_task to match test expectations."""
+        await self.cancel_task(session_id)
+
+    async def get_task_status(self, session_id: str | None = None) -> dict[str, Any]:
+        """Get status information about background tasks.
+
+        Args:
+            session_id: If provided, get status for specific session. Otherwise, get overall status.
+
+        Returns:
+            Dictionary with task status information
+        """
+        async with self._lock:
+            if session_id is not None:
+                # Get status for specific session
+                if session_id in self._tasks:
+                    task = self._tasks[session_id]
+                    return {
+                        "session_id": session_id,
+                        "has_task": True,
+                        "status": "running" if not task.done() else "done",
+                        "cancelled": task.cancelled() if task.done() else False,
+                    }
+                else:
+                    return {
+                        "session_id": session_id,
+                        "has_task": False,
+                        "status": None,
+                        "cancelled": False,
+                    }
+            else:
+                # Get overall status for all sessions
+                total_tasks = len(self._tasks)
+                running_tasks = sum(1 for task in self._tasks.values() if not task.done())
+                return {
+                    "total_tasks": total_tasks,
+                    "running_tasks": running_tasks,
+                    "sessions": list(self._tasks.keys()),
+                }
+
     async def cleanup_expired_sessions(self) -> set[str]:
-        """Remove expired sessions with no subscribers."""
+        """Remove expired sessions with no subscribers and cancel their tasks."""
         current_time = time.time()
         expired_sessions = set()
 
@@ -283,6 +335,18 @@ class SessionManager:
                     del self._sessions[session_id]
                     if session_id in self._subscriber_counts:
                         del self._subscriber_counts[session_id]
+
+                    # Cancel background task if exists
+                    if session_id in self._tasks:
+                        task = self._tasks[session_id]
+                        if not task.done():
+                            task.cancel()
+                            try:
+                                await task
+                            except asyncio.CancelledError:
+                                pass  # Expected when canceling
+                        del self._tasks[session_id]
+                        logger.info(f"Cancelled task for expired session {session_id}")
 
         return expired_sessions
 

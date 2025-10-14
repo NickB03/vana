@@ -2,11 +2,12 @@
  * SSE event handling for research and agent updates
  */
 
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatMessage, ResearchProgress } from '../../lib/api/types';
 import { useChatStore } from './store';
 import { ChatSession, StableResearchEvent, StableAgentEvent } from './types';
+import { extractContentFromADKEvent } from './adk-content-extraction';
 
 interface SSEEventHandlerParams {
   currentSessionId: string | null;
@@ -28,6 +29,17 @@ export function useSSEEventHandlers({
   setIsStreaming,
   setError,
 }: SSEEventHandlerParams) {
+  // P1-005 FIX: Track mount status to prevent state updates after unmount
+  const mountedRef = useRef(true);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const addMessageInStore = useChatStore(state => state.addMessage);
   const updateProgressInStore = useChatStore(state => state.updateProgress);
   const updateSessionMetaInStore = useChatStore(state => state.updateSessionMeta);
@@ -202,7 +214,8 @@ export function useSSEEventHandlers({
 
   // Handle SSE events for research progress
   useEffect(() => {
-    if (!stableResearchEvent || !currentSessionId) return;
+    // P1-005 FIX: Check if component is still mounted before processing
+    if (!mountedRef.current || !stableResearchEvent || !currentSessionId) return;
 
     const { type, payload } = stableResearchEvent;
     const session = currentSession;
@@ -210,93 +223,119 @@ export function useSSEEventHandlers({
 
     switch (type) {
       case 'research_started': {
+        // P1-005 FIX: Check mounted before state updates
+        if (!mountedRef.current) return;
+
         const messageId = ensureProgressMessage();
-        if (messageId) {
+        if (messageId && mountedRef.current) {
           updateStreamingMessageInStore(
             currentSessionId,
             messageId,
             'Research session acknowledged. Coordinating agent network...'
           );
         }
-        setSessionStreamingInStore(currentSessionId, true);
+        if (mountedRef.current) {
+          setSessionStreamingInStore(currentSessionId, true);
+        }
         break;
       }
       case 'research_update':
       case 'research_progress': {
+        // P1-005 FIX: Check mounted before state updates
+        if (!mountedRef.current) return;
+
         const messageId = ensureProgressMessage();
-        if (messageId) {
-          // For research_update, use content directly; for research_progress, format it
+        if (messageId && mountedRef.current) {
+          // For research_update, extract content using ADK extraction (handles parts[])
+          // For research_progress, format progress data
           const content = type === 'research_update'
-            ? payload.content || formatProgressContent(payload)
+            ? extractContentFromADKEvent(payload, formatProgressContent(payload)).content
             : formatProgressContent(payload);
           updateStreamingMessageInStore(currentSessionId, messageId, content);
         }
 
-        mergeProgressSnapshot({
-          status: payload.status ?? 'running',
-          overall_progress: typeof payload.overall_progress === 'number'
-            ? (payload.overall_progress <= 1 ? payload.overall_progress : payload.overall_progress / 100)
-            : undefined,
-          current_phase: payload.current_phase,
-          partial_results: payload.partial_results,
-          agents: Array.isArray(payload.agents) ? payload.agents : undefined,
-        });
+        if (mountedRef.current) {
+          mergeProgressSnapshot({
+            status: payload.status ?? 'running',
+            overall_progress: typeof payload.overall_progress === 'number'
+              ? (payload.overall_progress <= 1 ? payload.overall_progress : payload.overall_progress / 100)
+              : undefined,
+            current_phase: payload.current_phase,
+            partial_results: payload.partial_results,
+            agents: Array.isArray(payload.agents) ? payload.agents : undefined,
+          });
+        }
 
-        setSessionStreamingInStore(currentSessionId, true);
+        if (mountedRef.current) {
+          setSessionStreamingInStore(currentSessionId, true);
+        }
         break;
       }
       case 'research_complete': {
+        // P1-005 FIX: Check mounted before state updates
+        if (!mountedRef.current) return;
+
         const messageId = ensureProgressMessage();
 
-        // CRITICAL FIX: Extract final content from the research_complete payload
-        // The ADK sends the complete report in the payload, not just in previous research_update events
-        const finalContent = payload.content ||
-                           payload.report ||
-                           payload.final_report ||
-                           payload.result ||
-                           currentSession?.messages.find(msg => msg.id === messageId)?.content ||
-                           'Research complete. (No report returned)';
+        // CRITICAL FIX P0-002: Extract content from ADK event using proper extraction
+        // that handles top-level fields, parts[].text, AND parts[].functionResponse
+        // Research plans from plan_generator come via functionResponse, not top-level fields!
+        const extractionResult = extractContentFromADKEvent(
+          payload,
+          currentSession?.messages.find(msg => msg.id === messageId)?.content ||
+          'Research complete. (No report returned)'
+        );
 
-        console.log('[FIX] research_complete:', {
+        const finalContent = extractionResult.content;
+
+        console.log('[P0-002] research_complete extraction:', {
           messageId,
           contentLength: finalContent?.length,
+          sources: extractionResult.sources,
           storeMessagesCount: currentSession?.messages?.length,
-          hasPayloadContent: Boolean(payload.content),
-          hasPayloadReport: Boolean(payload.report),
-          hasPayloadFinalReport: Boolean(payload.final_report),
         });
 
-        if (messageId) {
+        if (messageId && mountedRef.current) {
           // Update message with final content from payload
           updateStreamingMessageInStore(currentSessionId, messageId, finalContent);
           // Mark the message as completed
           completeStreamingMessageInStore(currentSessionId, messageId);
         }
 
-        setSessionStreamingInStore(currentSessionId, false);
-        mergeProgressSnapshot({
-          status: 'completed',
-          overall_progress: 1,
-          current_phase: payload.current_phase ?? 'Research complete',
-          final_report: finalContent,
-        });
-        setIsStreaming(false);
+        if (mountedRef.current) {
+          setSessionStreamingInStore(currentSessionId, false);
+          mergeProgressSnapshot({
+            status: 'completed',
+            overall_progress: 1,
+            current_phase: payload.current_phase ?? 'Research complete',
+            final_report: finalContent,
+          });
+          setIsStreaming(false);
+        }
         break;
       }
       case 'error': {
+        // P1-005 FIX: Check mounted before state updates
+        if (!mountedRef.current) return;
+
         const messageId = ensureProgressMessage();
         const message = payload.message || payload.error || 'An error occurred during research.';
-        if (messageId) {
+        if (messageId && mountedRef.current) {
           updateStreamingMessageInStore(currentSessionId, messageId, `Error: ${message}`);
           completeStreamingMessageInStore(currentSessionId, messageId);
         }
-        setSessionStreamingInStore(currentSessionId, false);
-        mergeProgressSnapshot({ status: 'error', error: message });
-        setError(message);
-        setIsStreaming(false);
+        if (mountedRef.current) {
+          setSessionStreamingInStore(currentSessionId, false);
+          mergeProgressSnapshot({ status: 'error', error: message });
+          setError(message);
+          setIsStreaming(false);
+        }
         break;
       }
       case 'connection': {
+        // P1-005 FIX: Check mounted before state updates
+        if (!mountedRef.current) return;
+
         if (payload.status === 'disconnected') {
           setSessionStreamingInStore(currentSessionId, false);
           setIsStreaming(false);
@@ -304,6 +343,9 @@ export function useSSEEventHandlers({
         break;
       }
       case 'message_edited': {
+        // P1-005 FIX: Check mounted before state updates
+        if (!mountedRef.current) return;
+
         const { messageId, newContent } = payload;
         if (messageId && newContent !== undefined) {
           updateMessageInStore(currentSessionId, messageId, (message) => ({
@@ -315,6 +357,9 @@ export function useSSEEventHandlers({
         break;
       }
       case 'message_deleted': {
+        // P1-005 FIX: Check mounted before state updates
+        if (!mountedRef.current) return;
+
         const { messageId } = payload;
         if (messageId) {
           deleteMessageAndSubsequentInStore(currentSessionId, messageId);
@@ -322,6 +367,9 @@ export function useSSEEventHandlers({
         break;
       }
       case 'feedback_received': {
+        // P1-005 FIX: Check mounted before state updates
+        if (!mountedRef.current) return;
+
         const { messageId, feedback } = payload;
         if (messageId && feedback !== undefined) {
           updateFeedbackInStore(currentSessionId, messageId, feedback);
@@ -329,6 +377,9 @@ export function useSSEEventHandlers({
         break;
       }
       case 'regeneration_progress': {
+        // P1-005 FIX: Check mounted before state updates
+        if (!mountedRef.current) return;
+
         const { messageId, thoughtProcess, regenerationStep } = payload;
         if (messageId && thoughtProcess) {
           updateThoughtProcessInStore(currentSessionId, messageId, thoughtProcess);

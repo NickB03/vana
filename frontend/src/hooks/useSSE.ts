@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { AgentNetworkEvent } from '@/lib/api/types';
 import { apiClient } from '@/lib/api/client';
 import { useStableCallback, createRenderCounter } from '@/lib/react-performance';
+import { getCsrfToken } from '@/lib/csrf';
 
 export type SSEConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error' | 'reconnecting';
 
@@ -54,6 +55,20 @@ export interface SSEHookReturn {
   /** Current reconnection attempt count */
   reconnectAttempt: number;
 }
+
+/**
+ * P1-001 FIX: Maximum number of events to retain in memory
+ *
+ * Implements a circular buffer to prevent unbounded memory growth in long-running SSE sessions.
+ * When the events array exceeds this limit, oldest events are automatically removed (FIFO).
+ *
+ * Memory Impact:
+ * - Before: Unbounded growth (50MB+ in long sessions)
+ * - After: ~5-10MB max (1000 events × 5-10KB each)
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events
+ */
+const MAX_EVENTS = 1000;
 
 const DEFAULT_OPTIONS = {
   autoReconnect: true,
@@ -279,18 +294,29 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
         abortControllerRef.current = controller;
 
         // Build headers - no auth tokens, cookies handle authentication
+        // SECURITY: Add CSRF token for CSRF protection
+        const csrfToken = getCsrfToken();
         const headers: HeadersInit = {
           'Accept': 'text/event-stream',
           'Cache-Control': 'no-cache',
           'Connection': 'keep-alive',
         };
 
+        // Add CSRF token if available
+        if (csrfToken) {
+          headers['X-CSRF-Token'] = csrfToken;
+          console.log('[useSSE] Added CSRF token to request headers');
+        } else {
+          console.warn('[useSSE] No CSRF token available - request may fail in production');
+        }
+
         console.log('[useSSE] Connection attempt:', {
           url: sseUrl,
           isDevelopment,
           NODE_ENV: process.env.NODE_ENV,
           enabled: opts.enabled,
-          cookiesIncluded: opts.withCredentials
+          cookiesIncluded: opts.withCredentials,
+          hasCsrfToken: !!csrfToken
         });
         console.log('[useSSE] Fetching SSE stream with headers:', Object.keys(headers));
 
@@ -357,7 +383,14 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
             if (parsedEvent) {
               console.log('[useSSE] Parsed event type:', parsedEvent.type);
               stateRefs.current.setLastEvent(parsedEvent);
-              stateRefs.current.setEvents(prev => [...prev, parsedEvent]);
+              // P1-001 FIX: Circular buffer implementation (see MAX_EVENTS constant)
+              stateRefs.current.setEvents(prev => {
+                const newEvents = [...prev, parsedEvent];
+                if (newEvents.length > MAX_EVENTS) {
+                  return newEvents.slice(-MAX_EVENTS); // Keep most recent events
+                }
+                return newEvents;
+              });
             } else {
               console.warn('[useSSE] Failed to parse event - eventType:', eventType, 'payload preview:', payload.substring(0, 100));
             }
@@ -382,14 +415,55 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
                   }
                   cleaningUpRef.current = true;
 
-                  // CRITICAL FIX: Stream completed normally - clean up to allow reconnection
-                  console.log('[useSSE] Stream completed normally, cleaning up connection state');
-                  eventSourceRef.current = null;
-                  abortControllerRef.current = null;
+                  // P1-002 FIX: Smart stream termination detection
+                  // Distinguish between expected completion (with markers) vs unexpected termination (network loss)
+                  const hasExpectedCompletion =
+                    buffer.includes('[DONE]') ||
+                    buffer.includes('"status":"complete"') ||
+                    buffer.includes('"status":"done"') ||
+                    buffer.includes('"type":"stream_complete"');
 
-                  if (mountedRef.current) {
-                    stateRefs.current.setConnectionState('disconnected');
-                    callbacksRef.current.onDisconnect?.();
+                  if (hasExpectedCompletion) {
+                    // Expected termination - stream completed successfully with completion marker
+                    console.log('[useSSE] Stream completed with completion marker - clean disconnect');
+                    eventSourceRef.current = null;
+                    abortControllerRef.current = null;
+
+                    if (mountedRef.current) {
+                      stateRefs.current.setConnectionState('disconnected');
+                      callbacksRef.current.onDisconnect?.();
+                    }
+                  } else {
+                    // Unexpected termination - no completion marker found (network issue, server crash, etc.)
+                    console.warn('[useSSE] Stream terminated unexpectedly without completion marker');
+                    eventSourceRef.current = null;
+                    abortControllerRef.current = null;
+
+                    if (mountedRef.current) {
+                      // Check if we should attempt reconnection
+                      const currentReconnectAttempt = reconnectAttemptRef.current;
+                      if (
+                        shouldReconnectRef.current &&
+                        opts.autoReconnect &&
+                        currentReconnectAttempt < opts.maxReconnectAttempts
+                      ) {
+                        console.log(`[useSSE] Attempting reconnection (${currentReconnectAttempt + 1}/${opts.maxReconnectAttempts})`);
+                        stateRefs.current.setError('Stream terminated unexpectedly - reconnecting...');
+                        cleaningUpRef.current = false;
+                        reconnect();
+                      } else {
+                        // Max reconnection attempts reached or auto-reconnect disabled
+                        const errorMessage = currentReconnectAttempt >= opts.maxReconnectAttempts
+                          ? 'Stream terminated unexpectedly - max reconnection attempts reached'
+                          : 'Stream terminated unexpectedly';
+
+                        console.error(`[useSSE] ${errorMessage}`);
+                        stateRefs.current.setError(errorMessage);
+                        stateRefs.current.setConnectionState('error');
+                        callbacksRef.current.onError?.(new Error(errorMessage) as any);
+                        callbacksRef.current.onDisconnect?.();
+                      }
+                    }
                   }
 
                   cleaningUpRef.current = false;
@@ -544,7 +618,14 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
         const parsedEvent = parseEventData(event.data);
         if (parsedEvent) {
           stateRefs.current.setLastEvent(parsedEvent);
-          stateRefs.current.setEvents(prev => [...prev, parsedEvent]);
+          // P1-001 FIX: Circular buffer implementation (see MAX_EVENTS constant)
+          stateRefs.current.setEvents(prev => {
+            const newEvents = [...prev, parsedEvent];
+            if (newEvents.length > MAX_EVENTS) {
+              return newEvents.slice(-MAX_EVENTS); // Keep most recent events
+            }
+            return newEvents;
+          });
         }
       };
 
@@ -585,13 +666,20 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
           if (parsedEvent) {
             parsedEvent.type = eventType as any;
             stateRefs.current.setLastEvent(parsedEvent);
-            stateRefs.current.setEvents(prev => [...prev, parsedEvent]);
+            // P1-001 FIX: Circular buffer implementation (see MAX_EVENTS constant)
+            stateRefs.current.setEvents(prev => {
+              const newEvents = [...prev, parsedEvent];
+              if (newEvents.length > MAX_EVENTS) {
+                return newEvents.slice(-MAX_EVENTS); // Keep most recent events
+              }
+              return newEvents;
+            });
           }
         };
 
         // Store handler reference for cleanup
         eventHandlersRef.current.customHandlers.set(eventType, handler);
-        
+
         // Attach handler
         eventSource.addEventListener(eventType, handler);
       });

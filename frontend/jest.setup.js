@@ -88,6 +88,21 @@ global.EventSource = jest.fn().mockImplementation(() => ({
   CLOSED: 2,
 }))
 
+// Mock TextEncoder/TextDecoder for SSE stream testing
+if (typeof global.TextEncoder === 'undefined') {
+  const { TextEncoder, TextDecoder } = require('util');
+  global.TextEncoder = TextEncoder;
+  global.TextDecoder = TextDecoder;
+}
+
+// Polyfill ReadableStream for Node.js test environment
+if (typeof global.ReadableStream === 'undefined') {
+  const streams = require('web-streams-polyfill/dist/ponyfill.js');
+  global.ReadableStream = streams.ReadableStream;
+  global.WritableStream = streams.WritableStream;
+  global.TransformStream = streams.TransformStream;
+}
+
 // Suppress console errors/warnings in tests unless explicitly testing them
 const originalError = console.error
 const originalWarn = console.warn

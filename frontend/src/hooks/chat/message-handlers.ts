@@ -2,20 +2,26 @@
  * Message handling logic for chat streaming
  */
 
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatMessage, ResearchRequest } from '../../lib/api/types';
 import { apiClient } from '../../lib/api/client';
 import { useChatStore } from './store';
 import { ChatSession } from './types';
+import { SSEHookReturn } from '../useSSE';
+import {
+  ensureSSEReady,
+  waitForSSEConnection,
+  SSEMessageQueue
+} from './sse-connection-helpers';
 
 interface MessageHandlerParams {
   currentSessionId: string | null;
   currentSession: ChatSession | null;
   setIsStreaming: (streaming: boolean) => void;
   setError: (error: string | null) => void;
-  researchSSE?: { connect: () => void; disconnect: () => void; isConnected: boolean };
-  agentSSE?: { connect: () => void; disconnect: () => void; isConnected: boolean };
+  researchSSE?: SSEHookReturn;
+  agentSSE?: SSEHookReturn;
 }
 
 /**
@@ -35,6 +41,10 @@ export function useMessageHandlers({
   const setSessionErrorInStore = useChatStore(state => state.setSessionError);
   const updateStreamingMessageInStore = useChatStore(state => state.updateStreamingMessage);
   const completeStreamingMessageInStore = useChatStore(state => state.completeStreamingMessage);
+
+  // P0-001 FIX: Message queue to prevent SSE race conditions
+  // This ensures sequential processing of rapid messages
+  const messageQueueRef = useRef(new SSEMessageQueue());
 
   /**
    * Sends a message and initiates research
@@ -109,41 +119,46 @@ export function useMessageHandlers({
       // 2. startResearch handles message persistence
       // 3. This was causing timeouts for new sessions
 
-      // CRITICAL FIX: Ensure clean SSE connection state before starting new research
-      // Each message should get a fresh SSE connection, not reuse an old one
-      if (researchSSE?.isConnected) {
-        console.log('[MessageHandler] Disconnecting existing SSE before new request');
-        researchSSE.disconnect();
-        // Small delay to ensure disconnect completes
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
+      // P0-001 FIX: Proper SSE connection state management
+      // Use message queue to prevent race conditions when sending rapid sequential messages
+      await messageQueueRef.current.enqueue(async () => {
+        console.log('[MessageHandler] Starting SSE connection sequence');
 
-      const response = await apiClient.startResearch(activeSessionId, researchRequest);
+        try {
+          // Step 1: Ensure clean disconnection of existing SSE (max 5 seconds)
+          await ensureSSEReady(researchSSE, 5000);
 
-      console.log('[MessageHandler] Research API response:', {
-        sessionId: activeSessionId,
-        success: response.success,
-        message: response.message,
-        researchSSEConnected: researchSSE?.isConnected,
-        agentSSEConnected: agentSSE?.isConnected
-      });
+          // Step 2: Start research via API
+          const response = await apiClient.startResearch(activeSessionId, researchRequest);
 
-      // CRITICAL FIX: Explicitly reconnect SSE after starting research
-      // The useSSE hook will auto-connect, but we ensure it's ready
-      if (!researchSSE?.isConnected) {
-        console.log('[MessageHandler] Reconnecting SSE for new research session');
-        researchSSE?.connect();
-      }
+          console.log('[MessageHandler] Research API response:', {
+            sessionId: activeSessionId,
+            success: response.success,
+            message: response.message,
+          });
 
-      if (!response.success) {
-        throw new Error(response.message || 'Failed to start research');
-      }
+          if (!response.success) {
+            throw new Error(response.message || 'Failed to start research');
+          }
 
-      // SSE connections should be managed by the hooks themselves
-      // Only log the connection status for debugging
-      console.log('[MessageHandler] SSE connection status:', {
-        research: researchSSE?.isConnected,
-        agent: agentSSE?.isConnected
+          // Step 3: Explicitly connect SSE for the new research session
+          if (!researchSSE?.isConnected) {
+            console.log('[MessageHandler] Initiating SSE connection for new research');
+            researchSSE?.connect();
+          }
+
+          // Step 4: Wait for SSE connection to be established (max 5 seconds)
+          await waitForSSEConnection(researchSSE, 5000);
+
+          console.log('[MessageHandler] SSE connection sequence completed successfully');
+          console.log('[MessageHandler] SSE connection status:', {
+            research: researchSSE?.isConnected,
+            agent: agentSSE?.isConnected
+          });
+        } catch (error) {
+          console.error('[MessageHandler] SSE connection sequence failed:', error);
+          throw error; // Re-throw to be caught by outer error handler
+        }
       });
 
     } catch (err) {

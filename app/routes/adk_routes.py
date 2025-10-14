@@ -723,9 +723,8 @@ async def run_session_sse(
                         }
                     })
 
+            # CRIT-006: Create and register task (cancellation handled automatically by register_task)
             task = asyncio.create_task(call_with_timeout())
-
-            # Register task with session manager for lifecycle tracking
             await broadcaster._session_manager.register_task(session_id, task)
 
             research_started = True

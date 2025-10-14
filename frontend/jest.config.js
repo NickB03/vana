@@ -39,6 +39,12 @@ const customJestConfig = {
     '<rootDir>/node_modules/',
     '<rootDir>/tests/e2e/', // Exclude E2E tests from Jest (use Playwright)
   ],
+  // Transform configuration to handle ES modules
+  transformIgnorePatterns: [
+    'node_modules/(?!(msw|@bundled-es-modules)/)',
+  ],
+  // Module file extensions
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 }
 
 // createJestConfig is exported in this way to ensure that next/jest can load the Next.js configuration, which is async
