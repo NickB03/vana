@@ -28,6 +28,16 @@ from google.adk.agents.callback_context import CallbackContext
 
 logger = logging.getLogger(__name__)
 
+# Export all callbacks for proper module imports
+__all__ = [
+    "before_agent_callback",
+    "after_agent_callback",
+    "agent_network_tracking_callback",
+    "composite_after_agent_callback_with_research_sources",
+    "composite_after_agent_callback_with_citations",
+    "peer_transfer_tracking_callback",
+]
+
 
 def before_agent_callback(callback_context: CallbackContext) -> None:
     """Callback executed before an agent starts processing.
@@ -146,3 +156,46 @@ def composite_after_agent_callback_with_citations(
 
     except Exception as e:
         logger.error(f"Error in composite_after_agent_callback_with_citations: {e}")
+
+
+def peer_transfer_tracking_callback(callback_context: CallbackContext) -> None:
+    """Track peer transfer events for monitoring and debugging.
+
+    Logs transfer events with session_id, from/to agents, and latency.
+    Detects potential loop patterns.
+
+    Args:
+        callback_context: The ADK callback context containing session and agent details
+    """
+    try:
+        session = callback_context._invocation_context.session
+        current_agent = callback_context._invocation_context.agent.name
+
+        # Track transfer in session state
+        transfers = session.state.get("peer_transfers", [])
+        transfer_event = {
+            "from_agent": transfers[-1]["to_agent"] if transfers else "dispatcher",
+            "to_agent": current_agent,
+            "timestamp": datetime.now().isoformat(),
+            "message_preview": (
+                session.events[-1].content.parts[0].text[:50] if session.events else "N/A"
+            ),
+        }
+        transfers.append(transfer_event)
+        session.state["peer_transfers"] = transfers
+
+        # Log transfer
+        logger.info(
+            f"[PEER_TRANSFER] {transfer_event['from_agent']} → {transfer_event['to_agent']}"
+        )
+
+        # Loop detection: Check for bounce patterns
+        if len(transfers) >= 3:
+            last_three = [t["to_agent"] for t in transfers[-3:]]
+            if last_three[0] == last_three[2]:  # A → B → A pattern
+                logger.warning(
+                    f"[LOOP_RISK] Detected bounce pattern: {' → '.join(last_three)}"
+                )
+
+    except Exception as e:
+        logger.error(f"Error in peer_transfer_tracking_callback: {e}")
