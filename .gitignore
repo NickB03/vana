@@ -337,3 +337,10 @@ claude-flow
 # Removed Windows wrapper files per user request
 hive-mind-prompt-*.txt
 memory/memory-store.json
+
+# Reference materials (external resources, not project code)
+external/
+docs/adk/refs/
+
+# System prompt references (documentation only)
+docs/qwen3coder_system_prompt.md
