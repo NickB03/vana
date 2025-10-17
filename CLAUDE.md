@@ -31,11 +31,6 @@ See [Chrome DevTools MCP section](#-chrome-devtools-mcp---critical-debugging--ve
 **CORRECT GOOGLE ADK CHAT IMPLEMENTATION**:
 - An ADK dispatcher-led agent network runs on port 8080. The dispatcher routes to planning and research sub-agents (e.g., `plan_generator`, `section_planner`, `section_researcher`, `research_evaluator`, `enhanced_search_executor`, `report_composer`).
 - FastAPI backend (port 8000) should **proxy requests to ADK**, not run its own orchestrator
-- Flow: Frontend → FastAPI → ADK Agents (port 8080) → Response via SSE
-- See [Service Architecture & Ports](#-service-architecture--ports) for detailed configuration
-
-⚠️ **CRITICAL ADK BUG**: When processing ADK events, extract from **BOTH** `parts[].text` AND `parts[].functionResponse` - research plans come from `functionResponse`, not `text`. See `docs/adk/ADK-Event-Extraction-Guide.md`
-
 
 ## Key Architecture
 
@@ -45,7 +40,7 @@ See [Chrome DevTools MCP section](#-chrome-devtools-mcp---critical-debugging--ve
 - Session management with GCS persistence
 - Authentication: JWT/OAuth2/Firebase/development modes
 
-**Frontend** (`/frontend`): Next.js + React + TypeScript + shadcn/ui
+**Frontend** (`/frontend`): Next.js + React + TypeScript + shadcn/ui (Prompt-Kit)
 - Real-time chat interface with SSE streaming
 - Performance-optimized React patterns
 - Responsive design with Tailwind CSS
@@ -62,6 +57,7 @@ The system consists of three main services that must be running:
    - Provides `/health` and `/agent_network_sse/{sessionId}`; research SSE via ADK-compliant `GET /apps/{app}/users/{user}/sessions/{session}/run`
 
 2. **Google Agent Development Kit (ADK)** (Port **8080**)
+   - ADK refernce material located in /docs/adk/refs demonstrate proper ADK patterns and configuration
    - ADK web UI for agent management
    - Run with: `adk web agents/ --port 8080`
    - Provides visual interface for agent development
@@ -1113,7 +1109,7 @@ Comprehensive documentation available at [ADK Docs](https://github.com/google/ad
 - **Streaming**: SSE streaming, WebSocket streaming, bidi-streaming, streaming tools
 - **Advanced Features**: Callbacks, events, artifacts, runtime configuration
 
-### Best Practices & Resources
+### Best Practices & Resources (docs/adk/refs)
 - **Observability**: Arize AX integration, Phoenix integration
 - **Safety & Security**: Security guidelines for AI agents
 - **Tutorials**: Agent team building, progressive examples

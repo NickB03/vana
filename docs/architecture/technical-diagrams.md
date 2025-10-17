@@ -1,5 +1,44 @@
 # Vana Technical Architecture Diagrams
 
+## ⚠️ Implementation Status
+
+**Last Updated**: 2024-10-17
+
+These diagrams represent **aspirational production architecture**. The current implementation is significantly simpler:
+
+### Current State (Development/MVP)
+- ✅ **Runtime**: Local development with PM2 process manager
+- ✅ **Backend**: FastAPI on port 8000 (single process)
+- ✅ **Frontend**: Next.js on port 3000 (development server)
+- ✅ **ADK**: Google Agent Development Kit on port 8080
+- ✅ **Database**: SQLite for local development (`auth.db`)
+- ✅ **Authentication**: JWT with HTTP-only cookies
+- ✅ **SSE Streaming**: Real-time agent communication implemented
+- ✅ **Session Storage**: SQLite-based with GCS backup support (configured but optional)
+
+### Aspirational Architecture (Shown in Diagrams)
+- ❌ **Kubernetes (GKE)**: Not deployed - diagrams show multi-pod architecture
+- ❌ **CloudFlare CDN/WAF**: Not configured - diagrams show full CDN stack
+- ❌ **Load Balancers**: Not implemented - diagrams show L4/L7 load balancing
+- ❌ **Redis Cluster**: Not deployed - diagrams show Redis replication
+- ❌ **Cloud SQL (PostgreSQL)**: Not configured - currently using SQLite
+- ❌ **Auto-scaling**: Not configured - diagrams show HPA/VPA/CA
+- ❌ **Pub/Sub**: Not implemented - diagrams show event-driven architecture
+- ❌ **Cloud Monitoring Stack**: Not fully configured - basic logging only
+
+### Gap Summary
+The diagrams illustrate **where the system should be for production**, not where it currently is. Think of these as:
+- **Architectural targets** for production readiness
+- **Design patterns** to follow when scaling
+- **Infrastructure blueprints** for future deployment
+
+For **current development setup**, see:
+- `pm2 start ecosystem.config.js` for service orchestration
+- `CLAUDE.md` for actual service architecture and ports
+- `.env.local` for configuration (SQLite, JWT, API keys)
+
+---
+
 ## System Architecture Overview
 
 ### High-Level System Architecture

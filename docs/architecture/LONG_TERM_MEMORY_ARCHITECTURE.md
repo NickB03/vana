@@ -1,9 +1,10 @@
 # Long-Term Memory System Architecture
 
-**Status**: Production-Ready Design
+**Status**: Partially Implemented ⚠️
 **Author**: System Architecture Designer
-**Date**: 2025-10-10
-**Version**: 1.0
+**Date**: 2024-10-10
+**Last Reviewed**: 2024-10-17
+**Version**: 1.1
 
 ---
 
@@ -12,6 +13,37 @@
 This document defines a production-ready long-term memory system for the Vana AI Research Platform. The system enables ADK agents to store and retrieve contextual information across sessions while respecting Vana's existing authentication patterns and ADK's execution model.
 
 **Critical Insight**: ADK tools execute **outside** FastAPI request context, requiring explicit `user_id` parameters rather than dependency injection.
+
+---
+
+## Implementation Status
+
+**Last Updated**: 2024-10-17
+
+### ✅ Completed Components
+- **Database Model** (`app/auth/models.py:446-544`): `LongTermMemory` model fully implemented with all fields and indices
+- **Memory Tools** (`app/tools/memory_tools.py`): All three tools (`store`, `retrieve`, `delete`) implemented with modern ADK `ToolContext` pattern
+- **Input Validation**: Namespace/key validation, content length limits, tag limits
+- **Error Handling**: Graceful degradation, structured logging
+- **Security**: User isolation via user_id filtering, soft delete support
+
+### ⚠️ Partially Implemented
+- **Database Migrations**: Model exists but Alembic migration status not verified
+- **Async Support**: Model uses sync operations only (Section 3 describes async but not implemented)
+
+### ❌ Not Implemented
+- **Route Integration** (`app/routes/adk_routes.py`): Memory tools are NOT passed to agents during session creation
+- **Agent Configuration** (`app/agent.py`): Agents do not have access to memory tools
+- **Advanced Features**: Vector search (14.1), memory summarization (14.2), analytics (14.3)
+- **Monitoring**: Prometheus metrics (Section 11.3)
+
+### 📝 Documentation Gaps
+- **Section 1.2** documents `functools.partial` approach, but actual implementation uses ADK's `ToolContext` (modern pattern)
+- **Section 4.1** shows old API signature with `user_id` parameter; actual implementation uses `tool_context: ToolContext`
+- **Section 5** (ADK Agent Integration) describes integration that has not been completed
+
+### 🔄 Implementation Variance
+The actual implementation uses **ADK's native `ToolContext`** parameter for user context injection instead of `functools.partial`. This is **superior to documented approach** and represents modern ADK v2.0+ best practices. See `app/tools/memory_tools.py` for current implementation.
 
 ---
 
@@ -56,7 +88,43 @@ finally:
 
 **Problem**: ADK agents call tools in background tasks, outside FastAPI request scope.
 
-**Solution**: Use partial application to bind user context at route level:
+**Modern Solution (IMPLEMENTED)**: Use ADK's native `ToolContext` parameter for automatic user context injection:
+
+```python
+from google.adk.tools.function_tool import FunctionTool
+from google.adk.tools.tool_context import ToolContext
+
+def store_memory_function(
+    namespace: str,
+    key: str,
+    content: str,
+    tags: list[str] | None = None,
+    importance: float = 0.5,
+    ttl_days: int | None = None,
+    tool_context: ToolContext | None = None,  # ← Auto-injected by ADK
+) -> str:
+    """Store a memory for the current user.
+
+    Args:
+        tool_context: Auto-injected by ADK (contains user_id and session info)
+    """
+    if not tool_context:
+        return "Error: User context not available."
+
+    # Extract user context directly from ADK
+    user_id = tool_context._invocation_context.user_id
+    session_id = tool_context._invocation_context.session.id
+
+    # Use user_id for database operations...
+
+# Export tool - no user_id binding needed!
+store_memory_tool = FunctionTool(store_memory_function)
+
+# In routes, just pass the tool directly to agents
+agent = LlmAgent(tools=[store_memory_tool, retrieve_memories_tool])
+```
+
+**Legacy Approach (Documented but Superseded)**: The original design used `functools.partial` to bind user_id:
 
 ```python
 from functools import partial
@@ -65,7 +133,7 @@ from functools import partial
 async def run_session(
     current_user: User | None = Depends(get_current_active_user_optional())
 ):
-    # Bind user_id to memory tools
+    # OLD PATTERN: Bind user_id to memory tools via partial
     user_id = current_user.id if current_user else None
 
     # Create partially applied tools with user_id bound
@@ -79,6 +147,15 @@ async def run_session(
     # Pass to agent
     agent = LlmAgent(tools=[memory_store_tool, memory_retrieve_tool])
 ```
+
+**Why ToolContext is Superior**:
+- ✅ **Automatic Injection**: ADK handles user context propagation automatically
+- ✅ **Session Awareness**: Access to full session context, not just user_id
+- ✅ **Type Safety**: Proper type hints and IDE support
+- ✅ **Less Boilerplate**: No manual partial application in routes
+- ✅ **Framework Native**: Uses ADK's intended pattern (v2.0+)
+
+**Implementation Status**: Current code (`app/tools/memory_tools.py`) uses the modern `ToolContext` pattern. However, route integration is pending - memory tools are not yet passed to agents in `app/routes/adk_routes.py`.
 
 ---
 
@@ -436,16 +513,25 @@ def get_auth_db() -> Generator[Session, None, None]:
 
 ### 4.1 Core Memory Functions
 
+**⚠️ NOTE**: This section documents the original design using `functools.partial` for user context binding. **The actual implementation** (`app/tools/memory_tools.py`) uses ADK's modern `ToolContext` parameter for automatic context injection. See Section 1.2 for comparison of both approaches.
+
+For the current implementation, see the actual file at `app/tools/memory_tools.py` which uses:
+- `tool_context: ToolContext | None = None` parameter for automatic user context injection
+- `user_id = tool_context._invocation_context.user_id` for extracting user ID
+- Returns `str` instead of `dict[str, Any]` for agent-friendly responses
+
+The code examples below represent the original design pattern for reference:
+
 ```python
-# app/tools/memory_tools.py
+# app/tools/memory_tools.py (LEGACY PATTERN - for reference only)
 
 """Long-term memory tools for ADK agents.
 
 CRITICAL: These tools are called by ADK agents in background tasks,
 OUTSIDE FastAPI request context. Therefore:
-- user_id MUST be an explicit parameter
-- Use get_sync_db_session() for database access
-- Always close database sessions in finally blocks
+- user_id MUST be an explicit parameter (LEGACY - now handled by ToolContext)
+- Use get_sync_db_session() for database access (STILL VALID)
+- Always close database sessions in finally blocks (STILL VALID)
 """
 
 import logging
