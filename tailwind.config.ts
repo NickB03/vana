@@ -57,6 +57,14 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        gradient: {
+          start: "hsl(var(--gradient-start))",
+          end: "hsl(var(--gradient-end))",
+        },
+      },
+      backgroundImage: {
+        'gradient-primary': 'linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)))',
+        'gradient-subtle': 'linear-gradient(180deg, hsl(var(--gradient-start) / 0.1), hsl(var(--gradient-end) / 0.1))',
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -80,10 +88,21 @@ export default {
             height: "0",
           },
         },
+        "fade-in": {
+          from: {
+            opacity: "0",
+            transform: "translateY(10px)",
+          },
+          to: {
+            opacity: "1",
+            transform: "translateY(0)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-in": "fade-in 0.3s ease-out",
       },
     },
   },
