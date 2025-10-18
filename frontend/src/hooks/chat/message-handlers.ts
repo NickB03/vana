@@ -142,13 +142,18 @@ export function useMessageHandlers({
           }
 
           // Step 3: Explicitly connect SSE for the new research session
-          if (!researchSSE?.isConnected) {
-            console.log('[MessageHandler] Initiating SSE connection for new research');
-            researchSSE?.connect();
-          }
+          // P0-004 FIX: Check current state before connecting to prevent race condition
+          const currentState = researchSSE?.connectionStateRef?.current ?? researchSSE?.connectionState;
 
-          // Step 4: Wait for SSE connection to be established (max 5 seconds)
-          await waitForSSEConnection(researchSSE, 5000);
+          if (currentState !== 'connected' && currentState !== 'connecting') {
+            console.log('[MessageHandler] Initiating SSE connection for new research (current state:', currentState, ')');
+            researchSSE?.connect();
+
+            // Step 4: Wait for SSE connection to be established (max 5 seconds)
+            await waitForSSEConnection(researchSSE, 5000);
+          } else {
+            console.log('[MessageHandler] SSE already connected or connecting, skipping connect() call (state:', currentState, ')');
+          }
 
           console.log('[MessageHandler] SSE connection sequence completed successfully');
           console.log('[MessageHandler] SSE connection status:', {

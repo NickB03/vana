@@ -116,6 +116,9 @@ class SessionRecord:
     final_report: str | None = None
     error: str | None = None
 
+    # Phase 2: Raw ADK event storage for replay, analytics, and debugging
+    events: list[dict[str, Any]] = field(default_factory=list)
+
     # Security metadata
     user_binding_token: str | None = None
     client_ip: str | None = None
@@ -127,7 +130,10 @@ class SessionRecord:
     security_warnings: list[str] = field(default_factory=list)
 
     def to_dict(
-        self, include_messages: bool = True, include_security: bool = False
+        self,
+        include_messages: bool = True,
+        include_security: bool = False,
+        include_events: bool = False,
     ) -> dict[str, Any]:
         data: dict[str, Any] = {
             "id": self.id,
@@ -143,6 +149,9 @@ class SessionRecord:
         }
         if include_messages:
             data["messages"] = [message.to_dict() for message in self.messages]
+
+        if include_events:
+            data["events"] = self.events
 
         if include_security:
             data.update(
@@ -164,7 +173,7 @@ class SessionStore:
         self._sessions: dict[str, SessionRecord] = {}
         self._lock = RLock()
         self._config = config or SessionStoreConfig()
-        
+
         # Async cleanup management
         self._cleanup_task: asyncio.Task | None = None
         self._shutdown_event = asyncio.Event()
@@ -213,10 +222,10 @@ class SessionStore:
                     # Create new event loop if none exists
                     self._loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(self._loop)
-            
+
             # Schedule the cleanup task
             self._cleanup_task = self._loop.create_task(self._async_cleanup_loop())
-            
+
         except Exception as e:
             self._logger.warning(f"Failed to start async cleanup task: {e}")
             # Fallback to sync cleanup if async fails
@@ -232,12 +241,12 @@ class SessionStore:
     async def _async_cleanup_loop(self) -> None:
         """Async cleanup loop that runs periodically."""
         interval_seconds = self._config.cleanup_interval_minutes * 60
-        
+
         while not self._shutdown_event.is_set():
             try:
                 # Wait for the interval or shutdown event
                 await asyncio.wait_for(
-                    self._shutdown_event.wait(), 
+                    self._shutdown_event.wait(),
                     timeout=interval_seconds
                 )
                 # If we get here, shutdown was requested
@@ -271,11 +280,11 @@ class SessionStore:
                     self.cleanup_expired_sessions()
                 except Exception as e:
                     self._logger.warning(f"Sync cleanup failed: {e}")
-                
+
                 # Use event.wait() with timeout instead of time.sleep
                 if self._shutdown_event.wait(timeout=interval_seconds):
                     break  # Shutdown requested
-        
+
         # Start cleanup thread
         cleanup_thread = threading.Thread(target=cleanup_worker, daemon=True)
         cleanup_thread.start()
@@ -428,10 +437,10 @@ class SessionStore:
     async def shutdown(self) -> None:
         """Gracefully shutdown the session store and cleanup resources."""
         self._logger.info("Shutting down session store...")
-        
+
         # Signal shutdown
         self._shutdown_event.set()
-        
+
         # Wait for cleanup task to finish
         if self._cleanup_task is not None and not self._cleanup_task.done():
             try:
@@ -445,16 +454,16 @@ class SessionStore:
                     pass
             except Exception as e:
                 self._logger.warning(f"Error during cleanup task shutdown: {e}")
-        
+
         # Mark task as None after proper cleanup
         self._cleanup_task = None
-        
+
         # Final cleanup
         try:
             self.cleanup_expired_sessions()
         except Exception as e:
             self._logger.warning(f"Final cleanup failed: {e}")
-        
+
         self._logger.info("Session store shutdown complete")
 
     def force_cleanup_now(self) -> int:
@@ -1080,39 +1089,63 @@ class SessionStore:
     # SSE integration
     # ------------------------------------------------------------------
     def ingest_event(self, session_id: str, event: dict[str, Any]) -> None:
-        """Update session metadata based on SSE events."""
-        event_type = event.get("type")
-        payload = event.get("data") if isinstance(event.get("data"), dict) else event
+        """Update session metadata based on SSE events.
 
-        if event_type not in {
-            "research_started",
-            "research_progress",
-            "research_complete",
-            "error",
-        }:
-            return
+        Phase 2 Enhancement: Stores full raw ADK events for replay, analytics,
+        and debugging while maintaining backward compatibility with derived fields.
 
-        status = payload.get("status") if isinstance(payload, dict) else None
-        overall_progress = (
-            payload.get("overall_progress") if isinstance(payload, dict) else None
-        )
-        current_phase = (
-            payload.get("current_phase") if isinstance(payload, dict) else None
-        )
-        final_report = (
-            payload.get("final_report") if isinstance(payload, dict) else None
-        )
-        error_message = (
-            payload.get("error")
-            if isinstance(payload, dict)
-            else payload.get("message")
-        )
-
-        if event_type == "error" and not error_message and isinstance(payload, dict):
-            error_message = payload.get("data", {}).get("error")
-
+        Args:
+            session_id: Session identifier
+            event: Full raw ADK event dictionary containing:
+                - type: Event type (e.g., "research_started", "research_progress")
+                - data: Event payload with status, progress, results
+                - content: Optional ADK content with parts[] array
+                - author: Optional agent identifier
+                - usageMetadata: Optional token usage info
+        """
         with self._lock:
             record = self.ensure_session(session_id)
+
+            # Phase 2: Store the full raw event for complete replay capability
+            # Add timestamp if not present for chronological ordering
+            event_with_timestamp = event.copy()
+            if "timestamp" not in event_with_timestamp:
+                event_with_timestamp["timestamp"] = _iso(_now())
+
+            record.events.append(event_with_timestamp)
+
+            # Maintain backward compatibility: update derived fields
+            event_type = event.get("type")
+            payload = event.get("data") if isinstance(event.get("data"), dict) else event
+
+            if event_type not in {
+                "research_started",
+                "research_progress",
+                "research_complete",
+                "error",
+            }:
+                record.updated_at = _iso(_now())
+                return
+
+            status = payload.get("status") if isinstance(payload, dict) else None
+            overall_progress = (
+                payload.get("overall_progress") if isinstance(payload, dict) else None
+            )
+            current_phase = (
+                payload.get("current_phase") if isinstance(payload, dict) else None
+            )
+            final_report = (
+                payload.get("final_report") if isinstance(payload, dict) else None
+            )
+            error_message = (
+                payload.get("error")
+                if isinstance(payload, dict)
+                else payload.get("message")
+            )
+
+            if event_type == "error" and not error_message and isinstance(payload, dict):
+                error_message = payload.get("data", {}).get("error")
+
             if status:
                 record.status = status
             if overall_progress is not None:
@@ -1139,6 +1172,121 @@ class SessionStore:
                 self.upsert_progress_message(session_id, content, completed=completed)
 
             record.updated_at = _iso(_now())
+
+    def get_events(
+        self,
+        session_id: str,
+        event_type: str | None = None,
+        author: str | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
+        """Retrieve raw ADK events from a session with optional filtering.
+
+        Phase 2: Enables event replay, analytics, and debugging by providing
+        access to the full raw event stream.
+
+        Args:
+            session_id: Session identifier
+            event_type: Optional filter by event type (e.g., "research_progress")
+            author: Optional filter by agent author (e.g., "plan_generator")
+            limit: Optional maximum number of events to return (most recent first)
+
+        Returns:
+            List of event dictionaries in chronological order (oldest first).
+            Empty list if session not found or no matching events.
+
+        Example:
+            # Get all events
+            all_events = store.get_events("session-123")
+
+            # Get only progress events
+            progress = store.get_events("session-123", event_type="research_progress")
+
+            # Get events from specific agent
+            planner_events = store.get_events("session-123", author="plan_generator")
+
+            # Get last 10 events
+            recent = store.get_events("session-123", limit=10)
+        """
+        with self._lock:
+            record = self._sessions.get(session_id)
+            if not record:
+                return []
+
+            events = record.events
+
+            # Apply filters
+            if event_type is not None:
+                events = [e for e in events if e.get("type") == event_type]
+
+            if author is not None:
+                events = [e for e in events if e.get("author") == author]
+
+            # Apply limit (most recent first)
+            if limit is not None and limit > 0:
+                events = events[-limit:]
+
+            return events
+
+    def get_event_summary(self, session_id: str) -> dict[str, Any]:
+        """Get summary statistics about events in a session.
+
+        Phase 2: Provides quick insights into event distribution for analytics.
+
+        Args:
+            session_id: Session identifier
+
+        Returns:
+            Dictionary containing:
+                - total_events: Total number of events
+                - event_types: Dict mapping event type to count
+                - authors: Dict mapping author to count
+                - first_event_timestamp: Timestamp of first event
+                - last_event_timestamp: Timestamp of last event
+
+        Example:
+            summary = store.get_event_summary("session-123")
+            # {
+            #   "total_events": 45,
+            #   "event_types": {"research_progress": 30, "research_complete": 1, ...},
+            #   "authors": {"plan_generator": 15, "section_researcher": 20, ...},
+            #   "first_event_timestamp": "2025-01-15T10:00:00Z",
+            #   "last_event_timestamp": "2025-01-15T10:05:00Z"
+            # }
+        """
+        with self._lock:
+            record = self._sessions.get(session_id)
+            if not record or not record.events:
+                return {
+                    "total_events": 0,
+                    "event_types": {},
+                    "authors": {},
+                    "first_event_timestamp": None,
+                    "last_event_timestamp": None,
+                }
+
+            events = record.events
+            event_types: dict[str, int] = {}
+            authors: dict[str, int] = {}
+
+            for event in events:
+                # Count event types
+                event_type = event.get("type", "unknown")
+                event_types[event_type] = event_types.get(event_type, 0) + 1
+
+                # Count authors
+                author = event.get("author", "unknown")
+                authors[author] = authors.get(author, 0) + 1
+
+            return {
+                "total_events": len(events),
+                "event_types": event_types,
+                "authors": authors,
+                "first_event_timestamp": events[0].get("timestamp") if events else None,
+                "last_event_timestamp": events[-1].get("timestamp")
+                if events
+                else None,
+            }
 
     # ------------------------------------------------------------------
     # Helper utilities
