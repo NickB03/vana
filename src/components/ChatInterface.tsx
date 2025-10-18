@@ -78,15 +78,17 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
   return (
     <div className="flex h-full flex-col">
       <ChatContainerRoot className="flex-1">
-        <ChatContainerContent className="space-y-0 px-5 py-12">
+        <ChatContainerContent className="space-y-4 p-4">
           {messages.map((message) => (
             <MessageBubble key={message.id} message={message} />
           ))}
           {isStreaming && streamingMessage && (
             <MessageComponent className="justify-start">
               <MessageAvatar fallback="AI" />
-              <div className="bg-secondary text-foreground prose rounded-lg p-3 max-w-[85%] sm:max-w-[75%]">
-                <Markdown>{streamingMessage}</Markdown>
+              <div className="max-w-[85%] flex-1 sm:max-w-[75%]">
+                <div className="bg-secondary text-foreground prose rounded-lg p-2">
+                  <Markdown>{streamingMessage}</Markdown>
+                </div>
               </div>
             </MessageComponent>
           )}
@@ -147,26 +149,23 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 
   return (
     <MessageComponent
-      className={cn(
-        "mx-auto w-full max-w-3xl px-6 animate-fade-in",
-        isUser ? "justify-end" : "justify-start"
-      )}
+      className={isUser ? "justify-end" : "justify-start"}
     >
       {!isUser && <MessageAvatar fallback="AI" />}
       
-      <div className={cn("flex max-w-[85%] flex-1 flex-col gap-2 sm:max-w-[75%]", isUser && "items-end")}>
+      <div className="max-w-[85%] flex-1 sm:max-w-[75%]">
         {isUser ? (
           <MessageContent className="bg-primary text-primary-foreground">
             {message.content}
           </MessageContent>
         ) : (
-          <div className="bg-secondary text-foreground prose rounded-lg p-3">
+          <div className="bg-secondary text-foreground prose rounded-lg p-2">
             <Markdown>{message.content}</Markdown>
           </div>
         )}
 
         {!isUser && message.reasoning && (
-          <div className="w-full">
+          <div className="mt-2 w-full">
             <Button
               variant="ghost"
               size="sm"
@@ -197,7 +196,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         )}
       </div>
 
-      {isUser && <MessageAvatar fallback="U" className="order-last" />}
+      {isUser && <MessageAvatar fallback="U" />}
     </MessageComponent>
   );
 }
