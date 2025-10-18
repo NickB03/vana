@@ -85,14 +85,26 @@ export function ChatSidebar({
             <SidebarGroupContent>
               <SidebarMenu>
                 {periodSessions.map(session => <SidebarMenuItem key={session.id}>
-                    <div className="group relative flex items-center">
-                      <SidebarMenuButton onClick={() => onSessionSelect(session.id)} isActive={currentSessionId === session.id} className={cn("flex-1", currentSessionId === session.id && "bg-gradient-subtle border-l-2 border-primary")}>
-                        <span className="truncate">{session.title}</span>
+                    <div className="group relative flex items-center w-full">
+                      <SidebarMenuButton 
+                        onClick={() => onSessionSelect(session.id)} 
+                        isActive={currentSessionId === session.id} 
+                        className={cn(
+                          "flex-1 justify-start hover:bg-accent/50 transition-colors",
+                          currentSessionId === session.id && "bg-accent"
+                        )}
+                      >
+                        <span className="truncate text-sm">{session.title}</span>
                       </SidebarMenuButton>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => {
-                  e.stopPropagation();
-                  onDeleteSession(session.id);
-                }}>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 absolute right-2 invisible group-hover:visible transition-all opacity-0 group-hover:opacity-100" 
+                        onClick={e => {
+                          e.stopPropagation();
+                          onDeleteSession(session.id);
+                        }}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
