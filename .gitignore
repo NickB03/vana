@@ -349,8 +349,11 @@ docs/qwen3coder_system_prompt.md
 *_REPORT.md
 *_SUMMARY.md
 *_INSTRUCTIONS.md
-*_PLAN.md
 *_APPLIED.md
 *_IMPLEMENTATION.md
 *_COMPLETE.md
 READY_FOR_*.md
+# Note: Removed *_PLAN.md to allow docs/plans/ directory
+
+# Duplicate backend directory (created by agents)
+vana/

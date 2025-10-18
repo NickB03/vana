@@ -31,6 +31,7 @@ See [Chrome DevTools MCP section](#-chrome-devtools-mcp---critical-debugging--ve
 **CORRECT GOOGLE ADK CHAT IMPLEMENTATION**:
 - An ADK dispatcher-led agent network runs on port 8080. The dispatcher routes to planning and research sub-agents (e.g., `plan_generator`, `section_planner`, `section_researcher`, `research_evaluator`, `enhanced_search_executor`, `report_composer`).
 - FastAPI backend (port 8000) should **proxy requests to ADK**, not run its own orchestrator
+- **WIP NOTE:** We are actively migrating to stream canonical ADK events via `POST /run_sse`. Until the migration is complete, older SSE endpoints (e.g., `/agent_network_sse/{sessionId}`) may still appear in the codebase. See “Server-Sent Events (SSE)” below for the latest guidance and update this section once the rollout finishes.
 
 ## Key Architecture
 
@@ -54,10 +55,10 @@ The system consists of three main services that must be running:
    - Main API server (`app.server`)
    - Handles SSE streams for chat
    - Manages sessions and authentication
-   - Provides `/health` and `/agent_network_sse/{sessionId}`; research SSE via ADK-compliant `GET /apps/{app}/users/{user}/sessions/{session}/run`
+   - Provides `/health` and (legacy) `/agent_network_sse/{sessionId}`; **WIP:** research streaming is moving to the canonical `POST /run_sse` (mirrored under `/apps/{app}/users/{user}/sessions/{session}/run`). Update this note once the migration completes.
 
 2. **Google Agent Development Kit (ADK)** (Port **8080**)
-   - ADK refernce material located in /docs/adk/refs demonstrate proper ADK patterns and configuration
+   - ADK reference material located in `/docs/adk/refs/` - comprehensive library of 14+ production-ready examples including official Google repos, A2A samples, agent-starter-pack templates, and real-world financial services implementations
    - ADK web UI for agent management
    - Run with: `adk web agents/ --port 8080`
    - Provides visual interface for agent development
@@ -91,17 +92,25 @@ PM2 manages these processes:
 - Frontend `.env.local` must have: `NEXT_PUBLIC_API_URL=http://127.0.0.1:8000`
 - Frontend ADK path config (optional): `NEXT_PUBLIC_ADK_APP_NAME` (default: `vana`), `NEXT_PUBLIC_ADK_DEFAULT_USER` (default: `default`)
 - The frontend connects to FastAPI (port 8000), NOT directly to ADK (port 8080)
-- SSE endpoints:
-  - Agent network: `/agent_network_sse/{sessionId}`
-  - Research run (ADK-compliant): `GET /apps/{app}/users/{user}/sessions/{session}/run`
-  - Recommended (secure) frontend proxy paths: `/api/sse/agent_network_sse/{sessionId}`, `/api/sse/apps/{app}/users/{user}/sessions/{session}/run`
+- **Server-Sent Events (SSE) – Work in Progress**
+  - We are transitioning to the canonical ADK streaming contract (`POST /run_sse`, mirrored under `/apps/{app}/users/{user}/sessions/{session}/run`). During migration, legacy endpoints like `/agent_network_sse/{sessionId}` may still exist.
+  - Interim proxy guidance:
+    - Stream via `POST /api/sse/apps/{app}/users/{user}/sessions/{session}/run` → upstream `POST /apps/{app}/users/{user}/sessions/{session}/run`
+    - Avoid introducing new dependencies on `/agent_network_sse` since it will be removed once the migration completes.
+  - **Action:** After the canonical streaming rollout ships, update this section to document the final proxy mappings and remove legacy references.
 - Quick check: `curl http://127.0.0.1:8000/health` or `lsof -i :8000`
 
 #### Frontend SSE Proxy (Security)
-To prevent JWT exposure in browser URLs, the frontend provides a secure SSE proxy under `/api/sse/...` which forwards Authorization headers server‑side and streams responses:
-- Map `/api/sse/agent_network_sse/{sessionId}` → upstream `/agent_network_sse/{sessionId}`
-- Map `/api/sse/apps/{app}/users/{user}/sessions/{session}/run` → upstream `/apps/{app}/users/{user}/sessions/{session}/run`
-Use these proxy paths in the UI for all SSE connections.
+To prevent JWT exposure in browser URLs, the frontend provides a secure SSE proxy under `/api/sse/...` which forwards Authorization headers server‑side and streams responses.
+- Primary mapping (new contract): `/api/sse/apps/{app}/users/{user}/sessions/{session}/run` → upstream `POST /apps/{app}/users/{user}/sessions/{session}/run`
+- Legacy mapping (to be deprecated): `/api/sse/agent_network_sse/{sessionId}` → upstream `/agent_network_sse/{sessionId}`
+
+**WIP NOTE:** The legacy mapping exists only for backward compatibility during the migration period. Remove it once the canonical `/run_sse` path is fully adopted throughout the frontend and backend.
+
+**Security Reminder (Update Once Hardening Tasks Land):**
+- Authentication cookies must set `secure=True` whenever `ENVIRONMENT=production` (implement via env flag, then update this note).
+- CSRF validation will apply to `POST /apps/{app}/users/{user}/sessions/{session}/run`; ensure the frontend always sends `X-CSRF-Token`.
+- Keep `ALLOW_UNAUTHENTICATED_SSE` empty outside local development to avoid anonymous SSE access.
 
 ## Common Development Commands
 
@@ -245,153 +254,44 @@ See [Project Structure](#project-structure) section below for complete directory
   /routes                 # API endpoints
   /integration           # ADK integration
   /tools                 # Agent tools
+  /middleware            # Security, CSRF, rate limiting
   server.py              # Main FastAPI app
   agent.py               # ADK agent definitions
 
-/frontend                 # Frontend (Next.js)
+/frontend                 # Frontend (Next.js 13+ App Router)
   /src
-    /components          # React components
-    /hooks              # Custom React hooks
-    /services           # API services
-    /stores             # State management (Zustand)
-    /types              # TypeScript types
-  /tests                # Frontend tests
+    /app                  # Next.js pages and API routes
+    /components           # React components
+    /hooks                # Custom hooks (includes store.ts, types.ts)
+    /lib                  # Utilities and API client
+  /tests                  # Frontend tests (Jest/Playwright)
 
 /tests                   # Backend test suite
   /unit                 # Unit tests
   /integration          # Integration tests
-  /performance          # Performance tests
+  /middleware           # Middleware tests
 ```
 
 ## AI Model Configuration
 
 The system uses a two-tier model approach:
-1. **PRIMARY**: Google Gemini 2.5 Pro Flash requires Google AI Studio API key in `.env.local`
-2. **FALLBACK**: OpenRouter with Qwen 3 Coder (FREE) - Set `OPENROUTER_API_KEY` in `.env.local`
+1. **PRIMARY**: `gemini-2.5-flash` - requires `GOOGLE_API_KEY` in `.env.local`
+2. **FALLBACK**: OpenRouter - requires `OPENROUTER_API_KEY` in `.env.local`
 
 ## Testing Strategy
 
-- **Backend**: 342+ tests covering auth, SSE, agents, sessions
-- **Frontend**: Jest unit tests + Playwright E2E tests
-- **Coverage requirement**: 85% minimum
-- Run `make test` before committing changes
-
-See [Common Development Commands](#common-development-commands) for test execution commands and [Test-Driven Development](#test-driven-development-tdd) for TDD workflow.
+Run `make test` before committing - executes tests in `tests/unit/` and `tests/integration/` directories only.
 
 
 ## Test-Driven Development (TDD)
 
-### TDD Workflow: Red-Green-Refactor
+Follow Red-Green-Refactor cycle:
+1. Write failing test first
+2. Implement minimal code to pass
+3. Refactor while keeping tests green
 
-**1. RED**: Write failing test first
-```bash
-# Backend example
-uv run pytest tests/unit/test_new_feature.py -v
-# Should fail - feature doesn't exist yet
-```
+Use `tdd-london-swarm`, `tester`, or `production-validator` agents for TDD workflows.
 
-```python
-# tests/unit/test_message_processor.py
-def test_process_message_returns_formatted_response():
-    processor = MessageProcessor()
-    result = processor.process("Hello")
-    assert result["status"] == "success"
-    assert result["data"] == "Hello"
-    assert "timestamp" in result
-```
-
-**2. GREEN**: Implement minimal code to pass
-```python
-# app/services/message_processor.py
-from datetime import datetime
-
-class MessageProcessor:
-    def process(self, message: str) -> dict[str, Any]:
-        return {
-            "status": "success",
-            "data": message,
-            "timestamp": datetime.utcnow().isoformat()
-        }
-```
-
-**3. REFACTOR**: Clean up while keeping tests green
-```python
-# Refactor for better structure
-class MessageProcessor:
-    def process(self, message: str) -> dict[str, Any]:
-        return self._create_response(message)
-
-    def _create_response(self, data: str) -> dict[str, Any]:
-        return {
-            "status": "success",
-            "data": data,
-            "timestamp": self._get_timestamp()
-        }
-
-    def _get_timestamp(self) -> str:
-        return datetime.utcnow().isoformat()
-```
-
-### Frontend TDD Example
-```typescript
-// tests/components/ChatMessage.test.tsx
-describe('ChatMessage', () => {
-  it('renders message content', () => {
-    render(<ChatMessage message="Hello" timestamp={new Date()} userId="1" />);
-    expect(screen.getByText('Hello')).toBeInTheDocument();
-  });
-});
-
-// Then implement component to pass test
-export function ChatMessage({ message }: ChatMessageProps) {
-  return <div>{message}</div>;
-}
-```
-
-### TDD Agents
-See [Available Claude Flow Agents](#-available-claude-flow-agents-54-total) for complete agent list including TDD-specific agents.
-
-### Best Practices
-1. Write tests before implementation
-2. Keep tests small and focused (one assertion per test preferred)
-3. Use descriptive test names that explain the behavior
-4. Mock external dependencies
-5. Run tests frequently during development
-6. Aim for >85% code coverage
-
-## Google ADK Agent Starter Pack Guidance
-
-### Core Principles
-- Modify only the code tied to the requested change; keep surrounding structure, comments, and formatting intact.
-- Mirror the repository's existing patterns before introducing new logic. Inspect nearby modules to match naming, templating, and directory placement.
-- Search across `src/base_template/`, `src/deployment_targets/`, `.github/`, `.cloudbuild/`, and `docs/` so configuration, CI/CD, and documentation stay aligned.
-
-### Architecture Snapshot
-- **Templating Pipeline:** Cookiecutter variable substitution, Jinja2 logic execution, and templated file/directory names. A failure in any phase breaks project generation.
-- **Key Directories:** `src/base_template/` (global defaults), `src/deployment_targets/` (environment overrides), `agents/` (self-contained templates with `.template/templateconfig.yaml`), and `src/cli/commands` for CLI entry points such as `create.py` and `setup_cicd.py`.
-- **Template Processing Flow:** `src/cli/utils/template.py` copies the base template, overlays deployment target files, then applies agent-specific files.
-
-### Jinja2 Rules of Thumb
-- Close every `{% if %}`, `{% for %}`, and `{% raw %}` block to avoid generation failures.
-- Use `{{ }}` for substitutions and `{% %}` for control flow logic.
-- Trim whitespace with `{%-` / `-%}` when rendered output should not include extra newlines.
-
-### Terraform and CI/CD Expectations
-- Maintain a single `app_sa` service account across deployment targets; assign roles via `app_sa_roles` and reference the account consistently.
-- Keep GitHub Actions (`.github/workflows/`) and Cloud Build (`.cloudbuild/`) workflows in sync, including variable naming (`${{ vars.X }}` vs. `${_X}`) and Terraform-managed secrets.
-
-### Layer Overrides and Cross-File Dependencies
-- Respect the four-layer order: base template → deployment target → frontend type → agent template. Place edits in the minimal layer and propagate overrides where necessary.
-- Coordinate updates across `templateconfig.yaml`, `cookiecutter.json`, rendered templates, and CI/CD manifests to prevent drift.
-- Wrap agent- or target-specific logic in conditionals such as `{% if cookiecutter.agent_name == "adk_live" %}`.
-
-### Testing and Validation
-- Exercise multiple combinations: agent types (`adk_live`, `adk_base`), deployment targets (`cloud_run`, `agent_engine`), and feature flags (`data_ingestion`, frontend options).
-- Example scaffold command:
-    ```bash
-    uv run agent-starter-pack create myagent-$(date +%s) --output-dir target
-    ```
-- Watch for hardcoded URLs, missing conditionals, or dependency mismatches when introducing new extras.
 
 ## 🔍 Chrome DevTools MCP - Browser Verification Tool
 
@@ -427,40 +327,9 @@ mcp__chrome-devtools__list_console_messages
 mcp__chrome-devtools__list_network_requests { resourceTypes: ["xhr", "fetch"] }
 ```
 
-### Visual Iteration Workflow (Screenshot-Based UI Development)
+### Visual Iteration Workflow
 
-**Pattern**: Design → Implement → Screenshot → Compare → Iterate
-
-```javascript
-// 1. Take baseline screenshot of target design
-mcp__chrome-devtools__navigate_page { url: "http://localhost:3000/design" }
-mcp__chrome-devtools__take_screenshot { filePath: "/tmp/design-target.png" }
-
-// 2. Implement UI changes
-Write "frontend/src/components/Feature.tsx"
-
-// 3. Capture implementation screenshot
-mcp__chrome-devtools__navigate_page { url: "http://localhost:3000/feature" }
-mcp__chrome-devtools__take_screenshot { filePath: "/tmp/feature-v1.png" }
-
-// 4. Compare visually and iterate
-Read "/tmp/design-target.png"
-Read "/tmp/feature-v1.png"
-// Analyze differences, make adjustments
-
-// 5. Test responsive layouts
-mcp__chrome-devtools__resize_page { width: 375, height: 667 }  // Mobile
-mcp__chrome-devtools__take_screenshot { filePath: "/tmp/feature-mobile.png" }
-mcp__chrome-devtools__resize_page { width: 1920, height: 1080 }  // Desktop
-mcp__chrome-devtools__take_screenshot { filePath: "/tmp/feature-desktop.png" }
-```
-
-**Use Cases**:
-- Match design mockups pixel-perfectly
-- Verify component styling across viewports
-- Document UI states (loading, error, success)
-- Capture before/after for refactoring
-- Create visual regression tests
+Use `take_screenshot` to capture UI states for comparison. Test responsive layouts with `resize_page` before screenshots.
 
 ### SSE/Real-Time Debugging
 ```javascript
@@ -711,7 +580,7 @@ Grep "class MessageProcessor" --output_mode content
 
 # Understand the architecture
 Read "app/server.py"
-Read "frontend/src/App.tsx"
+Read "frontend/src/app/page.tsx"  # Next.js 13+ main page
 ```
 
 **Phase 2: PLAN**
@@ -774,194 +643,81 @@ Co-Authored-By: Claude <noreply@anthropic.com>'
 - Ask for clarification when requirements are ambiguous
 - Don't continue if something seems fundamentally wrong
 
-## Context Management
+## Headless Browser Mode (CI/CD Automation)
+Use Chrome DevTools MCP in headless mode for automated browser testing in CI/CD pipelines:
 
-### When to Use /clear
-Context accumulates during long sessions and can affect Claude's performance. Use `/clear` to reset:
-
-**Clear context when:**
-1. Completing a major feature (entire workflow done)
-2. Switching to an unrelated task
-3. Claude seems confused or gives unexpected responses
-4. Context has grown very large (20+ file reads)
-5. Starting a new day of work
-
-**Don't clear context when:**
-- In the middle of implementing a feature
-- Debugging an ongoing issue
-- Need recent conversation history
-- Working on related tasks
-
-### How /clear Works
-- Removes conversation history
-- Preserves CLAUDE.md instructions
-- Keeps important files in context (you can re-read if needed)
-- Resets to fresh state
-
-### Best Practices
+**Setup for CI/CD:**
 ```bash
-# After completing authentication feature
-/clear
-
-# New task: "Now let's implement the chat interface"
-Read "frontend/src/App.tsx"  # Re-establish context
-TodoWrite { todos: [...] }  # New task list
+# Configure Chrome DevTools MCP with headless mode enabled
+claude mcp add chrome-devtools npx chrome-devtools-mcp@latest --channel stable --headless true
 ```
 
-### Alternative: /compact
-Use `/compact` instead of `/clear` when you want to:
-- Compress context without losing history
-- Keep working on the same feature
-- Maintain conversation flow
+**Example CI/CD Workflow:**
+```yaml
+# .github/workflows/frontend-e2e.yml
+name: Frontend E2E Tests
 
-## Advanced Techniques
+on: [pull_request]
 
-### Git Worktrees (Parallel Development)
-Work on multiple features simultaneously without branch switching:
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-```bash
-# Create worktree for new feature
-git worktree add ../vana-oauth-feature feature/oauth-integration
+      - name: Setup Chrome DevTools MCP (Headless)
+        run: |
+          claude mcp add chrome-devtools \
+            npx chrome-devtools-mcp@latest \
+            --channel stable \
+            --headless true
 
-# Now you have two directories:
-# ~/Projects/vana          (main branch)
-# ~/Projects/vana-oauth-feature  (feature/oauth-integration branch)
+      - name: Start Services
+        run: pm2 start ecosystem.config.js
 
-# Use Case 1: Multiple Claude instances
-# Terminal 1 (main development)
-cd ~/Projects/vana
-claude  # Instance 1 working on main
+      - name: Run Automated Browser Tests
+        run: |
+          # Use Chrome DevTools MCP tools in headless mode
+          claude "Use Chrome DevTools MCP to:
+          1. Navigate to http://localhost:3000
+          2. Test authentication flow
+          3. Verify chat functionality
+          4. Check for console errors
+          5. Test responsive layouts"
 
-# Terminal 2 (feature branch)
-cd ~/Projects/vana-oauth-feature
-claude  # Instance 2 working on OAuth
-
-# Use Case 2: Parallel testing
-# One worktree for development, another for testing
-git worktree add ../vana-test main  # Clean testing environment
+      - name: Capture Screenshots on Failure
+        if: failure()
+        run: |
+          claude "Take screenshots of all pages for debugging"
 ```
 
-**Benefits:**
-- No branch switching disruption
-- Run tests on main while developing on feature
-- Multiple Claude instances on different branches
-- Faster context switching
-
-### Multiple Claude Instances
-Run several Claude Code instances for specialized tasks:
-
-**Pattern 1: Role Separation**
-```bash
-# Terminal 1: Backend Development
-cd ~/Projects/vana
-claude
-# Task: "Implement new API endpoints"
-
-# Terminal 2: Frontend Development
-cd ~/Projects/vana
-claude
-# Task: "Build UI components for new feature"
-
-# Terminal 3: Testing & QA
-cd ~/Projects/vana
-claude
-# Task: "Write tests and verify functionality"
-```
-
-**Pattern 2: Feature Isolation (with worktrees)**
-```bash
-# Instance 1: Feature A
-cd ~/Projects/vana-feature-a
-claude  # Working on authentication
-
-# Instance 2: Feature B
-cd ~/Projects/vana-feature-b
-claude  # Working on chat interface
-
-# Instance 3: Bug Fixes
-cd ~/Projects/vana
-claude  # Fixing production issues on main
-```
-
-**Pattern 3: Review & Development**
-```bash
-# Instance 1: Development
-claude  # Implementing features
-
-# Instance 2: Code Review
-claude  # Reviewing and testing changes
-# Use: reviewer agent, run tests, check code quality
-
-# Instance 3: Documentation
-claude  # Writing docs and updating README
-```
-
-### Headless Mode (Automation)
-Use Claude Code in scripts and CI/CD pipelines:
-
-```bash
-# Automated code review
-claude --headless "Review all changes in app/routes/ for security issues"
-
-# Automated testing
-claude --headless "Run all tests and report failures"
-
-# Automated refactoring
-claude --headless "Refactor app/services/message_processor.py to use async/await"
-
-# CI/CD Integration
-# .github/workflows/claude-review.yml
-- name: Claude Code Review
-  run: |
-    claude --headless "Review PR changes for:
-    1. Security vulnerabilities
-    2. Code quality issues
-    3. Test coverage
-    4. Performance concerns"
+**Headless Browser Testing Examples:**
+```javascript
+// All Chrome DevTools MCP tools work in headless mode
+mcp__chrome-devtools__navigate_page { url: "http://localhost:3000" }
+mcp__chrome-devtools__take_snapshot  // Works without visible browser
+mcp__chrome-devtools__list_console_messages
+mcp__chrome-devtools__take_screenshot { filePath: "/tmp/ci-screenshot.png" }
+mcp__chrome-devtools__performance_start_trace { reload: true, autoStop: false }
 ```
 
 **Use Cases:**
-- Automated code reviews in CI/CD
-- Batch processing tasks
-- Scheduled refactoring
-- Test generation
-- Documentation updates
+- Automated E2E testing in CI/CD
+- Visual regression testing
+- Performance benchmarking
+- SEO and accessibility audits
+- Smoke testing before deployment
+- Screenshot generation for documentation
 
-### Custom Slash Commands
-Create reusable workflows for common tasks:
+**Toggle Headless Mode:**
+```bash
+# Enable headless (for CI/CD)
+claude mcp add chrome-devtools npx chrome-devtools-mcp@latest --headless true
 
-**Available in this project:**
-- `/sparc` - SPARC methodology workflows
-- `/cr-config` - CodeRabbit integration
-- `/batchtools` - Parallel batch operations
-- `/claude-flow-swarm` - Multi-agent coordination
-
-**Creating Custom Commands:**
-1. Add files to `.claude/commands/` directory
-2. Define command behavior in markdown
-3. Use for repetitive workflows
-
-**Example: Custom testing command**
-```markdown
-# .claude/commands/full-test.md
----
-name: full-test
-description: Run complete test suite with coverage
----
-
-Run the following commands in sequence:
-1. Backend tests: `make test`
-2. Frontend tests: `npm --prefix frontend test`
-3. E2E tests: `npm --prefix frontend run test:e2e`
-4. Check coverage: `make coverage-report`
+# Disable headless (for local debugging with visible browser)
+claude mcp add chrome-devtools npx chrome-devtools-mcp@latest --headless false
 ```
 
-Usage: `/full-test`
-
-## Support
-
-- Documentation: https://github.com/ruvnet/claude-flow
-- Issues: https://github.com/ruvnet/claude-flow/issues
 
 # Agent Development Kit (ADK)
 
@@ -1033,6 +789,8 @@ Explore the full documentation for detailed guides on building, evaluating, and
 
 
 Documentation
+
+**💡 Local Reference Library**: This project includes `/docs/adk/refs/` - a curated collection of 14+ production-ready ADK repositories cloned locally, including official Google samples, A2A protocols, agent-starter-pack templates, and real-world financial services implementations. See [Local ADK Reference Library](#local-adk-reference-library-docsadkrefs) section below for complete details.
 
 
 🏁 Feature Highlight
@@ -1109,12 +867,37 @@ Comprehensive documentation available at [ADK Docs](https://github.com/google/ad
 - **Streaming**: SSE streaming, WebSocket streaming, bidi-streaming, streaming tools
 - **Advanced Features**: Callbacks, events, artifacts, runtime configuration
 
-### Best Practices & Resources (docs/adk/refs)
-- **Observability**: Arize AX integration, Phoenix integration
-- **Safety & Security**: Security guidelines for AI agents
-- **Tutorials**: Agent team building, progressive examples
-- **Community**: Community resources, contributing guide
+### Local ADK Reference Library (`/docs/adk/refs/`)
 
+A curated collection of **14+ production-ready reference repositories** cloned locally for offline access and rapid prototyping:
+
+**Official Google ADK** (3 repos)
+- `official-adk-python/` - Core Python SDK with complete implementation patterns
+- `official-adk-samples/` - Official examples demonstrating ADK capabilities
+- ADK Java patterns for cross-language reference
+
+**Agent-to-Agent (A2A) Communication** (3 repos)
+- `a2a-official-samples/` - Official A2A protocol implementations
+- `a2a-multi-agent-samples/` - Advanced multi-agent A2A patterns
+- `awesome-a2a-protocol/` - Comprehensive A2A resource directory
+
+**Production Templates & Starters**
+- `agent-starter-pack/` - Google Cloud Platform production templates with Terraform, CI/CD, and deployment configs ⭐
+- `frontend-nextjs-fullstack/` - Full-stack Next.js + ADK integration example
+
+**Real-World Examples** (Financial Services Agent Bake-Off)
+- `marcus-ng-cymbal-bank/` - Hierarchical multi-agent banking platform
+- `luis-sala-agent-bakeoff/` - Real-time streaming with advanced debugging
+- `brandon-hancock-agent-bakeoff/` - Multi-agent A2A orchestration patterns
+- `ayo-adedeji-finserv-agents/` - Hybrid AI + algorithmic architecture
+
+**Community & Learning**
+- `awesome-adk-agents/` - Curated catalog of production agents
+- `marketing-multi-agent-example/` - Multi-agent marketing workflow
+
+**Quick Start**: See `/docs/adk/refs/README.md` for detailed descriptions, use cases, and key files to explore in each repository.
+
+**Online Documentation**
 [Full documentation index →](https://github.com/google/adk-docs/blob/main/docs/)
 [Python API Reference →](https://github.com/google/adk-docs/blob/main/docs/api-reference/python/)
 
