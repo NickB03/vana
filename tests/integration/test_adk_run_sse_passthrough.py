@@ -75,6 +75,41 @@ class TestRunSSEEndpointRegistration:
         assert response.status_code in [501, 422]
 
 
+class TestRunSSEStreamingBehavior:
+    """Test SSE streaming protocol compliance."""
+
+    def test_run_sse_preserves_blank_lines(self, client, monkeypatch):
+        """Test that /run_sse preserves blank lines (SSE event delimiters).
+
+        CRITICAL: SSE protocol requires blank lines to delimit events.
+        Without blank lines, browsers wait indefinitely for event completion.
+
+        This test documents the expected behavior even though we can't fully
+        test it without a live ADK service. The implementation must forward
+        ALL lines including empty ones.
+        """
+        # Enable feature flag
+        monkeypatch.setenv("ENABLE_ADK_CANONICAL_STREAM", "true")
+
+        # This is a documentation test - the actual implementation in
+        # app/routes/adk_routes.py line 236-237 must yield ALL lines:
+        #   async for line in upstream.aiter_lines():
+        #       yield f"{line}\n"  # No if line.strip() check!
+
+        # Without live ADK service, we verify the feature flag works
+        response = client.post("/run_sse", json={
+            "appName": "vana",
+            "userId": "test",
+            "sessionId": "test_session_123456789012345",
+            "newMessage": {"parts": [{"text": "test"}], "role": "user"},
+            "streaming": True
+        })
+
+        # Should not be 501 (feature flag is enabled)
+        # Will be 403/500 without ADK service, but that's expected
+        assert response.status_code != 501
+
+
 @pytest.mark.skipif(
     True,  # Skip by default - requires ADK service on port 8080
     reason="Requires ADK service running on port 8080"

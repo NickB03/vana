@@ -232,10 +232,9 @@ async def run_sse_canonical(
                         return
 
                     # Stream raw SSE lines from ADK (no mutation)
+                    # CRITICAL: Forward ALL lines including empty ones - blank lines are SSE event delimiters
                     async for line in upstream.aiter_lines():
-                        if line.strip():
-                            # Pass through raw SSE lines
-                            yield f"{line}\n"
+                        yield f"{line}\n"
 
         except httpx.TimeoutException:
             # Phase 1.3: Timeout after 300s
