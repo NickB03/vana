@@ -1,9 +1,19 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, User, Bot, ChevronDown, ChevronUp } from "lucide-react";
+import { Send, Bot, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import {
+  ChatContainerContent,
+  ChatContainerRoot,
+} from "@/components/prompt-kit/chat-container";
+import { Markdown } from "@/components/prompt-kit/markdown";
+import {
+  Message as MessageComponent,
+  MessageAvatar,
+  MessageContent,
+} from "@/components/prompt-kit/message";
 
 interface Message {
   id: string;
@@ -75,25 +85,23 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
 
   return (
     <div className="flex h-full flex-col">
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
-        ))}
-        {isLoading && (
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-primary">
-              <Bot className="h-5 w-5 text-white" />
-            </div>
-            <div className="flex gap-1">
-              <div className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.3s]" />
-              <div className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.15s]" />
-              <div className="h-2 w-2 animate-bounce rounded-full bg-primary" />
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
+      <ChatContainerRoot className="flex-1">
+        <ChatContainerContent className="space-y-4 p-4">
+          {messages.map((message) => (
+            <MessageBubble key={message.id} message={message} />
+          ))}
+          {isLoading && (
+            <MessageComponent className="justify-start">
+              <MessageAvatar fallback="AI" />
+              <div className="flex gap-1">
+                <div className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.3s]" />
+                <div className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.15s]" />
+                <div className="h-2 w-2 animate-bounce rounded-full bg-primary" />
+              </div>
+            </MessageComponent>
+          )}
+        </ChatContainerContent>
+      </ChatContainerRoot>
 
       {/* Input Area */}
       <div className="border-t border-border bg-background p-4">
@@ -130,31 +138,24 @@ function MessageBubble({ message }: { message: Message }) {
   const isUser = message.role === "user";
 
   return (
-    <div
+    <MessageComponent
       className={cn(
-        "flex gap-3 animate-fade-in",
+        "animate-fade-in",
         isUser ? "justify-end" : "justify-start"
       )}
     >
-      {!isUser && (
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-primary shrink-0">
-          <Bot className="h-5 w-5 text-white" />
-        </div>
-      )}
+      {!isUser && <MessageAvatar fallback="AI" />}
       
-      <div className={cn("flex flex-col gap-2 max-w-[80%]", isUser && "items-end")}>
-        <Card
-          className={cn(
-            "p-4",
-            isUser
-              ? "bg-gradient-primary text-white"
-              : "bg-card border-border"
-          )}
-        >
-          <p className="whitespace-pre-wrap text-sm leading-relaxed">
+      <div className={cn("flex max-w-[85%] flex-1 flex-col gap-2 sm:max-w-[75%]", isUser && "items-end")}>
+        {isUser ? (
+          <MessageContent className="bg-primary text-primary-foreground">
             {message.content}
-          </p>
-        </Card>
+          </MessageContent>
+        ) : (
+          <div className="bg-secondary text-foreground prose rounded-lg p-3">
+            <Markdown>{message.content}</Markdown>
+          </div>
+        )}
 
         {!isUser && message.reasoning && (
           <div className="w-full">
@@ -188,11 +189,7 @@ function MessageBubble({ message }: { message: Message }) {
         )}
       </div>
 
-      {isUser && (
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted shrink-0">
-          <User className="h-5 w-5" />
-        </div>
-      )}
-    </div>
+      {isUser && <MessageAvatar fallback="U" className="order-last" />}
+    </MessageComponent>
   );
 }
