@@ -86,7 +86,7 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
   return (
     <div className="flex h-full flex-col">
       <ChatContainerRoot className="flex-1">
-        <ChatContainerContent className="space-y-4 p-4">
+        <ChatContainerContent className="space-y-0 px-5 py-12">
           {messages.map((message) => (
             <MessageBubble key={message.id} message={message} />
           ))}
@@ -140,19 +140,17 @@ function MessageBubble({ message }: { message: Message }) {
   return (
     <MessageComponent
       className={cn(
-        "animate-fade-in",
-        isUser ? "justify-end" : "justify-start"
+        "mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 animate-fade-in",
+        isUser ? "items-end" : "items-start"
       )}
     >
-      {!isUser && <MessageAvatar fallback="AI" />}
-      
-      <div className={cn("flex max-w-[85%] flex-1 flex-col gap-2 sm:max-w-[75%]", isUser && "items-end")}>
+      <div className={cn("flex flex-col gap-1", isUser && "items-end")}>
         {isUser ? (
-          <MessageContent className="bg-primary text-primary-foreground">
+          <MessageContent className="bg-muted text-primary max-w-[85%] rounded-3xl px-5 py-2.5 sm:max-w-[75%]">
             {message.content}
           </MessageContent>
         ) : (
-          <div className="bg-secondary text-foreground prose rounded-lg p-3">
+          <div className="text-foreground prose w-full rounded-lg bg-transparent p-0">
             <Markdown>{message.content}</Markdown>
           </div>
         )}
