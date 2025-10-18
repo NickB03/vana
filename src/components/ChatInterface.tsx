@@ -84,7 +84,6 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
           ))}
           {isStreaming && streamingMessage && (
             <MessageComponent className="justify-start">
-              <MessageAvatar fallback="AI" />
               <div className="max-w-[85%] sm:max-w-[75%] mr-auto">
                 <div className="bg-secondary text-foreground prose rounded-lg p-2 inline-block">
                   <Markdown>{streamingMessage}</Markdown>
@@ -94,7 +93,6 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
           )}
           {(isLoading || isStreaming) && !streamingMessage && (
             <MessageComponent className="justify-start">
-              <MessageAvatar fallback="AI" />
               <div className="flex gap-1">
                 <div className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.3s]" />
                 <div className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.15s]" />
@@ -151,8 +149,6 @@ function MessageBubble({ message }: { message: ChatMessage }) {
     <MessageComponent
       className={isUser ? "justify-end" : "justify-start"}
     >
-      {!isUser && <MessageAvatar fallback="AI" />}
-      
       <div className={cn("max-w-[85%] sm:max-w-[75%]", isUser ? "ml-auto" : "mr-auto")}>
         {isUser ? (
           <MessageContent className="bg-primary text-primary-foreground inline-block">
@@ -195,8 +191,6 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           </div>
         )}
       </div>
-
-      {isUser && <MessageAvatar fallback="U" />}
     </MessageComponent>
   );
 }

@@ -11,7 +11,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from "@/components/prompt-kit/prompt-input";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Square, LogOut } from "lucide-react";
+import { ArrowUp, Square, LogOut, Settings } from "lucide-react";
 import { useChatSessions } from "@/hooks/useChatSessions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -97,6 +97,7 @@ const Index = () => {
           onSessionSelect={handleSessionSelect}
           onNewChat={handleNewChat}
           onDeleteSession={deleteSession}
+          onLogout={handleLogout}
           isLoading={sessionsLoading}
         />
         <SidebarInset>
@@ -110,14 +111,12 @@ const Index = () => {
                 </h1>
               </div>
               <div className="flex items-center gap-2">
-                <ThemeToggle />
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={handleLogout}
-                  title="Logout"
+                  title="Settings"
                 >
-                  <LogOut className="h-5 w-5" />
+                  <Settings className="h-5 w-5" />
                 </Button>
               </div>
             </header>
