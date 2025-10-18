@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MessageSquare, Search, Plus, Trash2 } from "lucide-react";
+import { MessageSquare, Search, Plus, MoreHorizontal } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -99,13 +99,13 @@ export function ChatSidebar({
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-8 w-8 absolute right-2 invisible group-hover:visible transition-all opacity-0 group-hover:opacity-100" 
+                        className="h-8 w-8 absolute right-2 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all" 
                         onClick={e => {
                           e.stopPropagation();
                           onDeleteSession(session.id);
                         }}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </div>
                   </SidebarMenuItem>)}
