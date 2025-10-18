@@ -5,37 +5,44 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { ChatSidebar } from "@/components/ChatSidebar";
-import { PromptSuggestions } from "@/components/PromptSuggestions";
 import { ChatInterface } from "@/components/ChatInterface";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from "@/components/prompt-kit/prompt-input";
+import { Button } from "@/components/ui/button";
+import { ArrowUp, Square } from "lucide-react";
 
 const Index = () => {
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>();
-  const [selectedPrompt, setSelectedPrompt] = useState<string | undefined>();
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
-
-  const handleSuggestionClick = (prompt: string) => {
-    setSelectedPrompt(prompt);
-  };
 
   const handleNewChat = () => {
     setCurrentSessionId(undefined);
-    setSelectedPrompt(undefined);
+    setInput("");
     setShowChat(false);
   };
 
   const handleSessionSelect = (sessionId: string) => {
     setCurrentSessionId(sessionId);
     setShowChat(true);
-    setSelectedPrompt(undefined);
   };
 
-  // Start chat when user has a prompt ready
-  const startChat = () => {
-    if (selectedPrompt) {
-      setShowChat(true);
-      setCurrentSessionId(Date.now().toString());
-    }
+  const handleSubmit = () => {
+    if (!input.trim()) return;
+    
+    setIsLoading(true);
+    setShowChat(true);
+    setCurrentSessionId(Date.now().toString());
+    
+    // Simulate loading
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+  };
+
+  const handleValueChange = (value: string) => {
+    setInput(value);
   };
 
   return (
@@ -58,36 +65,46 @@ const Index = () => {
 
             {/* Main Content */}
             <div className="flex-1 overflow-hidden">
-              {!showChat && !selectedPrompt ? (
-                <div className="flex h-full items-center justify-center overflow-y-auto">
-                  <PromptSuggestions onSuggestionClick={handleSuggestionClick} />
-                </div>
-              ) : !showChat && selectedPrompt ? (
-                <div className="flex h-full items-center justify-center overflow-y-auto p-8">
-                  <div className="w-full max-w-4xl">
-                    <div className="mb-4 rounded-lg border-2 border-primary bg-gradient-subtle p-6">
-                      <p className="text-lg">{selectedPrompt}</p>
-                    </div>
-                    <div className="flex gap-4">
-                      <button
-                        onClick={startChat}
-                        className="flex-1 rounded-lg bg-gradient-primary px-6 py-3 font-semibold text-white transition-opacity hover:opacity-90"
-                      >
-                        Start Chat
-                      </button>
-                      <button
-                        onClick={() => setSelectedPrompt(undefined)}
-                        className="rounded-lg border-2 border-border px-6 py-3 font-semibold transition-colors hover:bg-muted"
-                      >
-                        Choose Different
-                      </button>
-                    </div>
+              {!showChat ? (
+                <div className="flex h-full flex-col items-center justify-center p-8">
+                  <div className="mb-8 text-center">
+                    <h1 className="mb-4 bg-gradient-primary bg-clip-text text-5xl font-bold text-transparent">
+                      How can I help you?
+                    </h1>
                   </div>
+                  
+                  <PromptInput
+                    value={input}
+                    onValueChange={handleValueChange}
+                    isLoading={isLoading}
+                    onSubmit={handleSubmit}
+                    className="w-full max-w-3xl"
+                  >
+                    <PromptInputTextarea placeholder="Ask me anything..." />
+                    <PromptInputActions className="justify-end pt-2">
+                      <PromptInputAction
+                        tooltip={isLoading ? "Stop generation" : "Send message"}
+                      >
+                        <Button
+                          variant="default"
+                          size="icon"
+                          className="h-8 w-8 rounded-full"
+                          onClick={handleSubmit}
+                        >
+                          {isLoading ? (
+                            <Square className="size-5 fill-current" />
+                          ) : (
+                            <ArrowUp className="size-5" />
+                          )}
+                        </Button>
+                      </PromptInputAction>
+                    </PromptInputActions>
+                  </PromptInput>
                 </div>
               ) : (
                 <ChatInterface
                   sessionId={currentSessionId}
-                  initialPrompt={selectedPrompt}
+                  initialPrompt={input}
                 />
               )}
             </div>
