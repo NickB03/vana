@@ -4,8 +4,6 @@ import {
   Settings,
   Search,
   Plus,
-  ChevronLeft,
-  ChevronRight,
   Moon,
   Sun,
   Monitor,
@@ -20,7 +18,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
-  useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,14 +42,47 @@ interface ChatSidebarProps {
   onNewChat: () => void;
 }
 
+const groupChatsByPeriod = (sessions: ChatSession[]) => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const lastWeek = new Date(today);
+  lastWeek.setDate(lastWeek.getDate() - 7);
+  const lastMonth = new Date(today);
+  lastMonth.setDate(lastMonth.getDate() - 30);
+
+  const groups = {
+    Today: [] as ChatSession[],
+    Yesterday: [] as ChatSession[],
+    "Last 7 days": [] as ChatSession[],
+    "Last month": [] as ChatSession[],
+  };
+
+  sessions.forEach((session) => {
+    const sessionDate = new Date(session.timestamp);
+    if (sessionDate >= today) {
+      groups.Today.push(session);
+    } else if (sessionDate >= yesterday) {
+      groups.Yesterday.push(session);
+    } else if (sessionDate >= lastWeek) {
+      groups["Last 7 days"].push(session);
+    } else if (sessionDate >= lastMonth) {
+      groups["Last month"].push(session);
+    }
+  });
+
+  return Object.entries(groups).filter(([_, items]) => items.length > 0);
+};
+
 export function ChatSidebar({
   currentSessionId,
   onSessionSelect,
   onNewChat,
 }: ChatSidebarProps) {
-  const { state } = useSidebar();
   const { theme, setTheme } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
   const [sessions] = useState<ChatSession[]>([
     {
       id: "1",
@@ -62,94 +92,36 @@ export function ChatSidebar({
     },
   ]);
 
-  const collapsed = state === "collapsed";
-
   const filteredSessions = sessions.filter(
     (session) =>
       session.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       session.preview.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const groupedSessions = groupChatsByPeriod(filteredSessions);
+
   return (
-    <Sidebar className="border-r border-border">
-      <SidebarHeader className="border-b border-border p-4">
-        <div className="flex items-center justify-between gap-2">
-          {!collapsed && (
-            <h2 className="bg-gradient-primary bg-clip-text text-xl font-bold text-transparent">
-              AI Chat
-            </h2>
-          )}
-          <Button
-            onClick={onNewChat}
-            size={collapsed ? "icon" : "default"}
-            className="bg-gradient-primary hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" />
-            {!collapsed && <span className="ml-2">New Chat</span>}
-          </Button>
-        </div>
-      </SidebarHeader>
-
-      <SidebarContent>
-        {!collapsed && (
-          <div className="p-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search chats..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
+    <Sidebar>
+      <SidebarHeader className="flex flex-row items-center justify-between gap-2 px-2 py-4">
+        <div className="flex flex-row items-center gap-2 px-2">
+          <div className="size-8 rounded-md bg-gradient-primary"></div>
+          <div className="text-md font-base tracking-tight bg-gradient-primary bg-clip-text text-transparent">
+            AI Chat
           </div>
-        )}
-
-        <SidebarGroup>
-          <SidebarGroupLabel>
-            {collapsed ? <MessageSquare className="h-4 w-4" /> : "Recent Chats"}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {filteredSessions.map((session) => (
-                <SidebarMenuItem key={session.id}>
-                  <SidebarMenuButton
-                    onClick={() => onSessionSelect(session.id)}
-                    isActive={currentSessionId === session.id}
-                    className={cn(
-                      "w-full justify-start",
-                      currentSessionId === session.id &&
-                        "bg-gradient-subtle border-l-2 border-primary"
-                    )}
-                  >
-                    <MessageSquare className="h-4 w-4 shrink-0" />
-                    {!collapsed && (
-                      <div className="ml-2 flex-1 overflow-hidden">
-                        <div className="truncate font-medium">
-                          {session.title}
-                        </div>
-                        <div className="truncate text-xs text-muted-foreground">
-                          {session.preview}
-                        </div>
-                      </div>
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <div className="mt-auto border-t border-border p-4">
+        </div>
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            onClick={() => setShowSearch(!showSearch)}
+          >
+            <Search className="size-4" />
+          </Button>
           <Popover>
             <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                size={collapsed ? "icon" : "default"}
-                className="w-full justify-start"
-              >
-                <Settings className="h-4 w-4" />
-                {!collapsed && <span className="ml-2">Settings</span>}
+              <Button variant="ghost" size="icon" className="size-8">
+                <Settings className="size-4" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-56" side="right">
@@ -187,6 +159,56 @@ export function ChatSidebar({
             </PopoverContent>
           </Popover>
         </div>
+      </SidebarHeader>
+
+      <SidebarContent className="pt-4">
+        <div className="px-4 pb-4">
+          <Button
+            onClick={onNewChat}
+            className="w-full bg-gradient-primary hover:opacity-90"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Chat
+          </Button>
+        </div>
+
+        {showSearch && (
+          <div className="px-4 pb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search chats..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          </div>
+        )}
+
+        {groupedSessions.map(([period, periodSessions]) => (
+          <SidebarGroup key={period}>
+            <SidebarGroupLabel>{period}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {periodSessions.map((session) => (
+                  <SidebarMenuItem key={session.id}>
+                    <SidebarMenuButton
+                      onClick={() => onSessionSelect(session.id)}
+                      isActive={currentSessionId === session.id}
+                      className={cn(
+                        currentSessionId === session.id &&
+                          "bg-gradient-subtle border-l-2 border-primary"
+                      )}
+                    >
+                      <span className="truncate">{session.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
     </Sidebar>
   );

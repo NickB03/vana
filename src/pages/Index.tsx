@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { PromptSuggestions } from "@/components/PromptSuggestions";
 import { ChatInterface } from "@/components/ChatInterface";
@@ -37,28 +41,29 @@ const Index = () => {
   return (
     <ThemeProvider defaultTheme="system">
       <SidebarProvider defaultOpen={true}>
-        <div className="flex min-h-screen w-full">
-          <ChatSidebar
-            currentSessionId={currentSessionId}
-            onSessionSelect={handleSessionSelect}
-            onNewChat={handleNewChat}
-          />
-
-          <main className="flex-1 flex flex-col">
+        <ChatSidebar
+          currentSessionId={currentSessionId}
+          onSessionSelect={handleSessionSelect}
+          onNewChat={handleNewChat}
+        />
+        <SidebarInset>
+          <main className="flex h-screen flex-col overflow-hidden">
             {/* Header */}
-            <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
-              <SidebarTrigger />
+            <header className="bg-background z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b px-4">
+              <SidebarTrigger className="-ml-1" />
               <h1 className="text-lg font-semibold">
                 {showChat ? "Chat Session" : "New Chat"}
               </h1>
             </header>
 
             {/* Main Content */}
-            <div className="flex-1">
+            <div className="flex-1 overflow-hidden">
               {!showChat && !selectedPrompt ? (
-                <PromptSuggestions onSuggestionClick={handleSuggestionClick} />
+                <div className="flex h-full items-center justify-center overflow-y-auto">
+                  <PromptSuggestions onSuggestionClick={handleSuggestionClick} />
+                </div>
               ) : !showChat && selectedPrompt ? (
-                <div className="flex h-full items-center justify-center p-8">
+                <div className="flex h-full items-center justify-center overflow-y-auto p-8">
                   <div className="w-full max-w-4xl">
                     <div className="mb-4 rounded-lg border-2 border-primary bg-gradient-subtle p-6">
                       <p className="text-lg">{selectedPrompt}</p>
@@ -87,7 +92,7 @@ const Index = () => {
               )}
             </div>
           </main>
-        </div>
+        </SidebarInset>
       </SidebarProvider>
     </ThemeProvider>
   );
