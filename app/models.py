@@ -8,9 +8,10 @@ including request/response models, session management, and type definitions.
 
 # Standard library imports
 from datetime import datetime
-from typing import Any, Union
+from typing import Any, Optional, Union
 
-from pydantic import BaseModel, Field, field_validator
+from google.genai import types
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ResearchRequest(BaseModel):
@@ -228,6 +229,35 @@ class UserProfile(BaseModel):
         default_factory=dict, description="User preferences"
     )
     subscription_tier: str = Field("free", description="Subscription tier")
+
+
+class RunAgentRequest(BaseModel):
+    """ADK-compliant request model for running an agent with streaming support.
+
+    This model matches the official ADK RunAgentRequest structure to ensure
+    compatibility with ADK's /run_sse endpoint.
+
+    Based on: docs/adk/refs/official-adk-python/src/google/adk/cli/adk_web_server.py
+
+    Attributes:
+        app_name: Application identifier (e.g., "vana")
+        user_id: User identifier for session tracking
+        session_id: Unique session identifier
+        new_message: Content object containing user message parts
+        streaming: Whether to enable SSE streaming (default: False)
+        state_delta: Optional state changes to apply
+        invocation_id: Optional ID for resuming long-running functions
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    app_name: str = Field(..., alias="appName")
+    user_id: str = Field(..., alias="userId")
+    session_id: str = Field(..., alias="sessionId")
+    new_message: types.Content = Field(..., alias="newMessage")
+    streaming: bool = False
+    state_delta: Optional[dict[str, Any]] = Field(None, alias="stateDelta")
+    invocation_id: Optional[str] = Field(None, alias="invocationId")
 
 
 # Type aliases for common data structures
