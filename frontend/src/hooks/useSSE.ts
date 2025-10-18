@@ -8,6 +8,8 @@ import { AgentNetworkEvent } from '@/lib/api/types';
 import { apiClient } from '@/lib/api/client';
 import { useStableCallback, createRenderCounter } from '@/lib/react-performance';
 import { getCsrfToken } from '@/lib/csrf';
+import { isAdkCanonicalStreamEnabled } from '@/lib/env';
+import { parseAdkEventSSE, type ParsedAdkEvent } from '@/lib/streaming/adk';
 
 export type SSEConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error' | 'reconnecting';
 
@@ -36,6 +38,8 @@ export interface SSEOptions {
 export interface SSEHookReturn {
   /** Current connection state */
   connectionState: SSEConnectionState;
+  /** Synchronous connection state ref (for immediate access without waiting for re-render) */
+  connectionStateRef: React.MutableRefObject<SSEConnectionState>;
   /** Last received event */
   lastEvent: AgentNetworkEvent | null;
   /** All received events */
@@ -54,6 +58,8 @@ export interface SSEHookReturn {
   clearEvents: () => void;
   /** Current reconnection attempt count */
   reconnectAttempt: number;
+  /** Last parsed ADK event (Phase 3 - only populated when feature flag enabled) */
+  lastAdkEvent: ParsedAdkEvent | null;
 }
 
 /**
@@ -111,6 +117,8 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
   const [events, setEvents] = useState<AgentNetworkEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
+  // Phase 3: ADK canonical event storage (feature flag gated)
+  const [lastAdkEvent, setLastAdkEvent] = useState<ParsedAdkEvent | null>(null);
 
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -118,6 +126,9 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
   const mountedRef = useRef(true);
   const abortControllerRef = useRef<AbortController | null>(null);
   const cleaningUpRef = useRef(false); // IDEMPOTENCY FIX: Prevent duplicate cleanup
+  // CRITICAL FIX: Track connection state synchronously in ref for immediate visibility
+  // This allows waitForSSEState to see state changes immediately without waiting for React re-render
+  const connectionStateRef = useRef<SSEConnectionState>('disconnected');
 
   // Store event handler references for cleanup
   const eventHandlersRef = useRef<{
@@ -150,6 +161,19 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
     };
   }, [options.onConnect, options.onDisconnect, options.onError, options.onReconnect]);
 
+  // CRITICAL FIX: Sync connectionStateRef with connectionState
+  // This ensures the ref always reflects the latest state for synchronous access
+  useEffect(() => {
+    connectionStateRef.current = connectionState;
+  }, [connectionState]);
+
+  // CRITICAL FIX: Helper to update both state and ref synchronously
+  // This ensures waitForSSEState can see state changes immediately
+  const updateConnectionState = useCallback((newState: SSEConnectionState) => {
+    connectionStateRef.current = newState; // SYNC update
+    stateRefs.current.setConnectionState(newState); // ASYNC update
+  }, []);
+
   // Calculate exponential backoff delay - stabilized
   const getReconnectDelay = useStableCallback((attempt: number): number => {
     const delay = opts.reconnectDelay * Math.pow(2, attempt);
@@ -177,7 +201,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
     return proxyPath;
   }, [url]);
 
-  // Parse SSE event data
+  // Parse SSE event data with feature flag routing
   const parseEventData = useCallback((data: string, fallbackType?: string): AgentNetworkEvent | null => {
     try {
       const trimmedData = data.trim();
@@ -201,7 +225,52 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
         return null;
       }
 
-      // Parse JSON data
+      // PHASE 3: Feature flag routing for ADK canonical events
+      if (isAdkCanonicalStreamEnabled()) {
+        // Detect if this looks like an ADK event before attempting to parse
+        // ADK events must have: id, author, and invocationId
+        try {
+          const possibleEvent = JSON.parse(trimmedData);
+          const hasAdkStructure = possibleEvent &&
+            typeof possibleEvent === 'object' &&
+            (possibleEvent.id || possibleEvent.author || possibleEvent.invocationId);
+
+          if (hasAdkStructure) {
+            console.log('[useSSE] Detected ADK event structure - parsing as canonical');
+            const adkResult = parseAdkEventSSE(trimmedData, fallbackType);
+
+            if (adkResult.success && adkResult.event) {
+              // Store ADK event for Phase 3 consumers
+              setLastAdkEvent(adkResult.event);
+
+              // Convert to legacy AgentNetworkEvent for backward compatibility
+              return {
+                type: (fallbackType as AgentNetworkEvent['type']) || 'message',
+                data: {
+                  timestamp: new Date(adkResult.event.rawEvent.timestamp * 1000).toISOString(),
+                  author: adkResult.event.author,
+                  messageId: adkResult.event.messageId,
+                  textParts: adkResult.event.textParts,
+                  thoughtParts: adkResult.event.thoughtParts,
+                  functionCalls: adkResult.event.functionCalls,
+                  functionResponses: adkResult.event.functionResponses,
+                  isAgentTransfer: adkResult.event.isAgentTransfer,
+                  transferTargetAgent: adkResult.event.transferTargetAgent,
+                  isFinalResponse: adkResult.event.isFinalResponse,
+                  _raw: adkResult.event.rawEvent,
+                }
+              };
+            }
+          } else {
+            console.log('[useSSE] Legacy event structure detected - skipping ADK parser');
+          }
+        } catch (error) {
+          console.log('[useSSE] Event detection failed - using legacy parser:', error);
+          // Fall through to legacy parsing
+        }
+      }
+
+      // LEGACY: Parse flattened events (backward compatibility)
       const parsed = JSON.parse(trimmedData);
 
       // If data has type and nested data field (new format), use it
@@ -226,7 +295,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
     } catch (error) {
       // Only warn for non-trivial parsing failures
       if (data.trim().length > 0) {
-        console.warn('Failed to parse SSE event data:', data, error);
+        console.warn('[useSSE] Failed to parse SSE event data:', data, error);
       }
       return null;
     }
@@ -238,7 +307,8 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
     setError,
     setLastEvent,
     setEvents,
-    setReconnectAttempt
+    setReconnectAttempt,
+    setLastAdkEvent,
   });
 
   // Update state setters on each render
@@ -248,9 +318,10 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
       setError,
       setLastEvent,
       setEvents,
-      setReconnectAttempt
+      setReconnectAttempt,
+      setLastAdkEvent,
     };
-  }, [setConnectionState, setError, setLastEvent, setEvents, setReconnectAttempt]);
+  }, [setConnectionState, setError, setLastEvent, setEvents, setReconnectAttempt, setLastAdkEvent]);
 
   // Connect to SSE stream with secure authentication - stable reference
   const connect = useCallback(() => {
@@ -259,7 +330,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
     if (!opts.enabled || !url) {
       console.log('[useSSE] connect() aborting - enabled:', opts.enabled, 'url:', url);
       shouldReconnectRef.current = false;
-      stateRefs.current.setConnectionState('disconnected');
+      updateConnectionState('disconnected');
       return;
     }
 
@@ -272,7 +343,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
       return;
     }
 
-    stateRefs.current.setConnectionState('connecting');
+    updateConnectionState('connecting');
     stateRefs.current.setError(null);
 
     try {
@@ -330,10 +401,21 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
           if (!response.ok) {
             throw new Error(`SSE request failed: ${response.status}`);
           }
-          
+
           if (!response.body) {
             throw new Error('No response body');
           }
+
+          // CRITICAL FIX: Set state to 'connected' immediately after validating response
+          // This must happen BEFORE setting up stream reader so waitForSSEConnection() works
+          // Update both state (async, for React renders) and ref (sync, for immediate access)
+          connectionStateRef.current = 'connected'; // SYNC update - visible immediately
+          stateRefs.current.setConnectionState('connected'); // ASYNC update - triggers re-render
+          stateRefs.current.setReconnectAttempt(0);
+          stateRefs.current.setError(null);
+          shouldReconnectRef.current = true;
+          console.log('[useSSE] SSE connection established successfully (response OK, state=' + connectionStateRef.current + ')');
+          callbacksRef.current.onConnect?.();
 
           const reader = response.body.getReader();
           const decoder = new TextDecoder();
@@ -549,12 +631,6 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
           readStream().catch(err => {
             console.error('[useSSE] Unhandled readStream error:', err);
           });
-          stateRefs.current.setConnectionState('connected');
-          stateRefs.current.setReconnectAttempt(0);
-          stateRefs.current.setError(null);
-          shouldReconnectRef.current = true;
-          console.log('[useSSE] SSE connection established successfully');
-          callbacksRef.current.onConnect?.();
           
           // Store cleanup function
           eventSourceRef.current = {
@@ -779,13 +855,13 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
     };
 
     if (mountedRef.current) {
-      stateRefs.current.setConnectionState('disconnected');
+      updateConnectionState('disconnected');
       callbacksRef.current.onDisconnect?.();
     }
 
     // IDEMPOTENCY FIX: Reset cleanup flag
     cleaningUpRef.current = false;
-  }, []); // No dependencies - all state accessed via refs
+  }, [updateConnectionState]); // Include updateConnectionState dependency
 
   // Store reconnectAttempt in ref for stable access
   const reconnectAttemptRef = useRef(0);
@@ -803,7 +879,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
 
     const newAttempt = reconnectAttemptRef.current + 1;
     stateRefs.current.setReconnectAttempt(newAttempt);
-    stateRefs.current.setConnectionState('reconnecting');
+    updateConnectionState('reconnecting');
 
     const delay = getReconnectDelay(newAttempt - 1);
 
@@ -821,6 +897,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
   const clearEvents = useCallback(() => {
     stateRefs.current.setEvents([]);
     stateRefs.current.setLastEvent(null);
+    stateRefs.current.setLastAdkEvent(null);
     stateRefs.current.setError(null);
   }, []);
 
@@ -861,6 +938,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
 
   return useMemo(() => ({
     connectionState,
+    connectionStateRef, // CRITICAL FIX: Expose ref for synchronous state access
     lastEvent,
     events,
     error,
@@ -870,6 +948,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
     reconnect,
     clearEvents,
     reconnectAttempt,
+    lastAdkEvent,
   }), [
     connectionState,
     lastEvent,
@@ -880,6 +959,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
     reconnect,
     clearEvents,
     reconnectAttempt,
+    lastAdkEvent,
   ]);
 }
 
@@ -895,6 +975,10 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
 /**
  * Hook specifically for research task SSE streams
  * Uses ADK-compliant endpoint: /apps/{appName}/users/{userId}/sessions/{sessionId}/run
+ *
+ * NOTE: Even with ENABLE_ADK_CANONICAL_STREAM=true, we continue to use this endpoint
+ * because the backend's /run_sse is a POST-only endpoint for direct ADK integration.
+ * The legacy endpoint has been enhanced to emit ADK-compatible events when the feature flag is enabled.
  */
 export function useResearchSSE(sessionId: string, options: Omit<SSEOptions, 'sessionId'> = {}) {
   // Guard against empty sessionId to prevent race condition

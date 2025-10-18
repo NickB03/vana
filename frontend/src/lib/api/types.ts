@@ -151,6 +151,7 @@ export interface AgentNetworkEvent extends SSEEvent {
     | 'error'
     | 'message_chunk'
     | 'message_complete'
+    | 'message'
     | 'research_started'
     | 'research_progress'
     | 'research_update'
@@ -184,6 +185,24 @@ export interface AgentNetworkEvent extends SSEEvent {
     // For regeneration_progress event
     thoughtProcess?: string;
     regenerationStep?: string;
+    // Phase 3: ADK canonical event fields (when NEXT_PUBLIC_ENABLE_ADK_CANONICAL_STREAM=true)
+    author?: string;
+    textParts?: string[];
+    thoughtParts?: string[];
+    functionCalls?: Array<{
+      name: string;
+      args: Record<string, unknown>;
+      id: string;
+    }>;
+    functionResponses?: Array<{
+      name: string;
+      response: Record<string, unknown>;
+      id: string;
+    }>;
+    isAgentTransfer?: boolean;
+    transferTargetAgent?: string;
+    isFinalResponse?: boolean;
+    _raw?: any; // Raw ADK event for debugging
   };
 }
 

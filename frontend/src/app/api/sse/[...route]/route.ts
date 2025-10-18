@@ -44,26 +44,8 @@ export async function GET(
   { params }: { params: Promise<{ route: string[] }> }
 ) {
   try {
-    // SECURITY CHECK 1: CSRF Token Validation
-    // Prevents CSRF attacks on SSE endpoints by validating double-submit cookie pattern
-    const csrfValid = validateCsrfToken(request);
-    logCsrfAttempt(request, csrfValid);
-
-    if (!csrfValid) {
-      console.warn('[SSE Proxy] CSRF validation failed');
-      return new NextResponse('CSRF validation failed. Please refresh the page and try again.', {
-        status: 403,
-        headers: {
-          'Content-Type': 'text/plain',
-        }
-      });
-    }
-
-    // SECURITY CHECK 2: Authentication Token Validation
-    // Extract authentication tokens using secure extraction utility
-    const { accessToken } = extractAuthTokens(request);
-
-    // Security: Check if authentication can be bypassed
+    // SECURITY CHECK 1: Determine if localhost/development bypass applies
+    // Must check this BEFORE CSRF validation to allow local development
     const requestHost = request.headers.get('host') || '';
 
     // Local development check: Only allow localhost/127.0.0.1
@@ -75,6 +57,29 @@ export async function GET(
 
     // Explicit allowlist check: For development/testing environments only
     const isAllowedHost = ALLOWED_UNAUTHENTICATED_HOSTS.includes(requestHost);
+
+    // SECURITY CHECK 2: CSRF Token Validation (skip for localhost in development)
+    // Prevents CSRF attacks on SSE endpoints by validating double-submit cookie pattern
+    if (!isLocalDevelopment && !isAllowedHost) {
+      const csrfValid = validateCsrfToken(request);
+      logCsrfAttempt(request, csrfValid);
+
+      if (!csrfValid) {
+        console.warn('[SSE Proxy] CSRF validation failed');
+        return new NextResponse('CSRF validation failed. Please refresh the page and try again.', {
+          status: 403,
+          headers: {
+            'Content-Type': 'text/plain',
+          }
+        });
+      }
+    } else {
+      console.log('[SSE Proxy] Skipping CSRF validation for localhost development');
+    }
+
+    // SECURITY CHECK 3: Authentication Token Validation
+    // Extract authentication tokens using secure extraction utility
+    const { accessToken } = extractAuthTokens(request);
 
     // Log security check results for debugging
     console.log('[SSE Proxy Security] Host:', requestHost);
