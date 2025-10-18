@@ -41,7 +41,7 @@ All colors MUST be HSL.
 
     /* Gradient colors */
     --gradient-start: 238.7324 83.5294% 66.6667%;
-    --gradient-end: 292.5 44.4444% 92.9412%;
+    --gradient-end: 270 70% 55%;
     
     /* Sidebar */
     --sidebar-background: 24 5.7471% 82.9412%;
