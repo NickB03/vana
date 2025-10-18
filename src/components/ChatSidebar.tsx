@@ -52,6 +52,7 @@ export function ChatSidebar({
 }: ChatSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const [hoveredSessionId, setHoveredSessionId] = useState<string | null>(null);
   const filteredSessions = sessions.filter(session => session.title.toLowerCase().includes(searchQuery.toLowerCase()) || session.first_message && session.first_message.toLowerCase().includes(searchQuery.toLowerCase()));
   const groupedSessions = groupChatsByPeriod(filteredSessions);
   return <Sidebar>
@@ -85,7 +86,11 @@ export function ChatSidebar({
             <SidebarGroupContent>
               <SidebarMenu>
                 {periodSessions.map(session => <SidebarMenuItem key={session.id}>
-                    <div className="group relative flex items-center w-full">
+                    <div 
+                      className="relative flex items-center w-full"
+                      onMouseEnter={() => setHoveredSessionId(session.id)}
+                      onMouseLeave={() => setHoveredSessionId(null)}
+                    >
                       <SidebarMenuButton 
                         onClick={() => onSessionSelect(session.id)} 
                         isActive={currentSessionId === session.id} 
@@ -96,17 +101,19 @@ export function ChatSidebar({
                       >
                         <span className="truncate text-sm">{session.title}</span>
                       </SidebarMenuButton>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 absolute right-2 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all" 
-                        onClick={e => {
-                          e.stopPropagation();
-                          onDeleteSession(session.id);
-                        }}
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
+                      {hoveredSessionId === session.id && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 absolute right-2 transition-all" 
+                          onClick={e => {
+                            e.stopPropagation();
+                            onDeleteSession(session.id);
+                          }}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </SidebarMenuItem>)}
               </SidebarMenu>
