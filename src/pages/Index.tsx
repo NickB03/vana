@@ -105,9 +105,6 @@ const Index = () => {
             <header className="bg-background z-10 flex h-16 w-full shrink-0 items-center justify-between gap-2 border-b border-background px-4">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="-ml-1" />
-                <h1 className="text-lg font-semibold">
-                  {showChat ? "Chat Session" : "New Chat"}
-                </h1>
               </div>
             </header>
 
