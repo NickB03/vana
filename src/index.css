@@ -8,7 +8,8 @@ All colors MUST be HSL.
 */
 
 @layer base {
-  :root {
+  :root,
+  .light {
     /* Warm Clay theme (light) - Claymorphism */
     --background: 20 5.8824% 90%;
     --foreground: 217.2414 32.5843% 17.4510%;
@@ -30,6 +31,8 @@ All colors MUST be HSL.
     --input: 24 5.7471% 82.9412%;
     --ring: 238.7324 83.5294% 66.6667%;
     --radius: 1.25rem;
+    --gradient-start: 238.7324 83.5294% 66.6667%;
+    --gradient-end: 292.5 44.4444% 72%;
     --sidebar-background: 24 5.7471% 82.9412%;
     --sidebar-foreground: 217.2414 32.5843% 17.4510%;
     --sidebar-primary: 238.7324 83.5294% 66.6667%;
@@ -61,6 +64,8 @@ All colors MUST be HSL.
     --border: 240 6% 20%;
     --input: 240 6% 20%;
     --ring: 180 75% 45%;
+    --gradient-start: 180 75% 45%;
+    --gradient-end: 200 65% 55%;
     --sidebar-background: 240 8% 10%;
     --sidebar-foreground: 240 5% 96%;
     --sidebar-primary: 180 75% 45%;
@@ -92,6 +97,8 @@ All colors MUST be HSL.
     --border: 210 35% 22%;
     --input: 210 35% 22%;
     --ring: 210 90% 60%;
+    --gradient-start: 210 90% 60%;
+    --gradient-end: 190 85% 65%;
     --sidebar-background: 210 45% 11%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 210 90% 60%;
@@ -123,6 +130,8 @@ All colors MUST be HSL.
     --border: 220 25% 25%;
     --input: 220 25% 25%;
     --ring: 30 95% 55%;
+    --gradient-start: 220 60% 45%;
+    --gradient-end: 30 95% 55%;
     --sidebar-background: 220 30% 15%;
     --sidebar-foreground: 30 15% 95%;
     --sidebar-primary: 30 95% 55%;
@@ -154,6 +163,8 @@ All colors MUST be HSL.
     --border: 25 20% 28%;
     --input: 25 20% 28%;
     --ring: 25 75% 50%;
+    --gradient-start: 25 75% 50%;
+    --gradient-end: 35 70% 55%;
     --sidebar-background: 25 25% 18%;
     --sidebar-foreground: 25 15% 92%;
     --sidebar-primary: 25 75% 50%;
