@@ -102,23 +102,12 @@ const Index = () => {
         <SidebarInset>
           <main className="flex h-screen flex-col overflow-hidden">
             {/* Header */}
-            <header className="bg-background z-10 flex h-16 w-full shrink-0 items-center justify-between gap-2 border-b px-4">
+            <header className="bg-background z-10 flex h-16 w-full shrink-0 items-center justify-between gap-2 border-b border-background px-4">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="-ml-1" />
                 <h1 className="text-lg font-semibold">
                   {showChat ? "Chat Session" : "New Chat"}
                 </h1>
-              </div>
-              <div className="flex items-center gap-2">
-                <ThemeToggle />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleLogout}
-                  title="Logout"
-                >
-                  <LogOut className="h-5 w-5" />
-                </Button>
               </div>
             </header>
 
