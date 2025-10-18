@@ -151,6 +151,10 @@ const Index = () => {
                     <Check className={`mr-2 h-4 w-4 ${theme === "forest" ? "opacity-100" : "opacity-0"}`} />
                     <span>Forest Sage</span>
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme("gemini")}>
+                    <Check className={`mr-2 h-4 w-4 ${theme === "gemini" ? "opacity-100" : "opacity-0"}`} />
+                    <span>Sky Blue</span>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
