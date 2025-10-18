@@ -7,6 +7,14 @@ export default function Auth() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Skip auth in dev mode
+    const isDev = import.meta.env.DEV;
+    
+    if (isDev) {
+      navigate("/");
+      return;
+    }
+
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {

@@ -37,6 +37,14 @@ const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
+    // Skip auth in dev mode
+    const isDev = import.meta.env.DEV;
+    
+    if (isDev) {
+      setIsAuthenticated(true);
+      return;
+    }
+
     // Check authentication
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAuthenticated(!!session);
