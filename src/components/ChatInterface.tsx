@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, ArrowUp, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import {
@@ -14,6 +13,12 @@ import {
   MessageAvatar,
   MessageContent,
 } from "@/components/prompt-kit/message";
+import {
+  PromptInput,
+  PromptInputAction,
+  PromptInputActions,
+  PromptInputTextarea,
+} from "@/components/prompt-kit/prompt-input";
 
 interface Message {
   id: string;
@@ -76,12 +81,6 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
     }, 1000);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
 
   return (
     <div className="flex h-full flex-col">
@@ -106,27 +105,33 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
       {/* Input Area */}
       <div className="border-t border-border bg-background p-4">
         <div className="mx-auto max-w-4xl">
-          <div className="relative">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Message AI Chat..."
-              className="min-h-[60px] resize-none pr-12"
-              rows={2}
-            />
-            <Button
-              onClick={handleSend}
-              disabled={!input.trim() || isLoading}
-              size="icon"
-              className="absolute bottom-2 right-2 h-8 w-8 bg-gradient-primary hover:opacity-90"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground text-center">
-            Press Enter to send, Shift + Enter for new line
-          </p>
+          <PromptInput
+            value={input}
+            onValueChange={setInput}
+            isLoading={isLoading}
+            onSubmit={handleSend}
+            className="w-full"
+          >
+            <PromptInputTextarea placeholder="Message AI Chat..." />
+            <PromptInputActions className="justify-end pt-2">
+              <PromptInputAction
+                tooltip={isLoading ? "Stop generation" : "Send message"}
+              >
+                <Button
+                  variant="default"
+                  size="icon"
+                  className="h-8 w-8 rounded-full"
+                  onClick={handleSend}
+                >
+                  {isLoading ? (
+                    <Square className="size-5 fill-current" />
+                  ) : (
+                    <ArrowUp className="size-5" />
+                  )}
+                </Button>
+              </PromptInputAction>
+            </PromptInputActions>
+          </PromptInput>
         </div>
       </div>
     </div>
