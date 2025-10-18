@@ -162,6 +162,23 @@ class RedisConfiguration:
 
 
 @dataclass
+class FeatureFlags:
+    """Feature flags for gradual rollout of new functionality.
+
+    Attributes:
+        enable_adk_canonical_stream (bool): Enable ADK canonical streaming format.
+        enable_agent_dispatcher (bool): Enable agent intent routing and dispatcher.
+    """
+
+    enable_adk_canonical_stream: bool = field(
+        default_factory=lambda: os.getenv("ENABLE_ADK_CANONICAL_STREAM", "false").lower() == "true"
+    )
+    enable_agent_dispatcher: bool = field(
+        default_factory=lambda: os.getenv("ENABLE_AGENT_DISPATCHER", "false").lower() == "true"
+    )
+
+
+@dataclass
 class ResearchConfiguration:
     """Configuration for research-related models and parameters.
 
@@ -172,6 +189,7 @@ class ResearchConfiguration:
         session_storage_enabled (bool): Whether persistent session storage is enabled.
         session_storage_bucket (str): GCS bucket name for session storage.
         redis_config (RedisConfiguration): Redis configuration for session persistence.
+        feature_flags (FeatureFlags): Feature flags for gradual rollout.
     """
 
     critic_model: ModelType = field(default_factory=lambda: CRITIC_MODEL)
@@ -183,6 +201,7 @@ class ResearchConfiguration:
     )
     session_backup_interval_hours: int = field(default=6)
     redis_config: RedisConfiguration = field(default_factory=RedisConfiguration)
+    feature_flags: FeatureFlags = field(default_factory=FeatureFlags)
 
 
 config = ResearchConfiguration()
@@ -191,3 +210,21 @@ config = ResearchConfiguration()
 def get_config() -> ResearchConfiguration:
     """Get the global configuration object."""
     return config
+
+
+def is_adk_canonical_stream_enabled() -> bool:
+    """Check if ADK canonical streaming is enabled.
+
+    Returns:
+        True if ENABLE_ADK_CANONICAL_STREAM=true in environment
+    """
+    return config.feature_flags.enable_adk_canonical_stream
+
+
+def is_agent_dispatcher_enabled() -> bool:
+    """Check if agent dispatcher routing is enabled.
+
+    Returns:
+        True if ENABLE_AGENT_DISPATCHER=true in environment
+    """
+    return config.feature_flags.enable_agent_dispatcher

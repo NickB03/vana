@@ -26,6 +26,9 @@ function parseEnv() {
       NEXT_PUBLIC_SSE_MAX_RECONNECT_DELAY: Number(process.env.NEXT_PUBLIC_SSE_MAX_RECONNECT_DELAY) || 30000,
       NEXT_PUBLIC_CHAT_MAX_MESSAGES: Number(process.env.NEXT_PUBLIC_CHAT_MAX_MESSAGES) || 100,
       NEXT_PUBLIC_CHAT_PERSIST_SESSIONS: process.env.NEXT_PUBLIC_CHAT_PERSIST_SESSIONS !== 'false',
+      // ADK Feature Flags
+      NEXT_PUBLIC_ENABLE_ADK_CANONICAL_STREAM: process.env.NEXT_PUBLIC_ENABLE_ADK_CANONICAL_STREAM === 'true',
+      NEXT_PUBLIC_ENABLE_AGENT_DISPATCHER: process.env.NEXT_PUBLIC_ENABLE_AGENT_DISPATCHER === 'true',
       NODE_ENV: process.env.NODE_ENV || 'development',
     };
   } catch (error) {
@@ -48,6 +51,9 @@ function parseEnv() {
       NEXT_PUBLIC_SSE_MAX_RECONNECT_DELAY: 30000,
       NEXT_PUBLIC_CHAT_MAX_MESSAGES: 100,
       NEXT_PUBLIC_CHAT_PERSIST_SESSIONS: true,
+      // ADK Feature Flags (default to false for safety)
+      NEXT_PUBLIC_ENABLE_ADK_CANONICAL_STREAM: false,
+      NEXT_PUBLIC_ENABLE_AGENT_DISPATCHER: false,
       NODE_ENV: 'development',
     };
   }
@@ -81,6 +87,9 @@ export const config = {
   features: {
     analytics: env.NEXT_PUBLIC_ENABLE_ANALYTICS,
     debugMode: env.NEXT_PUBLIC_ENABLE_DEBUG_MODE && env.NODE_ENV !== 'production',
+    // ADK Feature Flags
+    adkCanonicalStream: env.NEXT_PUBLIC_ENABLE_ADK_CANONICAL_STREAM,
+    agentDispatcher: env.NEXT_PUBLIC_ENABLE_AGENT_DISPATCHER,
   },
   
   sse: {
@@ -154,6 +163,18 @@ export const getSSEUrl = (endpoint: string, params?: Record<string, string>) => 
 export const isFeatureEnabled = (feature: keyof typeof config.features) => {
   return config.features[feature];
 };
+
+/**
+ * Check if ADK canonical streaming is enabled.
+ * When enabled, the frontend will expect raw ADK Event JSON from the backend.
+ */
+export const isAdkCanonicalStreamEnabled = () => config.features.adkCanonicalStream;
+
+/**
+ * Check if agent dispatcher routing is enabled.
+ * When enabled, the frontend will use intent-based routing for messages.
+ */
+export const isAgentDispatcherEnabled = () => config.features.agentDispatcher;
 
 // Environment info for debugging
 export const getEnvironmentInfo = () => ({

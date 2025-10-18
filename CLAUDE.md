@@ -31,7 +31,7 @@ See [Chrome DevTools MCP section](#-chrome-devtools-mcp---critical-debugging--ve
 **CORRECT GOOGLE ADK CHAT IMPLEMENTATION**:
 - An ADK dispatcher-led agent network runs on port 8080. The dispatcher routes to planning and research sub-agents (e.g., `plan_generator`, `section_planner`, `section_researcher`, `research_evaluator`, `enhanced_search_executor`, `report_composer`).
 - FastAPI backend (port 8000) should **proxy requests to ADK**, not run its own orchestrator
-- **WIP NOTE:** We are actively migrating to stream canonical ADK events via `POST /run_sse`. Until the migration is complete, older SSE endpoints (e.g., `/agent_network_sse/{sessionId}`) may still appear in the codebase. See “Server-Sent Events (SSE)” below for the latest guidance and update this section once the rollout finishes.
+- **✅ Phase 1 Complete (2025-10-18):** Canonical ADK streaming via `POST /run_sse` is now available. Enable with `ENABLE_ADK_CANONICAL_STREAM=true`. Legacy endpoints remain available for backward compatibility during gradual migration. See `docs/plans/phase_1_completion_summary.md` for details.
 
 ## Key Architecture
 
@@ -55,7 +55,10 @@ The system consists of three main services that must be running:
    - Main API server (`app.server`)
    - Handles SSE streams for chat
    - Manages sessions and authentication
-   - Provides `/health` and (legacy) `/agent_network_sse/{sessionId}`; **WIP:** research streaming is moving to the canonical `POST /run_sse` (mirrored under `/apps/{app}/users/{user}/sessions/{session}/run`). Update this note once the migration completes.
+   - **SSE Endpoints:**
+     - `POST /run_sse` - Canonical ADK streaming (requires `ENABLE_ADK_CANONICAL_STREAM=true`)
+     - `GET /apps/{app}/users/{user}/sessions/{session}/run` - Legacy SSE (always available)
+     - `POST /apps/{app}/users/{user}/sessions/{session}/run` - Trigger research (always available)
 
 2. **Google Agent Development Kit (ADK)** (Port **8080**)
    - ADK reference material located in `/docs/adk/refs/` - comprehensive library of 14+ production-ready examples including official Google repos, A2A samples, agent-starter-pack templates, and real-world financial services implementations
@@ -102,15 +105,21 @@ PM2 manages these processes:
 
 #### Frontend SSE Proxy (Security)
 To prevent JWT exposure in browser URLs, the frontend provides a secure SSE proxy under `/api/sse/...` which forwards Authorization headers server‑side and streams responses.
-- Primary mapping (new contract): `/api/sse/apps/{app}/users/{user}/sessions/{session}/run` → upstream `POST /apps/{app}/users/{user}/sessions/{session}/run`
-- Legacy mapping (to be deprecated): `/api/sse/agent_network_sse/{sessionId}` → upstream `/agent_network_sse/{sessionId}`
 
-**WIP NOTE:** The legacy mapping exists only for backward compatibility during the migration period. Remove it once the canonical `/run_sse` path is fully adopted throughout the frontend and backend.
+**SSE Proxy Mappings:**
+- Canonical: `/api/sse/run_sse` → upstream `POST /run_sse` (when `ENABLE_ADK_CANONICAL_STREAM=true`)
+- Legacy: `/api/sse/apps/{app}/users/{user}/sessions/{session}/run` → upstream `GET /apps/{app}/users/{user}/sessions/{session}/run`
+- Deprecated: `/api/sse/agent_network_sse/{sessionId}` → upstream `/agent_network_sse/{sessionId}` (backward compatibility only)
 
-**Security Reminder (Update Once Hardening Tasks Land):**
-- Authentication cookies must set `secure=True` whenever `ENVIRONMENT=production` (implement via env flag, then update this note).
-- CSRF validation will apply to `POST /apps/{app}/users/{user}/sessions/{session}/run`; ensure the frontend always sends `X-CSRF-Token`.
-- Keep `ALLOW_UNAUTHENTICATED_SSE` empty outside local development to avoid anonymous SSE access.
+**Phase 1 Feature Flags (2025-10-18):**
+- Backend: `ENABLE_ADK_CANONICAL_STREAM=true` enables `POST /run_sse` endpoint
+- Frontend: `NEXT_PUBLIC_ENABLE_ADK_CANONICAL_STREAM=true` switches to canonical event parsing
+- Default: `false` (legacy mode) for safe rollout
+
+**Security Requirements:**
+- Authentication cookies set `secure=True` when `ENVIRONMENT=production`
+- CSRF validation applies to all POST endpoints; frontend must send `X-CSRF-Token`
+- Keep `ALLOW_UNAUTHENTICATED_SSE` empty outside local development
 
 ## Common Development Commands
 

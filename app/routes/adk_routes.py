@@ -15,11 +15,13 @@ import uuid
 from datetime import datetime
 from typing import Any
 
+import httpx
 from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from app.models import SessionMessagePayload
+from app.config import is_adk_canonical_stream_enabled
+from app.models import RunAgentRequest, SessionMessagePayload
 from app.utils.input_validation import (
     get_validation_error_response,
     validate_chat_input,
@@ -155,6 +157,116 @@ async def list_apps(
         "timestamp": datetime.now().isoformat(),
         "authenticated": current_user is not None
     }
+
+
+@adk_router.post("/run_sse")
+async def run_sse_canonical(
+    request: RunAgentRequest,
+    current_user: User | None = Depends(get_current_active_user_optional())
+) -> StreamingResponse:
+    """
+    ADK canonical SSE streaming endpoint (Phase 1.1).
+
+    This endpoint proxies directly to the ADK service on port 8080 and streams
+    raw ADK Event JSON without mutation. Only enabled when
+    ENABLE_ADK_CANONICAL_STREAM=true.
+
+    Based on: docs/adk/refs/official-adk-python/src/google/adk/cli/adk_web_server.py
+
+    Args:
+        request: RunAgentRequest with appName, userId, sessionId, newMessage
+        current_user: Optional authenticated user
+
+    Returns:
+        StreamingResponse with raw ADK Event JSON via SSE
+
+    Raises:
+        HTTPException: 501 if feature flag disabled, 4xx/5xx on upstream errors
+    """
+    # Phase 1.1: Feature flag guard
+    if not is_adk_canonical_stream_enabled():
+        raise HTTPException(
+            status_code=501,
+            detail=(
+                "ADK canonical streaming not enabled. "
+                "Set ENABLE_ADK_CANONICAL_STREAM=true to use this endpoint."
+            )
+        )
+
+    logger.info(
+        f"ADK canonical streaming requested: app={request.app_name}, "
+        f"user={request.user_id}, session={request.session_id}, "
+        f"authenticated={current_user is not None}"
+    )
+
+    # Phase 1.1: Inline async generator (no background task)
+    async def stream_adk_events():
+        """Stream raw ADK Event JSON from upstream ADK service."""
+        try:
+            # Phase 1.3: 300s timeout with no read timeout (allow LLM processing gaps)
+            timeout_config = httpx.Timeout(300.0, read=None)
+
+            async with httpx.AsyncClient(timeout=timeout_config) as client:
+                # Proxy to ADK service on port 8080
+                async with client.stream(
+                    "POST",
+                    "http://127.0.0.1:8080/run_sse",
+                    json=request.model_dump(by_alias=True, exclude_none=True)
+                ) as upstream:
+                    # Phase 1.3: Propagate HTTP status on failure
+                    try:
+                        upstream.raise_for_status()
+                    except httpx.HTTPStatusError as e:
+                        # Emit ADK-compliant error event
+                        error_event = {
+                            "error": f"ADK upstream error: {e.response.status_code}",
+                            "status_code": e.response.status_code,
+                            "detail": str(e),
+                            "timestamp": datetime.now().timestamp()
+                        }
+                        yield f"data: {json.dumps(error_event)}\n\n"
+                        logger.error(
+                            f"ADK upstream error for session {request.session_id}: "
+                            f"{e.response.status_code}"
+                        )
+                        return
+
+                    # Stream raw SSE lines from ADK (no mutation)
+                    async for line in upstream.aiter_lines():
+                        if line.strip():
+                            # Pass through raw SSE lines
+                            yield f"{line}\n"
+
+        except httpx.TimeoutException:
+            # Phase 1.3: Timeout after 300s
+            error_event = {
+                "error": "Request timeout after 300 seconds",
+                "error_code": "TIMEOUT",
+                "timestamp": datetime.now().timestamp()
+            }
+            yield f"data: {json.dumps(error_event)}\n\n"
+            logger.error(f"Timeout for session {request.session_id}")
+
+        except Exception as e:
+            # Phase 1.3: General error handling
+            error_event = {
+                "error": str(e),
+                "error_code": "STREAM_ERROR",
+                "timestamp": datetime.now().timestamp()
+            }
+            yield f"data: {json.dumps(error_event)}\n\n"
+            logger.exception(f"Streaming error for session {request.session_id}: {e}")
+
+    # Return SSE stream with proper headers
+    return StreamingResponse(
+        stream_adk_events(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        }
+    )
 
 
 @adk_router.get("/apps/{app_name}/users/{user_id}/sessions")
@@ -768,9 +880,14 @@ async def get_session_sse(
     current_user: User | None = Depends(get_current_active_user_optional())
 ) -> StreamingResponse:
     """
-    GET endpoint for EventSource SSE connection (ADK-compliant).
+    GET endpoint for EventSource SSE connection (legacy pattern).
 
-    This endpoint provides SSE streaming for research progress events.
+    This endpoint provides SSE streaming for research progress events using
+    the broadcaster pattern. For ADK canonical streaming, use POST /run_sse
+    with ENABLE_ADK_CANONICAL_STREAM=true.
+
+    Legacy pattern: Streams derived events (research_update, agent_status, etc.)
+    Canonical pattern: Use POST /run_sse for raw ADK Event JSON
 
     Args:
         app_name: Application name
