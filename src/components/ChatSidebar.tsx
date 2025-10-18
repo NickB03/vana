@@ -155,17 +155,15 @@ export function ChatSidebar({
       </SidebarHeader>
 
       <SidebarContent className="pt-4">
-        {currentSessionId && (
-          <div className="px-4 pb-4">
-            <Button
-              onClick={onNewChat}
-              className="w-full bg-gradient-primary hover:opacity-90"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Chat
-            </Button>
-          </div>
-        )}
+        <div className="px-4 pb-4">
+          <Button
+            onClick={onNewChat}
+            className="w-full bg-gradient-primary hover:opacity-90"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Chat
+          </Button>
+        </div>
 
         {showSearch && (
           <div className="px-4 pb-4">
