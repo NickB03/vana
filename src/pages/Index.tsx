@@ -7,6 +7,7 @@ import {
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatInterface } from "@/components/ChatInterface";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from "@/components/prompt-kit/prompt-input";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, Square } from "lucide-react";
@@ -56,11 +57,14 @@ const Index = () => {
         <SidebarInset>
           <main className="flex h-screen flex-col overflow-hidden">
             {/* Header */}
-            <header className="bg-background z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b px-4">
-              <SidebarTrigger className="-ml-1" />
-              <h1 className="text-lg font-semibold">
-                {showChat ? "Chat Session" : "New Chat"}
-              </h1>
+            <header className="bg-background z-10 flex h-16 w-full shrink-0 items-center justify-between gap-2 border-b px-4">
+              <div className="flex items-center gap-2">
+                <SidebarTrigger className="-ml-1" />
+                <h1 className="text-lg font-semibold">
+                  {showChat ? "Chat Session" : "New Chat"}
+                </h1>
+              </div>
+              <ThemeToggle />
             </header>
 
             {/* Main Content */}

@@ -55,45 +55,46 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 20 5.8824% 90%;
-    --foreground: 217.2414 32.5843% 17.4510%;
+    /* Dark Claymorphism Theme - Darker clay tones with purple accents */
+    --background: 240 4% 16%;
+    --foreground: 60 5% 90%;
 
-    --card: 60 4.7619% 95.8824%;
-    --card-foreground: 217.2414 32.5843% 17.4510%;
+    --card: 240 4% 20%;
+    --card-foreground: 60 5% 90%;
 
-    --popover: 60 4.7619% 95.8824%;
-    --popover-foreground: 217.2414 32.5843% 17.4510%;
+    --popover: 240 4% 20%;
+    --popover-foreground: 60 5% 90%;
 
     --primary: 238.7324 83.5294% 66.6667%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 24 5.7471% 82.9412%;
-    --secondary-foreground: 215 13.7931% 34.1176%;
+    --secondary: 240 4% 24%;
+    --secondary-foreground: 60 5% 85%;
 
-    --muted: 20 5.8824% 90%;
-    --muted-foreground: 220 8.9362% 46.0784%;
+    --muted: 240 4% 24%;
+    --muted-foreground: 240 5% 65%;
 
-    --accent: 292.5 44.4444% 92.9412%;
-    --accent-foreground: 216.9231 19.1176% 26.6667%;
+    --accent: 270 50% 30%;
+    --accent-foreground: 60 5% 90%;
 
     --destructive: 0 84.2365% 60.1961%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 24 5.7471% 82.9412%;
-    --input: 24 5.7471% 82.9412%;
+    --border: 240 4% 28%;
+    --input: 240 4% 28%;
     --ring: 238.7324 83.5294% 66.6667%;
 
     /* Gradient colors */
     --gradient-start: 238.7324 83.5294% 66.6667%;
-    --gradient-end: 292.5 44.4444% 92.9412%;
+    --gradient-end: 270 50% 40%;
 
-    --sidebar-background: 24 5.7471% 82.9412%;
-    --sidebar-foreground: 217.2414 32.5843% 17.4510%;
+    --sidebar-background: 240 4% 20%;
+    --sidebar-foreground: 60 5% 90%;
     --sidebar-primary: 238.7324 83.5294% 66.6667%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 292.5 44.4444% 92.9412%;
-    --sidebar-accent-foreground: 216.9231 19.1176% 26.6667%;
-    --sidebar-border: 24 5.7471% 82.9412%;
+    --sidebar-accent: 270 50% 30%;
+    --sidebar-accent-foreground: 60 5% 90%;
+    --sidebar-border: 240 4% 28%;
     --sidebar-ring: 238.7324 83.5294% 66.6667%;
   }
 }
