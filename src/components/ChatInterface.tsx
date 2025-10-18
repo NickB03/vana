@@ -85,8 +85,8 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
           {isStreaming && streamingMessage && (
             <MessageComponent className="justify-start">
               <MessageAvatar fallback="AI" />
-              <div className="max-w-[85%] sm:max-w-[75%]">
-                <div className="bg-secondary text-foreground prose rounded-lg p-2">
+              <div className="max-w-[85%] sm:max-w-[75%] mr-auto">
+                <div className="bg-secondary text-foreground prose rounded-lg p-2 inline-block">
                   <Markdown>{streamingMessage}</Markdown>
                 </div>
               </div>
@@ -153,13 +153,13 @@ function MessageBubble({ message }: { message: ChatMessage }) {
     >
       {!isUser && <MessageAvatar fallback="AI" />}
       
-      <div className="max-w-[85%] sm:max-w-[75%]">
+      <div className={cn("max-w-[85%] sm:max-w-[75%]", isUser ? "ml-auto" : "mr-auto")}>
         {isUser ? (
-          <MessageContent className="bg-primary text-primary-foreground">
+          <MessageContent className="bg-primary text-primary-foreground inline-block">
             {message.content}
           </MessageContent>
         ) : (
-          <div className="bg-secondary text-foreground prose rounded-lg p-2">
+          <div className="bg-secondary text-foreground prose rounded-lg p-2 inline-block">
             <Markdown>{message.content}</Markdown>
           </div>
         )}
