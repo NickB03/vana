@@ -3,7 +3,6 @@ import { MessageSquare, Search, Plus, MoreHorizontal } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { ChatSession } from "@/hooks/useChatSessions";
 interface ChatSidebarProps {
@@ -56,8 +55,7 @@ export function ChatSidebar({
   const [hoveredSessionId, setHoveredSessionId] = useState<string | null>(null);
   const filteredSessions = sessions.filter(session => session.title.toLowerCase().includes(searchQuery.toLowerCase()) || session.first_message && session.first_message.toLowerCase().includes(searchQuery.toLowerCase()));
   const groupedSessions = groupChatsByPeriod(filteredSessions);
-  return <TooltipProvider>
-    <Sidebar>
+  return <Sidebar>
       <SidebarHeader className="flex flex-row items-center justify-between gap-2 px-2 py-4">
         <div className="flex flex-row items-center gap-2 px-2">
           <div className="size-8 rounded-md bg-gradient-primary"></div>
@@ -104,24 +102,17 @@ export function ChatSidebar({
                         <span className="truncate text-sm">{session.title}</span>
                       </SidebarMenuButton>
                       {hoveredSessionId === session.id && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 absolute right-2 transition-all" 
-                              onClick={e => {
-                                e.stopPropagation();
-                                onDeleteSession(session.id);
-                              }}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Delete</p>
-                          </TooltipContent>
-                        </Tooltip>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 absolute right-2 transition-all" 
+                          onClick={e => {
+                            e.stopPropagation();
+                            onDeleteSession(session.id);
+                          }}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
                       )}
                     </div>
                   </SidebarMenuItem>)}
@@ -129,6 +120,5 @@ export function ChatSidebar({
             </SidebarGroupContent>
           </SidebarGroup>)}
       </SidebarContent>
-    </Sidebar>
-  </TooltipProvider>;
+    </Sidebar>;
 }
