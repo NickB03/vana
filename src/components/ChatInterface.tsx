@@ -31,13 +31,22 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
   const [input, setInput] = useState("");
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Reset when session changes
   useEffect(() => {
-    if (initialPrompt && sessionId) {
+    setStreamingMessage("");
+    setIsStreaming(false);
+    setHasInitialized(false);
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (initialPrompt && sessionId && !hasInitialized) {
+      setHasInitialized(true);
       handleSend(initialPrompt);
     }
-  }, [sessionId]);
+  }, [sessionId, initialPrompt, hasInitialized]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

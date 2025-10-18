@@ -52,6 +52,7 @@ const Index = () => {
   };
 
   const handleSessionSelect = (sessionId: string) => {
+    setInput(""); // Clear input when switching sessions
     setCurrentSessionId(sessionId);
     setShowChat(true);
   };

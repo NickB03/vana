@@ -18,6 +18,7 @@ export function useChatMessages(sessionId: string | undefined) {
 
   useEffect(() => {
     if (sessionId) {
+      setMessages([]); // Clear messages when session changes
       fetchMessages();
     } else {
       setMessages([]);
