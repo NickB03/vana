@@ -2,6 +2,124 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    /* Warm Clay theme (light) */
+    --background: 28 25% 97%;
+    --foreground: 28 25% 10%;
+    --card: 28 20% 95%;
+    --card-foreground: 28 25% 10%;
+    --popover: 28 20% 98%;
+    --popover-foreground: 28 25% 10%;
+    --primary: 28 70% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 28 30% 88%;
+    --secondary-foreground: 28 25% 10%;
+    --muted: 28 20% 92%;
+    --muted-foreground: 28 15% 40%;
+    --accent: 28 30% 88%;
+    --accent-foreground: 28 25% 10%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 28 20% 85%;
+    --input: 28 20% 85%;
+    --ring: 28 70% 55%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* Midnight theme - inspired by modern dark interfaces */
+    --background: 240 10% 7%;
+    --foreground: 240 5% 96%;
+    --card: 240 8% 10%;
+    --card-foreground: 240 5% 96%;
+    --popover: 240 8% 10%;
+    --popover-foreground: 240 5% 96%;
+    --primary: 180 75% 45%;
+    --primary-foreground: 240 10% 7%;
+    --secondary: 240 6% 15%;
+    --secondary-foreground: 240 5% 96%;
+    --muted: 240 6% 15%;
+    --muted-foreground: 240 4% 60%;
+    --accent: 240 6% 15%;
+    --accent-foreground: 240 5% 96%;
+    --destructive: 0 63% 50%;
+    --destructive-foreground: 240 5% 96%;
+    --border: 240 6% 20%;
+    --input: 240 6% 20%;
+    --ring: 180 75% 45%;
+  }
+
+  .ocean {
+    /* Ocean Breeze theme - blue gradient inspired */
+    --background: 210 50% 8%;
+    --foreground: 210 40% 98%;
+    --card: 210 45% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 210 45% 11%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 90% 60%;
+    --primary-foreground: 210 50% 8%;
+    --secondary: 210 35% 18%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 210 35% 18%;
+    --muted-foreground: 210 30% 65%;
+    --accent: 210 35% 18%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 63% 50%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 210 35% 22%;
+    --input: 210 35% 22%;
+    --ring: 210 90% 60%;
+  }
+
+  .sunset {
+    /* Sunset Glow theme - blue to orange gradient */
+    --background: 220 35% 12%;
+    --foreground: 30 15% 95%;
+    --card: 220 30% 15%;
+    --card-foreground: 30 15% 95%;
+    --popover: 220 30% 15%;
+    --popover-foreground: 30 15% 95%;
+    --primary: 30 95% 55%;
+    --primary-foreground: 220 35% 12%;
+    --secondary: 220 25% 20%;
+    --secondary-foreground: 30 15% 95%;
+    --muted: 220 25% 20%;
+    --muted-foreground: 220 15% 65%;
+    --accent: 220 25% 20%;
+    --accent-foreground: 30 15% 95%;
+    --destructive: 0 63% 50%;
+    --destructive-foreground: 30 15% 95%;
+    --border: 220 25% 25%;
+    --input: 220 25% 25%;
+    --ring: 30 95% 55%;
+  }
+
+  .forest {
+    /* Forest Sage theme - warm earthy tones */
+    --background: 25 30% 15%;
+    --foreground: 25 15% 92%;
+    --card: 25 25% 18%;
+    --card-foreground: 25 15% 92%;
+    --popover: 25 25% 18%;
+    --popover-foreground: 25 15% 92%;
+    --primary: 25 75% 50%;
+    --primary-foreground: 25 30% 15%;
+    --secondary: 25 20% 22%;
+    --secondary-foreground: 25 15% 92%;
+    --muted: 25 20% 22%;
+    --muted-foreground: 25 12% 65%;
+    --accent: 25 20% 22%;
+    --accent-foreground: 25 15% 92%;
+    --destructive: 0 63% 50%;
+    --destructive-foreground: 25 15% 92%;
+    --border: 25 20% 28%;
+    --input: 25 20% 28%;
+    --ring: 25 75% 50%;
+  }
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */

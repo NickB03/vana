@@ -11,8 +11,15 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from "@/components/prompt-kit/prompt-input";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Square, LogOut, Settings, Moon, Sun, Monitor } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ArrowUp, Square, LogOut, Settings, Check } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useTheme } from "@/components/ThemeProvider";
 import { useChatSessions } from "@/hooks/useChatSessions";
 import { supabase } from "@/integrations/supabase/client";
@@ -110,56 +117,42 @@ const Index = () => {
                 <SidebarTrigger className="-ml-1" />
               </div>
               <div className="flex items-center gap-2">
-                <Popover>
-                  <PopoverTrigger asChild>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon">
                       <Settings className="h-5 w-5" />
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-56" side="bottom" align="end">
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="mb-2 font-medium">Theme</h4>
-                        <div className="flex gap-2">
-                          <Button
-                            variant={theme === "light" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setTheme("light")}
-                            className="flex-1"
-                          >
-                            <Sun className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant={theme === "dark" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setTheme("dark")}
-                            className="flex-1"
-                          >
-                            <Moon className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant={theme === "system" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setTheme("system")}
-                            className="flex-1"
-                          >
-                            <Monitor className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="pt-2 border-t">
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start"
-                          onClick={handleLogout}
-                        >
-                          <LogOut className="h-4 w-4 mr-2" />
-                          Sign Out
-                        </Button>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end">
+                    <DropdownMenuLabel>Theme</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setTheme("dark")}>
+                      <Check className={`mr-2 h-4 w-4 ${theme === "dark" ? "opacity-100" : "opacity-0"}`} />
+                      <span>Midnight</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme("light")}>
+                      <Check className={`mr-2 h-4 w-4 ${theme === "light" ? "opacity-100" : "opacity-0"}`} />
+                      <span>Warm Clay</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme("ocean")}>
+                      <Check className={`mr-2 h-4 w-4 ${theme === "ocean" ? "opacity-100" : "opacity-0"}`} />
+                      <span>Ocean Breeze</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme("sunset")}>
+                      <Check className={`mr-2 h-4 w-4 ${theme === "sunset" ? "opacity-100" : "opacity-0"}`} />
+                      <span>Sunset Glow</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme("forest")}>
+                      <Check className={`mr-2 h-4 w-4 ${theme === "forest" ? "opacity-100" : "opacity-0"}`} />
+                      <span>Forest Sage</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Sign Out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </header>
 
