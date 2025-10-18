@@ -8,8 +8,6 @@ import {
   Sun,
   Monitor,
   Trash2,
-  MoreVertical,
-  LogOut,
 } from "lucide-react";
 import {
   Sidebar,
@@ -39,7 +37,6 @@ interface ChatSidebarProps {
   onSessionSelect: (sessionId: string) => void;
   onNewChat: () => void;
   onDeleteSession: (sessionId: string) => void;
-  onLogout: () => void;
   isLoading: boolean;
 }
 
@@ -82,7 +79,6 @@ export function ChatSidebar({
   onSessionSelect,
   onNewChat,
   onDeleteSession,
-  onLogout,
   isLoading,
 }: ChatSidebarProps) {
   const { theme, setTheme } = useTheme();
@@ -152,17 +148,6 @@ export function ChatSidebar({
                     </Button>
                   </div>
                 </div>
-                <div className="border-t pt-4">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={onLogout}
-                    className="w-full justify-start"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign out
-                  </Button>
-                </div>
               </div>
             </PopoverContent>
           </Popover>
@@ -170,17 +155,15 @@ export function ChatSidebar({
       </SidebarHeader>
 
       <SidebarContent className="pt-4">
-        {currentSessionId && (
-          <div className="px-4 pb-4">
-            <Button
-              onClick={onNewChat}
-              className="w-full bg-gradient-primary hover:opacity-90"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Chat
-            </Button>
-          </div>
-        )}
+        <div className="px-4 pb-4">
+          <Button
+            onClick={onNewChat}
+            className="w-full bg-gradient-primary hover:opacity-90"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Chat
+          </Button>
+        </div>
 
         {showSearch && (
           <div className="px-4 pb-4">
@@ -210,34 +193,22 @@ export function ChatSidebar({
                         className={cn(
                           "flex-1",
                           currentSessionId === session.id &&
-                            "bg-gradient-subtle border border-primary/50"
+                            "bg-gradient-subtle border-l-2 border-primary"
                         )}
                       >
                         <span className="truncate">{session.title}</span>
                       </SidebarMenuButton>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-40 p-1" side="right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onDeleteSession(session.id)}
-                            className="w-full justify-start text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </Button>
-                        </PopoverContent>
-                      </Popover>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteSession(session.id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </SidebarMenuItem>
                 ))}

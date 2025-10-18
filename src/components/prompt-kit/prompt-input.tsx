@@ -85,7 +85,7 @@ function PromptInput({
       >
         <div
           className={cn(
-            "border-input bg-background cursor-text rounded-3xl border p-2 shadow-xs transition-all focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 focus-within:shadow-[0_0_20px_rgba(147,51,234,0.3)]",
+            "border-input bg-background cursor-text rounded-3xl border p-2 shadow-xs",
             className
           )}
           onClick={() => textareaRef.current?.focus()}
