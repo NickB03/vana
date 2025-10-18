@@ -11,7 +11,9 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from "@/components/prompt-kit/prompt-input";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Square, LogOut } from "lucide-react";
+import { ArrowUp, Square, LogOut, Settings, Moon, Sun, Monitor } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useTheme } from "@/components/ThemeProvider";
 import { useChatSessions } from "@/hooks/useChatSessions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   const { sessions, isLoading: sessionsLoading, createSession, deleteSession } = useChatSessions();
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>();
   const [input, setInput] = useState("");
@@ -105,6 +108,58 @@ const Index = () => {
             <header className="bg-background z-10 flex h-16 w-full shrink-0 items-center justify-between gap-2 border-b border-background px-4">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="-ml-1" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Settings className="h-5 w-5" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56" side="bottom" align="end">
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="mb-2 font-medium">Theme</h4>
+                        <div className="flex gap-2">
+                          <Button
+                            variant={theme === "light" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setTheme("light")}
+                            className="flex-1"
+                          >
+                            <Sun className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant={theme === "dark" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setTheme("dark")}
+                            className="flex-1"
+                          >
+                            <Moon className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant={theme === "system" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setTheme("system")}
+                            className="flex-1"
+                          >
+                            <Monitor className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="pt-2 border-t">
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start"
+                          onClick={handleLogout}
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Sign Out
+                        </Button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </header>
 

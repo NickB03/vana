@@ -1,12 +1,8 @@
 import { useState, useEffect } from "react";
 import {
   MessageSquare,
-  Settings,
   Search,
   Plus,
-  Moon,
-  Sun,
-  Monitor,
   Trash2,
 } from "lucide-react";
 import {
@@ -22,12 +18,6 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { useTheme } from "@/components/ThemeProvider";
 import { cn } from "@/lib/utils";
 import { ChatSession } from "@/hooks/useChatSessions";
 
@@ -81,7 +71,6 @@ export function ChatSidebar({
   onDeleteSession,
   isLoading,
 }: ChatSidebarProps) {
-  const { theme, setTheme } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
 
@@ -102,56 +91,14 @@ export function ChatSidebar({
             AI Chat
           </div>
         </div>
-        <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8"
-            onClick={() => setShowSearch(!showSearch)}
-          >
-            <Search className="size-4" />
-          </Button>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="size-8">
-                <Settings className="size-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-56" side="right">
-              <div className="space-y-4">
-                <div>
-                  <h4 className="mb-2 font-medium">Theme</h4>
-                  <div className="flex gap-2">
-                    <Button
-                      variant={theme === "light" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setTheme("light")}
-                      className="flex-1"
-                    >
-                      <Sun className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant={theme === "dark" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setTheme("dark")}
-                      className="flex-1"
-                    >
-                      <Moon className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant={theme === "system" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setTheme("system")}
-                      className="flex-1"
-                    >
-                      <Monitor className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8"
+          onClick={() => setShowSearch(!showSearch)}
+        >
+          <Search className="size-4" />
+        </Button>
       </SidebarHeader>
 
       <SidebarContent className="pt-4">
