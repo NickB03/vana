@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,7 +21,6 @@ export function LoginForm() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -34,36 +33,18 @@ export function LoginForm() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email: data.email,
-          password: data.password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-          },
-        });
+      const { error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        toast({
-          title: "Account created!",
-          description: "You can now log in with your credentials.",
-        });
-        setIsSignUp(false);
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: data.email,
-          password: data.password,
-        });
-
-        if (error) throw error;
-
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully logged in.",
-        });
-        navigate("/");
-      }
+      toast({
+        title: "Welcome back!",
+        description: "You have successfully logged in.",
+      });
+      navigate("/");
     } catch (error: any) {
       toast({
         title: "Error",
@@ -78,11 +59,9 @@ export function LoginForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{isSignUp ? "Create an account" : "Login to your account"}</CardTitle>
+        <CardTitle>Login to your account</CardTitle>
         <CardDescription>
-          {isSignUp
-            ? "Enter your email below to create your account"
-            : "Enter your email below to login to your account"}
+          Enter your email below to login to your account
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -113,33 +92,14 @@ export function LoginForm() {
             )}
           </div>
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Loading..." : isSignUp ? "Sign up" : "Login"}
+            {isLoading ? "Loading..." : "Login"}
           </Button>
         </form>
         <div className="mt-4 text-center text-sm">
-          {isSignUp ? (
-            <>
-              Already have an account?{" "}
-              <button
-                type="button"
-                onClick={() => setIsSignUp(false)}
-                className="underline"
-              >
-                Login
-              </button>
-            </>
-          ) : (
-            <>
-              Don't have an account?{" "}
-              <button
-                type="button"
-                onClick={() => setIsSignUp(true)}
-                className="underline"
-              >
-                Sign up
-              </button>
-            </>
-          )}
+          Don't have an account?{" "}
+          <Link to="/signup" className="underline">
+            Sign up
+          </Link>
         </div>
       </CardContent>
     </Card>
