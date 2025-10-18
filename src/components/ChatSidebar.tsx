@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   MessageSquare,
   Settings,
@@ -7,6 +7,7 @@ import {
   Moon,
   Sun,
   Monitor,
+  Trash2,
 } from "lucide-react";
 import {
   Sidebar,
@@ -28,18 +29,15 @@ import {
 } from "@/components/ui/popover";
 import { useTheme } from "@/components/ThemeProvider";
 import { cn } from "@/lib/utils";
-
-interface ChatSession {
-  id: string;
-  title: string;
-  preview: string;
-  timestamp: Date;
-}
+import { ChatSession } from "@/hooks/useChatSessions";
 
 interface ChatSidebarProps {
+  sessions: ChatSession[];
   currentSessionId?: string;
   onSessionSelect: (sessionId: string) => void;
   onNewChat: () => void;
+  onDeleteSession: (sessionId: string) => void;
+  isLoading: boolean;
 }
 
 const groupChatsByPeriod = (sessions: ChatSession[]) => {
@@ -60,7 +58,7 @@ const groupChatsByPeriod = (sessions: ChatSession[]) => {
   };
 
   sessions.forEach((session) => {
-    const sessionDate = new Date(session.timestamp);
+    const sessionDate = new Date(session.updated_at);
     if (sessionDate >= today) {
       groups.Today.push(session);
     } else if (sessionDate >= yesterday) {
@@ -76,26 +74,21 @@ const groupChatsByPeriod = (sessions: ChatSession[]) => {
 };
 
 export function ChatSidebar({
+  sessions,
   currentSessionId,
   onSessionSelect,
   onNewChat,
+  onDeleteSession,
+  isLoading,
 }: ChatSidebarProps) {
   const { theme, setTheme } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
-  const [sessions] = useState<ChatSession[]>([
-    {
-      id: "1",
-      title: "Welcome Chat",
-      preview: "How can I help you today?",
-      timestamp: new Date(),
-    },
-  ]);
 
   const filteredSessions = sessions.filter(
     (session) =>
       session.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      session.preview.toLowerCase().includes(searchQuery.toLowerCase())
+      (session.first_message && session.first_message.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const groupedSessions = groupChatsByPeriod(filteredSessions);
@@ -193,16 +186,30 @@ export function ChatSidebar({
               <SidebarMenu>
                 {periodSessions.map((session) => (
                   <SidebarMenuItem key={session.id}>
-                    <SidebarMenuButton
-                      onClick={() => onSessionSelect(session.id)}
-                      isActive={currentSessionId === session.id}
-                      className={cn(
-                        currentSessionId === session.id &&
-                          "bg-gradient-subtle border-l-2 border-primary"
-                      )}
-                    >
-                      <span className="truncate">{session.title}</span>
-                    </SidebarMenuButton>
+                    <div className="group relative flex items-center">
+                      <SidebarMenuButton
+                        onClick={() => onSessionSelect(session.id)}
+                        isActive={currentSessionId === session.id}
+                        className={cn(
+                          "flex-1",
+                          currentSessionId === session.id &&
+                            "bg-gradient-subtle border-l-2 border-primary"
+                        )}
+                      >
+                        <span className="truncate">{session.title}</span>
+                      </SidebarMenuButton>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteSession(session.id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>

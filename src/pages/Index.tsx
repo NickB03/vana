@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   SidebarProvider,
   SidebarInset,
@@ -10,13 +11,39 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from "@/components/prompt-kit/prompt-input";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Square } from "lucide-react";
+import { ArrowUp, Square, LogOut } from "lucide-react";
+import { useChatSessions } from "@/hooks/useChatSessions";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { sessions, isLoading: sessionsLoading, createSession, deleteSession } = useChatSessions();
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>();
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Check authentication
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const handleNewChat = () => {
     setCurrentSessionId(undefined);
@@ -29,17 +56,31 @@ const Index = () => {
     setShowChat(true);
   };
 
-  const handleSubmit = () => {
-    if (!input.trim()) return;
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
+
+  const handleSubmit = async () => {
+    if (!input.trim() || !isAuthenticated) {
+      if (!isAuthenticated) {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to start chatting",
+          variant: "destructive",
+        });
+        navigate("/auth");
+      }
+      return;
+    }
     
     setIsLoading(true);
-    setShowChat(true);
-    setCurrentSessionId(Date.now().toString());
-    
-    // Simulate loading
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+    const sessionId = await createSession(input);
+    if (sessionId) {
+      setCurrentSessionId(sessionId);
+      setShowChat(true);
+    }
+    setIsLoading(false);
   };
 
   const handleValueChange = (value: string) => {
@@ -50,9 +91,12 @@ const Index = () => {
     <ThemeProvider defaultTheme="system">
       <SidebarProvider defaultOpen={true}>
         <ChatSidebar
+          sessions={sessions}
           currentSessionId={currentSessionId}
           onSessionSelect={handleSessionSelect}
           onNewChat={handleNewChat}
+          onDeleteSession={deleteSession}
+          isLoading={sessionsLoading}
         />
         <SidebarInset>
           <main className="flex h-screen flex-col overflow-hidden">
@@ -64,7 +108,17 @@ const Index = () => {
                   {showChat ? "Chat Session" : "New Chat"}
                 </h1>
               </div>
-              <ThemeToggle />
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleLogout}
+                  title="Logout"
+                >
+                  <LogOut className="h-5 w-5" />
+                </Button>
+              </div>
             </header>
 
             {/* Main Content */}

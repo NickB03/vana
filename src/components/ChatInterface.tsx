@@ -19,14 +19,7 @@ import {
   PromptInputActions,
   PromptInputTextarea,
 } from "@/components/prompt-kit/prompt-input";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  reasoning?: string;
-  timestamp: Date;
-}
+import { useChatMessages, ChatMessage } from "@/hooks/useChatMessages";
 
 interface ChatInterfaceProps {
   sessionId?: string;
@@ -34,16 +27,17 @@ interface ChatInterfaceProps {
 }
 
 export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState(initialPrompt || "");
-  const [isLoading, setIsLoading] = useState(false);
+  const { messages, isLoading, streamChat } = useChatMessages(sessionId);
+  const [input, setInput] = useState("");
+  const [streamingMessage, setStreamingMessage] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (initialPrompt) {
-      handleSend();
+    if (initialPrompt && sessionId) {
+      handleSend(initialPrompt);
     }
-  }, []);
+  }, [sessionId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -51,37 +45,27 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, streamingMessage]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  const handleSend = async (message?: string) => {
+    const messageToSend = message || input;
+    if (!messageToSend.trim() || isLoading || isStreaming) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: input,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
     setInput("");
-    setIsLoading(true);
+    setIsStreaming(true);
+    setStreamingMessage("");
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: `I understand you're asking about: "${userMessage.content}". This is a demo response. Connect Lovable Cloud to enable real AI responses!`,
-        reasoning: `Analysis: The user's question touches on several key concepts. I'm breaking down the response into clear, actionable steps based on the context provided.`,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-      setIsLoading(false);
-    }, 1000);
+    await streamChat(
+      messageToSend,
+      (chunk) => {
+        setStreamingMessage((prev) => prev + chunk);
+      },
+      () => {
+        setStreamingMessage("");
+        setIsStreaming(false);
+      }
+    );
   };
-
-
   return (
     <div className="flex h-full flex-col">
       <ChatContainerRoot className="flex-1">
@@ -89,7 +73,15 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
           {messages.map((message) => (
             <MessageBubble key={message.id} message={message} />
           ))}
-          {isLoading && (
+          {isStreaming && streamingMessage && (
+            <MessageComponent className="justify-start">
+              <MessageAvatar fallback="AI" />
+              <div className="bg-secondary text-foreground prose rounded-lg p-3 max-w-[85%] sm:max-w-[75%]">
+                <Markdown>{streamingMessage}</Markdown>
+              </div>
+            </MessageComponent>
+          )}
+          {(isLoading || isStreaming) && !streamingMessage && (
             <MessageComponent className="justify-start">
               <MessageAvatar fallback="AI" />
               <div className="flex gap-1">
@@ -99,6 +91,7 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
               </div>
             </MessageComponent>
           )}
+          <div ref={messagesEndRef} />
         </ChatContainerContent>
       </ChatContainerRoot>
 
@@ -108,22 +101,23 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
           <PromptInput
             value={input}
             onValueChange={setInput}
-            isLoading={isLoading}
-            onSubmit={handleSend}
+            isLoading={isLoading || isStreaming}
+            onSubmit={() => handleSend()}
             className="w-full"
           >
             <PromptInputTextarea placeholder="Message AI Chat..." />
             <PromptInputActions className="justify-end pt-2">
               <PromptInputAction
-                tooltip={isLoading ? "Stop generation" : "Send message"}
+                tooltip={(isLoading || isStreaming) ? "Stop generation" : "Send message"}
               >
                 <Button
                   variant="default"
                   size="icon"
                   className="h-8 w-8 rounded-full"
-                  onClick={handleSend}
+                  onClick={() => handleSend()}
+                  disabled={isLoading || isStreaming}
                 >
-                  {isLoading ? (
+                  {(isLoading || isStreaming) ? (
                     <Square className="size-5 fill-current" />
                   ) : (
                     <ArrowUp className="size-5" />
@@ -138,7 +132,7 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
   );
 }
 
-function MessageBubble({ message }: { message: Message }) {
+function MessageBubble({ message }: { message: ChatMessage }) {
   const [showReasoning, setShowReasoning] = useState(false);
   const isUser = message.role === "user";
 
