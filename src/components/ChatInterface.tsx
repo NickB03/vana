@@ -125,7 +125,7 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
                     </div>
                   ) : (
                     <div className="group flex flex-col items-end gap-1">
-                      <MessageContent className="max-w-[85%] rounded-3xl bg-muted px-5 py-2.5 text-primary sm:max-w-[75%]">
+                      <MessageContent className="max-w-[85%] rounded-3xl bg-muted px-5 py-2.5 text-foreground sm:max-w-[75%]">
                         {message.content}
                       </MessageContent>
                       <MessageActions
