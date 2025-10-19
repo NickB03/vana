@@ -21,8 +21,8 @@ interface MessageHandlerParams {
   currentSession: ChatSession | null;
   setIsStreaming: (streaming: boolean) => void;
   setError: (error: string | null) => void;
-  researchSSE?: SSEHookReturn;
-  agentSSE?: SSEHookReturn;
+  researchSSE?: React.MutableRefObject<SSEHookReturn>;  // CRITICAL FIX: Accept ref to prevent stale closures
+  agentSSE?: React.MutableRefObject<SSEHookReturn>;     // CRITICAL FIX: Accept ref to prevent stale closures
 }
 
 /**
@@ -126,8 +126,14 @@ export function useMessageHandlers({
         console.log('[MessageHandler] Starting SSE connection sequence');
 
         try {
+          // CRITICAL FIX: Use .current to get latest SSE hook reference
+          const currentResearchSSE = researchSSE?.current;
+          if (!currentResearchSSE) {
+            throw new Error('Research SSE hook not available');
+          }
+
           // Step 1: Ensure clean disconnection of existing SSE (max 5 seconds)
-          await ensureSSEReady(researchSSE, 5000);
+          await ensureSSEReady(currentResearchSSE, 5000);
 
           // PHASE 3.3: Feature flag routing between canonical and legacy modes
           const isCanonicalMode = isAdkCanonicalStreamEnabled();
@@ -152,14 +158,14 @@ export function useMessageHandlers({
             };
 
             // Inject request body into SSE hook via ref
-            researchSSE?.updateRequestBody?.(requestBody);
+            currentResearchSSE.updateRequestBody?.(requestBody);
 
             // Connect SSE (will use POST with body - starts research + streams results)
-            const currentState = researchSSE?.connectionStateRef?.current ?? researchSSE?.connectionState;
+            const currentState = currentResearchSSE.connectionStateRef?.current ?? currentResearchSSE.connectionState;
             if (currentState !== 'connected' && currentState !== 'connecting') {
               console.log('[MessageHandler] Connecting POST SSE with body (current state:', currentState, ')');
-              researchSSE?.connect();
-              await waitForSSEConnection(researchSSE, 5000);
+              currentResearchSSE.connect();
+              await waitForSSEConnection(currentResearchSSE, 5000);
             } else {
               console.log('[MessageHandler] SSE already connected, reusing connection (state:', currentState, ')');
             }
@@ -182,20 +188,21 @@ export function useMessageHandlers({
             }
 
             // Step 3: Connect SSE
-            const currentState = researchSSE?.connectionStateRef?.current ?? researchSSE?.connectionState;
+            const currentState = currentResearchSSE.connectionStateRef?.current ?? currentResearchSSE.connectionState;
             if (currentState !== 'connected' && currentState !== 'connecting') {
               console.log('[MessageHandler] Initiating SSE connection for new research (current state:', currentState, ')');
-              researchSSE?.connect();
-              await waitForSSEConnection(researchSSE, 5000);
+              currentResearchSSE.connect();
+              await waitForSSEConnection(currentResearchSSE, 5000);
             } else {
               console.log('[MessageHandler] SSE already connected or connecting, skipping connect() call (state:', currentState, ')');
             }
           }
 
           console.log('[MessageHandler] SSE connection sequence completed successfully');
+          const currentAgentSSE = agentSSE?.current;
           console.log('[MessageHandler] SSE connection status:', {
-            research: researchSSE?.isConnected,
-            agent: agentSSE?.isConnected
+            research: currentResearchSSE.isConnected,
+            agent: currentAgentSSE?.isConnected
           });
         } catch (error) {
           console.error('[MessageHandler] SSE connection sequence failed:', error);
@@ -232,8 +239,7 @@ export function useMessageHandlers({
     completeStreamingMessageInStore,
     setIsStreaming,
     setError,
-    researchSSE,
-    agentSSE,
+    // NOTE: researchSSE and agentSSE removed from deps - they're refs now
   ]);
 
   /**

@@ -260,6 +260,29 @@ class RunAgentRequest(BaseModel):
     invocation_id: Optional[str] = Field(None, alias="invocationId")
 
 
+class SessionCreationResponse(BaseModel):
+    """Response model for session creation endpoint (Phase 3.3).
+
+    Following canonical ADK pattern where sessions must be created BEFORE
+    sending messages to /run_sse. Backend generates and returns session ID.
+
+    Based on: docs/adk/refs/frontend-nextjs-fullstack/nextjs/src/lib/services/session-service.ts
+
+    Attributes:
+        success: Whether session creation succeeded
+        session_id: Backend-generated session identifier
+        app_name: Application name
+        user_id: User identifier
+        created_at: Session creation timestamp
+    """
+
+    success: bool = Field(..., description="Session creation success status")
+    session_id: str = Field(..., description="Backend-generated session ID")
+    app_name: str = Field(..., description="Application name")
+    user_id: str = Field(..., description="User identifier")
+    created_at: datetime = Field(..., description="Session creation timestamp")
+
+
 # Type aliases for common data structures
 JSONData = dict[str, Any]
 QueryData = Union[str, dict[str, Any]]

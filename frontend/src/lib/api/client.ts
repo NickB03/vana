@@ -4,6 +4,7 @@
  */
 
 import {
+  ApiResponse,
   AuthResponse,
   LoginRequest,
   RegisterRequest,
@@ -24,6 +25,7 @@ import {
   SessionListResponse,
   SessionSummary,
   SessionDetail,
+  SessionCreationResult,
   ChatMessage,
   MessageOperationResponse,
   MessageFeedbackResponse,
@@ -446,6 +448,61 @@ export class VanaAPIClient {
   }
 
   // Research and Agent Methods
+
+  /**
+   * Create a new chat session (Phase 3.3: Session pre-creation)
+   * Must be called BEFORE sending messages via /run_sse
+   *
+   * Following canonical ADK pattern where sessions are created before message submission.
+   * Backend generates and returns the session ID.
+   *
+   * Security: Uses Next.js API route proxy to avoid CORS and keep tokens secure.
+   *
+   * @returns SessionCreationResult with backend-generated session ID
+   */
+  async createSession(): Promise<ApiResponse<SessionCreationResult>> {
+    try {
+      // Prepare headers with CSRF token for POST request
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add CSRF token for state-changing method
+      Object.assign(headers, addCsrfHeader(headers));
+
+      // Use Next.js API proxy instead of direct backend call to avoid CORS
+      // Proxy endpoint: /api/sessions -> backend: /apps/{app}/users/{user}/sessions
+      const response = await fetch('/api/sessions', {
+        method: 'POST',
+        headers,
+        credentials: 'include', // Include auth cookies
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Session creation failed' }));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success || !result.data) {
+        throw new Error(result.error || 'Invalid response from session creation');
+      }
+
+      console.log('[API Client] Session created:', result.data.session_id);
+
+      return {
+        success: true,
+        data: result.data
+      };
+    } catch (error) {
+      console.error('[API Client] Session creation failed:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Session creation failed'
+      };
+    }
+  }
 
   /**
    * Start research session

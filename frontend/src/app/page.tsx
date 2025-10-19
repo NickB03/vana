@@ -46,6 +46,7 @@ import { Button } from "@/components/ui/button";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import {
+  AlertTriangle,
   ArrowUp,
   Copy,
   Mic,
@@ -66,7 +67,7 @@ function ChatView({
   chat: ChatStreamReturn;
   onExit: () => void;
 }) {
-  const { messages, sendMessage, isStreaming, currentSession, error } = chat;
+  const { messages, sendMessage, isStreaming, currentSession, error, sessionId } = chat;
   const [inputValue, setInputValue] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -89,17 +90,50 @@ function ChatView({
   const rateLimiter = useRef(new RateLimitTracker());
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
+  // Phase 3.3: Session pre-creation on mount
+  const [sessionReady, setSessionReady] = useState(false);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+
   // Memoized character count status for performance
   const characterStatus = useMemo(
     () => getCharacterStatus(inputValue.length),
     [inputValue.length],
   );
 
-  // Console log to verify state initialization - removed to prevent infinite re-renders
-  // Only log once on mount
+  // Phase 3.3: Ensure session exists before user can send messages
+  // This prevents "connect() aborting" errors caused by hook ref timing issues
   useEffect(() => {
-    // ChatView state initialized - use proper logger if needed
-  }, []);
+    let cancelled = false;
+
+    const initializeSession = async () => {
+      try {
+        const { switchOrCreateSession, currentSessionId } = useChatStore.getState();
+
+        if (!currentSessionId) {
+          console.log('[ChatView] No session on mount, creating via backend');
+          await switchOrCreateSession();
+        } else {
+          console.log('[ChatView] Session already exists on mount:', currentSessionId);
+        }
+
+        if (!cancelled) {
+          setSessionReady(true);
+          setSessionError(null);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          const errorMsg = error instanceof Error ? error.message : 'Failed to initialize session';
+          console.error('[ChatView] Session initialization error:', errorMsg, error);
+          setSessionError(errorMsg);
+        }
+      }
+    };
+
+    initializeSession();
+    return () => {
+      cancelled = true;
+    };
+  }, []); // Run once on mount - backend-first session creation
 
   useEffect(() => {
     const viewport = chatContainerRef.current?.querySelector(
@@ -400,6 +434,111 @@ function ChatView({
     currentSession?.messages[0]?.content.slice(0, 60) ||
     "Chat with Vana";
   const disableInput = isSubmitting || isStreaming;
+
+  // Phase 3.3: Show loading/error states during session initialization
+  if (!sessionReady) {
+    if (sessionError) {
+      return (
+        <ErrorBoundary
+          componentName="ChatView"
+          allowRetry={true}
+          showErrorDetails={false}
+        >
+          <PageTransition transitionKey="chat-error">
+            <main className="flex h-screen flex-col overflow-hidden">
+              <header className="bg-background z-10 flex h-16 w-full shrink-0 items-center gap-2 px-4 shadow-none">
+                <SidebarTrigger className="-ml-1" />
+                <div className="text-foreground">Chat Session Error</div>
+                <div className="ml-auto">
+                  <Button variant="ghost" size="sm" onClick={onExit}>
+                    Back to Home
+                  </Button>
+                </div>
+              </header>
+              <div className="flex flex-1 items-center justify-center">
+                <div className="text-center max-w-md px-4">
+                  <div
+                    className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10"
+                    role="img"
+                    aria-label="Error"
+                  >
+                    <AlertTriangle className="h-8 w-8 text-destructive" aria-hidden="true" />
+                  </div>
+                  <h3
+                    className="mb-2 text-lg font-semibold text-destructive"
+                    id="error-heading-chatview"
+                  >
+                    Failed to Initialize Chat Session
+                  </h3>
+                  <p
+                    className="text-sm text-muted-foreground mb-6"
+                    aria-describedby="error-heading-chatview"
+                  >
+                    {sessionError}
+                  </p>
+                  <div className="flex gap-2 justify-center">
+                    <Button
+                      onClick={() => {
+                        setSessionError(null);
+                        setSessionReady(false);
+                        window.location.reload();
+                      }}
+                      className="px-6"
+                    >
+                      Retry
+                    </Button>
+                    <Button variant="outline" onClick={onExit}>
+                      Go Home
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </main>
+          </PageTransition>
+        </ErrorBoundary>
+      );
+    }
+
+    return (
+      <ErrorBoundary
+        componentName="ChatView"
+        allowRetry={true}
+        showErrorDetails={false}
+      >
+        <PageTransition transitionKey="chat-loading">
+          <main className="flex h-screen flex-col overflow-hidden">
+            <header className="bg-background z-10 flex h-16 w-full shrink-0 items-center gap-2 px-4 shadow-none">
+              <SidebarTrigger className="-ml-1" />
+              <div className="text-foreground">Initializing Chat...</div>
+              <div className="ml-auto">
+                <Button variant="ghost" size="sm" onClick={onExit}>
+                  Back to Home
+                </Button>
+              </div>
+            </header>
+            <div className="flex flex-1 items-center justify-center">
+              <div
+                className="text-center"
+                role="status"
+                aria-live="polite"
+                aria-busy="true"
+              >
+                <span className="sr-only">Initializing chat session, please wait</span>
+                <div
+                  className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"
+                  aria-hidden="true"
+                ></div>
+                <h2 className="text-2xl font-semibold mb-2">Initializing Chat</h2>
+                <p className="text-muted-foreground">
+                  Preparing your secure chat session
+                </p>
+              </div>
+            </div>
+          </main>
+        </PageTransition>
+      </ErrorBoundary>
+    );
+  }
 
   return (
     <ErrorBoundary
@@ -793,30 +932,106 @@ function HomePageContent() {
   // Check if we should auto-focus the input (e.g., from "New Chat" button)
   const shouldAutoFocus = searchParams.get('focus') === 'true';
 
+  // Phase 3.3: Session pre-creation state
+  const [sessionReady, setSessionReady] = useState(false);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+
   // Clear session on mount to always show home page when navigating to /
   useEffect(() => {
     chat.switchSession(null);
   }, []); // Empty dependency array = run only once on mount
+
+  // Phase 3.3: Ensure session exists before user can send messages
+  useEffect(() => {
+    let cancelled = false;
+
+    const initializeSession = async () => {
+      try {
+        // Step 1: Fetch CSRF token first (required for session creation)
+        console.log('[HomePage] Fetching CSRF token');
+        const csrfResponse = await fetch('/api/csrf', {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        if (!csrfResponse.ok) {
+          throw new Error('Failed to fetch CSRF token');
+        }
+
+        console.log('[HomePage] CSRF token fetched successfully');
+
+        // Step 2: Get store methods (they're async now)
+        const { switchOrCreateSession, currentSessionId } = useChatStore.getState();
+
+        // Step 3: Only create if no current session
+        if (!currentSessionId) {
+          console.log('[HomePage] No session on mount, creating via backend');
+          await switchOrCreateSession();
+        } else {
+          console.log('[HomePage] Session already exists on mount:', currentSessionId);
+        }
+
+        if (!cancelled) {
+          setSessionReady(true);
+          setSessionError(null);
+          console.log('[HomePage] Session initialization complete');
+        }
+      } catch (error) {
+        if (!cancelled) {
+          const errorMsg = error instanceof Error ? error.message : 'Failed to initialize session';
+          console.error('[HomePage] Session initialization error:', errorMsg, error);
+          setSessionError(errorMsg);
+        }
+      }
+    };
+
+    initializeSession();
+    return () => { cancelled = true; };
+  }, []); // Run once on mount
 
   // Use refs to access chat methods without dependency on chat object
   const chatRef = useRef(chat);
   chatRef.current = chat;
 
   const handleStartChat = useCallback(async (prompt: string) => {
-    const currentChat = chatRef.current;
-    let targetSessionId = currentChat.sessionId;
-    if (!targetSessionId) {
-      targetSessionId = currentChat.createNewSession();
+    try {
+      const { switchOrCreateSession, currentSessionId } = useChatStore.getState();
+
+      // Ensure session exists (should already exist from mount, but defensive check)
+      if (!currentSessionId) {
+        console.log('[HomePage] Creating session before sending message');
+        await switchOrCreateSession();
+      }
+
+      const currentChat = chatRef.current;
+      if (!currentChat) {
+        console.error('[HomePage] Chat ref not available');
+        return;
+      }
+
+      // Session guaranteed to exist now, send message
+      console.log('[HomePage] Sending message with session:', currentSessionId);
+      await currentChat.sendMessage(prompt);
+
+    } catch (error) {
+      console.error('[HomePage] Failed to start chat:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Failed to start chat';
+      setSessionError(errorMsg);
     }
-    currentChat.switchSession(targetSessionId);
-    await currentChat.sendMessage(prompt);
   }, []);
 
-  const handleCreateSession = () => {
-    const newSessionId = chat.createNewSession();
-    chat.switchSession(newSessionId);
-    return newSessionId;
-  };
+  const handleCreateSession = useCallback(() => {
+    const { switchOrCreateSession, currentSessionId } = useChatStore.getState();
+
+    // Fire-and-forget async session creation
+    switchOrCreateSession().catch(error => {
+      console.error('[HomePage] Session creation error:', error);
+      setSessionError('Failed to create session');
+    });
+
+    // Return current session ID immediately (synchronous for VanaSidebar)
+    return currentSessionId || '';
+  }, []);
 
   const handleSelectSession = (sessionId: string) => {
     chat.switchSession(sessionId);
@@ -847,6 +1062,73 @@ function HomePageContent() {
   };
 
   const isChatActive = Boolean(chat.sessionId);
+
+  // Phase 3.3: Show error if session creation failed
+  if (sessionError) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="text-center max-w-md px-4">
+          <div
+            className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10"
+            role="img"
+            aria-label="Error"
+          >
+            <AlertTriangle className="h-8 w-8 text-destructive" aria-hidden="true" />
+          </div>
+          <h2
+            className="text-2xl font-semibold mb-2"
+            id="error-heading-homepage"
+          >
+            Session Error
+          </h2>
+          <p
+            className="text-muted-foreground mb-6"
+            aria-describedby="error-heading-homepage"
+          >
+            {sessionError}
+          </p>
+          <div className="flex gap-3 justify-center">
+            <Button
+              onClick={() => window.location.reload()}
+              variant="default"
+            >
+              Retry
+            </Button>
+            <Button
+              onClick={() => window.location.href = '/'}
+              variant="outline"
+            >
+              Go Home
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Phase 3.3: Show loading while session is being created
+  if (!sessionReady) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div
+          className="text-center"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <span className="sr-only">Initializing chat session, please wait</span>
+          <div
+            className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"
+            aria-hidden="true"
+          ></div>
+          <h2 className="text-2xl font-semibold mb-2">Initializing Chat</h2>
+          <p className="text-muted-foreground">
+            Preparing your secure chat session
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <ErrorBoundary

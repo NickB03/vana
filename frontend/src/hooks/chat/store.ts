@@ -9,6 +9,7 @@ import { ChatMessage } from '../../lib/api/types';
 import { config } from '@/lib/env';
 import { ChatStreamState, ChatSession } from './types';
 import type { AdkEvent } from '@/lib/streaming/adk/types';
+import { apiClient } from '../../lib/api/client';
 
 const chatStorage = () => {
   if (typeof window === 'undefined') {
@@ -58,6 +59,83 @@ export const useChatStore = create<ChatStreamState>()(
         }));
 
         return sessionId;
+      },
+
+      /**
+       * Phase 3.3: Create session via backend API
+       * This is the NEW method for canonical ADK streaming.
+       * The old createSession() is kept for backward compatibility.
+       */
+      createSessionViaBackend: async () => {
+        try {
+          console.log('[ChatStore] Creating new session via backend API');
+
+          const response = await apiClient.createSession();
+
+          if (response.success && response.data) {
+            const sessionId = response.data.session_id;
+            const now = new Date().toISOString();
+
+            // Create session in store with backend-provided ID
+            const newSession: ChatSession = {
+              id: sessionId,
+              messages: [],
+              agents: [],
+              progress: null,
+              isStreaming: false,
+              error: null,
+              created_at: response.data.created_at || now,
+              updated_at: now,
+              historyLoaded: true,
+              status: 'idle',
+              title: 'New Chat',
+              editingMessageId: null,
+              messagesFeedback: {},
+              thoughtProcesses: {},
+              regeneratingMessageId: null,
+              metadata: {
+                kind: 'canonical-session',
+                backendCreated: true
+              }
+            };
+
+            set(state => ({
+              sessions: { ...state.sessions, [sessionId]: newSession },
+              currentSessionId: sessionId,
+            }));
+
+            console.log('[ChatStore] Session created and stored:', sessionId);
+            return { success: true, sessionId };
+          } else {
+            throw new Error(response.error || 'Session creation failed');
+          }
+        } catch (error) {
+          console.error('[ChatStore] Session creation error:', error);
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          };
+        }
+      },
+
+      /**
+       * Phase 3.3: Switch to existing session or create new one via backend
+       */
+      switchOrCreateSession: async (sessionId?: string) => {
+        const state = useChatStore.getState();
+
+        if (sessionId && state.sessions[sessionId]) {
+          // Switch to existing session
+          console.log('[ChatStore] Switching to existing session:', sessionId);
+          set({ currentSessionId: sessionId });
+        } else {
+          // Create new session via backend
+          console.log('[ChatStore] No valid session, creating new one via backend');
+          const result = await state.createSessionViaBackend();
+          if (!result.success) {
+            throw new Error(result.error || 'Failed to create session');
+          }
+        }
       },
 
       setCurrentSession: (sessionId: string | null) => {

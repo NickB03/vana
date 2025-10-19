@@ -3,6 +3,13 @@
  * Generated from FastAPI backend analysis
  */
 
+// Generic API Response Types
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
 // Authentication Types
 export interface User {
   id: number;
@@ -301,6 +308,18 @@ export interface SessionListResponse {
   count: number;
   timestamp: string;
   authenticated?: boolean;
+}
+
+/**
+ * Response from session creation endpoint (Phase 3.3)
+ * Backend generates session ID before message submission.
+ */
+export interface SessionCreationResult {
+  success: boolean;
+  session_id: string;
+  app_name: string;
+  user_id: string;
+  created_at: string;
 }
 
 // Chat Integration Types

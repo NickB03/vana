@@ -112,7 +112,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
       options.reconnectDelay,
       options.maxReconnectDelay,
       options.withCredentials,
-      options.sessionId,
+      // NOTE: options.sessionId intentionally omitted - already embedded in URL
       options.method, // PHASE 3.3: Include method for canonical mode
       // Note: Intentionally exclude callback functions and requestBody from dependencies
       // Callbacks handled via refs, requestBody handled via separate ref + effect
@@ -199,20 +199,29 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
   // Build SSE URL through secure proxy (no token exposure) - stabilized
   // SECURITY ENHANCEMENT: This function was updated to prevent JWT token exposure
   // in browser URLs by routing through server-side proxy endpoints
-  const buildSSEUrl = useStableCallback((): string => {
+  const buildSSEUrl = useStableCallback((targetUrl?: string): string => {
+    // PHASE 3.3 FIX: Accept targetUrl parameter to support dynamic URL construction
+    const effectiveUrl = targetUrl ?? url;
+
     // Use Next.js API route proxy to avoid exposing JWT tokens in URLs
+
+    // PHASE 3.3 FIX: If URL already starts with /api/sse/, it's already a proxy path
+    if (effectiveUrl.startsWith('/api/sse/')) {
+      return effectiveUrl;
+    }
+
     let proxyPath: string;
-    
-    if (url.startsWith('http')) {
+
+    if (effectiveUrl.startsWith('http')) {
       // For absolute URLs, encode the full URL for proxy forwarding
-      const encodedUrl = encodeURIComponent(url);
+      const encodedUrl = encodeURIComponent(effectiveUrl);
       proxyPath = `/api/sse?path=${encodedUrl}`;
     } else {
       // For relative URLs, construct proxy path
-      const cleanUrl = url.startsWith('/') ? url.slice(1) : url;
+      const cleanUrl = effectiveUrl.startsWith('/') ? effectiveUrl.slice(1) : effectiveUrl;
       proxyPath = `/api/sse/${cleanUrl}`;
     }
-    
+
     // Return relative proxy path - no tokens in URL
     return proxyPath;
   }, [url]);
@@ -341,10 +350,41 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
 
   // Connect to SSE stream with secure authentication - stable reference
   const connect = useCallback(() => {
-    console.log('[useSSE] connect() called:', { enabled: opts.enabled, url, eventSourceExists: !!eventSourceRef.current, mounted: mountedRef.current });
+    // PHASE 3.3 FIX: For POST requests with a body, allow connection even if enabled is false
+    // This handles the race condition where sessionId hasn't propagated to the URL yet
+    const hasPostBody = opts.method === 'POST' && requestBodyRef.current;
+    const canConnect = opts.enabled || hasPostBody;
 
-    if (!opts.enabled || !url) {
-      console.log('[useSSE] connect() aborting - enabled:', opts.enabled, 'url:', url);
+    console.log('[useSSE] connect() called:', {
+      enabled: opts.enabled,
+      url,
+      method: opts.method,
+      hasPostBody,
+      canConnect,
+      eventSourceExists: !!eventSourceRef.current,
+      mounted: mountedRef.current
+    });
+
+    if (!canConnect) {
+      console.log('[useSSE] connect() aborting - enabled:', opts.enabled, 'hasPostBody:', hasPostBody);
+      shouldReconnectRef.current = false;
+      updateConnectionState('disconnected');
+      return;
+    }
+
+    // For POST requests with body but no URL, build URL dynamically from body.sessionId
+    let effectiveUrl = url;
+    if (!effectiveUrl && hasPostBody && requestBodyRef.current?.sessionId) {
+      const { appName, userId, sessionId } = requestBodyRef.current;
+      if (opts.method === 'POST' && url === '') {
+        // Use the canonical POST endpoint
+        effectiveUrl = '/api/sse/run_sse';
+        console.log('[useSSE] Built dynamic URL from request body:', effectiveUrl);
+      }
+    }
+
+    if (!effectiveUrl) {
+      console.log('[useSSE] connect() aborting - no effective URL available');
       shouldReconnectRef.current = false;
       updateConnectionState('disconnected');
       return;
@@ -363,8 +403,10 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
     stateRefs.current.setError(null);
 
     try {
-      const sseUrl = buildSSEUrl();
-      console.log('[useSSE] Connecting to SSE:', sseUrl);
+      // PHASE 3.3 FIX: Use effectiveUrl instead of url for buildSSEUrl
+      // This ensures we use the dynamically built URL when available
+      const sseUrl = buildSSEUrl(effectiveUrl);
+      console.log('[useSSE] Connecting to SSE:', sseUrl, '(effectiveUrl:', effectiveUrl, ')');
 
       // For proxy routes, use fetch with custom headers since EventSource doesn't support them
       if (sseUrl.startsWith('/api/sse')) {
@@ -409,6 +451,8 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
 
         // PHASE 3.3: Dynamic method and body support for canonical mode
         const method = opts.method || 'GET';
+        console.log('[useSSE] Method:', method, 'requestBodyRef:', !!requestBodyRef.current);
+
         const fetchOptions: RequestInit = {
           method,
           headers,
@@ -418,9 +462,11 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
 
         // Add body for POST requests (canonical mode)
         if (method === 'POST' && requestBodyRef.current) {
-          fetchOptions.body = JSON.stringify(requestBodyRef.current);
           headers['Content-Type'] = 'application/json';
+          fetchOptions.body = JSON.stringify(requestBodyRef.current);
           console.log('[useSSE] POST request with body:', Object.keys(requestBodyRef.current));
+        } else if (method === 'POST') {
+          console.warn('[useSSE] POST method but no requestBodyRef.current');
         }
 
         fetch(sseUrl, fetchOptions).then(response => {
@@ -1029,35 +1075,78 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
  * @param options - SSE connection options
  * @returns SSE hook with connection management
  */
-export function useResearchSSE(sessionId: string, options: Omit<SSEOptions, 'sessionId'> = {}) {
-  // Guard against empty sessionId to prevent race condition
-  // This prevents attempting connection with URL like "/apps/vana/users/default/sessions//run"
-  if (!sessionId || sessionId.trim() === '') {
-    return useSSE('', { ...options, enabled: false, sessionId: '' });
-  }
-
-  // PHASE 3.3: Feature flag routing
-  const isCanonicalMode = isAdkCanonicalStreamEnabled();
+export function useResearchSSE(
+  sessionId: string,
+  options: Omit<SSEOptions, 'sessionId' | 'enabled'> = {}  // CRITICAL: Remove 'enabled' from parent control
+) {
+  // PHASE 3.3: Feature flag routing (memoized to prevent unnecessary re-computations)
+  const isCanonicalMode = useMemo(() => isAdkCanonicalStreamEnabled(), []);
   const ADK_APP_NAME = process.env.NEXT_PUBLIC_ADK_APP_NAME || 'vana';
   const ADK_DEFAULT_USER = process.env.NEXT_PUBLIC_ADK_DEFAULT_USER || 'default';
 
-  let url: string;
-  let method: 'GET' | 'POST' = 'GET';
+  // CRITICAL FIX: Memoize URL and method to prevent hook recreation
+  const { url, method } = useMemo(() => {
+    // Guard against empty sessionId to prevent race condition
+    if (!sessionId || sessionId.trim() === '') {
+      return { url: '', method: 'GET' as const };
+    }
 
-  if (isCanonicalMode) {
-    // CANONICAL MODE: POST /api/sse/run_sse (Phase 3.3)
-    // Request body will be injected by message handlers via updateRequestBody()
-    url = '/api/sse/run_sse';
-    method = 'POST';
-    console.log('[useResearchSSE] Canonical mode enabled - using POST /api/sse/run_sse');
-  } else {
-    // LEGACY MODE: GET /apps/{appName}/users/{userId}/sessions/{sessionId}/run
-    url = `/apps/${ADK_APP_NAME}/users/${ADK_DEFAULT_USER}/sessions/${sessionId}/run`;
-    method = 'GET';
-    console.log('[useResearchSSE] Legacy mode - using GET', url);
-  }
+    if (isCanonicalMode) {
+      // CANONICAL MODE: POST /api/sse/run_sse (Phase 3.3)
+      // Request body will be injected by message handlers via updateRequestBody()
+      console.log('[useResearchSSE] Canonical mode enabled - using POST /api/sse/run_sse');
+      return { url: '/api/sse/run_sse', method: 'POST' as const };
+    } else {
+      // LEGACY MODE: GET /apps/{appName}/users/{userId}/sessions/{sessionId}/run
+      const legacyUrl = `/apps/${ADK_APP_NAME}/users/${ADK_DEFAULT_USER}/sessions/${sessionId}/run`;
+      console.log('[useResearchSSE] Legacy mode - using GET', legacyUrl);
+      return { url: legacyUrl, method: 'GET' as const };
+    }
+  }, [sessionId, isCanonicalMode, ADK_APP_NAME, ADK_DEFAULT_USER]);
 
-  return useSSE(url, { ...options, sessionId, method });
+  // CRITICAL FIX: Memoize options object to prevent unnecessary hook recreations
+  // Extract specific option values to ensure stable dependencies
+  const {
+    autoReconnect,
+    maxReconnectAttempts,
+    reconnectDelay,
+    maxReconnectDelay,
+    withCredentials,
+    onConnect,
+    onDisconnect,
+    onError,
+    onReconnect,
+  } = options;
+
+  const sseOptions = useMemo(() => ({
+    enabled: url !== '',  // CRITICAL FIX: Calculate enabled from URL, not from parent options
+    autoReconnect,
+    maxReconnectAttempts,
+    reconnectDelay,
+    maxReconnectDelay,
+    withCredentials,
+    // NOTE: sessionId intentionally omitted - it's already embedded in the URL
+    method,
+    onConnect,
+    onDisconnect,
+    onError,
+    onReconnect,
+  }), [
+    url,  // enabled depends on url (and url changes with sessionId)
+    autoReconnect,
+    maxReconnectAttempts,
+    reconnectDelay,
+    maxReconnectDelay,
+    withCredentials,
+    // NOTE: sessionId removed from deps - prevents hook recreation on session change
+    method,
+    onConnect,
+    onDisconnect,
+    onError,
+    onReconnect,
+  ]);
+
+  return useSSE(url, sseOptions);
 }
 
 /**

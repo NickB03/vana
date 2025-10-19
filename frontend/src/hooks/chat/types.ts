@@ -12,6 +12,8 @@ export interface ChatStreamState {
 
   // Actions
   createSession: () => string;
+  createSessionViaBackend: () => Promise<{ success: boolean; sessionId?: string; error?: string }>;
+  switchOrCreateSession: (sessionId?: string) => Promise<void>;
   setCurrentSession: (sessionId: string | null) => void;
   hydrateSessions: (sessions: ChatSession[]) => void;
   replaceMessages: (sessionId: string, messages: ChatMessage[]) => void;
@@ -61,6 +63,13 @@ export interface ChatSession {
   messagesFeedback?: Record<string, 'upvote' | 'downvote' | null>;
   thoughtProcesses?: Record<string, string>;
   regeneratingMessageId?: string | null;
+
+  /** Phase 3.3: Session metadata */
+  metadata?: {
+    kind?: 'canonical-session' | 'legacy-session';
+    backendCreated?: boolean;
+    [key: string]: any;
+  };
 
   /** Phase 3.2: Raw ADK events (canonical mode only) - NOT persisted to localStorage */
   rawAdkEvents?: AdkEvent[];

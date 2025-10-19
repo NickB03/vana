@@ -108,8 +108,10 @@ class CSRFMiddleware(BaseHTTPMiddleware):
 
         # Skip CSRF validation for ADK session endpoints
         # ADK endpoints handle their own authentication and session management
-        # Pattern: /apps/{app}/users/{user}/sessions/{session}/run
-        if "/apps/" in request.url.path and "/sessions/" in request.url.path:
+        # Patterns:
+        # - POST /apps/{app}/users/{user}/sessions (session creation - Phase 3.3)
+        # - GET/POST /apps/{app}/users/{user}/sessions/{session}/run (message execution)
+        if "/apps/" in request.url.path and ("/sessions/" in request.url.path or request.url.path.endswith("/sessions")):
             response = await call_next(request)
             return self._ensure_csrf_cookie(request, response)
 

@@ -21,7 +21,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.config import is_adk_canonical_stream_enabled
-from app.models import RunAgentRequest, SessionMessagePayload
+from app.models import RunAgentRequest, SessionCreationResponse, SessionMessagePayload
 from app.utils.input_validation import (
     get_validation_error_response,
     validate_chat_input,
@@ -266,6 +266,114 @@ async def run_sse_canonical(
             "X-Accel-Buffering": "no",  # Disable nginx buffering
         }
     )
+
+
+@adk_router.post(
+    "/apps/{app_name}/users/{user_id}/sessions",
+    response_model=SessionCreationResponse,
+    summary="Create new chat session",
+    description="Creates a new session for the user. Returns backend-generated session ID. "
+                "Sessions must be created BEFORE calling /run_sse (canonical ADK pattern)."
+)
+async def create_chat_session(
+    app_name: str,
+    user_id: str,
+    current_user: User | None = Depends(get_current_active_user_optional())
+) -> SessionCreationResponse:
+    """
+    Create a new chat session following canonical ADK pattern (Phase 3.3).
+
+    Sessions must be created BEFORE calling /run_sse. This matches the official
+    ADK pattern where session IDs are backend-generated and pre-exist before
+    message submission.
+
+    Based on:
+    - docs/adk/refs/official-adk-python/src/google/adk/cli/adk_web_server.py (lines 752-777)
+    - docs/adk/refs/frontend-nextjs-fullstack/nextjs/src/lib/services/session-service.ts
+
+    Args:
+        app_name: Application name (e.g., "vana")
+        user_id: User identifier
+        current_user: Optional authenticated user
+
+    Returns:
+        SessionCreationResponse with backend-generated session ID
+
+    Raises:
+        HTTPException: 404 if app not found, 500 on creation failure
+    """
+    # Validate app name
+    if app_name != DEFAULT_APP_NAME:
+        raise HTTPException(status_code=404, detail=f"App '{app_name}' not found")
+
+    try:
+        # Generate unique session ID
+        session_id = f"session_{uuid.uuid4().hex[:16]}"
+
+        logger.info(
+            f"Creating new session: app={app_name}, user={user_id}, "
+            f"session={session_id}, authenticated={current_user is not None}"
+        )
+
+        # Initialize session in ADK first (upstream must know about session)
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            try:
+                response = await client.post(
+                    f"http://127.0.0.1:8080/apps/{app_name}/users/{user_id}/sessions/{session_id}",
+                    json={}  # Empty initial state
+                )
+
+                # Handle already-exists case (idempotent behavior)
+                if response.status_code == 400 and "already exists" in response.text:
+                    logger.info(f"Session {session_id} already exists in ADK")
+                elif response.status_code not in [200, 201]:
+                    error_msg = f"ADK session creation failed: {response.status_code} - {response.text[:200]}"
+                    logger.error(error_msg)
+                    raise HTTPException(status_code=502, detail=error_msg)
+                else:
+                    logger.info(f"Session {session_id} created in ADK successfully")
+
+            except httpx.TimeoutException:
+                logger.error(f"Timeout creating session {session_id} in ADK")
+                raise HTTPException(
+                    status_code=504,
+                    detail="Timeout connecting to ADK service"
+                )
+
+        # Store session metadata locally with TTL
+        session_store.ensure_session(
+            session_id,
+            user_id=current_user.id if current_user else user_id,
+            title="New Chat",
+            status="idle",
+            metadata={
+                "created_at": datetime.now().isoformat(),
+                "ttl_minutes": 30,  # Critical recommendation from peer review
+                "has_messages": False,
+                "backend_created": True,
+                "kind": "canonical-session"
+            }
+        )
+
+        logger.info(f"Session {session_id} stored locally with TTL metadata")
+
+        # Return success response
+        return SessionCreationResponse(
+            success=True,
+            session_id=session_id,
+            app_name=app_name,
+            user_id=user_id,
+            created_at=datetime.now()
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Session creation failed: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create session: {str(e)}"
+        )
 
 
 @adk_router.get("/apps/{app_name}/users/{user_id}/sessions")

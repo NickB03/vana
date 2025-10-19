@@ -48,40 +48,31 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
   // Get session utilities
   const { ensureSessionHistory, loadServerSessions } = useSessionUtils();
 
-  // Memoize SSE options to prevent infinite re-renders
-  // Improved development mode detection
-  const isDevelopment = process.env.NODE_ENV === 'development' ||
-                        !process.env.NEXT_PUBLIC_API_URL?.includes('production');
-
-  const sseOptions = useMemo(() => {
-    const enabled: boolean = Boolean(currentSessionId) && (isDevelopment || Boolean(hasAuthToken));
-    console.log('[useChatStream] SSE options:', {
-      currentSessionId,
-      isDevelopment,
-      hasAuthToken,
-      enabled,
-      NODE_ENV: process.env.NODE_ENV
-    });
-    return {
-      autoReconnect: true,
-      maxReconnectAttempts: 5,
-      enabled,
-    };
-  }, [currentSessionId, hasAuthToken, isDevelopment]);
+  // CRITICAL FIX: Stable SSE options (enabled flag removed - calculated by useResearchSSE)
+  // This prevents hook destruction between updateRequestBody() and connect()
+  const sseOptions = useMemo(() => ({
+    autoReconnect: true,
+    maxReconnectAttempts: 5,
+    // NOTE: 'enabled' flag removed - useResearchSSE calculates it from sessionId/url
+  }), []); // ✅ NEVER CHANGES - no dependencies
 
   // Single SSE connection for all events (research + agent status)
   // Following Google ADK best practices: all events flow through one stream
+  // useResearchSSE will enable/disable based on sessionId validity
   const researchSSE = useResearchSSE(currentSessionId || '', sseOptions);
 
-  // Get message handlers
-  const { sendMessage, retryLastMessage } = useMessageHandlers({
-    currentSessionId,
-    currentSession,
-    setIsStreaming,
-    setError,
-    researchSSE,
-    agentSSE: researchSSE, // Use same stream for agent events
-  });
+  // Development logging (optional - can be removed in production)
+  useEffect(() => {
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    if (isDevelopment) {
+      console.log('[useChatStream] SSE state:', {
+        currentSessionId,
+        hasAuthToken,
+        connectionState: researchSSE.connectionState,
+        NODE_ENV: process.env.NODE_ENV
+      });
+    }
+  }, [currentSessionId, hasAuthToken, researchSSE.connectionState]);
 
   // Auto-create session if needed
   useEffect(() => {
@@ -154,9 +145,20 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
     };
   }, [hasLoadedServerSessions, loadServerSessions, isAuthenticated]);
 
-  // Use refs to avoid dependency issues in cleanup
+  // CRITICAL FIX: Use refs to avoid dependency issues and stale closures
+  // This ensures message handlers always have the latest SSE hook reference
   const researchSSERef = useRef(researchSSE);
   researchSSERef.current = researchSSE;
+
+  // Get message handlers (using ref to prevent stale closures)
+  const { sendMessage, retryLastMessage } = useMessageHandlers({
+    currentSessionId,
+    currentSession,
+    setIsStreaming,
+    setError,
+    researchSSE: researchSSERef,  // Pass ref instead of direct value
+    agentSSE: researchSSERef,     // Use same stream for agent events
+  });
 
   // Setup SSE event handlers (single stream handles all event types)
   useSSEEventHandlers({
