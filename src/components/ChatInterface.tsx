@@ -1,17 +1,16 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, ChevronUp, ArrowUp, Square } from "lucide-react";
+import { ArrowUp, Copy, Pencil, Trash, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import {
   ChatContainerContent,
   ChatContainerRoot,
 } from "@/components/prompt-kit/chat-container";
-import { Markdown } from "@/components/prompt-kit/markdown";
 import {
   Message as MessageComponent,
-  MessageAvatar,
   MessageContent,
+  MessageActions,
+  MessageAction,
 } from "@/components/prompt-kit/message";
 import {
   PromptInput,
@@ -19,6 +18,7 @@ import {
   PromptInputActions,
   PromptInputTextarea,
 } from "@/components/prompt-kit/prompt-input";
+import { ScrollButton } from "@/components/prompt-kit/scroll-button";
 import { useChatMessages, ChatMessage } from "@/hooks/useChatMessages";
 
 interface ChatInterfaceProps {
@@ -77,63 +77,141 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
   };
   return (
     <div className="flex h-full flex-col">
-      <ChatContainerRoot className="flex-1">
-        <ChatContainerContent className="space-y-4 p-4">
-          {messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
-          ))}
-          {isStreaming && streamingMessage && (
-            <MessageComponent className="justify-start">
-              <div className="max-w-[80%]">
-                <div className="bg-secondary text-foreground prose rounded-lg p-3">
-                  <Markdown>{streamingMessage}</Markdown>
+      <div ref={messagesEndRef} className="relative flex-1 overflow-y-auto">
+        <ChatContainerRoot className="h-full">
+          <ChatContainerContent className="space-y-0 px-5 py-12">
+            {messages.map((message, index) => {
+              const isAssistant = message.role === "assistant";
+              const isLastMessage = index === messages.length - 1;
+
+              return (
+                <MessageComponent
+                  key={message.id}
+                  className={cn(
+                    "mx-auto flex w-full max-w-3xl flex-col gap-2 px-6",
+                    isAssistant ? "items-start" : "items-end"
+                  )}
+                >
+                  {isAssistant ? (
+                    <div className="group flex w-full flex-col gap-0">
+                      <MessageContent
+                        className="prose flex-1 rounded-lg bg-transparent p-0 text-foreground"
+                        markdown
+                      >
+                        {message.content}
+                      </MessageContent>
+                      <MessageActions
+                        className={cn(
+                          "-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100",
+                          isLastMessage && "opacity-100"
+                        )}
+                      >
+                        <MessageAction tooltip="Copy" delayDuration={100}>
+                          <Button variant="ghost" size="icon" className="rounded-full">
+                            <Copy />
+                          </Button>
+                        </MessageAction>
+                        <MessageAction tooltip="Upvote" delayDuration={100}>
+                          <Button variant="ghost" size="icon" className="rounded-full">
+                            <ThumbsUp />
+                          </Button>
+                        </MessageAction>
+                        <MessageAction tooltip="Downvote" delayDuration={100}>
+                          <Button variant="ghost" size="icon" className="rounded-full">
+                            <ThumbsDown />
+                          </Button>
+                        </MessageAction>
+                      </MessageActions>
+                    </div>
+                  ) : (
+                    <div className="group flex flex-col items-end gap-1">
+                      <MessageContent className="max-w-[85%] rounded-3xl bg-muted px-5 py-2.5 text-primary sm:max-w-[75%]">
+                        {message.content}
+                      </MessageContent>
+                      <MessageActions
+                        className={cn(
+                          "flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+                        )}
+                      >
+                        <MessageAction tooltip="Edit" delayDuration={100}>
+                          <Button variant="ghost" size="icon" className="rounded-full">
+                            <Pencil />
+                          </Button>
+                        </MessageAction>
+                        <MessageAction tooltip="Delete" delayDuration={100}>
+                          <Button variant="ghost" size="icon" className="rounded-full">
+                            <Trash />
+                          </Button>
+                        </MessageAction>
+                        <MessageAction tooltip="Copy" delayDuration={100}>
+                          <Button variant="ghost" size="icon" className="rounded-full">
+                            <Copy />
+                          </Button>
+                        </MessageAction>
+                      </MessageActions>
+                    </div>
+                  )}
+                </MessageComponent>
+              );
+            })}
+            
+            {isStreaming && streamingMessage && (
+              <MessageComponent className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 items-start">
+                <div className="group flex w-full flex-col gap-0">
+                  <MessageContent className="prose flex-1 rounded-lg bg-transparent p-0 text-foreground" markdown>
+                    {streamingMessage}
+                  </MessageContent>
                 </div>
-              </div>
-            </MessageComponent>
-          )}
-          {(isLoading || isStreaming) && !streamingMessage && (
-            <MessageComponent className="justify-start">
-              <div className="flex gap-1">
-                <div className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.3s]" />
-                <div className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.15s]" />
-                <div className="h-2 w-2 animate-bounce rounded-full bg-primary" />
-              </div>
-            </MessageComponent>
-          )}
-          <div ref={messagesEndRef} />
-        </ChatContainerContent>
-      </ChatContainerRoot>
+              </MessageComponent>
+            )}
+
+            {(isLoading || isStreaming) && !streamingMessage && (
+              <MessageComponent className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 items-start">
+                <div className="flex gap-1">
+                  <div className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.3s]" />
+                  <div className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.15s]" />
+                  <div className="h-2 w-2 animate-bounce rounded-full bg-primary" />
+                </div>
+              </MessageComponent>
+            )}
+          </ChatContainerContent>
+          <div className="absolute bottom-4 left-1/2 flex w-full max-w-3xl -translate-x-1/2 justify-end px-5">
+            <ScrollButton className="shadow-sm" onClick={scrollToBottom} />
+          </div>
+        </ChatContainerRoot>
+      </div>
 
       {/* Input Area */}
-      <div className="border-t border-border bg-background p-4">
-        <div className="mx-auto max-w-4xl">
+      <div className="z-10 shrink-0 bg-background px-3 pb-3 md:px-5 md:pb-5">
+        <div className="mx-auto max-w-3xl">
           <PromptInput
+            isLoading={isLoading || isStreaming}
             value={input}
             onValueChange={setInput}
-            isLoading={isLoading || isStreaming}
             onSubmit={() => handleSend()}
-            className="w-full"
+            className="relative z-10 w-full rounded-3xl border border-input bg-popover p-0 pt-1 shadow-xs"
           >
-            <PromptInputTextarea placeholder="Message AI Chat..." />
-            <PromptInputActions className="justify-end pt-2">
-              <PromptInputAction
-                tooltip={(isLoading || isStreaming) ? "Stop generation" : "Send message"}
-              >
+            <div className="flex flex-col">
+              <PromptInputTextarea
+                placeholder="Ask anything"
+                className="min-h-[44px] pl-4 pt-3 text-base leading-[1.3] sm:text-base md:text-base"
+              />
+
+              <PromptInputActions className="mt-5 flex w-full items-center justify-end gap-2 px-3 pb-3">
                 <Button
-                  variant="default"
                   size="icon"
-                  className="h-8 w-8 rounded-full"
+                  disabled={!input.trim() || isLoading || isStreaming}
                   onClick={() => handleSend()}
-                  disabled={isLoading || isStreaming}
+                  className="size-9 rounded-full"
                 >
-                  {(isLoading || isStreaming) ? (
-                    <Square className="size-5 fill-current" />
+                  {!(isLoading || isStreaming) ? (
+                    <ArrowUp size={18} />
                   ) : (
-                    <ArrowUp className="size-5" />
+                    <span className="size-3 rounded-xs bg-white" />
                   )}
                 </Button>
-              </PromptInputAction>
-            </PromptInputActions>
+              </PromptInputActions>
+            </div>
           </PromptInput>
         </div>
       </div>
@@ -141,56 +219,3 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
   );
 }
 
-function MessageBubble({ message }: { message: ChatMessage }) {
-  const [showReasoning, setShowReasoning] = useState(false);
-  const isUser = message.role === "user";
-
-  return (
-    <MessageComponent
-      className={isUser ? "justify-end" : "justify-start"}
-    >
-      <div className="max-w-[80%]">
-        {isUser ? (
-          <div className="bg-primary text-primary-foreground rounded-lg p-3">
-            {message.content}
-          </div>
-        ) : (
-          <div className="bg-secondary text-foreground prose rounded-lg p-3">
-            <Markdown>{message.content}</Markdown>
-          </div>
-        )}
-
-        {!isUser && message.reasoning && (
-          <div className="mt-2 w-full">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowReasoning(!showReasoning)}
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              {showReasoning ? (
-                <>
-                  <ChevronUp className="mr-1 h-3 w-3" />
-                  Hide reasoning
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="mr-1 h-3 w-3" />
-                  Show reasoning
-                </>
-              )}
-            </Button>
-            
-            {showReasoning && (
-              <Card className="mt-2 border-l-2 border-primary bg-muted/50 p-3">
-                <p className="text-xs text-muted-foreground italic">
-                  {message.reasoning}
-                </p>
-              </Card>
-            )}
-          </div>
-        )}
-      </div>
-    </MessageComponent>
-  );
-}
