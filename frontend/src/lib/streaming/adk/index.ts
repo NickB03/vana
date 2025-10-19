@@ -27,6 +27,9 @@ export type {
   AdkEventActions,
   ParsedAdkEvent,
   NormalizeResult,
+  Source,
+  GroundingMetadata,
+  GroundingChunk,
 } from './types';
 
 // Type guard exports
@@ -55,6 +58,16 @@ export {
   extractFunctionResponses,
   extractFunctionResponseText,
   extractSourcesFromFunctionResponse,
+  extractSources,
   extractAllContent,
   hasContent,
 } from './content-extractor';
+
+// Validator exports
+export type { ValidationResult } from './validator';
+export {
+  validateAdkEvent,
+  quickValidateAdkEvent,
+  shouldValidate,
+  conditionalValidate,
+} from './validator';

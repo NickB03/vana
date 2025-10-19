@@ -51,6 +51,25 @@ export interface AdkContent {
 }
 
 /**
+ * Grounding Metadata - matches google.genai.types.GroundingMetadata
+ */
+export interface GroundingChunk {
+  web?: {
+    uri: string;
+    title?: string;
+  };
+}
+
+export interface GroundingMetadata {
+  groundingChunks?: GroundingChunk[];
+  groundingSupports?: Array<unknown>;
+  retrievalMetadata?: unknown;
+  retrievalQueries?: string[];
+  searchEntryPoint?: unknown;
+  webSearchQueries?: string[];
+}
+
+/**
  * ADK Event Actions - matches EventActions from ADK
  */
 export interface AdkEventActions {
@@ -82,6 +101,18 @@ export interface AdkEvent {
   longRunningToolIds?: string[];
   branch?: string;
   partial?: boolean;
+  turnComplete?: boolean;
+  errorCode?: string;
+  errorMessage?: string;
+  groundingMetadata?: GroundingMetadata;
+}
+
+/**
+ * Source citation from grounding metadata or function responses
+ */
+export interface Source {
+  url: string;
+  title?: string;
 }
 
 /**
@@ -98,6 +129,7 @@ export interface ParsedAdkEvent {
   thoughtParts: string[];
   functionCalls: AdkFunctionCall[];
   functionResponses: AdkFunctionResponse[];
+  sources: Source[];
   isAgentTransfer: boolean;
   transferTargetAgent?: string;
   isFinalResponse: boolean;

@@ -18,6 +18,7 @@ import type {
   AdkPart,
   AdkFunctionCall,
   AdkFunctionResponse,
+  Source,
   isTextPart,
   isFunctionCallPart,
   isFunctionResponsePart,
@@ -213,6 +214,49 @@ export function extractAllContent(event: AdkEvent) {
     functionCalls,
     functionResponses,
   };
+}
+
+/**
+ * Extract sources from grounding metadata
+ *
+ * Sources can come from:
+ * 1. groundingMetadata.groundingChunks (web search results)
+ * 2. Function responses with source data
+ *
+ * @param event - ADK Event to extract from
+ * @returns Array of source objects with url and optional title
+ */
+export function extractSources(event: AdkEvent): Source[] {
+  const sources: Source[] = [];
+
+  // Extract from grounding metadata (primary source)
+  if (event.groundingMetadata?.groundingChunks) {
+    for (const chunk of event.groundingMetadata.groundingChunks) {
+      if (chunk.web?.uri) {
+        sources.push({
+          url: chunk.web.uri,
+          title: chunk.web.title,
+        });
+      }
+    }
+  }
+
+  // Also check function responses for sources
+  const functionResponses = extractFunctionResponses(event);
+  for (const response of functionResponses) {
+    const responseSources = extractSourcesFromFunctionResponse(response);
+    sources.push(...responseSources);
+  }
+
+  // Deduplicate by URL
+  const uniqueSources = sources.reduce((acc, source) => {
+    if (!acc.some(s => s.url === source.url)) {
+      acc.push(source);
+    }
+    return acc;
+  }, [] as Source[]);
+
+  return uniqueSources;
 }
 
 /**

@@ -68,7 +68,7 @@ class TestSSEIntegration:
         @app.get("/stats")
         async def stats_endpoint():
             """Get broadcaster stats."""
-            return broadcaster.get_stats()
+            return await broadcaster.get_stats()
 
         return app
 

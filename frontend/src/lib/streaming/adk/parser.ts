@@ -26,6 +26,7 @@ import {
   extractTextContent,
   extractFunctionCalls,
   extractFunctionResponses,
+  extractSources,
   hasContent,
 } from './content-extractor';
 
@@ -133,6 +134,7 @@ export function normalizeAdkEvent(
   const { textParts, thoughtParts } = extractTextContent(rawEvent);
   const functionCalls = extractFunctionCalls(rawEvent);
   const functionResponses = extractFunctionResponses(rawEvent);
+  const sources = extractSources(rawEvent);
 
   // Detect agent transfers
   const isAgentTransfer = !!rawEvent.actions?.transfer_to_agent;
@@ -158,6 +160,7 @@ export function normalizeAdkEvent(
     thoughtParts,
     functionCalls,
     functionResponses,
+    sources,
     isAgentTransfer,
     transferTargetAgent,
     isFinalResponse,

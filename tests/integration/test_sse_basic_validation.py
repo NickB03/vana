@@ -36,7 +36,7 @@ async def test_basic_broadcaster_creation():
 
     try:
         # Test initial state
-        stats = broadcaster.get_stats()
+        stats = await broadcaster.get_stats()
         assert stats["totalSessions"] == 0
         assert stats["totalSubscribers"] == 0
         assert stats["totalEvents"] == 0
@@ -68,7 +68,7 @@ async def test_single_subscriber():
         queue = await broadcaster.add_subscriber(session_id)
 
         # Check stats
-        stats = broadcaster.get_stats()
+        stats = await broadcaster.get_stats()
         assert stats["totalSessions"] == 1
         assert stats["totalSubscribers"] == 1
         print("  ✓ Subscriber added correctly")
@@ -97,7 +97,7 @@ async def test_single_subscriber():
         await broadcaster.remove_subscriber(session_id, queue)
 
         # Check cleanup
-        stats = broadcaster.get_stats()
+        stats = await broadcaster.get_stats()
         assert stats["totalSubscribers"] == 0
         print("  ✓ Subscriber cleaned up correctly")
 
@@ -126,7 +126,7 @@ async def test_multiple_subscribers():
             subscribers.append(queue)
 
         # Check stats
-        stats = broadcaster.get_stats()
+        stats = await broadcaster.get_stats()
         assert stats["totalSessions"] == 1
         assert stats["totalSubscribers"] == num_subscribers
         print("  ✓ All subscribers added correctly")
@@ -162,7 +162,7 @@ async def test_multiple_subscribers():
         for queue in subscribers:
             await broadcaster.remove_subscriber(session_id, queue)
 
-        stats = broadcaster.get_stats()
+        stats = await broadcaster.get_stats()
         assert stats["totalSubscribers"] == 0
         print("  ✓ All subscribers cleaned up correctly")
 
@@ -189,7 +189,7 @@ async def test_session_isolation():
         queue_b = await broadcaster.add_subscriber(session_b)
 
         # Check stats
-        stats = broadcaster.get_stats()
+        stats = await broadcaster.get_stats()
         assert stats["totalSessions"] == 2
         assert stats["totalSubscribers"] == 2
         print("  ✓ Both sessions created correctly")
@@ -233,7 +233,7 @@ async def test_session_isolation():
         await broadcaster.remove_subscriber(session_a, queue_a)
         await broadcaster.remove_subscriber(session_b, queue_b)
 
-        stats = broadcaster.get_stats()
+        stats = await broadcaster.get_stats()
         assert stats["totalSubscribers"] == 0
         print("  ✓ Sessions cleaned up correctly")
 
@@ -334,7 +334,7 @@ async def test_cleanup_functionality():
             await broadcaster.broadcast_event(session_id, event_data)
 
         # Check initial state
-        initial_stats = broadcaster.get_stats()
+        initial_stats = await broadcaster.get_stats()
         initial_events = initial_stats["totalEvents"]
         assert initial_events >= 5
         print(f"  ✓ Initial events: {initial_events}")
@@ -347,7 +347,7 @@ async def test_cleanup_functionality():
         await broadcaster._perform_cleanup()
 
         # Check cleanup effectiveness
-        final_stats = broadcaster.get_stats()
+        final_stats = await broadcaster.get_stats()
         final_events = final_stats["totalEvents"]
 
         print(f"  - Events after cleanup: {final_events}")

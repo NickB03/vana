@@ -554,8 +554,11 @@ class EnhancedSSEBroadcaster:
             await self._session_manager.increment_subscribers(session_id)
 
             # Send recent history to new subscriber
-            history = list(self._event_history[session_id])[-10:]  # Last 10 events
-            logger.info(f"History retrieved: {len(history)} events")
+            # CRITICAL FIX: Send up to max_history_per_session events (100) instead of just 10
+            # This ensures subscribers receive the full buffer on connection for production use
+            max_history = self.config.max_history_per_session
+            history = list(self._event_history[session_id])[-max_history:]
+            logger.info(f"History retrieved: {len(history)} events (max: {max_history})")
 
         # Send history asynchronously
         for event in history:
@@ -630,6 +633,11 @@ class EnhancedSSEBroadcaster:
         # Store in session history (bounded deque)
         async with self._lock:
             self._event_history[session_id].append(event)
+            history_size = len(self._event_history[session_id])
+            logger.debug(
+                f"Event stored in history for session {session_id}: "
+                f"type={event.type}, history_size={history_size}/{self.config.max_history_per_session}"
+            )
             await self._session_manager.touch_session(session_id)
 
             # Get subscribers for this session
