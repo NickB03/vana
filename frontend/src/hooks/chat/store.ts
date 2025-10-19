@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ChatMessage } from '../../lib/api/types';
 import { config } from '@/lib/env';
 import { ChatStreamState, ChatSession } from './types';
+import type { AdkEvent } from '@/lib/streaming/adk/types';
 
 const chatStorage = () => {
   if (typeof window === 'undefined') {
@@ -515,13 +516,62 @@ export const useChatStore = create<ChatStreamState>()(
           };
         });
       },
+
+      /**
+       * Store a raw ADK event in the session's event history
+       * Maintains circular buffer of max 1000 events
+       */
+      storeAdkEvent: (sessionId: string, event: AdkEvent) => {
+        set(state => {
+          const session = state.sessions[sessionId];
+          if (!session) {
+            console.warn('[Store] Cannot store ADK event - session not found:', sessionId);
+            return state;
+          }
+
+          const rawAdkEvents = session.rawAdkEvents ?? [];
+          const newEvents = [...rawAdkEvents, event];
+
+          // Circular buffer: keep last 1000 events
+          if (newEvents.length > 1000) {
+            newEvents.splice(0, newEvents.length - 1000);
+          }
+
+          return {
+            sessions: {
+              ...state.sessions,
+              [sessionId]: {
+                ...session,
+                rawAdkEvents: newEvents,
+                eventMetadata: {
+                  totalEvents: newEvents.length,
+                  lastEventId: event.id || 'unknown',
+                  lastInvocationId: event.invocationId,
+                  lastAuthor: event.author,
+                },
+                updated_at: new Date().toISOString(),
+              },
+            },
+          };
+        });
+      },
     }),
     {
       name: 'vana-chat-sessions',
       storage: createJSONStorage(chatStorage),
       partialize: state => ({
         currentSessionId: state.currentSessionId,
-        sessions: state.sessions,
+        sessions: Object.fromEntries(
+          Object.entries(state.sessions).map(([id, session]) => [
+            id,
+            {
+              ...session,
+              // Phase 3.2: Exclude rawAdkEvents from localStorage (too large)
+              rawAdkEvents: undefined,
+              eventMetadata: undefined,
+            },
+          ])
+        ),
       }),
     }
   )

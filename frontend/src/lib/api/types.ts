@@ -203,6 +203,14 @@ export interface AgentNetworkEvent extends SSEEvent {
     transferTargetAgent?: string;
     isFinalResponse?: boolean;
     _raw?: any; // Raw ADK event for debugging
+    // Legacy event fields (for backward compatibility)
+    content?: string;
+    text?: string;
+    role?: string;
+    kind?: string;
+    completed?: boolean;
+    sources?: Array<{ url: string; title?: string }>;
+    id?: string;
   };
 }
 

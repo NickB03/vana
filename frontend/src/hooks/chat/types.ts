@@ -3,6 +3,7 @@
  */
 
 import { AgentStatus, ResearchProgress, ChatMessage, SessionSummary } from '../../lib/api/types';
+import type { AdkEvent } from '@/lib/streaming/adk/types';
 
 export interface ChatStreamState {
   // Session management
@@ -35,6 +36,9 @@ export interface ChatStreamState {
   setMessageFeedback: (sessionId: string, messageId: string, feedback: 'upvote' | 'downvote' | null) => void;
   updateFeedback: (sessionId: string, messageId: string, feedback: 'upvote' | 'downvote' | null) => void;
   updateThoughtProcess: (sessionId: string, messageId: string, thoughtProcess: string) => void;
+
+  // Phase 3.2: ADK event storage
+  storeAdkEvent: (sessionId: string, event: AdkEvent) => void;
 }
 
 export interface ChatSession {
@@ -57,6 +61,17 @@ export interface ChatSession {
   messagesFeedback?: Record<string, 'upvote' | 'downvote' | null>;
   thoughtProcesses?: Record<string, string>;
   regeneratingMessageId?: string | null;
+
+  /** Phase 3.2: Raw ADK events (canonical mode only) - NOT persisted to localStorage */
+  rawAdkEvents?: AdkEvent[];
+
+  /** Phase 3.2: Event metadata for debugging */
+  eventMetadata?: {
+    totalEvents: number;
+    lastEventId: string;
+    lastInvocationId: string;
+    lastAuthor?: string;
+  };
 }
 
 export interface ChatStreamOptions {
