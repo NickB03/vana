@@ -147,16 +147,50 @@ This document guides AI coding agents through the end-to-end enhancements requir
 - ✅ Zero breaking changes maintained
 - ✅ Zero console errors
 
-**Phase 3.3 (Future Work) - Frontend Endpoint Switch:**
-- ⏳ Create POST `/api/sse/run_sse` proxy (frontend → backend)
-- ⏳ Update frontend to call POST endpoint when feature flag enabled
-- ⏳ E2E testing of canonical mode activation
-- **Note:** Infrastructure is 100% ready for this switch
+**Phase 3.3 - Frontend Endpoint Switch (ARCHITECTURE DEFINED):**
 
-**Estimated Time for Phase 3.3:** 4-6 hours
-**Blocking:** Full ADK event support in UI, performance optimization
+**Status:** ✅ Architecture Complete | ⏳ Implementation Ready
+**SPARC Analysis:** Complete (Backend + Frontend specialists, 2025-10-19)
+**Solution:** Ref-based request body injection pattern
 
-**Agent Assignment:** Frontend developer + TypeScript specialist agents needed
+**Problem Identified:**
+- SSE hook created at component mount (no request body yet)
+- Request body only available when user sends message
+- EventSource API cannot POST (technical limitation)
+
+**Solution Architecture:**
+- Add `method` + `requestBody` to SSEOptions interface
+- Use `requestBodyRef` for dynamic injection after mount
+- Expose `updateRequestBody()` method from useSSE hook
+- Canonical mode: Skip `apiClient.startResearch()`, go direct to POST SSE
+- Legacy mode: Keep existing two-step flow (POST to start, GET to stream)
+
+**Implementation:**
+- Files: 2 (useSSE.ts, message-handlers.ts)
+- Lines Changed: ~90 total
+- Breaking Changes: ✅ ZERO (feature flag gated)
+- Risk Level: 🟢 LOW (activating existing fetch-based SSE)
+
+**Tasks:**
+- ✅ **Task 1:** POST proxy `/api/sse/run_sse` created (337 lines) - COMPLETE
+- ⏳ **Task 2:** Add POST support to useSSE hook (~50 lines) - READY
+- ⏳ **Task 3:** Update message handlers for routing (~40 lines) - READY
+- ⏳ **Task 4:** Browser E2E testing (Chrome DevTools MCP) - READY
+- ⏳ **Task 5:** Peer review (target ≥8.0/10) - READY
+- ⏳ **Task 6:** Documentation update - READY
+
+**Documentation Created:**
+- `/docs/plans/phase3_3_architectural_solution.md` - Complete design (400+ lines)
+- `/docs/plans/phase3_3_implementation_roadmap.md` - Quick reference guide
+- `/docs/api/canonical_adk_streaming_spec.md` - Backend API contract
+- `/docs/plans/frontend_sse_architecture_analysis.md` - Frontend deep-dive
+- `/docs/plans/frontend_sse_technical_spec.md` - Implementation spec
+
+**Estimated Time:** 4-6 hours
+**Prerequisites:** ✅ ALL COMPLETE
+**Blocking:** None
+
+**Agent Assignment:** Frontend developer (execution ready)
 
 ---
 
