@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ChatSession } from "@/hooks/useChatSessions";
-import NebiusLogo from "@/assets/nebius.svg";
+import { NebiusLogo } from "@/components/NebiusLogo";
 interface ChatSidebarProps {
   sessions: ChatSession[];
   currentSessionId?: string;
@@ -59,7 +59,7 @@ export function ChatSidebar({
   return <Sidebar>
       <SidebarHeader className="flex flex-row items-center justify-between gap-2 px-2 py-4">
         <div className="flex flex-row items-center gap-2 px-2">
-          <img src={NebiusLogo} alt="Nebius" className="size-8" />
+          <NebiusLogo className="text-primary" />
         </div>
         <Button variant="ghost" size="icon" className="size-8" onClick={() => setShowSearch(!showSearch)}>
           <Search className="size-4" />
