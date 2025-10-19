@@ -28,6 +28,10 @@ export interface SSEOptions {
   maxReconnectDelay?: number;
   /** Whether to include credentials in the request */
   withCredentials?: boolean;
+  /** HTTP method for SSE request (Phase 3.3: POST for canonical mode) */
+  method?: 'GET' | 'POST';
+  /** Request body for POST SSE requests (Phase 3.3 canonical mode) */
+  requestBody?: Record<string, any>;
   /** Custom event handlers */
   onConnect?: () => void;
   onDisconnect?: () => void;
@@ -60,6 +64,8 @@ export interface SSEHookReturn {
   reconnectAttempt: number;
   /** Last parsed ADK event (Phase 3 - only populated when feature flag enabled) */
   lastAdkEvent: ParsedAdkEvent | null;
+  /** Update request body for POST SSE (Phase 3.3 - canonical mode) */
+  updateRequestBody: (body: Record<string, any>) => void;
 }
 
 /**
@@ -107,8 +113,9 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
       options.maxReconnectDelay,
       options.withCredentials,
       options.sessionId,
-      // Note: Intentionally exclude callback functions from dependencies
-      // They will be handled via refs to prevent unnecessary reconnections
+      options.method, // PHASE 3.3: Include method for canonical mode
+      // Note: Intentionally exclude callback functions and requestBody from dependencies
+      // Callbacks handled via refs, requestBody handled via separate ref + effect
     ]
   );
   
@@ -129,6 +136,10 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
   // CRITICAL FIX: Track connection state synchronously in ref for immediate visibility
   // This allows waitForSSEState to see state changes immediately without waiting for React re-render
   const connectionStateRef = useRef<SSEConnectionState>('disconnected');
+
+  // PHASE 3.3: Ref for dynamic request body injection (canonical mode)
+  // Allows updating body after hook creation but before connection
+  const requestBodyRef = useRef<Record<string, any> | undefined>(options.requestBody);
 
   // Store event handler references for cleanup
   const eventHandlersRef = useRef<{
@@ -160,6 +171,11 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
       onReconnect: options.onReconnect,
     };
   }, [options.onConnect, options.onDisconnect, options.onError, options.onReconnect]);
+
+  // PHASE 3.3: Update request body ref when options change
+  useEffect(() => {
+    requestBodyRef.current = options.requestBody;
+  }, [options.requestBody]);
 
   // CRITICAL FIX: Sync connectionStateRef with connectionState
   // This ensures the ref always reflects the latest state for synchronous access
@@ -391,12 +407,23 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
         });
         console.log('[useSSE] Fetching SSE stream with headers:', Object.keys(headers));
 
-        fetch(sseUrl, {
-          method: 'GET',
+        // PHASE 3.3: Dynamic method and body support for canonical mode
+        const method = opts.method || 'GET';
+        const fetchOptions: RequestInit = {
+          method,
           headers,
-          credentials: opts.withCredentials ? 'include' : 'omit', // Cookies sent automatically
+          credentials: opts.withCredentials ? 'include' : 'omit',
           signal: controller.signal,
-        }).then(response => {
+        };
+
+        // Add body for POST requests (canonical mode)
+        if (method === 'POST' && requestBodyRef.current) {
+          fetchOptions.body = JSON.stringify(requestBodyRef.current);
+          headers['Content-Type'] = 'application/json';
+          console.log('[useSSE] POST request with body:', Object.keys(requestBodyRef.current));
+        }
+
+        fetch(sseUrl, fetchOptions).then(response => {
           console.log('[useSSE] SSE fetch response:', response.status, response.statusText);
           if (!response.ok) {
             throw new Error(`SSE request failed: ${response.status}`);
@@ -901,6 +928,13 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
     stateRefs.current.setError(null);
   }, []);
 
+  // PHASE 3.3: Update request body dynamically (for canonical POST SSE)
+  // Allows injecting body after hook creation but before connection
+  const updateRequestBody = useCallback((body: Record<string, any>) => {
+    requestBodyRef.current = body;
+    console.log('[useSSE] Request body updated for next connection:', Object.keys(body));
+  }, []);
+
   // Store url and enabled in refs for stable access
   const urlRef = useRef(url);
   const enabledRef = useRef(opts.enabled);
@@ -949,6 +983,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
     clearEvents,
     reconnectAttempt,
     lastAdkEvent,
+    updateRequestBody, // PHASE 3.3: Expose body update method
   }), [
     connectionState,
     lastEvent,
@@ -960,6 +995,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
     clearEvents,
     reconnectAttempt,
     lastAdkEvent,
+    updateRequestBody, // PHASE 3.3: Include in dependencies
   ]);
 }
 
@@ -974,11 +1010,24 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
 
 /**
  * Hook specifically for research task SSE streams
- * Uses ADK-compliant endpoint: /apps/{appName}/users/{userId}/sessions/{sessionId}/run
  *
- * NOTE: Even with ENABLE_ADK_CANONICAL_STREAM=true, we continue to use this endpoint
- * because the backend's /run_sse is a POST-only endpoint for direct ADK integration.
- * The legacy endpoint has been enhanced to emit ADK-compatible events when the feature flag is enabled.
+ * PHASE 3.3: Feature flag routing between legacy and canonical modes
+ *
+ * **Legacy Mode** (NEXT_PUBLIC_ENABLE_ADK_CANONICAL_STREAM=false):
+ * - Uses GET /apps/{appName}/users/{userId}/sessions/{sessionId}/run
+ * - Message already persisted by apiClient.startResearch()
+ * - Backend converts canonical ADK events to legacy format
+ * - Triggers LegacyEventHandler in frontend
+ *
+ * **Canonical Mode** (NEXT_PUBLIC_ENABLE_ADK_CANONICAL_STREAM=true):
+ * - Uses POST /api/sse/run_sse with request body
+ * - Direct streaming from ADK without conversion
+ * - Triggers AdkEventHandler in frontend
+ * - Populates rawAdkEvents in store
+ *
+ * @param sessionId - Session identifier
+ * @param options - SSE connection options
+ * @returns SSE hook with connection management
  */
 export function useResearchSSE(sessionId: string, options: Omit<SSEOptions, 'sessionId'> = {}) {
   // Guard against empty sessionId to prevent race condition
@@ -987,11 +1036,28 @@ export function useResearchSSE(sessionId: string, options: Omit<SSEOptions, 'ses
     return useSSE('', { ...options, enabled: false, sessionId: '' });
   }
 
-  // ADK-compliant endpoint structure
+  // PHASE 3.3: Feature flag routing
+  const isCanonicalMode = isAdkCanonicalStreamEnabled();
   const ADK_APP_NAME = process.env.NEXT_PUBLIC_ADK_APP_NAME || 'vana';
   const ADK_DEFAULT_USER = process.env.NEXT_PUBLIC_ADK_DEFAULT_USER || 'default';
-  const url = `/apps/${ADK_APP_NAME}/users/${ADK_DEFAULT_USER}/sessions/${sessionId}/run`;
-  return useSSE(url, { ...options, sessionId });
+
+  let url: string;
+  let method: 'GET' | 'POST' = 'GET';
+
+  if (isCanonicalMode) {
+    // CANONICAL MODE: POST /api/sse/run_sse (Phase 3.3)
+    // Request body will be injected by message handlers via updateRequestBody()
+    url = '/api/sse/run_sse';
+    method = 'POST';
+    console.log('[useResearchSSE] Canonical mode enabled - using POST /api/sse/run_sse');
+  } else {
+    // LEGACY MODE: GET /apps/{appName}/users/{userId}/sessions/{sessionId}/run
+    url = `/apps/${ADK_APP_NAME}/users/${ADK_DEFAULT_USER}/sessions/${sessionId}/run`;
+    method = 'GET';
+    console.log('[useResearchSSE] Legacy mode - using GET', url);
+  }
+
+  return useSSE(url, { ...options, sessionId, method });
 }
 
 /**

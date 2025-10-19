@@ -14,6 +14,7 @@ import {
   waitForSSEConnection,
   SSEMessageQueue
 } from './sse-connection-helpers';
+import { isAdkCanonicalStreamEnabled } from '../../lib/env';
 
 interface MessageHandlerParams {
   currentSessionId: string | null;
@@ -128,31 +129,67 @@ export function useMessageHandlers({
           // Step 1: Ensure clean disconnection of existing SSE (max 5 seconds)
           await ensureSSEReady(researchSSE, 5000);
 
-          // Step 2: Start research via API
-          const response = await apiClient.startResearch(activeSessionId, researchRequest);
+          // PHASE 3.3: Feature flag routing between canonical and legacy modes
+          const isCanonicalMode = isAdkCanonicalStreamEnabled();
 
-          console.log('[MessageHandler] Research API response:', {
-            sessionId: activeSessionId,
-            success: response.success,
-            message: response.message,
-          });
+          if (isCanonicalMode) {
+            // CANONICAL MODE: POST SSE with request body (single-step)
+            console.log('[MessageHandler] Canonical mode - using POST SSE with body');
 
-          if (!response.success) {
-            throw new Error(response.message || 'Failed to start research');
-          }
+            // Build ADK-compliant request body
+            const ADK_APP_NAME = process.env.NEXT_PUBLIC_ADK_APP_NAME || 'vana';
+            const ADK_DEFAULT_USER = process.env.NEXT_PUBLIC_ADK_DEFAULT_USER || 'default';
 
-          // Step 3: Explicitly connect SSE for the new research session
-          // P0-004 FIX: Check current state before connecting to prevent race condition
-          const currentState = researchSSE?.connectionStateRef?.current ?? researchSSE?.connectionState;
+            const requestBody = {
+              appName: ADK_APP_NAME,
+              userId: ADK_DEFAULT_USER,
+              sessionId: activeSessionId,
+              newMessage: {
+                parts: [{ text: content.trim() }],
+                role: 'user'
+              },
+              streaming: true
+            };
 
-          if (currentState !== 'connected' && currentState !== 'connecting') {
-            console.log('[MessageHandler] Initiating SSE connection for new research (current state:', currentState, ')');
-            researchSSE?.connect();
+            // Inject request body into SSE hook via ref
+            researchSSE?.updateRequestBody?.(requestBody);
 
-            // Step 4: Wait for SSE connection to be established (max 5 seconds)
-            await waitForSSEConnection(researchSSE, 5000);
+            // Connect SSE (will use POST with body - starts research + streams results)
+            const currentState = researchSSE?.connectionStateRef?.current ?? researchSSE?.connectionState;
+            if (currentState !== 'connected' && currentState !== 'connecting') {
+              console.log('[MessageHandler] Connecting POST SSE with body (current state:', currentState, ')');
+              researchSSE?.connect();
+              await waitForSSEConnection(researchSSE, 5000);
+            } else {
+              console.log('[MessageHandler] SSE already connected, reusing connection (state:', currentState, ')');
+            }
+
           } else {
-            console.log('[MessageHandler] SSE already connected or connecting, skipping connect() call (state:', currentState, ')');
+            // LEGACY MODE: POST to start research, then GET to stream (two-step)
+            console.log('[MessageHandler] Legacy mode - POST to start, then GET to stream');
+
+            // Step 2: Start research via API
+            const response = await apiClient.startResearch(activeSessionId, researchRequest);
+
+            console.log('[MessageHandler] Research API response:', {
+              sessionId: activeSessionId,
+              success: response.success,
+              message: response.message,
+            });
+
+            if (!response.success) {
+              throw new Error(response.message || 'Failed to start research');
+            }
+
+            // Step 3: Connect SSE
+            const currentState = researchSSE?.connectionStateRef?.current ?? researchSSE?.connectionState;
+            if (currentState !== 'connected' && currentState !== 'connecting') {
+              console.log('[MessageHandler] Initiating SSE connection for new research (current state:', currentState, ')');
+              researchSSE?.connect();
+              await waitForSSEConnection(researchSSE, 5000);
+            } else {
+              console.log('[MessageHandler] SSE already connected or connecting, skipping connect() call (state:', currentState, ')');
+            }
           }
 
           console.log('[MessageHandler] SSE connection sequence completed successfully');
