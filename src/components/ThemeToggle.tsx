@@ -41,7 +41,7 @@ export function ThemeToggle() {
         <DropdownMenuLabel>Color Themes</DropdownMenuLabel>
         <DropdownMenuItem onClick={() => setTheme("charcoal")}>
           <Palette className="mr-2 h-4 w-4" />
-          <span>Charcoal Blue</span>
+          <span>Charcoal</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("gemini")}>
           <Palette className="mr-2 h-4 w-4" />

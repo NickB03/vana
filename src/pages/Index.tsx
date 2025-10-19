@@ -141,7 +141,7 @@ const Index = () => {
                     <DropdownMenuSubContent>
                       <DropdownMenuItem onClick={() => setTheme("charcoal")}>
                         <Check className={`mr-2 h-4 w-4 ${theme === "charcoal" ? "opacity-100" : "opacity-0"}`} />
-                        <span>Charcoal Blue</span>
+                        <span>Charcoal</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setTheme("dark")}>
                         <Check className={`mr-2 h-4 w-4 ${theme === "dark" ? "opacity-100" : "opacity-0"}`} />

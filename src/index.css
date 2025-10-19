@@ -209,36 +209,36 @@ All colors MUST be HSL.
   }
 
   .charcoal {
-    /* Charcoal Blue theme - deep charcoal with bright blue accents */
+    /* Charcoal theme - deep charcoal with neutral grey accents */
     --background: 0 0% 7%;
     --foreground: 0 0% 96%;
     --card: 0 0% 13%;
     --card-foreground: 0 0% 96%;
     --popover: 0 0% 13%;
     --popover-foreground: 0 0% 96%;
-    --primary: 211 100% 50%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 0 0% 70%;
+    --primary-foreground: 0 0% 10%;
     --secondary: 0 0% 25%;
     --secondary-foreground: 0 0% 96%;
     --muted: 0 0% 25%;
     --muted-foreground: 0 0% 65%;
-    --accent: 0 0% 25%;
+    --accent: 0 0% 30%;
     --accent-foreground: 0 0% 96%;
     --destructive: 0 63% 50%;
     --destructive-foreground: 0 0% 96%;
     --border: 0 0% 25%;
     --input: 0 0% 25%;
-    --ring: 211 100% 50%;
-    --gradient-start: 211 100% 50%;
-    --gradient-end: 211 100% 60%;
+    --ring: 0 0% 70%;
+    --gradient-start: 0 0% 50%;
+    --gradient-end: 0 0% 70%;
     --sidebar-background: 0 0% 13%;
     --sidebar-foreground: 0 0% 96%;
-    --sidebar-primary: 211 100% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 70%;
+    --sidebar-primary-foreground: 0 0% 10%;
     --sidebar-accent: 0 0% 25%;
     --sidebar-accent-foreground: 0 0% 96%;
     --sidebar-border: 0 0% 25%;
-    --sidebar-ring: 211 100% 50%;
+    --sidebar-ring: 0 0% 70%;
   }
 }
 
