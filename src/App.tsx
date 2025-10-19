@@ -13,7 +13,7 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+    <ThemeProvider defaultThemeMode="system" defaultColorTheme="default" storageKey="vite-ui-theme">
       <TooltipProvider>
         <Toaster />
         <Sonner />

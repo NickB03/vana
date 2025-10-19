@@ -1,59 +1,105 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
-type Theme = "dark" | "light" | "ocean" | "sunset" | "forest" | "gemini" | "charcoal" | "system";
+type ThemeMode = "light" | "dark" | "system";
+type ColorTheme = "default" | "ocean" | "sunset" | "forest" | "gemini" | "charcoal";
 
 type ThemeProviderProps = {
   children: React.ReactNode;
-  defaultTheme?: Theme;
+  defaultThemeMode?: ThemeMode;
+  defaultColorTheme?: ColorTheme;
   storageKey?: string;
 };
 
 type ThemeProviderState = {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
+  theme: string; // For backwards compatibility
+  themeMode: ThemeMode;
+  colorTheme: ColorTheme;
+  setTheme: (theme: string) => void;
+  setThemeMode: (mode: ThemeMode) => void;
+  setColorTheme: (color: ColorTheme) => void;
 };
 
 const initialState: ThemeProviderState = {
   theme: "system",
+  themeMode: "system",
+  colorTheme: "default",
   setTheme: () => null,
+  setThemeMode: () => null,
+  setColorTheme: () => null,
 };
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
 export function ThemeProvider({
   children,
-  defaultTheme = "system",
+  defaultThemeMode = "system",
+  defaultColorTheme = "default",
   storageKey = "vite-ui-theme",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
+  const [themeMode, setThemeModeState] = useState<ThemeMode>(
+    () => (localStorage.getItem(`${storageKey}-mode`) as ThemeMode) || defaultThemeMode
+  );
+  const [colorTheme, setColorThemeState] = useState<ColorTheme>(
+    () => (localStorage.getItem(`${storageKey}-color`) as ColorTheme) || defaultColorTheme
   );
 
   useEffect(() => {
     const root = window.document.documentElement;
 
-    root.classList.remove("light", "dark", "ocean", "sunset", "forest", "gemini", "charcoal");
+    // Remove all theme classes
+    root.classList.remove(
+      "light", "dark",
+      "ocean", "ocean-light",
+      "sunset", "sunset-light",
+      "forest", "forest-light",
+      "gemini", "gemini-light",
+      "charcoal", "charcoal-light"
+    );
 
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light";
-
-      root.classList.add(systemTheme);
-      return;
+    // Determine the actual mode to apply
+    let actualMode: "light" | "dark" = "dark";
+    if (themeMode === "system") {
+      actualMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    } else {
+      actualMode = themeMode;
     }
 
-    root.classList.add(theme);
-  }, [theme]);
+    // Apply the color theme with mode suffix
+    if (colorTheme === "default") {
+      root.classList.add(actualMode);
+    } else {
+      const themeClass = actualMode === "light" ? `${colorTheme}-light` : colorTheme;
+      root.classList.add(themeClass);
+    }
+  }, [themeMode, colorTheme]);
+
+  const setThemeMode = (mode: ThemeMode) => {
+    localStorage.setItem(`${storageKey}-mode`, mode);
+    setThemeModeState(mode);
+  };
+
+  const setColorTheme = (color: ColorTheme) => {
+    localStorage.setItem(`${storageKey}-color`, color);
+    setColorThemeState(color);
+  };
+
+  // Legacy setTheme for backwards compatibility
+  const setTheme = (theme: string) => {
+    if (theme === "light" || theme === "dark" || theme === "system") {
+      setThemeMode(theme as ThemeMode);
+    } else {
+      setColorTheme(theme as ColorTheme);
+    }
+  };
 
   const value = {
-    theme,
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme);
-      setTheme(theme);
-    },
+    theme: themeMode, // For backwards compatibility
+    themeMode,
+    colorTheme,
+    setTheme,
+    setThemeMode,
+    setColorTheme,
   };
 
   return (

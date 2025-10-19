@@ -30,7 +30,7 @@ import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { theme, setTheme } = useTheme();
+  const { themeMode, colorTheme, setThemeMode, setColorTheme } = useTheme();
   const { sessions, isLoading: sessionsLoading, createSession, deleteSession } = useChatSessions();
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>();
   const [input, setInput] = useState("");
@@ -139,8 +139,8 @@ const Index = () => {
                   <div className="px-2 py-2">
                     <div className="text-xs font-medium mb-2 text-muted-foreground">Theme Mode</div>
                     <ThemeSwitcher 
-                      value={theme === 'light' || theme === 'dark' || theme === 'system' ? theme : 'system'}
-                      onChange={(newTheme) => setTheme(newTheme)}
+                      value={themeMode}
+                      onChange={setThemeMode}
                     />
                   </div>
 
@@ -152,33 +152,29 @@ const Index = () => {
                       <span>Color Theme</span>
                     </DropdownMenuSubTrigger>
                     <DropdownMenuSubContent>
-                      <DropdownMenuItem onClick={() => setTheme("charcoal")}>
-                        <Check className={`mr-2 h-4 w-4 ${theme === "charcoal" ? "opacity-100" : "opacity-0"}`} />
+                      <DropdownMenuItem onClick={() => setColorTheme("default")}>
+                        <Check className={`mr-2 h-4 w-4 ${colorTheme === "default" ? "opacity-100" : "opacity-0"}`} />
+                        <span>Default</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setColorTheme("charcoal")}>
+                        <Check className={`mr-2 h-4 w-4 ${colorTheme === "charcoal" ? "opacity-100" : "opacity-0"}`} />
                         <span>Charcoal</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTheme("dark")}>
-                        <Check className={`mr-2 h-4 w-4 ${theme === "dark" ? "opacity-100" : "opacity-0"}`} />
-                        <span>Midnight</span>
+                      <DropdownMenuItem onClick={() => setColorTheme("gemini")}>
+                        <Check className={`mr-2 h-4 w-4 ${colorTheme === "gemini" ? "opacity-100" : "opacity-0"}`} />
+                        <span>Sky Blue</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTheme("light")}>
-                        <Check className={`mr-2 h-4 w-4 ${theme === "light" ? "opacity-100" : "opacity-0"}`} />
-                        <span>Warm Clay</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTheme("ocean")}>
-                        <Check className={`mr-2 h-4 w-4 ${theme === "ocean" ? "opacity-100" : "opacity-0"}`} />
+                      <DropdownMenuItem onClick={() => setColorTheme("ocean")}>
+                        <Check className={`mr-2 h-4 w-4 ${colorTheme === "ocean" ? "opacity-100" : "opacity-0"}`} />
                         <span>Ocean Breeze</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTheme("sunset")}>
-                        <Check className={`mr-2 h-4 w-4 ${theme === "sunset" ? "opacity-100" : "opacity-0"}`} />
+                      <DropdownMenuItem onClick={() => setColorTheme("sunset")}>
+                        <Check className={`mr-2 h-4 w-4 ${colorTheme === "sunset" ? "opacity-100" : "opacity-0"}`} />
                         <span>Sunset Glow</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTheme("forest")}>
-                        <Check className={`mr-2 h-4 w-4 ${theme === "forest" ? "opacity-100" : "opacity-0"}`} />
+                      <DropdownMenuItem onClick={() => setColorTheme("forest")}>
+                        <Check className={`mr-2 h-4 w-4 ${colorTheme === "forest" ? "opacity-100" : "opacity-0"}`} />
                         <span>Forest Sage</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTheme("gemini")}>
-                        <Check className={`mr-2 h-4 w-4 ${theme === "gemini" ? "opacity-100" : "opacity-0"}`} />
-                        <span>Sky Blue</span>
                       </DropdownMenuItem>
                     </DropdownMenuSubContent>
                   </DropdownMenuSub>
