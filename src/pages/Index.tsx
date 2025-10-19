@@ -9,13 +9,16 @@ import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatInterface } from "@/components/ChatInterface";
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from "@/components/prompt-kit/prompt-input";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Square, LogOut, Settings, Check } from "lucide-react";
+import { ArrowUp, Square, LogOut, Settings, Check, ChevronRight } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "@/components/ThemeProvider";
@@ -129,32 +132,39 @@ const Index = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end">
-                  <DropdownMenuLabel>Theme</DropdownMenuLabel>
+                  <DropdownMenuLabel>Settings</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setTheme("dark")}>
-                    <Check className={`mr-2 h-4 w-4 ${theme === "dark" ? "opacity-100" : "opacity-0"}`} />
-                    <span>Midnight</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTheme("light")}>
-                    <Check className={`mr-2 h-4 w-4 ${theme === "light" ? "opacity-100" : "opacity-0"}`} />
-                    <span>Warm Clay</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTheme("ocean")}>
-                    <Check className={`mr-2 h-4 w-4 ${theme === "ocean" ? "opacity-100" : "opacity-0"}`} />
-                    <span>Ocean Breeze</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTheme("sunset")}>
-                    <Check className={`mr-2 h-4 w-4 ${theme === "sunset" ? "opacity-100" : "opacity-0"}`} />
-                    <span>Sunset Glow</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTheme("forest")}>
-                    <Check className={`mr-2 h-4 w-4 ${theme === "forest" ? "opacity-100" : "opacity-0"}`} />
-                    <span>Forest Sage</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTheme("gemini")}>
-                    <Check className={`mr-2 h-4 w-4 ${theme === "gemini" ? "opacity-100" : "opacity-0"}`} />
-                    <span>Sky Blue</span>
-                  </DropdownMenuItem>
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      <span>Theme</span>
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuItem onClick={() => setTheme("dark")}>
+                        <Check className={`mr-2 h-4 w-4 ${theme === "dark" ? "opacity-100" : "opacity-0"}`} />
+                        <span>Midnight</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTheme("light")}>
+                        <Check className={`mr-2 h-4 w-4 ${theme === "light" ? "opacity-100" : "opacity-0"}`} />
+                        <span>Warm Clay</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTheme("ocean")}>
+                        <Check className={`mr-2 h-4 w-4 ${theme === "ocean" ? "opacity-100" : "opacity-0"}`} />
+                        <span>Ocean Breeze</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTheme("sunset")}>
+                        <Check className={`mr-2 h-4 w-4 ${theme === "sunset" ? "opacity-100" : "opacity-0"}`} />
+                        <span>Sunset Glow</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTheme("forest")}>
+                        <Check className={`mr-2 h-4 w-4 ${theme === "forest" ? "opacity-100" : "opacity-0"}`} />
+                        <span>Forest Sage</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTheme("gemini")}>
+                        <Check className={`mr-2 h-4 w-4 ${theme === "gemini" ? "opacity-100" : "opacity-0"}`} />
+                        <span>Sky Blue</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
