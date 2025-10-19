@@ -22,6 +22,7 @@ export type Database = {
           reasoning: string | null
           role: string
           session_id: string
+          token_count: number | null
         }
         Insert: {
           content: string
@@ -30,6 +31,7 @@ export type Database = {
           reasoning?: string | null
           role: string
           session_id: string
+          token_count?: number | null
         }
         Update: {
           content?: string
@@ -38,6 +40,7 @@ export type Database = {
           reasoning?: string | null
           role?: string
           session_id?: string
+          token_count?: number | null
         }
         Relationships: [
           {
@@ -51,25 +54,34 @@ export type Database = {
       }
       chat_sessions: {
         Row: {
+          conversation_summary: string | null
           created_at: string
           first_message: string | null
           id: string
+          last_summarized_at: string | null
+          summary_checkpoint: number | null
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          conversation_summary?: string | null
           created_at?: string
           first_message?: string | null
           id?: string
+          last_summarized_at?: string | null
+          summary_checkpoint?: number | null
           title?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          conversation_summary?: string | null
           created_at?: string
           first_message?: string | null
           id?: string
+          last_summarized_at?: string | null
+          summary_checkpoint?: number | null
           title?: string
           updated_at?: string
           user_id?: string
