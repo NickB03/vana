@@ -9,7 +9,7 @@ interface MessageProps extends React.HTMLAttributes<HTMLDivElement> {
 
 function Message({ className, children, ...props }: MessageProps) {
   return (
-    <div className={cn("flex gap-3", className)} {...props}>
+    <div className={cn("flex", className)} {...props}>
       {children}
     </div>
   )
