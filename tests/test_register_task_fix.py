@@ -16,7 +16,7 @@ from app.utils.sse_broadcaster import BroadcasterConfig, SessionManager
 
 
 @pytest.mark.asyncio
-async def test_task_executes_after_registration():
+async def test_task_executes_after_registration() -> None:
     """Test that a registered task executes immediately after registration."""
     config = BroadcasterConfig(
         max_queue_size=100,
@@ -27,9 +27,9 @@ async def test_task_executes_after_registration():
 
     # Create a flag to track task execution
     task_executed = asyncio.Event()
-    execution_log = []
+    execution_log: list[str] = []
 
-    async def test_task():
+    async def test_task() -> None:
         """Simple task that sets a flag when executed."""
         execution_log.append("task_started")
         await asyncio.sleep(0.1)  # Simulate work
@@ -54,7 +54,7 @@ async def test_task_executes_after_registration():
 
 
 @pytest.mark.asyncio
-async def test_task_replacement_doesnt_block_new_task():
+async def test_task_replacement_doesnt_block_new_task() -> None:
     """Test that replacing a task doesn't block the new task from executing."""
     config = BroadcasterConfig(
         max_queue_size=100,
@@ -66,9 +66,9 @@ async def test_task_replacement_doesnt_block_new_task():
     # Create flags for both tasks
     old_task_cancelled = asyncio.Event()
     new_task_executed = asyncio.Event()
-    execution_log = []
+    execution_log: list[str] = []
 
-    async def old_task():
+    async def old_task() -> None:
         """Old task that should be cancelled."""
         execution_log.append("old_task_started")
         try:
@@ -78,7 +78,7 @@ async def test_task_replacement_doesnt_block_new_task():
             old_task_cancelled.set()
             raise
 
-    async def new_task():
+    async def new_task() -> None:
         """New task that should execute immediately."""
         execution_log.append("new_task_started")
         await asyncio.sleep(0.1)
@@ -112,7 +112,7 @@ async def test_task_replacement_doesnt_block_new_task():
 
 
 @pytest.mark.asyncio
-async def test_multiple_rapid_registrations():
+async def test_multiple_rapid_registrations() -> None:
     """Test that rapid task registrations don't cause deadlock."""
     config = BroadcasterConfig(
         max_queue_size=100,
@@ -124,7 +124,7 @@ async def test_multiple_rapid_registrations():
     execution_count = 0
     execution_lock = asyncio.Lock()
 
-    async def task_factory(task_id: int):
+    async def task_factory(task_id: int) -> None:
         """Create a task that increments a counter."""
         nonlocal execution_count
         await asyncio.sleep(0.01)  # Small delay
@@ -145,7 +145,7 @@ async def test_multiple_rapid_registrations():
 
 
 @pytest.mark.asyncio
-async def test_task_executes_before_endpoint_returns():
+async def test_task_executes_before_endpoint_returns() -> None:
     """
     Test that simulates the actual bug scenario:
     Task is created and registered, then endpoint returns.
@@ -159,16 +159,16 @@ async def test_task_executes_before_endpoint_returns():
     manager = SessionManager(config)
 
     task_executed = asyncio.Event()
-    log_messages = []
+    log_messages: list[str] = []
 
-    async def simulated_adk_call():
+    async def simulated_adk_call() -> None:
         """Simulate the ADK call that was not executing."""
         log_messages.append("Starting agent execution")
         await asyncio.sleep(0.2)  # Simulate ADK processing
         log_messages.append("Agent execution completed")
         task_executed.set()
 
-    async def simulated_endpoint():
+    async def simulated_endpoint() -> None:
         """Simulate the POST endpoint that returns immediately."""
         # This matches the actual code flow in adk_routes.py line 838-842
         task = asyncio.create_task(simulated_adk_call())

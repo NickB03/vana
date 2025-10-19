@@ -234,7 +234,7 @@ async for line in upstream.aiter_lines():
 **Recommended Fix:**
 ```python
 # In run_sse_canonical, after yielding line:
-if not is_adk_canonical_stream_enabled():
+if is_adk_canonical_stream_enabled():
     await multicast_adk_event(session_id, json.loads(line[6:]))
 ```
 

@@ -251,9 +251,9 @@ class SessionManager:
         async with self._lock:
             return set(self._sessions.keys())
 
-    async def register_task(self, session_id: str, task: asyncio.Task) -> None:
+    async def register_task(self, session_id: str, task: asyncio.Task[Any]) -> None:
         """Register a background task for a session, canceling any existing task."""
-        old_task = None
+        old_task: asyncio.Task[Any] | None = None
 
         async with self._lock:
             # Cancel existing task if present

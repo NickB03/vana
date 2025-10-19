@@ -319,6 +319,10 @@ export interface ChatMessage {
     adkEventId?: string;
     adkInvocationId?: string;
     adkAuthor?: string;
+
+    // ADD: Content extraction fields (used by ChatMessage component)
+    thoughtContent?: string;
+    sources?: Array<{ title: string; url: string }>;
   };
 }
 ```

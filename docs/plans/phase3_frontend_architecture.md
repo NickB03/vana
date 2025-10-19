@@ -499,7 +499,7 @@ export const useChatStore = create<ChatStreamState>()(
 ### Phase 3.3: UI Updates (Week 3)
 
 **Tasks**:
-1. Update message rendering to use ADkEvent metadata
+1. Update message rendering to use AdkEvent metadata
 2. Add thought process visualization (thought=true parts)
 3. Add function call/response display
 4. Add grounding sources display
