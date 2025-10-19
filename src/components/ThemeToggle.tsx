@@ -1,4 +1,4 @@
-import { Moon, Sun, Monitor } from "lucide-react";
+import { Moon, Sun, Monitor, Palette } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { Button } from "@/components/ui/button";
 import {
@@ -6,6 +6,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 
 export function ThemeToggle() {
@@ -21,6 +23,7 @@ export function ThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Basic Themes</DropdownMenuLabel>
         <DropdownMenuItem onClick={() => setTheme("light")}>
           <Sun className="mr-2 h-4 w-4" />
           <span>Light</span>
@@ -32,6 +35,29 @@ export function ThemeToggle() {
         <DropdownMenuItem onClick={() => setTheme("system")}>
           <Monitor className="mr-2 h-4 w-4" />
           <span>System</span>
+        </DropdownMenuItem>
+        
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>Color Themes</DropdownMenuLabel>
+        <DropdownMenuItem onClick={() => setTheme("charcoal")}>
+          <Palette className="mr-2 h-4 w-4" />
+          <span>Charcoal Blue</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("gemini")}>
+          <Palette className="mr-2 h-4 w-4" />
+          <span>Gemini</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("ocean")}>
+          <Palette className="mr-2 h-4 w-4" />
+          <span>Ocean</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("sunset")}>
+          <Palette className="mr-2 h-4 w-4" />
+          <span>Sunset</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("forest")}>
+          <Palette className="mr-2 h-4 w-4" />
+          <span>Forest</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

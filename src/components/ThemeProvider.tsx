@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
-type Theme = "dark" | "light" | "ocean" | "sunset" | "forest" | "gemini" | "system";
+type Theme = "dark" | "light" | "ocean" | "sunset" | "forest" | "gemini" | "charcoal" | "system";
 
 type ThemeProviderProps = {
   children: React.ReactNode;
@@ -33,7 +33,7 @@ export function ThemeProvider({
   useEffect(() => {
     const root = window.document.documentElement;
 
-    root.classList.remove("light", "dark", "ocean", "sunset", "forest", "gemini");
+    root.classList.remove("light", "dark", "ocean", "sunset", "forest", "gemini", "charcoal");
 
     if (theme === "system") {
       const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
