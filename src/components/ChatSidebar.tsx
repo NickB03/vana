@@ -59,7 +59,7 @@ export function ChatSidebar({
       <SidebarHeader className="flex flex-row items-center justify-between gap-2 px-2 py-4">
         <div className="flex flex-row items-center gap-2 px-2">
           <div className="size-8 rounded-md bg-gradient-primary"></div>
-          <div className="text-md font-base tracking-tight bg-gradient-primary bg-clip-text text-transparent">Nick AI</div>
+          
         </div>
         <Button variant="ghost" size="icon" className="size-8" onClick={() => setShowSearch(!showSearch)}>
           <Search className="size-4" />
@@ -86,34 +86,16 @@ export function ChatSidebar({
             <SidebarGroupContent>
               <SidebarMenu>
                 {periodSessions.map(session => <SidebarMenuItem key={session.id}>
-                    <div 
-                      className="relative flex items-center w-full"
-                      onMouseEnter={() => setHoveredSessionId(session.id)}
-                      onMouseLeave={() => setHoveredSessionId(null)}
-                    >
-                      <SidebarMenuButton 
-                        onClick={() => onSessionSelect(session.id)} 
-                        isActive={currentSessionId === session.id} 
-                        className={cn(
-                          "flex-1 justify-start hover:bg-accent/50 transition-colors",
-                          currentSessionId === session.id && "bg-accent"
-                        )}
-                      >
+                    <div className="relative flex items-center w-full" onMouseEnter={() => setHoveredSessionId(session.id)} onMouseLeave={() => setHoveredSessionId(null)}>
+                      <SidebarMenuButton onClick={() => onSessionSelect(session.id)} isActive={currentSessionId === session.id} className={cn("flex-1 justify-start hover:bg-accent/50 transition-colors", currentSessionId === session.id && "bg-accent")}>
                         <span className="truncate text-sm">{session.title}</span>
                       </SidebarMenuButton>
-                      {hoveredSessionId === session.id && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 absolute right-2 transition-all" 
-                          onClick={e => {
-                            e.stopPropagation();
-                            onDeleteSession(session.id);
-                          }}
-                        >
+                      {hoveredSessionId === session.id && <Button variant="ghost" size="icon" className="h-8 w-8 absolute right-2 transition-all" onClick={e => {
+                  e.stopPropagation();
+                  onDeleteSession(session.id);
+                }}>
                           <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      )}
+                        </Button>}
                     </div>
                   </SidebarMenuItem>)}
               </SidebarMenu>
