@@ -30,13 +30,18 @@ export type ExtendedSSEState =
 
 /**
  * Get the current extended connection state
+ *
+ * CRITICAL FIX: Use connectionStateRef for synchronous access to avoid race conditions
+ * React state updates are async, so we need to check the ref for immediate state visibility
  */
 export function getExtendedSSEState(sse: SSEHookReturn | undefined): ExtendedSSEState {
   if (!sse) return 'idle';
 
-  const { connectionState } = sse;
+  // CRITICAL FIX: Use ref instead of state for immediate visibility
+  // connectionState is updated async (next render), but connectionStateRef is sync (immediate)
+  const currentState = sse.connectionStateRef?.current ?? sse.connectionState;
 
-  switch (connectionState) {
+  switch (currentState) {
     case 'connected':
       return 'connected';
     case 'connecting':

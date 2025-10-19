@@ -278,13 +278,21 @@ export function extractContentFromADKEvent(
       functionResponses = partsResult.functionResponses;
     }
 
-    // 3. Return results
+    // 3. Return results with deduplication
     if (extractedParts.length > 0) {
-      const content = extractedParts.join('\n\n').trim();
+      // CRITICAL FIX: Deduplicate extracted parts to prevent tripled/duplicated content
+      // Backend may send same content in multiple fields (top-level + parts[].functionResponse)
+      const uniqueParts = Array.from(new Set(extractedParts));
+      const content = uniqueParts.join('\n\n').trim();
+
       console.log('[ADK] Extraction complete:', {
+        totalParts: extractedParts.length,
+        uniqueParts: uniqueParts.length,
+        deduplicationApplied: extractedParts.length !== uniqueParts.length,
         totalLength: content.length,
         sources: { topLevel, textParts, functionResponses },
       });
+
       return {
         content,
         sources: { topLevel, textParts, functionResponses },

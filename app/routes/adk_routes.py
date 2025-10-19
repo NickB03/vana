@@ -232,10 +232,9 @@ async def run_sse_canonical(
                         return
 
                     # Stream raw SSE lines from ADK (no mutation)
+                    # CRITICAL: Forward ALL lines including empty ones - blank lines are SSE event delimiters
                     async for line in upstream.aiter_lines():
-                        if line.strip():
-                            # Pass through raw SSE lines
-                            yield f"{line}\n"
+                        yield f"{line}\n"
 
         except httpx.TimeoutException:
             # Phase 1.3: Timeout after 300s
@@ -650,6 +649,9 @@ async def run_session_sse(
                         }
 
                         accumulated_content = []
+                        # P0-003 FIX: Track seen content to prevent duplicates when ADK sends same content
+                        # in multiple fields (text + functionResponse). This prevents doubled responses.
+                        seen_content_hashes = set()
 
                         # SSE streams need special timeout config:
                         # - No read timeout (allow gaps between chunks while LLM processes)
@@ -708,13 +710,15 @@ async def run_session_sse(
                                                 content_obj = data.get("content")
                                                 if content_obj and isinstance(content_obj, dict):
                                                     parts = content_obj.get("parts", [])
+                                                    # P0-003 FIX: Collect all parts first, then deduplicate before appending
+                                                    parts_to_add = []
                                                     for part in parts:
                                                         if isinstance(part, dict):
                                                             # PART 1: Extract regular text streaming
                                                             # Used for: Model responses, status updates, explanations
                                                             text = part.get("text")
                                                             if text:
-                                                                accumulated_content.append(text)
+                                                                parts_to_add.append(text)
 
                                                             # PART 2: Extract functionResponse (CRITICAL!)
                                                             # Used for: Research plans, agent tool outputs, analysis results
@@ -724,8 +728,18 @@ async def run_session_sse(
                                                                 response_data = function_response.get("response", {})
                                                                 result_text = response_data.get("result")
                                                                 if result_text:
-                                                                    accumulated_content.append(result_text)
+                                                                    parts_to_add.append(result_text)
                                                                     logger.info(f"Extracted functionResponse content: {len(result_text)} chars")
+
+                                                    # P0-003 FIX: Deduplicate parts before adding to accumulated_content
+                                                    # Hash-based deduplication prevents same content from text + functionResponse
+                                                    for part_content in parts_to_add:
+                                                        content_hash = hash(part_content)
+                                                        if content_hash not in seen_content_hashes:
+                                                            seen_content_hashes.add(content_hash)
+                                                            accumulated_content.append(part_content)
+                                                        else:
+                                                            logger.debug(f"[P0-003] Skipped duplicate content: {len(part_content)} chars")
 
                                                     # Broadcast update if we have content
                                                     if accumulated_content:

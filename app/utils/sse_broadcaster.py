@@ -251,21 +251,29 @@ class SessionManager:
         async with self._lock:
             return set(self._sessions.keys())
 
-    async def register_task(self, session_id: str, task: asyncio.Task) -> None:
+    async def register_task(self, session_id: str, task: asyncio.Task[Any]) -> None:
         """Register a background task for a session, canceling any existing task."""
+        old_task: asyncio.Task[Any] | None = None
+
         async with self._lock:
             # Cancel existing task if present
             if session_id in self._tasks:
                 old_task = self._tasks[session_id]
                 if not old_task.done():
                     old_task.cancel()
-                    try:
-                        await old_task
-                    except asyncio.CancelledError:
-                        pass  # Expected when canceling
-                    logger.info(f"Cancelled existing task for session {session_id} before registering new one")
+                    logger.info(f"Cancelling existing task for session {session_id}")
 
+            # Register new task immediately (don't wait for old task to finish)
             self._tasks[session_id] = task
+
+        # CRITICAL FIX: Wait for old task cancellation OUTSIDE the lock
+        # Awaiting inside the lock can cause deadlock if the task needs the lock
+        if old_task and not old_task.done():
+            try:
+                await old_task
+            except asyncio.CancelledError:
+                pass  # Expected when canceling
+            logger.info(f"Cancelled existing task for session {session_id} completed")
 
     async def cancel_task(self, session_id: str) -> None:
         """Cancel and remove a background task for a session."""
