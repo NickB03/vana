@@ -5,3 +5,9 @@ verify_jwt = true
 
 [functions.generate-title]
 verify_jwt = true
+
+[functions.cache-manager]
+verify_jwt = true
+
+[functions.summarize-conversation]
+verify_jwt = true

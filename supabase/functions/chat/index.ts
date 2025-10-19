@@ -43,6 +43,31 @@ serve(async (req) => {
 
     console.log("Starting chat stream for session:", sessionId);
 
+    // Try to get cached context with summary
+    let contextMessages = messages;
+    try {
+      const cacheResponse = await supabase.functions.invoke("cache-manager", {
+        body: { sessionId, operation: "get" },
+      });
+      
+      if (cacheResponse.data?.cached) {
+        const { messages: cachedMessages, summary } = cacheResponse.data.cached;
+        console.log("Using cached context with summary");
+        
+        // If we have a summary, use it as context instead of all messages
+        if (summary) {
+          contextMessages = [
+            { role: "system", content: `Previous conversation summary: ${summary}` },
+            ...messages.slice(-5) // Include last 5 messages for immediate context
+          ];
+        } else {
+          contextMessages = cachedMessages;
+        }
+      }
+    } catch (cacheError) {
+      console.warn("Cache fetch failed, using provided messages:", cacheError);
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -56,7 +81,7 @@ serve(async (req) => {
             role: "system",
             content: "You are a helpful AI assistant. Provide clear, concise, and accurate responses.",
           },
-          ...messages,
+          ...contextMessages,
         ],
         stream: true,
       }),
@@ -91,6 +116,23 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Trigger background tasks (fire and forget)
+    (async () => {
+      try {
+        // Update cache
+        await supabase.functions.invoke("cache-manager", {
+          body: { sessionId, operation: "update" },
+        });
+        
+        // Trigger summarization check
+        await supabase.functions.invoke("summarize-conversation", {
+          body: { sessionId },
+        });
+      } catch (bgError) {
+        console.warn("Background task error:", bgError);
+      }
+    })();
 
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
