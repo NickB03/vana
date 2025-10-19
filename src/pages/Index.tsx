@@ -9,7 +9,7 @@ import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatInterface } from "@/components/ChatInterface";
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from "@/components/prompt-kit/prompt-input";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Square, LogOut, Settings, Check, ChevronRight } from "lucide-react";
+import { ArrowUp, Square, LogOut, Settings, Check, ChevronRight, Palette } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +25,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { useChatSessions } from "@/hooks/useChatSessions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -134,9 +135,21 @@ const Index = () => {
                 <DropdownMenuContent className="w-56" align="end">
                   <DropdownMenuLabel>Settings</DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  
+                  <div className="px-2 py-2">
+                    <div className="text-xs font-medium mb-2 text-muted-foreground">Theme Mode</div>
+                    <ThemeSwitcher 
+                      value={theme === 'light' || theme === 'dark' || theme === 'system' ? theme : 'system'}
+                      onChange={(newTheme) => setTheme(newTheme)}
+                    />
+                  </div>
+
+                  <DropdownMenuSeparator />
+
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger>
-                      <span>Theme</span>
+                      <Palette className="mr-2 h-4 w-4" />
+                      <span>Color Theme</span>
                     </DropdownMenuSubTrigger>
                     <DropdownMenuSubContent>
                       <DropdownMenuItem onClick={() => setTheme("charcoal")}>
