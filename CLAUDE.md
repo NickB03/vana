@@ -78,6 +78,27 @@ Vana is a multi-agent AI platform built on Google's Agent Development Kit (ADK).
 
 **Local ADK Reference Library**: `/docs/adk/refs/` contains 14+ production-ready ADK repositories including official Google samples, A2A protocols, agent-starter-pack templates, and real-world implementations.
 
+## 🧠 MCP Memory Service (Shared Memory System)
+
+**Status**: ✅ Production-ready with native Claude Code hooks (95% automation)
+
+**Shared Database**: `~/Library/Application Support/mcp-memory/sqlite_vec.db`
+
+**How It Works**:
+- Claude Code: Automatic memory injection at session start, automatic storage at session end
+- Gemini CLI: Use wrapper script `gemini-with-memory` (70% automation) or `/mcp` commands
+- Cline: Add custom instructions, ask Cline to use memory tools (40-60% automation)
+- Augment Code: Manual `/mcp` commands only
+
+**Quick Commands** (for manual use):
+```bash
+/mcp memory-service retrieve_memory query="topic" n_results=5
+/mcp memory-service store_memory content="insight" tags=["tag1"]
+/mcp memory-service search_by_tag tags=["tag1", "tag2"]
+```
+
+**Documentation**: See `MEMORY_QUICK_REFERENCE.md` and `HOOKS_EXECUTIVE_SUMMARY.md` for detailed usage.
+
 ## 🚀 Service Architecture & Ports
 
 ### Three Services (All Required)
@@ -403,6 +424,42 @@ For detailed configuration: https://github.com/salesforce/chrome-devtools-mcp
 - Keep `ALLOW_UNAUTHENTICATED_SSE` empty outside local development
 
 ## 🔀 Git Workflow
+
+### Nested Repository Structure
+
+**Important**: This project contains a nested git repository:
+```
+/Users/nick/Projects/vana/
+  .git/                          # Vana main repo (NickB03/vana)
+  mcp-memory-service/
+    .git/                        # Separate repo (doobidoo/mcp-memory-service)
+```
+
+**How it works:**
+- **Vana repo** (`NickB03/vana`): Main project repository for backend, frontend, and documentation
+- **Memory service** (`doobidoo/mcp-memory-service`): Nested as a separate independent git repository
+- These are **NOT** git submodules — each has its own `.git` directory and remote tracking
+- Vana's `.gitignore` ignores the memory service's `.git` directory, so changes don't cross-commit
+
+**Key workflow rules:**
+1. **For Vana changes** (backend, frontend, docs):
+   - Commit and push normally in the main directory
+   - Changes go to `github.com/NickB03/vana`
+
+2. **For Memory service changes** (if needed):
+   - `cd mcp-memory-service && git commit && git push`
+   - Changes go to `github.com/doobidoo/mcp-memory-service`
+   - Completely independent from vana commits
+
+3. **No workspace setup needed**: Both repos work automatically; the memory service is pre-installed and auto-starting via LaunchAgent
+
+**When cloning vana in the future:**
+```bash
+git clone https://github.com/NickB03/vana.git
+cd vana
+# Memory service will already be there as a nested repo
+# No need to install it separately
+```
 
 ### Branch Naming
 ```bash
