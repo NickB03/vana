@@ -39,21 +39,29 @@ class MockNextRequest {
 
 describe('CSRF Server-Side Validation', () => {
   const originalNodeEnv = process.env.NODE_ENV;
+  const setNodeEnv = (value: string | undefined) => {
+    const env = process.env as Record<string, string | undefined>;
+    if (value === undefined) {
+      delete env.NODE_ENV;
+    } else {
+      env.NODE_ENV = value;
+    }
+  };
 
   beforeEach(() => {
     // Reset to development for most tests
-    process.env.NODE_ENV = 'development';
+    setNodeEnv('development');
   });
 
   afterEach(() => {
     // Restore original environment
-    process.env.NODE_ENV = originalNodeEnv;
+    setNodeEnv(originalNodeEnv);
   });
 
   describe('validateCsrfToken', () => {
     it('should return true in development mode', () => {
       // Arrange
-      process.env.NODE_ENV = 'development';
+      setNodeEnv('development');
       const request = new MockNextRequest({}) as any;
 
       // Act
@@ -65,7 +73,7 @@ describe('CSRF Server-Side Validation', () => {
 
     it('should reject missing CSRF token in production', () => {
       // Arrange
-      process.env.NODE_ENV = 'production';
+      setNodeEnv('production');
       const request = new MockNextRequest({}) as any;
 
       // Act
@@ -77,7 +85,7 @@ describe('CSRF Server-Side Validation', () => {
 
     it('should reject when only header is present', () => {
       // Arrange
-      process.env.NODE_ENV = 'production';
+      setNodeEnv('production');
       const token = 'a'.repeat(64);
       const request = new MockNextRequest({
         headers: { 'x-csrf-token': token },
@@ -92,7 +100,7 @@ describe('CSRF Server-Side Validation', () => {
 
     it('should reject when only cookie is present', () => {
       // Arrange
-      process.env.NODE_ENV = 'production';
+      setNodeEnv('production');
       const token = 'a'.repeat(64);
       const request = new MockNextRequest({
         cookies: { csrf_token: token },
@@ -107,7 +115,7 @@ describe('CSRF Server-Side Validation', () => {
 
     it('should reject tokens with incorrect length', () => {
       // Arrange
-      process.env.NODE_ENV = 'production';
+      setNodeEnv('production');
       const shortToken = 'abc123';
       const request = new MockNextRequest({
         headers: { 'x-csrf-token': shortToken },
@@ -123,7 +131,7 @@ describe('CSRF Server-Side Validation', () => {
 
     it('should reject non-hex tokens', () => {
       // Arrange
-      process.env.NODE_ENV = 'production';
+      setNodeEnv('production');
       const nonHexToken = 'g'.repeat(64); // 'g' is not a valid hex character
       const request = new MockNextRequest({
         headers: { 'x-csrf-token': nonHexToken },
@@ -139,7 +147,7 @@ describe('CSRF Server-Side Validation', () => {
 
     it('should reject mismatched tokens', () => {
       // Arrange
-      process.env.NODE_ENV = 'production';
+      setNodeEnv('production');
       const token1 = 'a'.repeat(64);
       const token2 = 'b'.repeat(64);
       const request = new MockNextRequest({
@@ -156,7 +164,7 @@ describe('CSRF Server-Side Validation', () => {
 
     it('should accept matching valid tokens', () => {
       // Arrange
-      process.env.NODE_ENV = 'production';
+      setNodeEnv('production');
       const validToken = 'a'.repeat(64);
       const request = new MockNextRequest({
         headers: { 'x-csrf-token': validToken },
@@ -172,7 +180,7 @@ describe('CSRF Server-Side Validation', () => {
 
     it('should accept case-insensitive header name', () => {
       // Arrange
-      process.env.NODE_ENV = 'production';
+      setNodeEnv('production');
       const validToken = 'a'.repeat(64);
       const request = new MockNextRequest({
         headers: { 'X-CSRF-Token': validToken },
@@ -188,7 +196,7 @@ describe('CSRF Server-Side Validation', () => {
 
     it('should use constant-time comparison to prevent timing attacks', () => {
       // Arrange
-      process.env.NODE_ENV = 'production';
+      setNodeEnv('production');
       const token1 = 'a'.repeat(64);
       const token2 = 'a'.repeat(63) + 'b'; // Differs only in last character
 
@@ -281,7 +289,7 @@ describe('CSRF Server-Side Validation', () => {
   describe('Security Properties', () => {
     it('should validate hex format (prevents injection)', () => {
       // Arrange
-      process.env.NODE_ENV = 'production';
+      setNodeEnv('production');
       const maliciousToken = '<script>alert("xss")</script>'.padEnd(64, 'a');
       const request = new MockNextRequest({
         headers: { 'x-csrf-token': maliciousToken },
@@ -297,7 +305,7 @@ describe('CSRF Server-Side Validation', () => {
 
     it('should require exact length (prevents truncation attacks)', () => {
       // Arrange
-      process.env.NODE_ENV = 'production';
+      setNodeEnv('production');
       const longToken = 'a'.repeat(128); // Too long
       const request = new MockNextRequest({
         headers: { 'x-csrf-token': longToken },
@@ -313,7 +321,7 @@ describe('CSRF Server-Side Validation', () => {
 
     it('should enforce 256-bit entropy requirement', () => {
       // Arrange
-      process.env.NODE_ENV = 'production';
+      setNodeEnv('production');
       const validToken = 'a'.repeat(64); // 32 bytes = 256 bits
       const request = new MockNextRequest({
         headers: { 'x-csrf-token': validToken },

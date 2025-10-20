@@ -35,7 +35,7 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
   const hasAuthToken = isAuthenticated && apiClient.isAuthenticated();
   const currentSessionId = useChatStore(state => state.currentSessionId);
   const sessions = useChatStore(state => state.sessions);
-  const createSessionInStore = useChatStore(state => state.createSession);
+  const switchOrCreateSession = useChatStore(state => state.switchOrCreateSession);
   const setCurrentSessionInStore = useChatStore(state => state.setCurrentSession);
   const clearSessionInStore = useChatStore(state => state.clearSession);
 
@@ -74,12 +74,15 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
     }
   }, [currentSessionId, hasAuthToken, researchSSE.connectionState]);
 
-  // Auto-create session if needed
+  // Auto-create session if needed (Phase 3.3: backend-first)
   useEffect(() => {
     if (autoCreateSession && !currentSessionId) {
-      createSessionInStore();
+      switchOrCreateSession().catch(error => {
+        console.error('[useChatStream] Auto-create session failed:', error);
+        setError('Failed to create session');
+      });
     }
-  }, [autoCreateSession, currentSessionId, createSessionInStore]);
+  }, [autoCreateSession, currentSessionId, switchOrCreateSession]);
 
   useEffect(() => {
     if (hasLoadedServerSessions || !isAuthenticated) {
@@ -183,10 +186,17 @@ export function useChatStream(options: ChatStreamOptions = {}): ChatStreamReturn
     }
   }, [currentSessionId, ensureSessionHistory]);
 
-  // Create new session
-  const createNewSession = useCallback(() => {
-    return createSessionInStore();
-  }, [createSessionInStore]);
+  // Create new session (Phase 3.3: backend-first)
+  // Returns Promise<void> - callers should subscribe to currentSessionId state updates
+  const createNewSession = useCallback(async () => {
+    try {
+      await switchOrCreateSession();
+    } catch (error) {
+      console.error('[useChatStream] Session creation failed:', error);
+      setError('Failed to create session');
+      throw error; // Re-throw for caller to handle if needed
+    }
+  }, [switchOrCreateSession]);
 
   // Switch to different session
   const switchSession = useCallback((sessionId: string | null) => {

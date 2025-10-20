@@ -44,16 +44,25 @@ import { validateCsrfToken, logCsrfAttempt } from '@/lib/csrf-server';
 const mockValidateCsrfToken = validateCsrfToken as jest.MockedFunction<typeof validateCsrfToken>;
 const mockLogCsrfAttempt = logCsrfAttempt as jest.MockedFunction<typeof logCsrfAttempt>;
 
+const setNodeEnv = (value: string | undefined) => {
+  const env = process.env as Record<string, string | undefined>;
+  if (value === undefined) {
+    delete env.NODE_ENV;
+  } else {
+    env.NODE_ENV = value;
+  }
+};
+
 describe('SSE Proxy - CSRF Protection', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Reset environment to development by default
-    process.env.NODE_ENV = 'development';
+    setNodeEnv('development');
   });
 
   afterEach(() => {
     // Clean up environment
-    delete process.env.NODE_ENV;
+    setNodeEnv(undefined);
   });
 
   /**
@@ -167,7 +176,7 @@ describe('SSE Proxy - CSRF Protection', () => {
 
     it('should skip CSRF validation in development mode', async () => {
       // Arrange
-      process.env.NODE_ENV = 'development';
+      setNodeEnv('development');
       mockValidateCsrfToken.mockReturnValue(true); // Dev mode returns true
 
       const request = createMockRequest({
@@ -198,7 +207,7 @@ describe('SSE Proxy - CSRF Protection', () => {
 
     it('should enforce CSRF validation in production mode', async () => {
       // Arrange
-      process.env.NODE_ENV = 'production';
+      setNodeEnv('production');
       mockValidateCsrfToken.mockReturnValue(false);
 
       const request = createMockRequest({

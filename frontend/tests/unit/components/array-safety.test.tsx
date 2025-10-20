@@ -4,41 +4,41 @@
  */
 
 import { render, screen } from '@testing-library/react'
-import { VanaAgentStatus } from '../components/agent/VanaAgentStatus'
-import VanaSidebar from '../components/vana/VanaSidebar'
-import { AgentStatus, ResearchProgress } from '../lib/api/types'
-import { ChatSession } from '../hooks/useChatStream'
+import { VanaAgentStatus } from '@/components/agent/VanaAgentStatus'
+import VanaSidebar from '@/components/vana/VanaSidebar'
+import { AgentStatus, ResearchProgress } from '@/lib/api/types'
+import type { ChatSession } from '@/hooks/chat/types'
 
 // Mock the UI components
-jest.mock('../components/ui/card', () => ({
+jest.mock('@/components/ui/card', () => ({
   Card: ({ children, className }: any) => <div className={className}>{children}</div>,
   CardContent: ({ children }: any) => <div>{children}</div>,
   CardHeader: ({ children }: any) => <div>{children}</div>,
   CardTitle: ({ children }: any) => <h3>{children}</h3>,
 }))
 
-jest.mock('../components/ui/badge', () => ({
+jest.mock('@/components/ui/badge', () => ({
   Badge: ({ children }: any) => <span>{children}</span>
 }))
 
-jest.mock('../components/ui/progress', () => ({
+jest.mock('@/components/ui/progress', () => ({
   Progress: ({ value }: any) => <div role="progressbar" aria-valuenow={value}></div>
 }))
 
-jest.mock('../components/ui/avatar', () => ({
+jest.mock('@/components/ui/avatar', () => ({
   Avatar: ({ children }: any) => <div>{children}</div>,
   AvatarFallback: ({ children }: any) => <div>{children}</div>
 }))
 
-jest.mock('../components/ui/scroll-area', () => ({
+jest.mock('@/components/ui/scroll-area', () => ({
   ScrollArea: ({ children }: any) => <div>{children}</div>
 }))
 
-jest.mock('../components/ui/separator', () => ({
+jest.mock('@/components/ui/separator', () => ({
   Separator: () => <hr />
 }))
 
-jest.mock('../components/ui/sidebar', () => ({
+jest.mock('@/components/ui/sidebar', () => ({
   Sidebar: ({ children }: any) => <div>{children}</div>,
   SidebarContent: ({ children }: any) => <div>{children}</div>,
   SidebarGroup: ({ children }: any) => <div>{children}</div>,
@@ -48,16 +48,16 @@ jest.mock('../components/ui/sidebar', () => ({
   SidebarMenuButton: ({ children, onClick }: any) => <li onClick={onClick}>{children}</li>,
 }))
 
-jest.mock('../components/ui/button', () => ({
+jest.mock('@/components/ui/button', () => ({
   Button: ({ children, onClick }: any) => <button onClick={onClick}>{children}</button>
 }))
 
-jest.mock('../lib/utils', () => ({
+jest.mock('@/lib/utils', () => ({
   cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
   formatRelativeTime: (date: string) => 'Just now'
 }))
 
-jest.mock('../lib/react-performance', () => ({
+jest.mock('@/lib/react-performance', () => ({
   memoWithTracking: (Component: any) => Component,
   useRenderTracker: () => ({ componentName: 'test', renderCount: 1, warnings: [] }),
   useStableArray: (arr: any[]) => arr

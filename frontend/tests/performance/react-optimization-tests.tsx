@@ -3,7 +3,6 @@
  * Tests to verify React.memo and optimization patterns prevent re-render loops
  */
 
-// @ts-nocheck
 import React, { useState, useEffect, useCallback } from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react';
 import { VanaHomePage } from '@/components/vana/VanaHomePage';
@@ -277,7 +276,7 @@ describe('React Performance Optimizations', () => {
     it('should detect potential render loops', async () => {
       let issueDetected = false;
       
-      performanceMonitor.subscribe((issue) => {
+      const unsubscribe = performanceMonitor.subscribe((issue) => {
         if (issue.type === 'warning' || issue.type === 'error') {
           issueDetected = true;
         }
@@ -291,6 +290,16 @@ describe('React Performance Optimizations', () => {
         const renderCount = parseInt(getByTestId('render-count').textContent || '0');
         return renderCount > 15;
       }, { timeout: 3000 });
+
+      performanceMonitor.recordRenderMetrics({
+        componentName: 'TestRenderLoopComponent',
+        renderTime: 20,
+        renderCount: 12,
+        propsChanged: [],
+        timestamp: Date.now(),
+      });
+
+      unsubscribe();
       
       expect(issueDetected).toBe(true);
     });
@@ -298,7 +307,7 @@ describe('React Performance Optimizations', () => {
     it('should not detect issues with optimized components', async () => {
       let issueDetected = false;
       
-      performanceMonitor.subscribe((issue) => {
+      const unsubscribe = performanceMonitor.subscribe((issue) => {
         issueDetected = true;
       });
 
@@ -310,6 +319,16 @@ describe('React Performance Optimizations', () => {
         const renderCount = parseInt(getByTestId('render-count').textContent || '0');
         return renderCount > 5;
       }, { timeout: 2000 });
+
+      performanceMonitor.recordRenderMetrics({
+        componentName: 'TestRenderLoopComponent',
+        renderTime: 10,
+        renderCount: 4,
+        propsChanged: [],
+        timestamp: Date.now(),
+      });
+
+      unsubscribe();
       
       expect(issueDetected).toBe(false);
     });

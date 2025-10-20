@@ -102,7 +102,9 @@ class CSRFMiddleware(BaseHTTPMiddleware):
 
         # Skip CSRF validation for SSE endpoints
         # SSE uses GET method but may have persistent connections
-        if "/sse/" in request.url.path or request.url.path.startswith("/agent_network_sse/"):
+        if "/sse/" in request.url.path or request.url.path.startswith(
+            "/agent_network_sse/"
+        ):
             response = await call_next(request)
             return self._ensure_csrf_cookie(request, response)
 
@@ -111,7 +113,11 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         # Patterns:
         # - POST /apps/{app}/users/{user}/sessions (session creation - Phase 3.3)
         # - GET/POST /apps/{app}/users/{user}/sessions/{session}/run (message execution)
-        if "/apps/" in request.url.path and ("/sessions/" in request.url.path or request.url.path.endswith("/sessions")):
+        # - POST /run_sse (canonical ADK streaming - Phase 3.3)
+        is_adk_session_path = "/apps/" in request.url.path and (
+            "/sessions/" in request.url.path or request.url.path.endswith("/sessions")
+        )
+        if is_adk_session_path or request.url.path == "/run_sse":
             response = await call_next(request)
             return self._ensure_csrf_cookie(request, response)
 
@@ -119,7 +125,9 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         if not self._validate_csrf_token(request):
             return JSONResponse(
                 status_code=403,
-                content={"detail": "CSRF validation failed. Please refresh the page and try again."},
+                content={
+                    "detail": "CSRF validation failed. Please refresh the page and try again."
+                },
             )
 
         # Process request and ensure cookie is set

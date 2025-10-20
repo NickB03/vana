@@ -30,7 +30,10 @@ export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
 // Environment configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL =
+  process.env.API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  'http://localhost:8000';
 
 /**
  * Security Configuration: Allowlist for unauthenticated SSE access
@@ -180,6 +183,17 @@ export async function POST(request: NextRequest) {
     // Only add Authorization header if we have a token
     if (accessToken) {
       headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
+    // CRITICAL FIX: Forward CSRF token to backend
+    // Even though we skip CSRF validation in the proxy for localhost,
+    // the backend still expects it. Forward the token from the client.
+    const csrfToken = request.headers.get('x-csrf-token');
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken;
+      console.log('[SSE Proxy /run_sse] Forwarding CSRF token to backend');
+    } else {
+      console.warn('[SSE Proxy /run_sse] No CSRF token in request headers');
     }
 
     // Forward POST request to backend

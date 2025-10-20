@@ -12,6 +12,29 @@
  * See: docs/adk/ADK-Event-Extraction-Guide.md
  */
 
+import DOMPurify from 'dompurify';
+
+/**
+ * Sanitizes content to prevent XSS attacks
+ *
+ * SECURITY: Always sanitize AI-generated content before rendering
+ * Removes dangerous HTML/JS while preserving safe formatting
+ *
+ * @param content - Raw content from ADK events
+ * @returns Sanitized content safe for rendering
+ */
+function sanitizeContent(content: string): string {
+  // Configure DOMPurify to be strict but allow basic formatting
+  const config = {
+    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'code', 'pre', 'a'],
+    ALLOWED_ATTR: ['href', 'title'],
+    ALLOW_DATA_ATTR: false,
+    ALLOW_UNKNOWN_PROTOCOLS: false,
+  };
+
+  return DOMPurify.sanitize(content, config);
+}
+
 /**
  * ADK event part types
  */
@@ -89,6 +112,21 @@ function extractStringValue(value: unknown): string | null {
     }
     if ('content' in obj && typeof obj.content === 'string') {
       return obj.content.trim() || null;
+    }
+
+    // FIX: Handle ADK content structure with parts[] array
+    // When content is an object like {parts: [{text: "..."}], role: "model"}
+    if ('parts' in obj && Array.isArray(obj.parts)) {
+      const textParts: string[] = [];
+      for (const part of obj.parts) {
+        if (part && typeof part === 'object' && 'text' in part && typeof part.text === 'string') {
+          const text = part.text.trim();
+          if (text) textParts.push(text);
+        }
+      }
+      if (textParts.length > 0) {
+        return textParts.join('\n\n');
+      }
     }
 
     // Last resort: stringify if it looks like meaningful data
@@ -278,18 +316,22 @@ export function extractContentFromADKEvent(
       functionResponses = partsResult.functionResponses;
     }
 
-    // 3. Return results with deduplication
+    // 3. Return results with deduplication and XSS sanitization
     if (extractedParts.length > 0) {
       // CRITICAL FIX: Deduplicate extracted parts to prevent tripled/duplicated content
       // Backend may send same content in multiple fields (top-level + parts[].functionResponse)
       const uniqueParts = Array.from(new Set(extractedParts));
-      const content = uniqueParts.join('\n\n').trim();
+      const rawContent = uniqueParts.join('\n\n').trim();
+
+      // SECURITY: Sanitize content to prevent XSS attacks
+      const content = sanitizeContent(rawContent);
 
       console.log('[ADK] Extraction complete:', {
         totalParts: extractedParts.length,
         uniqueParts: uniqueParts.length,
         deduplicationApplied: extractedParts.length !== uniqueParts.length,
         totalLength: content.length,
+        sanitized: rawContent !== content,
         sources: { topLevel, textParts, functionResponses },
       });
 
@@ -302,14 +344,15 @@ export function extractContentFromADKEvent(
     // No content found
     console.warn('[ADK] No content found in payload:', JSON.stringify(payload).slice(0, 200));
     return {
-      content: fallbackMessage,
+      content: sanitizeContent(fallbackMessage),
       sources: { topLevel: false, textParts: 0, functionResponses: 0 },
     };
 
   } catch (error) {
     console.error('[ADK] Error extracting content:', error);
+    const errorMessage = `Error extracting content: ${error instanceof Error ? error.message : String(error)}`;
     return {
-      content: `Error extracting content: ${error instanceof Error ? error.message : String(error)}`,
+      content: sanitizeContent(errorMessage),
       sources: { topLevel: false, textParts: 0, functionResponses: 0 },
     };
   }

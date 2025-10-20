@@ -269,6 +269,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
               setLastAdkEvent(adkResult.event);
 
               // Convert to legacy AgentNetworkEvent for backward compatibility
+              // FIX: Include content, usageMetadata, partial, and invocationId for Fix 2
               return {
                 type: (fallbackType as AgentNetworkEvent['type']) || 'message',
                 data: {
@@ -283,6 +284,11 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
                   transferTargetAgent: adkResult.event.transferTargetAgent,
                   isFinalResponse: adkResult.event.isFinalResponse,
                   _raw: adkResult.event.rawEvent,
+                  // FIX 2: Add fields needed by sse-event-handlers.ts for completion detection
+                  content: adkResult.event.rawEvent.content,
+                  usageMetadata: adkResult.event.rawEvent.usageMetadata,
+                  partial: adkResult.event.rawEvent.partial,
+                  invocationId: adkResult.event.rawEvent.invocationId,
                 }
               };
             }
@@ -494,6 +500,7 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
           const decoder = new TextDecoder();
 
           let buffer = '';
+          let hasReceivedCompletionEvent = false; // Track if we've seen ADK final response
 
           const processEventBlock = (block: string) => {
             const lines = block.split('\n');
@@ -525,6 +532,14 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
             }
 
             const payload = dataLines.join('\n');
+
+            // FIX 2: Check if this is an ADK completion event (usageMetadata + role:model + NOT partial)
+            if (payload.includes('"usageMetadata"') &&
+                payload.includes('"role":"model"') &&
+                !payload.includes('"partial":true')) {
+              hasReceivedCompletionEvent = true;
+              console.log('[useSSE] Detected ADK completion event (usageMetadata present, not partial)');
+            }
 
             // Enhanced logging for debugging
             if (!eventType) {
@@ -570,13 +585,23 @@ export function useSSE(url: string, options: SSEOptions = {}): SSEHookReturn {
                   }
                   cleaningUpRef.current = true;
 
+                  // DEBUG: Log buffer contents and completion flag at stream end
+                  console.log('[useSSE] Stream ended, buffer contents:', buffer.length > 0 ? buffer.substring(0, 500) : '(empty)');
+                  console.log('[useSSE] Stream ended, hasReceivedCompletionEvent:', hasReceivedCompletionEvent);
+
                   // P1-002 FIX: Smart stream termination detection
                   // Distinguish between expected completion (with markers) vs unexpected termination (network loss)
+                  // FIX 2: Check both buffer markers AND the completion flag set during event processing
                   const hasExpectedCompletion =
+                    hasReceivedCompletionEvent ||  // Flag set when ADK final event was processed
                     buffer.includes('[DONE]') ||
                     buffer.includes('"status":"complete"') ||
                     buffer.includes('"status":"done"') ||
-                    buffer.includes('"type":"stream_complete"');
+                    buffer.includes('"type":"stream_complete"') ||
+                    // Fallback: check buffer for ADK completion pattern
+                    (buffer.includes('"usageMetadata"') &&
+                     buffer.includes('"role":"model"') &&
+                     !buffer.includes('"partial":true'));
 
                   if (hasExpectedCompletion) {
                     // Expected termination - stream completed successfully with completion marker
@@ -1118,28 +1143,39 @@ export function useResearchSSE(
     onReconnect,
   } = options;
 
-  const sseOptions = useMemo(() => ({
-    enabled: url !== '',  // CRITICAL FIX: Calculate enabled from URL, not from parent options
-    autoReconnect,
-    maxReconnectAttempts,
-    reconnectDelay,
-    maxReconnectDelay,
-    withCredentials,
-    // NOTE: sessionId intentionally omitted - it's already embedded in the URL
-    method,
-    onConnect,
-    onDisconnect,
-    onError,
-    onReconnect,
-  }), [
+  const sseOptions = useMemo(() => {
+    // CRITICAL FIX (Phase 3.3): Disable auto-connect for POST canonical mode
+    // POST requires request body, which is injected later by sendMessage
+    // Only auto-connect for GET legacy mode (no body required)
+    const shouldEnable = url !== '' && method === 'GET';
+
+    if (url && method === 'POST') {
+      console.log('[useResearchSSE] POST mode detected - disabling auto-connect, waiting for sendMessage with body');
+    }
+
+    return {
+      enabled: shouldEnable,
+      autoReconnect,
+      maxReconnectAttempts,
+      reconnectDelay,
+      maxReconnectDelay,
+      withCredentials,
+      // NOTE: sessionId intentionally omitted - it's already embedded in the URL
+      method,
+      onConnect,
+      onDisconnect,
+      onError,
+      onReconnect,
+    };
+  }, [
     url,  // enabled depends on url (and url changes with sessionId)
+    method,  // CRITICAL: also depends on method (POST vs GET)
     autoReconnect,
     maxReconnectAttempts,
     reconnectDelay,
     maxReconnectDelay,
     withCredentials,
     // NOTE: sessionId removed from deps - prevents hook recreation on session change
-    method,
     onConnect,
     onDisconnect,
     onError,

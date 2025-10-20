@@ -7,7 +7,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { extractAuthTokens } from '@/lib/auth-cookies';
 
 // Environment configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL =
+  process.env.API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  'http://localhost:8000';
 
 /**
  * GET handler for SSE proxy with query parameter

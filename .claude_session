@@ -1,9 +1,0 @@
-# CLAUDE SESSION AUTO-LOADER
-# This file automatically triggers memory loading for new sessions
-
-# AUTO-LOAD MEMORY ON SESSION START
-echo "🔄 Auto-loading cross-session memory..."
-npx claude-flow@alpha memory usage --action retrieve --key "test/cross-session-challenge" 2>/dev/null
-npx claude-flow@alpha memory usage --action retrieve --key "knowledge/vana-secrets" 2>/dev/null
-npx claude-flow@alpha memory usage --action search --pattern "secret|challenge|knowledge" 2>/dev/null
-echo "✅ Session memory loaded"

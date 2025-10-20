@@ -61,8 +61,9 @@ export function useMessageHandlers({
 
     try {
       // Add user message
+      const userMessageId = `msg_${uuidv4()}_user`;
       const userMessage: ChatMessage = {
-        id: `msg_${uuidv4()}_user`,
+        id: userMessageId,
         content: content.trim(),
         role: 'user',
         timestamp: new Date().toISOString(),
@@ -71,22 +72,20 @@ export function useMessageHandlers({
 
       addMessageInStore(activeSessionId, userMessage);
 
-      // Add initial assistant message for streaming
-      const assistantMessageId = `msg_${uuidv4()}_assistant`;
-      const assistantMessage: ChatMessage = {
-        id: assistantMessageId,
-        content: 'Thinking...',
-        role: 'assistant',
-        timestamp: new Date().toISOString(),
-        sessionId: activeSessionId,
-        metadata: { kind: 'assistant-progress' },
-      };
-
-      addMessageInStore(activeSessionId, assistantMessage);
+      // FIX: Track last user message ID for progress message association
+      // This prevents multiple messages from reusing the same progress message
       updateSessionMetaInStore(activeSessionId, {
         title: currentSession?.title ?? userMessage.content.slice(0, 60),
         status: 'running',
+        metadata: {
+          ...currentSession?.metadata,
+          lastUserMessageId: userMessageId,
+        },
       });
+
+      // NOTE: We no longer create assistant message here - ensureProgressMessage() handles it
+      // This prevents duplicate progress messages and allows proper per-message tracking
+
       setSessionStreamingInStore(activeSessionId, true);
       setIsStreaming(true);
       setSessionErrorInStore(activeSessionId, null);
@@ -103,12 +102,17 @@ export function useMessageHandlers({
       if (!isDevelopment && !apiClient.isAuthenticated()) {
         // Fallback to local response when not authenticated
         setTimeout(() => {
-          updateStreamingMessageInStore(
-            activeSessionId,
-            assistantMessageId,
-            `I received your request: "${content}". Connect your Vana backend to stream live multi-agent research results.`
-          );
-          completeStreamingMessageInStore(activeSessionId, assistantMessageId);
+          // Create a temporary assistant message for fallback
+          const fallbackMessageId = `msg_${uuidv4()}_assistant_fallback`;
+          const fallbackMessage: ChatMessage = {
+            id: fallbackMessageId,
+            content: `I received your request: "${content}". Connect your Vana backend to stream live multi-agent research results.`,
+            role: 'assistant',
+            timestamp: new Date().toISOString(),
+            sessionId: activeSessionId,
+            metadata: { kind: 'fallback', completed: true },
+          };
+          addMessageInStore(activeSessionId, fallbackMessage);
           setSessionStreamingInStore(activeSessionId, false);
           setIsStreaming(false);
         }, 600);

@@ -575,16 +575,50 @@ export class VanaAPIClient {
 
   /**
    * Delete a chat session
+   * Uses Next.js API proxy to avoid CORS errors
    */
   async deleteSession(sessionId: string): Promise<{ success: boolean; message?: string }> {
     try {
-      const response = await this.makeRequestWithRetry<{ success: boolean; message?: string }>(
-        `/api/sessions/${sessionId}`,
-        {
-          method: 'DELETE',
-        }
-      );
-      return response;
+      // Prepare headers with CSRF token
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add CSRF token for DELETE request
+      Object.assign(headers, addCsrfHeader(headers));
+
+      // Use relative URL to proxy through Next.js (avoids CORS)
+      // Frontend: DELETE /api/sessions/{id}
+      // Proxy forwards to backend: DELETE /api/sessions/{id}
+      const response = await fetch(`/api/sessions/${sessionId}`, {
+        method: 'DELETE',
+        headers,
+        credentials: 'include', // Include auth cookies
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ success: false, message: 'Delete failed' }));
+        return { success: false, message: errorData.message || `HTTP ${response.status}` };
+      }
+
+      const result: unknown = await response.json().catch(() => null);
+      if (
+        !result ||
+        typeof result !== 'object' ||
+        typeof (result as { success?: unknown }).success !== 'boolean'
+      ) {
+        return { success: false, message: 'Invalid response format' };
+      }
+
+      const typedResult = result as { success: boolean; message?: unknown };
+
+      return {
+        success: typedResult.success,
+        message:
+          typeof typedResult.message === 'string'
+            ? typedResult.message
+            : undefined,
+      };
     } catch (error) {
       console.error('Failed to delete session:', error);
       return { success: false, message: 'Failed to delete session' };
@@ -671,12 +705,14 @@ export class VanaAPIClient {
    * Check if user is authenticated by verifying cookies on backend
    *
    * Security: Does not expose tokens to JavaScript, checks server-side cookies
+   * Uses Next.js API proxy to avoid CORS errors
    *
    * @returns Promise<boolean> indicating authentication status
    */
   async isAuthenticated(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.config.baseURL}/api/auth/check`, {
+      // Use relative URL to proxy through Next.js (avoids CORS)
+      const response = await fetch('/api/auth/check', {
         credentials: 'include', // Send cookies
       });
 

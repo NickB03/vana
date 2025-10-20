@@ -68,7 +68,8 @@ export interface ChatSession {
   metadata?: {
     kind?: 'canonical-session' | 'legacy-session';
     backendCreated?: boolean;
-    [key: string]: any;
+    lastUserMessageId?: string;  // Track last user message for progress message association
+    [key: string]: unknown;
   };
 
   /** Phase 3.2: Raw ADK events (canonical mode only) - NOT persisted to localStorage */
@@ -114,7 +115,7 @@ export interface ChatStreamReturn {
   
   // Actions
   sendMessage: (content: string) => Promise<void>;
-  createNewSession: () => string;
+  createNewSession: () => Promise<void>;
   switchSession: (sessionId: string | null) => void;
   clearCurrentSession: () => void;
   retryLastMessage: () => Promise<void>;

@@ -91,6 +91,18 @@ export interface AdkEventActions {
  * - actions.transfer_to_agent: Indicates agent handoff
  * - partial: True if streaming is incomplete
  */
+/**
+ * Usage Metadata - token consumption stats from ADK
+ */
+export interface AdkUsageMetadata {
+  candidatesTokenCount?: number;
+  promptTokenCount?: number;
+  totalTokenCount?: number;
+  promptTokensDetails?: {
+    cachedContent?: number;
+  };
+}
+
 export interface AdkEvent {
   id: string;
   author: string;
@@ -105,6 +117,7 @@ export interface AdkEvent {
   errorCode?: string;
   errorMessage?: string;
   groundingMetadata?: GroundingMetadata;
+  usageMetadata?: AdkUsageMetadata;  // Token usage stats for final responses
 }
 
 /**

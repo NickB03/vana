@@ -12,6 +12,15 @@ import {
 } from '../validator';
 import type { AdkEvent } from '../types';
 
+const setNodeEnv = (value: string | undefined) => {
+  const env = process.env as Record<string, string | undefined>;
+  if (value === undefined) {
+    delete env.NODE_ENV;
+  } else {
+    env.NODE_ENV = value;
+  }
+};
+
 describe('ADK Event Validator', () => {
   describe('validateAdkEvent', () => {
     it('should validate minimal valid event', () => {
@@ -372,27 +381,27 @@ describe('ADK Event Validator', () => {
   describe('shouldValidate', () => {
     it('should return true in development', () => {
       const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'development';
+      setNodeEnv('development');
 
       expect(shouldValidate()).toBe(true);
 
-      process.env.NODE_ENV = originalEnv;
+      setNodeEnv(originalEnv);
     });
 
     it('should return false in production', () => {
       const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
+      setNodeEnv('production');
 
       expect(shouldValidate()).toBe(false);
 
-      process.env.NODE_ENV = originalEnv;
+      setNodeEnv(originalEnv);
     });
   });
 
   describe('conditionalValidate', () => {
     it('should validate in development', () => {
       const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'development';
+      setNodeEnv('development');
 
       const event = {
         id: 'evt_123',
@@ -403,12 +412,12 @@ describe('ADK Event Validator', () => {
 
       expect(result.valid).toBe(false);
 
-      process.env.NODE_ENV = originalEnv;
+      setNodeEnv(originalEnv);
     });
 
     it('should skip validation in production', () => {
       const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
+      setNodeEnv('production');
 
       const event = {
         id: 'evt_123',
@@ -419,7 +428,7 @@ describe('ADK Event Validator', () => {
 
       expect(result.valid).toBe(true);
 
-      process.env.NODE_ENV = originalEnv;
+      setNodeEnv(originalEnv);
     });
   });
 

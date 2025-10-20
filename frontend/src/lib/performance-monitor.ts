@@ -76,6 +76,13 @@ interface PerformanceReport {
   }>;
 }
 
+interface PerformanceIssue {
+  type: 'info' | 'warning' | 'error';
+  message: string;
+  context?: string;
+  metrics?: unknown;
+}
+
 class PerformanceMonitor {
   private static instance: PerformanceMonitor;
   private apiMetrics: APIPerformanceMetrics[] = [];
@@ -85,6 +92,7 @@ class PerformanceMonitor {
   private isMonitoring = false;
   private observers: PerformanceObserver[] = [];
   private memoryInterval: number | null = null;
+  private issueListeners: Array<(issue: PerformanceIssue) => void> = [];
 
   static getInstance(): PerformanceMonitor {
     if (!PerformanceMonitor.instance) {
@@ -126,6 +134,27 @@ class PerformanceMonitor {
     }
 
     console.log('⏹️ Performance monitoring stopped');
+  }
+
+  /**
+   * Subscribe to performance issues detected by the monitor.
+   * Returns an unsubscribe function.
+   */
+  subscribe(listener: (issue: PerformanceIssue) => void): () => void {
+    this.issueListeners.push(listener);
+    return () => {
+      this.issueListeners = this.issueListeners.filter((l) => l !== listener);
+    };
+  }
+
+  private notifyIssue(issue: PerformanceIssue): void {
+    this.issueListeners.forEach((listener) => {
+      try {
+        listener(issue);
+      } catch (error) {
+        console.warn('Performance monitor listener failed:', error);
+      }
+    });
   }
 
   /**
@@ -269,10 +298,22 @@ class PerformanceMonitor {
   private checkAPIPerformance(metrics: APIPerformanceMetrics): void {
     if (metrics.responseTime > 5000) {
       console.warn(`🐌 Slow API request: ${metrics.endpoint} took ${metrics.responseTime}ms`);
+      this.notifyIssue({
+        type: 'warning',
+        message: `Slow API request detected for ${metrics.endpoint}`,
+        context: metrics.endpoint,
+        metrics,
+      });
     }
 
     if (metrics.statusCode >= 400) {
       console.warn(`❌ API error: ${metrics.endpoint} returned ${metrics.statusCode}`);
+      this.notifyIssue({
+        type: metrics.statusCode >= 500 ? 'error' : 'warning',
+        message: `API error detected for ${metrics.endpoint}`,
+        context: metrics.endpoint,
+        metrics,
+      });
     }
   }
 
@@ -282,10 +323,22 @@ class PerformanceMonitor {
   private checkRenderPerformance(metrics: RenderPerformanceMetrics): void {
     if (metrics.renderTime > 16) { // More than one frame at 60fps
       console.warn(`🐌 Slow render: ${metrics.componentName} took ${metrics.renderTime}ms`);
+      this.notifyIssue({
+        type: 'warning',
+        message: `Slow render detected for ${metrics.componentName}`,
+        context: metrics.componentName,
+        metrics,
+      });
     }
 
     if (metrics.renderCount > 10) {
       console.warn(`🔄 Frequent renders: ${metrics.componentName} rendered ${metrics.renderCount} times recently`);
+      this.notifyIssue({
+        type: 'warning',
+        message: `Frequent renders detected for ${metrics.componentName}`,
+        context: metrics.componentName,
+        metrics,
+      });
     }
   }
 
@@ -645,4 +698,5 @@ export type {
   SSEPerformanceMetrics,
   RenderPerformanceMetrics,
   MemoryMetrics,
+  PerformanceIssue,
 };

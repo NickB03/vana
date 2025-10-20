@@ -37,8 +37,8 @@ describe('useSSE - P1-001 Memory Leak Prevention', () => {
       // Access the setEvents function via internal state management
       // In real scenario, events come through SSE stream
       for (let i = 0; i < 1500; i++) {
-        const mockEvent = {
-          type: 'test_event' as const,
+        const mockEvent: any = {
+          type: 'message' as const,
           data: {
             id: i,
             timestamp: new Date().toISOString(),
@@ -61,9 +61,9 @@ describe('useSSE - P1-001 Memory Leak Prevention', () => {
   test('circular buffer removes oldest events first (FIFO)', () => {
     // Create test events array
     const testEvents = Array.from({ length: 1200 }, (_, i) => ({
-      type: 'test_event' as const,
+      type: 'message' as const,
       data: { id: i, sequence: i, timestamp: new Date().toISOString() },
-    }));
+    } as any));
 
     // Simulate circular buffer behavior
     let events = [...testEvents];
@@ -86,9 +86,9 @@ describe('useSSE - P1-001 Memory Leak Prevention', () => {
   test('circular buffer preserves event ordering', () => {
     // Create test events
     const testEvents = Array.from({ length: 1500 }, (_, i) => ({
-      type: 'ordered_event' as const,
+      type: 'message' as const,
       data: { index: i, timestamp: new Date().toISOString() },
-    }));
+    } as any));
 
     // Apply circular buffer
     const MAX_EVENTS = 1000;
@@ -103,9 +103,9 @@ describe('useSSE - P1-001 Memory Leak Prevention', () => {
   test('events under MAX_EVENTS are not affected', () => {
     // Create 500 events (under limit)
     const testEvents = Array.from({ length: 500 }, (_, i) => ({
-      type: 'test_event' as const,
+      type: 'message' as const,
       data: { id: i, timestamp: new Date().toISOString() },
-    }));
+    } as any));
 
     // Apply circular buffer logic
     const MAX_EVENTS = 1000;
@@ -122,9 +122,9 @@ describe('useSSE - P1-001 Memory Leak Prevention', () => {
   test('circular buffer handles exactly MAX_EVENTS', () => {
     // Create exactly 1000 events
     const testEvents = Array.from({ length: 1000 }, (_, i) => ({
-      type: 'exact_limit' as const,
+      type: 'message' as const,
       data: { id: i, timestamp: new Date().toISOString() },
-    }));
+    } as any));
 
     // Apply circular buffer
     const MAX_EVENTS = 1000;
@@ -141,9 +141,9 @@ describe('useSSE - P1-001 Memory Leak Prevention', () => {
   test('circular buffer handles one more than MAX_EVENTS', () => {
     // Create 1001 events (just over limit)
     const testEvents = Array.from({ length: 1001 }, (_, i) => ({
-      type: 'over_limit' as const,
+      type: 'message' as const,
       data: { id: i, timestamp: new Date().toISOString() },
-    }));
+    } as any));
 
     // Apply circular buffer
     const MAX_EVENTS = 1000;

@@ -16,7 +16,7 @@ from datetime import datetime
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -27,6 +27,7 @@ from app.utils.input_validation import (
     validate_chat_input,
 )
 from app.utils.rate_limiter import gemini_rate_limiter
+from app.utils.session_cleanup import cleanup_empty_session, get_cleanup_ttl_seconds
 from app.utils.session_store import session_store
 from app.utils.sse_broadcaster import agent_network_event_stream, get_sse_broadcaster
 
@@ -46,8 +47,7 @@ try:
         optional_security = HTTPBearer(auto_error=False)
 
         async def dependency(
-            credentials=Depends(optional_security),
-            db: Session = Depends(get_auth_db)
+            credentials=Depends(optional_security), db: Session = Depends(get_auth_db)
         ):
             return get_current_user_optional(credentials, db)
 
@@ -60,14 +60,17 @@ except ImportError:
 
     def get_current_active_user_optional():
         """Fallback for optional authentication."""
+
         def dependency():
             return None
+
         return dependency
 
     class User:
         def __init__(self):
             self.id = None
             self.email = None
+
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +80,39 @@ adk_router = APIRouter(tags=["adk-compliant"])
 # Constants for ADK compliance
 DEFAULT_APP_NAME = "vana"
 DEFAULT_USER_ID = "default"
+
+
+def mark_session_as_used(session_id: str) -> None:
+    """
+    Mark session as used to prevent cleanup (Phase 3.3).
+
+    Updates session metadata to indicate it has received messages. This prevents
+    the background cleanup task from deleting the session after the TTL expires.
+
+    Args:
+        session_id: Session identifier to mark as used
+
+    Raises:
+        Does not raise exceptions - logs warnings on failure
+    """
+    try:
+        session_data = session_store.get_session(session_id)
+        if session_data:
+            metadata = session_data.get("metadata", {})
+            if not metadata.get("has_messages"):
+                # First message for this session - mark as used
+                session_store.update_session_metadata(
+                    session_id,
+                    {
+                        "has_messages": True,
+                        "first_message_at": datetime.now().isoformat(),
+                    },
+                    user_id=session_data.get("user_id"),
+                )
+                logger.info(f"Session {session_id[:8]}... marked as used")
+    except Exception as e:
+        # Don't fail the request if metadata update fails
+        logger.warning(f"Failed to mark session {session_id[:8]}... as used: {e}")
 
 
 def sanitize_log_content(content: str, max_length: int = 50) -> str:
@@ -100,26 +136,28 @@ def sanitize_log_content(content: str, max_length: int = 50) -> str:
     import re
 
     # Remove control characters that could break log parsing
-    sanitized = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', content)
+    sanitized = re.sub(r"[\x00-\x1f\x7f-\x9f]", "", content)
 
     # Remove common injection characters
-    sanitized = re.sub(r'[<>\'";\\]', '', sanitized)
+    sanitized = re.sub(r'[<>\'";\\]', "", sanitized)
 
     # Truncate to max length
     if len(sanitized) > max_length:
-        return sanitized[:max_length] + '...'
+        return sanitized[:max_length] + "..."
 
     return sanitized
 
 
 class SessionUpdatePayload(BaseModel):
     """Payload for updating session metadata in ADK format."""
+
     title: str | None = None
     status: str | None = None
 
 
 class AppInfo(BaseModel):
     """Application information for ADK compliance."""
+
     name: str
     description: str
     version: str
@@ -130,9 +168,10 @@ class AppInfo(BaseModel):
 # ADK CORE ENDPOINTS
 # ============================================================================
 
+
 @adk_router.get("/list-apps")
 async def list_apps(
-    current_user: User | None = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional()),
 ) -> dict[str, Any]:
     """
     List available applications for ADK compliance.
@@ -147,7 +186,7 @@ async def list_apps(
             name="vana",
             description="AI Research Agent Platform",
             version="1.0.0",
-            status="active"
+            status="active",
         )
     ]
 
@@ -155,14 +194,14 @@ async def list_apps(
         "apps": [app.model_dump() for app in apps],
         "count": len(apps),
         "timestamp": datetime.now().isoformat(),
-        "authenticated": current_user is not None
+        "authenticated": current_user is not None,
     }
 
 
 @adk_router.post("/run_sse")
 async def run_sse_canonical(
     request: RunAgentRequest,
-    current_user: User | None = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional()),
 ) -> StreamingResponse:
     """
     ADK canonical SSE streaming endpoint (Phase 1.1).
@@ -190,7 +229,7 @@ async def run_sse_canonical(
             detail=(
                 "ADK canonical streaming not enabled. "
                 "Set ENABLE_ADK_CANONICAL_STREAM=true to use this endpoint."
-            )
+            ),
         )
 
     logger.info(
@@ -198,6 +237,9 @@ async def run_sse_canonical(
         f"user={request.user_id}, session={request.session_id}, "
         f"authenticated={current_user is not None}"
     )
+
+    # Phase 3.3: Mark session as used (prevents cleanup)
+    mark_session_as_used(request.session_id)
 
     # Phase 1.1: Inline async generator (no background task)
     async def stream_adk_events():
@@ -211,7 +253,7 @@ async def run_sse_canonical(
                 async with client.stream(
                     "POST",
                     "http://127.0.0.1:8080/run_sse",
-                    json=request.model_dump(by_alias=True, exclude_none=True)
+                    json=request.model_dump(by_alias=True, exclude_none=True),
                 ) as upstream:
                     # Phase 1.3: Propagate HTTP status on failure
                     try:
@@ -222,7 +264,7 @@ async def run_sse_canonical(
                             "error": f"ADK upstream error: {e.response.status_code}",
                             "status_code": e.response.status_code,
                             "detail": str(e),
-                            "timestamp": datetime.now().timestamp()
+                            "timestamp": datetime.now().timestamp(),
                         }
                         yield f"data: {json.dumps(error_event)}\n\n"
                         logger.error(
@@ -236,12 +278,20 @@ async def run_sse_canonical(
                     async for line in upstream.aiter_lines():
                         yield f"{line}\n"
 
+                    # Send completion marker for frontend (BLOCKER-1 FIX)
+                    # This signals successful stream termination to prevent reconnection loops
+                    yield "event: done\n"
+                    yield f"data: {json.dumps({'status': 'completed', 'timestamp': datetime.now().isoformat()})}\n\n"
+                    logger.info(
+                        f"Stream completed successfully for session {request.session_id}"
+                    )
+
         except httpx.TimeoutException:
             # Phase 1.3: Timeout after 300s
             error_event = {
                 "error": "Request timeout after 300 seconds",
                 "error_code": "TIMEOUT",
-                "timestamp": datetime.now().timestamp()
+                "timestamp": datetime.now().timestamp(),
             }
             yield f"data: {json.dumps(error_event)}\n\n"
             logger.error(f"Timeout for session {request.session_id}")
@@ -251,7 +301,7 @@ async def run_sse_canonical(
             error_event = {
                 "error": str(e),
                 "error_code": "STREAM_ERROR",
-                "timestamp": datetime.now().timestamp()
+                "timestamp": datetime.now().timestamp(),
             }
             yield f"data: {json.dumps(error_event)}\n\n"
             logger.exception(f"Streaming error for session {request.session_id}: {e}")
@@ -264,7 +314,7 @@ async def run_sse_canonical(
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",  # Disable nginx buffering
-        }
+        },
     )
 
 
@@ -273,12 +323,13 @@ async def run_sse_canonical(
     response_model=SessionCreationResponse,
     summary="Create new chat session",
     description="Creates a new session for the user. Returns backend-generated session ID. "
-                "Sessions must be created BEFORE calling /run_sse (canonical ADK pattern)."
+    "Sessions must be created BEFORE calling /run_sse (canonical ADK pattern).",
 )
 async def create_chat_session(
     app_name: str,
     user_id: str,
-    current_user: User | None = Depends(get_current_active_user_optional())
+    background_tasks: BackgroundTasks,
+    current_user: User | None = Depends(get_current_active_user_optional()),
 ) -> SessionCreationResponse:
     """
     Create a new chat session following canonical ADK pattern (Phase 3.3).
@@ -320,7 +371,7 @@ async def create_chat_session(
             try:
                 response = await client.post(
                     f"http://127.0.0.1:8080/apps/{app_name}/users/{user_id}/sessions/{session_id}",
-                    json={}  # Empty initial state
+                    json={},  # Empty initial state
                 )
 
                 # Handle already-exists case (idempotent behavior)
@@ -336,8 +387,7 @@ async def create_chat_session(
             except httpx.TimeoutException:
                 logger.error(f"Timeout creating session {session_id} in ADK")
                 raise HTTPException(
-                    status_code=504,
-                    detail="Timeout connecting to ADK service"
+                    status_code=504, detail="Timeout connecting to ADK service"
                 )
 
         # Store session metadata locally with TTL
@@ -351,11 +401,20 @@ async def create_chat_session(
                 "ttl_minutes": 30,  # Critical recommendation from peer review
                 "has_messages": False,
                 "backend_created": True,
-                "kind": "canonical-session"
-            }
+                "kind": "canonical-session",
+            },
         )
 
         logger.info(f"Session {session_id} stored locally with TTL metadata")
+
+        # Phase 3.3: Schedule background cleanup task
+        # This will delete the session after TTL if it remains empty (no messages)
+        cleanup_delay = get_cleanup_ttl_seconds()  # Default: 1800 seconds (30 min)
+        background_tasks.add_task(cleanup_empty_session, session_id, cleanup_delay)
+        logger.debug(
+            f"Scheduled cleanup for session {session_id} in {cleanup_delay}s "
+            f"({cleanup_delay // 60} minutes)"
+        )
 
         # Return success response
         return SessionCreationResponse(
@@ -363,7 +422,7 @@ async def create_chat_session(
             session_id=session_id,
             app_name=app_name,
             user_id=user_id,
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
 
     except HTTPException:
@@ -371,8 +430,7 @@ async def create_chat_session(
     except Exception as e:
         logger.error(f"Session creation failed: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to create session: {str(e)}"
+            status_code=500, detail=f"Failed to create session: {str(e)}"
         )
 
 
@@ -380,7 +438,7 @@ async def create_chat_session(
 async def list_user_sessions(
     app_name: str,
     user_id: str,
-    current_user: User | None = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional()),
 ) -> dict[str, Any]:
     """
     List sessions for a specific app and user (ADK-compliant).
@@ -403,8 +461,10 @@ async def list_user_sessions(
     # Filter sessions by user_id if not default
     if user_id != DEFAULT_USER_ID and current_user:
         sessions = [
-            session for session in sessions
-            if session.get("user_id") == user_id or session.get("user_id") == current_user.id
+            session
+            for session in sessions
+            if session.get("user_id") == user_id
+            or session.get("user_id") == current_user.id
         ]
 
     return {
@@ -413,7 +473,7 @@ async def list_user_sessions(
         "sessions": sessions,
         "count": len(sessions),
         "timestamp": datetime.now().isoformat(),
-        "authenticated": current_user is not None
+        "authenticated": current_user is not None,
     }
 
 
@@ -422,7 +482,7 @@ async def get_user_session(
     app_name: str,
     user_id: str,
     session_id: str,
-    current_user: User | None = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional()),
 ) -> dict[str, Any]:
     """
     Get a specific session for a user in an app (ADK-compliant).
@@ -459,7 +519,7 @@ async def update_user_session(
     user_id: str,
     session_id: str,
     payload: SessionUpdatePayload,
-    current_user: User | None = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional()),
 ) -> dict[str, Any]:
     """
     Update session metadata for a user in an app (ADK-compliant).
@@ -497,7 +557,7 @@ async def delete_user_session(
     app_name: str,
     user_id: str,
     session_id: str,
-    current_user: User | None = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional()),
 ) -> dict[str, Any]:
     """
     Delete a session for a user in an app (ADK-compliant).
@@ -533,7 +593,7 @@ async def delete_user_session(
             "message": f"Session {session_id} deleted successfully",
             "app_name": app_name,
             "user_id": user_id,
-            "authenticated": current_user is not None
+            "authenticated": current_user is not None,
         }
     except Exception as e:
         return {
@@ -541,7 +601,7 @@ async def delete_user_session(
             "message": str(e),
             "app_name": app_name,
             "user_id": user_id,
-            "authenticated": current_user is not None
+            "authenticated": current_user is not None,
         }
 
 
@@ -550,7 +610,7 @@ async def get_session_task_status(
     app_name: str,
     user_id: str,
     session_id: str,
-    current_user: User | None = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional()),
 ) -> dict[str, Any]:
     """
     Get background task status for a session (CRIT-006 debugging endpoint).
@@ -575,13 +635,13 @@ async def get_session_task_status(
         "app_name": app_name,
         "user_id": user_id,
         "authenticated": current_user is not None,
-        **task_status
+        **task_status,
     }
 
 
 @adk_router.get("/task-status")
 async def get_all_task_status(
-    current_user: User | None = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional()),
 ) -> dict[str, Any]:
     """
     Get status of all background tasks (CRIT-006 debugging endpoint).
@@ -598,7 +658,7 @@ async def get_all_task_status(
     return {
         "authenticated": current_user is not None,
         "timestamp": datetime.now().isoformat(),
-        **task_status
+        **task_status,
     }
 
 
@@ -606,13 +666,14 @@ async def get_all_task_status(
 # ADK SESSION ACTIONS
 # ============================================================================
 
+
 @adk_router.post("/apps/{app_name}/users/{user_id}/sessions/{session_id}/run")
 async def run_session_sse(
     app_name: str,
     user_id: str,
     session_id: str,
     request: dict[str, Any] = Body(...),
-    current_user: User | None = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional()),
 ) -> dict[str, Any]:
     """
     Start session research and return success response (ADK-compliant).
@@ -646,8 +707,7 @@ async def run_session_sse(
                 f"Query preview: {research_query[:100]}"
             )
             raise HTTPException(
-                status_code=400,
-                detail=get_validation_error_response(error_message)
+                status_code=400, detail=get_validation_error_response(error_message)
             )
 
         # Ensure session exists in store
@@ -655,8 +715,11 @@ async def run_session_sse(
             session_id,
             user_id=current_user.id if current_user else user_id,
             title=research_query[:60],
-            status="starting"
+            status="starting",
         )
+
+        # Phase 3.3: Mark session as used (prevents cleanup)
+        mark_session_as_used(session_id)
 
         # Add initial user message
         session_store.add_message(
@@ -677,7 +740,9 @@ async def run_session_sse(
             "session_id": session_id,
             "user_id_auth": current_user.id if current_user else None,
             "query_length": len(research_query),  # Log length, not content
-            "query_preview": sanitize_log_content(research_query, 50),  # Sanitized preview
+            "query_preview": sanitize_log_content(
+                research_query, 50
+            ),  # Sanitized preview
             "timestamp": datetime.now().isoformat(),
         }
 
@@ -702,20 +767,25 @@ async def run_session_sse(
                     logger.info(f"Starting agent execution for session {session_id}")
 
                     # Send initial agent status to ADK SSE stream
-                    await broadcaster.broadcast_event(session_id, {
-                        "type": "agent_status",
-                        "data": {
-                            "agents": [{
-                                "agent_id": "team_leader",
-                                "agent_type": "coordinator",
-                                "name": "Team Leader",
-                                "status": "active",
-                                "progress": 0.1,
-                                "current_task": "Processing request"
-                            }],
-                            "timestamp": datetime.now().isoformat()
-                        }
-                    })
+                    await broadcaster.broadcast_event(
+                        session_id,
+                        {
+                            "type": "agent_status",
+                            "data": {
+                                "agents": [
+                                    {
+                                        "agent_id": "team_leader",
+                                        "agent_type": "coordinator",
+                                        "name": "Team Leader",
+                                        "status": "active",
+                                        "progress": 0.1,
+                                        "current_task": "Processing request",
+                                    }
+                                ],
+                                "timestamp": datetime.now().isoformat(),
+                            },
+                        },
+                    )
 
                     # Create session in ADK first with specific session_id
                     async with httpx.AsyncClient() as client:
@@ -723,16 +793,23 @@ async def run_session_sse(
                             session_resp = await client.post(
                                 f"http://127.0.0.1:8080/apps/{app_name}/users/{user_id}/sessions/{session_id}",
                                 json={},
-                                timeout=10.0
+                                timeout=10.0,
                             )
-                            if session_resp.status_code == 400 and "already exists" in session_resp.text:
-                                logger.info(f"Session {session_id} already exists, proceeding")
+                            if (
+                                session_resp.status_code == 400
+                                and "already exists" in session_resp.text
+                            ):
+                                logger.info(
+                                    f"Session {session_id} already exists, proceeding"
+                                )
                             elif session_resp.status_code not in [200, 201]:
                                 error_msg = f"Session creation failed: {session_resp.status_code} - {session_resp.text[:200]}"
                                 logger.error(error_msg)
                                 raise Exception(error_msg)
                             else:
-                                logger.info(f"Session {session_id} created successfully")
+                                logger.info(
+                                    f"Session {session_id} created successfully"
+                                )
 
                         except httpx.TimeoutException:
                             error_msg = f"Timeout creating session {session_id} in ADK"
@@ -740,7 +817,9 @@ async def run_session_sse(
                             raise Exception(error_msg)
                         except Exception as e:
                             if "already exists" not in str(e):
-                                logger.error(f"Failed to create session {session_id}: {e}")
+                                logger.error(
+                                    f"Failed to create session {session_id}: {e}"
+                                )
                                 raise
 
                         # Call ADK's /run_sse endpoint
@@ -751,9 +830,9 @@ async def run_session_sse(
                             "sessionId": session_id,
                             "newMessage": {
                                 "parts": [{"text": research_query}],
-                                "role": "user"
+                                "role": "user",
                             },
-                            "streaming": True
+                            "streaming": True,
                         }
 
                         accumulated_content = []
@@ -769,20 +848,28 @@ async def run_session_sse(
 
                         # Use rate limiter to prevent overwhelming the Gemini API
                         rate_limit_hit = False
-                        logger.info(f"Attempting to acquire rate limiter for session {session_id}")
+                        logger.info(
+                            f"Attempting to acquire rate limiter for session {session_id}"
+                        )
                         async with gemini_rate_limiter:
-                            logger.info(f"Rate limiter acquired for session {session_id}")
+                            logger.info(
+                                f"Rate limiter acquired for session {session_id}"
+                            )
 
                             async with client.stream(
                                 "POST",
                                 "http://127.0.0.1:8080/run_sse",
                                 json=adk_request,
-                                timeout=httpx.Timeout(300.0, read=None)
+                                timeout=httpx.Timeout(300.0, read=None),
                             ) as response:
-                                logger.info(f"ADK responded with status {response.status_code} for session {session_id}")
+                                logger.info(
+                                    f"ADK responded with status {response.status_code} for session {session_id}"
+                                )
 
                                 response.raise_for_status()
-                                logger.debug(f"Starting SSE stream iteration for session {session_id}")
+                                logger.debug(
+                                    f"Starting SSE stream iteration for session {session_id}"
+                                )
 
                                 line_count = 0
                                 async for line in response.aiter_lines():
@@ -816,7 +903,9 @@ async def run_session_sse(
                                                 # See: docs/adk/ADK-Event-Extraction-Guide.md
                                                 # ═══════════════════════════════════════════════════════════════════
                                                 content_obj = data.get("content")
-                                                if content_obj and isinstance(content_obj, dict):
+                                                if content_obj and isinstance(
+                                                    content_obj, dict
+                                                ):
                                                     parts = content_obj.get("parts", [])
                                                     # P0-003 FIX: Collect all parts first, then deduplicate before appending
                                                     parts_to_add = []
@@ -826,66 +915,125 @@ async def run_session_sse(
                                                             # Used for: Model responses, status updates, explanations
                                                             text = part.get("text")
                                                             if text:
-                                                                parts_to_add.append(text)
+                                                                parts_to_add.append(
+                                                                    text
+                                                                )
 
                                                             # PART 2: Extract functionResponse (CRITICAL!)
                                                             # Used for: Research plans, agent tool outputs, analysis results
                                                             # DO NOT REMOVE THIS SECTION - It extracts plan_generator output!
-                                                            function_response = part.get("functionResponse")
-                                                            if function_response and isinstance(function_response, dict):
-                                                                response_data = function_response.get("response", {})
-                                                                result_text = response_data.get("result")
+                                                            function_response = (
+                                                                part.get(
+                                                                    "functionResponse"
+                                                                )
+                                                            )
+                                                            if (
+                                                                function_response
+                                                                and isinstance(
+                                                                    function_response,
+                                                                    dict,
+                                                                )
+                                                            ):
+                                                                response_data = function_response.get(
+                                                                    "response", {}
+                                                                )
+                                                                result_text = (
+                                                                    response_data.get(
+                                                                        "result"
+                                                                    )
+                                                                )
                                                                 if result_text:
-                                                                    parts_to_add.append(result_text)
-                                                                    logger.info(f"Extracted functionResponse content: {len(result_text)} chars")
+                                                                    parts_to_add.append(
+                                                                        result_text
+                                                                    )
+                                                                    logger.info(
+                                                                        f"Extracted functionResponse content: {len(result_text)} chars"
+                                                                    )
 
                                                     # P0-003 FIX: Deduplicate parts before adding to accumulated_content
                                                     # Hash-based deduplication prevents same content from text + functionResponse
                                                     for part_content in parts_to_add:
-                                                        content_hash = hash(part_content)
-                                                        if content_hash not in seen_content_hashes:
-                                                            seen_content_hashes.add(content_hash)
-                                                            accumulated_content.append(part_content)
+                                                        content_hash = hash(
+                                                            part_content
+                                                        )
+                                                        if (
+                                                            content_hash
+                                                            not in seen_content_hashes
+                                                        ):
+                                                            seen_content_hashes.add(
+                                                                content_hash
+                                                            )
+                                                            accumulated_content.append(
+                                                                part_content
+                                                            )
                                                         else:
-                                                            logger.debug(f"[P0-003] Skipped duplicate content: {len(part_content)} chars")
+                                                            logger.debug(
+                                                                f"[P0-003] Skipped duplicate content: {len(part_content)} chars"
+                                                            )
 
                                                     # Broadcast update if we have content
                                                     if accumulated_content:
-                                                        logger.info(f"Broadcasting research_update for session {session_id}, content length: {len(''.join(accumulated_content))}")
-                                                        await broadcaster.broadcast_event(session_id, {
-                                                            "type": "research_update",
-                                                            "data": {
-                                                                "content": "".join(accumulated_content),
-                                                                "timestamp": datetime.now().isoformat()
-                                                            }
-                                                        })
+                                                        logger.info(
+                                                            f"Broadcasting research_update for session {session_id}, content length: {len(''.join(accumulated_content))}"
+                                                        )
+                                                        await broadcaster.broadcast_event(
+                                                            session_id,
+                                                            {
+                                                                "type": "research_update",
+                                                                "data": {
+                                                                    "content": "".join(
+                                                                        accumulated_content
+                                                                    ),
+                                                                    "timestamp": datetime.now().isoformat(),
+                                                                },
+                                                            },
+                                                        )
                                                 else:
                                                     # Log non-content events
-                                                    event_type = data.get("invocationId") or data.get("id") or "unknown"
+                                                    event_type = (
+                                                        data.get("invocationId")
+                                                        or data.get("id")
+                                                        or "unknown"
+                                                    )
                                                     logger.debug(
                                                         f"ADK event (no content): {event_type}, "
                                                         f"keys={list(data.keys())[:10]}"
                                                     )
                                             except json.JSONDecodeError as e:
-                                                logger.warning(f"Could not parse SSE data: {data_str[:100]} - {e}")
+                                                logger.warning(
+                                                    f"Could not parse SSE data: {data_str[:100]} - {e}"
+                                                )
                                                 # Check for rate limit errors in JSON parsing exceptions
-                                                if "429" in data_str or "Too Many Requests" in data_str or "rate limit" in data_str.lower():
+                                                if (
+                                                    "429" in data_str
+                                                    or "Too Many Requests" in data_str
+                                                    or "rate limit" in data_str.lower()
+                                                ):
                                                     user_friendly_msg = "⚠️ API rate limit reached. The AI service is temporarily unavailable. Please try again in a few minutes or contact support if this persists."
-                                                    await broadcaster.broadcast_event(session_id, {
-                                                        "type": "error",
-                                                        "data": {
-                                                            "message": user_friendly_msg,
-                                                            "error_code": "RATE_LIMIT_EXCEEDED",
-                                                            "timestamp": datetime.now().isoformat()
-                                                        }
-                                                    })
-                                                    session_store.update_session(session_id, status="error")
+                                                    await broadcaster.broadcast_event(
+                                                        session_id,
+                                                        {
+                                                            "type": "error",
+                                                            "data": {
+                                                                "message": user_friendly_msg,
+                                                                "error_code": "RATE_LIMIT_EXCEEDED",
+                                                                "timestamp": datetime.now().isoformat(),
+                                                            },
+                                                        },
+                                                    )
+                                                    session_store.update_session(
+                                                        session_id, status="error"
+                                                    )
                                                     rate_limit_hit = True
                                                     break
                                             except Exception as e:
-                                                logger.warning(f"Error processing SSE event: {e}")
+                                                logger.warning(
+                                                    f"Error processing SSE event: {e}"
+                                                )
 
-                                logger.info(f"ADK stream completed for session {session_id}: {line_count} events processed")
+                                logger.info(
+                                    f"ADK stream completed for session {session_id}: {line_count} events processed"
+                                )
 
                         # Only send completion events if rate limit was NOT hit
                         if not rate_limit_hit:
@@ -893,7 +1041,11 @@ async def run_session_sse(
                             # CRITICAL FIX: Include final_content in research_complete payload
                             # The frontend now extracts the complete answer from this event
                             # to ensure full content is displayed (not just streaming chunks)
-                            final_content = "".join(accumulated_content) if accumulated_content else "Research completed."
+                            final_content = (
+                                "".join(accumulated_content)
+                                if accumulated_content
+                                else "Research completed."
+                            )
 
                             session_store.update_session(
                                 session_id,
@@ -901,18 +1053,25 @@ async def run_session_sse(
                                 final_report=final_content,
                             )
 
-                            await broadcaster.broadcast_event(session_id, {
-                                "type": "research_complete",
-                                "data": {
-                                    "content": final_content,  # CRITICAL: Include complete content
-                                    "status": "completed",
-                                    "timestamp": datetime.now().isoformat()
-                                }
-                            })
+                            await broadcaster.broadcast_event(
+                                session_id,
+                                {
+                                    "type": "research_complete",
+                                    "data": {
+                                        "content": final_content,  # CRITICAL: Include complete content
+                                        "status": "completed",
+                                        "timestamp": datetime.now().isoformat(),
+                                    },
+                                },
+                            )
 
-                            logger.info(f"Agent execution completed for session {session_id}")
+                            logger.info(
+                                f"Agent execution completed for session {session_id}"
+                            )
                         else:
-                            logger.warning(f"Agent execution terminated due to rate limit for session {session_id}")
+                            logger.warning(
+                                f"Agent execution terminated due to rate limit for session {session_id}"
+                            )
 
                 except asyncio.CancelledError:
                     # CRIT-006: Handle task cancellation gracefully
@@ -921,7 +1080,9 @@ async def run_session_sse(
                     raise
                 except Exception as e:
                     # CRIT-006: Proper error logging for task failures
-                    logger.exception(f"Error in agent execution for session {session_id}: {e}")
+                    logger.exception(
+                        f"Error in agent execution for session {session_id}: {e}"
+                    )
 
                     assistant_message = {
                         "id": f"msg_{uuid.uuid4()}_assistant",
@@ -931,13 +1092,16 @@ async def run_session_sse(
                     }
                     session_store.add_message(session_id, assistant_message)
 
-                    await broadcaster.broadcast_event(session_id, {
-                        "type": "error",
-                        "data": {
-                            "error": str(e),
-                            "timestamp": datetime.now().isoformat()
-                        }
-                    })
+                    await broadcaster.broadcast_event(
+                        session_id,
+                        {
+                            "type": "error",
+                            "data": {
+                                "error": str(e),
+                                "timestamp": datetime.now().isoformat(),
+                            },
+                        },
+                    )
                     session_store.update_session(session_id, status="error")
 
             # CRIT-006: Start ADK call in background with task tracking and timeout
@@ -947,22 +1111,29 @@ async def run_session_sse(
                     # Default timeout of 300 seconds (5 minutes) for research tasks
                     await asyncio.wait_for(call_adk_and_stream(), timeout=300.0)
                 except asyncio.TimeoutError:
-                    logger.error(f"Task timeout for session {session_id} after 300 seconds")
+                    logger.error(
+                        f"Task timeout for session {session_id} after 300 seconds"
+                    )
                     session_store.update_session(session_id, status="timeout")
-                    await broadcaster.broadcast_event(session_id, {
-                        "type": "error",
-                        "data": {
-                            "error": "Task timed out after 5 minutes",
-                            "timestamp": datetime.now().isoformat()
-                        }
-                    })
+                    await broadcaster.broadcast_event(
+                        session_id,
+                        {
+                            "type": "error",
+                            "data": {
+                                "error": "Task timed out after 5 minutes",
+                                "timestamp": datetime.now().isoformat(),
+                            },
+                        },
+                    )
 
             # CRIT-006: Create and register task (cancellation handled automatically by register_task)
             task = asyncio.create_task(call_with_timeout())
             await broadcaster._session_manager.register_task(session_id, task)
 
             research_started = True
-            logger.info(f"ADK request task created and registered for session {session_id}")
+            logger.info(
+                f"ADK request task created and registered for session {session_id}"
+            )
 
         except Exception as e:
             logger.error(f"Failed to initiate ADK call: {e!s}", exc_info=True)
@@ -999,7 +1170,7 @@ async def get_session_sse(
     app_name: str,
     user_id: str,
     session_id: str,
-    current_user: User | None = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional()),
 ) -> StreamingResponse:
     """
     GET endpoint for EventSource SSE connection (legacy pattern).
@@ -1046,7 +1217,7 @@ async def append_session_message(
     user_id: str,
     session_id: str,
     payload: SessionMessagePayload,
-    current_user: User | None = Depends(get_current_active_user_optional())
+    current_user: User | None = Depends(get_current_active_user_optional()),
 ) -> dict[str, Any]:
     """
     Persist a single message into the session store (ADK-compliant).
@@ -1106,7 +1277,9 @@ async def deprecated_list_chat_sessions(
 
     This endpoint is kept for backwards compatibility.
     """
-    logger.warning("DEPRECATED: /api/sessions endpoint used. Please migrate to ADK format")
+    logger.warning(
+        "DEPRECATED: /api/sessions endpoint used. Please migrate to ADK format"
+    )
     return await list_user_sessions(DEFAULT_APP_NAME, DEFAULT_USER_ID, current_user)
 
 
@@ -1120,8 +1293,12 @@ async def deprecated_get_chat_session(
 
     This endpoint is kept for backwards compatibility.
     """
-    logger.warning(f"DEPRECATED: /api/sessions/{session_id} endpoint used. Please migrate to ADK format")
-    return await get_user_session(DEFAULT_APP_NAME, DEFAULT_USER_ID, session_id, current_user)
+    logger.warning(
+        f"DEPRECATED: /api/sessions/{session_id} endpoint used. Please migrate to ADK format"
+    )
+    return await get_user_session(
+        DEFAULT_APP_NAME, DEFAULT_USER_ID, session_id, current_user
+    )
 
 
 @adk_router.put("/api/sessions/{session_id}")
@@ -1135,8 +1312,12 @@ async def deprecated_update_chat_session(
 
     This endpoint is kept for backwards compatibility.
     """
-    logger.warning(f"DEPRECATED: PUT /api/sessions/{session_id} endpoint used. Please migrate to ADK format")
-    return await update_user_session(DEFAULT_APP_NAME, DEFAULT_USER_ID, session_id, payload, current_user)
+    logger.warning(
+        f"DEPRECATED: PUT /api/sessions/{session_id} endpoint used. Please migrate to ADK format"
+    )
+    return await update_user_session(
+        DEFAULT_APP_NAME, DEFAULT_USER_ID, session_id, payload, current_user
+    )
 
 
 @adk_router.delete("/api/sessions/{session_id}")
@@ -1149,8 +1330,12 @@ async def deprecated_delete_chat_session(
 
     This endpoint is kept for backwards compatibility.
     """
-    logger.warning(f"DEPRECATED: DELETE /api/sessions/{session_id} endpoint used. Please migrate to ADK format")
-    return await delete_user_session(DEFAULT_APP_NAME, DEFAULT_USER_ID, session_id, current_user)
+    logger.warning(
+        f"DEPRECATED: DELETE /api/sessions/{session_id} endpoint used. Please migrate to ADK format"
+    )
+    return await delete_user_session(
+        DEFAULT_APP_NAME, DEFAULT_USER_ID, session_id, current_user
+    )
 
 
 @adk_router.post("/api/sessions/{session_id}/messages")
@@ -1164,5 +1349,9 @@ async def deprecated_append_chat_message(
 
     This endpoint is kept for backwards compatibility.
     """
-    logger.warning(f"DEPRECATED: /api/sessions/{session_id}/messages endpoint used. Please migrate to ADK format")
-    return await append_session_message(DEFAULT_APP_NAME, DEFAULT_USER_ID, session_id, payload, current_user)
+    logger.warning(
+        f"DEPRECATED: /api/sessions/{session_id}/messages endpoint used. Please migrate to ADK format"
+    )
+    return await append_session_message(
+        DEFAULT_APP_NAME, DEFAULT_USER_ID, session_id, payload, current_user
+    )

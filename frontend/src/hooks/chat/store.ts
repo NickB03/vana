@@ -266,6 +266,17 @@ export const useChatStore = create<ChatStreamState>()(
           const session = state.sessions[sessionId];
           if (!session) return state;
 
+          const messageIndex = session.messages.findIndex(msg => msg.id === messageId);
+          if (messageIndex === -1) return state;
+
+          const message = session.messages[messageIndex];
+
+          // FIX: Don't update completed messages (prevents multi-message corruption)
+          if (message.metadata?.completed) {
+            console.log('[store] Skipping update - message already completed:', messageId);
+            return state;
+          }
+
           const timestamp = new Date().toISOString();
           const messages = session.messages.map(msg =>
             msg.id === messageId ? { ...msg, content, timestamp } : msg

@@ -1,10 +1,12 @@
+import type { AdkContent, AdkEvent } from '@/lib/streaming/adk/types';
+
 /**
  * TypeScript types for Vana API integration
  * Generated from FastAPI backend analysis
  */
 
 // Generic API Response Types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -209,9 +211,18 @@ export interface AgentNetworkEvent extends SSEEvent {
     isAgentTransfer?: boolean;
     transferTargetAgent?: string;
     isFinalResponse?: boolean;
-    _raw?: any; // Raw ADK event for debugging
-    // Legacy event fields (for backward compatibility)
-    content?: string;
+    _raw?: AdkEvent; // Raw ADK event for debugging
+    // FIX 2: ADK completion detection fields
+    usageMetadata?: {
+      candidatesTokenCount?: number;
+      promptTokenCount?: number;
+      totalTokenCount?: number;
+      promptTokensDetails?: { cachedContent?: number };
+    };
+    partial?: boolean; // True if streaming response is incomplete
+    invocationId?: string; // Unique ID grouping related events
+    // Legacy and ADK content fields (backward compatible)
+    content?: string | AdkContent; // string for legacy, AdkContent object for ADK events
     text?: string;
     role?: string;
     kind?: string;

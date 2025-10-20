@@ -55,15 +55,23 @@ export function useSSEEventHandlers({
   // Memoize stable event data to prevent infinite loops
   const stableResearchEvent = useMemo(() => {
     if (!researchSSE.lastEvent || !currentSessionId) return null;
-    
+
     try {
       const { type, data } = researchSSE.lastEvent;
-      
+
       // Defensive null checking
       if (!type) return null;
-      
+
       const payload = (data ?? {}) as Record<string, any>;
-      
+
+      console.log('[sse-event-handlers] stableResearchEvent memo triggered:', {
+        type,
+        invocationId: data?.invocationId,
+        hasContent: !!data?.content,
+        hasUsageMetadata: !!data?.usageMetadata,
+        isPartial: data?.partial,
+      });
+
       return {
         type,
         payload,
@@ -75,10 +83,13 @@ export function useSSEEventHandlers({
     }
   }, [
     researchSSE.lastEvent?.type,
+    researchSSE.lastEvent?.data?.invocationId,  // FIX: Unique per ADK event
     researchSSE.lastEvent?.data?.timestamp,
     researchSSE.lastEvent?.data?.current_phase,
     researchSSE.lastEvent?.data?.overall_progress,
     researchSSE.lastEvent?.data?.status,
+    // Monitor content reference changes without expensive serialization
+    researchSSE.lastEvent?.data?.content,
     currentSessionId,
   ]);
 
@@ -131,25 +142,40 @@ export function useSSEEventHandlers({
 
   /**
    * Creates a progress message if it doesn't exist
+   * FIX: Now creates unique progress message per user message to prevent corruption
    */
   const ensureProgressMessage = () => {
     if (!currentSessionId || !currentSession) return null;
 
+    const inReplyToMessageId = currentSession.metadata?.lastUserMessageId;
+
+    // FIX: Find progress message for THIS specific user message (not any old one)
     const progressMessage = currentSession.messages.find(
-      msg => msg.role === 'assistant' && msg.metadata?.kind === 'assistant-progress'
+      msg => msg.role === 'assistant'
+        && msg.metadata?.kind === 'assistant-progress'
+        && msg.metadata?.inReplyTo === inReplyToMessageId
+        && !msg.metadata?.completed  // Only find incomplete progress messages
     );
 
-    if (progressMessage) return progressMessage.id;
+    if (progressMessage) {
+      console.log('[ensureProgressMessage] Found existing progress message:', progressMessage.id, 'for user message:', inReplyToMessageId);
+      return progressMessage.id;
+    }
 
     const messageId = `msg_${uuidv4()}_assistant_progress`;
     const placeholder: ChatMessage = {
       id: messageId,
-      content: 'Preparing research response...',
+      content: 'Thinking...',
       role: 'assistant',
       timestamp: new Date().toISOString(),
       sessionId: currentSessionId,
-      metadata: { kind: 'assistant-progress' },
+      metadata: {
+        kind: 'assistant-progress',
+        inReplyTo: inReplyToMessageId,  // Link to user message
+        completed: false,
+      },
     };
+    console.log('[ensureProgressMessage] Created new progress message:', messageId, 'for user message:', inReplyToMessageId);
     addMessageInStore(currentSessionId, placeholder);
     return messageId;
   };
@@ -220,6 +246,13 @@ export function useSSEEventHandlers({
     const { type, payload } = stableResearchEvent;
     const session = currentSession;
     if (!session) return;
+
+    console.log('[sse-event-handlers] Processing event in effect:', {
+      type,
+      invocationId: payload?.invocationId,
+      hasUsageMetadata: !!payload?.usageMetadata,
+      isPartial: payload?.partial,
+    });
 
     switch (type) {
       case 'research_started': {
@@ -391,6 +424,46 @@ export function useSSEEventHandlers({
             });
           }
         }
+        break;
+      }
+      case 'message': {
+        // PHASE 3.3: ADK canonical streaming message handler
+        // Handles ADK events with content.parts[].text structure
+        if (!mountedRef.current) return;
+
+        // FIX: Skip partial events entirely - only process complete chunks
+        // Partial events are intermediate and should not create visible messages
+        if (payload.partial === true) {
+          console.log('[message handler] Skipping partial event - not rendering');
+          return;
+        }
+
+        const messageId = ensureProgressMessage();
+        if (!messageId || !mountedRef.current) return;
+
+        // Extract content from ADK event structure
+        const extractionResult = extractContentFromADKEvent(payload, '');
+        const content = extractionResult.content;
+
+        // Only update if we have actual content
+        if (content && mountedRef.current) {
+          updateStreamingMessageInStore(currentSessionId, messageId, content);
+        }
+
+        // Check if this is the final response (has usageMetadata and not partial)
+        const isComplete = payload.usageMetadata && !payload.partial;
+        if (isComplete && mountedRef.current) {
+          completeStreamingMessageInStore(currentSessionId, messageId);
+          setSessionStreamingInStore(currentSessionId, false);
+          setIsStreaming(false);
+          console.log('[message handler] Final response completed with usageMetadata');
+        }
+
+        // Set streaming state for non-complete responses
+        if (!isComplete && mountedRef.current) {
+          setSessionStreamingInStore(currentSessionId, true);
+        }
+
         break;
       }
       default:

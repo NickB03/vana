@@ -119,6 +119,9 @@ class SessionRecord:
     # Phase 2: Raw ADK event storage for replay, analytics, and debugging
     events: list[dict[str, Any]] = field(default_factory=list)
 
+    # Phase 3.3: Custom metadata for session lifecycle management
+    metadata: dict[str, Any] = field(default_factory=dict)
+
     # Security metadata
     user_binding_token: str | None = None
     client_ip: str | None = None
@@ -146,6 +149,7 @@ class SessionRecord:
             "current_phase": self.current_phase,
             "final_report": self.final_report,
             "error": self.error,
+            "metadata": self.metadata,  # Phase 3.3: Include metadata
         }
         if include_messages:
             data["messages"] = [message.to_dict() for message in self.messages]
@@ -757,8 +761,12 @@ class SessionStore:
         status: str | None = None,
         client_ip: str | None = None,
         user_agent: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> SessionRecord:
-        """Create the session if missing and update metadata with security validation."""
+        """Create the session if missing and update metadata with security validation.
+
+        Phase 3.3: Added metadata parameter for session lifecycle management (TTL tracking).
+        """
         # Validate session access first
         validation_result = self._validate_session_access(
             session_id, client_ip, user_agent, user_id
@@ -789,6 +797,7 @@ class SessionStore:
                     client_ip=client_ip,
                     user_agent=user_agent,
                     last_access_at=now,
+                    metadata=metadata or {},  # Phase 3.3: Initialize metadata
                 )
                 self._sessions[session_id] = record
 
@@ -826,6 +835,10 @@ class SessionStore:
                 if user_id is not None:
                     record.user_id = user_id
 
+                # Phase 3.3: Update metadata if provided
+                if metadata is not None:
+                    record.metadata.update(metadata)
+
                 # Update security metadata if provided
                 if client_ip and record.client_ip != client_ip:
                     # IP change detected - potential security concern
@@ -857,6 +870,58 @@ class SessionStore:
                 if hasattr(record, key):
                     setattr(record, key, value)
             record.updated_at = _iso(_now())
+            return record
+
+    def update_session_metadata(
+        self,
+        session_id: str,
+        metadata: dict[str, Any],
+        client_ip: str | None = None,
+        user_agent: str | None = None,
+        user_id: int | None = None,
+    ) -> SessionRecord:
+        """Update session metadata without affecting other fields.
+
+        Phase 3.3: Used to mark sessions as "used" when first message is received.
+
+        Args:
+            session_id: Session identifier
+            metadata: Metadata dict to merge with existing metadata
+            client_ip: Optional client IP for security validation
+            user_agent: Optional user agent for tamper detection
+            user_id: Optional user identifier for binding validation
+
+        Returns:
+            Updated SessionRecord
+        """
+        validation_result = self._validate_session_access(
+            session_id, client_ip, user_agent, user_id
+        )
+
+        if not validation_result.is_valid:
+            if client_ip:
+                self._record_failed_attempt(
+                    client_ip,
+                    session_id,
+                    validation_result.error_code or "VALIDATION_FAILED",
+                )
+            raise ValueError(
+                f"Session validation failed: {validation_result.error_message or validation_result.error_code}"
+            )
+
+        with self._lock:
+            record = self._sessions.get(session_id)
+            if not record:
+                raise ValueError(f"Session {session_id} not found")
+
+            # Merge metadata and update security bookkeeping
+            record.metadata.update(metadata)
+            now = _iso(_now())
+            record.updated_at = now
+            record.last_access_at = now
+            record.failed_access_attempts = 0
+            if validation_result.security_warnings:
+                record.security_warnings.extend(validation_result.security_warnings)
             return record
 
     def delete_session(

@@ -357,3 +357,12 @@ READY_FOR_*.md
 
 # Duplicate backend directory (created by agents)
 vana/
+
+# Phase 3.3 cleanup - Temporary files and one-time scripts
+CLAUDE-backup.md
+DEPLOY_NOW.sh
+coderabbit-review.txt
+eslint-result.json
+test_screenshots/
+mcp-memory-service/
+docs/plans/*.sh

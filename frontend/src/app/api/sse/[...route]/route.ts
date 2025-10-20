@@ -19,7 +19,10 @@ export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
 // Environment configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL =
+  process.env.API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  'http://localhost:8000';
 
 /**
  * Security Configuration: Allowlist for unauthenticated SSE access
