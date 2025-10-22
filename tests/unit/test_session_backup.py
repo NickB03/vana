@@ -19,6 +19,14 @@ from datetime import datetime
 
 import pytest
 
+# Import exceptions from session_backup module (handles missing google.cloud dependency)
+try:
+    from google.api_core import exceptions
+except ModuleNotFoundError:
+    # Fallback for test environments without google-cloud-storage
+    import app.utils.session_backup as session_backup_module
+    exceptions = session_backup_module.exceptions  # type: ignore
+
 from app.utils.session_backup import (
     backup_session_db_to_gcs,
     backup_session_db_to_gcs_async,

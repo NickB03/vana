@@ -114,10 +114,12 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         # - POST /apps/{app}/users/{user}/sessions (session creation - Phase 3.3)
         # - GET/POST /apps/{app}/users/{user}/sessions/{session}/run (message execution)
         # - POST /run_sse (canonical ADK streaming - Phase 3.3)
+        # - /api/sessions/* (deprecated endpoints - backwards compatibility)
         is_adk_session_path = "/apps/" in request.url.path and (
             "/sessions/" in request.url.path or request.url.path.endswith("/sessions")
         )
-        if is_adk_session_path or request.url.path == "/run_sse":
+        is_deprecated_session_path = request.url.path.startswith("/api/sessions")
+        if is_adk_session_path or is_deprecated_session_path or request.url.path == "/run_sse":
             response = await call_next(request)
             return self._ensure_csrf_cookie(request, response)
 

@@ -13,8 +13,10 @@
 # limitations under the License.
 
 import asyncio
+import concurrent.futures
 import logging
 import os
+import threading
 from datetime import datetime
 
 # These backup utilities rely on Google Cloud Storage.  Provide optional
@@ -191,7 +193,6 @@ def backup_session_db_to_gcs(
         try:
             asyncio.get_running_loop()
             # We're in an async context, need to run in thread pool
-            import concurrent.futures
 
             def run_async() -> str | None:
                 # Create new event loop for this thread
@@ -251,7 +252,6 @@ def restore_session_db_from_gcs(
         try:
             asyncio.get_running_loop()
             # We're in an async context, need to run in thread pool
-            import concurrent.futures
 
             def run_async() -> bool:
                 # Create new event loop for this thread
@@ -399,7 +399,6 @@ def create_periodic_backup_job(
         )
     except RuntimeError:
         # No event loop, fall back to threading
-        import threading
         import time
 
         def backup_loop() -> None:
