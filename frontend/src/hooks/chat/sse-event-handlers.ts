@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ChatMessage, ResearchProgress } from '../../lib/api/types';
 import { useChatStore } from './store';
 import { ChatSession, StableResearchEvent, StableAgentEvent } from './types';
-import { extractContentFromADKEvent } from './adk-content-extraction';
+import { extractContentFromADKEvent, hasExtractableContent } from './adk-content-extraction';
 
 interface SSEEventHandlerParams {
   currentSessionId: string | null;
@@ -435,6 +435,13 @@ export function useSSEEventHandlers({
         // Partial events are intermediate and should not create visible messages
         if (payload.partial === true) {
           console.log('[message handler] Skipping partial event - not rendering');
+          return;
+        }
+
+        // FIX: Skip events with no user-facing content (tool invocations, thinking, etc.)
+        // Events containing only functionCall or thoughtSignature should not be rendered
+        if (!hasExtractableContent(payload)) {
+          console.log('[message handler] Skipping event - no extractable content (functionCall/thoughtSignature only)');
           return;
         }
 

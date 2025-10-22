@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "memory-service": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "~/Projects/vana/mcp-memory-service",
+        "run",
+        "memory",
+        "server",
+        "-s",
+        "sqlite_vec"
+      ]
+    }
+  }
+}
+

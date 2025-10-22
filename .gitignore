@@ -281,9 +281,13 @@ frontend/src/test-*.ts
 
 # Archive directories (one-time docs and scripts)
 archive/
+!archive/reports/
 **/archive/
 frontend/archive/
 docs/archive/
+!docs/integration/
+!docs/memory/
+!docs/troubleshooting/
 tests/archive/
 *.tsbuildinfo
 uv.lock
