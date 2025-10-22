@@ -40,6 +40,15 @@ except ImportError:
     METRICS_AVAILABLE = False
     logger.warning("Performance metrics collector not available")
 
+# Cost tracking integration (simple, portfolio-optimized)
+try:
+    from app.utils.cost_tracker import get_cost_tracker
+
+    COST_TRACKING_AVAILABLE = True
+except ImportError:
+    COST_TRACKING_AVAILABLE = False
+    logger.warning("Cost tracking not available")
+
 
 @dataclass
 class AgentMetrics:
@@ -183,8 +192,36 @@ class AgentNetworkState:
         self.data_dependencies[agent_name].add(data_key)
 
 
-# Global network state - in production, this would be managed by the session
+# DEPRECATED: Global network state for backward compatibility only
+# Production code should use session-scoped state via get_network_state()
 _network_state = AgentNetworkState()
+
+
+def get_network_state(session) -> AgentNetworkState:
+    """Get or create session-scoped network state.
+
+    This ensures each session has its own isolated network state,
+    preventing race conditions and state corruption in concurrent sessions.
+
+    Args:
+        session: The ADK session object
+
+    Returns:
+        AgentNetworkState instance for this session
+    """
+    if not session:
+        # Fallback to global state if no session (backward compatibility)
+        logger.warning("No session available, using global network state (not thread-safe)")
+        return _network_state
+
+    # Use a specific key to avoid conflicts with other session state
+    network_state_key = "_agent_network_state"
+
+    if network_state_key not in session.state:
+        session.state[network_state_key] = AgentNetworkState()
+        logger.debug(f"Created new network state for session {getattr(session, 'id', 'unknown')}")
+
+    return session.state[network_state_key]
 
 
 def before_agent_callback(callback_context: CallbackContext) -> None:
@@ -204,23 +241,25 @@ def before_agent_callback(callback_context: CallbackContext) -> None:
         start_time = time.time()
         callback_context.state[f"{agent_name}_start_time"] = start_time
 
+        # Get session-scoped network state (thread-safe)
+        network_state = get_network_state(invocation_ctx.session)
+
         # Update network state
-        global _network_state
-        _network_state.push_agent(agent_name)
+        network_state.push_agent(agent_name)
 
         # Get agent metrics
-        _network_state.get_or_create_agent_metrics(agent_name)
+        network_state.get_or_create_agent_metrics(agent_name)
 
         # Check for parent agent relationship
-        if len(_network_state.execution_stack) > 1:
-            parent_agent = _network_state.execution_stack[-2]
-            _network_state.add_relationship(parent_agent, agent_name, "invokes")
+        if len(network_state.execution_stack) > 1:
+            parent_agent = network_state.execution_stack[-2]
+            network_state.add_relationship(parent_agent, agent_name, "invokes")
 
         # Analyze data dependencies from session state
         if invocation_ctx.session and invocation_ctx.session.state:
             session_keys = set(invocation_ctx.session.state.keys())
             for key in session_keys:
-                _network_state.add_data_dependency(agent_name, key)
+                network_state.add_data_dependency(agent_name, key)
 
         # Emit agent network event (using camelCase for frontend compatibility)
         network_event = {
@@ -234,10 +273,10 @@ def before_agent_callback(callback_context: CallbackContext) -> None:
                 "action": "Starting",
                 "status": "active",
                 "timestamp": datetime.now().isoformat(),
-                "executionStack": _network_state.execution_stack.copy(),
-                "activeAgents": list(_network_state.active_agents),
-                "parentAgent": _network_state.execution_stack[-2]
-                if len(_network_state.execution_stack) > 1
+                "executionStack": network_state.execution_stack.copy(),
+                "activeAgents": list(network_state.active_agents),
+                "parentAgent": network_state.execution_stack[-2]
+                if len(network_state.execution_stack) > 1
                 else None,
                 "sessionId": getattr(invocation_ctx.session, "id", None)
                 if invocation_ctx.session
@@ -295,12 +334,14 @@ def after_agent_callback(callback_context: CallbackContext) -> None:
         if start_time_key in callback_context.state:
             del callback_context.state[start_time_key]
 
+        # Get session-scoped network state (thread-safe)
+        network_state = get_network_state(invocation_ctx.session)
+
         # Update network state
-        global _network_state
-        _network_state.pop_agent()
+        network_state.pop_agent()
 
         # Update agent metrics
-        metrics = _network_state.get_or_create_agent_metrics(agent_name)
+        metrics = network_state.get_or_create_agent_metrics(agent_name)
         metrics.update_timing(execution_time)
 
         # Check if agent completed successfully (no escalation)
@@ -331,9 +372,9 @@ def after_agent_callback(callback_context: CallbackContext) -> None:
                     state_changes.append(key)
 
         # Record data flow relationships with next agent in stack
-        if state_changes and _network_state.execution_stack:
-            next_agent = _network_state.execution_stack[-1]
-            _network_state.add_relationship(
+        if state_changes and network_state.execution_stack:
+            next_agent = network_state.execution_stack[-1]
+            network_state.add_relationship(
                 agent_name, next_agent, "provides_data", state_changes
             )
 
@@ -365,7 +406,7 @@ def after_agent_callback(callback_context: CallbackContext) -> None:
                 "hasOutput": bool(state_changes),
                 "success": not has_error,
                 "stateChanges": state_changes,
-                "activeAgents": list(_network_state.active_agents),
+                "activeAgents": list(network_state.active_agents),
                 "metrics": {
                     "invocationCount": metrics.invocation_count,
                     "averageExecutionTime": metrics.average_execution_time,
@@ -409,6 +450,38 @@ def after_agent_callback(callback_context: CallbackContext) -> None:
             except Exception as e:
                 logger.error(f"Failed to record performance metrics completion: {e}")
 
+        # Record cost tracking if available
+        if COST_TRACKING_AVAILABLE:
+            try:
+                # Extract token usage from last event
+                last_event = invocation_ctx.session.events[-1] if invocation_ctx.session.events else None
+                if last_event and hasattr(last_event, 'usage_metadata') and last_event.usage_metadata:
+                    usage = last_event.usage_metadata
+                    cost_tracker = get_cost_tracker()
+
+                    # Get model name from agent
+                    model_name = (
+                        invocation_ctx.agent.model
+                        if hasattr(invocation_ctx.agent, 'model')
+                        else "unknown"
+                    )
+
+                    # Record usage
+                    cost_result = cost_tracker.record_usage(
+                        agent_name=agent_name,
+                        model=str(model_name),
+                        input_tokens=getattr(usage, 'prompt_token_count', 0),
+                        output_tokens=getattr(usage, 'candidates_token_count', 0),
+                        cached_tokens=getattr(usage, 'cached_content_token_count', 0),
+                        session_id=getattr(invocation_ctx.session, 'id', None),
+                    )
+
+                    # Add cost to network event
+                    network_event["data"]["cost_usd"] = cost_result["cost_usd"]
+                    network_event["data"]["total_tokens"] = cost_result["tokens"]["total"]
+            except Exception as e:
+                logger.error(f"Failed to record cost tracking: {e}")
+
         logger.info(f"Agent {agent_name} completed execution in {execution_time:.2f}s")
 
     except Exception as e:
@@ -436,7 +509,8 @@ def agent_network_tracking_callback(callback_context: CallbackContext) -> None:
         invocation_ctx = callback_context._invocation_context
         agent_name = invocation_ctx.agent.name if invocation_ctx.agent else "unknown"
 
-        global _network_state
+        # Get session-scoped network state (thread-safe)
+        network_state = get_network_state(invocation_ctx.session)
 
         # Analyze all events from this session to build comprehensive network picture
         agent_interactions = {}
@@ -476,7 +550,7 @@ def agent_network_tracking_callback(callback_context: CallbackContext) -> None:
 
         # Build data flow relationships
         for agent, info in agent_interactions.items():
-            metrics = _network_state.get_or_create_agent_metrics(agent)
+            metrics = network_state.get_or_create_agent_metrics(agent)
 
             # Update tool usage
             for tool in info["tools_used"]:
@@ -484,12 +558,12 @@ def agent_network_tracking_callback(callback_context: CallbackContext) -> None:
 
             # Determine data dependencies
             for key in info["state_keys_read"]:
-                _network_state.add_data_dependency(agent, key)
+                network_state.add_data_dependency(agent, key)
 
                 # If another agent wrote this key, create data flow relationship
                 if key in state_modifications and state_modifications[key] != agent:
                     writer_agent = state_modifications[key]
-                    _network_state.add_relationship(
+                    network_state.add_relationship(
                         writer_agent, agent, "provides_data", [key]
                     )
 
@@ -501,7 +575,7 @@ def agent_network_tracking_callback(callback_context: CallbackContext) -> None:
             sub_agent_names = [
                 sub_agent.name for sub_agent in invocation_ctx.agent.sub_agents
             ]
-            _network_state.set_hierarchy(agent_name, sub_agent_names)
+            network_state.set_hierarchy(agent_name, sub_agent_names)
 
         # Create comprehensive network snapshot
         network_snapshot = {
@@ -520,9 +594,9 @@ def agent_network_tracking_callback(callback_context: CallbackContext) -> None:
                         "last_invocation": metrics.last_invocation.isoformat()
                         if metrics.last_invocation
                         else None,
-                        "is_active": name in _network_state.active_agents,
+                        "is_active": name in network_state.active_agents,
                     }
-                    for name, metrics in _network_state.agents.items()
+                    for name, metrics in network_state.agents.items()
                 },
                 "relationships": [
                     {
@@ -535,14 +609,14 @@ def agent_network_tracking_callback(callback_context: CallbackContext) -> None:
                         if rel.last_interaction
                         else None,
                     }
-                    for rel in _network_state.relationships
+                    for rel in network_state.relationships
                 ],
-                "hierarchy": _network_state.agent_hierarchy,
-                "execution_stack": _network_state.execution_stack.copy(),
-                "active_agents": list(_network_state.active_agents),
+                "hierarchy": network_state.agent_hierarchy,
+                "execution_stack": network_state.execution_stack.copy(),
+                "active_agents": list(network_state.active_agents),
                 "data_dependencies": {
                     agent: list(deps)
-                    for agent, deps in _network_state.data_dependencies.items()
+                    for agent, deps in network_state.data_dependencies.items()
                 },
             },
         }
@@ -559,21 +633,35 @@ def agent_network_tracking_callback(callback_context: CallbackContext) -> None:
         callback_context.state["agent_network_snapshot"] = network_snapshot
 
         logger.info(
-            f"Generated network snapshot with {len(_network_state.agents)} agents and {len(_network_state.relationships)} relationships"
+            f"Generated network snapshot with {len(network_state.agents)} agents and {len(network_state.relationships)} relationships"
         )
 
     except Exception as e:
         logger.error(f"Error in agent_network_tracking_callback: {e}")
 
 
-def get_current_network_state() -> dict[str, Any]:
+def get_current_network_state(session=None) -> dict[str, Any]:
     """Get the current agent network state for external access.
+
+    Args:
+        session: Optional session object to get session-scoped state.
+                If None, falls back to global state (deprecated).
 
     Returns:
         Dictionary containing the current network state including agents,
         relationships, hierarchy, and metrics.
+
+    Note:
+        DEPRECATED: Calling without a session uses global state which is not thread-safe.
+        Always provide a session object for production use.
     """
-    global _network_state
+    # Get appropriate network state (session-scoped or global fallback)
+    network_state = get_network_state(session) if session else _network_state
+
+    if not session:
+        logger.warning(
+            "get_current_network_state() called without session - using global state (not thread-safe)"
+        )
 
     return {
         "agents": {
@@ -588,9 +676,9 @@ def get_current_network_state() -> dict[str, Any]:
                 "last_invocation": metrics.last_invocation.isoformat()
                 if metrics.last_invocation
                 else None,
-                "is_active": name in _network_state.active_agents,
+                "is_active": name in network_state.active_agents,
             }
-            for name, metrics in _network_state.agents.items()
+            for name, metrics in network_state.agents.items()
         },
         "relationships": [
             {
@@ -603,23 +691,38 @@ def get_current_network_state() -> dict[str, Any]:
                 if rel.last_interaction
                 else None,
             }
-            for rel in _network_state.relationships
+            for rel in network_state.relationships
         ],
-        "hierarchy": _network_state.agent_hierarchy,
-        "execution_stack": _network_state.execution_stack.copy(),
-        "active_agents": list(_network_state.active_agents),
+        "hierarchy": network_state.agent_hierarchy,
+        "execution_stack": network_state.execution_stack.copy(),
+        "active_agents": list(network_state.active_agents),
         "data_dependencies": {
             agent: list(deps)
-            for agent, deps in _network_state.data_dependencies.items()
+            for agent, deps in network_state.data_dependencies.items()
         },
     }
 
 
-def reset_network_state() -> None:
-    """Reset the global network state. Useful for testing or new sessions."""
-    global _network_state
-    _network_state = AgentNetworkState()
-    logger.info("Agent network state reset")
+def reset_network_state(session=None) -> None:
+    """Reset the network state.
+
+    Args:
+        session: Optional session object to reset session-scoped state.
+                If None, resets global state (deprecated).
+
+    Note:
+        DEPRECATED: Resetting global state is not thread-safe.
+        Prefer creating a new session for fresh network state.
+    """
+    if session:
+        # Reset session-scoped state by creating new instance
+        session.state["_agent_network_state"] = AgentNetworkState()
+        logger.info(f"Agent network state reset for session {getattr(session, 'id', 'unknown')}")
+    else:
+        # Legacy global state reset
+        global _network_state
+        _network_state = AgentNetworkState()
+        logger.warning("Global agent network state reset (not thread-safe - prefer session-scoped reset)")
 
 
 def composite_after_agent_callback_with_research_sources(

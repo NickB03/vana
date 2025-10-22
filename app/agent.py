@@ -319,7 +319,9 @@ section_researcher = LlmAgent(
     *   **Execution Directive:** You **MUST** systematically process every goal prefixed with `[RESEARCH]` before proceeding to Phase 2.
     *   For each `[RESEARCH]` goal:
         *   **Query Generation:** Formulate a comprehensive set of 4-5 targeted search queries. These queries must be expertly designed to broadly cover the specific intent of the `[RESEARCH]` goal from multiple angles.
-        *   **Execution:** Utilize the `brave_search` tool to execute **all** generated queries for the current `[RESEARCH]` goal.
+        *   **PARALLEL EXECUTION:** Execute **ALL** generated queries for the current `[RESEARCH]` goal **in parallel** by calling `brave_search` multiple times in the **same turn**. The ADK framework automatically handles concurrent execution, resulting in 3-5x faster research compared to sequential execution.
+            *   ✅ CORRECT: Call `brave_search(query1)`, `brave_search(query2)`, `brave_search(query3)`, `brave_search(query4)`, `brave_search(query5)` together
+            *   ❌ INCORRECT: Wait for each search to complete before starting the next one
         *   **Summarization:** Synthesize the search results into a detailed, coherent summary that directly addresses the objective of the `[RESEARCH]` goal.
         *   **Internal Storage:** Store this summary, clearly tagged or indexed by its corresponding `[RESEARCH]` goal, for later and exclusive use in Phase 2. You **MUST NOT** lose or discard any generated summaries.
 
@@ -390,7 +392,9 @@ enhanced_search_executor = LlmAgent(
     You have been activated because the previous research was graded as 'fail'.
 
     1.  Review the 'research_evaluation' state key to understand the feedback and required fixes.
-    2.  Execute EVERY query listed in 'follow_up_queries' using the 'brave_search' tool.
+    2.  **PARALLEL EXECUTION:** Execute **ALL** queries listed in 'follow_up_queries' **in parallel** by calling `brave_search` multiple times in the **same turn**. ADK's parallel tool calling will execute them concurrently for faster results.
+        - ✅ CORRECT: Call all follow-up searches together in one turn
+        - ❌ INCORRECT: Execute searches one at a time sequentially
     3.  Synthesize the new findings and COMBINE them with the existing information in 'section_research_findings'.
     4.  Your output MUST be the new, complete, and improved set of research findings.
     """,

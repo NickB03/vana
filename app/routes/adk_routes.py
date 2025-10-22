@@ -9,6 +9,7 @@ The ADK expects very specific path structures for proper integration.
 """
 
 import asyncio
+import hashlib
 import json
 import logging
 import uuid
@@ -952,10 +953,13 @@ async def run_session_sse(
 
                                                     # P0-003 FIX: Deduplicate parts before adding to accumulated_content
                                                     # Hash-based deduplication prevents same content from text + functionResponse
+                                                    # Using SHA-256 for collision-resistant hashing (more reliable than built-in hash())
                                                     for part_content in parts_to_add:
-                                                        content_hash = hash(
-                                                            part_content
-                                                        )
+                                                        # Use SHA-256 hash truncated to 16 chars for collision resistance
+                                                        # Python's hash() can produce collisions; SHA-256 is cryptographically secure
+                                                        content_hash = hashlib.sha256(
+                                                            part_content.encode('utf-8')
+                                                        ).hexdigest()[:16]
                                                         if (
                                                             content_hash
                                                             not in seen_content_hashes
@@ -968,7 +972,7 @@ async def run_session_sse(
                                                             )
                                                         else:
                                                             logger.debug(
-                                                                f"[P0-003] Skipped duplicate content: {len(part_content)} chars"
+                                                                f"[P0-003] Skipped duplicate content: {len(part_content)} chars (hash: {content_hash})"
                                                             )
 
                                                     # Broadcast update if we have content
@@ -1355,3 +1359,170 @@ async def deprecated_append_chat_message(
     return await append_session_message(
         DEFAULT_APP_NAME, DEFAULT_USER_ID, session_id, payload, current_user
     )
+
+
+# ═══════════════════════════════════════════════════════════════════
+# DEBUGGING & MONITORING ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════
+
+
+@adk_router.get("/debug/session/{session_id}/state")
+async def get_session_debug_state(
+    session_id: str,
+    current_user: User | None = current_active_user_dep,
+) -> dict[str, Any]:
+    """Get comprehensive debugging state for a session.
+
+    **Enhanced Debugging Endpoint** - Provides complete session diagnostics including:
+    - SSE broadcaster statistics
+    - Session metadata and status
+    - Event history and subscriber count
+    - Background task status
+    - Memory usage metrics
+
+    **Security**: Requires authentication in production
+
+    Args:
+        session_id: Session ID to inspect
+        current_user: Authenticated user (required in production)
+
+    Returns:
+        Comprehensive debugging information for the session
+
+    **Example Response**:
+    ```json
+    {
+      "sessionId": "session_abc123",
+      "session": {
+        "exists": true,
+        "hasMessages": true,
+        "messageCount": 5,
+        "status": "active"
+      },
+      "broadcaster": {
+        "subscribers": 2,
+        "eventsBuffered": 15,
+        "hasBackgroundTask": true,
+        "taskStatus": "running"
+      },
+      "endpoints": {
+        "sseStream": "/apps/vana/users/default/sessions/session_abc123/run",
+        "eventHistory": "/agent_network_history"
+      },
+      "timestamp": "2025-10-21T10:30:00Z"
+    }
+    ```
+    """
+    logger.info(f"Debug state requested for session {session_id}")
+
+    broadcaster = get_sse_broadcaster()
+    stats = await broadcaster.get_stats()
+
+    # Get session-specific stats
+    session_stats = stats.get("sessionStats", {}).get(session_id, {})
+
+    # Check if session exists in session store
+    session_exists = session_store.session_exists(session_id)
+    session_metadata = {}
+
+    if session_exists:
+        try:
+            # Get session metadata
+            metadata = session_store.get_session_metadata(session_id)
+            session_metadata = {
+                "exists": True,
+                "hasMessages": metadata.get("has_messages", False),
+                "messageCount": metadata.get("message_count", 0),
+                "status": metadata.get("status", "unknown"),
+                "createdAt": metadata.get("created_at"),
+                "updatedAt": metadata.get("updated_at"),
+                "ttlMinutes": metadata.get("ttl_minutes"),
+            }
+        except Exception as e:
+            logger.warning(f"Error fetching session metadata: {e}")
+            session_metadata = {"exists": True, "error": str(e)}
+    else:
+        session_metadata = {"exists": False}
+
+    # Get background task status
+    task_status = await broadcaster._session_manager.get_task_status(session_id)
+
+    return {
+        "sessionId": session_id,
+        "session": session_metadata,
+        "broadcaster": {
+            "subscribers": session_stats.get("subscribers", 0),
+            "eventsBuffered": session_stats.get("historySize", 0),
+            "hasBackgroundTask": task_status.get("has_task", False),
+            "taskStatus": task_status.get("status"),
+            "taskCancelled": task_status.get("cancelled", False),
+        },
+        "networkState": {
+            "note": "Network state is session-scoped and managed automatically",
+            "info": "Use SSE stream for real-time agent network updates",
+        },
+        "endpoints": {
+            "sseStream": f"/apps/{DEFAULT_APP_NAME}/users/{DEFAULT_USER_ID}/sessions/{session_id}/run",
+            "canonicalSSE": "/run_sse (requires POST with session_id in body)",
+            "eventHistory": "/agent_network_history",
+            "agentNetworkSSE": f"/agent_network_sse/{session_id}",
+        },
+        "broadcasterGlobalStats": {
+            "totalSessions": stats.get("totalSessions", 0),
+            "totalSubscribers": stats.get("totalSubscribers", 0),
+            "totalEventsBuffered": stats.get("totalEvents", 0),
+            "memoryUsageMB": stats.get("memoryUsageMB", 0),
+        },
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+@adk_router.get("/debug/broadcaster/stats")
+async def get_broadcaster_stats(
+    current_user: User | None = current_active_user_dep,
+) -> dict[str, Any]:
+    """Get comprehensive SSE broadcaster statistics.
+
+    **Global Monitoring Endpoint** - Provides system-wide broadcaster metrics:
+    - Active sessions and subscribers
+    - Memory usage and event buffer sizes
+    - Cleanup metrics and performance data
+    - Configuration settings
+
+    **Security**: Requires authentication in production
+
+    Returns:
+        Complete broadcaster statistics and configuration
+
+    **Use Cases**:
+    - Operational monitoring
+    - Performance analysis
+    - Memory leak detection
+    - Capacity planning
+    """
+    broadcaster = get_sse_broadcaster()
+    stats = await broadcaster.get_stats()
+
+    # Enhance with additional metadata
+    stats["endpoints"] = {
+        "sseStreams": "/apps/{app}/users/{user}/sessions/{session}/run",
+        "canonicalSSE": "/run_sse (POST)",
+        "agentNetworkSSE": "/agent_network_sse/{session_id}",
+        "eventHistory": "/agent_network_history",
+        "sessionDebug": "/debug/session/{session_id}/state",
+    }
+
+    stats["healthStatus"] = {
+        "status": "healthy"
+        if stats.get("totalSessions", 0) < 100
+        else "degraded"
+        if stats.get("totalSessions", 0) < 200
+        else "critical",
+        "reason": f"{stats.get('totalSessions', 0)} active sessions"
+        if stats.get("totalSessions", 0) >= 100
+        else "Normal operation",
+    }
+
+    stats["timestamp"] = datetime.now().isoformat()
+
+    return stats

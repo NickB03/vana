@@ -130,6 +130,17 @@ export async function GET(
       headers['Authorization'] = `Bearer ${accessToken}`;
     }
 
+    // CONSISTENCY FIX: Forward CSRF token to backend (matches POST proxy behavior)
+    // Even though we skip CSRF validation in the proxy for localhost,
+    // the backend still expects it. Forward the token from the client.
+    const csrfToken = request.headers.get('x-csrf-token');
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken;
+      console.log('[SSE Proxy] Forwarding CSRF token to backend');
+    } else {
+      console.warn('[SSE Proxy] No CSRF token in request headers');
+    }
+
     // Important: Don't use standard fetch for SSE streams
     // Instead, create a proper streaming response
     try {

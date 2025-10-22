@@ -777,6 +777,24 @@ async def health_check() -> dict:
     # Calculate response time
     response_time_ms = round((time.time() - start_time) * 1000, 2)
 
+    # Get agent network statistics from SSE broadcaster
+    try:
+        broadcaster = get_sse_broadcaster()
+        broadcaster_stats = await broadcaster.get_stats()
+        agent_network_stats = {
+            "activeSessions": broadcaster_stats.get("totalSessions", 0),
+            "totalSubscribers": broadcaster_stats.get("totalSubscribers", 0),
+            "eventsBuffered": broadcaster_stats.get("totalEvents", 0),
+            "memoryUsageMB": broadcaster_stats.get("memoryUsageMB", 0),
+            "backgroundTasksActive": broadcaster_stats.get("backgroundTasksActive", 0),
+            "status": broadcaster_stats.get("health", "unknown"),
+        }
+    except Exception as e:
+        # Fallback if broadcaster unavailable
+        agent_network_stats = {
+            "error": f"Could not retrieve broadcaster stats: {e!s}"
+        }
+
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
@@ -789,7 +807,8 @@ async def health_check() -> dict:
         "system_metrics": system_metrics,
         "dependencies": dependencies,
         "response_time_ms": response_time_ms,
-        "active_adk_sessions": 0,  # TODO: replace with real count when ADK session tracking is wired
+        "active_adk_sessions": agent_network_stats.get("activeSessions", 0),
+        "agentNetwork": agent_network_stats,
         "uptime_check": "operational",
     }
 
