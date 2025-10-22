@@ -199,10 +199,15 @@ const Index = () => {
                     </DropdownMenuSubContent>
                   </DropdownMenuSub>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Sign Out</span>
-                  </DropdownMenuItem>
+                  {isAuthenticated ? (
+                    <DropdownMenuItem onClick={handleLogout}>
+                      <span>Sign Out</span>
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onClick={() => navigate("/auth")}>
+                      <span>Sign In</span>
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
