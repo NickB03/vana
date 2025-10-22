@@ -65,16 +65,34 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Handle browser back button
+  useEffect(() => {
+    const handlePopState = () => {
+      if (showChat) {
+        setShowChat(false);
+        setCurrentSessionId(undefined);
+        setInput("");
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [showChat]);
+
   const handleNewChat = () => {
     setCurrentSessionId(undefined);
     setInput("");
     setShowChat(false);
+    // Reset browser history to home state
+    window.history.pushState(null, "", "/");
   };
 
   const handleSessionSelect = (sessionId: string) => {
     setInput(""); // Clear input when switching sessions
     setCurrentSessionId(sessionId);
     setShowChat(true);
+    // Push state for browser back button
+    window.history.pushState({ showChat: true }, "", "/");
   };
 
   const handleLogout = async () => {
@@ -100,6 +118,8 @@ const Index = () => {
     if (sessionId) {
       setCurrentSessionId(sessionId);
       setShowChat(true);
+      // Push state for browser back button
+      window.history.pushState({ showChat: true }, "", "/");
     }
     setIsLoading(false);
   };
