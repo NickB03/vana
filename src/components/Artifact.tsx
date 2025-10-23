@@ -73,8 +73,8 @@ ${artifact.content}
   const renderCode = () => {
     return (
       <div className="w-full h-full overflow-auto bg-muted">
-        <pre className="p-4 text-sm">
-          <code>{artifact.content}</code>
+        <pre className="p-4 text-sm font-mono">
+          <code className="text-foreground whitespace-pre-wrap break-words">{artifact.content}</code>
         </pre>
       </div>
     );

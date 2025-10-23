@@ -24,14 +24,13 @@ export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cl
     cleanContent = cleanContent.replace(fullMatch, `\n\n[View: ${title}]\n\n`);
   }
 
-  // Also detect code blocks that might be HTML/web content
+  // Detect HTML code blocks
   const htmlCodeBlockRegex = /```html\n([\s\S]*?)```/g;
   while ((match = htmlCodeBlockRegex.exec(content)) !== null) {
     const [fullMatch, code] = match;
     
-    // Only convert to artifact if it contains HTML structure
     if (code.includes("<") && code.includes(">") && !artifacts.some(a => a.content === code.trim())) {
-      const title = code.includes("<h1") ? "HTML Preview" : "Code Preview";
+      const title = "HTML Preview";
       
       artifacts.push({
         id: `artifact-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -42,6 +41,62 @@ export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cl
       });
 
       cleanContent = cleanContent.replace(fullMatch, `\n\n[View: ${title}]\n\n`);
+    }
+  }
+
+  // Detect other code blocks (python, javascript, etc.)
+  const codeBlockRegex = /```(\w+)\n([\s\S]*?)```/g;
+  while ((match = codeBlockRegex.exec(content)) !== null) {
+    const [fullMatch, language, code] = match;
+    
+    // Skip if already processed as HTML or if it's a duplicate
+    if (language === 'html' || artifacts.some(a => a.content === code.trim())) {
+      continue;
+    }
+    
+    const languageMap: { [key: string]: string } = {
+      python: "Python Code",
+      javascript: "JavaScript Code",
+      typescript: "TypeScript Code",
+      java: "Java Code",
+      cpp: "C++ Code",
+      c: "C Code",
+      go: "Go Code",
+      rust: "Rust Code",
+      ruby: "Ruby Code",
+      php: "PHP Code",
+      swift: "Swift Code",
+      kotlin: "Kotlin Code",
+    };
+    
+    const title = languageMap[language.toLowerCase()] || `${language} Code`;
+    
+    artifacts.push({
+      id: `artifact-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      type: "code",
+      title: title,
+      content: code.trim(),
+      language: language,
+    });
+
+    cleanContent = cleanContent.replace(fullMatch, `\n\n[View: ${title}]\n\n`);
+  }
+
+  // Detect markdown documents
+  const markdownBlockRegex = /```markdown\n([\s\S]*?)```/g;
+  while ((match = markdownBlockRegex.exec(content)) !== null) {
+    const [fullMatch, markdown] = match;
+    
+    if (!artifacts.some(a => a.content === markdown.trim())) {
+      artifacts.push({
+        id: `artifact-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        type: "markdown",
+        title: "Markdown Document",
+        content: markdown.trim(),
+        language: "markdown",
+      });
+
+      cleanContent = cleanContent.replace(fullMatch, `\n\n[View: Markdown Document]\n\n`);
     }
   }
 
