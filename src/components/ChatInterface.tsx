@@ -28,9 +28,11 @@ import { ThinkingIndicator } from "@/components/ThinkingIndicator";
 interface ChatInterfaceProps {
   sessionId?: string;
   initialPrompt?: string;
+  isCanvasOpen?: boolean;
+  onCanvasToggle?: (isOpen: boolean) => void;
 }
 
-export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) {
+export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, onCanvasToggle }: ChatInterfaceProps) {
   const { messages, isLoading, streamChat } = useChatMessages(sessionId);
   const [input, setInput] = useState("");
   const [streamingMessage, setStreamingMessage] = useState("");
@@ -73,8 +75,15 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
     if (lastAssistantMsg) {
       const { artifacts } = parseArtifacts(lastAssistantMsg.content);
       if (artifacts.length > 0) {
-        setCurrentArtifact(artifacts[artifacts.length - 1]);
+        const newArtifact = artifacts[artifacts.length - 1];
+        setCurrentArtifact(newArtifact);
+        // Auto-open canvas when new artifact is detected
+        if (onCanvasToggle && !isCanvasOpen) {
+          onCanvasToggle(true);
+        }
       }
+    } else {
+      setCurrentArtifact(null);
     }
   }, [messages, streamingMessage]);
 
@@ -97,10 +106,16 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
       }
     );
   };
+  const handleCloseCanvas = () => {
+    if (onCanvasToggle) {
+      onCanvasToggle(false);
+    }
+  };
+
   return (
     <div className="flex h-full flex-col">
       <ResizablePanelGroup direction="horizontal" className="flex-1">
-        <ResizablePanel defaultSize={currentArtifact ? 50 : 100} minSize={30}>
+        <ResizablePanel defaultSize={isCanvasOpen && currentArtifact ? 50 : 100} minSize={30}>
           <div ref={messagesEndRef} className="relative h-full overflow-y-auto">
             <ChatContainerRoot className="h-full">
               <ChatContainerContent className="space-y-0 px-5 py-12">
@@ -249,11 +264,11 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
           </div>
         </ResizablePanel>
 
-        {currentArtifact && (
+        {isCanvasOpen && currentArtifact && (
           <>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={50} minSize={30}>
-              <Artifact artifact={currentArtifact} />
+              <Artifact artifact={currentArtifact} onClose={handleCloseCanvas} />
             </ResizablePanel>
           </>
         )}

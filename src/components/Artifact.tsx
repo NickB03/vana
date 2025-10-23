@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Copy, Maximize2, Minimize2 } from "lucide-react";
+import { Copy, Maximize2, Minimize2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Markdown } from "./prompt-kit/markdown";
 
@@ -107,6 +107,16 @@ ${artifact.content}
               <Maximize2 className="size-4" />
             )}
           </Button>
+          {onClose && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              onClick={onClose}
+            >
+              <X className="size-4" />
+            </Button>
+          )}
         </div>
       </div>
 

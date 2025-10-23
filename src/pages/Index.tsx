@@ -9,7 +9,7 @@ import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatInterface } from "@/components/ChatInterface";
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from "@/components/prompt-kit/prompt-input";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Square, LogOut, Settings, Check, ChevronRight, Palette } from "lucide-react";
+import { ArrowUp, Square, LogOut, Settings, Check, ChevronRight, Palette, PanelRightOpen } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +37,7 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCanvasOpen, setIsCanvasOpen] = useState(false);
 
   useEffect(() => {
     // Skip auth in dev mode
@@ -83,8 +84,13 @@ const Index = () => {
     setCurrentSessionId(undefined);
     setInput("");
     setShowChat(false);
+    setIsCanvasOpen(false);
     // Reset browser history to home state
     window.history.pushState(null, "", "/");
+  };
+
+  const handleCanvasToggle = () => {
+    setIsCanvasOpen(!isCanvasOpen);
   };
 
   const handleSessionSelect = (sessionId: string) => {
@@ -146,6 +152,16 @@ const Index = () => {
               <SidebarTrigger className="-ml-1" />
             </div>
             <div className="flex items-center gap-2">
+              {showChat && (
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={handleCanvasToggle}
+                  className={isCanvasOpen ? "bg-muted" : ""}
+                >
+                  <PanelRightOpen className="h-5 w-5" />
+                </Button>
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon">
@@ -255,6 +271,8 @@ const Index = () => {
               <ChatInterface
                 sessionId={currentSessionId}
                 initialPrompt={input}
+                isCanvasOpen={isCanvasOpen}
+                onCanvasToggle={setIsCanvasOpen}
               />
             )}
           </div>
