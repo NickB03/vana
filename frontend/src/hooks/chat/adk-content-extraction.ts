@@ -127,9 +127,16 @@ function extractStringValue(value: unknown): string | null {
       if (textParts.length > 0) {
         return textParts.join('\n\n');
       }
+      // CRITICAL FIX: If parts array exists but has no text, return null
+      // Do NOT fall through to stringify - this prevents raw JSON from being displayed
+      // The parts array is the canonical ADK structure, so if it exists but has no
+      // extractable text, we've already tried the proper extraction and should not
+      // fall back to stringifying internal coordination messages (functionCall, thoughtSignature)
+      return null;
     }
 
     // Last resort: stringify if it looks like meaningful data
+    // NOTE: This should only trigger for non-ADK structures (legacy formats)
     const stringified = JSON.stringify(value);
     if (stringified !== '{}' && stringified !== '[]') {
       return stringified;
@@ -364,6 +371,12 @@ export function extractContentFromADKEvent(
 export function hasExtractableContent(payload: any): boolean {
   if (!payload || typeof payload !== 'object') {
     return false;
+  }
+
+  // Phase 3.3: Check for error field (503 errors, rate limit errors, etc.)
+  // Error events should be displayed to users, not silently filtered
+  if (payload.error) {
+    return true;
   }
 
   // Check top-level fields

@@ -374,6 +374,15 @@ app: FastAPI = get_fast_api_app(
 app.title = "vana"
 app.description = "API for interacting with the Agent vana"
 
+# Add session verification middleware (ADK-compliant race condition fix)
+from app.middleware.session_verification import SessionVerificationMiddleware
+app.add_middleware(
+    SessionVerificationMiddleware,
+    adk_port=8000,  # Port where backend runs (ADK routes are built into backend)
+    verify_timeout=5,  # 5 second timeout for verification
+    max_retries=3,  # Retry up to 3 times with exponential backoff
+)
+
 # Store ADK configuration for route access
 app.state.agents_dir = AGENTS_DIR
 app.state.session_service_uri = session_service_uri

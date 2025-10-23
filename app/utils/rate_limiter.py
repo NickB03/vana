@@ -8,6 +8,7 @@ with too many concurrent requests.
 import asyncio
 import time
 from collections import deque
+from datetime import datetime
 from typing import Any, Awaitable, Callable, Optional, Type
 from types import TracebackType
 import logging
@@ -252,23 +253,109 @@ class ExponentialBackoff:
 
 # Global rate limiter instance for Gemini API
 #
-# Conservative settings to prevent overwhelming the API with rapid requests:
-# - max_requests: 10 requests per time window
+# Conservative settings optimized for Gemini Free Tier (portfolio project):
+# - max_requests: 8 requests per minute (buffer under 15 RPM free tier limit)
 # - time_window: 60 seconds (1 minute)
-# - max_concurrent: 3 concurrent requests maximum
+# - max_concurrent: 2 concurrent requests (safe for free tier demos)
 #
-# These limits prevent 429 "Too Many Requests" errors which occur when
-# too many requests arrive too quickly, not due to quota exhaustion.
+# Gemini Free Tier Limits (2024/2025):
+# - Gemini 1.5 Flash: 15 RPM, 1M tokens/min, 1500 requests/day
+# - Gemini 1.5 Pro: 2 RPM, 32K tokens/day
 #
-# To adjust limits based on your API tier:
-# - Free tier: Keep at 10 req/60s
-# - Paid tier: Increase to 20-30 req/60s
+# These conservative limits ensure:
+# - Reliable portfolio demo performance
+# - No 503 "model overloaded" errors during presentations
+# - Headroom for API quota variations
+#
+# To adjust for paid tiers:
+# - Standard tier: Increase to max_requests=30, max_concurrent=5
 # - Enterprise: Consult API documentation for limits
 gemini_rate_limiter = AsyncRateLimiter(
-    max_requests=10,
+    max_requests=8,     # Conservative: 8 RPM (leaves buffer under 15 RPM limit)
     time_window=60.0,
-    max_concurrent=10  # Increased from 3 to 10 to prevent semaphore deadlock
+    max_concurrent=2    # Safe for free tier - prevents overwhelming API
 )
+
+
+class DailyQuotaTracker:
+    """
+    Daily quota tracker for API requests (portfolio free-tier protection).
+
+    Tracks daily request count and automatically resets at midnight.
+    Useful for preventing exhaustion of Gemini free tier daily limits
+    (1500 requests/day for Flash, lower for Pro).
+    """
+
+    def __init__(self, max_daily_requests: int = 1000):
+        """
+        Initialize daily quota tracker.
+
+        Args:
+            max_daily_requests: Maximum requests allowed per day (default: 1000)
+                               Conservative default leaves headroom under 1500/day limit
+        """
+        self.max_requests = max_daily_requests
+        self.request_count = 0
+        self.reset_date = datetime.now().date()
+        logger.info(
+            f"Daily quota tracker initialized: {max_daily_requests} requests/day"
+        )
+
+    def check_quota(self) -> bool:
+        """
+        Check if under daily quota.
+
+        Returns:
+            True if under quota, False if exceeded
+
+        Side effects:
+            Resets counter if new day detected
+        """
+        # Reset counter at midnight
+        current_date = datetime.now().date()
+        if current_date > self.reset_date:
+            logger.info(
+                f"Daily quota reset: {self.request_count} requests used yesterday"
+            )
+            self.request_count = 0
+            self.reset_date = current_date
+
+        is_under_quota = self.request_count < self.max_requests
+        if not is_under_quota:
+            logger.warning(
+                f"Daily quota exceeded: {self.request_count}/{self.max_requests}"
+            )
+        return is_under_quota
+
+    def increment(self) -> None:
+        """Increment request counter."""
+        self.request_count += 1
+        if self.request_count % 100 == 0:  # Log every 100 requests
+            logger.info(
+                f"Daily quota usage: {self.request_count}/{self.max_requests} "
+                f"({(self.request_count / self.max_requests * 100):.1f}%)"
+            )
+
+    def get_remaining(self) -> int:
+        """Get remaining requests for today."""
+        self.check_quota()  # Ensure reset if needed
+        return max(0, self.max_requests - self.request_count)
+
+    def get_stats(self) -> dict[str, Any]:
+        """Get current quota statistics."""
+        self.check_quota()  # Ensure reset if needed
+        return {
+            "max_daily_requests": self.max_requests,
+            "requests_used": self.request_count,
+            "requests_remaining": self.get_remaining(),
+            "utilization_percent": (self.request_count / self.max_requests) * 100,
+            "reset_date": self.reset_date.isoformat(),
+        }
+
+
+# Global daily quota tracker instance
+# Conservative limit of 1000 requests/day (leaves headroom under 1500/day Gemini Flash limit)
+daily_quota = DailyQuotaTracker(max_daily_requests=1000)
 
 
 async def with_retry(

@@ -370,3 +370,4 @@ eslint-result.json
 test_screenshots/
 mcp-memory-service/
 docs/plans/*.sh
+archive/

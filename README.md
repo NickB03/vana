@@ -566,6 +566,61 @@ To use Gemini models, ensure you have:
    GOOGLE_CLOUD_PROJECT=your-project-id
    ```
 
+### 🚦 API Rate Limiting
+
+Vana implements comprehensive rate limiting to prevent overwhelming the Gemini API and ensure reliable operation within free-tier constraints.
+
+#### Rate Limit Configuration
+
+**Request Rate Limiting:**
+- **8 requests per minute** (conservative buffer under 15 RPM free-tier limit)
+- **2 concurrent requests maximum** (prevents API overload)
+- **1000 requests per day** (leaves headroom under 1500/day limit)
+
+**Implementation Details:**
+```python
+# app/utils/rate_limiter.py
+gemini_rate_limiter = AsyncRateLimiter(
+    max_requests=8,        # 8 RPM limit
+    time_window=60.0,      # 60 seconds
+    max_concurrent=2       # 2 concurrent requests
+)
+
+daily_quota = DailyQuotaTracker(max_daily_requests=1000)
+```
+
+#### Gemini Free Tier Limits (2024/2025)
+
+| Model | RPM | TPM | Daily Limit |
+|-------|-----|-----|-------------|
+| Gemini 1.5 Flash | 15 | 1M tokens | 1500 requests |
+| Gemini 1.5 Pro | 2 | — | 32K tokens |
+
+#### Rate Limit Behavior
+
+**When limits are reached:**
+1. **RPM Limit**: Requests are queued and processed when tokens become available
+2. **Daily Quota**: Returns `429 Too Many Requests` with user-friendly error message
+3. **503 Errors**: Automatically normalized and displayed to users with retry suggestions
+
+**User Experience:**
+- Subtle UI notice informs users about free-tier constraints
+- Error messages provide clear guidance for retry timing
+- No silent failures - all errors are displayed in chat
+
+**For Production Deployments:**
+
+To adjust limits for paid tiers, modify `app/utils/rate_limiter.py`:
+```python
+# Standard tier example
+gemini_rate_limiter = AsyncRateLimiter(
+    max_requests=30,       # Increase to 30 RPM
+    max_concurrent=5       # Allow more concurrent requests
+)
+
+daily_quota = DailyQuotaTracker(max_daily_requests=10000)
+```
+
 ---
 
 ## 🧪 Testing

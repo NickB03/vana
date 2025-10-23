@@ -7,6 +7,7 @@ import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction
 import { FileUpload, FileUploadTrigger } from '@/components/ui/file-upload'
 import { Plus, Mic, ArrowUp } from 'lucide-react'
 import { memoWithTracking, useStableCallback, useStableArray } from '@/lib/react-performance'
+import { RateLimitNoticeCompact } from '@/components/RateLimitNotice'
 
 interface VanaHomePageProps {
   onStartChat: (prompt: string) => void
@@ -176,6 +177,11 @@ function VanaHomePage({ onStartChat, isBusy = false, autoFocus = false }: VanaHo
             </PromptSuggestion>
           ))}
         </div>
+      </div>
+
+      {/* Phase 3.3: Rate Limit Notice for Portfolio Demo */}
+      <div className="w-full max-w-2xl mt-6">
+        <RateLimitNoticeCompact />
       </div>
     </div>
   )

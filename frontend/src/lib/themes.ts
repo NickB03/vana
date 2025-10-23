@@ -35,6 +35,22 @@ export interface ThemeColors {
   sidebarAccentForeground: string
   sidebarBorder: string
   sidebarRing: string
+  // Semantic status colors
+  success: string
+  successForeground: string
+  warning: string
+  warningForeground: string
+  info: string
+  infoForeground: string
+  // Agent status colors (theme-specific variations)
+  statusActive: string
+  statusActiveForeground: string
+  statusWaiting: string
+  statusWaitingForeground: string
+  statusCompleted: string
+  statusCompletedForeground: string
+  statusError: string
+  statusErrorForeground: string
 }
 
 export interface ThemePreset {
@@ -78,6 +94,22 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebarAccentForeground: '240 5.9% 10%',
       sidebarBorder: '220 13% 91%',
       sidebarRing: '217.2 91.2% 59.8%',
+      // Semantic colors
+      success: '142.1 76.2% 36.3%',
+      successForeground: '0 0% 100%',
+      warning: '43 96.4% 56.3%',
+      warningForeground: '24 9.8% 10%',
+      info: '217.2 91.2% 59.8%',
+      infoForeground: '0 0% 100%',
+      // Agent status colors
+      statusActive: '217.2 91.2% 59.8%',
+      statusActiveForeground: '0 0% 100%',
+      statusWaiting: '43 96.4% 56.3%',
+      statusWaitingForeground: '24 9.8% 10%',
+      statusCompleted: '142.1 76.2% 36.3%',
+      statusCompletedForeground: '0 0% 100%',
+      statusError: '0 84.2% 60.2%',
+      statusErrorForeground: '0 0% 98%',
     },
     dark: {
       background: '240 10% 3.9%',
@@ -107,6 +139,22 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebarAccentForeground: '240 4.8% 95.9%',
       sidebarBorder: '240 3.7% 15.9%',
       sidebarRing: '217.2 91.2% 59.8%',
+      // Semantic colors
+      success: '142.1 70.6% 45.3%',
+      successForeground: '0 0% 100%',
+      warning: '43 96.4% 56.3%',
+      warningForeground: '20 14.3% 4.1%',
+      info: '217.2 91.2% 59.8%',
+      infoForeground: '222.2 47.4% 11.2%',
+      // Agent status colors
+      statusActive: '217.2 91.2% 59.8%',
+      statusActiveForeground: '222.2 47.4% 11.2%',
+      statusWaiting: '43 96.4% 56.3%',
+      statusWaitingForeground: '20 14.3% 4.1%',
+      statusCompleted: '142.1 70.6% 45.3%',
+      statusCompletedForeground: '0 0% 100%',
+      statusError: '0 62.8% 30.6%',
+      statusErrorForeground: '0 0% 98%',
     },
   },
 
@@ -142,6 +190,22 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebarAccentForeground: '240 5.9% 10%',
       sidebarBorder: '240 5.9% 90%',
       sidebarRing: '240 5.9% 10%',
+      // Semantic colors
+      success: '142.1 76.2% 36.3%',
+      successForeground: '0 0% 100%',
+      warning: '43 96.4% 56.3%',
+      warningForeground: '24 9.8% 10%',
+      info: '217.2 91.2% 59.8%',
+      infoForeground: '0 0% 100%',
+      // Agent status colors
+      statusActive: '217.2 91.2% 59.8%',
+      statusActiveForeground: '0 0% 100%',
+      statusWaiting: '43 96.4% 56.3%',
+      statusWaitingForeground: '24 9.8% 10%',
+      statusCompleted: '142.1 76.2% 36.3%',
+      statusCompletedForeground: '0 0% 100%',
+      statusError: '0 84.2% 60.2%',
+      statusErrorForeground: '0 0% 98%',
     },
     dark: {
       background: '240 10% 3.9%',
@@ -171,6 +235,22 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebarAccentForeground: '0 0% 98%',
       sidebarBorder: '240 3.7% 15.9%',
       sidebarRing: '240 4.9% 83.9%',
+      // Semantic colors
+      success: '142.1 70.6% 45.3%',
+      successForeground: '0 0% 100%',
+      warning: '43 96.4% 56.3%',
+      warningForeground: '20 14.3% 4.1%',
+      info: '217.2 91.2% 59.8%',
+      infoForeground: '222.2 47.4% 11.2%',
+      // Agent status colors
+      statusActive: '217.2 91.2% 59.8%',
+      statusActiveForeground: '222.2 47.4% 11.2%',
+      statusWaiting: '43 96.4% 56.3%',
+      statusWaitingForeground: '20 14.3% 4.1%',
+      statusCompleted: '142.1 70.6% 45.3%',
+      statusCompletedForeground: '0 0% 100%',
+      statusError: '0 62.8% 30.6%',
+      statusErrorForeground: '0 0% 98%',
     },
   },
 
@@ -206,6 +286,22 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebarAccentForeground: '222.2 47.4% 11.2%',
       sidebarBorder: '214.3 31.8% 91.4%',
       sidebarRing: '222.2 84% 4.9%',
+      // Semantic colors
+      success: '142.1 76.2% 36.3%',
+      successForeground: '0 0% 100%',
+      warning: '43 96.4% 56.3%',
+      warningForeground: '24 9.8% 10%',
+      info: '217.2 91.2% 59.8%',
+      infoForeground: '0 0% 100%',
+      // Agent status colors
+      statusActive: '217.2 91.2% 59.8%',
+      statusActiveForeground: '0 0% 100%',
+      statusWaiting: '43 96.4% 56.3%',
+      statusWaitingForeground: '24 9.8% 10%',
+      statusCompleted: '142.1 76.2% 36.3%',
+      statusCompletedForeground: '0 0% 100%',
+      statusError: '0 84.2% 60.2%',
+      statusErrorForeground: '210 40% 98%',
     },
     dark: {
       background: '222.2 84% 4.9%',
@@ -235,6 +331,22 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebarAccentForeground: '210 40% 98%',
       sidebarBorder: '217.2 32.6% 17.5%',
       sidebarRing: '212.7 26.8% 83.9%',
+      // Semantic colors
+      success: '142.1 70.6% 45.3%',
+      successForeground: '0 0% 100%',
+      warning: '43 96.4% 56.3%',
+      warningForeground: '20 14.3% 4.1%',
+      info: '217.2 91.2% 59.8%',
+      infoForeground: '222.2 47.4% 11.2%',
+      // Agent status colors
+      statusActive: '217.2 91.2% 59.8%',
+      statusActiveForeground: '222.2 47.4% 11.2%',
+      statusWaiting: '43 96.4% 56.3%',
+      statusWaitingForeground: '20 14.3% 4.1%',
+      statusCompleted: '142.1 70.6% 45.3%',
+      statusCompletedForeground: '0 0% 100%',
+      statusError: '0 62.8% 30.6%',
+      statusErrorForeground: '0 0% 98%',
     },
   },
 
@@ -270,6 +382,22 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebarAccentForeground: '24 9.8% 10%',
       sidebarBorder: '20 5.9% 90%',
       sidebarRing: '20 14.3% 4.1%',
+      // Semantic colors
+      success: '142.1 76.2% 36.3%',
+      successForeground: '0 0% 100%',
+      warning: '43 96.4% 56.3%',
+      warningForeground: '24 9.8% 10%',
+      info: '217.2 91.2% 59.8%',
+      infoForeground: '0 0% 100%',
+      // Agent status colors
+      statusActive: '217.2 91.2% 59.8%',
+      statusActiveForeground: '0 0% 100%',
+      statusWaiting: '43 96.4% 56.3%',
+      statusWaitingForeground: '24 9.8% 10%',
+      statusCompleted: '142.1 76.2% 36.3%',
+      statusCompletedForeground: '0 0% 100%',
+      statusError: '0 84.2% 60.2%',
+      statusErrorForeground: '0 0% 98%',
     },
     dark: {
       background: '20 14.3% 4.1%',
@@ -299,6 +427,22 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebarAccentForeground: '60 9.1% 97.8%',
       sidebarBorder: '12 6.5% 15.1%',
       sidebarRing: '24 5.7% 82.9%',
+      // Semantic colors
+      success: '142.1 70.6% 45.3%',
+      successForeground: '0 0% 100%',
+      warning: '43 96.4% 56.3%',
+      warningForeground: '20 14.3% 4.1%',
+      info: '217.2 91.2% 59.8%',
+      infoForeground: '222.2 47.4% 11.2%',
+      // Agent status colors
+      statusActive: '217.2 91.2% 59.8%',
+      statusActiveForeground: '222.2 47.4% 11.2%',
+      statusWaiting: '43 96.4% 56.3%',
+      statusWaitingForeground: '20 14.3% 4.1%',
+      statusCompleted: '142.1 70.6% 45.3%',
+      statusCompletedForeground: '0 0% 100%',
+      statusError: '0 62.8% 30.6%',
+      statusErrorForeground: '0 0% 98%',
     },
   },
 
@@ -334,6 +478,22 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebarAccentForeground: '240 10% 3.9%', // FIXED: Use dark neutral instead of rose
       sidebarBorder: '240 5.9% 90%',
       sidebarRing: '346.8 77.2% 49.8%',
+      // Semantic colors
+      success: '142.1 76.2% 36.3%',
+      successForeground: '0 0% 100%',
+      warning: '43 96.4% 56.3%',
+      warningForeground: '24 9.8% 10%',
+      info: '217.2 91.2% 59.8%',
+      infoForeground: '0 0% 100%',
+      // Agent status colors
+      statusActive: '217.2 91.2% 59.8%',
+      statusActiveForeground: '0 0% 100%',
+      statusWaiting: '43 96.4% 56.3%',
+      statusWaitingForeground: '24 9.8% 10%',
+      statusCompleted: '142.1 76.2% 36.3%',
+      statusCompletedForeground: '0 0% 100%',
+      statusError: '0 84.2% 60.2%',
+      statusErrorForeground: '0 0% 98%',
     },
     dark: {
       background: '20 14.3% 4.1%',
@@ -363,6 +523,22 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebarAccentForeground: '0 0% 95%', // FIXED: Use light neutral instead of rose
       sidebarBorder: '240 3.7% 15.9%',
       sidebarRing: '346.8 77.2% 49.8%',
+      // Semantic colors
+      success: '142.1 70.6% 45.3%',
+      successForeground: '0 0% 100%',
+      warning: '43 96.4% 56.3%',
+      warningForeground: '20 14.3% 4.1%',
+      info: '217.2 91.2% 59.8%',
+      infoForeground: '222.2 47.4% 11.2%',
+      // Agent status colors
+      statusActive: '217.2 91.2% 59.8%',
+      statusActiveForeground: '222.2 47.4% 11.2%',
+      statusWaiting: '43 96.4% 56.3%',
+      statusWaitingForeground: '20 14.3% 4.1%',
+      statusCompleted: '142.1 70.6% 45.3%',
+      statusCompletedForeground: '0 0% 100%',
+      statusError: '0 62.8% 30.6%',
+      statusErrorForeground: '0 0% 98%',
     },
   },
 
@@ -398,6 +574,22 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebarAccentForeground: '222.2 84% 4.9%', // FIXED: Use darker shade for better contrast
       sidebarBorder: '214.3 31.8% 91.4%',
       sidebarRing: '221.2 83.2% 53.3%',
+      // Semantic colors
+      success: '142.1 76.2% 36.3%',
+      successForeground: '0 0% 100%',
+      warning: '43 96.4% 56.3%',
+      warningForeground: '24 9.8% 10%',
+      info: '217.2 91.2% 59.8%',
+      infoForeground: '0 0% 100%',
+      // Agent status colors
+      statusActive: '217.2 91.2% 59.8%',
+      statusActiveForeground: '0 0% 100%',
+      statusWaiting: '43 96.4% 56.3%',
+      statusWaitingForeground: '24 9.8% 10%',
+      statusCompleted: '142.1 76.2% 36.3%',
+      statusCompletedForeground: '0 0% 100%',
+      statusError: '0 84.2% 60.2%',
+      statusErrorForeground: '0 0% 98%',
     },
     dark: {
       background: '222.2 84% 4.9%',
@@ -427,6 +619,22 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebarAccentForeground: '210 40% 98%', // Already correct - light neutral
       sidebarBorder: '217.2 32.6% 17.5%',
       sidebarRing: '224.3 76.3% 48%',
+      // Semantic colors
+      success: '142.1 70.6% 45.3%',
+      successForeground: '0 0% 100%',
+      warning: '43 96.4% 56.3%',
+      warningForeground: '20 14.3% 4.1%',
+      info: '217.2 91.2% 59.8%',
+      infoForeground: '222.2 47.4% 11.2%',
+      // Agent status colors
+      statusActive: '217.2 91.2% 59.8%',
+      statusActiveForeground: '222.2 47.4% 11.2%',
+      statusWaiting: '43 96.4% 56.3%',
+      statusWaitingForeground: '20 14.3% 4.1%',
+      statusCompleted: '142.1 70.6% 45.3%',
+      statusCompletedForeground: '0 0% 100%',
+      statusError: '0 62.8% 30.6%',
+      statusErrorForeground: '0 0% 98%',
     },
   },
 
@@ -462,6 +670,22 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebarAccentForeground: '240 10% 3.9%', // FIXED: Use dark neutral instead of green
       sidebarBorder: '240 5.9% 90%',
       sidebarRing: '142.1 76.2% 36.3%',
+      // Semantic colors
+      success: '142.1 76.2% 36.3%',
+      successForeground: '0 0% 100%',
+      warning: '43 96.4% 56.3%',
+      warningForeground: '24 9.8% 10%',
+      info: '217.2 91.2% 59.8%',
+      infoForeground: '0 0% 100%',
+      // Agent status colors
+      statusActive: '217.2 91.2% 59.8%',
+      statusActiveForeground: '0 0% 100%',
+      statusWaiting: '43 96.4% 56.3%',
+      statusWaitingForeground: '24 9.8% 10%',
+      statusCompleted: '142.1 76.2% 36.3%',
+      statusCompletedForeground: '0 0% 100%',
+      statusError: '0 84.2% 60.2%',
+      statusErrorForeground: '0 0% 98%',
     },
     dark: {
       background: '20 14.3% 4.1%',
@@ -491,6 +715,22 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebarAccentForeground: '0 0% 95%', // FIXED: Use light neutral instead of green
       sidebarBorder: '240 3.7% 15.9%',
       sidebarRing: '142.1 70.6% 45.3%',
+      // Semantic colors
+      success: '142.1 70.6% 45.3%',
+      successForeground: '0 0% 100%',
+      warning: '43 96.4% 56.3%',
+      warningForeground: '20 14.3% 4.1%',
+      info: '217.2 91.2% 59.8%',
+      infoForeground: '222.2 47.4% 11.2%',
+      // Agent status colors
+      statusActive: '217.2 91.2% 59.8%',
+      statusActiveForeground: '222.2 47.4% 11.2%',
+      statusWaiting: '43 96.4% 56.3%',
+      statusWaitingForeground: '20 14.3% 4.1%',
+      statusCompleted: '142.1 70.6% 45.3%',
+      statusCompletedForeground: '0 0% 100%',
+      statusError: '0 62.8% 30.6%',
+      statusErrorForeground: '0 0% 98%',
     },
   },
 
@@ -526,6 +766,22 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebarAccentForeground: '20 14.3% 4.1%', // FIXED: Use darker foreground for consistency
       sidebarBorder: '20 5.9% 90%',
       sidebarRing: '24.6 95% 53.1%',
+      // Semantic colors
+      success: '142.1 76.2% 36.3%',
+      successForeground: '0 0% 100%',
+      warning: '43 96.4% 56.3%',
+      warningForeground: '24 9.8% 10%',
+      info: '217.2 91.2% 59.8%',
+      infoForeground: '0 0% 100%',
+      // Agent status colors
+      statusActive: '217.2 91.2% 59.8%',
+      statusActiveForeground: '0 0% 100%',
+      statusWaiting: '43 96.4% 56.3%',
+      statusWaitingForeground: '24 9.8% 10%',
+      statusCompleted: '142.1 76.2% 36.3%',
+      statusCompletedForeground: '0 0% 100%',
+      statusError: '0 84.2% 60.2%',
+      statusErrorForeground: '0 0% 98%',
     },
     dark: {
       background: '20 14.3% 4.1%',
@@ -555,6 +811,22 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebarAccentForeground: '60 9.1% 97.8%', // Already correct - light neutral
       sidebarBorder: '12 6.5% 15.1%',
       sidebarRing: '20.5 90.2% 48.2%',
+      // Semantic colors
+      success: '142.1 70.6% 45.3%',
+      successForeground: '0 0% 100%',
+      warning: '43 96.4% 56.3%',
+      warningForeground: '20 14.3% 4.1%',
+      info: '217.2 91.2% 59.8%',
+      infoForeground: '222.2 47.4% 11.2%',
+      // Agent status colors
+      statusActive: '217.2 91.2% 59.8%',
+      statusActiveForeground: '222.2 47.4% 11.2%',
+      statusWaiting: '43 96.4% 56.3%',
+      statusWaitingForeground: '20 14.3% 4.1%',
+      statusCompleted: '142.1 70.6% 45.3%',
+      statusCompletedForeground: '0 0% 100%',
+      statusError: '0 62.8% 30.6%',
+      statusErrorForeground: '0 0% 98%',
     },
   },
 }
@@ -605,5 +877,21 @@ export function themeColorsToCSSVariables(colors: ThemeColors): Record<string, s
     '--sidebar-accent-foreground': colors.sidebarAccentForeground,
     '--sidebar-border': colors.sidebarBorder,
     '--sidebar-ring': colors.sidebarRing,
+    // Semantic colors
+    '--success': colors.success,
+    '--success-foreground': colors.successForeground,
+    '--warning': colors.warning,
+    '--warning-foreground': colors.warningForeground,
+    '--info': colors.info,
+    '--info-foreground': colors.infoForeground,
+    // Agent status colors
+    '--status-active': colors.statusActive,
+    '--status-active-foreground': colors.statusActiveForeground,
+    '--status-waiting': colors.statusWaiting,
+    '--status-waiting-foreground': colors.statusWaitingForeground,
+    '--status-completed': colors.statusCompleted,
+    '--status-completed-foreground': colors.statusCompletedForeground,
+    '--status-error': colors.statusError,
+    '--status-error-foreground': colors.statusErrorForeground,
   }
 }

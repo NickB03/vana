@@ -53,10 +53,10 @@ const AGENT_ICONS: Record<string, React.ComponentType<{ className?: string }>> =
 };
 
 const STATUS_COLORS = {
-  current: 'bg-blue-500 text-white',
-  waiting: 'bg-yellow-500 text-white',
-  completed: 'bg-green-500 text-white',
-  error: 'bg-red-500 text-white',
+  current: 'bg-status-active text-status-active-foreground',
+  waiting: 'bg-status-waiting text-status-waiting-foreground',
+  completed: 'bg-status-completed text-status-completed-foreground',
+  error: 'bg-status-error text-status-error-foreground',
 } as const;
 
 const STATUS_ICONS = {
@@ -164,12 +164,12 @@ const AgentCard = memoWithTracking(({ agent, className }: AgentCardProps) => {
 
         {/* Error Display */}
         {agent.error && (
-          <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-md">
+          <div className="mt-3 p-2 bg-status-error/10 border border-status-error/20 rounded-md">
             <div className="flex items-center space-x-1">
-              <AlertCircle className="h-3 w-3 text-red-600" />
-              <span className="text-xs font-medium text-red-800">Error</span>
+              <AlertCircle className="h-3 w-3 text-status-error" />
+              <span className="text-xs font-medium text-status-error-foreground">Error</span>
             </div>
-            <p className="text-xs text-red-700 mt-1">{agent.error}</p>
+            <p className="text-xs text-status-error-foreground/90 mt-1">{agent.error}</p>
           </div>
         )}
 
@@ -177,7 +177,7 @@ const AgentCard = memoWithTracking(({ agent, className }: AgentCardProps) => {
         {agent.results && typeof agent.results === 'object' && Object.keys(agent.results).length > 0 && (
           <div className="mt-3">
             <p className="text-xs font-medium text-muted-foreground mb-1">Results</p>
-            <div className="text-xs bg-gray-50 p-2 rounded border">
+            <div className="text-xs bg-muted/50 p-2 rounded border">
               {Object.entries(agent.results || {}).slice(0, 2).map(([key, value]) => {
                 // Safe key and value handling with circular reference protection
                 const safeKey = String(key || 'unknown');
@@ -310,25 +310,25 @@ function VanaAgentStatus({ agents, progress, className }: VanaAgentStatusProps) 
             {/* Status Summary */}
             <div className="flex flex-wrap gap-2 mt-3">
               {activeAgents.length > 0 && (
-                <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">
+                <Badge variant="outline" className="bg-info/10 text-info border-info/20">
                   <Activity className="h-3 w-3 mr-1" />
                   {activeAgents.length} Active
                 </Badge>
               )}
               {waitingAgents.length > 0 && (
-                <Badge variant="outline" className="text-yellow-600 border-yellow-200 bg-yellow-50">
+                <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
                   <Clock className="h-3 w-3 mr-1" />
                   {waitingAgents.length} Waiting
                 </Badge>
               )}
               {completedAgents.length > 0 && (
-                <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                <Badge variant="outline" className="bg-success/10 text-success border-success/20">
                   <CheckCircle2 className="h-3 w-3 mr-1" />
                   {completedAgents.length} Completed
                 </Badge>
               )}
               {errorAgents.length > 0 && (
-                <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50">
+                <Badge variant="outline" className="bg-status-error/10 text-status-error border-status-error/20">
                   <AlertCircle className="h-3 w-3 mr-1" />
                   {errorAgents.length} Error
                 </Badge>

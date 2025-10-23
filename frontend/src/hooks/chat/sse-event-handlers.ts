@@ -142,19 +142,37 @@ export function useSSEEventHandlers({
 
   /**
    * Creates a progress message if it doesn't exist
-   * FIX: Now creates unique progress message per user message to prevent corruption
+   * FIX: Now creates unique progress message per ADK invocation to prevent corruption
+   * Each distinct ADK agent response gets its own message (prevents overwriting)
    */
-  const ensureProgressMessage = () => {
+  const ensureProgressMessage = (invocationId?: string) => {
     if (!currentSessionId || !currentSession) return null;
 
     const inReplyToMessageId = currentSession.metadata?.lastUserMessageId;
 
-    // FIX: Find progress message for THIS specific user message (not any old one)
+    // FIX: Find progress message for THIS specific invocation (if provided)
+    // This prevents multiple agent responses from overwriting the same message
+    if (invocationId) {
+      const invocationMessage = currentSession.messages.find(
+        msg => msg.role === 'assistant'
+          && msg.metadata?.invocationId === invocationId
+          && !msg.metadata?.completed
+      );
+
+      if (invocationMessage) {
+        console.log('[ensureProgressMessage] Found existing message for invocation:', invocationId, 'message:', invocationMessage.id);
+        return invocationMessage.id;
+      }
+    }
+
+    // No invocationId or no existing message - find any incomplete message for this user message
+    // This handles legacy events without invocationId
     const progressMessage = currentSession.messages.find(
       msg => msg.role === 'assistant'
         && msg.metadata?.kind === 'assistant-progress'
         && msg.metadata?.inReplyTo === inReplyToMessageId
-        && !msg.metadata?.completed  // Only find incomplete progress messages
+        && !msg.metadata?.completed
+        && !msg.metadata?.invocationId  // Only match messages without invocationId (legacy)
     );
 
     if (progressMessage) {
@@ -162,6 +180,7 @@ export function useSSEEventHandlers({
       return progressMessage.id;
     }
 
+    // Create new message with invocationId tracking
     const messageId = `msg_${uuidv4()}_assistant_progress`;
     const placeholder: ChatMessage = {
       id: messageId,
@@ -172,10 +191,11 @@ export function useSSEEventHandlers({
       metadata: {
         kind: 'assistant-progress',
         inReplyTo: inReplyToMessageId,  // Link to user message
+        invocationId: invocationId,     // Track ADK invocation
         completed: false,
       },
     };
-    console.log('[ensureProgressMessage] Created new progress message:', messageId, 'for user message:', inReplyToMessageId);
+    console.log('[ensureProgressMessage] Created new progress message:', messageId, 'invocation:', invocationId, 'for user message:', inReplyToMessageId);
     addMessageInStore(currentSessionId, placeholder);
     return messageId;
   };
@@ -259,7 +279,8 @@ export function useSSEEventHandlers({
         // P1-005 FIX: Check mounted before state updates
         if (!mountedRef.current) return;
 
-        const messageId = ensureProgressMessage();
+        const invocationId = payload?.invocationId;
+        const messageId = ensureProgressMessage(invocationId);
         if (messageId && mountedRef.current) {
           updateStreamingMessageInStore(
             currentSessionId,
@@ -277,7 +298,8 @@ export function useSSEEventHandlers({
         // P1-005 FIX: Check mounted before state updates
         if (!mountedRef.current) return;
 
-        const messageId = ensureProgressMessage();
+        const invocationId = payload?.invocationId;
+        const messageId = ensureProgressMessage(invocationId);
         if (messageId && mountedRef.current) {
           // For research_update, extract content using ADK extraction (handles parts[])
           // For research_progress, format progress data
@@ -308,7 +330,8 @@ export function useSSEEventHandlers({
         // P1-005 FIX: Check mounted before state updates
         if (!mountedRef.current) return;
 
-        const messageId = ensureProgressMessage();
+        const invocationId = payload?.invocationId;
+        const messageId = ensureProgressMessage(invocationId);
 
         // CRITICAL FIX P0-002: Extract content from ADK event using proper extraction
         // that handles top-level fields, parts[].text, AND parts[].functionResponse
@@ -323,6 +346,7 @@ export function useSSEEventHandlers({
 
         console.log('[P0-002] research_complete extraction:', {
           messageId,
+          invocationId,
           contentLength: finalContent?.length,
           sources: extractionResult.sources,
           storeMessagesCount: currentSession?.messages?.length,
@@ -351,7 +375,8 @@ export function useSSEEventHandlers({
         // P1-005 FIX: Check mounted before state updates
         if (!mountedRef.current) return;
 
-        const messageId = ensureProgressMessage();
+        const invocationId = payload?.invocationId;
+        const messageId = ensureProgressMessage(invocationId);
         const message = payload.message || payload.error || 'An error occurred during research.';
         if (messageId && mountedRef.current) {
           updateStreamingMessageInStore(currentSessionId, messageId, `Error: ${message}`);
@@ -438,6 +463,33 @@ export function useSSEEventHandlers({
           return;
         }
 
+        // Phase 3.3: Handle error events BEFORE filtering (503, rate limits, etc.)
+        // Error events must be displayed to users, not silently discarded
+        if (payload.error) {
+          console.log('[message handler] Processing error event:', payload.error);
+          const messageId = ensureProgressMessage(payload.invocationId);
+          if (messageId && mountedRef.current) {
+            // Extract error message from various formats
+            let errorMessage = 'An error occurred';
+            if (typeof payload.error === 'string') {
+              errorMessage = payload.error;
+            } else if (typeof payload.error === 'object') {
+              errorMessage = payload.error.message || payload.error.detail || JSON.stringify(payload.error);
+            }
+
+            // Create user-friendly error message
+            const displayMessage = `⚠️ **Error:** ${errorMessage}\n\n${
+              payload.error?.retry_after
+                ? `Please wait ${payload.error.retry_after} seconds and try again.`
+                : 'Please try again in a moment.'
+            }`;
+
+            updateStreamingMessageInStore(currentSessionId, messageId, displayMessage);
+            setMessageCompleted(currentSessionId, messageId);
+          }
+          return;
+        }
+
         // FIX: Skip events with no user-facing content (tool invocations, thinking, etc.)
         // Events containing only functionCall or thoughtSignature should not be rendered
         if (!hasExtractableContent(payload)) {
@@ -445,7 +497,10 @@ export function useSSEEventHandlers({
           return;
         }
 
-        const messageId = ensureProgressMessage();
+        // CRITICAL FIX: Use invocationId to create separate messages for each agent response
+        // This prevents the planner's "Does this look good?" from overwriting the plan itself
+        const invocationId = payload?.invocationId;
+        const messageId = ensureProgressMessage(invocationId);
         if (!messageId || !mountedRef.current) return;
 
         // Extract content from ADK event structure
@@ -463,7 +518,7 @@ export function useSSEEventHandlers({
           completeStreamingMessageInStore(currentSessionId, messageId);
           setSessionStreamingInStore(currentSessionId, false);
           setIsStreaming(false);
-          console.log('[message handler] Final response completed with usageMetadata');
+          console.log('[message handler] Final response completed with usageMetadata, invocation:', invocationId);
         }
 
         // Set streaming state for non-complete responses

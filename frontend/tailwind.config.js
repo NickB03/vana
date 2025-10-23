@@ -63,6 +63,36 @@ module.exports = {
   				'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
   				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))'
   			},
+			// Semantic status colors
+			success: {
+				DEFAULT: 'hsl(var(--success))',
+				foreground: 'hsl(var(--success-foreground))'
+			},
+			warning: {
+				DEFAULT: 'hsl(var(--warning))',
+				foreground: 'hsl(var(--warning-foreground))'
+			},
+			info: {
+				DEFAULT: 'hsl(var(--info))',
+				foreground: 'hsl(var(--info-foreground))'
+			},
+			// Agent status colors
+			'status-active': {
+				DEFAULT: 'hsl(var(--status-active))',
+				foreground: 'hsl(var(--status-active-foreground))'
+			},
+			'status-waiting': {
+				DEFAULT: 'hsl(var(--status-waiting))',
+				foreground: 'hsl(var(--status-waiting-foreground))'
+			},
+			'status-completed': {
+				DEFAULT: 'hsl(var(--status-completed))',
+				foreground: 'hsl(var(--status-completed-foreground))'
+			},
+			'status-error': {
+				DEFAULT: 'hsl(var(--status-error))',
+				foreground: 'hsl(var(--status-error-foreground))'
+			},
   			chart: {
   				'1': 'hsl(var(--chart-1))',
   				'2': 'hsl(var(--chart-2))',

@@ -664,7 +664,7 @@ function ChatView({
                                   className={cn(
                                     "rounded-full",
                                     messagesFeedback[message.id] === "upvote" &&
-                                      "text-green-600 bg-green-50",
+                                      "text-success bg-success/10",
                                   )}
                                   onClick={() => handleUpvote(message.id)}
                                 >
@@ -681,7 +681,7 @@ function ChatView({
                                   className={cn(
                                     "rounded-full",
                                     messagesFeedback[message.id] ===
-                                      "downvote" && "text-red-600 bg-red-50",
+                                      "downvote" && "text-status-error bg-status-error/10",
                                   )}
                                   onClick={() => handleDownvote(message.id)}
                                 >
@@ -727,7 +727,7 @@ function ChatView({
                                 </PromptInput>
                               </div>
                             ) : (
-                              <MessageContent className="min-w-fit max-w-[95%] rounded-3xl bg-muted px-5 py-2.5 text-primary sm:max-w-[90%] md:max-w-[85%]">
+                              <MessageContent className="min-w-fit max-w-[95%] rounded-3xl bg-muted px-5 py-2.5 text-foreground sm:max-w-[90%] md:max-w-[85%]">
                                 {message.content}
                               </MessageContent>
                             )}
@@ -805,10 +805,10 @@ function ChatView({
                 <span
                   className={cn(
                     "font-medium",
-                    characterStatus.status === "error" && "text-red-600",
-                    characterStatus.status === "caution" && "text-orange-600",
-                    characterStatus.status === "warning" && "text-yellow-600",
-                    characterStatus.status === "safe" && "text-green-600",
+                    characterStatus.status === "error" && "text-status-error",
+                    characterStatus.status === "caution" && "text-warning",
+                    characterStatus.status === "warning" && "text-warning",
+                    characterStatus.status === "safe" && "text-success",
                   )}
                 >
                   {characterStatus.message}
@@ -939,55 +939,10 @@ function HomePageContent() {
   // Clear session on mount to always show home page when navigating to /
   useEffect(() => {
     chat.switchSession(null);
+    // Mark as ready immediately - CSRF will be fetched when user sends first message
+    setSessionReady(true);
+    setSessionError(null);
   }, []); // Empty dependency array = run only once on mount
-
-  // Phase 3.3: Ensure session exists before user can send messages
-  useEffect(() => {
-    let cancelled = false;
-
-    const initializeSession = async () => {
-      try {
-        // Step 1: Fetch CSRF token first (required for session creation)
-        console.log('[HomePage] Fetching CSRF token');
-        const csrfResponse = await fetch('/api/csrf', {
-          method: 'GET',
-          credentials: 'include',
-        });
-
-        if (!csrfResponse.ok) {
-          throw new Error('Failed to fetch CSRF token');
-        }
-
-        console.log('[HomePage] CSRF token fetched successfully');
-
-        // Step 2: Get store methods (they're async now)
-        const { switchOrCreateSession, currentSessionId } = useChatStore.getState();
-
-        // Step 3: Only create if no current session
-        if (!currentSessionId) {
-          console.log('[HomePage] No session on mount, creating via backend');
-          await switchOrCreateSession();
-        } else {
-          console.log('[HomePage] Session already exists on mount:', currentSessionId);
-        }
-
-        if (!cancelled) {
-          setSessionReady(true);
-          setSessionError(null);
-          console.log('[HomePage] Session initialization complete');
-        }
-      } catch (error) {
-        if (!cancelled) {
-          const errorMsg = error instanceof Error ? error.message : 'Failed to initialize session';
-          console.error('[HomePage] Session initialization error:', errorMsg, error);
-          setSessionError(errorMsg);
-        }
-      }
-    };
-
-    initializeSession();
-    return () => { cancelled = true; };
-  }, []); // Run once on mount
 
   // Use refs to access chat methods without dependency on chat object
   const chatRef = useRef(chat);
@@ -1106,7 +1061,7 @@ function HomePageContent() {
     );
   }
 
-  // Phase 3.3: Show loading while session is being created
+  // Phase 3.3: Show loading while CSRF token is being fetched
   if (!sessionReady) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -1116,14 +1071,14 @@ function HomePageContent() {
           aria-live="polite"
           aria-busy="true"
         >
-          <span className="sr-only">Initializing chat session, please wait</span>
+          <span className="sr-only">Loading, please wait</span>
           <div
             className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"
             aria-hidden="true"
           ></div>
-          <h2 className="text-2xl font-semibold mb-2">Initializing Chat</h2>
+          <h2 className="text-2xl font-semibold mb-2">Loading</h2>
           <p className="text-muted-foreground">
-            Preparing your secure chat session
+            Preparing your session
           </p>
         </div>
       </div>
