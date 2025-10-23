@@ -23,6 +23,7 @@ import { useChatMessages, ChatMessage } from "@/hooks/useChatMessages";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Artifact, ArtifactData } from "@/components/Artifact";
 import { parseArtifacts } from "@/utils/artifactParser";
+import { ThinkingIndicator } from "@/components/ThinkingIndicator";
 
 interface ChatInterfaceProps {
   sessionId?: string;
@@ -118,6 +119,9 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
                     >
                       {isAssistant ? (
                         <div className="group flex w-full flex-col gap-0">
+                          {message.reasoning && (
+                            <ThinkingIndicator reasoning={message.reasoning} />
+                          )}
                           <MessageContent
                             className="prose flex-1 rounded-lg bg-transparent p-0 text-foreground"
                             markdown
@@ -184,6 +188,7 @@ export function ChatInterface({ sessionId, initialPrompt }: ChatInterfaceProps) 
                   return (
                     <MessageComponent className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 items-start">
                       <div className="group flex w-full flex-col gap-0">
+                        <ThinkingIndicator reasoning="Generating response..." isStreaming />
                         <MessageContent className="prose flex-1 rounded-lg bg-transparent p-0 text-foreground" markdown>
                           {cleanContent}
                         </MessageContent>
