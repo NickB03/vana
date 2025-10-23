@@ -9,7 +9,8 @@ import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatInterface } from "@/components/ChatInterface";
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from "@/components/prompt-kit/prompt-input";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Square, LogOut, Settings, Check, ChevronRight, Palette, PanelRightOpen } from "lucide-react";
+import { ArrowUp, Square, LogOut, Settings, Check, ChevronRight, Palette, PanelRightOpen, PanelRightClose } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,6 +39,7 @@ const Index = () => {
   const [showChat, setShowChat] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
+  const [hasArtifact, setHasArtifact] = useState(false);
 
   useEffect(() => {
     // Skip auth in dev mode
@@ -85,12 +87,22 @@ const Index = () => {
     setInput("");
     setShowChat(false);
     setIsCanvasOpen(false);
+    setHasArtifact(false);
     // Reset browser history to home state
     window.history.pushState(null, "", "/");
   };
 
   const handleCanvasToggle = () => {
-    setIsCanvasOpen(!isCanvasOpen);
+    if (hasArtifact) {
+      setIsCanvasOpen(!isCanvasOpen);
+    }
+  };
+
+  const handleArtifactChange = (hasContent: boolean) => {
+    setHasArtifact(hasContent);
+    if (!hasContent) {
+      setIsCanvasOpen(false);
+    }
   };
 
   const handleSessionSelect = (sessionId: string) => {
@@ -153,14 +165,28 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-2">
               {showChat && (
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={handleCanvasToggle}
-                  className={isCanvasOpen ? "bg-muted" : ""}
-                >
-                  <PanelRightOpen className="h-5 w-5" />
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={handleCanvasToggle}
+                        disabled={!hasArtifact}
+                        className={isCanvasOpen ? "bg-accent" : ""}
+                      >
+                        {isCanvasOpen ? (
+                          <PanelRightClose className="h-5 w-5" />
+                        ) : (
+                          <PanelRightOpen className="h-5 w-5" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {!hasArtifact ? "No canvas content" : isCanvasOpen ? "Close canvas" : "Open canvas"}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -273,6 +299,7 @@ const Index = () => {
                 initialPrompt={input}
                 isCanvasOpen={isCanvasOpen}
                 onCanvasToggle={setIsCanvasOpen}
+                onArtifactChange={handleArtifactChange}
               />
             )}
           </div>

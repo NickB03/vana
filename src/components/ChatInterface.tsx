@@ -30,9 +30,10 @@ interface ChatInterfaceProps {
   initialPrompt?: string;
   isCanvasOpen?: boolean;
   onCanvasToggle?: (isOpen: boolean) => void;
+  onArtifactChange?: (hasContent: boolean) => void;
 }
 
-export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, onCanvasToggle }: ChatInterfaceProps) {
+export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, onCanvasToggle, onArtifactChange }: ChatInterfaceProps) {
   const { messages, isLoading, streamChat } = useChatMessages(sessionId);
   const [input, setInput] = useState("");
   const [streamingMessage, setStreamingMessage] = useState("");
@@ -46,6 +47,8 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
     setStreamingMessage("");
     setIsStreaming(false);
     setHasInitialized(false);
+    setCurrentArtifact(null);
+    onArtifactChange?.(false);
   }, [sessionId]);
 
   useEffect(() => {
@@ -77,13 +80,18 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
       if (artifacts.length > 0) {
         const newArtifact = artifacts[artifacts.length - 1];
         setCurrentArtifact(newArtifact);
+        onArtifactChange?.(true);
         // Auto-open canvas when new artifact is detected
         if (onCanvasToggle && !isCanvasOpen) {
           onCanvasToggle(true);
         }
+      } else {
+        setCurrentArtifact(null);
+        onArtifactChange?.(false);
       }
     } else {
       setCurrentArtifact(null);
+      onArtifactChange?.(false);
     }
   }, [messages, streamingMessage]);
 
@@ -107,9 +115,7 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
     );
   };
   const handleCloseCanvas = () => {
-    if (onCanvasToggle) {
-      onCanvasToggle(false);
-    }
+    onCanvasToggle?.(false);
   };
 
   return (
