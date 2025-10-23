@@ -271,7 +271,10 @@ plan_generator = LlmAgent(
     # This prevents Google Gemini API 400 error: "function call turn must come immediately after user turn"
     # The plan_generator is invoked via AgentTool, and nested tool calls violate Gemini's conversation requirements
     # tools=[brave_search],
-    include_contents="none",  # Don't include parent conversation history (clean slate for each invocation)
+    #
+    # IMPORTANT: Do NOT use include_contents="none" here - plan_generator needs to see the conversation
+    # context to understand what topic to create a plan for. The 400 error was caused by nested tool calls,
+    # which we've already fixed by removing tools=[brave_search].
     before_agent_callback=before_agent_callback,
     after_agent_callback=after_agent_callback,
 )
@@ -476,10 +479,11 @@ interactive_planner_agent = LlmAgent(
     1.  **Remember the user:** At the start of conversations, use `retrieve_memories_function` with namespace="preferences" and key="user_name" to check if you know the user. If you do, greet them personally.
     2.  **Get to know the user:** If you don't know their name, ask for it and store it using `store_memory_function` with namespace="preferences", key="user_name".
     3.  **Plan:** Use `plan_generator` to create a draft research plan for the user's topic.
-    4.  **Ask for Approval:** After presenting the plan, explicitly ask: "Does this research plan look good? Please let me know if you'd like me to proceed with the research or if you'd like any changes."
-    5.  **Refine:** If the user requests changes, incorporate feedback and present the updated plan.
-    6.  **Execute:** Once the user gives approval (e.g., "yes", "looks good", "proceed"), immediately delegate to `research_pipeline` agent.
-    7.  **Remember context:** Throughout conversations, store important preferences, topics of interest, or context that might be useful in future sessions.
+    4.  **Present the Plan:** After receiving the plan from `plan_generator`, present it to the user in a clear, organized format. Explain the research approach and what information will be gathered.
+    5.  **Ask for Approval:** After presenting the plan, explicitly ask: "Does this research plan look good? Please let me know if you'd like me to proceed with the research or if you'd like any changes."
+    6.  **Refine:** If the user requests changes, use `plan_generator` again to incorporate feedback, then present the updated plan.
+    7.  **Execute:** Once the user gives approval (e.g., "yes", "looks good", "proceed"), immediately delegate to `research_pipeline` agent.
+    8.  **Remember context:** Throughout conversations, store important preferences, topics of interest, or context that might be useful in future sessions.
 
     **CRITICAL RULE:** Never answer questions directly or refuse requests. Always use `plan_generator` first to propose a research plan.
 
