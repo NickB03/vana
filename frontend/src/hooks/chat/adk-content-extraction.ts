@@ -117,15 +117,28 @@ function extractStringValue(value: unknown): string | null {
     // FIX: Handle ADK content structure with parts[] array
     // When content is an object like {parts: [{text: "..."}], role: "model"}
     if ('parts' in obj && Array.isArray(obj.parts)) {
-      const textParts: string[] = [];
+      const extractedParts: string[] = [];
       for (const part of obj.parts) {
-        if (part && typeof part === 'object' && 'text' in part && typeof part.text === 'string') {
-          const text = part.text.trim();
-          if (text) textParts.push(text);
+        if (part && typeof part === 'object') {
+          // Extract text parts
+          if ('text' in part && typeof part.text === 'string') {
+            const text = part.text.trim();
+            if (text) extractedParts.push(text);
+          }
+
+          // CRITICAL: Also extract functionResponse parts (research plans!)
+          if ('functionResponse' in part && part.functionResponse) {
+            const funcResp = part.functionResponse as ADKFunctionResponse;
+            const result = funcResp.response?.result;
+            if (result && typeof result === 'string') {
+              const text = result.trim();
+              if (text) extractedParts.push(text);
+            }
+          }
         }
       }
-      if (textParts.length > 0) {
-        return textParts.join('\n\n');
+      if (extractedParts.length > 0) {
+        return extractedParts.join('\n\n');
       }
       // CRITICAL FIX: If parts array exists but has no text, return null
       // Do NOT fall through to stringify - this prevents raw JSON from being displayed
