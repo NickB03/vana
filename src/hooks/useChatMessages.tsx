@@ -11,6 +11,19 @@ export interface ChatMessage {
   created_at: string;
 }
 
+export type GenerationStage = 
+  | "analyzing"
+  | "planning"
+  | "generating"
+  | "finalizing"
+  | "complete";
+
+export interface StreamProgress {
+  stage: GenerationStage;
+  message: string;
+  artifactDetected: boolean;
+}
+
 export function useChatMessages(sessionId: string | undefined) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -93,7 +106,7 @@ export function useChatMessages(sessionId: string | undefined) {
 
   const streamChat = async (
     userMessage: string,
-    onDelta: (chunk: string) => void,
+    onDelta: (chunk: string, progress: StreamProgress) => void,
     onDone: () => void
   ) => {
     if (!sessionId) return;
@@ -135,6 +148,32 @@ export function useChatMessages(sessionId: string | undefined) {
       const decoder = new TextDecoder();
       let textBuffer = "";
       let fullResponse = "";
+      let tokenCount = 0;
+      let artifactDetected = false;
+      let artifactClosed = false;
+
+      const updateProgress = (): StreamProgress => {
+        // Detect artifact tags
+        if (!artifactDetected && fullResponse.includes('<artifact')) {
+          artifactDetected = true;
+        }
+        if (!artifactClosed && fullResponse.includes('</artifact>')) {
+          artifactClosed = true;
+        }
+
+        // Determine stage based on content analysis
+        if (tokenCount < 50) {
+          return { stage: "analyzing", message: "Analyzing request...", artifactDetected };
+        } else if (tokenCount < 150 && !artifactDetected) {
+          return { stage: "planning", message: "Planning approach...", artifactDetected };
+        } else if (artifactDetected && !artifactClosed) {
+          return { stage: "generating", message: "Generating UI...", artifactDetected };
+        } else if (artifactClosed || tokenCount > 500) {
+          return { stage: "finalizing", message: "Finishing touches...", artifactDetected };
+        } else {
+          return { stage: "generating", message: "Creating response...", artifactDetected };
+        }
+      };
 
       while (true) {
         const { done, value } = await reader.read();
@@ -161,7 +200,9 @@ export function useChatMessages(sessionId: string | undefined) {
               | undefined;
             if (content) {
               fullResponse += content;
-              onDelta(content);
+              tokenCount += content.split(/\s+/).length;
+              const progress = updateProgress();
+              onDelta(content, progress);
             }
           } catch {
             textBuffer = line + "\n" + textBuffer;

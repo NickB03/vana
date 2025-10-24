@@ -21,7 +21,7 @@ import {
   PromptInputTextarea,
 } from "@/components/prompt-kit/prompt-input";
 import { ScrollButton } from "@/components/prompt-kit/scroll-button";
-import { useChatMessages, ChatMessage } from "@/hooks/useChatMessages";
+import { useChatMessages, ChatMessage, type StreamProgress } from "@/hooks/useChatMessages";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Artifact, ArtifactData } from "@/components/Artifact";
 import { parseArtifacts } from "@/utils/artifactParser";
@@ -40,6 +40,11 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
   const [input, setInput] = useState("");
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [streamProgress, setStreamProgress] = useState<StreamProgress>({
+    stage: "analyzing",
+    message: "Analyzing request...",
+    artifactDetected: false
+  });
   const [hasInitialized, setHasInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [currentArtifact, setCurrentArtifact] = useState<ArtifactData | null>(null);
@@ -120,12 +125,18 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
 
     await streamChat(
       messageToSend,
-      (chunk) => {
+      (chunk, progress) => {
         setStreamingMessage((prev) => prev + chunk);
+        setStreamProgress(progress);
       },
       () => {
         setStreamingMessage("");
         setIsStreaming(false);
+        setStreamProgress({
+          stage: "complete",
+          message: "",
+          artifactDetected: false
+        });
       }
     );
   };
@@ -158,7 +169,7 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
                         {isAssistant ? (
                           <div className="group flex w-full flex-col gap-0">
                             {message.reasoning && (
-                              <ThinkingIndicator reasoning={message.reasoning} />
+                              <ThinkingIndicator status={message.reasoning} />
                             )}
                             <MessageContent
                               className="prose flex-1 rounded-lg bg-transparent p-0 text-foreground"
@@ -226,7 +237,7 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
                     return (
                       <MessageComponent className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 items-start">
                         <div className="group flex w-full flex-col gap-0">
-                          <ThinkingIndicator reasoning="Generating response..." isStreaming />
+                          <ThinkingIndicator status={streamProgress.message} isStreaming />
                           <MessageContent className="prose flex-1 rounded-lg bg-transparent p-0 text-foreground" markdown>
                             {cleanContent}
                           </MessageContent>
