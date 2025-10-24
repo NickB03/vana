@@ -84,6 +84,8 @@ serve(async (req) => {
 ARTIFACT CREATION RULES:
 Create artifacts for interactive UIs, data visualizations, games, tools, landing pages, dashboards, animations, and standalone web apps.
 
+IMPORTANT: Write COMPLETE, PRODUCTION-READY code. No placeholders, no TODOs, no incomplete functionality.
+
 FORMAT: Wrap your code in artifact tags:
 <artifact type="html" title="Descriptive Title">
 ...your complete, runnable HTML code...

@@ -40,6 +40,7 @@ const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   const [hasArtifact, setHasArtifact] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     // Skip auth in dev mode
