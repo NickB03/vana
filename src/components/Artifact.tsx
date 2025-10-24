@@ -24,23 +24,37 @@ interface ArtifactProps {
 export const Artifact = ({ artifact, onClose }: ArtifactProps) => {
   const [isMaximized, setIsMaximized] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(artifact.content);
     toast.success("Copied to clipboard");
   };
 
-  // Listen for errors from iframe
+  // Listen for errors and ready state from iframe
   useEffect(() => {
-    const handleIframeError = (e: MessageEvent) => {
+    setIsLoading(true);
+    setPreviewError(null);
+    
+    const handleIframeMessage = (e: MessageEvent) => {
       if (e.data?.type === 'artifact-error') {
         setPreviewError(e.data.message);
-        toast.error(`Preview error: ${e.data.message}`);
+        setIsLoading(false);
+      } else if (e.data?.type === 'artifact-ready') {
+        setIsLoading(false);
       }
     };
-    window.addEventListener('message', handleIframeError);
-    return () => window.removeEventListener('message', handleIframeError);
-  }, []);
+    
+    const loadTimeout = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000);
+    
+    window.addEventListener('message', handleIframeMessage);
+    return () => {
+      window.removeEventListener('message', handleIframeMessage);
+      clearTimeout(loadTimeout);
+    };
+  }, [artifact.content]);
 
   // Detect libraries and inject CDNs
   const detectAndInjectLibraries = (content: string): string => {
@@ -114,8 +128,9 @@ export const Artifact = ({ artifact, onClose }: ArtifactProps) => {
     window.addEventListener('error', (e) => {
       window.parent.postMessage({ 
         type: 'artifact-error', 
-        message: e.message 
+        message: e.message + ' at ' + e.filename + ':' + e.lineno 
       }, '*');
+      return true;
     });
     
     window.addEventListener('unhandledrejection', (e) => {
@@ -125,7 +140,7 @@ export const Artifact = ({ artifact, onClose }: ArtifactProps) => {
       }, '*');
     });
 
-    // Capture console errors
+    // Capture console errors and warnings
     const originalError = console.error;
     console.error = (...args) => {
       originalError.apply(console, args);
@@ -134,6 +149,16 @@ export const Artifact = ({ artifact, onClose }: ArtifactProps) => {
         message: args.join(' ') 
       }, '*');
     };
+    
+    const originalWarn = console.warn;
+    console.warn = (...args) => {
+      originalWarn.apply(console, args);
+    };
+    
+    // Signal ready state
+    window.addEventListener('load', () => {
+      window.parent.postMessage({ type: 'artifact-ready' }, '*');
+    });
   </script>
 </head>
 <body>
@@ -144,9 +169,18 @@ ${artifact.content}
 
       return (
         <div className="w-full h-full relative">
-          {previewError && (
-            <div className="absolute top-2 left-2 right-2 bg-destructive/10 border border-destructive text-destructive text-xs p-2 rounded z-10">
-              Error: {previewError}
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-20">
+              <div className="flex flex-col items-center gap-2">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                <p className="text-sm text-muted-foreground">Loading preview...</p>
+              </div>
+            </div>
+          )}
+          {previewError && !isLoading && (
+            <div className="absolute top-2 left-2 right-2 bg-destructive/10 border border-destructive text-destructive text-xs p-2 rounded z-10 flex items-start gap-2">
+              <span className="font-semibold shrink-0">⚠️ Error:</span>
+              <span className="flex-1 break-words">{previewError}</span>
             </div>
           )}
           <iframe
