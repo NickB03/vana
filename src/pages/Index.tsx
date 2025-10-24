@@ -44,14 +44,6 @@ const Index = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
-    // Skip auth in dev mode
-    const isDev = import.meta.env.DEV;
-    
-    if (isDev) {
-      setIsAuthenticated(true);
-      return;
-    }
-
     // Check authentication with session validation
     const checkAuth = async () => {
       const session = await ensureValidSession();
@@ -73,7 +65,7 @@ const Index = () => {
     // Periodic session validation (every 5 minutes)
     const intervalId = setInterval(async () => {
       const session = await ensureValidSession();
-      if (!session && !isDev) {
+      if (!session) {
         setIsAuthenticated(false);
         toast({
           title: "Session Expired",
