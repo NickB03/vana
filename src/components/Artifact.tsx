@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Copy, Maximize2, Minimize2, X, AlertCircle, Pencil, Wand2 } from "lucide-react";
+import { Copy, Maximize2, Minimize2, X, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Markdown } from "./prompt-kit/markdown";
 import { validateArtifact, ValidationResult } from "@/utils/artifactValidator";
@@ -27,26 +27,6 @@ interface ArtifactProps {
   onEdit?: (suggestion?: string) => void;
 }
 
-const EDIT_SUGGESTIONS = {
-  html: [
-    "Make it mobile responsive",
-    "Add animations and transitions",
-    "Improve the color scheme",
-    "Add more interactive elements"
-  ],
-  code: [
-    "Add error handling",
-    "Optimize performance",
-    "Add code comments",
-    "Refactor for better structure"
-  ],
-  markdown: [
-    "Add more sections",
-    "Improve formatting",
-    "Add examples",
-    "Make it more detailed"
-  ]
-};
 
 export const Artifact = ({ artifact, onClose, onEdit }: ArtifactProps) => {
   const [isMaximized, setIsMaximized] = useState(false);
@@ -497,37 +477,6 @@ ${artifact.content}
           </div>
         </div>
 
-        {/* Edit Suggestions Panel */}
-        {onEdit && (
-          <div className="border-b border-border bg-muted/30 px-4 py-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Wand2 className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">Quick Improvements</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {EDIT_SUGGESTIONS[artifact.type]?.map((suggestion, idx) => (
-                <Button
-                  key={idx}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onEdit(suggestion)}
-                  className="text-xs"
-                >
-                  {suggestion}
-                </Button>
-              ))}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onEdit()}
-                className="text-xs"
-              >
-                <Pencil className="h-3 w-3 mr-1" />
-                Custom edit
-              </Button>
-            </div>
-          </div>
-        )}
 
         <Tabs defaultValue="preview" className="flex-1 flex flex-col min-h-0">
           <TabsList className="w-full justify-start rounded-none border-b bg-muted/30">
