@@ -48,6 +48,7 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
   const [hasInitialized, setHasInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [currentArtifact, setCurrentArtifact] = useState<ArtifactData | null>(null);
+  const [isEditingArtifact, setIsEditingArtifact] = useState(false);
 
   // Reset when session changes
   useEffect(() => {
@@ -55,6 +56,7 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
     setIsStreaming(false);
     setHasInitialized(false);
     setCurrentArtifact(null);
+    setIsEditingArtifact(false);
     onArtifactChange?.(false);
   }, [sessionId]);
 
@@ -132,13 +134,23 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
       () => {
         setStreamingMessage("");
         setIsStreaming(false);
+        setIsEditingArtifact(false);
         setStreamProgress({
           stage: "complete",
           message: "",
           artifactDetected: false
         });
-      }
+      },
+      currentArtifact && isEditingArtifact ? currentArtifact : undefined
     );
+  };
+
+  const handleEditArtifact = (suggestion?: string) => {
+    setIsEditingArtifact(true);
+    if (suggestion) {
+      setInput(suggestion);
+    }
+    // Focus will naturally go to input
   };
   const handleCloseCanvas = () => {
     onCanvasToggle?.(false);
@@ -266,6 +278,22 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
             {/* Input Area */}
             <div className="z-10 shrink-0 bg-background px-3 pb-3 md:px-5 md:pb-5">
               <div className="mx-auto max-w-3xl">
+                {isEditingArtifact && currentArtifact && (
+                  <div className="mb-2 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm">
+                    <Pencil className="h-4 w-4 text-primary" />
+                    <span className="text-muted-foreground">
+                      Editing: <span className="font-medium text-foreground">{currentArtifact.title}</span>
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsEditingArtifact(false)}
+                      className="ml-auto h-6 px-2"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
                 <PromptInput
                   isLoading={isLoading || isStreaming}
                   value={input}
@@ -330,7 +358,11 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
           <>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={50} minSize={30}>
-              <Artifact artifact={currentArtifact} onClose={handleCloseCanvas} />
+              <Artifact 
+                artifact={currentArtifact} 
+                onClose={handleCloseCanvas}
+                onEdit={handleEditArtifact}
+              />
             </ResizablePanel>
           </>
         )}

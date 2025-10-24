@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, sessionId } = await req.json();
+    const { messages, sessionId, currentArtifact } = await req.json();
     
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -66,6 +66,29 @@ serve(async (req) => {
       }
     } catch (cacheError) {
       console.warn("Cache fetch failed, using provided messages:", cacheError);
+    }
+
+    // Add artifact editing context if provided
+    let artifactContext = "";
+    if (currentArtifact) {
+      artifactContext = `
+
+CURRENT ARTIFACT CONTEXT (User is editing this):
+Title: ${currentArtifact.title}
+Type: ${currentArtifact.type}
+Current Code:
+\`\`\`
+${currentArtifact.content}
+\`\`\`
+
+When the user asks for changes, modifications, or improvements, you should:
+1. Understand what they want to change in the current artifact
+2. Generate an UPDATED version of the entire artifact with their requested changes
+3. Preserve the parts they didn't ask to change
+4. Use the same artifact type and structure unless they explicitly want to change it
+5. Always provide the COMPLETE updated artifact code, not just the changes
+
+Treat this as an iterative improvement of the existing artifact.`;
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -123,7 +146,7 @@ ARTIFACT EXAMPLES:
 - API data visualizer
 
 ITERATIVE UPDATES:
-When user asks to modify an artifact, return the complete updated code with the same title to replace it.
+When user asks to modify an artifact, return the complete updated code with the same title to replace it.${artifactContext}
 
 Always explain what you built and suggest possible improvements or next steps.`,
           },

@@ -107,7 +107,8 @@ export function useChatMessages(sessionId: string | undefined) {
   const streamChat = async (
     userMessage: string,
     onDelta: (chunk: string, progress: StreamProgress) => void,
-    onDone: () => void
+    onDone: () => void,
+    currentArtifact?: { title: string; type: string; content: string }
   ) => {
     if (!sessionId) return;
 
@@ -133,6 +134,7 @@ export function useChatMessages(sessionId: string | undefined) {
               .concat([{ role: "user", content: userMessage } as ChatMessage])
               .map((m) => ({ role: m.role, content: m.content })),
             sessionId,
+            currentArtifact,
           }),
         }
       );
