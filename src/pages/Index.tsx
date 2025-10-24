@@ -9,7 +9,7 @@ import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatInterface } from "@/components/ChatInterface";
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from "@/components/prompt-kit/prompt-input";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Square, LogOut, Settings, Check, ChevronRight, Palette, PanelRightOpen, PanelRightClose } from "lucide-react";
+import { ArrowUp, Square, LogOut, Settings, Check, ChevronRight, Palette } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
@@ -164,30 +164,6 @@ const Index = () => {
               <SidebarTrigger className="-ml-1" />
             </div>
             <div className="flex items-center gap-2">
-              {showChat && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={handleCanvasToggle}
-                        disabled={!hasArtifact}
-                        className={isCanvasOpen ? "bg-accent" : ""}
-                      >
-                        {isCanvasOpen ? (
-                          <PanelRightClose className="h-5 w-5" />
-                        ) : (
-                          <PanelRightOpen className="h-5 w-5" />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {!hasArtifact ? "No canvas content" : isCanvasOpen ? "Close canvas" : "Open canvas"}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon">

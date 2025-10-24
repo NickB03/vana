@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowUp, Copy, Pencil, Trash, ThumbsUp, ThumbsDown } from "lucide-react";
+import { ArrowUp, Copy, Pencil, Trash, ThumbsUp, ThumbsDown, Wrench, PanelRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   ChatContainerContent,
   ChatContainerRoot,
@@ -94,6 +96,19 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
       onArtifactChange?.(false);
     }
   }, [messages, streamingMessage]);
+
+  const handleCanvasToolClick = () => {
+    if (!currentArtifact) {
+      // No artifact exists - send a message asking what to build
+      setStreamingMessage("What would you like me to build today?");
+      setTimeout(() => {
+        setStreamingMessage("");
+      }, 3000);
+    } else {
+      // Artifact exists - toggle canvas open/close
+      onCanvasToggle?.(!isCanvasOpen);
+    }
+  };
 
   const handleSend = async (message?: string) => {
     const messageToSend = message || input;
@@ -254,6 +269,32 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
                     />
 
                     <PromptInputActions className="mt-5 flex w-full items-center justify-end gap-2 px-3 pb-3">
+                      <DropdownMenu>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn(
+                                  "size-9 rounded-full",
+                                  isCanvasOpen && currentArtifact && "bg-accent"
+                                )}
+                              >
+                                <Wrench size={18} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                          </TooltipTrigger>
+                          <TooltipContent>Tools</TooltipContent>
+                        </Tooltip>
+                        <DropdownMenuContent align="end" className="w-48 bg-popover z-50">
+                          <DropdownMenuItem onClick={handleCanvasToolClick}>
+                            <PanelRight className="h-4 w-4 mr-2" />
+                            {!currentArtifact ? "Canvas" : isCanvasOpen ? "Close Canvas" : "Open Canvas"}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      
                       <Button
                         size="icon"
                         disabled={!input.trim() || isLoading || isStreaming}
