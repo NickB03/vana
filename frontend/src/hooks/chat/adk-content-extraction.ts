@@ -47,20 +47,20 @@ interface ADKFunctionResponse {
   name?: string;
   response?: {
     result?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
 interface ADKFunctionCall {
   id?: string;
   name?: string;
-  args?: Record<string, any>;
+  args?: Record<string, unknown>;
 }
 
 interface ADKThoughtSignature {
   thinking?: string;
   step?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 type ADKPart =
@@ -381,7 +381,7 @@ export function extractContentFromADKEvent(
 /**
  * Validates if an ADK event has extractable content
  */
-export function hasExtractableContent(payload: any): boolean {
+export function hasExtractableContent(payload: unknown): boolean {
   if (!payload || typeof payload !== 'object') {
     return false;
   }
