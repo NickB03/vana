@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -23,39 +23,139 @@ interface ArtifactProps {
 
 export const Artifact = ({ artifact, onClose }: ArtifactProps) => {
   const [isMaximized, setIsMaximized] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(artifact.content);
     toast.success("Copied to clipboard");
   };
 
+  // Listen for errors from iframe
+  useEffect(() => {
+    const handleIframeError = (e: MessageEvent) => {
+      if (e.data?.type === 'artifact-error') {
+        setPreviewError(e.data.message);
+        toast.error(`Preview error: ${e.data.message}`);
+      }
+    };
+    window.addEventListener('message', handleIframeError);
+    return () => window.removeEventListener('message', handleIframeError);
+  }, []);
+
+  // Detect libraries and inject CDNs
+  const detectAndInjectLibraries = (content: string): string => {
+    const cdnMap: Record<string, string[]> = {
+      'chart.js': ['<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>'],
+      'd3': ['<script src="https://d3js.org/d3.v7.min.js"></script>'],
+      'three.js': ['<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>'],
+      'alpine': ['<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>'],
+      'gsap': ['<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>'],
+      'anime': ['<script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>'],
+      'p5': ['<script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>'],
+      'particles': ['<script src="https://cdn.jsdelivr.net/npm/tsparticles@3.0.3/tsparticles.bundle.min.js"></script>'],
+      'leaflet': [
+        '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />',
+        '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>'
+      ],
+      'sortable': ['<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>'],
+    };
+
+    const detectionPatterns: Record<string, RegExp> = {
+      'chart.js': /new Chart\(|Chart\.register/i,
+      'd3': /d3\.|from ['"]d3['"]/i,
+      'three.js': /new THREE\.|from ['"]three['"]/i,
+      'alpine': /x-data|x-bind|x-on|x-show|x-if/i,
+      'gsap': /gsap\.|TweenMax|TimelineMax|ScrollTrigger/i,
+      'anime': /anime\(\{|anime\.timeline/i,
+      'p5': /createCanvas|draw\(\)|setup\(\)/i,
+      'particles': /particlesJS|tsParticles/i,
+      'leaflet': /L\.map\(|L\.marker\(/i,
+      'sortable': /new Sortable\(/i,
+    };
+
+    const detectedLibs = new Set<string>();
+    
+    // Check if CDN already included
+    for (const [lib, pattern] of Object.entries(detectionPatterns)) {
+      if (pattern.test(content)) {
+        // Check if CDN already present
+        const cdnScripts = cdnMap[lib] || [];
+        const alreadyIncluded = cdnScripts.some(script => content.includes(script));
+        if (!alreadyIncluded) {
+          detectedLibs.add(lib);
+        }
+      }
+    }
+
+    return Array.from(detectedLibs).flatMap(lib => cdnMap[lib] || []).join('\n');
+  };
+
   const renderPreview = () => {
     if (artifact.type === "code" || artifact.type === "html") {
       // Create a complete HTML document for preview
-      const previewContent = artifact.content.includes("<!DOCTYPE") 
+      const isFullHTML = artifact.content.includes("<!DOCTYPE");
+      
+      const previewContent = isFullHTML
         ? artifact.content 
-        : `<!DOCTYPE html>
+        : (() => {
+            const injectedCDNs = detectAndInjectLibraries(artifact.content);
+            return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  ${injectedCDNs}
   <style>
     body { margin: 0; padding: 0; }
   </style>
+  <script>
+    // Error reporting to parent
+    window.addEventListener('error', (e) => {
+      window.parent.postMessage({ 
+        type: 'artifact-error', 
+        message: e.message 
+      }, '*');
+    });
+    
+    window.addEventListener('unhandledrejection', (e) => {
+      window.parent.postMessage({ 
+        type: 'artifact-error', 
+        message: 'Promise rejection: ' + e.reason 
+      }, '*');
+    });
+
+    // Capture console errors
+    const originalError = console.error;
+    console.error = (...args) => {
+      originalError.apply(console, args);
+      window.parent.postMessage({ 
+        type: 'artifact-error', 
+        message: args.join(' ') 
+      }, '*');
+    };
+  </script>
 </head>
 <body>
 ${artifact.content}
 </body>
 </html>`;
+          })();
 
       return (
-        <iframe
-          srcDoc={previewContent}
-          className="w-full h-full border-0 bg-background"
-          title={artifact.title}
-          sandbox="allow-scripts allow-same-origin"
-        />
+        <div className="w-full h-full relative">
+          {previewError && (
+            <div className="absolute top-2 left-2 right-2 bg-destructive/10 border border-destructive text-destructive text-xs p-2 rounded z-10">
+              Error: {previewError}
+            </div>
+          )}
+          <iframe
+            srcDoc={previewContent}
+            className="w-full h-full border-0 bg-background"
+            title={artifact.title}
+            sandbox="allow-scripts allow-same-origin"
+          />
+        </div>
       );
     }
 
