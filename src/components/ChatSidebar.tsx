@@ -58,14 +58,13 @@ export function ChatSidebar({
   const groupedSessions = groupChatsByPeriod(filteredSessions);
   return <Sidebar>
       <SidebarHeader className="flex flex-row items-center justify-between gap-2 px-2 py-4">
-        <Button 
-          variant="ghost" 
-          className="px-2 hover:bg-transparent h-auto"
+        <button 
+          className="px-2 hover:bg-transparent h-auto cursor-pointer transition-opacity hover:opacity-80"
           onClick={onNewChat}
           aria-label="Return to home"
         >
           <NebiusLogo className="text-primary h-40 w-auto" />
-        </Button>
+        </button>
         <Button variant="ghost" size="icon" className="size-8" onClick={() => setShowSearch(!showSearch)}>
           <Search className="size-4" />
         </Button>
