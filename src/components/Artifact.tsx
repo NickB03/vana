@@ -426,7 +426,7 @@ ${artifact.content}
 
   return (
     <>
-      <Card className={`flex flex-col overflow-hidden transition-all rounded-none ${
+      <Card className={`flex flex-col overflow-hidden transition-all !rounded-none ${
         isMaximized ? "fixed inset-4 z-50" : "h-full"
       }`}>
         <div className="flex items-center justify-between gap-2 border-b px-4 py-2 bg-muted/50">
