@@ -43,7 +43,8 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
   const [streamProgress, setStreamProgress] = useState<StreamProgress>({
     stage: "analyzing",
     message: "Analyzing request...",
-    artifactDetected: false
+    artifactDetected: false,
+    percentage: 0
   });
   const [hasInitialized, setHasInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -138,7 +139,8 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
         setStreamProgress({
           stage: "complete",
           message: "",
-          artifactDetected: false
+          artifactDetected: false,
+          percentage: 100
         });
       },
       currentArtifact && isEditingArtifact ? currentArtifact : undefined
@@ -244,19 +246,17 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
                     );
                   })}
                   
-                  {isStreaming && streamingMessage && (() => {
-                    const { cleanContent } = parseArtifacts(streamingMessage);
-                    return (
-                      <MessageComponent className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 items-start">
-                        <div className="group flex w-full flex-col gap-0">
-                          <ThinkingIndicator status={streamProgress.message} isStreaming />
-                          <MessageContent className="prose flex-1 rounded-lg bg-transparent p-0 text-foreground" markdown>
-                            {cleanContent}
-                          </MessageContent>
-                        </div>
-                      </MessageComponent>
-                    );
-                  })()}
+                  {isStreaming && streamingMessage && (
+                    <MessageComponent className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 items-start">
+                      <div className="group flex w-full flex-col gap-0">
+                        <ThinkingIndicator 
+                          status={streamProgress.message} 
+                          isStreaming 
+                          percentage={streamProgress.percentage}
+                        />
+                      </div>
+                    </MessageComponent>
+                  )}
 
                   {(isLoading || isStreaming) && !streamingMessage && (
                     <MessageComponent className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 items-start">

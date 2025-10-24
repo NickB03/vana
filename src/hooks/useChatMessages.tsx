@@ -22,6 +22,7 @@ export interface StreamProgress {
   stage: GenerationStage;
   message: string;
   artifactDetected: boolean;
+  percentage: number;
 }
 
 export function useChatMessages(sessionId: string | undefined) {
@@ -163,18 +164,39 @@ export function useChatMessages(sessionId: string | undefined) {
           artifactClosed = true;
         }
 
-        // Determine stage based on content analysis
+        // Calculate percentage based on stage
+        let percentage = 0;
+        let stage: GenerationStage = "analyzing";
+        let message = "";
+
         if (tokenCount < 50) {
-          return { stage: "analyzing", message: "Analyzing request...", artifactDetected };
+          stage = "analyzing";
+          message = "Analyzing request...";
+          percentage = Math.min(15, (tokenCount / 50) * 15);
         } else if (tokenCount < 150 && !artifactDetected) {
-          return { stage: "planning", message: "Planning approach...", artifactDetected };
+          stage = "planning";
+          message = "Planning approach...";
+          percentage = 15 + Math.min(25, ((tokenCount - 50) / 100) * 25);
         } else if (artifactDetected && !artifactClosed) {
-          return { stage: "generating", message: "Generating UI...", artifactDetected };
+          stage = "generating";
+          message = "Generating code...";
+          percentage = 40 + Math.min(45, (tokenCount / 1000) * 45);
         } else if (artifactClosed || tokenCount > 500) {
-          return { stage: "finalizing", message: "Finishing touches...", artifactDetected };
+          stage = "finalizing";
+          message = "Finalizing response...";
+          percentage = 85 + Math.min(15, ((tokenCount - 500) / 200) * 15);
         } else {
-          return { stage: "generating", message: "Creating response...", artifactDetected };
+          stage = "generating";
+          message = "Creating response...";
+          percentage = 40 + Math.min(45, (tokenCount / 1000) * 45);
         }
+
+        return { 
+          stage, 
+          message, 
+          artifactDetected,
+          percentage: Math.min(99, Math.round(percentage))
+        };
       };
 
       while (true) {
