@@ -9,12 +9,10 @@ export function NebiusLogo({ className }: NebiusLogoProps) {
     <svg
       fill="currentColor"
       fillRule="evenodd"
-      height="1em"
       style={{ flex: "none", lineHeight: 1 }}
       viewBox="0 0 24 24"
-      width="1em"
       xmlns="http://www.w3.org/2000/svg"
-      className={cn("size-8", className)}
+      className={className}
     >
       <title>Nebius</title>
       <path d="M20 2.306v16.797s4-.242 4-4.815V2.306h-4zM4 22.001V5.204s-4 .242-4 4.816V22h4z"></path>
