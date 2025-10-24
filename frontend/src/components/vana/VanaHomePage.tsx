@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { PromptSuggestion } from '@/components/ui/prompt-suggestion'
-import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction, usePromptInput } from '@/components/ui/prompt-input'
+import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction, usePromptInput } from '@/components/prompt-kit/prompt-input'
 import { FileUpload, FileUploadTrigger } from '@/components/ui/file-upload'
 import { Plus, Mic, ArrowUp } from 'lucide-react'
 import { memoWithTracking, useStableCallback, useStableArray } from '@/lib/react-performance'

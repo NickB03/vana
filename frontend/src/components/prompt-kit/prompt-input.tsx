@@ -30,10 +30,11 @@ export function PromptInput({
 }: PromptInputProps) {
   const [internalValue, setInternalValue] = useState('')
   const formRef = useRef<HTMLFormElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
   // Use controlled or uncontrolled value
   const value = controlledValue !== undefined ? controlledValue : internalValue
-  
+
   const handleValueChange = (newValue: string) => {
     if (controlledValue === undefined) {
       setInternalValue(newValue)
@@ -44,13 +45,17 @@ export function PromptInput({
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault()
     if (!value.trim() || isLoading || disabled) return
-    
+
     onSubmit?.(value.trim())
-    
+
     // Clear input after submit if uncontrolled
     if (controlledValue === undefined) {
       setInternalValue('')
     }
+  }
+
+  const focusInput = () => {
+    textareaRef.current?.focus()
   }
 
   // Provide context to children
@@ -61,7 +66,9 @@ export function PromptInput({
     isLoading,
     disabled,
     placeholder,
-    maxHeight
+    maxHeight,
+    textareaRef,
+    focusInput
   }
 
   return (
@@ -88,6 +95,8 @@ const PromptInputContext = React.createContext<{
   disabled: boolean
   placeholder: string
   maxHeight: number
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>
+  focusInput: () => void
 } | null>(null)
 
 const usePromptInputContext = () => {
@@ -98,14 +107,16 @@ const usePromptInputContext = () => {
   return context
 }
 
+// Export as usePromptInput for backward compatibility
+export const usePromptInput = usePromptInputContext
+
 interface PromptInputTextareaProps {
   placeholder?: string
   className?: string
 }
 
 export function PromptInputTextarea({ placeholder: propPlaceholder, className }: PromptInputTextareaProps) {
-  const { value, onChange, onSubmit, isLoading, disabled, placeholder: contextPlaceholder, maxHeight } = usePromptInputContext()
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const { value, onChange, onSubmit, isLoading, disabled, placeholder: contextPlaceholder, maxHeight, textareaRef } = usePromptInputContext()
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -122,11 +133,11 @@ export function PromptInputTextarea({ placeholder: propPlaceholder, className }:
     textarea.style.height = 'auto'
     const scrollHeight = Math.min(textarea.scrollHeight, maxHeight)
     textarea.style.height = `${scrollHeight}px`
-  }, [value, maxHeight])
+  }, [value, maxHeight, textareaRef])
 
   return (
     <Textarea
-      ref={textareaRef}
+      ref={textareaRef as React.RefObject<HTMLTextAreaElement>}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onKeyDown={handleKeyDown}

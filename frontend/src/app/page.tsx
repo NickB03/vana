@@ -698,10 +698,17 @@ function ChatView({
                                   <ThumbsDown />
                                 </Button>
                               </MessageAction>
-                            </MessageActions>
+                              </MessageActions>
+                            </div>
                           </div>
                         ) : (
-                          <div className="group flex flex-col items-end gap-1">
+                          <div className="group flex gap-3 flex-row-reverse items-start w-full">
+                            <MessageAvatar
+                              src="/user-avatar.png"
+                              alt="User"
+                              fallback="U"
+                            />
+                            <div className="flex flex-col items-end gap-1 w-full">
                             {/* Edit mode UI switching */}
                             {editingMessageId === message.id ? (
                               <div className="w-full max-w-[85%] sm:max-w-[75%]">
@@ -780,6 +787,7 @@ function ChatView({
                                 </Button>
                               </MessageAction>
                             </MessageActions>
+                            </div>
                           </div>
                         )}
                       </Message>
