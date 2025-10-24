@@ -63,7 +63,7 @@ export function ChatSidebar({
           onClick={onNewChat}
           aria-label="Return to home"
         >
-          <NebiusLogo className="text-primary h-40 w-auto" />
+          <NebiusLogo className="text-primary h-10 w-auto" />
         </button>
         <Button variant="ghost" size="icon" className="size-8" onClick={() => setShowSearch(!showSearch)}>
           <Search className="size-4" />
