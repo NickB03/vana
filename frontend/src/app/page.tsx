@@ -29,10 +29,12 @@ import {
 } from "@/components/prompt-kit/chat-container";
 import {
   Message,
+  MessageAvatar,
   MessageAction,
   MessageActions,
   MessageContent,
 } from "@/components/prompt-kit/message";
+import { Markdown } from "@/components/prompt-kit/markdown";
 import {
   PromptInput,
   PromptInputAction,
@@ -598,34 +600,42 @@ function ChatView({
                         )}
                       >
                         {isAssistant ? (
-                          <div className="group flex w-full flex-col gap-0">
-                            {/* Thought process display */}
-                            {thoughtProcess &&
-                              thoughtProcess.messageId === message.id &&
-                              thoughtProcess.isVisible && (
-                                <MessageContent className="text-muted-foreground italic mb-2 opacity-80">
-                                  <Loader
-                                    variant="text-shimmer"
-                                    text={
-                                      thoughtProcess.status === "thinking"
-                                        ? "Thinking..."
-                                        : "Processing..."
-                                    }
-                                  />
-                                </MessageContent>
-                              )}
-                            <MessageContent
-                              className="prose flex-1 rounded-lg bg-transparent p-0"
-                              markdown
-                            >
-                              {message.content}
-                            </MessageContent>
-                            <MessageActions
-                              className={cn(
-                                "-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100",
-                                isLastMessage && "opacity-100",
-                              )}
-                            >
+                          <div className="group flex w-full gap-3">
+                            <MessageAvatar
+                              src="/ai-avatar.png"
+                              alt="AI Assistant"
+                              fallback="AI"
+                            />
+                            <div className="flex w-full flex-col gap-0">
+                              {/* Thought process display */}
+                              {thoughtProcess &&
+                                thoughtProcess.messageId === message.id &&
+                                thoughtProcess.isVisible && (
+                                  <MessageContent className="text-muted-foreground italic mb-2 opacity-80">
+                                    <Loader
+                                      variant="text-shimmer"
+                                      text={
+                                        thoughtProcess.status === "thinking"
+                                          ? "Thinking..."
+                                          : "Processing..."
+                                      }
+                                    />
+                                  </MessageContent>
+                                )}
+                              <MessageContent className="prose flex-1 rounded-lg bg-transparent p-0">
+                                <Markdown
+                                  id={message.id}
+                                  className="prose prose-sm max-w-none dark:prose-invert prose-p:leading-relaxed prose-pre:p-0"
+                                >
+                                  {message.content}
+                                </Markdown>
+                              </MessageContent>
+                              <MessageActions
+                                className={cn(
+                                  "-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100",
+                                  isLastMessage && "opacity-100",
+                                )}
+                              >
                               <MessageAction tooltip="Copy" delayDuration={100}>
                                 <Button
                                   variant="ghost"
