@@ -388,20 +388,20 @@ export function hasExtractableContent(payload: unknown): boolean {
 
   // Phase 3.3: Check for error field (503 errors, rate limit errors, etc.)
   // Error events should be displayed to users, not silently filtered
-  if (payload.error) {
+  if ('error' in payload && payload.error) {
     return true;
   }
 
   // Check top-level fields
   const topLevelFields = ['content', 'report', 'final_report', 'result'];
   for (const field of topLevelFields) {
-    if (payload[field] && extractStringValue(payload[field])) {
+    if (field in payload && payload[field as keyof typeof payload] && extractStringValue(payload[field as keyof typeof payload])) {
       return true;
     }
   }
 
   // Check parts array
-  if (Array.isArray(payload.parts) && payload.parts.length > 0) {
+  if ('parts' in payload && Array.isArray(payload.parts) && payload.parts.length > 0) {
     for (const part of payload.parts) {
       if (!part || typeof part !== 'object') continue;
 

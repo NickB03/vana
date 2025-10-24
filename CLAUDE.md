@@ -31,6 +31,7 @@ uv run pytest tests/unit/test_*.py -v  # Single backend test
 
 **Decision Trees:**
 - **MCP vs Claude Code**: Use MCP for coordination/monitoring/browser verification. Use Claude Code for file edits/bash/git.
+- **Component Libraries**: Use shadcn/prompt-kit MCP tools to browse/add components via natural language.
 - **ADK vs FastAPI**: Modify `/app/agent.py` for agent logic. Modify `/app/routes/` for API endpoints.
 - **When to Ask**: Before modifying auth, database schema, or deploying to production.
 
@@ -98,6 +99,32 @@ Vana is a multi-agent AI platform built on Google's Agent Development Kit (ADK).
 ```
 
 **Documentation**: See `MEMORY_QUICK_REFERENCE.md` and `HOOKS_EXECUTIVE_SUMMARY.md` for detailed usage.
+
+## 🎨 Component Registry MCP Tools
+
+**Available Servers** (configured in `.mcp.json`):
+- **shadcn**: General UI components (Button, Dialog, Form, Card, Badge, Input, etc.)
+- **prompt-kit**: AI-specific components (PromptInput, PromptTextarea, StreamingText, ReasoningDisplay, etc.)
+
+**Usage** (natural language):
+- "Show me all shadcn button variants"
+- "Add the Dialog component from shadcn"
+- "What Prompt Kit components are available?"
+- "Add PromptInput from Prompt Kit to my project"
+
+**Note**: Use these MCP tools to browse and add components. Both registries work with the existing shadcn/ui + Prompt-Kit theme setup.
+
+**Expert Guidance** (via skill/agent):
+- `/shadcn` - Activate shadcn/prompt-kit expert skill for component guidance
+- `/shadcn-agent` - Launch expert agent for autonomous UI development tasks
+
+**Documentation**:
+- `/docs/shadcn/README.md` - Component overview and quick start
+- `/docs/shadcn/AI-CHAT-PATTERNS.md` - Common patterns (basic chat, streaming, tool calling, multi-agent)
+- `/docs/shadcn/COMPONENT-REFERENCE.md` - Complete API reference for all components
+- `/docs/shadcn/BEST-PRACTICES.md` - Performance optimization, accessibility, TypeScript patterns
+
+**CRITICAL**: When using Markdown components for streaming, ALWAYS add `id` prop: `<Markdown id={message.id}>{content}</Markdown>`. Without it, entire chat history re-renders on every token (massive performance impact).
 
 ## 🚀 Service Architecture & Ports
 

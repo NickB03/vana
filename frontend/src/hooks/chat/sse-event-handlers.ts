@@ -485,7 +485,7 @@ export function useSSEEventHandlers({
             }`;
 
             updateStreamingMessageInStore(currentSessionId, messageId, displayMessage);
-            setMessageCompleted(currentSessionId, messageId);
+            completeStreamingMessageInStore(currentSessionId, messageId);
           }
           return;
         }
