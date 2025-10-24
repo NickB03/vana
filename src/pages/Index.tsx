@@ -27,6 +27,7 @@ import { useChatSessions } from "@/hooks/useChatSessions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
+import { ensureValidSession } from "@/utils/authHelpers";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -51,23 +52,43 @@ const Index = () => {
       return;
     }
 
-    // Check authentication
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Check authentication with session validation
+    const checkAuth = async () => {
+      const session = await ensureValidSession();
       setIsAuthenticated(!!session);
       if (!session) {
         navigate("/auth");
       }
-    });
+    };
+
+    checkAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setIsAuthenticated(!!session);
-      if (!session) {
+      if (!session && event !== 'INITIAL_SESSION') {
         navigate("/auth");
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    // Periodic session validation (every 5 minutes)
+    const intervalId = setInterval(async () => {
+      const session = await ensureValidSession();
+      if (!session && !isDev) {
+        setIsAuthenticated(false);
+        toast({
+          title: "Session Expired",
+          description: "Please sign in again to continue",
+          variant: "destructive",
+        });
+        navigate("/auth");
+      }
+    }, 5 * 60 * 1000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearInterval(intervalId);
+    };
+  }, [navigate, toast]);
 
   // Handle browser back button
   useEffect(() => {
@@ -120,15 +141,18 @@ const Index = () => {
   };
 
   const handleSubmit = async () => {
-    if (!input.trim() || !isAuthenticated) {
-      if (!isAuthenticated) {
-        toast({
-          title: "Authentication required",
-          description: "Please log in to start chatting",
-          variant: "destructive",
-        });
-        navigate("/auth");
-      }
+    if (!input.trim()) return;
+
+    // Validate session before creating chat
+    const session = await ensureValidSession();
+    if (!session) {
+      toast({
+        title: "Authentication required",
+        description: "Please refresh the page or sign in again",
+        variant: "destructive",
+      });
+      setIsAuthenticated(false);
+      navigate("/auth");
       return;
     }
     

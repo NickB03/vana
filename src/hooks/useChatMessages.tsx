@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ensureValidSession, getAuthErrorMessage } from "@/utils/authHelpers";
 
 export interface ChatMessage {
   id: string;
@@ -119,8 +120,11 @@ export function useChatMessages(sessionId: string | undefined) {
       // Save user message
       await saveMessage("user", userMessage);
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
+      // Ensure we have a valid session before making the API call
+      const session = await ensureValidSession();
+      if (!session) {
+        throw new Error("Authentication required. Please refresh the page or sign in again.");
+      }
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`,
@@ -240,9 +244,10 @@ export function useChatMessages(sessionId: string | undefined) {
       onDone();
     } catch (error: any) {
       console.error("Stream error:", error);
+      const errorMessage = getAuthErrorMessage(error);
       toast({
         title: "Error",
-        description: error.message || "Failed to get AI response",
+        description: errorMessage,
         variant: "destructive",
       });
       onDone();
