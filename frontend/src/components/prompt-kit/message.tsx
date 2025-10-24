@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useMemo } from 'react'
+import React from 'react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
-import ReactMarkdown from 'react-markdown'
 import { memoWithTracking } from '@/lib/react-performance'
 
 interface MessageProps {
@@ -18,9 +18,37 @@ const Message = memoWithTracking(({ children, className }: MessageProps) => {
     </div>
   )
 }, (prevProps, nextProps) => {
-  return prevProps.children === nextProps.children && 
+  return prevProps.children === nextProps.children &&
          prevProps.className === nextProps.className;
 }, 'Message');
+
+interface MessageAvatarProps {
+  src?: string
+  alt: string
+  fallback: string
+  delayMs?: number
+  className?: string
+}
+
+const MessageAvatar = memoWithTracking(({
+  src,
+  alt,
+  fallback,
+  delayMs = 600,
+  className
+}: MessageAvatarProps) => {
+  return (
+    <Avatar className={cn("h-8 w-8", className)}>
+      <AvatarImage src={src} alt={alt} />
+      <AvatarFallback delayMs={delayMs}>{fallback}</AvatarFallback>
+    </Avatar>
+  )
+}, (prevProps, nextProps) => {
+  return prevProps.src === nextProps.src &&
+         prevProps.alt === nextProps.alt &&
+         prevProps.fallback === nextProps.fallback &&
+         prevProps.className === nextProps.className;
+}, 'MessageAvatar');
 
 interface MessageContentProps {
   children: React.ReactNode
