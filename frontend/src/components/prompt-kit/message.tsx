@@ -53,55 +53,28 @@ const MessageAvatar = memoWithTracking(({
 interface MessageContentProps {
   children: React.ReactNode
   className?: string
-  markdown?: boolean
+  markdown?: boolean  // Deprecated: Use <Markdown> component directly instead
+  id?: string         // For memoization when using with Markdown component
 }
 
-const MessageContent = memoWithTracking(({ children, className, markdown = false }: MessageContentProps) => {
-  // Memoize markdown components to prevent re-creation on every render
-  const markdownComponents = useMemo(() => ({
-    p: ({ children, ...props }: React.ComponentProps<'p'>) => <p className="mb-2 last:mb-0" {...props}>{children}</p>,
-    code: ({ children, ...props }: React.ComponentProps<'code'>) => {
-      const isInline = !props.className;
-      if (isInline) {
-        return (
-          <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold">
-            {children}
-          </code>
-        );
-      }
-      return <code {...props}>{children}</code>;
-    },
-    pre: ({ children, ...props }: React.ComponentProps<'pre'>) => (
-      <pre className="mb-4 mt-6 overflow-x-auto rounded-lg border bg-zinc-950 py-4" {...props}>
-        {children}
-      </pre>
-    ),
-  }), []);
-
-  // Memoize content to prevent unnecessary markdown re-processing
-  const content = useMemo(() => {
-    if (!markdown) return children;
-    
-    const textContent = typeof children === 'string' ? children : String(children);
-    return (
-      <div className="prose prose-sm max-w-none dark:prose-invert prose-p:leading-relaxed prose-pre:p-0">
-        <ReactMarkdown components={markdownComponents}>
-          {textContent}
-        </ReactMarkdown>
-      </div>
-    );
-  }, [children, markdown, markdownComponents]);
+const MessageContent = memoWithTracking(({
+  children,
+  className,
+  markdown = false,  // Kept for backward compatibility but deprecated
+  id
+}: MessageContentProps) => {
+  // Note: The `markdown` prop is deprecated. Users should wrap content with
+  // <Markdown id={messageId}>{content}</Markdown> instead for better streaming performance
 
   return (
     <div className={cn("text-foreground flex-1 rounded-lg bg-transparent p-0", className)}>
-      {content}
+      {children}
     </div>
   )
 }, (prevProps, nextProps) => {
-  // Only re-render if content, markdown flag, or className changes
-  return prevProps.children === nextProps.children && 
-         prevProps.markdown === nextProps.markdown &&
-         prevProps.className === nextProps.className;
+  return prevProps.children === nextProps.children &&
+         prevProps.className === nextProps.className &&
+         prevProps.id === nextProps.id;
 }, 'MessageContent');
 
 interface MessageActionsProps {
@@ -152,4 +125,4 @@ const MessageAction = memoWithTracking(({ children, tooltip, delayDuration = 100
 }, 'MessageAction');
 
 // Export all components
-export { Message, MessageContent, MessageActions, MessageAction };
+export { Message, MessageAvatar, MessageContent, MessageActions, MessageAction };
