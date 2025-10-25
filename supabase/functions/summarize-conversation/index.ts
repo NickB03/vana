@@ -47,6 +47,20 @@ serve(async (req) => {
       });
     }
 
+    // Verify session ownership
+    const { data: sessionOwnership, error: ownershipError } = await supabase
+      .from('chat_sessions')
+      .select('user_id')
+      .eq('id', sessionId)
+      .single();
+
+    if (ownershipError || !sessionOwnership || sessionOwnership.user_id !== user.id) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: You do not own this session' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log("Starting summarization for session:", sessionId);
 
     // Get session info

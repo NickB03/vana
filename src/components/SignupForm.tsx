@@ -60,8 +60,8 @@ export function SignupForm() {
       navigate("/auth");
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "An error occurred during signup",
+        title: "Signup Error",
+        description: "Unable to create account. Please try a different email or contact support.",
         variant: "destructive",
       });
     } finally {

@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  password: z.string().min(8, { message: "Password must be at least 8 characters" }),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -47,8 +47,8 @@ export function LoginForm() {
       navigate("/");
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "An error occurred",
+        title: "Login Failed",
+        description: "Invalid email or password. Please try again.",
         variant: "destructive",
       });
     } finally {

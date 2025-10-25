@@ -95,6 +95,22 @@ serve(async (req) => {
       });
     }
 
+    // Verify session ownership if sessionId is provided
+    if (sessionId) {
+      const { data: session, error: sessionError } = await supabase
+        .from('chat_sessions')
+        .select('user_id')
+        .eq('id', sessionId)
+        .single();
+
+      if (sessionError || !session || session.user_id !== user.id) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized access to session' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
