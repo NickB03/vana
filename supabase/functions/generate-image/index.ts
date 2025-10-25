@@ -148,10 +148,45 @@ serve(async (req) => {
 
     console.log(`Image ${mode} successful, size: ${imageData.length} bytes`);
 
+    // Upload to Supabase Storage
+    let imageUrl = imageData; // Default to base64 if upload fails
+    try {
+      // Convert base64 to blob
+      const base64Response = await fetch(imageData);
+      const blob = await base64Response.blob();
+      
+      // Generate unique filename
+      const fileName = `${user.id}/${Date.now()}_${prompt.substring(0, 30).replace(/[^a-z0-9]/gi, '_')}.png`;
+      
+      // Upload to storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('generated-images')
+        .upload(fileName, blob, {
+          contentType: 'image/png',
+          cacheControl: '3600'
+        });
+      
+      if (uploadError) {
+        console.error("Storage upload error:", uploadError);
+      } else {
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('generated-images')
+          .getPublicUrl(fileName);
+        
+        imageUrl = publicUrl;
+        console.log(`Image uploaded to storage: ${publicUrl}`);
+      }
+    } catch (storageError) {
+      console.error("Storage upload failed, using base64:", storageError);
+      // Continue with base64 as fallback
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
-        imageData,
+        imageData, // Base64 for immediate display
+        imageUrl,  // Storage URL for database persistence
         prompt
       }),
       {
