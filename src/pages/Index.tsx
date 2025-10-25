@@ -4,6 +4,7 @@ import {
   SidebarProvider,
   SidebarInset,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatInterface } from "@/components/ChatInterface";
@@ -29,11 +30,12 @@ import { useToast } from "@/hooks/use-toast";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { ensureValidSession } from "@/utils/authHelpers";
 
-const Index = () => {
+const IndexContent = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { themeMode, colorTheme, setThemeMode, setColorTheme } = useTheme();
   const { sessions, isLoading: sessionsLoading, createSession, deleteSession } = useChatSessions();
+  const { setOpen } = useSidebar();
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>();
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -116,6 +118,10 @@ const Index = () => {
     setHasArtifact(hasContent);
     if (!hasContent) {
       setIsCanvasOpen(false);
+    } else {
+      // Auto-collapse sidebar when artifact appears
+      setIsCanvasOpen(true);
+      setOpen(false);
     }
   };
 
@@ -164,7 +170,7 @@ const Index = () => {
   };
 
   return (
-    <SidebarProvider defaultOpen={true}>
+    <>
       <ChatSidebar
         sessions={sessions}
         currentSessionId={currentSessionId}
@@ -298,6 +304,14 @@ const Index = () => {
           </div>
         </main>
       </SidebarInset>
+    </>
+  );
+};
+
+const Index = () => {
+  return (
+    <SidebarProvider defaultOpen={true}>
+      <IndexContent />
     </SidebarProvider>
   );
 };
