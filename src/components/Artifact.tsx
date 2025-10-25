@@ -706,7 +706,11 @@ ${artifact.content}
         </div>
 
 
-        <Tabs defaultValue="preview" className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <Tabs 
+          defaultValue="preview" 
+          className="flex-1 flex flex-col min-h-0 overflow-hidden"
+          onValueChange={(value) => setIsEditingCode(value === "code")}
+        >
           <TabsList className="w-full justify-start rounded-none border-b bg-muted/30">
             <TabsTrigger value="preview">Preview</TabsTrigger>
             <TabsTrigger value="code">Edit</TabsTrigger>
@@ -714,7 +718,7 @@ ${artifact.content}
           <TabsContent value="preview" className="flex-1 m-0 p-0 data-[state=active]:flex flex-col overflow-hidden">
             {renderPreview()}
           </TabsContent>
-          <TabsContent value="code" className="flex-1 m-0 p-0 data-[state=active]:flex overflow-hidden" onSelect={() => setIsEditingCode(true)}>
+          <TabsContent value="code" className="flex-1 m-0 p-0 data-[state=active]:flex overflow-hidden">
             {renderCode()}
           </TabsContent>
         </Tabs>
