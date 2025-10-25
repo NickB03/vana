@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Copy, Maximize2, Minimize2, X, AlertCircle, Download, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { Markdown } from "./prompt-kit/markdown";
-import { validateArtifact, ValidationResult } from "@/utils/artifactValidator";
+import { validateArtifact, ValidationResult, categorizeError } from "@/utils/artifactValidator";
 import { LibraryApprovalDialog, DetectedLibrary } from "./LibraryApprovalDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -32,6 +32,7 @@ interface ArtifactProps {
 export const Artifact = ({ artifact, onClose, onEdit }: ArtifactProps) => {
   const [isMaximized, setIsMaximized] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [errorCategory, setErrorCategory] = useState<'syntax' | 'runtime' | 'import' | 'unknown'>('unknown');
   const [isLoading, setIsLoading] = useState(true);
   const [validation, setValidation] = useState<ValidationResult | null>(null);
   const [libraryApprovalOpen, setLibraryApprovalOpen] = useState(false);
@@ -69,7 +70,9 @@ export const Artifact = ({ artifact, onClose, onEdit }: ArtifactProps) => {
     
     const handleIframeMessage = (e: MessageEvent) => {
       if (e.data?.type === 'artifact-error') {
+        const errorInfo = categorizeError(e.data.message);
         setPreviewError(e.data.message);
+        setErrorCategory(errorInfo.category);
         setIsLoading(false);
       } else if (e.data?.type === 'artifact-ready') {
         setIsLoading(false);
@@ -147,6 +150,11 @@ export const Artifact = ({ artifact, onClose, onEdit }: ArtifactProps) => {
         purpose: 'Data-driven DOM manipulation and visualizations',
         provider: 'd3js.org'
       },
+      'shadcn': {
+        scripts: [], // shadcn is imported via ES modules, not CDN
+        purpose: 'shadcn/ui component library (imported as ES modules)',
+        provider: 'internal'
+      },
       'three.js': {
         scripts: ['<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>'],
         purpose: '3D graphics and WebGL rendering',
@@ -206,6 +214,19 @@ export const Artifact = ({ artifact, onClose, onEdit }: ArtifactProps) => {
     };
 
     const detectedLibs: DetectedLibrary[] = [];
+    
+    // Phase 1: Detect shadcn/ui component imports
+    const shadcnPattern = /import\s+\{[^}]+\}\s+from\s+['"]@\/components\/ui\//;
+    const usesShadcn = shadcnPattern.test(content);
+    
+    if (usesShadcn) {
+      detectedLibs.push({
+        name: 'shadcn/ui',
+        url: 'internal://shadcn-ui',
+        purpose: 'Modern React component library',
+        cdnProvider: 'internal'
+      });
+    }
     
     for (const [lib, pattern] of Object.entries(detectionPatterns)) {
       if (pattern.test(content)) {
@@ -421,9 +442,49 @@ ${artifact.content}
               </div>
             )}
             {previewError && !isLoading && (
-              <div className="absolute top-2 left-2 right-2 bg-destructive/10 border border-destructive text-destructive text-xs p-2 rounded z-10 flex items-start gap-2">
-                <span className="font-semibold shrink-0">⚠️ Error:</span>
-                <span className="flex-1 break-words">{previewError}</span>
+              <div className={`absolute top-2 left-2 right-2 text-xs p-3 rounded z-10 flex flex-col gap-2 ${
+                errorCategory === 'syntax' ? 'bg-red-50 border border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200' :
+                errorCategory === 'runtime' ? 'bg-orange-50 border border-orange-200 text-orange-800 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-200' :
+                errorCategory === 'import' ? 'bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200' :
+                'bg-destructive/10 border border-destructive text-destructive'
+              }`}>
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold shrink-0">
+                    {errorCategory === 'syntax' ? '🔴 Syntax Error:' :
+                     errorCategory === 'runtime' ? '🟠 Runtime Error:' :
+                     errorCategory === 'import' ? '🟡 Import Error:' :
+                     '⚠️ Error:'}
+                  </span>
+                  <span className="flex-1 break-words font-mono text-xs">{previewError}</span>
+                </div>
+                {categorizeError(previewError).suggestion && (
+                  <div className="text-xs opacity-80 pl-6">
+                    💡 {categorizeError(previewError).suggestion}
+                  </div>
+                )}
+                <div className="flex gap-2 pl-6">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="h-6 text-xs"
+                    onClick={() => {
+                      navigator.clipboard.writeText(previewError);
+                      toast.success("Error copied to clipboard");
+                    }}
+                  >
+                    Copy Error
+                  </Button>
+                  {onEdit && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="h-6 text-xs"
+                      onClick={() => onEdit(`Fix this error: ${previewError}`)}
+                    >
+                      Ask AI to Fix
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
             <iframe
