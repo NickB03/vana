@@ -14,7 +14,16 @@ serve(async (req) => {
   }
 
   try {
-    const { sessionId } = await req.json();
+    const requestBody = await req.json();
+    const { sessionId } = requestBody;
+    
+    // Input validation
+    if (!sessionId || typeof sessionId !== "string") {
+      return new Response(
+        JSON.stringify({ error: "Invalid session ID" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -167,7 +176,7 @@ serve(async (req) => {
   } catch (e) {
     console.error("Summarization error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      JSON.stringify({ error: "An error occurred while summarizing the conversation" }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

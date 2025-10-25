@@ -12,7 +12,30 @@ serve(async (req) => {
   }
 
   try {
-    const { message } = await req.json();
+    const requestBody = await req.json();
+    const { message } = requestBody;
+    
+    // Input validation
+    if (!message || typeof message !== "string") {
+      return new Response(
+        JSON.stringify({ error: "Invalid message format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    if (message.trim().length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Message cannot be empty" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    if (message.length > 10000) {
+      return new Response(
+        JSON.stringify({ error: "Message too long" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -105,7 +128,7 @@ serve(async (req) => {
   } catch (e) {
     console.error("Generate title error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      JSON.stringify({ error: "An error occurred while generating the title" }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
