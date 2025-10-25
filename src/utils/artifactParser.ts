@@ -7,7 +7,8 @@ const mimeTypeMap: Record<string, ArtifactType> = {
   'text/html': 'html',
   'image/svg+xml': 'svg',
   'application/vnd.ant.mermaid': 'mermaid',
-  'application/vnd.ant.react': 'react'
+  'application/vnd.ant.react': 'react',
+  'image': 'image'
 };
 
 // Parse message content to extract artifacts

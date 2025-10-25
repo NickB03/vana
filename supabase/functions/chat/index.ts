@@ -6,6 +6,18 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Helper function to extract meaningful title from prompt
+function extractImageTitle(prompt: string): string {
+  // Remove "generate image of" type phrases
+  const cleaned = prompt
+    .replace(/^(generate|create|make|draw|design|show me|paint|illustrate)\s+(an?\s+)?(image|picture|photo|illustration|drawing|artwork)\s+(of\s+)?/i, '')
+    .trim();
+  
+  // Capitalize first letter and limit length
+  const title = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  return title.length > 50 ? title.substring(0, 47) + '...' : title;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -89,6 +101,53 @@ serve(async (req) => {
     }
 
     console.log("Starting chat stream for session:", sessionId);
+
+    // Detect image generation requests
+    const lastUserMessage = messages[messages.length - 1];
+    const isImageRequest = lastUserMessage && 
+      /\b(generate|create|make|draw|design|show me|paint|illustrate)\s+(an?\s+)?(image|picture|photo|illustration|drawing|artwork)\b/i.test(lastUserMessage.content);
+
+    if (isImageRequest) {
+      console.log("Image generation request detected");
+      
+      try {
+        // Call generate-image edge function
+        const imageResponse = await supabase.functions.invoke('generate-image', {
+          body: {
+            prompt: lastUserMessage.content,
+            mode: 'generate',
+            sessionId
+          }
+        });
+
+        if (imageResponse.error) {
+          console.error("Image generation error:", imageResponse.error);
+          const errorMessage = "I encountered an issue generating the image. Please try again.";
+          return new Response(
+            `data: ${JSON.stringify({ choices: [{ delta: { content: errorMessage } }] })}\n\ndata: [DONE]\n\n`,
+            { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } }
+          );
+        }
+
+        // Extract image data and create artifact
+        const { imageData, prompt } = imageResponse.data;
+        const title = extractImageTitle(prompt);
+        const artifactResponse = `I've generated an image for you:\n\n<artifact type="image" title="${title}">${imageData}</artifact>`;
+        
+        // Stream the artifact response
+        return new Response(
+          `data: ${JSON.stringify({ choices: [{ delta: { content: artifactResponse } }] })}\n\ndata: [DONE]\n\n`,
+          { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } }
+        );
+      } catch (imgError) {
+        console.error("Image generation failed:", imgError);
+        const errorMessage = "I encountered an issue generating the image. Please try again.";
+        return new Response(
+          `data: ${JSON.stringify({ choices: [{ delta: { content: errorMessage } }] })}\n\ndata: [DONE]\n\n`,
+          { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } }
+        );
+      }
+    }
 
     // Try to get cached context with summary
     let contextMessages = messages;

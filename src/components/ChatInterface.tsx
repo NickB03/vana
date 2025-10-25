@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowUp, Copy, Pencil, Trash, ThumbsUp, ThumbsDown, Wrench, PanelRight } from "lucide-react";
+import { ArrowUp, Copy, Pencil, Trash, ThumbsUp, ThumbsDown, Wrench, PanelRight, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -26,6 +26,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/componen
 import { Artifact, ArtifactData } from "@/components/Artifact";
 import { parseArtifacts } from "@/utils/artifactParser";
 import { ThinkingIndicator } from "@/components/ThinkingIndicator";
+import { InlineImage } from "@/components/InlineImage";
 
 interface ChatInterfaceProps {
   sessionId?: string;
@@ -91,8 +92,8 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
         const newArtifact = artifacts[artifacts.length - 1];
         setCurrentArtifact(newArtifact);
         onArtifactChange?.(true);
-        // Auto-open canvas when new artifact is detected
-        if (onCanvasToggle && !isCanvasOpen) {
+        // Auto-open canvas when new artifact is detected (but NOT for images)
+        if (newArtifact.type !== 'image' && onCanvasToggle && !isCanvasOpen) {
           onCanvasToggle(true);
         }
       } else {
@@ -168,9 +169,13 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
               <ChatContainerRoot className="h-full">
                 <ChatContainerContent className="space-y-0 px-5 py-12">
                   {messages.map((message, index) => {
-                    const { cleanContent } = parseArtifacts(message.content);
+                    const { artifacts, cleanContent } = parseArtifacts(message.content);
                     const isAssistant = message.role === "assistant";
                     const isLastMessage = index === messages.length - 1;
+                    
+                    // Separate image artifacts from other artifacts
+                    const imageArtifacts = artifacts.filter(a => a.type === 'image');
+                    const otherArtifacts = artifacts.filter(a => a.type !== 'image');
 
                     return (
                       <MessageComponent
@@ -191,6 +196,19 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
                             >
                               {cleanContent}
                             </MessageContent>
+                            
+                            {/* Render inline images */}
+                            {imageArtifacts.map(artifact => (
+                              <InlineImage
+                                key={artifact.id}
+                                artifact={artifact}
+                                onEditInCanvas={(artifact) => {
+                                  setCurrentArtifact(artifact);
+                                  onCanvasToggle?.(true);
+                                }}
+                              />
+                            ))}
+                            
                             <MessageActions
                               className={cn(
                                 "-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100",
@@ -327,6 +345,10 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
                           <TooltipContent>Tools</TooltipContent>
                         </Tooltip>
                         <DropdownMenuContent align="end" className="w-48 bg-popover z-50">
+                          <DropdownMenuItem onClick={() => setInput("Generate an image of ")}>
+                            <ImageIcon className="h-4 w-4 mr-2" />
+                            Generate Image
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={handleCanvasToolClick}>
                             <PanelRight className="h-4 w-4 mr-2" />
                             {!currentArtifact ? "Canvas" : isCanvasOpen ? "Close Canvas" : "Open Canvas"}

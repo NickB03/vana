@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Copy, Maximize2, Minimize2, X, AlertCircle } from "lucide-react";
+import { Copy, Maximize2, Minimize2, X, AlertCircle, Download, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { Markdown } from "./prompt-kit/markdown";
 import { validateArtifact, ValidationResult } from "@/utils/artifactValidator";
@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import mermaid from "mermaid";
 
-export type ArtifactType = "code" | "markdown" | "html" | "svg" | "mermaid" | "react";
+export type ArtifactType = "code" | "markdown" | "html" | "svg" | "mermaid" | "react" | "image";
 
 export interface ArtifactData {
   id: string;
@@ -507,6 +507,41 @@ ${artifact.content}
             </div>
           )}
           <div ref={mermaidRef} className={isLoading || previewError ? 'hidden' : ''} />
+        </div>
+      );
+    }
+
+    if (artifact.type === "image") {
+      return (
+        <div className="w-full h-full overflow-auto p-6 bg-muted/30 flex flex-col items-center justify-center gap-4">
+          <img 
+            src={artifact.content} 
+            alt={artifact.title}
+            className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
+          />
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => {
+                const link = document.createElement('a');
+                link.href = artifact.content;
+                link.download = `${artifact.title.replace(/\s+/g, '_')}.png`;
+                link.click();
+                toast.success("Image downloaded");
+              }}
+              variant="outline"
+              size="sm"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </Button>
+            <Button 
+              onClick={() => onEdit?.(`Edit this image: ${artifact.title}. `)}
+              size="sm"
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Image
+            </Button>
+          </div>
         </div>
       );
     }
