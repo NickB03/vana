@@ -36,10 +36,10 @@ uv run pytest tests/unit/test_*.py -v  # Single backend test
 - **When to Ask**: Before modifying auth, database schema, or deploying to production.
 
 **Environment Variables (Required):**
-- `GOOGLE_API_KEY` (REQUIRED) - Primary AI model
+- `GOOGLE_API_KEY` (REQUIRED) - Primary AI model (includes Google Search)
 - `OPENROUTER_API_KEY` (REQUIRED) - Fallback model
-- `BRAVE_API_KEY` (OPTIONAL) - Web search
 - `JWT_SECRET_KEY` (REQUIRED for auth) - Or set `AUTH_REQUIRE_SSE_AUTH=false` for dev
+- ~~`BRAVE_API_KEY`~~ - No longer needed (migrated to Google Search Oct 2025)
 
 **Context Priority (if limited):**
 1. Critical warnings (DO NOT rules, browser verification)

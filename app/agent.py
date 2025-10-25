@@ -27,7 +27,8 @@ from google.adk.tools.agent_tool import AgentTool
 from google.genai import types as genai_types
 from pydantic import BaseModel, Field
 
-from app.tools import brave_search  # Compatible with all LLM providers
+from google.adk.tools.google_search_tool import GoogleSearchTool
+
 from app.tools.memory_tools import (
     delete_memory_tool,
     retrieve_memories_tool,
@@ -42,6 +43,23 @@ from .enhanced_callbacks import (
     composite_after_agent_callback_with_citations,
     composite_after_agent_callback_with_research_sources,
 )
+
+# --- Google Search Tool Configuration ---
+# ADK 1.16.0+ supports using Google Search with other tools via bypass_multi_tools_limit
+# This replaces Brave Search for better native Gemini grounding and automatic citations
+google_search = GoogleSearchTool(bypass_multi_tools_limit=True)
+"""Google Search tool configured for multi-tool usage in child agents.
+
+ADK 1.16.0+ feature that allows Google Search to work alongside custom tools.
+Provides native Gemini grounding with automatic citation extraction and
+source attribution via grounding_metadata.
+
+Benefits over Brave Search:
+- Native Gemini integration (better quality)
+- Automatic citation extraction
+- No additional API costs
+- Richer grounding metadata with confidence scores
+"""
 
 
 # --- Structured Output Models ---
@@ -263,18 +281,15 @@ plan_generator = LlmAgent(
 
     **TOOL USE IS STRICTLY LIMITED:**
     Your goal is to create a generic, high-quality plan *without searching*.
-    Only use `brave_search` if a topic is ambiguous or time-sensitive and you absolutely cannot create a plan without a key piece of identifying information.
+    Only use `google_search` if a topic is ambiguous or time-sensitive and you absolutely cannot create a plan without a key piece of identifying information.
     You are explicitly forbidden from researching the *content* or *themes* of the topic. That is the next agent's job. Your search is only to identify the subject, not to investigate it.
     Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
     """,
-    # FIX: Removed tools=[brave_search] to prevent nested function call errors
-    # This prevents Google Gemini API 400 error: "function call turn must come immediately after user turn"
-    # The plan_generator is invoked via AgentTool, and nested tool calls violate Gemini's conversation requirements
-    # tools=[brave_search],
-    #
-    # IMPORTANT: Do NOT use include_contents="none" here - plan_generator needs to see the conversation
-    # context to understand what topic to create a plan for. The 400 error was caused by nested tool calls,
-    # which we've already fixed by removing tools=[brave_search].
+    # ADK 1.17.0: Re-enabled Google Search with bypass_multi_tools_limit=True
+    # Previous issue: Brave Search caused nested function call errors when plan_generator was invoked via AgentTool
+    # Solution: Google Search with bypass flag works correctly in multi-agent scenarios
+    # The bypass_multi_tools_limit flag allows Google Search to coexist with AgentTool invocations
+    tools=[google_search],
     before_agent_callback=before_agent_callback,
     after_agent_callback=after_agent_callback,
 )
@@ -322,8 +337,8 @@ section_researcher = LlmAgent(
     *   **Execution Directive:** You **MUST** systematically process every goal prefixed with `[RESEARCH]` before proceeding to Phase 2.
     *   For each `[RESEARCH]` goal:
         *   **Query Generation:** Formulate a comprehensive set of 4-5 targeted search queries. These queries must be expertly designed to broadly cover the specific intent of the `[RESEARCH]` goal from multiple angles.
-        *   **PARALLEL EXECUTION:** Execute **ALL** generated queries for the current `[RESEARCH]` goal **in parallel** by calling `brave_search` multiple times in the **same turn**. The ADK framework automatically handles concurrent execution, resulting in 3-5x faster research compared to sequential execution.
-            *   ✅ CORRECT: Call `brave_search(query1)`, `brave_search(query2)`, `brave_search(query3)`, `brave_search(query4)`, `brave_search(query5)` together
+        *   **PARALLEL EXECUTION:** Execute **ALL** generated queries for the current `[RESEARCH]` goal **in parallel** by calling `google_search` multiple times in the **same turn**. The ADK framework automatically handles concurrent execution, resulting in 3-5x faster research compared to sequential execution.
+            *   ✅ CORRECT: Call `google_search(query1)`, `google_search(query2)`, `google_search(query3)`, `google_search(query4)`, `google_search(query5)` together
             *   ❌ INCORRECT: Wait for each search to complete before starting the next one
         *   **Summarization:** Synthesize the search results into a detailed, coherent summary that directly addresses the objective of the `[RESEARCH]` goal.
         *   **Internal Storage:** Store this summary, clearly tagged or indexed by its corresponding `[RESEARCH]` goal, for later and exclusive use in Phase 2. You **MUST NOT** lose or discard any generated summaries.
@@ -348,7 +363,7 @@ section_researcher = LlmAgent(
 
     **Final Output:** Your final output will comprise the complete set of processed summaries from `[RESEARCH]` tasks AND all the generated artifacts from `[DELIVERABLE]` tasks, presented clearly and distinctly.
     """,
-    tools=[brave_search],
+    tools=[google_search],
     output_key="section_research_findings",
     before_agent_callback=before_agent_callback,
     after_agent_callback=composite_after_agent_callback_with_research_sources,
@@ -395,13 +410,13 @@ enhanced_search_executor = LlmAgent(
     You have been activated because the previous research was graded as 'fail'.
 
     1.  Review the 'research_evaluation' state key to understand the feedback and required fixes.
-    2.  **PARALLEL EXECUTION:** Execute **ALL** queries listed in 'follow_up_queries' **in parallel** by calling `brave_search` multiple times in the **same turn**. ADK's parallel tool calling will execute them concurrently for faster results.
+    2.  **PARALLEL EXECUTION:** Execute **ALL** queries listed in 'follow_up_queries' **in parallel** by calling `google_search` multiple times in the **same turn**. ADK's parallel tool calling will execute them concurrently for faster results.
         - ✅ CORRECT: Call all follow-up searches together in one turn
         - ❌ INCORRECT: Execute searches one at a time sequentially
     3.  Synthesize the new findings and COMBINE them with the existing information in 'section_research_findings'.
     4.  Your output MUST be the new, complete, and improved set of research findings.
     """,
-    tools=[brave_search],
+    tools=[google_search],
     output_key="section_research_findings",
     before_agent_callback=before_agent_callback,
     after_agent_callback=composite_after_agent_callback_with_research_sources,
