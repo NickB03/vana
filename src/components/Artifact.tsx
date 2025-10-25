@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,9 @@ import { LibraryApprovalDialog, DetectedLibrary } from "./LibraryApprovalDialog"
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import mermaid from "mermaid";
 
-export type ArtifactType = "code" | "markdown" | "html";
+export type ArtifactType = "code" | "markdown" | "html" | "svg" | "mermaid" | "react";
 
 export interface ArtifactData {
   id: string;
@@ -37,6 +38,16 @@ export const Artifact = ({ artifact, onClose, onEdit }: ArtifactProps) => {
   const [detectedLibraries, setDetectedLibraries] = useState<DetectedLibrary[]>([]);
   const [injectedCDNs, setInjectedCDNs] = useState<string>('');
   const [librariesChecked, setLibrariesChecked] = useState(false);
+  const mermaidRef = useRef<HTMLDivElement>(null);
+
+  // Initialize mermaid
+  useEffect(() => {
+    mermaid.initialize({ 
+      startOnLoad: false,
+      theme: 'default',
+      securityLevel: 'loose'
+    });
+  }, []);
 
   // Phase 4: Validate artifact on mount
   useEffect(() => {
@@ -74,9 +85,31 @@ export const Artifact = ({ artifact, onClose, onEdit }: ArtifactProps) => {
     };
   }, [artifact.content]);
 
+  // Render mermaid diagrams
+  useEffect(() => {
+    if (artifact.type === "mermaid" && mermaidRef.current) {
+      const renderMermaid = async () => {
+        try {
+          setIsLoading(true);
+          const id = `mermaid-${Date.now()}`;
+          const { svg } = await mermaid.render(id, artifact.content);
+          if (mermaidRef.current) {
+            mermaidRef.current.innerHTML = svg;
+          }
+          setIsLoading(false);
+        } catch (error) {
+          console.error('Mermaid render error:', error);
+          setPreviewError(error instanceof Error ? error.message : 'Failed to render diagram');
+          setIsLoading(false);
+        }
+      };
+      renderMermaid();
+    }
+  }, [artifact.content, artifact.type]);
+
   // Phase 7: Check for libraries when content changes
   useEffect(() => {
-    if (artifact.type === "html" || artifact.type === "code") {
+    if (artifact.type === "html" || artifact.type === "code" || artifact.type === "react") {
       setLibrariesChecked(false);
       setInjectedCDNs('');
       checkLibraries();
@@ -407,6 +440,115 @@ ${artifact.content}
       return (
         <div className="w-full h-full overflow-auto p-4 bg-background">
           <Markdown>{artifact.content}</Markdown>
+        </div>
+      );
+    }
+
+    if (artifact.type === "svg") {
+      return (
+        <div className="w-full h-full overflow-auto p-4 bg-background flex items-center justify-center">
+          <div dangerouslySetInnerHTML={{ __html: artifact.content }} />
+        </div>
+      );
+    }
+
+    if (artifact.type === "mermaid") {
+      return (
+        <div className="w-full h-full overflow-auto p-4 bg-background flex items-center justify-center">
+          {isLoading && (
+            <div className="flex flex-col items-center gap-2">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+              <p className="text-sm text-muted-foreground">Rendering diagram...</p>
+            </div>
+          )}
+          {previewError && !isLoading && (
+            <div className="bg-destructive/10 border border-destructive text-destructive text-xs p-2 rounded flex items-start gap-2">
+              <span className="font-semibold shrink-0">⚠️ Error:</span>
+              <span className="flex-1 break-words">{previewError}</span>
+            </div>
+          )}
+          <div ref={mermaidRef} className={isLoading || previewError ? 'hidden' : ''} />
+        </div>
+      );
+    }
+
+    if (artifact.type === "react") {
+      const reactPreviewContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Pre-approved libraries -->
+  <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
+  <script src="https://unpkg.com/recharts@2.5.0/dist/Recharts.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  ${injectedCDNs}
+  
+  <style>
+    body { margin: 0; padding: 0; }
+    #root { width: 100%; height: 100vh; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useReducer, useRef, useMemo, useCallback } = React;
+    
+    ${artifact.content}
+    
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+  
+  <script>
+    // Error reporting
+    window.addEventListener('error', (e) => {
+      window.parent.postMessage({ 
+        type: 'artifact-error', 
+        message: e.message 
+      }, '*');
+    });
+    
+    window.addEventListener('load', () => {
+      window.parent.postMessage({ type: 'artifact-ready' }, '*');
+    });
+  </script>
+</body>
+</html>`;
+
+      return (
+        <div className="w-full h-full relative flex flex-col">
+          <div className="flex-1 relative">
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-20">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                  <p className="text-sm text-muted-foreground">Loading React component...</p>
+                </div>
+              </div>
+            )}
+            {previewError && !isLoading && (
+              <div className="absolute top-2 left-2 right-2 bg-destructive/10 border border-destructive text-destructive text-xs p-2 rounded z-10 flex items-start gap-2">
+                <span className="font-semibold shrink-0">⚠️ Error:</span>
+                <span className="flex-1 break-words">{previewError}</span>
+              </div>
+            )}
+            <iframe
+              key={injectedCDNs}
+              srcDoc={reactPreviewContent}
+              className="w-full h-full border-0 bg-background"
+              title={artifact.title}
+              sandbox="allow-scripts allow-same-origin"
+            />
+          </div>
         </div>
       );
     }
