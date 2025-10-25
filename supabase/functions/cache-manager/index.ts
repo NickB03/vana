@@ -98,6 +98,20 @@ serve(async (req) => {
       });
     }
 
+    // Verify session ownership
+    const { data: session, error: sessionError } = await supabase
+      .from('chat_sessions')
+      .select('user_id')
+      .eq('id', sessionId)
+      .single();
+
+    if (sessionError || !session || session.user_id !== user.id) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized access to session' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const redisUrl = Deno.env.get("UPSTASH_REDIS_REST_URL");
     const redisToken = Deno.env.get("UPSTASH_REDIS_REST_TOKEN");
 
