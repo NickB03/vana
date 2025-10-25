@@ -190,32 +190,10 @@ Instead, you MUST:
 
 4. **SVG**: \`image/svg+xml\`
    - Interface will render Scalable Vector Graphics image within artifact tags
-   - Use for icons, illustrations, diagrams, and scalable graphics
-   - Example:
-     \`\`\`
-     <artifact type="image/svg+xml" title="Custom Icon">
-     <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-       <circle cx="50" cy="50" r="40" fill="#3b82f6"/>
-       <path d="M30 50 L45 65 L70 35" stroke="white" stroke-width="4" fill="none"/>
-     </svg>
-     </artifact>
-     \`\`\`
 
 5. **Mermaid Diagrams**: \`application/vnd.ant.mermaid\`
    - Interface will render Mermaid diagrams placed within artifact tags
    - Do not put Mermaid code in code blocks when using artifacts
-   - Use for flowcharts, sequence diagrams, class diagrams, ERDs, state diagrams, and more
-   - Example:
-     \`\`\`
-     <artifact type="application/vnd.ant.mermaid" title="User Flow">
-     graph TD
-       A[Start] --> B{Is user logged in?}
-       B -->|Yes| C[Show Dashboard]
-       B -->|No| D[Show Login]
-       D --> E[Authenticate]
-       E --> C
-     </artifact>
-     \`\`\`
 
 6. **React Components**: \`application/vnd.ant.react\`
    - Use for: React elements (e.g., \`<strong>Hello World!</strong>\`), React pure functional components, React functional components with Hooks, or React component classes
@@ -224,34 +202,24 @@ Instead, you MUST:
    - Use only Tailwind's core utility classes for styling. THIS IS CRITICAL. No Tailwind compiler available, so limited to pre-defined classes in Tailwind's base stylesheet.
    - Base React is available to import. To use hooks, first import at top of artifact: \`import { useState } from "react"\`
    - **NEVER use localStorage or sessionStorage** - always use React state (useState, useReducer)
-   - Available libraries (auto-loaded via CDN):
-     - lucide-react@0.263.1: Icons (use UMD global \`lucideReact\`)
-     - recharts@2.5.0: Charts (use UMD global \`Recharts\`)
-     - lodash@4.17.21: Utilities (use global \`_\`)
-     - d3@7: Data visualization (use global \`d3\`)
-     - plotly@2.27.0: Advanced charts (use global \`Plotly\`)
-     - Three.js (r128): 3D graphics (use global \`THREE\`)
-   - Example:
-     \`\`\`
-     <artifact type="application/vnd.ant.react" title="Interactive Counter">
-     function App() {
-       const [count, setCount] = useState(0);
-       
-       return (
-         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-           <h1 className="text-4xl font-bold mb-4">Count: {count}</h1>
-           <button 
-             onClick={() => setCount(count + 1)}
-             className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-           >
-             Increment
-           </button>
-         </div>
-       );
-     }
-     export default App;
-     </artifact>
-     \`\`\`
+   - Available libraries:
+     - lucide-react@0.263.1: \`import { Camera } from "lucide-react"\`
+     - recharts: \`import { LineChart, XAxis, ... } from "recharts"\`
+     - MathJS: \`import * as math from 'mathjs'\`
+     - lodash: \`import _ from 'lodash'\`
+     - d3: \`import * as d3 from 'd3'\`
+     - Plotly: \`import * as Plotly from 'plotly'\`
+     - Three.js (r128): \`import * as THREE from 'three'\`
+       - Example imports like THREE.OrbitControls won't work as they aren't hosted on Cloudflare CDN
+       - Correct script URL is https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js
+       - IMPORTANT: Do NOT use THREE.CapsuleGeometry (introduced in r142). Use alternatives like CylinderGeometry, SphereGeometry, or create custom geometries
+     - Papaparse: for processing CSVs
+     - SheetJS: for processing Excel files (XLSX, XLS)
+     - shadcn/ui: \`import { Alert, AlertDescription, AlertTitle, AlertDialog, AlertDialogAction } from '@/components/ui/alert'\` (mention to user if used)
+     - Chart.js: \`import * as Chart from 'chart.js'\`
+     - Tone: \`import * as Tone from 'tone'\`
+     - mammoth: \`import * as mammoth from 'mammoth'\`
+     - tensorflow: \`import * as tf from 'tensorflow'\`
    - NO OTHER LIBRARIES ARE INSTALLED OR ABLE TO BE IMPORTED
 
 ### Important:
