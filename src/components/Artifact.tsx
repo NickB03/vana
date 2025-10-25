@@ -440,8 +440,21 @@ ${artifact.content}
 
     if (artifact.type === "markdown") {
       return (
-        <div className="w-full h-full overflow-auto p-4 bg-background">
-          <Markdown>{artifact.content}</Markdown>
+        <div className="w-full h-full flex flex-col">
+          {isEditingCode ? (
+            <div className="flex-1 overflow-auto p-4 bg-muted">
+              <textarea
+                value={editedContent}
+                onChange={(e) => setEditedContent(e.target.value)}
+                className="w-full h-full p-4 text-sm bg-muted text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                spellCheck={false}
+              />
+            </div>
+          ) : (
+            <div className="flex-1 overflow-auto p-4 bg-background">
+              <Markdown>{artifact.content}</Markdown>
+            </div>
+          )}
         </div>
       );
     }
@@ -602,7 +615,7 @@ ${artifact.content}
 
   const renderCode = () => {
     return (
-      <div className="w-full h-full flex flex-col">
+      <div className="w-full h-full flex flex-col overflow-hidden">
         <div className="flex-1 overflow-auto bg-muted">
           {isEditingCode ? (
             <textarea
@@ -612,39 +625,29 @@ ${artifact.content}
               spellCheck={false}
             />
           ) : (
-            <pre className="p-4 text-sm font-mono">
+            <pre className="p-4 text-sm font-mono overflow-auto">
               <code className="text-foreground whitespace-pre-wrap break-words">{artifact.content}</code>
             </pre>
           )}
         </div>
-        <div className="flex items-center justify-end gap-2 border-t px-4 py-2 bg-muted/50">
-          {isEditingCode ? (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCancelEdit}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleEditToggle}
-              >
-                Save Changes
-              </Button>
-            </>
-          ) : (
+        {isEditingCode && (
+          <div className="flex items-center justify-end gap-2 border-t px-4 py-2 bg-muted/50">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCancelEdit}
+            >
+              Cancel
+            </Button>
             <Button
               variant="default"
               size="sm"
               onClick={handleEditToggle}
             >
-              Edit
+              Save Changes
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -703,15 +706,15 @@ ${artifact.content}
         </div>
 
 
-        <Tabs defaultValue="preview" className="flex-1 flex flex-col min-h-0">
+        <Tabs defaultValue="preview" className="flex-1 flex flex-col min-h-0 overflow-hidden">
           <TabsList className="w-full justify-start rounded-none border-b bg-muted/30">
             <TabsTrigger value="preview">Preview</TabsTrigger>
-            <TabsTrigger value="code">Code</TabsTrigger>
+            <TabsTrigger value="code">Edit</TabsTrigger>
           </TabsList>
-          <TabsContent value="preview" className="flex-1 m-0 p-0 data-[state=active]:flex flex-col">
+          <TabsContent value="preview" className="flex-1 m-0 p-0 data-[state=active]:flex flex-col overflow-hidden">
             {renderPreview()}
           </TabsContent>
-          <TabsContent value="code" className="flex-1 m-0 p-0 data-[state=active]:flex">
+          <TabsContent value="code" className="flex-1 m-0 p-0 data-[state=active]:flex overflow-hidden" onSelect={() => setIsEditingCode(true)}>
             {renderCode()}
           </TabsContent>
         </Tabs>
