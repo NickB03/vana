@@ -39,6 +39,8 @@ export const Artifact = ({ artifact, onClose, onEdit }: ArtifactProps) => {
   const [injectedCDNs, setInjectedCDNs] = useState<string>('');
   const [librariesChecked, setLibrariesChecked] = useState(false);
   const mermaidRef = useRef<HTMLDivElement>(null);
+  const [isEditingCode, setIsEditingCode] = useState(false);
+  const [editedContent, setEditedContent] = useState(artifact.content);
 
   // Initialize mermaid
   useEffect(() => {
@@ -556,12 +558,69 @@ ${artifact.content}
     return null;
   };
 
+  const handleEditToggle = () => {
+    if (isEditingCode) {
+      // Save changes
+      artifact.content = editedContent;
+      toast.success("Code updated");
+      setIsEditingCode(false);
+    } else {
+      // Enter edit mode
+      setEditedContent(artifact.content);
+      setIsEditingCode(true);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditedContent(artifact.content);
+    setIsEditingCode(false);
+  };
+
   const renderCode = () => {
     return (
-      <div className="w-full h-full overflow-auto bg-muted">
-        <pre className="p-4 text-sm font-mono">
-          <code className="text-foreground whitespace-pre-wrap break-words">{artifact.content}</code>
-        </pre>
+      <div className="w-full h-full flex flex-col">
+        <div className="flex-1 overflow-auto bg-muted">
+          {isEditingCode ? (
+            <textarea
+              value={editedContent}
+              onChange={(e) => setEditedContent(e.target.value)}
+              className="w-full h-full p-4 text-sm font-mono bg-muted text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+              spellCheck={false}
+            />
+          ) : (
+            <pre className="p-4 text-sm font-mono">
+              <code className="text-foreground whitespace-pre-wrap break-words">{artifact.content}</code>
+            </pre>
+          )}
+        </div>
+        <div className="flex items-center justify-end gap-2 border-t px-4 py-2 bg-muted/50">
+          {isEditingCode ? (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCancelEdit}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleEditToggle}
+              >
+                Save Changes
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleEditToggle}
+            >
+              Edit
+            </Button>
+          )}
+        </div>
       </div>
     );
   };
