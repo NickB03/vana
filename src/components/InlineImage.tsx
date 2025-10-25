@@ -20,6 +20,9 @@ export function InlineImage({ artifact }: InlineImageProps) {
           src={artifact.content} 
           alt={artifact.title}
           className="w-full h-auto bg-muted"
+          loading="lazy"
+          decoding="async"
+          fetchPriority="low"
         />
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
           <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 shadow-lg">

@@ -64,23 +64,40 @@ const IndexContent = () => {
       }
     });
 
-    // Periodic session validation (every 5 minutes)
-    const intervalId = setInterval(async () => {
-      const session = await ensureValidSession();
-      if (!session) {
-        setIsAuthenticated(false);
-        toast({
-          title: "Session Expired",
-          description: "Please sign in again to continue",
-          variant: "destructive",
-        });
-        navigate("/auth");
+    // Optimized session validation - check only when necessary
+    // Check 5 minutes before token expiry instead of polling every 5 minutes
+    let timeoutId: NodeJS.Timeout;
+    
+    const scheduleSessionCheck = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.expires_at) {
+        const expiresAt = session.expires_at * 1000; // Convert to ms
+        const now = Date.now();
+        const timeUntilExpiry = expiresAt - now;
+        const checkTime = Math.max(timeUntilExpiry - (5 * 60 * 1000), 1000); // Check 5 min before expiry
+        
+        timeoutId = setTimeout(async () => {
+          const validSession = await ensureValidSession();
+          if (!validSession) {
+            setIsAuthenticated(false);
+            toast({
+              title: "Session Expired",
+              description: "Please sign in again to continue",
+              variant: "destructive",
+            });
+            navigate("/auth");
+          } else {
+            scheduleSessionCheck(); // Schedule next check
+          }
+        }, checkTime);
       }
-    }, 5 * 60 * 1000);
+    };
+    
+    scheduleSessionCheck();
 
     return () => {
       subscription.unsubscribe();
-      clearInterval(intervalId);
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, [navigate, toast]);
 

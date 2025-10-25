@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -52,10 +52,14 @@ export const Artifact = ({ artifact, onClose, onEdit }: ArtifactProps) => {
     });
   }, []);
 
-  // Phase 4: Validate artifact on mount
+  // Phase 4: Validate artifact on mount - debounced for performance
   useEffect(() => {
-    const validationResult = validateArtifact(artifact.content, artifact.type);
-    setValidation(validationResult);
+    const timeoutId = setTimeout(() => {
+      const validationResult = validateArtifact(artifact.content, artifact.type);
+      setValidation(validationResult);
+    }, 300); // Debounce validation by 300ms
+    
+    return () => clearTimeout(timeoutId);
   }, [artifact.content, artifact.type]);
 
   const handleCopy = () => {

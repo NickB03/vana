@@ -3,13 +3,14 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { cn } from "@/lib/utils"
+import { memo } from 'react'
 
 interface MarkdownProps {
   children: string
   className?: string
 }
 
-function Markdown({ children, className }: MarkdownProps) {
+const Markdown = memo(function Markdown({ children, className }: MarkdownProps) {
   return (
     <div className={cn("prose prose-sm max-w-none dark:prose-invert", className)}>
       <ReactMarkdown 
@@ -59,6 +60,6 @@ function Markdown({ children, className }: MarkdownProps) {
       </ReactMarkdown>
     </div>
   )
-}
+})
 
 export { Markdown }

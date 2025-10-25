@@ -36,6 +36,8 @@ export function ImagePreviewDialog({
             src={imageData} 
             alt={title}
             className="max-w-full max-h-[80vh] w-auto h-auto object-contain rounded-lg shadow-lg"
+            loading="lazy"
+            decoding="async"
           />
         </div>
         
