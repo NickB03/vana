@@ -339,6 +339,7 @@ Bad Response (too wordy):
           },
           ...contextMessages,
         ],
+        tools: [{ google_search_retrieval: {} }],
         stream: true,
       }),
     });
