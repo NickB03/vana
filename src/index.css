@@ -408,6 +408,14 @@ All colors MUST be HSL.
 }
 
 @layer base {
+  /* Safe area and dynamic viewport height support */
+  :root {
+    --safe-area-inset-top: env(safe-area-inset-top, 0px);
+    --safe-area-inset-right: env(safe-area-inset-right, 0px);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  }
+
   * {
     @apply border-border;
   }
@@ -427,6 +435,27 @@ All colors MUST be HSL.
     text-rendering: optimizeLegibility;
   }
   
+  /* Dynamic viewport height for mobile */
+  #root {
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
+  }
+  
+  /* Mobile scroll optimizations */
+  @media (max-width: 640px) {
+    body {
+      overflow-x: hidden;
+    }
+    
+    /* Smooth momentum scrolling on iOS */
+    [data-scroll-area],
+    .overflow-y-auto {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+      touch-action: pan-y;
+    }
+  }
+  
   /* CSS Containment for isolated components */
   .chat-message {
     contain: layout style paint;
@@ -439,6 +468,14 @@ All colors MUST be HSL.
   /* Touch action optimization for mobile */
   button, a, [role="button"] {
     touch-action: manipulation;
+  }
+  
+  /* Backdrop blur support for sticky header */
+  @supports (backdrop-filter: blur(8px)) {
+    .backdrop-blur-sm {
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
   }
   
   /* Reduce motion for users who prefer it */
