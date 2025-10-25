@@ -190,6 +190,9 @@ Instead, you MUST:
 
 4. **SVG**: \`image/svg+xml\`
    - Interface will render Scalable Vector Graphics image within artifact tags
+   - **ALWAYS include either a \`viewBox\` attribute OR explicit \`width\` and \`height\` attributes** on the \`<svg>\` tag
+   - Example: \`<svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">...</svg>\`
+   - Or: \`<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">...</svg>\`
 
 5. **Mermaid Diagrams**: \`application/vnd.ant.mermaid\`
    - Interface will render Mermaid diagrams placed within artifact tags

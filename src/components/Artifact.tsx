@@ -447,9 +447,27 @@ ${artifact.content}
     }
 
     if (artifact.type === "svg") {
+      // Ensure SVG has proper dimensions
+      const hasViewBox = artifact.content.includes('viewBox');
+      const hasWidthHeight = artifact.content.includes('width=') && artifact.content.includes('height=');
+      
+      let svgContent = artifact.content;
+      
+      // If SVG lacks dimensions, add default viewBox to the svg element
+      if (!hasViewBox && !hasWidthHeight) {
+        svgContent = svgContent.replace(
+          /<svg([^>]*)>/,
+          '<svg$1 viewBox="0 0 800 600" width="800" height="600">'
+        );
+      }
+      
       return (
         <div className="w-full h-full overflow-auto p-4 bg-background flex items-center justify-center">
-          <div dangerouslySetInnerHTML={{ __html: artifact.content }} />
+          <div 
+            className="svg-container"
+            dangerouslySetInnerHTML={{ __html: svgContent }}
+            style={{ maxWidth: '100%', maxHeight: '100%' }}
+          />
         </div>
       );
     }
