@@ -90,11 +90,19 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
       const { artifacts } = parseArtifacts(lastAssistantMsg.content);
       if (artifacts.length > 0) {
         const newArtifact = artifacts[artifacts.length - 1];
-        setCurrentArtifact(newArtifact);
-        onArtifactChange?.(true);
-        // Auto-open canvas when new artifact is detected (but NOT for images)
-        if (newArtifact.type !== 'image' && onCanvasToggle && !isCanvasOpen) {
-          onCanvasToggle(true);
+        
+        // Skip canvas system entirely for image artifacts
+        if (newArtifact.type === 'image') {
+          setCurrentArtifact(null);
+          onArtifactChange?.(false);
+        } else {
+          // Only set artifact and open canvas for non-image types
+          setCurrentArtifact(newArtifact);
+          onArtifactChange?.(true);
+          // Auto-open canvas when new artifact is detected
+          if (onCanvasToggle && !isCanvasOpen) {
+            onCanvasToggle(true);
+          }
         }
       } else {
         setCurrentArtifact(null);
