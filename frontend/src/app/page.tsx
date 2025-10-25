@@ -41,6 +41,9 @@ import {
   PromptInputActions,
   PromptInputTextarea,
 } from "@/components/prompt-kit/prompt-input";
+import { SearchResponseDisplay } from "@/components/search";
+import { isSearchResponse } from "@/types/search";
+import type { SearchResponse } from "@/types/search";
 import { FileUpload, FileUploadTrigger } from "@/components/ui/file-upload";
 import { ScrollButton } from "@/components/prompt-kit/scroll-button";
 import { Loader } from "@/components/prompt-kit/loader";
@@ -193,8 +196,16 @@ function ChatView({
     }
   };
 
-  const handleCopyMessage = (content: string) => {
-    navigator.clipboard.writeText(content);
+  const handleCopyMessage = (content: string | SearchResponse) => {
+    // If content is a SearchResponse object, format it nicely
+    if (typeof content === 'object' && isSearchResponse(content)) {
+      const formattedText = `Search: ${content.query}\n\n${content.results.map((r, i) =>
+        `${i + 1}. ${r.title}\n   ${r.url}\n   ${r.aiSummary}\n`
+      ).join('\n')}`;
+      navigator.clipboard.writeText(formattedText);
+    } else {
+      navigator.clipboard.writeText(content as string);
+    }
   };
 
   // File upload handler
@@ -623,12 +634,24 @@ function ChatView({
                                   </MessageContent>
                                 )}
                               <MessageContent className="prose flex-1 rounded-lg bg-transparent p-0">
-                                <Markdown
-                                  id={message.id}
-                                  className="prose prose-sm max-w-none dark:prose-invert prose-p:leading-relaxed prose-pre:p-0"
-                                >
-                                  {message.content}
-                                </Markdown>
+                                {/* Check if content is a SearchResponse object */}
+                                {typeof message.content === 'object' && isSearchResponse(message.content) ? (
+                                  <SearchResponseDisplay
+                                    searchResponse={message.content}
+                                    onRelatedSearchClick={(query) => {
+                                      // Send related search query as new message
+                                      setInputValue(query);
+                                      handleSubmit(new Event('submit') as any, query);
+                                    }}
+                                  />
+                                ) : (
+                                  <Markdown
+                                    id={message.id}
+                                    className="prose prose-sm max-w-none dark:prose-invert prose-p:leading-relaxed prose-pre:p-0"
+                                  >
+                                    {typeof message.content === 'string' ? message.content : JSON.stringify(message.content)}
+                                  </Markdown>
+                                )}
                               </MessageContent>
                               <MessageActions
                                 className={cn(

@@ -462,30 +462,74 @@ research_pipeline = SequentialAgent(
     after_agent_callback=agent_network_tracking_callback,
 )
 
+# Import quick search agent for fast web searches
+from app.agents.quick_search_agent import quick_search_agent
+
 interactive_planner_agent = LlmAgent(
     name="interactive_planner_agent",
     model=config.worker_model,
-    description="Powerful research assistant that creates and executes detailed research plans to answer complex questions requiring web searches and current information.",
+    description="Powerful research assistant that creates and executes detailed research plans to answer complex questions requiring web searches and current information. Also handles quick web searches for fast answers.",
     instruction=f"""
     You are a helpful and friendly research assistant with long-term memory capabilities.
+    You can operate in TWO MODES: Quick Search Mode and Deep Research Mode.
+
+    ⚠️ **CRITICAL: ASK USER TO CHOOSE MODE FOR AMBIGUOUS QUERIES**
+    You handle queries where the user's intent is unclear. Your job is to ASK them to choose
+    between Quick Search (fast) or Deep Research (comprehensive).
+
+    **YOUR WORKFLOW:**
+
+    **STEP 1: Detect explicit intent or mode choice**
+       - If query contains "search for", "find", "find me", "show me" (explicit quick search keywords)
+         → Immediately call transfer_to_agent(agent_name="quick_search_agent") - NO prompt needed
+       - If user is responding to mode choice: "quick search", "fast", "quick", "option 1", "1", "first one"
+         → Immediately call transfer_to_agent(agent_name="quick_search_agent")
+       - If user says: "deep research", "comprehensive", "detailed", "option 2", "2", "second one"
+         → Use plan_generator tool to create research plan
+       - If no clear intent detected (ambiguous query), proceed to STEP 2
+
+    **STEP 2: Ask user to choose between Quick Search and Deep Research**
+       Present this EXACT message format:
+
+       "I can help with that! Please choose how you'd like me to proceed:
+
+       **Option 1: Quick Search** ⚡
+       Get fast results with AI-powered summaries and related suggestions. Best for discovering resources, getting quick answers, or exploring topics.
+
+       **Option 2: Deep Research** 🔍
+       Comprehensive analysis with multiple sources, citations, and detailed findings. Best for thorough investigations or creating detailed reports.
+
+       Which option would you prefer? (Type '1' for Quick Search or '2' for Deep Research)"
+
+    **STEP 3: After user chooses**
+       - Option 1 (Quick Search) → transfer_to_agent(agent_name="quick_search_agent")
+       - Option 2 (Deep Research) → Use plan_generator, present plan, ask for approval, then route to research_pipeline
+
+    **CRITICAL RULES:**
+    - ALWAYS ask for mode choice FIRST (unless user already chose)
+    - DO NOT automatically assume deep research
+    - DO NOT call plan_generator until user explicitly chooses Option 2
+    - Keep the mode selection message friendly and clear
+
+    **WORKFLOW BY MODE:**
+
+    **Quick Search Mode:**
+    1. Detect quick search keywords
+    2. Immediately transfer to quick_search_agent (no planning needed)
+    3. Present formatted results to user
+
+    **Deep Research Mode:**
+    1. Use `plan_generator` to create a draft research plan
+    2. Present the plan in a clear, organized format
+    3. Ask for approval: "Does this research plan look good? Please let me know if you'd like me to proceed with the research or if you'd like any changes."
+    4. If user approves, delegate to `research_pipeline`
+    5. If changes requested, refine plan and repeat
 
     **MEMORY SYSTEM:**
     You have access to a long-term memory system that persists across sessions:
     - Use `store_memory_function` to remember important user preferences, facts, or context
     - Use `retrieve_memories_function` to recall previously stored information
     - Use `delete_memory_function` to forget outdated or incorrect information
-
-    **YOUR WORKFLOW:**
-    1.  **Remember the user:** At the start of conversations, use `retrieve_memories_function` with namespace="preferences" and key="user_name" to check if you know the user. If you do, greet them personally.
-    2.  **Get to know the user:** If you don't know their name, ask for it and store it using `store_memory_function` with namespace="preferences", key="user_name".
-    3.  **Plan:** Use `plan_generator` to create a draft research plan for the user's topic.
-    4.  **Present the Plan:** After receiving the plan from `plan_generator`, present it to the user in a clear, organized format. Explain the research approach and what information will be gathered.
-    5.  **Ask for Approval:** After presenting the plan, explicitly ask: "Does this research plan look good? Please let me know if you'd like me to proceed with the research or if you'd like any changes."
-    6.  **Refine:** If the user requests changes, use `plan_generator` again to incorporate feedback, then present the updated plan.
-    7.  **Execute:** Once the user gives approval (e.g., "yes", "looks good", "proceed"), immediately delegate to `research_pipeline` agent.
-    8.  **Remember context:** Throughout conversations, store important preferences, topics of interest, or context that might be useful in future sessions.
-
-    **CRITICAL RULE:** Never answer questions directly or refuse requests. Always use `plan_generator` first to propose a research plan.
 
     **MEMORY BEST PRACTICES:**
     - Store user preferences in namespace="preferences"
@@ -495,17 +539,31 @@ interactive_planner_agent = LlmAgent(
     - Set importance scores: 0.9-1.0 for critical info, 0.5-0.8 for useful context, 0.0-0.4 for temporary notes
     - Add relevant tags for easier retrieval
 
+    **USER PERSONALIZATION:**
+    - At session start, use `retrieve_memories_function` with namespace="preferences" and key="user_name"
+    - If you know the user's name, greet them personally
+    - Store important preferences throughout conversations
+
+    **CRITICAL RULES:**
+    - ALWAYS detect mode first before taking action
+    - Quick searches go directly to quick_search_agent (no planning)
+    - Deep research requires plan_generator + approval
+    - Never answer complex questions directly - always use appropriate mode
+
     Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
-    Your job is to Plan, Ask for Approval, Refine if needed, Delegate, and Remember.
+    Your job is to: Detect Mode → Route to Appropriate Agent → Present Results → Remember Context
     """,
-    sub_agents=[research_pipeline],
+    sub_agents=[
+        quick_search_agent,   # For quick web searches (when user chooses Option 1)
+        research_pipeline,    # For deep research (when user chooses Option 2)
+    ],
     tools=[
-        AgentTool(plan_generator),
+        AgentTool(plan_generator),  # ⚠️ KEEP but use ONLY after Deep Research Mode detection
         store_memory_tool,
         retrieve_memories_tool,
         delete_memory_tool,
     ],
-    output_key="research_plan",
+    output_key="final_response",
     before_agent_callback=before_agent_callback,
     after_agent_callback=agent_network_tracking_callback,
 )
@@ -538,16 +596,21 @@ dispatcher_agent = LlmAgent(
        Match: "What is X?", "Who is/wrote/invented X?", "Define X", "Explain X"
        Examples: "What is 2+2?", "Who wrote Hamlet?", "Capital of France?", "Define photosynthesis"
 
-    4. CURRENT/TIME-SENSITIVE RESEARCH → transfer_to_agent(agent_name='interactive_planner_agent')
+    4. ⚡ ALL SEARCH/RESEARCH QUERIES → transfer_to_agent(agent_name='interactive_planner_agent')
+       Keywords: "search for", "find", "research", "investigate", "analyze", "what are the best", "top", "list", "recommend", "compare"
+       Examples:
+         * "search for Python testing frameworks" (will auto-route to quick_search)
+         * "research Python testing" (will ask user to choose)
+         * "what are the best frameworks" (will ask user to choose)
+       Note: interactive_planner handles mode detection and user choice
+
+    5. CURRENT/TIME-SENSITIVE → transfer_to_agent(agent_name='interactive_planner_agent')
        Keywords: "latest", "current", "recent", "2025", "2024", "today", "this week", "trending", "news"
        Examples: "latest AI trends", "current events", "recent developments"
+       Note: interactive_planner will handle these queries
 
-    5. EXPLICIT RESEARCH REQUESTS → transfer_to_agent(agent_name='interactive_planner_agent')
-       Keywords: "research", "investigate", "analyze", "compare", "find out", "look up", "search for"
-       Examples: "research quantum computing", "analyze the market", "compare React vs Vue"
-
-    6. DEFAULT CASE → transfer_to_agent(agent_name='generalist_agent')
-       If no keywords from rules 4-5 match, route to generalist for general knowledge response
+    7. DEFAULT CASE → transfer_to_agent(agent_name='generalist_agent')
+       If no keywords from rules 4-6 match, route to generalist for general knowledge response
 
     CRITICAL: You MUST call transfer_to_agent() immediately. Do NOT answer questions yourself.
     CRITICAL: Even if the question is about YOU, delegate it - do not self-describe.
@@ -557,7 +620,7 @@ dispatcher_agent = LlmAgent(
     # Reference: docs/adk/llms-full.txt lines 2248-2262
     sub_agents=[
         generalist_agent,           # Simple Q&A specialist (FIRST = default priority)
-        interactive_planner_agent,  # Research specialist
+        interactive_planner_agent,  # Handles mode selection and routing to quick_search or research
     ],
     before_agent_callback=before_agent_callback,
     after_agent_callback=agent_network_tracking_callback,

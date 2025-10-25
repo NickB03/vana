@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Any, Optional, Union
 
 from google.genai import types
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 
 
 class ResearchRequest(BaseModel):
@@ -298,3 +298,100 @@ WORKER_MODEL = "gemini-2.5-flash"  # Gemini 2.5 Flash (stable)
 DEFAULT_SESSION_TIMEOUT = 3600  # 1 hour
 MAX_QUERY_LENGTH = 2000
 MAX_SESSIONS_PER_USER = 10
+
+
+# --- Search Models (for quick_search_agent) ---
+
+class SearchResult(BaseModel):
+    """Individual search result with AI enhancements.
+
+    Attributes:
+        title: Result title from the search engine
+        url: Full URL to the result page
+        snippet: Brief excerpt from the page content
+        domain: Source domain (e.g., 'example.com')
+        published_date: Optional publication date in ISO 8601 format
+        ai_summary: AI-generated 2-3 sentence summary explaining relevance
+        credibility_score: Source trust score (0.0-1.0) based on domain authority,
+                          HTTPS, freshness, and content quality
+        relevance_score: Query match score (0.0-1.0) based on title/snippet match
+        favicon_url: Optional URL to site favicon
+        is_https: Whether the URL uses HTTPS protocol
+    """
+
+    title: str = Field(..., description="Result title")
+    url: HttpUrl = Field(..., description="Result URL")
+    snippet: str = Field(..., description="Brief excerpt from the page")
+    domain: str = Field(..., description="Source domain (e.g., 'example.com')")
+    published_date: str | None = Field(
+        None, description="Publication date (ISO 8601)"
+    )
+
+    # AI-Generated Fields
+    ai_summary: str = Field(
+        ..., description="AI-generated 2-3 sentence summary explaining why this result is relevant"
+    )
+
+    # Scoring Fields (calculated by callbacks)
+    credibility_score: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description="Source credibility (0.0-1.0): domain authority + HTTPS + freshness + content quality",
+    )
+    relevance_score: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description="Query relevance (0.0-1.0): title match + snippet match + keyword density",
+    )
+
+    # Metadata
+    favicon_url: str | None = Field(None, description="Site favicon URL")
+    is_https: bool = Field(True, description="Uses HTTPS protocol")
+
+
+class RelatedSearch(BaseModel):
+    """Related search suggestion for query expansion.
+
+    Attributes:
+        query: Suggested search query text
+        reason: Optional explanation of why this query is suggested
+    """
+
+    query: str = Field(..., description="Suggested query text")
+    reason: str | None = Field(
+        None, description="Why this query is suggested (e.g., 'broader topic', 'alternative angle')"
+    )
+
+
+class SearchResponse(BaseModel):
+    """Complete structured search response with results and metadata.
+
+    This is the output_schema for quick_search_agent, ensuring all responses
+    follow this structure for consistent frontend rendering.
+
+    Attributes:
+        query: Original search query submitted by user
+        results: List of search results (typically 8-12 results)
+        related_searches: Suggested related queries (typically 3-5)
+        total_results: Total number of results returned
+        search_time_ms: Search execution time in milliseconds
+        timestamp: Response generation timestamp
+    """
+
+    query: str = Field(..., description="Original search query")
+    results: list[SearchResult] = Field(
+        ..., description="Search results with AI summaries and scoring"
+    )
+    related_searches: list[RelatedSearch] = Field(
+        ..., description="Related query suggestions"
+    )
+    total_results: int = Field(..., description="Total number of results")
+    search_time_ms: int = Field(
+        default=0, description="Search execution time in milliseconds"
+    )
+    timestamp: datetime = Field(
+        default_factory=datetime.now,
+        description="Response generation timestamp"
+    )
