@@ -33,8 +33,8 @@ export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cl
       language: language || undefined,
     });
 
-    // Remove artifact from content
-    cleanContent = cleanContent.replace(fullMatch, `\n\n[View: ${title}]\n\n`);
+    // Remove artifact from content with subtle placeholder
+    cleanContent = cleanContent.replace(fullMatch, `\n\n*📎 ${title}*\n\n`);
   }
 
   // Detect HTML code blocks
@@ -53,7 +53,7 @@ export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cl
         language: "html",
       });
 
-      cleanContent = cleanContent.replace(fullMatch, `\n\n[View: ${title}]\n\n`);
+      cleanContent = cleanContent.replace(fullMatch, `\n\n*📎 ${title}*\n\n`);
     }
   }
 
@@ -92,7 +92,7 @@ export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cl
       language: language,
     });
 
-    cleanContent = cleanContent.replace(fullMatch, `\n\n[View: ${title}]\n\n`);
+    cleanContent = cleanContent.replace(fullMatch, `\n\n*📎 ${title}*\n\n`);
   }
 
   // Detect markdown documents
@@ -109,7 +109,7 @@ export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cl
         language: "markdown",
       });
 
-      cleanContent = cleanContent.replace(fullMatch, `\n\n[View: Markdown Document]\n\n`);
+      cleanContent = cleanContent.replace(fullMatch, `\n\n*📎 Markdown Document*\n\n`);
     }
   }
 
@@ -127,7 +127,7 @@ export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cl
         language: "svg",
       });
 
-      cleanContent = cleanContent.replace(fullMatch, `\n\n[View: SVG Image]\n\n`);
+      cleanContent = cleanContent.replace(fullMatch, `\n\n*📎 SVG Image*\n\n`);
     }
   }
 
@@ -145,7 +145,7 @@ export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cl
         language: "mermaid",
       });
 
-      cleanContent = cleanContent.replace(fullMatch, `\n\n[View: Mermaid Diagram]\n\n`);
+      cleanContent = cleanContent.replace(fullMatch, `\n\n*📎 Mermaid Diagram*\n\n`);
     }
   }
 
@@ -163,7 +163,7 @@ export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cl
         language: "jsx",
       });
 
-      cleanContent = cleanContent.replace(fullMatch, `\n\n[View: React Component]\n\n`);
+      cleanContent = cleanContent.replace(fullMatch, `\n\n*📎 React Component*\n\n`);
     }
   }
 
