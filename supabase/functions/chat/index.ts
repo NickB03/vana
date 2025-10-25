@@ -129,32 +129,16 @@ serve(async (req) => {
           );
         }
 
-        // Extract image data - we get both base64 (for display) and URL (for storage)
-        const { imageData, imageUrl, prompt } = imageResponse.data;
+        // Use storage URL for both display and database
+        const { imageUrl, prompt } = imageResponse.data;
         const title = extractImageTitle(prompt);
         
-        // Stream base64 to frontend for immediate display
-        const streamResponse = `I've generated an image for you:\n\n<artifact type="image" title="${title}">${imageData}</artifact>`;
+        // Stream storage URL (works for both display and saving)
+        const artifactResponse = `I've generated an image for you:\n\n<artifact type="image" title="${title}">${imageUrl}</artifact>`;
         
-        // But save storage URL to database (compact version)
-        const dbResponse = `I've generated an image for you:\n\n<artifact type="image" title="${title}">${imageUrl}</artifact>`;
-        
-        // Save to database with storage URL (doesn't block streaming)
-        supabase.from('chat_messages').insert({
-          session_id: sessionId,
-          role: 'assistant',
-          content: dbResponse
-        }).then(({ error: saveError }) => {
-          if (saveError) {
-            console.error("Failed to save image message to database:", saveError);
-          } else {
-            console.log("Image message saved to database with storage URL");
-          }
-        });
-        
-        // Stream the artifact response with base64 for immediate display
+        // Stream the response - frontend will save this URL to database
         return new Response(
-          `data: ${JSON.stringify({ choices: [{ delta: { content: streamResponse } }] })}\n\ndata: [DONE]\n\n`,
+          `data: ${JSON.stringify({ choices: [{ delta: { content: artifactResponse } }] })}\n\ndata: [DONE]\n\n`,
           { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } }
         );
       } catch (imgError) {
