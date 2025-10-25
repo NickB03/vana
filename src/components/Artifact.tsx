@@ -103,7 +103,16 @@ export const Artifact = ({ artifact, onClose, onEdit }: ArtifactProps) => {
           const id = `mermaid-${Date.now()}`;
           const { svg } = await mermaid.render(id, artifact.content);
           if (mermaidRef.current) {
-            mermaidRef.current.innerHTML = svg;
+            // Use safer DOM manipulation instead of innerHTML to prevent XSS
+            const template = document.createElement('template');
+            template.innerHTML = svg.trim();
+            const svgElement = template.content.firstChild;
+            
+            // Clear and append as DOM element (safer than innerHTML)
+            mermaidRef.current.textContent = '';
+            if (svgElement) {
+              mermaidRef.current.appendChild(svgElement);
+            }
           }
           setIsLoading(false);
         } catch (error) {
