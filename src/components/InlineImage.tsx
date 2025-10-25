@@ -5,16 +5,10 @@ import { Maximize2 } from "lucide-react";
 
 interface InlineImageProps {
   artifact: ArtifactData;
-  onEditInCanvas: (artifact: ArtifactData) => void;
 }
 
-export function InlineImage({ artifact, onEditInCanvas }: InlineImageProps) {
+export function InlineImage({ artifact }: InlineImageProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
-
-  const handleEditInCanvas = () => {
-    setPreviewOpen(false);
-    onEditInCanvas(artifact);
-  };
 
   return (
     <>
@@ -43,7 +37,6 @@ export function InlineImage({ artifact, onEditInCanvas }: InlineImageProps) {
         onOpenChange={setPreviewOpen}
         imageData={artifact.content}
         title={artifact.title}
-        onEditInCanvas={handleEditInCanvas}
       />
     </>
   );

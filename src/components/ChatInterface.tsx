@@ -202,10 +202,6 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
                               <InlineImage
                                 key={artifact.id}
                                 artifact={artifact}
-                                onEditInCanvas={(artifact) => {
-                                  setCurrentArtifact(artifact);
-                                  onCanvasToggle?.(true);
-                                }}
                               />
                             ))}
                             
