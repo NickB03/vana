@@ -451,9 +451,9 @@ ${artifact.content}
       const hasViewBox = artifact.content.includes('viewBox');
       const hasWidthHeight = artifact.content.includes('width=') && artifact.content.includes('height=');
       
-      let svgContent = artifact.content;
+      let svgContent = artifact.content.trim();
       
-      // If SVG lacks dimensions, add default viewBox to the svg element
+      // If SVG lacks dimensions, add default viewBox
       if (!hasViewBox && !hasWidthHeight) {
         svgContent = svgContent.replace(
           /<svg([^>]*)>/,
@@ -461,12 +461,18 @@ ${artifact.content}
         );
       }
       
+      // Convert to data URL for proper SVG namespace handling
+      const svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgContent)}`;
+      
       return (
         <div className="w-full h-full overflow-auto p-4 bg-background flex items-center justify-center">
-          <div 
-            className="svg-container"
-            dangerouslySetInnerHTML={{ __html: svgContent }}
-            style={{ maxWidth: '100%', maxHeight: '100%' }}
+          <img 
+            src={svgDataUrl}
+            alt={artifact.title}
+            className="max-w-full max-h-full object-contain"
+            onError={(e) => {
+              console.error('SVG rendering error:', artifact.content);
+            }}
           />
         </div>
       );
