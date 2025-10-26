@@ -274,40 +274,46 @@ const IndexContent = () => {
           {/* Main Content */}
           <div className="flex-1 overflow-hidden">
             {!showChat ? (
-              <div className="flex h-full flex-col items-center justify-start sm:justify-center p-4 sm:p-8 pt-12 sm:pt-8">
-                <div className="mb-6 sm:mb-8 text-center">
-                  <h1 className="mb-4 bg-gradient-primary bg-clip-text text-3xl sm:text-4xl md:text-5xl font-bold text-transparent">
-                    How can I help you?
-                  </h1>
+              <div className="flex h-full flex-col items-center justify-between sm:justify-center p-4 sm:p-8 pt-safe">
+                {/* Heading Zone - positioned in upper portion on mobile */}
+                <div className="flex-1 flex items-center justify-center sm:flex-initial">
+                  <div className="text-center">
+                    <h1 className="bg-gradient-primary bg-clip-text text-3xl sm:text-4xl md:text-5xl font-bold text-transparent">
+                      How can I help you?
+                    </h1>
+                  </div>
                 </div>
                 
-                <PromptInput
-                  value={input}
-                  onValueChange={handleValueChange}
-                  isLoading={isLoading}
-                  onSubmit={handleSubmit}
-                  className="w-full max-w-3xl safe-mobile-input"
-                >
-                  <PromptInputTextarea placeholder="Ask me anything..." />
-                  <PromptInputActions className="justify-end pt-2">
-                    <PromptInputAction
-                      tooltip={isLoading ? "Stop generation" : "Send message"}
-                    >
-                      <Button
-                        variant="default"
-                        size="icon"
-                        className="h-8 w-8 rounded-full"
-                        onClick={handleSubmit}
+                {/* Input Zone - anchored to bottom on mobile */}
+                <div className="w-full max-w-3xl pb-safe">
+                  <PromptInput
+                    value={input}
+                    onValueChange={handleValueChange}
+                    isLoading={isLoading}
+                    onSubmit={handleSubmit}
+                    className="w-full safe-mobile-input"
+                  >
+                    <PromptInputTextarea placeholder="Ask me anything..." />
+                    <PromptInputActions className="justify-end pt-2">
+                      <PromptInputAction
+                        tooltip={isLoading ? "Stop generation" : "Send message"}
                       >
-                        {isLoading ? (
-                          <Square className="size-5 fill-current" />
-                        ) : (
-                          <ArrowUp className="size-5" />
-                        )}
-                      </Button>
-                    </PromptInputAction>
-                  </PromptInputActions>
-                </PromptInput>
+                        <Button
+                          variant="default"
+                          size="icon"
+                          className="h-8 w-8 rounded-full"
+                          onClick={handleSubmit}
+                        >
+                          {isLoading ? (
+                            <Square className="size-5 fill-current" />
+                          ) : (
+                            <ArrowUp className="size-5" />
+                          )}
+                        </Button>
+                      </PromptInputAction>
+                    </PromptInputActions>
+                  </PromptInput>
+                </div>
               </div>
             ) : (
               <ChatInterface

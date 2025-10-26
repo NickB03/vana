@@ -484,3 +484,13 @@ All colors MUST be HSL.
     }
   }
 }
+
+@layer utilities {
+  .pt-safe {
+    padding-top: max(1rem, var(--safe-area-inset-top));
+  }
+  
+  .pb-safe {
+    padding-bottom: max(1rem, var(--safe-area-inset-bottom));
+  }
+}
