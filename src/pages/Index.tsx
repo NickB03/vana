@@ -331,9 +331,9 @@ const IndexContent = () => {
           {/* Main Content */}
           <div className="flex-1 overflow-hidden">
             {!showChat ? (
-              <div className="flex h-full flex-col items-center justify-between sm:justify-center p-4 sm:p-8 pt-safe">
-                {/* Heading Zone - positioned in upper portion on mobile */}
-                <div className="flex-1 flex items-center justify-center sm:flex-initial">
+              <div className="flex h-full flex-col items-center justify-between p-4 sm:p-8 pt-safe">
+                {/* Heading Zone - positioned in upper portion */}
+                <div className="flex-1 flex items-center justify-center sm:flex-none sm:mt-[15vh]">
                   <div className="text-center">
                     <h1 className="bg-gradient-primary bg-clip-text text-3xl sm:text-4xl md:text-5xl font-bold text-transparent">
                       How can I help you?
@@ -341,8 +341,8 @@ const IndexContent = () => {
                   </div>
                 </div>
                 
-                {/* Input Zone - anchored to bottom on mobile */}
-                <div className="w-full max-w-3xl pb-safe">
+                {/* Input Zone - anchored to bottom */}
+                <div className="w-full max-w-3xl pb-safe sm:mb-[10vh]">
                   <PromptInput
                     value={input}
                     onValueChange={handleValueChange}
@@ -434,9 +434,9 @@ const IndexContent = () => {
                         </Button>
                       </PromptInputActions>
                     </div>
-                  </PromptInput>
-                </div>
-              </div>
+          </PromptInput>
+        </div>
+      </div>
             ) : (
               <ChatInterface
                 sessionId={currentSessionId}

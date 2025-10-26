@@ -26,36 +26,50 @@ export function ImagePreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] w-auto p-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-2">
-          <DialogTitle className="text-lg font-semibold">{title}</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-none w-screen h-screen p-0 border-0 bg-black/90 flex items-center justify-center">
+        {/* Centered image */}
+        <img 
+          src={imageData} 
+          alt={title}
+          className="max-w-[90vw] max-h-[90vh] w-auto h-auto object-contain"
+          loading="eager"
+        />
         
-        <div className="relative px-6 pb-6 flex items-center justify-center bg-muted/30">
-          <img 
-            src={imageData} 
-            alt={title}
-            className="max-w-full max-h-[80vh] w-auto h-auto object-contain rounded-lg shadow-lg"
-            loading="lazy"
-            decoding="async"
-          />
+        {/* Floating header - top center */}
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full">
+          <p className="text-white text-sm font-medium">{title}</p>
         </div>
         
-        <div className="flex gap-2 px-6 pb-6 border-t pt-4 bg-background">
-          <Button onClick={handleDownload} variant="outline" size="sm">
+        {/* Floating action buttons - bottom center */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3">
+          <Button 
+            onClick={handleDownload} 
+            variant="secondary"
+            size="sm"
+            className="bg-black/60 hover:bg-black/80 text-white backdrop-blur-md border-white/20"
+          >
             <Download className="h-4 w-4 mr-2" />
             Download
           </Button>
           <Button 
             onClick={() => onOpenChange(false)} 
-            variant="ghost"
+            variant="secondary"
             size="sm"
-            className="ml-auto"
+            className="bg-black/60 hover:bg-black/80 text-white backdrop-blur-md border-white/20"
           >
             <X className="h-4 w-4 mr-2" />
             Close
           </Button>
         </div>
+        
+        {/* Close button - top right corner */}
+        <button
+          onClick={() => onOpenChange(false)}
+          className="absolute top-6 right-6 bg-black/60 hover:bg-black/80 backdrop-blur-md p-2 rounded-full transition-colors"
+          aria-label="Close"
+        >
+          <X className="h-5 w-5 text-white" />
+        </button>
       </DialogContent>
     </Dialog>
   );

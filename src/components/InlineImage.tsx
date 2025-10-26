@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { ImagePreviewDialog } from "./ImagePreviewDialog";
 import { ArtifactData } from "./Artifact";
-import { Maximize2 } from "lucide-react";
+import { Download, ImageIcon } from "lucide-react";
+import { toast } from "sonner";
 
 interface InlineImageProps {
   artifact: ArtifactData;
@@ -10,10 +11,46 @@ interface InlineImageProps {
 export function InlineImage({ artifact }: InlineImageProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
 
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    try {
+      // If it's a base64 data URL (AI generated)
+      if (artifact.content.startsWith('data:')) {
+        const link = document.createElement('a');
+        link.href = artifact.content;
+        link.download = `${artifact.title.replace(/\s+/g, '_')}.png`;
+        link.click();
+        toast.success("Image downloaded");
+        return;
+      }
+      
+      // If it's a storage bucket URL
+      const response = await fetch(artifact.content);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${artifact.title.replace(/\s+/g, '_')}.png`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success("Image downloaded");
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error("Failed to download image");
+    }
+  };
+
   return (
     <>
+      {/* Title above image */}
+      <div className="text-sm font-medium text-foreground/80 mb-2 flex items-center gap-2">
+        <ImageIcon className="h-4 w-4" />
+        {artifact.title}
+      </div>
+
       <div 
-        className="relative group cursor-pointer my-4 rounded-xl overflow-hidden border-2 border-border hover:border-primary transition-all duration-200 max-w-md shadow-sm hover:shadow-md"
+        className="relative group cursor-pointer my-2 rounded-xl overflow-hidden border-2 border-border hover:border-primary transition-all duration-200 max-w-md shadow-sm hover:shadow-md"
         onClick={() => setPreviewOpen(true)}
       >
         <img 
@@ -24,15 +61,18 @@ export function InlineImage({ artifact }: InlineImageProps) {
           decoding="async"
           fetchPriority="low"
         />
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 shadow-lg">
-            <Maximize2 className="h-4 w-4" />
-            Click to expand
-          </div>
-        </div>
-        <div className="absolute bottom-3 left-3 bg-background/95 backdrop-blur-sm px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm border border-border">
-          {artifact.title}
-        </div>
+        
+        {/* Subtle hover darkening only */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors pointer-events-none" />
+        
+        {/* Semi-transparent download icon in top-right corner */}
+        <button
+          onClick={handleDownload}
+          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 hover:bg-black/80 backdrop-blur-sm p-2 rounded-full"
+          aria-label="Download image"
+        >
+          <Download className="h-4 w-4 text-white" />
+        </button>
       </div>
       
       <ImagePreviewDialog
