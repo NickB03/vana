@@ -59,7 +59,6 @@ export function InlineImage({ artifact }: InlineImageProps) {
           className="w-full h-auto bg-muted"
           loading="lazy"
           decoding="async"
-          fetchPriority="low"
         />
         
         {/* Subtle hover darkening only */}

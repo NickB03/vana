@@ -39,7 +39,7 @@ interface ChatInterfaceProps {
   onArtifactChange?: (hasContent: boolean) => void;
   input?: string;
   onInputChange?: (value: string) => void;
-  onSend?: (message: string) => void;
+  onSendMessage?: (handleSend: (message?: string) => Promise<void>) => void;
 }
 
 export function ChatInterface({ 
@@ -50,7 +50,7 @@ export function ChatInterface({
   onArtifactChange,
   input: parentInput,
   onInputChange: parentOnInputChange,
-  onSend: parentOnSend
+  onSendMessage
 }: ChatInterfaceProps) {
   const { messages, isLoading, streamChat } = useChatMessages(sessionId);
   const [localInput, setLocalInput] = useState("");
@@ -80,6 +80,13 @@ export function ChatInterface({
     setIsEditingArtifact(false);
     onArtifactChange?.(false);
   }, [sessionId]);
+
+  // Expose handleSend to parent component
+  useEffect(() => {
+    if (onSendMessage) {
+      onSendMessage(handleSend);
+    }
+  }, [onSendMessage]);
 
   useEffect(() => {
     if (initialPrompt && sessionId && !hasInitialized) {

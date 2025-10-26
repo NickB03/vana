@@ -26,7 +26,16 @@ export function ImagePreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-none w-screen h-screen p-0 border-0 bg-black/90 flex items-center justify-center">
+      <DialogContent 
+        className="max-w-none w-screen h-screen p-0 border-0 bg-black/90 flex items-center justify-center"
+        aria-describedby="image-preview-description"
+      >
+        {/* Hidden accessibility elements */}
+        <DialogTitle className="sr-only">{title}</DialogTitle>
+        <span id="image-preview-description" className="sr-only">
+          Full screen image preview. Click the X button or press Escape to close.
+        </span>
+        
         {/* Centered image */}
         <img 
           src={imageData} 

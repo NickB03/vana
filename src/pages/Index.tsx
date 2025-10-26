@@ -48,6 +48,7 @@ const IndexContent = () => {
   const [hasArtifact, setHasArtifact] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [chatSendHandler, setChatSendHandler] = useState<((message?: string) => Promise<void>) | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -163,8 +164,10 @@ const IndexContent = () => {
   const handleSubmit = async () => {
     if (!input.trim()) return;
 
-    if (showChat) {
-      // In chat mode - just send message (will be handled by ChatInterface)
+    if (showChat && chatSendHandler) {
+      // In chat mode - call the ChatInterface's send handler
+      await chatSendHandler(input);
+      setInput("");
       return;
     }
 
@@ -353,6 +356,7 @@ const IndexContent = () => {
                 onArtifactChange={handleArtifactChange}
                 input={input}
                 onInputChange={setInput}
+                onSendMessage={(handler) => setChatSendHandler(() => handler)}
               />
             )}
 
