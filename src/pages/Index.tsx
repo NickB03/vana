@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   SidebarProvider,
@@ -10,7 +10,10 @@ import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatInterface } from "@/components/ChatInterface";
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from "@/components/prompt-kit/prompt-input";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Square, LogOut, Settings, Check, ChevronRight, Palette } from "lucide-react";
+import { ArrowUp, Square, LogOut, Settings, Check, ChevronRight, Palette, Plus, ImageIcon, WandSparkles } from "lucide-react";
+import { toast as sonnerToast } from "sonner";
+import { validateFile, sanitizeFilename } from "@/utils/fileValidation";
+import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
@@ -44,6 +47,8 @@ const IndexContent = () => {
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   const [hasArtifact, setHasArtifact] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Check authentication with session validation
@@ -186,6 +191,58 @@ const IndexContent = () => {
     setInput(value);
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingFile(true);
+    try {
+      // Validate file with comprehensive checks
+      const validationResult = await validateFile(file);
+      if (!validationResult.valid) {
+        sonnerToast.error(validationResult.error || "File validation failed");
+        return;
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        sonnerToast.error("You must be logged in to upload files");
+        return;
+      }
+
+      // Sanitize filename and create upload path
+      const sanitized = sanitizeFilename(file.name);
+      const fileExt = sanitized.substring(sanitized.lastIndexOf('.'));
+      const fileName = `${user.id}/${Date.now()}${fileExt}`;
+
+      // Upload to Supabase storage
+      const { error: uploadError } = await supabase.storage
+        .from('user-uploads')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('user-uploads')
+        .getPublicUrl(fileName);
+
+      // Add file reference to input
+      setInput(prev => `${prev}\n[${file.name}](${publicUrl})`);
+      
+      sonnerToast.success("File uploaded successfully");
+    } catch (error) {
+      console.error("Upload error:", error);
+      sonnerToast.error("Failed to upload file");
+    } finally {
+      setIsUploadingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <>
       <ChatSidebar
@@ -291,27 +348,92 @@ const IndexContent = () => {
                     onValueChange={handleValueChange}
                     isLoading={isLoading}
                     onSubmit={handleSubmit}
-                    className="w-full safe-mobile-input"
+                    className="w-full safe-mobile-input relative rounded-3xl border border-input bg-popover p-0 pt-1 shadow-xs"
                   >
-                    <PromptInputTextarea placeholder="Ask me anything..." />
-                    <PromptInputActions className="justify-end pt-2">
-                      <PromptInputAction
-                        tooltip={isLoading ? "Stop generation" : "Send message"}
-                      >
+                    <div className="flex flex-col">
+                      <PromptInputTextarea 
+                        placeholder="Ask me anything..." 
+                        className="min-h-[44px] pl-4 pt-3 text-base leading-[1.3] sm:text-base md:text-base"
+                      />
+                      <PromptInputActions className="mt-5 flex w-full items-center justify-between gap-2 px-3 pb-3">
+                        {/* Left side actions */}
+                        <div className="flex items-center gap-2">
+                          {/* Upload File Button */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-9 rounded-full"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isUploadingFile}
+                              >
+                                {isUploadingFile ? (
+                                  <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                ) : (
+                                  <Plus size={18} />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Upload file</TooltipContent>
+                          </Tooltip>
+                          
+                          {/* Hidden file input */}
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            className="hidden"
+                            onChange={handleFileUpload}
+                            accept=".pdf,.docx,.txt,.md,.jpg,.jpeg,.png,.webp,.gif,.svg,.csv,.json,.xlsx,.js,.ts,.tsx,.jsx,.py,.html,.css,.mp3,.wav,.m4a,.ogg"
+                          />
+
+                          {/* Generate Image Button */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-9 rounded-full"
+                                onClick={() => setInput("Generate an image of ")}
+                              >
+                                <ImageIcon size={18} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Generate Image</TooltipContent>
+                          </Tooltip>
+
+                          {/* Create Button */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-9 rounded-full"
+                                onClick={() => setInput("Help me create ")}
+                              >
+                                <WandSparkles size={18} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Create</TooltipContent>
+                          </Tooltip>
+                        </div>
+
+                        {/* Right side - Send button */}
                         <Button
                           variant="default"
                           size="icon"
-                          className="h-8 w-8 rounded-full"
+                          className="size-9 rounded-full"
                           onClick={handleSubmit}
+                          disabled={!input.trim() || isLoading}
                         >
                           {isLoading ? (
                             <Square className="size-5 fill-current" />
                           ) : (
-                            <ArrowUp className="size-5" />
+                            <ArrowUp size={18} />
                           )}
                         </Button>
-                      </PromptInputAction>
-                    </PromptInputActions>
+                      </PromptInputActions>
+                    </div>
                   </PromptInput>
                 </div>
               </div>
