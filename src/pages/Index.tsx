@@ -199,9 +199,9 @@ const IndexContent = () => {
       <SidebarInset>
         <main className="flex h-screen flex-col overflow-hidden">
           {/* Header */}
-          <header className="bg-background z-10 flex h-16 w-full shrink-0 items-center justify-between gap-2 border-b border-background px-4">
+          <header className="bg-background sticky top-0 z-20 flex h-16 w-full shrink-0 items-center justify-between gap-2 border-b border-background px-4" style={{ paddingTop: 'var(--safe-area-inset-top)' }}>
             <div className="flex items-center gap-2">
-              <SidebarTrigger className="-ml-1" />
+              <SidebarTrigger className="min-h-[44px] min-w-[44px]" />
             </div>
             <div className="flex items-center gap-2">
               <DropdownMenu>
@@ -274,9 +274,9 @@ const IndexContent = () => {
           {/* Main Content */}
           <div className="flex-1 overflow-hidden">
             {!showChat ? (
-              <div className="flex h-full flex-col items-center justify-center p-8">
-                <div className="mb-8 text-center">
-                  <h1 className="mb-4 bg-gradient-primary bg-clip-text text-5xl font-bold text-transparent">
+              <div className="flex h-full flex-col items-center justify-start sm:justify-center p-4 sm:p-8 pt-12 sm:pt-8">
+                <div className="mb-6 sm:mb-8 text-center">
+                  <h1 className="mb-4 bg-gradient-primary bg-clip-text text-3xl sm:text-4xl md:text-5xl font-bold text-transparent">
                     How can I help you?
                   </h1>
                 </div>
@@ -286,7 +286,7 @@ const IndexContent = () => {
                   onValueChange={handleValueChange}
                   isLoading={isLoading}
                   onSubmit={handleSubmit}
-                  className="w-full max-w-3xl"
+                  className="w-full max-w-3xl safe-mobile-input"
                 >
                   <PromptInputTextarea placeholder="Ask me anything..." />
                   <PromptInputActions className="justify-end pt-2">

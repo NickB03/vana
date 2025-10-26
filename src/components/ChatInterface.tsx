@@ -298,7 +298,7 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
             </div>
 
             {/* Input Area */}
-            <div className="z-10 shrink-0 bg-background px-3 pb-3 md:px-5 md:pb-5">
+            <div className="z-10 shrink-0 bg-background px-3 pb-3 md:px-5 md:pb-5 safe-mobile-input">
               <div className="mx-auto max-w-3xl">
                 {isEditingArtifact && currentArtifact && (
                   <div className="mb-2 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm">
