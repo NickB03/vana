@@ -70,6 +70,8 @@ export function ChatInterface({
   const [isEditingArtifact, setIsEditingArtifact] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Reset when session changes
   useEffect(() => {
@@ -99,9 +101,21 @@ export function ChatInterface({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const handleScroll = () => {
+    if (!scrollContainerRef.current) return;
+    
+    const element = scrollContainerRef.current;
+    const isNearBottom = 
+      element.scrollHeight - element.scrollTop - element.clientHeight < 150;
+    
+    setShouldAutoScroll(isNearBottom);
+  };
+
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, streamingMessage]);
+    if (shouldAutoScroll) {
+      scrollToBottom();
+    }
+  }, [messages, streamingMessage, shouldAutoScroll]);
 
   // Parse artifacts from messages
   useEffect(() => {
@@ -251,9 +265,9 @@ export function ChatInterface({
         <ResizablePanel defaultSize={isCanvasOpen && currentArtifact ? 50 : 100} minSize={30}>
           <div className="flex h-full flex-col">
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto" ref={scrollContainerRef} onScroll={handleScroll}>
               <ChatContainerRoot className="h-full">
-                <ChatContainerContent className="space-y-0 px-5 py-12">
+                <ChatContainerContent className="space-y-0 px-5 py-12" autoScroll={false}>
                   {messages.map((message, index) => {
                     const { artifacts, cleanContent } = parseArtifacts(message.content);
                     const isAssistant = message.role === "assistant";

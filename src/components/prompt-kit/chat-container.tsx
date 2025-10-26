@@ -38,13 +38,7 @@ function ChatContainerContent({
 
   useEffect(() => {
     if (autoScroll && contentRef.current) {
-      const element = contentRef.current;
-      const isNearBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 100;
-      
-      // Only auto-scroll if user is near the bottom (prevents shake)
-      if (isNearBottom) {
-        element.scrollTop = element.scrollHeight;
-      }
+      contentRef.current.scrollTop = contentRef.current.scrollHeight;
     }
   }, [children, autoScroll])
 
