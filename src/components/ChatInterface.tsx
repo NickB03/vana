@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowUp, Copy, Pencil, Trash, ThumbsUp, ThumbsDown, Wrench, PanelRight, ImageIcon } from "lucide-react";
+import { ArrowUp, Copy, Pencil, Trash, ThumbsUp, ThumbsDown, Plus, ImageIcon, WandSparkles } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { validateFile, sanitizeFilename } from "@/utils/fileValidation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -51,6 +54,8 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [currentArtifact, setCurrentArtifact] = useState<ArtifactData | null>(null);
   const [isEditingArtifact, setIsEditingArtifact] = useState(false);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Reset when session changes
   useEffect(() => {
@@ -114,16 +119,68 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
     }
   }, [messages, streamingMessage]);
 
-  const handleCanvasToolClick = () => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingFile(true);
+    try {
+      // Validate file with comprehensive checks
+      const validationResult = await validateFile(file);
+      if (!validationResult.valid) {
+        toast.error(validationResult.error || "File validation failed");
+        return;
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("You must be logged in to upload files");
+        return;
+      }
+
+      // Sanitize filename and create upload path
+      const sanitized = sanitizeFilename(file.name);
+      const fileExt = sanitized.substring(sanitized.lastIndexOf('.'));
+      const fileName = `${user.id}/${Date.now()}${fileExt}`;
+
+      // Upload to Supabase storage
+      const { error: uploadError } = await supabase.storage
+        .from('user-uploads')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('user-uploads')
+        .getPublicUrl(fileName);
+
+      // Add file reference to input
+      setInput(prev => `${prev}\n[${file.name}](${publicUrl})`);
+      
+      toast.success("File uploaded successfully");
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Failed to upload file");
+    } finally {
+      setIsUploadingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleCreateClick = () => {
     if (!currentArtifact) {
-      // No artifact exists - send a message asking what to build
-      setStreamingMessage("What would you like me to build today?");
-      setTimeout(() => {
-        setStreamingMessage("");
-      }, 3000);
+      // No artifact exists - insert "Help me create" into prompt
+      setInput("Help me create ");
+    } else if (isCanvasOpen) {
+      // Canvas is open - close it
+      onCanvasToggle?.(false);
     } else {
-      // Artifact exists - toggle canvas open/close
-      onCanvasToggle?.(!isCanvasOpen);
+      // Canvas exists but closed - open it
+      onCanvasToggle?.(true);
     }
   };
 
@@ -329,37 +386,79 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
                       className="min-h-[44px] pl-4 pt-3 text-base leading-[1.3] sm:text-base md:text-base"
                     />
 
-                    <PromptInputActions className="mt-5 flex w-full items-center justify-end gap-2 px-3 pb-3">
-                      <DropdownMenu>
+                    <PromptInputActions className="mt-5 flex w-full items-center justify-between gap-2 px-3 pb-3">
+                      {/* Left side actions */}
+                      <div className="flex items-center gap-2">
+                        {/* Upload File Button */}
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className={cn(
-                                  "size-9 rounded-full",
-                                  isCanvasOpen && currentArtifact && "bg-accent"
-                                )}
-                              >
-                                <Wrench size={18} />
-                              </Button>
-                            </DropdownMenuTrigger>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-9 rounded-full"
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={isUploadingFile}
+                            >
+                              {isUploadingFile ? (
+                                <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                              ) : (
+                                <Plus size={18} />
+                              )}
+                            </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Tools</TooltipContent>
+                          <TooltipContent>Upload file</TooltipContent>
                         </Tooltip>
-                        <DropdownMenuContent align="end" className="w-48 bg-popover z-50">
-                          <DropdownMenuItem onClick={() => setInput("Generate an image of ")}>
-                            <ImageIcon className="h-4 w-4 mr-2" />
-                            Generate Image
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={handleCanvasToolClick}>
-                            <PanelRight className="h-4 w-4 mr-2" />
-                            {!currentArtifact ? "Canvas" : isCanvasOpen ? "Close Canvas" : "Open Canvas"}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      
+                        
+                        {/* Hidden file input */}
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          className="hidden"
+                          onChange={handleFileUpload}
+                          accept=".pdf,.docx,.txt,.md,.jpg,.jpeg,.png,.webp,.gif,.svg,.csv,.json,.xlsx,.js,.ts,.tsx,.jsx,.py,.html,.css,.mp3,.wav,.m4a,.ogg"
+                        />
+
+                        {/* Generate Image Button */}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-9 rounded-full"
+                              onClick={() => setInput("Generate an image of ")}
+                            >
+                              <ImageIcon size={18} />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Generate Image</TooltipContent>
+                        </Tooltip>
+
+                        {/* Create/Canvas Button */}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={cn(
+                                "size-9 rounded-full",
+                                isCanvasOpen && currentArtifact && "bg-accent"
+                              )}
+                              onClick={handleCreateClick}
+                            >
+                              <WandSparkles size={18} />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {!currentArtifact 
+                              ? "Create" 
+                              : isCanvasOpen 
+                                ? "Close Canvas" 
+                                : "Open Canvas"}
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+
+                      {/* Right side - Send button */}
                       <Button
                         size="icon"
                         disabled={!input.trim() || isLoading || isStreaming}
