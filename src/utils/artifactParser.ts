@@ -34,8 +34,13 @@ export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cl
       language: language || undefined,
     });
 
-    // Remove artifact from content with subtle placeholder
-    cleanContent = cleanContent.replace(fullMatch, `\n\n*📎 ${title}*\n\n`);
+    // For images, remove artifact tag without placeholder (they render inline separately)
+    // For other artifacts, show a subtle placeholder
+    if (mappedType === 'image') {
+      cleanContent = cleanContent.replace(fullMatch, '');
+    } else {
+      cleanContent = cleanContent.replace(fullMatch, `\n\n*📎 ${title}*\n\n`);
+    }
   }
 
   // Detect HTML code blocks
