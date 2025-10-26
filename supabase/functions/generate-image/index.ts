@@ -135,13 +135,27 @@ serve(async (req) => {
     const data = await response.json();
     console.log("Lovable AI response received");
 
-    // Extract base64 image
-    const imageData = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    // Extract base64 image - check multiple possible locations
+    let imageData = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    
+    // Fallback: check if image is directly in content
+    if (!imageData && data.choices?.[0]?.message?.content) {
+      const content = data.choices[0].message.content;
+      // Check if content contains base64 image data
+      if (typeof content === 'string' && content.includes('data:image/')) {
+        const match = content.match(/data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/);
+        if (match) {
+          imageData = match[0];
+        }
+      }
+    }
 
     if (!imageData) {
       console.error("No image data in response:", JSON.stringify(data));
       return new Response(
-        JSON.stringify({ error: "No image was generated. Please try a different prompt." }),
+        JSON.stringify({ 
+          error: "The AI model failed to generate an image. This may be due to content restrictions or a temporary issue. Please try again with a different prompt." 
+        }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

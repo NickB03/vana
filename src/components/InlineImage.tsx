@@ -42,7 +42,7 @@ export function InlineImage({ artifact }: InlineImageProps) {
   };
 
   return (
-    <>
+    <div className="my-4">
       {/* Title above image */}
       <div className="text-sm font-medium text-foreground/80 mb-2 flex items-center gap-2">
         <ImageIcon className="h-4 w-4" />
@@ -50,15 +50,19 @@ export function InlineImage({ artifact }: InlineImageProps) {
       </div>
 
       <div 
-        className="relative group cursor-pointer my-2 rounded-xl overflow-hidden border-2 border-border hover:border-primary transition-all duration-200 max-w-md shadow-sm hover:shadow-md"
+        className="relative group cursor-pointer rounded-xl overflow-hidden border-2 border-border hover:border-primary transition-all duration-200 max-w-md shadow-sm hover:shadow-md"
         onClick={() => setPreviewOpen(true)}
       >
         <img 
           src={artifact.content} 
           alt={artifact.title}
-          className="w-full h-auto bg-muted"
+          className="w-full h-auto bg-muted block"
           loading="lazy"
           decoding="async"
+          onError={(e) => {
+            console.error('Image failed to load:', artifact.content);
+            e.currentTarget.style.display = 'none';
+          }}
         />
         
         {/* Subtle hover darkening only */}
@@ -80,6 +84,6 @@ export function InlineImage({ artifact }: InlineImageProps) {
         imageData={artifact.content}
         title={artifact.title}
       />
-    </>
+    </div>
   );
 }
