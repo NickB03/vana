@@ -44,32 +44,14 @@ export function ImagePreviewDialog({
           loading="eager"
         />
         
-        {/* Floating header - top center */}
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full">
-          <p className="text-white text-sm font-medium">{title}</p>
-        </div>
-        
-        {/* Floating action buttons - bottom center */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3">
-          <Button 
-            onClick={handleDownload} 
-            variant="secondary"
-            size="sm"
-            className="bg-black/60 hover:bg-black/80 text-white backdrop-blur-md border-white/20"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Download
-          </Button>
-          <Button 
-            onClick={() => onOpenChange(false)} 
-            variant="secondary"
-            size="sm"
-            className="bg-black/60 hover:bg-black/80 text-white backdrop-blur-md border-white/20"
-          >
-            <X className="h-4 w-4 mr-2" />
-            Close
-          </Button>
-        </div>
+        {/* Download button - top left corner */}
+        <button
+          onClick={handleDownload}
+          className="absolute top-6 left-6 bg-black/60 hover:bg-black/80 backdrop-blur-md p-2 rounded-full transition-colors"
+          aria-label="Download image"
+        >
+          <Download className="h-5 w-5 text-white" />
+        </button>
         
         {/* Close button - top right corner */}
         <button
