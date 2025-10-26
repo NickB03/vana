@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ImagePreviewDialog } from "./ImagePreviewDialog";
 import { ArtifactData } from "./Artifact";
-import { Download, ImageIcon } from "lucide-react";
+import { Download } from "lucide-react";
 import { toast } from "sonner";
 
 interface InlineImageProps {
@@ -43,13 +43,7 @@ export function InlineImage({ artifact }: InlineImageProps) {
 
   return (
     <div className="my-4">
-      {/* Title above image */}
-      <div className="text-sm font-medium text-foreground/80 mb-2 flex items-center gap-2">
-        <ImageIcon className="h-4 w-4" />
-        {artifact.title}
-      </div>
-
-      <div 
+      <div
         className="relative group cursor-pointer rounded-xl overflow-hidden border-2 border-border hover:border-primary transition-all duration-200 max-w-md shadow-sm hover:shadow-md"
         onClick={() => setPreviewOpen(true)}
       >

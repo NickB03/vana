@@ -150,7 +150,7 @@ serve(async (req) => {
         const title = extractImageTitle(prompt);
         
         // Stream storage URL (works for both display and saving)
-        const artifactResponse = `I've generated an image for you:\n\n<artifact type="image" title="${title}">${imageUrl}</artifact>`;
+        const artifactResponse = `I've generated an image for you: ${title}\n\n<artifact type="image" title="${title}">${imageUrl}</artifact>`;
         
         // Stream the response - frontend will save this URL to database
         return new Response(
