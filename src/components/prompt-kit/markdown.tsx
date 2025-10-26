@@ -20,7 +20,7 @@ const Markdown = memo(function Markdown({ children, className }: MarkdownProps) 
           code(props) {
             const { node, inline, className, children, ...rest } = props as any
             return inline ? (
-              <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-mono" {...rest}>
+              <code className="rounded bg-muted/40 px-1 py-0.5 text-sm font-mono border border-muted/60" {...rest}>
                 {children}
               </code>
             ) : (

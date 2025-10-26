@@ -37,11 +37,25 @@ interface ChatInterfaceProps {
   isCanvasOpen?: boolean;
   onCanvasToggle?: (isOpen: boolean) => void;
   onArtifactChange?: (hasContent: boolean) => void;
+  input?: string;
+  onInputChange?: (value: string) => void;
+  onSend?: (message: string) => void;
 }
 
-export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, onCanvasToggle, onArtifactChange }: ChatInterfaceProps) {
+export function ChatInterface({ 
+  sessionId, 
+  initialPrompt, 
+  isCanvasOpen = false, 
+  onCanvasToggle, 
+  onArtifactChange,
+  input: parentInput,
+  onInputChange: parentOnInputChange,
+  onSend: parentOnSend
+}: ChatInterfaceProps) {
   const { messages, isLoading, streamChat } = useChatMessages(sessionId);
-  const [input, setInput] = useState("");
+  const [localInput, setLocalInput] = useState("");
+  const input = parentInput ?? localInput;
+  const setInput = parentOnInputChange ?? setLocalInput;
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamProgress, setStreamProgress] = useState<StreamProgress>({
@@ -354,128 +368,6 @@ export function ChatInterface({ sessionId, initialPrompt, isCanvasOpen = false, 
               </ChatContainerRoot>
             </div>
 
-            {/* Input Area */}
-            <div className="z-10 shrink-0 bg-background px-3 pb-3 md:px-5 md:pb-5 safe-mobile-input">
-              <div className="mx-auto max-w-3xl">
-                {isEditingArtifact && currentArtifact && (
-                  <div className="mb-2 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm">
-                    <Pencil className="h-4 w-4 text-primary" />
-                    <span className="text-muted-foreground">
-                      Editing: <span className="font-medium text-foreground">{currentArtifact.title}</span>
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsEditingArtifact(false)}
-                      className="ml-auto h-6 px-2"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                )}
-                <PromptInput
-                  isLoading={isLoading || isStreaming}
-                  value={input}
-                  onValueChange={setInput}
-                  onSubmit={() => handleSend()}
-                  className="relative z-10 w-full rounded-3xl border border-input bg-popover p-0 pt-1 shadow-xs"
-                >
-                  <div className="flex flex-col">
-                    <PromptInputTextarea
-                      placeholder="Ask anything"
-                      className="min-h-[44px] pl-4 pt-3 text-base leading-[1.3] sm:text-base md:text-base"
-                    />
-
-                    <PromptInputActions className="mt-5 flex w-full items-center justify-between gap-2 px-3 pb-3">
-                      {/* Left side actions */}
-                      <div className="flex items-center gap-2">
-                        {/* Upload File Button */}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-9 rounded-full"
-                              onClick={() => fileInputRef.current?.click()}
-                              disabled={isUploadingFile}
-                            >
-                              {isUploadingFile ? (
-                                <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                              ) : (
-                                <Plus size={18} />
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Upload file</TooltipContent>
-                        </Tooltip>
-                        
-                        {/* Hidden file input */}
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          className="hidden"
-                          onChange={handleFileUpload}
-                          accept=".pdf,.docx,.txt,.md,.jpg,.jpeg,.png,.webp,.gif,.svg,.csv,.json,.xlsx,.js,.ts,.tsx,.jsx,.py,.html,.css,.mp3,.wav,.m4a,.ogg"
-                        />
-
-                        {/* Generate Image Button */}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-9 rounded-full"
-                              onClick={() => setInput("Generate an image of ")}
-                            >
-                              <ImageIcon size={18} />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Generate Image</TooltipContent>
-                        </Tooltip>
-
-                        {/* Create/Canvas Button */}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className={cn(
-                                "size-9 rounded-full",
-                                isCanvasOpen && currentArtifact && "bg-accent"
-                              )}
-                              onClick={handleCreateClick}
-                            >
-                              <WandSparkles size={18} />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {!currentArtifact 
-                              ? "Create" 
-                              : isCanvasOpen 
-                                ? "Close Canvas" 
-                                : "Open Canvas"}
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-
-                      {/* Right side - Send button */}
-                      <Button
-                        size="icon"
-                        disabled={!input.trim() || isLoading || isStreaming}
-                        onClick={() => handleSend()}
-                        className="size-9 rounded-full"
-                      >
-                        {!(isLoading || isStreaming) ? (
-                          <ArrowUp size={18} />
-                        ) : (
-                          <span className="size-3 rounded-xs bg-white" />
-                        )}
-                      </Button>
-                    </PromptInputActions>
-                  </div>
-                </PromptInput>
-              </div>
-            </div>
           </div>
         </ResizablePanel>
 
