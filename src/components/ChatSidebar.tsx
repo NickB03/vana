@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ChatSession } from "@/hooks/useChatSessions";
-import { NebiusLogo } from "@/components/NebiusLogo";
+import { ViggleLogo } from "@/components/ViggleLogo";
 interface ChatSidebarProps {
   sessions: ChatSession[];
   currentSessionId?: string;
@@ -63,7 +63,7 @@ export function ChatSidebar({
           onClick={onNewChat}
           aria-label="Return to home"
         >
-          <NebiusLogo className="text-primary h-10 w-auto" />
+          <ViggleLogo className="text-primary h-10 w-auto" />
         </button>
         <Button variant="ghost" size="icon" className="size-8" onClick={() => setShowSearch(!showSearch)}>
           <Search className="size-4" />
