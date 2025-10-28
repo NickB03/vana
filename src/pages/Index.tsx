@@ -5,7 +5,7 @@ import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatInterface } from "@/components/ChatInterface";
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from "@/components/prompt-kit/prompt-input";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Square, LogOut, Settings, Check, ChevronRight, Palette, Plus, ImageIcon, WandSparkles } from "lucide-react";
+import { ArrowUp, Square, LogOut, Settings, Check, ChevronRight, Palette, Plus, ImageIcon, WandSparkles, Send } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 import { validateFile, sanitizeFilename } from "@/utils/fileValidation";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { ensureValidSession } from "@/utils/authHelpers";
+import { PromptSuggestions } from "@/components/PromptSuggestions";
 const IndexContent = () => {
   const navigate = useNavigate();
   const {
@@ -193,6 +194,14 @@ const IndexContent = () => {
   const handleValueChange = (value: string) => {
     setInput(value);
   };
+  
+  const handleSuggestionClick = (prompt: string) => {
+    setInput(prompt);
+    // Automatically submit after setting the prompt
+    setTimeout(() => {
+      handleSubmit();
+    }, 100);
+  };
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -320,67 +329,159 @@ const IndexContent = () => {
 
           {/* Main Content */}
           <div className="flex-1 overflow-hidden flex flex-col">
-            {!showChat ? <div className="flex h-full flex-col items-center justify-center p-4 sm:p-8 pt-safe pb-24 sm:pb-32">
-                <div className="text-center mb-8 sm:mb-12">
-                  <h1 className="bg-gradient-primary bg-clip-text text-3xl sm:text-4xl md:text-5xl font-bold text-transparent mb-4">Hi, I'm Vana.</h1>
-                  <p className="text-foreground/80 text-sm sm:text-base">Get started by choosing from an idea below or tell me what you want to do in chat</p>
+            {!showChat ? (
+              <div className="flex h-full flex-col items-start justify-start overflow-y-auto p-4 sm:p-8 pt-safe">
+                {/* Heading */}
+                <div className="text-center w-full mb-6 sm:mb-8 pt-4 sm:pt-8">
+                  <h1 className="bg-gradient-primary bg-clip-text text-3xl sm:text-4xl md:text-5xl font-bold text-transparent mb-4">
+                    Hi, I'm Vana.
+                  </h1>
+                  <p className="text-foreground/80 text-sm sm:text-base">
+                    Get started by choosing from an idea below or tell me what you want to do in chat
+                  </p>
                 </div>
-              </div> : <ChatInterface sessionId={currentSessionId} initialPrompt={input} isCanvasOpen={isCanvasOpen} onCanvasToggle={handleCanvasToggle} onArtifactChange={handleArtifactChange} input={input} onInputChange={setInput} onSendMessage={handler => setChatSendHandler(() => handler)} />}
-
-            {/* Persistent Prompt Input - Always visible at bottom */}
-            <div className="z-10 shrink-0 bg-background px-3 pb-3 md:px-5 md:pb-5 safe-mobile-input" style={{
-            paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))'
-          }}>
-              <div className="mx-auto max-w-3xl">
-                <PromptInput value={input} onValueChange={handleValueChange} isLoading={isLoading} onSubmit={handleSubmit} className="w-full relative rounded-3xl border border-input bg-popover p-0 pt-1 shadow-xs">
-                  <div className="flex flex-col">
-                    <PromptInputTextarea placeholder={showChat ? "Ask anything" : "Ask me anything..."} className="min-h-[44px] pl-4 pt-3 text-base leading-[1.3] sm:text-base md:text-base" />
-                    <PromptInputActions className="mt-5 flex w-full items-center justify-between gap-2 px-3 pb-3">
-                      {/* Left side actions */}
-                      <div className="flex items-center gap-2">
-                        {/* Upload File Button */}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-9 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={isUploadingFile}>
-                              {isUploadingFile ? <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : <Plus size={18} />}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Upload file</TooltipContent>
-                        </Tooltip>
+                
+                {/* Prompt Box - Elevated position */}
+                <div className="w-full max-w-3xl mx-auto mb-8 px-4">
+                  <PromptInput
+                    value={input}
+                    onValueChange={handleValueChange}
+                    isLoading={isLoading}
+                    onSubmit={handleSubmit}
+                    className="w-full relative rounded-3xl border border-input bg-popover p-0 pt-1 shadow-xs"
+                  >
+                    <div className="flex flex-col">
+                      <PromptInputTextarea
+                        placeholder="Ask me anything..."
+                        className="min-h-[44px] pl-4 pt-3 text-base leading-[1.3]"
+                      />
+                      <PromptInputActions className="mt-5 flex w-full items-center justify-between gap-2 px-3 pb-3">
+                        {/* Left side actions */}
+                        <div className="flex items-center gap-2">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-9 rounded-full"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isUploadingFile}
+                              >
+                                {isUploadingFile ? (
+                                  <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                ) : (
+                                  <Plus size={18} />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Upload file</TooltipContent>
+                          </Tooltip>
+                          
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            className="hidden"
+                            onChange={handleFileUpload}
+                            accept=".pdf,.docx,.txt,.md,.jpg,.jpeg,.png,.webp,.gif,.svg,.csv,.json,.xlsx,.js,.ts,.tsx,.jsx,.py,.html,.css,.mp3,.wav,.m4a,.ogg"
+                          />
+                        </div>
                         
-                        {/* Hidden file input */}
-                        <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.docx,.txt,.md,.jpg,.jpeg,.png,.webp,.gif,.svg,.csv,.json,.xlsx,.js,.ts,.tsx,.jsx,.py,.html,.css,.mp3,.wav,.m4a,.ogg" />
-
-                        {/* Generate Image Button */}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-9 rounded-full" onClick={() => setInput("Generate an image of ")}>
-                              <ImageIcon size={18} />
+                        {/* Right side actions */}
+                        <div className="flex items-center gap-2">
+                          <PromptInputAction tooltip="Send message">
+                            <Button
+                              type="submit"
+                              size="icon"
+                              disabled={isLoading || !input.trim()}
+                              className="size-9 rounded-full bg-gradient-primary hover:opacity-90"
+                            >
+                              {isLoading ? (
+                                <div className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                              ) : (
+                                <Send size={18} className="text-white" />
+                              )}
                             </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Generate Image</TooltipContent>
-                        </Tooltip>
-
-                        {/* Create Button */}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-9 rounded-full" onClick={showChat ? handleCanvasToggle : () => setInput("Help me create ")}>
-                              <WandSparkles size={18} />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>{showChat ? isCanvasOpen ? "Hide canvas" : "Show canvas" : "Create"}</TooltipContent>
-                        </Tooltip>
-                      </div>
-
-                      {/* Right side - Send button */}
-                      <Button variant="default" size="icon" className="size-9 rounded-full" onClick={handleSubmit} disabled={!input.trim() || isLoading}>
-                        {isLoading ? <Square className="size-5 fill-current" /> : <ArrowUp size={18} />}
-                      </Button>
-                    </PromptInputActions>
-                  </div>
-                </PromptInput>
+                          </PromptInputAction>
+                        </div>
+                      </PromptInputActions>
+                    </div>
+                  </PromptInput>
+                </div>
+                
+                {/* Suggestion Cards - Below prompt */}
+                <div className="w-full max-w-5xl mx-auto px-4 pb-8">
+                  <PromptSuggestions onSuggestionClick={handleSuggestionClick} />
+                </div>
               </div>
-            </div>
+            ) : (
+              <ChatInterface
+                sessionId={currentSessionId}
+                initialPrompt={input}
+                isCanvasOpen={isCanvasOpen}
+                onCanvasToggle={handleCanvasToggle}
+                onArtifactChange={handleArtifactChange}
+                input={input}
+                onInputChange={setInput}
+                onSendMessage={handler => setChatSendHandler(() => handler)}
+              />
+            )}
+
+            {/* Persistent Prompt Input - Only visible in chat mode */}
+            {showChat && (
+              <div className="z-10 shrink-0 bg-background px-3 pb-3 md:px-5 md:pb-5 safe-mobile-input" style={{
+              paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))'
+              }}>
+                <div className="mx-auto max-w-3xl">
+                  <PromptInput value={input} onValueChange={handleValueChange} isLoading={isLoading} onSubmit={handleSubmit} className="w-full relative rounded-3xl border border-input bg-popover p-0 pt-1 shadow-xs">
+                    <div className="flex flex-col">
+                      <PromptInputTextarea placeholder="Ask anything" className="min-h-[44px] pl-4 pt-3 text-base leading-[1.3] sm:text-base md:text-base" />
+                      <PromptInputActions className="mt-5 flex w-full items-center justify-between gap-2 px-3 pb-3">
+                        {/* Left side actions */}
+                        <div className="flex items-center gap-2">
+                          {/* Upload File Button */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="size-9 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={isUploadingFile}>
+                                {isUploadingFile ? <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : <Plus size={18} />}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Upload file</TooltipContent>
+                          </Tooltip>
+                          
+                          {/* Hidden file input */}
+                          <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.docx,.txt,.md,.jpg,.jpeg,.png,.webp,.gif,.svg,.csv,.json,.xlsx,.js,.ts,.tsx,.jsx,.py,.html,.css,.mp3,.wav,.m4a,.ogg" />
+
+                          {/* Generate Image Button */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="size-9 rounded-full" onClick={() => setInput("Generate an image of ")}>
+                                <ImageIcon size={18} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Generate Image</TooltipContent>
+                          </Tooltip>
+
+                          {/* Create Button */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="size-9 rounded-full" onClick={showChat ? handleCanvasToggle : () => setInput("Help me create ")}>
+                                <WandSparkles size={18} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>{showChat ? isCanvasOpen ? "Hide canvas" : "Show canvas" : "Create"}</TooltipContent>
+                          </Tooltip>
+                        </div>
+
+                        {/* Right side - Send button */}
+                        <Button variant="default" size="icon" className="size-9 rounded-full" onClick={handleSubmit} disabled={!input.trim() || isLoading}>
+                          {isLoading ? <Square className="size-5 fill-current" /> : <ArrowUp size={18} />}
+                        </Button>
+                      </PromptInputActions>
+                    </div>
+                  </PromptInput>
+                </div>
+              </div>
+            )}
           </div>
         </main>
       </SidebarInset>

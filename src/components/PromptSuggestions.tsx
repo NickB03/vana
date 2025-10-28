@@ -1,33 +1,53 @@
 import { Card } from "@/components/ui/card";
-import { Lightbulb, Code, BookOpen, Sparkles } from "lucide-react";
+import { ImageIcon, Code, FileText, Gamepad2 } from "lucide-react";
 
 interface Suggestion {
-  icon: React.ReactNode;
   title: string;
   prompt: string;
+  preview: {
+    gradient: string;
+    icon: React.ReactNode;
+  };
+  category: string;
 }
 
 const suggestions: Suggestion[] = [
   {
-    icon: <Lightbulb className="h-5 w-5" />,
-    title: "Creative Ideas",
-    prompt: "Help me brainstorm creative ideas for a weekend project",
+    title: "Generate an Image",
+    prompt: "Generate an image of Pikachu in a banana costume",
+    preview: {
+      gradient: "from-purple-500 via-pink-500 to-purple-600",
+      icon: <ImageIcon className="h-12 w-12" />
+    },
+    category: "Image Generation"
   },
   {
-    icon: <Code className="h-5 w-5" />,
-    title: "Code Helper",
-    prompt: "Explain how React hooks work with practical examples",
+    title: "Build a Web App",
+    prompt: "Build a protein tracker web app",
+    preview: {
+      gradient: "from-blue-500 via-cyan-500 to-blue-600",
+      icon: <Code className="h-12 w-12" />
+    },
+    category: "Development"
   },
   {
-    icon: <BookOpen className="h-5 w-5" />,
-    title: "Learn Something",
-    prompt: "Teach me about quantum computing in simple terms",
+    title: "Create an Infographic",
+    prompt: "Build an infographic explaining AI Networking",
+    preview: {
+      gradient: "from-green-500 via-emerald-500 to-green-600",
+      icon: <FileText className="h-12 w-12" />
+    },
+    category: "Design"
   },
   {
-    icon: <Sparkles className="h-5 w-5" />,
-    title: "Problem Solving",
-    prompt: "Help me solve a complex problem step by step",
-  },
+    title: "Build a Game",
+    prompt: "Build a web-based Frogger game with arrow key controls",
+    preview: {
+      gradient: "from-orange-500 via-amber-500 to-orange-600",
+      icon: <Gamepad2 className="h-12 w-12" />
+    },
+    category: "Gaming"
+  }
 ];
 
 interface PromptSuggestionsProps {
@@ -36,30 +56,31 @@ interface PromptSuggestionsProps {
 
 export function PromptSuggestions({ onSuggestionClick }: PromptSuggestionsProps) {
   return (
-    <div className="mx-auto w-full max-w-4xl p-8">
-      <div className="mb-8 text-center">
-        <h1 className="mb-4 bg-gradient-primary bg-clip-text text-4xl font-bold text-transparent">
-          How can I help you today?
-        </h1>
-        <p className="text-muted-foreground">
-          Choose a suggestion below or start typing your own question
-        </p>
-      </div>
-
+    <div className="mx-auto w-full max-w-5xl">
       <div className="grid gap-4 sm:grid-cols-2">
         {suggestions.map((suggestion, index) => (
           <Card
             key={index}
-            className="group cursor-pointer border-2 border-border bg-card p-6 transition-all hover:border-primary hover:shadow-lg"
+            className="group cursor-pointer overflow-hidden border-2 border-border bg-card transition-all hover:border-primary hover:shadow-xl hover:scale-[1.02]"
             onClick={() => onSuggestionClick(suggestion.prompt)}
           >
-            <div className="mb-3 flex items-center gap-3">
-              <div className="rounded-lg bg-gradient-primary p-2 text-white transition-transform group-hover:scale-110">
-                {suggestion.icon}
+            {/* Preview Thumbnail */}
+            <div className={`relative aspect-video bg-gradient-to-br ${suggestion.preview.gradient} flex items-center justify-center overflow-hidden`}>
+              {/* Icon overlay */}
+              <div className="text-white/90 transition-transform group-hover:scale-110">
+                {suggestion.preview.icon}
               </div>
-              <h3 className="font-semibold">{suggestion.title}</h3>
+              {/* Category badge */}
+              <div className="absolute top-2 right-2 bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full text-xs text-white">
+                {suggestion.category}
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground">{suggestion.prompt}</p>
+            
+            {/* Text Area */}
+            <div className="p-4">
+              <h3 className="font-semibold text-base mb-1">{suggestion.title}</h3>
+              <p className="text-sm text-muted-foreground line-clamp-2">{suggestion.prompt}</p>
+            </div>
           </Card>
         ))}
       </div>
