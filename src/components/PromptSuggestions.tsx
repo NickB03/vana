@@ -66,17 +66,17 @@ export function PromptSuggestions({ onSuggestionClick }: PromptSuggestionsProps)
             onClick={() => onSuggestionClick(suggestion.prompt)}
           >
             {/* Preview Thumbnail */}
-            <div className={`relative aspect-square bg-gradient-to-br ${suggestion.preview.gradient} flex items-center justify-center overflow-hidden`}>
+            <div className={`relative aspect-[3/2] bg-gradient-to-br ${suggestion.preview.gradient} flex items-center justify-center overflow-hidden`}>
               {/* Icon overlay */}
               <div className="text-white/90 transition-transform group-hover:scale-110">
-                {React.cloneElement(suggestion.preview.icon as React.ReactElement, { className: "h-8 w-8" })}
+                {React.cloneElement(suggestion.preview.icon as React.ReactElement, { className: "h-6 w-6" })}
               </div>
             </div>
             
             {/* Text Area */}
-            <div className="p-2">
-              <h3 className="font-semibold text-xs mb-0.5 line-clamp-1">{suggestion.title}</h3>
-              <p className="text-[10px] text-muted-foreground line-clamp-2">{suggestion.prompt}</p>
+            <div className="p-1.5">
+              <h3 className="font-semibold text-[10px] mb-0.5 line-clamp-1">{suggestion.title}</h3>
+              <p className="text-[9px] text-muted-foreground line-clamp-1">{suggestion.prompt}</p>
             </div>
           </Card>
         ))}
