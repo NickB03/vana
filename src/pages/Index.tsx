@@ -330,9 +330,12 @@ const IndexContent = () => {
           {/* Main Content */}
           <div className="flex-1 overflow-hidden flex flex-col">
             {!showChat ? (
-              <div className="flex h-full flex-col items-start justify-end overflow-y-auto p-4 sm:p-8 pb-safe">
-                {/* Heading */}
-                <div className="text-center w-full mb-4 sm:mb-6">
+              <div className="flex h-full flex-col items-center justify-between overflow-y-auto p-4 sm:p-8 pt-safe pb-safe">
+                {/* Top spacer */}
+                <div></div>
+                
+                {/* Centered heading */}
+                <div className="text-center w-full">
                   <h1 className="bg-gradient-primary bg-clip-text text-3xl sm:text-4xl md:text-5xl font-bold text-transparent mb-4">
                     Hi, I'm Vana.
                   </h1>
@@ -341,8 +344,10 @@ const IndexContent = () => {
                   </p>
                 </div>
                 
-                {/* Prompt Box - Elevated position */}
-                <div className="w-full max-w-3xl mx-auto mb-6 px-4">
+                {/* Bottom section with prompt and suggestions */}
+                <div className="w-full">
+                  {/* Prompt Box */}
+                  <div className="w-full max-w-3xl mx-auto mb-6 px-4">
                   <PromptInput
                     value={input}
                     onValueChange={handleValueChange}
@@ -384,6 +389,24 @@ const IndexContent = () => {
                             onChange={handleFileUpload}
                             accept=".pdf,.docx,.txt,.md,.jpg,.jpeg,.png,.webp,.gif,.svg,.csv,.json,.xlsx,.js,.ts,.tsx,.jsx,.py,.html,.css,.mp3,.wav,.m4a,.ogg"
                           />
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="size-9 rounded-full" onClick={() => setInput("Generate an image of ")}>
+                                <ImageIcon size={18} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Generate Image</TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="size-9 rounded-full" onClick={() => setInput("Help me create ")}>
+                                <WandSparkles size={18} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Create</TooltipContent>
+                          </Tooltip>
                         </div>
                         
                         {/* Right side actions */}
@@ -408,9 +431,10 @@ const IndexContent = () => {
                   </PromptInput>
                 </div>
                 
-                {/* Suggestion Cards - Below prompt */}
-                <div className="w-full max-w-3xl mx-auto px-4 pb-4">
-                  <PromptSuggestions onSuggestionClick={handleSuggestionClick} />
+                  {/* Suggestion Cards - Below prompt */}
+                  <div className="w-full max-w-3xl mx-auto px-4 pb-4">
+                    <PromptSuggestions onSuggestionClick={handleSuggestionClick} />
+                  </div>
                 </div>
               </div>
             ) : (
