@@ -322,7 +322,8 @@ const IndexContent = () => {
           <div className="flex-1 overflow-hidden flex flex-col">
             {!showChat ? <div className="flex h-full flex-col items-center justify-center p-4 sm:p-8 pt-safe pb-24 sm:pb-32">
                 <div className="text-center mb-8 sm:mb-12">
-                  <h1 className="bg-gradient-primary bg-clip-text text-3xl sm:text-4xl md:text-5xl font-bold text-transparent">Hi, I'm Vana. Lets gets started</h1>
+                  <h1 className="bg-gradient-primary bg-clip-text text-3xl sm:text-4xl md:text-5xl font-bold text-transparent mb-4">Hi, I'm Vana.</h1>
+                  <p className="text-foreground/80 text-sm sm:text-base">Get started by choosing from an idea below or tell me what you want to do in chat</p>
                 </div>
               </div> : <ChatInterface sessionId={currentSessionId} initialPrompt={input} isCanvasOpen={isCanvasOpen} onCanvasToggle={handleCanvasToggle} onArtifactChange={handleArtifactChange} input={input} onInputChange={setInput} onSendMessage={handler => setChatSendHandler(() => handler)} />}
 
