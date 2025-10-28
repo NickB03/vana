@@ -1,3 +1,4 @@
+import React from "react";
 import { Card } from "@/components/ui/card";
 import { ImageIcon, Code, FileText, Gamepad2 } from "lucide-react";
 
@@ -56,30 +57,26 @@ interface PromptSuggestionsProps {
 
 export function PromptSuggestions({ onSuggestionClick }: PromptSuggestionsProps) {
   return (
-    <div className="mx-auto w-full max-w-5xl">
-      <div className="grid gap-4 sm:grid-cols-2">
+    <div className="mx-auto w-full max-w-3xl">
+      <div className="grid grid-cols-4 gap-2">
         {suggestions.map((suggestion, index) => (
           <Card
             key={index}
-            className="group cursor-pointer overflow-hidden border-2 border-border bg-card transition-all hover:border-primary hover:shadow-xl hover:scale-[1.02]"
+            className="group cursor-pointer overflow-hidden border border-border bg-card transition-all hover:border-primary hover:shadow-lg hover:scale-105"
             onClick={() => onSuggestionClick(suggestion.prompt)}
           >
             {/* Preview Thumbnail */}
-            <div className={`relative aspect-video bg-gradient-to-br ${suggestion.preview.gradient} flex items-center justify-center overflow-hidden`}>
+            <div className={`relative aspect-square bg-gradient-to-br ${suggestion.preview.gradient} flex items-center justify-center overflow-hidden`}>
               {/* Icon overlay */}
               <div className="text-white/90 transition-transform group-hover:scale-110">
-                {suggestion.preview.icon}
-              </div>
-              {/* Category badge */}
-              <div className="absolute top-2 right-2 bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full text-xs text-white">
-                {suggestion.category}
+                {React.cloneElement(suggestion.preview.icon as React.ReactElement, { className: "h-8 w-8" })}
               </div>
             </div>
             
             {/* Text Area */}
-            <div className="p-4">
-              <h3 className="font-semibold text-base mb-1">{suggestion.title}</h3>
-              <p className="text-sm text-muted-foreground line-clamp-2">{suggestion.prompt}</p>
+            <div className="p-2">
+              <h3 className="font-semibold text-xs mb-0.5 line-clamp-1">{suggestion.title}</h3>
+              <p className="text-[10px] text-muted-foreground line-clamp-2">{suggestion.prompt}</p>
             </div>
           </Card>
         ))}
