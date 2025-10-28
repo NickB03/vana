@@ -1,11 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  SidebarProvider,
-  SidebarInset,
-  SidebarTrigger,
-  useSidebar,
-} from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatInterface } from "@/components/ChatInterface";
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from "@/components/prompt-kit/prompt-input";
@@ -15,30 +10,33 @@ import { toast as sonnerToast } from "sonner";
 import { validateFile, sanitizeFilename } from "@/utils/fileValidation";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useTheme } from "@/components/ThemeProvider";
 import { useChatSessions } from "@/hooks/useChatSessions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { ensureValidSession } from "@/utils/authHelpers";
-
 const IndexContent = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { themeMode, colorTheme, setThemeMode, setColorTheme } = useTheme();
-  const { sessions, isLoading: sessionsLoading, createSession, deleteSession } = useChatSessions();
-  const { setOpen } = useSidebar();
+  const {
+    toast
+  } = useToast();
+  const {
+    themeMode,
+    colorTheme,
+    setThemeMode,
+    setColorTheme
+  } = useTheme();
+  const {
+    sessions,
+    isLoading: sessionsLoading,
+    createSession,
+    deleteSession
+  } = useChatSessions();
+  const {
+    setOpen
+  } = useSidebar();
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>();
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -50,7 +48,6 @@ const IndexContent = () => {
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [chatSendHandler, setChatSendHandler] = useState<((message?: string) => Promise<void>) | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   useEffect(() => {
     // Check authentication with session validation
     const checkAuth = async () => {
@@ -60,10 +57,12 @@ const IndexContent = () => {
         navigate("/auth");
       }
     };
-
     checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: {
+        subscription
+      }
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setIsAuthenticated(!!session);
       if (!session && event !== 'INITIAL_SESSION') {
         navigate("/auth");
@@ -73,15 +72,18 @@ const IndexContent = () => {
     // Optimized session validation - check only when necessary
     // Check 5 minutes before token expiry instead of polling every 5 minutes
     let timeoutId: NodeJS.Timeout;
-    
     const scheduleSessionCheck = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: {
+          session
+        }
+      } = await supabase.auth.getSession();
       if (session?.expires_at) {
         const expiresAt = session.expires_at * 1000; // Convert to ms
         const now = Date.now();
         const timeUntilExpiry = expiresAt - now;
-        const checkTime = Math.max(timeUntilExpiry - (5 * 60 * 1000), 1000); // Check 5 min before expiry
-        
+        const checkTime = Math.max(timeUntilExpiry - 5 * 60 * 1000, 1000); // Check 5 min before expiry
+
         timeoutId = setTimeout(async () => {
           const validSession = await ensureValidSession();
           if (!validSession) {
@@ -89,7 +91,7 @@ const IndexContent = () => {
             toast({
               title: "Session Expired",
               description: "Please sign in again to continue",
-              variant: "destructive",
+              variant: "destructive"
             });
             navigate("/auth");
           } else {
@@ -98,9 +100,7 @@ const IndexContent = () => {
         }, checkTime);
       }
     };
-    
     scheduleSessionCheck();
-
     return () => {
       subscription.unsubscribe();
       if (timeoutId) clearTimeout(timeoutId);
@@ -116,11 +116,9 @@ const IndexContent = () => {
         setInput("");
       }
     };
-
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, [showChat]);
-
   const handleNewChat = () => {
     setCurrentSessionId(undefined);
     setInput("");
@@ -130,13 +128,11 @@ const IndexContent = () => {
     // Reset browser history to home state
     window.history.pushState(null, "", "/");
   };
-
   const handleCanvasToggle = () => {
     if (hasArtifact) {
       setIsCanvasOpen(!isCanvasOpen);
     }
   };
-
   const handleArtifactChange = (hasContent: boolean) => {
     setHasArtifact(hasContent);
     if (!hasContent) {
@@ -147,23 +143,21 @@ const IndexContent = () => {
       setOpen(false);
     }
   };
-
   const handleSessionSelect = (sessionId: string) => {
     setInput(""); // Clear input when switching sessions
     setCurrentSessionId(sessionId);
     setShowChat(true);
     // Push state for browser back button
-    window.history.pushState({ showChat: true }, "", "/");
+    window.history.pushState({
+      showChat: true
+    }, "", "/");
   };
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
   };
-
   const handleSubmit = async () => {
     if (!input.trim()) return;
-
     if (showChat && chatSendHandler) {
       // In chat mode - call the ChatInterface's send handler
       await chatSendHandler(input);
@@ -178,32 +172,30 @@ const IndexContent = () => {
       toast({
         title: "Authentication required",
         description: "Please refresh the page or sign in again",
-        variant: "destructive",
+        variant: "destructive"
       });
       setIsAuthenticated(false);
       navigate("/auth");
       return;
     }
-    
     setIsLoading(true);
     const sessionId = await createSession(input);
     if (sessionId) {
       setCurrentSessionId(sessionId);
       setShowChat(true);
       // Push state for browser back button
-      window.history.pushState({ showChat: true }, "", "/");
+      window.history.pushState({
+        showChat: true
+      }, "", "/");
     }
     setIsLoading(false);
   };
-
   const handleValueChange = (value: string) => {
     setInput(value);
   };
-
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     setIsUploadingFile(true);
     try {
       // Validate file with comprehensive checks
@@ -212,8 +204,11 @@ const IndexContent = () => {
         sonnerToast.error(validationResult.error || "File validation failed");
         return;
       }
-
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       if (!user) {
         sonnerToast.error("You must be logged in to upload files");
         return;
@@ -225,23 +220,23 @@ const IndexContent = () => {
       const fileName = `${user.id}/${Date.now()}${fileExt}`;
 
       // Upload to Supabase storage
-      const { error: uploadError } = await supabase.storage
-        .from('user-uploads')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
+      const {
+        error: uploadError
+      } = await supabase.storage.from('user-uploads').upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
       if (uploadError) throw uploadError;
 
       // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('user-uploads')
-        .getPublicUrl(fileName);
+      const {
+        data: {
+          publicUrl
+        }
+      } = supabase.storage.from('user-uploads').getPublicUrl(fileName);
 
       // Add file reference to input
       setInput(prev => `${prev}\n[${file.name}](${publicUrl})`);
-      
       sonnerToast.success("File uploaded successfully");
     } catch (error) {
       console.error("Upload error:", error);
@@ -251,21 +246,14 @@ const IndexContent = () => {
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
-
-  return (
-    <>
-      <ChatSidebar
-        sessions={sessions}
-        currentSessionId={currentSessionId}
-        onSessionSelect={handleSessionSelect}
-        onNewChat={handleNewChat}
-        onDeleteSession={deleteSession}
-        isLoading={sessionsLoading}
-      />
+  return <>
+      <ChatSidebar sessions={sessions} currentSessionId={currentSessionId} onSessionSelect={handleSessionSelect} onNewChat={handleNewChat} onDeleteSession={deleteSession} isLoading={sessionsLoading} />
       <SidebarInset>
         <main className="flex h-screen flex-col overflow-hidden">
           {/* Header */}
-          <header className="bg-background sticky top-0 z-20 flex h-16 w-full shrink-0 items-center justify-between gap-2 border-b border-background px-4" style={{ paddingTop: 'var(--safe-area-inset-top)' }}>
+          <header className="bg-background sticky top-0 z-20 flex h-16 w-full shrink-0 items-center justify-between gap-2 border-b border-background px-4" style={{
+          paddingTop: 'var(--safe-area-inset-top)'
+        }}>
             <div className="flex items-center gap-2">
               <SidebarTrigger className="min-h-[44px] min-w-[44px]" />
             </div>
@@ -282,10 +270,7 @@ const IndexContent = () => {
                   
                   <div className="px-2 py-2">
                     <div className="text-xs font-medium mb-2 text-muted-foreground">Theme Mode</div>
-                    <ThemeSwitcher 
-                      value={themeMode}
-                      onChange={setThemeMode}
-                    />
+                    <ThemeSwitcher value={themeMode} onChange={setThemeMode} />
                   </div>
 
                   <DropdownMenuSeparator />
@@ -323,15 +308,11 @@ const IndexContent = () => {
                     </DropdownMenuSubContent>
                   </DropdownMenuSub>
                   <DropdownMenuSeparator />
-                  {isAuthenticated ? (
-                    <DropdownMenuItem onClick={handleLogout}>
+                  {isAuthenticated ? <DropdownMenuItem onClick={handleLogout}>
                       <span>Sign Out</span>
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem onClick={() => navigate("/auth")}>
+                    </DropdownMenuItem> : <DropdownMenuItem onClick={() => navigate("/auth")}>
                       <span>Sign In</span>
-                    </DropdownMenuItem>
-                  )}
+                    </DropdownMenuItem>}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -339,83 +320,40 @@ const IndexContent = () => {
 
           {/* Main Content */}
           <div className="flex-1 overflow-hidden flex flex-col">
-            {!showChat ? (
-              <div className="flex h-full flex-col items-center justify-center p-4 sm:p-8 pt-safe pb-24 sm:pb-32">
+            {!showChat ? <div className="flex h-full flex-col items-center justify-center p-4 sm:p-8 pt-safe pb-24 sm:pb-32">
                 <div className="text-center mb-8 sm:mb-12">
-                  <h1 className="bg-gradient-primary bg-clip-text text-3xl sm:text-4xl md:text-5xl font-bold text-transparent">
-                    How can I help you?
-                  </h1>
+                  <h1 className="bg-gradient-primary bg-clip-text text-3xl sm:text-4xl md:text-5xl font-bold text-transparent">Hi, I'm Vana. Lets gets started</h1>
                 </div>
-              </div>
-            ) : (
-              <ChatInterface
-                sessionId={currentSessionId}
-                initialPrompt={input}
-                isCanvasOpen={isCanvasOpen}
-                onCanvasToggle={handleCanvasToggle}
-                onArtifactChange={handleArtifactChange}
-                input={input}
-                onInputChange={setInput}
-                onSendMessage={(handler) => setChatSendHandler(() => handler)}
-              />
-            )}
+              </div> : <ChatInterface sessionId={currentSessionId} initialPrompt={input} isCanvasOpen={isCanvasOpen} onCanvasToggle={handleCanvasToggle} onArtifactChange={handleArtifactChange} input={input} onInputChange={setInput} onSendMessage={handler => setChatSendHandler(() => handler)} />}
 
             {/* Persistent Prompt Input - Always visible at bottom */}
-            <div className="z-10 shrink-0 bg-background px-3 pb-3 md:px-5 md:pb-5 safe-mobile-input" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+            <div className="z-10 shrink-0 bg-background px-3 pb-3 md:px-5 md:pb-5 safe-mobile-input" style={{
+            paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))'
+          }}>
               <div className="mx-auto max-w-3xl">
-                <PromptInput
-                  value={input}
-                  onValueChange={handleValueChange}
-                  isLoading={isLoading}
-                  onSubmit={handleSubmit}
-                  className="w-full relative rounded-3xl border border-input bg-popover p-0 pt-1 shadow-xs"
-                >
+                <PromptInput value={input} onValueChange={handleValueChange} isLoading={isLoading} onSubmit={handleSubmit} className="w-full relative rounded-3xl border border-input bg-popover p-0 pt-1 shadow-xs">
                   <div className="flex flex-col">
-                    <PromptInputTextarea 
-                      placeholder={showChat ? "Ask anything" : "Ask me anything..."} 
-                      className="min-h-[44px] pl-4 pt-3 text-base leading-[1.3] sm:text-base md:text-base"
-                    />
+                    <PromptInputTextarea placeholder={showChat ? "Ask anything" : "Ask me anything..."} className="min-h-[44px] pl-4 pt-3 text-base leading-[1.3] sm:text-base md:text-base" />
                     <PromptInputActions className="mt-5 flex w-full items-center justify-between gap-2 px-3 pb-3">
                       {/* Left side actions */}
                       <div className="flex items-center gap-2">
                         {/* Upload File Button */}
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-9 rounded-full"
-                              onClick={() => fileInputRef.current?.click()}
-                              disabled={isUploadingFile}
-                            >
-                              {isUploadingFile ? (
-                                <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                              ) : (
-                                <Plus size={18} />
-                              )}
+                            <Button variant="ghost" size="icon" className="size-9 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={isUploadingFile}>
+                              {isUploadingFile ? <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : <Plus size={18} />}
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>Upload file</TooltipContent>
                         </Tooltip>
                         
                         {/* Hidden file input */}
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          className="hidden"
-                          onChange={handleFileUpload}
-                          accept=".pdf,.docx,.txt,.md,.jpg,.jpeg,.png,.webp,.gif,.svg,.csv,.json,.xlsx,.js,.ts,.tsx,.jsx,.py,.html,.css,.mp3,.wav,.m4a,.ogg"
-                        />
+                        <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.docx,.txt,.md,.jpg,.jpeg,.png,.webp,.gif,.svg,.csv,.json,.xlsx,.js,.ts,.tsx,.jsx,.py,.html,.css,.mp3,.wav,.m4a,.ogg" />
 
                         {/* Generate Image Button */}
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-9 rounded-full"
-                              onClick={() => setInput("Generate an image of ")}
-                            >
+                            <Button variant="ghost" size="icon" className="size-9 rounded-full" onClick={() => setInput("Generate an image of ")}>
                               <ImageIcon size={18} />
                             </Button>
                           </TooltipTrigger>
@@ -425,32 +363,17 @@ const IndexContent = () => {
                         {/* Create Button */}
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-9 rounded-full"
-                              onClick={showChat ? handleCanvasToggle : () => setInput("Help me create ")}
-                            >
+                            <Button variant="ghost" size="icon" className="size-9 rounded-full" onClick={showChat ? handleCanvasToggle : () => setInput("Help me create ")}>
                               <WandSparkles size={18} />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>{showChat ? (isCanvasOpen ? "Hide canvas" : "Show canvas") : "Create"}</TooltipContent>
+                          <TooltipContent>{showChat ? isCanvasOpen ? "Hide canvas" : "Show canvas" : "Create"}</TooltipContent>
                         </Tooltip>
                       </div>
 
                       {/* Right side - Send button */}
-                      <Button
-                        variant="default"
-                        size="icon"
-                        className="size-9 rounded-full"
-                        onClick={handleSubmit}
-                        disabled={!input.trim() || isLoading}
-                      >
-                        {isLoading ? (
-                          <Square className="size-5 fill-current" />
-                        ) : (
-                          <ArrowUp size={18} />
-                        )}
+                      <Button variant="default" size="icon" className="size-9 rounded-full" onClick={handleSubmit} disabled={!input.trim() || isLoading}>
+                        {isLoading ? <Square className="size-5 fill-current" /> : <ArrowUp size={18} />}
                       </Button>
                     </PromptInputActions>
                   </div>
@@ -460,16 +383,11 @@ const IndexContent = () => {
           </div>
         </main>
       </SidebarInset>
-    </>
-  );
+    </>;
 };
-
 const Index = () => {
-  return (
-    <SidebarProvider defaultOpen={true}>
+  return <SidebarProvider defaultOpen={true}>
       <IndexContent />
-    </SidebarProvider>
-  );
+    </SidebarProvider>;
 };
-
 export default Index;
