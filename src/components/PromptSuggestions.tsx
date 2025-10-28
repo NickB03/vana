@@ -66,10 +66,10 @@ export function PromptSuggestions({ onSuggestionClick }: PromptSuggestionsProps)
             onClick={() => onSuggestionClick(suggestion.prompt)}
           >
             {/* Preview Thumbnail */}
-            <div className={`relative aspect-[3/2] bg-gradient-to-br ${suggestion.preview.gradient} flex items-center justify-center overflow-hidden`}>
+            <div className={`relative aspect-[5/2] bg-gradient-to-br ${suggestion.preview.gradient} flex items-center justify-center overflow-hidden`}>
               {/* Icon overlay */}
               <div className="text-white/90 transition-transform group-hover:scale-110">
-                {React.cloneElement(suggestion.preview.icon as React.ReactElement, { className: "h-6 w-6" })}
+                {React.cloneElement(suggestion.preview.icon as React.ReactElement, { className: "h-5 w-5" })}
               </div>
             </div>
             

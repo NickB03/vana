@@ -330,9 +330,9 @@ const IndexContent = () => {
           {/* Main Content */}
           <div className="flex-1 overflow-hidden flex flex-col">
             {!showChat ? (
-              <div className="flex h-full flex-col items-start justify-start overflow-y-auto p-4 sm:p-8 pt-safe">
+              <div className="flex h-full flex-col items-start justify-end overflow-y-auto p-4 sm:p-8 pb-safe">
                 {/* Heading */}
-                <div className="text-center w-full mb-6 sm:mb-8 pt-4 sm:pt-8">
+                <div className="text-center w-full mb-4 sm:mb-6">
                   <h1 className="bg-gradient-primary bg-clip-text text-3xl sm:text-4xl md:text-5xl font-bold text-transparent mb-4">
                     Hi, I'm Vana.
                   </h1>
@@ -342,7 +342,7 @@ const IndexContent = () => {
                 </div>
                 
                 {/* Prompt Box - Elevated position */}
-                <div className="w-full max-w-3xl mx-auto mb-8 px-4">
+                <div className="w-full max-w-3xl mx-auto mb-6 px-4">
                   <PromptInput
                     value={input}
                     onValueChange={handleValueChange}
@@ -409,7 +409,7 @@ const IndexContent = () => {
                 </div>
                 
                 {/* Suggestion Cards - Below prompt */}
-                <div className="w-full max-w-5xl mx-auto px-4 pb-8">
+                <div className="w-full max-w-3xl mx-auto px-4 pb-4">
                   <PromptSuggestions onSuggestionClick={handleSuggestionClick} />
                 </div>
               </div>
