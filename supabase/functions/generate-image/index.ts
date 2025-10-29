@@ -162,39 +162,36 @@ serve(async (req) => {
 
     console.log(`Image ${mode} successful, size: ${imageData.length} bytes`);
 
-    // Upload to Supabase Storage with signed URL (1 hour expiry)
+    // Upload to Supabase Storage with public URL
     let imageUrl = imageData; // Default to base64 if upload fails
     try {
       // Convert base64 to blob
       const base64Response = await fetch(imageData);
       const blob = await base64Response.blob();
-      
+
       // Generate unique filename with random token for security
       const randomToken = crypto.randomUUID();
       const fileName = `${user.id}/${randomToken}_${Date.now()}.png`;
-      
+
       // Upload to storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('generated-images')
         .upload(fileName, blob, {
           contentType: 'image/png',
-          cacheControl: '3600'
+          cacheControl: '31536000' // 1 year cache
         });
-      
+
       if (uploadError) {
         console.error("Storage upload error:", uploadError);
+        // Fallback to base64
       } else {
-        // Get signed URL with 1 hour expiry for better security
-        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+        // Get public URL (no expiry, requires bucket to be public)
+        const { data: { publicUrl } } = supabase.storage
           .from('generated-images')
-          .createSignedUrl(fileName, 3600); // 1 hour expiry
-        
-        if (signedUrlError) {
-          console.error("Signed URL error:", signedUrlError);
-        } else {
-          imageUrl = signedUrlData.signedUrl;
-          console.log(`Image uploaded with signed URL (expires in 1 hour)`);
-        }
+          .getPublicUrl(fileName);
+
+        imageUrl = publicUrl;
+        console.log(`Image uploaded successfully with public URL`);
       }
     } catch (storageError) {
       console.error("Storage upload failed, using base64:", storageError);
