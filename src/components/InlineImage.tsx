@@ -47,12 +47,12 @@ export function InlineImage({ artifact }: InlineImageProps) {
         className="relative group cursor-pointer rounded-xl overflow-hidden border-2 border-border hover:border-primary transition-all duration-200 max-w-md shadow-sm hover:shadow-md"
         onClick={() => setPreviewOpen(true)}
       >
-        <img 
-          src={artifact.content} 
+        <img
+          src={artifact.content}
           alt={artifact.title}
           className="w-full h-auto bg-muted block"
-          loading="lazy"
-          decoding="async"
+          loading="eager"
+          decoding="sync"
           onError={(e) => {
             console.error('Image failed to load:', artifact.content);
             e.currentTarget.style.display = 'none';

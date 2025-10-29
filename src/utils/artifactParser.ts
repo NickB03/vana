@@ -1,5 +1,13 @@
 import { ArtifactData, ArtifactType } from "@/components/Artifact";
 
+// Generate stable artifact ID based on content and type
+function generateStableId(content: string, type: ArtifactType, index: number): string {
+  // Create a simple hash from content (first 50 chars + length + type + index)
+  const contentSample = content.substring(0, 50).replace(/\s/g, '');
+  const hash = `${contentSample}-${content.length}-${type}-${index}`;
+  return `artifact-${hash}`;
+}
+
 // Map MIME types to internal artifact types
 const mimeTypeMap: Record<string, ArtifactType> = {
   'application/vnd.ant.code': 'code',
@@ -18,16 +26,17 @@ export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cl
 
   // Match artifact blocks with format: <artifact type="..." title="...">content</artifact>
   const artifactRegex = /<artifact\s+type="([^"]+)"\s+title="([^"]+)"(?:\s+language="([^"]+)")?>([\s\S]*?)<\/artifact>/g;
-  
+
   let match;
+  let artifactIndex = 0;
   while ((match = artifactRegex.exec(content)) !== null) {
     const [fullMatch, type, title, language, artifactContent] = match;
-    
+
     // Map MIME type to internal type
     const mappedType = mimeTypeMap[type] || type as ArtifactType;
-    
+
     artifacts.push({
-      id: `artifact-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: generateStableId(artifactContent.trim(), mappedType, artifactIndex++),
       type: mappedType,
       title: title,
       content: artifactContent.trim(),
@@ -47,12 +56,12 @@ export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cl
   const htmlCodeBlockRegex = /```html\n([\s\S]*?)```/g;
   while ((match = htmlCodeBlockRegex.exec(content)) !== null) {
     const [fullMatch, code] = match;
-    
+
     if (code.includes("<") && code.includes(">") && !artifacts.some(a => a.content === code.trim())) {
       const title = "HTML Preview";
-      
+
       artifacts.push({
-        id: `artifact-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: generateStableId(code.trim(), "html", artifactIndex++),
         type: "html",
         title: title,
         content: code.trim(),
@@ -67,12 +76,12 @@ export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cl
   const codeBlockRegex = /```(\w+)\n([\s\S]*?)```/g;
   while ((match = codeBlockRegex.exec(content)) !== null) {
     const [fullMatch, language, code] = match;
-    
+
     // Skip if already processed as HTML or if it's a duplicate
     if (language === 'html' || artifacts.some(a => a.content === code.trim())) {
       continue;
     }
-    
+
     const languageMap: { [key: string]: string } = {
       python: "Python Code",
       javascript: "JavaScript Code",
@@ -87,11 +96,11 @@ export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cl
       swift: "Swift Code",
       kotlin: "Kotlin Code",
     };
-    
+
     const title = languageMap[language.toLowerCase()] || `${language} Code`;
-    
+
     artifacts.push({
-      id: `artifact-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: generateStableId(code.trim(), "code", artifactIndex++),
       type: "code",
       title: title,
       content: code.trim(),
@@ -105,10 +114,10 @@ export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cl
   const markdownBlockRegex = /```markdown\n([\s\S]*?)```/g;
   while ((match = markdownBlockRegex.exec(content)) !== null) {
     const [fullMatch, markdown] = match;
-    
+
     if (!artifacts.some(a => a.content === markdown.trim())) {
       artifacts.push({
-        id: `artifact-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: generateStableId(markdown.trim(), "markdown", artifactIndex++),
         type: "markdown",
         title: "Markdown Document",
         content: markdown.trim(),
@@ -123,10 +132,10 @@ export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cl
   const svgCodeBlockRegex = /```svg\n([\s\S]*?)```/g;
   while ((match = svgCodeBlockRegex.exec(content)) !== null) {
     const [fullMatch, svg] = match;
-    
+
     if (!artifacts.some(a => a.content === svg.trim())) {
       artifacts.push({
-        id: `artifact-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: generateStableId(svg.trim(), "svg", artifactIndex++),
         type: "svg",
         title: "SVG Image",
         content: svg.trim(),
@@ -141,10 +150,10 @@ export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cl
   const mermaidCodeBlockRegex = /```mermaid\n([\s\S]*?)```/g;
   while ((match = mermaidCodeBlockRegex.exec(content)) !== null) {
     const [fullMatch, mermaid] = match;
-    
+
     if (!artifacts.some(a => a.content === mermaid.trim())) {
       artifacts.push({
-        id: `artifact-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: generateStableId(mermaid.trim(), "mermaid", artifactIndex++),
         type: "mermaid",
         title: "Mermaid Diagram",
         content: mermaid.trim(),
@@ -159,10 +168,10 @@ export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cl
   const reactCodeBlockRegex = /```(?:jsx|react)\n([\s\S]*?)```/g;
   while ((match = reactCodeBlockRegex.exec(content)) !== null) {
     const [fullMatch, jsx] = match;
-    
+
     if (!artifacts.some(a => a.content === jsx.trim())) {
       artifacts.push({
-        id: `artifact-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: generateStableId(jsx.trim(), "react", artifactIndex++),
         type: "react",
         title: "React Component",
         content: jsx.trim(),

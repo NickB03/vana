@@ -239,8 +239,13 @@ export function useChatMessages(sessionId: string | undefined) {
         }
       }
 
-      // Save assistant message
+      // Save assistant message first, then signal completion
+      // This prevents a race condition where streamingMessage is cleared before the saved message appears
       await saveMessage("assistant", fullResponse);
+
+      // Small delay to ensure React state updates have propagated
+      await new Promise(resolve => setTimeout(resolve, 50));
+
       onDone();
     } catch (error: any) {
       console.error("Stream error:", error);

@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo \"detached\"); COMMAND=$(echo \"$CLAUDE_TOOL_INPUT\" | jq -r \".command // empty\"); if [ \"$CURRENT_BRANCH\" = \"main\" ] && echo \"$COMMAND\" | grep -qE \"git\\s+commit\"; then echo \"🔒 BLOCKED: Cannot commit to main branch!\"; echo \"\"; echo \"Why: Lovable Cloud deploys from main. Direct commits bypass testing.\"; echo \"\"; echo \"What to do:\"; echo \"  1. Create feature branch: git checkout -b feature/your-feature\"; echo \"  2. Commit to feature branch\"; echo \"  3. Test in Lovable preview\"; echo \"  4. Merge when ready\"; echo \"\"; echo \"For EMERGENCY hotfix, tell me: I need to commit to main for emergency: [reason]\"; exit 1; fi'"
+          },
+          {
+            "type": "command",
+            "command": "bash -c 'COMMAND=$(echo \"$CLAUDE_TOOL_INPUT\" | jq -r \".command // empty\"); if echo \"$COMMAND\" | grep -qE \"git\\s+add.*\\.env\\.(local|development)\"; then echo \"🔒 BLOCKED: Cannot stage git-ignored environment files!\"; echo \"\"; echo \"Files that should NEVER be committed:\"; echo \"  • .env.local (personal secrets)\"; echo \"  • .env.development (development config)\"; echo \"\"; echo \"These contain sensitive data and are git-ignored for safety.\"; exit 1; fi'"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "bash -c 'CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo \"unknown\"); if [ \"$CURRENT_BRANCH\" = \"main\" ]; then echo \"⚠️  WARNING: You are on the main branch!\"; echo \"   Consider creating a feature branch to protect production.\"; echo \"   Command: git checkout -b feature/your-feature\"; echo \"\"; fi'"
+      }
+    ]
+  }
+}

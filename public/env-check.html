@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head><title>Env Check</title></head>
+<body>
+<h1>Environment Check</h1>
+<pre id="output"></pre>
+<script type="module">
+  const env = {
+    PROJECT_ID: import.meta.env.VITE_SUPABASE_PROJECT_ID,
+    URL: import.meta.env.VITE_SUPABASE_URL,
+    MODE: import.meta.env.MODE,
+    DEV: import.meta.env.DEV,
+    PROD: import.meta.env.PROD
+  };
+  
+  let result = 'Vite Environment Variables:\n';
+  result += '==========================\n\n';
+  result += JSON.stringify(env, null, 2);
+  result += '\n\n';
+  
+  if (env.PROJECT_ID === 'vznhbocnuykdmjvujaka') {
+    result += '✅ Connected to vana-dev (development)\n';
+  } else if (env.PROJECT_ID === 'xfwlneedhqealtktaacv') {
+    result += '⚠️  Connected to production (Lovable Cloud)\n';
+  } else {
+    result += '❌ Unknown Supabase instance\n';
+  }
+  
+  document.getElementById('output').textContent = result;
+</script>
+</body>
+</html>
