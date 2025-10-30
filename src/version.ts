@@ -30,7 +30,7 @@ export const APP_VERSION = {
   features: {
     imageFixDeployed: true,
     stableArtifactIds: true,
-    publicStorageUrls: true,
+    publicStorageUrls: false,  // Disabled: Using signed URLs instead
   },
 };
 
