@@ -1,5 +1,7 @@
 # Image Expiration Fix Report
 
+> **⚠️ IMPORTANT NOTE:** This document describes an **interim fix** that made storage buckets public to resolve image expiration issues. This solution was **later superseded** by the implementation in `PRIVATE_STORAGE_IMPLEMENTATION.md` (commit 8942eea), which restored private buckets with signed URLs for better security. The current production implementation uses **private buckets with 7-day signed URLs**.
+
 ## Date: 2025-10-30
 
 ## Issue Summary

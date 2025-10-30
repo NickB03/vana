@@ -237,21 +237,41 @@ const IndexContent = () => {
       });
       if (uploadError) throw uploadError;
 
-      // Get signed URL (7 days expiry for user-only access)
+      // Get signed URL (7 days expiry) for private bucket access
       const { data: signedUrlData, error: urlError } = await supabase.storage
         .from('user-uploads')
         .createSignedUrl(fileName, 604800); // 7 days = 604800 seconds
 
-      if (urlError || !signedUrlData?.signedUrl) {
-        throw new Error('Failed to generate secure URL');
+      if (urlError) {
+        throw new Error(`Failed to generate secure URL: ${urlError.message}`);
+      }
+
+      if (!signedUrlData?.signedUrl) {
+        throw new Error('Failed to generate secure URL: No URL returned from storage service');
       }
 
       // Add file reference to input
       setInput(prev => `${prev}\n[${file.name}](${signedUrlData.signedUrl})`);
       sonnerToast.success("File uploaded successfully");
     } catch (error) {
-      console.error("Upload error:", error);
-      sonnerToast.error("Failed to upload file");
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error("File upload error:", {
+        error: errorMessage,
+        fileName: file?.name,
+        fileSize: file?.size,
+        fileType: file?.type
+      });
+
+      // Provide user-friendly error message based on the error type
+      if (errorMessage.includes('secure URL')) {
+        sonnerToast.error(`Upload succeeded but URL generation failed: ${errorMessage}`);
+      } else if (errorMessage.includes('File too large')) {
+        sonnerToast.error('File is too large. Maximum size is 100MB.');
+      } else if (errorMessage.includes('Invalid file type')) {
+        sonnerToast.error('Invalid file type. Supported types: images, documents, text files.');
+      } else {
+        sonnerToast.error(`Failed to upload file: ${errorMessage}`);
+      }
     } finally {
       setIsUploadingFile(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

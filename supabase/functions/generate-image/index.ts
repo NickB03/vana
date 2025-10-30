@@ -162,8 +162,10 @@ serve(async (req) => {
 
     console.log(`Image ${mode} successful, size: ${imageData.length} bytes`);
 
-    // Upload to Supabase Storage with public URL
+    // Upload to Supabase Storage with signed URL
     let imageUrl = imageData; // Default to base64 if upload fails
+    let storageWarning: string | undefined;
+
     try {
       // Convert base64 to blob
       const base64Response = await fetch(imageData);
@@ -183,16 +185,16 @@ serve(async (req) => {
 
       if (uploadError) {
         console.error("Storage upload error:", uploadError);
-        // Fallback to base64
+        storageWarning = `Image storage failed (${uploadError.message}). Using temporary base64 - image may not persist long-term.`;
       } else {
-        // Get signed URL (7 days expiry for user-only access)
+        // Get signed URL (7 days expiry) for private bucket access
         const { data: signedUrlData, error: urlError } = await supabase.storage
           .from('generated-images')
           .createSignedUrl(fileName, 604800); // 7 days = 604800 seconds
 
         if (urlError || !signedUrlData?.signedUrl) {
           console.error("Failed to create signed URL:", urlError);
-          // Fallback to base64
+          storageWarning = `Failed to generate secure URL (${urlError?.message || 'No URL returned'}). Using temporary base64 - image may not persist long-term.`;
         } else {
           imageUrl = signedUrlData.signedUrl;
           console.log(`Image uploaded successfully with signed URL (7 days expiry)`);
@@ -200,15 +202,16 @@ serve(async (req) => {
       }
     } catch (storageError) {
       console.error("Storage upload failed, using base64:", storageError);
-      // Continue with base64 as fallback
+      storageWarning = `Storage system error (${storageError instanceof Error ? storageError.message : 'Unknown error'}). Using temporary base64 - image may not persist long-term.`;
     }
 
     return new Response(
       JSON.stringify({
         success: true,
         imageData, // Base64 for immediate display
-        imageUrl,  // Storage URL for database persistence
-        prompt
+        imageUrl,  // Storage URL for database persistence (or base64 if storage failed)
+        prompt,
+        storageWarning // Include warning when operating in degraded mode
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

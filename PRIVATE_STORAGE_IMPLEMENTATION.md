@@ -1,5 +1,7 @@
 # Private User-Only Storage Implementation
 
+> **✅ CURRENT IMPLEMENTATION:** This document describes the **current production implementation** (commit 8942eea) that uses private storage buckets with 7-day signed URLs. This supersedes the interim fix described in `IMAGE_FIX_REPORT.md`.
+
 ## Date: 2025-10-30
 
 ## Overview
