@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: '30763945e376c0a9d0cf324c83f1ea447627213b',
-    short: '3076394',
+    hash: '79ec65f818de3267d06b78bb0070ae3c53441419',
+    short: '79ec65f',
     branch: 'main',
-    message: 'Merge feature/workflow-documentation: Fix image display issues',
+    message: 'fix: resolve multiple critical UI and authentication bugs',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2025-10-29 22:47:38 UTC',
-    date: new Date('2025-10-29T22:47:38.952Z'),
+    timestamp: '2025-10-30 01:50:29 UTC',
+    date: new Date('2025-10-30T01:50:29.196Z'),
   },
 
   // Environment detection
