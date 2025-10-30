@@ -263,7 +263,7 @@ export function ChatInterface({
     <div className="flex h-full flex-col">
       <ResizablePanelGroup direction="horizontal" className="flex-1">
         <ResizablePanel defaultSize={isCanvasOpen && currentArtifact ? 50 : 100} minSize={30}>
-          <div className="flex h-full flex-col">
+          <div className="flex flex-1 min-h-0 flex-col">
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto" ref={scrollContainerRef} onScroll={handleScroll}>
               <ChatContainerRoot className="h-full">
@@ -330,7 +330,7 @@ export function ChatInterface({
                           </div>
                         ) : (
                           <div className="group flex flex-col items-end gap-1">
-                            <MessageContent className="max-w-[85%] rounded-3xl bg-muted px-5 py-2.5 text-foreground sm:max-w-[75%]">
+                            <MessageContent className="w-auto max-w-2xl rounded-3xl bg-muted px-5 py-2.5 text-foreground">
                               {cleanContent}
                             </MessageContent>
                             <MessageActions

@@ -55,7 +55,7 @@ export function SignupForm() {
 
       toast({
         title: "Account created!",
-        description: "You can now log in with your credentials.",
+        description: "Please check your email and click the confirmation link to verify your account. Once confirmed, you can log in with your credentials.",
       });
       navigate("/auth");
     } catch (error: any) {

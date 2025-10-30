@@ -38,7 +38,19 @@ export function LoginForm() {
         password: data.password,
       });
 
-      if (error) throw error;
+      if (error) {
+        // Check for email confirmation error
+        if (error.message?.includes("Email not confirmed") || error.message?.includes("email_not_confirmed")) {
+          toast({
+            title: "Email Confirmation Required",
+            description: "Please check your email and click the confirmation link to verify your account before signing in. Check your spam folder if you don't see it.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+        throw error;
+      }
 
       toast({
         title: "Welcome back!",
@@ -48,7 +60,7 @@ export function LoginForm() {
     } catch (error: any) {
       toast({
         title: "Login Failed",
-        description: "Invalid email or password. Please try again.",
+        description: error.message || "Invalid email or password. Please try again.",
         variant: "destructive",
       });
     } finally {
