@@ -192,19 +192,323 @@ if (!session) {
 4. Get public URL and insert as markdown link
 
 ### Environment Variables
+The project uses a single Supabase instance (lovable cloud) for both local development and deployments.
+
 Required in `.env`:
 ```
-VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_URL=https://xfwlneedhqealtktaacv.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_key
 ```
 
+**Note:** No separate `.env.development` is needed. The lovable cloud instance works perfectly for local VS Code development with no restrictions.
+
 ### MCP Tools Integration
+This project has multiple Model Context Protocol (MCP) servers configured, providing Claude Code with direct access to various development tools and services.
+
+## Chrome DevTools MCP Integration
+
+### Configuration
+The Chrome DevTools MCP server is configured in `~/.claude.json`:
+```bash
+claude mcp add chrome-devtools "npx chrome-devtools-mcp@latest --channel stable --headless false"
+```
+
+**Configuration Options:**
+- `--channel stable` - Uses stable Chrome release (recommended)
+- `--headless false` - Browser visible for debugging (set to `true` for CI/CD)
+- Alternative channels: `canary`, `beta`, `dev`
+- `--isolated` - Run in isolated profile
+- `--executablePath <path>` - Custom Chrome path
+
+### Core Capabilities
+
+Chrome DevTools MCP provides three primary capabilities for coding agents:
+
+1. **Performance Analysis** - Record traces and extract actionable performance insights
+2. **Browser Debugging** - Analyze network requests, console messages, and DOM state
+3. **Reliable Automation** - Puppeteer-based automation with automatic action waiting
+
+### Available Tools
+
+The Chrome DevTools MCP provides comprehensive browser control and inspection:
+
+**Navigation & Control:**
+- Navigate to URLs and manage browser lifecycle
+- Execute JavaScript in page context
+- Wait for elements, network idle, or custom conditions
+
+**Inspection & Debugging:**
+- Take screenshots (full page or element-specific)
+- Capture console messages (logs, warnings, errors)
+- Inspect network requests and responses
+- Query and inspect DOM elements
+- Get accessibility tree snapshots
+
+**Performance Analysis:**
+- Start/stop performance trace recording
+- Extract performance metrics and insights
+- Analyze Core Web Vitals (LCP, FID, CLS)
+- Identify performance bottlenecks
+
+### Verification Requirements
+
+**CRITICAL**: After ANY code changes, debugging, or deployments affecting the application, you MUST verify the service works as expected in a real browser using Chrome DevTools MCP.
+
+**Required Verification Steps:**
+
+1. **After Frontend Changes:**
+   ```typescript
+   // Navigate to the application
+   await browser.navigate({ url: "http://localhost:8080" });
+
+   // Take screenshot to verify UI renders correctly
+   await browser.screenshot({ filename: "ui-verification.png" });
+
+   // Check console for errors
+   const console = await browser.getConsoleMessages();
+   // Verify no critical errors present
+
+   // Verify key interactive elements work
+   await browser.click({ element: "main navigation button" });
+   ```
+
+2. **After Authentication Changes:**
+   ```typescript
+   // Navigate to auth page
+   await browser.navigate({ url: "http://localhost:8080/auth" });
+
+   // Fill and submit auth form
+   await browser.fillForm({
+     fields: [
+       { name: "email", type: "textbox", value: "test@example.com" },
+       { name: "password", type: "textbox", value: "testpass123" }
+     ]
+   });
+
+   // Check for successful redirect
+   await browser.waitFor({ text: "Dashboard" });
+
+   // Verify session storage
+   const session = await browser.evaluate({
+     function: "() => localStorage.getItem('supabase.auth.token')"
+   });
+   ```
+
+3. **After API/Backend Changes:**
+   ```typescript
+   // Navigate to feature using the API
+   await browser.navigate({ url: "http://localhost:8080" });
+
+   // Monitor network requests
+   const requests = await browser.getNetworkRequests();
+
+   // Verify API calls succeed
+   const apiCalls = requests.filter(r => r.url.includes('/api/'));
+   // Check status codes are 200/201
+
+   // Check console for API errors
+   const errors = await browser.getConsoleMessages({ onlyErrors: true });
+   ```
+
+4. **After Performance Optimizations:**
+   ```typescript
+   // Start performance trace
+   await browser.startTrace();
+
+   // Navigate and perform actions
+   await browser.navigate({ url: "http://localhost:8080" });
+   await browser.waitForNetworkIdle();
+
+   // Stop trace and get metrics
+   const metrics = await browser.stopTrace();
+
+   // Verify Core Web Vitals meet targets:
+   // - LCP < 2.5s
+   // - FID < 100ms
+   // - CLS < 0.1
+   ```
+
+5. **After Build/Deployment:**
+   ```typescript
+   // Navigate to production URL
+   await browser.navigate({ url: "https://your-app.com" });
+
+   // Verify service worker registration
+   const sw = await browser.evaluate({
+     function: "() => navigator.serviceWorker.controller !== null"
+   });
+
+   // Test offline capability
+   await browser.setOffline(true);
+   await browser.reload();
+   // Verify app still loads from cache
+
+   // Check no 404s or missing resources
+   const requests = await browser.getNetworkRequests();
+   const failed = requests.filter(r => r.status >= 400);
+   ```
+
+### Usage Patterns & Examples
+
+**Basic Verification Workflow:**
+```typescript
+// 1. Start dev server if not running
+await bash("npm run dev");
+await sleep(3000); // Wait for server startup
+
+// 2. Navigate to application
+await browser.navigate({ url: "http://localhost:8080" });
+
+// 3. Verify page loads without errors
+const snapshot = await browser.snapshot();
+const console = await browser.getConsoleMessages({ onlyErrors: true });
+
+if (console.length > 0) {
+  console.log("⚠️  Console errors detected:", console);
+}
+
+// 4. Take screenshot for visual confirmation
+await browser.screenshot({ filename: "verification.png" });
+
+// 5. Test critical user flows
+await browser.click({ element: "Start New Chat button" });
+await browser.type({ element: "message input", text: "test message" });
+await browser.click({ element: "send button" });
+
+// 6. Verify network calls succeed
+const requests = await browser.getNetworkRequests();
+const supabaseOk = requests.some(r =>
+  r.url.includes('supabase') && r.status === 200
+);
+```
+
+**Debugging Component Issues:**
+```typescript
+// Navigate to problematic component
+await browser.navigate({ url: "http://localhost:8080" });
+
+// Get component state via React DevTools (if available)
+const state = await browser.evaluate({
+  function: "() => window.__REACT_DEVTOOLS_GLOBAL_HOOK__"
+});
+
+// Check for runtime errors
+const errors = await browser.getConsoleMessages({ onlyErrors: true });
+
+// Inspect DOM for unexpected state
+const dom = await browser.evaluate({
+  function: "() => document.querySelector('.artifact-canvas').innerHTML"
+});
+
+// Take screenshot showing issue
+await browser.screenshot({
+  element: "problematic component",
+  filename: "component-issue.png"
+});
+```
+
+**Testing Artifact Rendering:**
+```typescript
+// Navigate to chat interface
+await browser.navigate({ url: "http://localhost:8080" });
+
+// Create new session
+await browser.click({ element: "New Chat button" });
+
+// Send message requesting artifact
+await browser.type({
+  element: "message input",
+  text: "Create a React button component"
+});
+await browser.click({ element: "send button" });
+
+// Wait for artifact to appear
+await browser.waitFor({ text: "artifact" });
+
+// Verify artifact panel opens
+const snapshot = await browser.snapshot();
+// Check snapshot contains artifact canvas
+
+// Verify no React errors in console
+const errors = await browser.getConsoleMessages({ onlyErrors: true });
+const reactErrors = errors.filter(e => e.includes('React'));
+
+// Screenshot artifact for review
+await browser.screenshot({
+  element: "artifact canvas",
+  filename: "artifact-verification.png"
+});
+```
+
+**Performance Testing After Changes:**
+```typescript
+// Start clean performance trace
+await browser.navigate({ url: "about:blank" });
+await browser.startTrace();
+
+// Navigate to app
+await browser.navigate({ url: "http://localhost:8080" });
+
+// Perform typical user actions
+await browser.click({ element: "New Chat" });
+await browser.type({ element: "input", text: "Hello" });
+await browser.click({ element: "send" });
+await browser.waitForNetworkIdle();
+
+// Get performance metrics
+const trace = await browser.stopTrace();
+
+// Verify metrics
+console.log("Performance Metrics:");
+console.log(`- LCP: ${trace.lcp}ms (target: <2500ms)`);
+console.log(`- FID: ${trace.fid}ms (target: <100ms)`);
+console.log(`- CLS: ${trace.cls} (target: <0.1)`);
+console.log(`- TTI: ${trace.tti}ms`);
+```
+
+### Best Practices
+
+1. **Always verify in browser after changes** - Don't rely solely on build success
+2. **Test critical user flows** - Authentication, chat message sending, artifact rendering
+3. **Check console for errors** - Both before and after user actions
+4. **Monitor network requests** - Ensure API calls succeed with correct status codes
+5. **Take screenshots** - Visual verification catches UI issues automated tests miss
+6. **Test responsive design** - Resize browser to mobile/tablet viewports
+7. **Verify accessibility** - Use accessibility snapshots to check ARIA attributes
+8. **Performance testing** - Run traces for any performance-related changes
+9. **Test error scenarios** - Verify error handling works (network failures, auth errors, etc.)
+10. **Cross-browser verification** - Test in different channels (stable, canary) when needed
+
+### When to Use Chrome DevTools MCP
+
+**Required Usage Scenarios:**
+- ✅ After fixing bugs affecting UI/UX
+- ✅ After adding new components or pages
+- ✅ After modifying authentication flows
+- ✅ After changing API integrations
+- ✅ After performance optimizations
+- ✅ After build configuration changes
+- ✅ Before marking tasks as complete
+- ✅ Before creating pull requests
+
+**Verification Checklist:**
+- [ ] Page loads without console errors
+- [ ] UI renders as expected (screenshot taken)
+- [ ] Critical user flows work (auth, chat, artifacts)
+- [ ] Network requests succeed (200/201 status codes)
+- [ ] No JavaScript runtime errors
+- [ ] Responsive design works across viewports
+- [ ] Performance metrics meet targets (if applicable)
+- [ ] Service worker registered (for PWA features)
+
+## Supabase MCP Integration
+
 This project has the Supabase Model Context Protocol (MCP) server configured, providing Claude Code with direct access to Supabase project operations.
 
 #### Configuration
 The MCP server is configured in `~/.claude.json`:
 ```bash
-claude mcp add --transport http supabase "https://mcp.supabase.com/mcp?project_ref=vznhbocnuykdmjvujaka&features=docs%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching%2Cstorage%2Caccount"
+claude mcp add --transport http supabase "https://mcp.supabase.com/mcp?project_ref=xfwlneedhqealtktaacv&features=docs%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching%2Cstorage%2Caccount"
 ```
 
 #### Available MCP Capabilities
