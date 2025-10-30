@@ -188,13 +188,17 @@ export function ChatInterface({
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
+      // Get signed URL (7 days expiry for user-only access)
+      const { data: signedUrlData, error: urlError } = await supabase.storage
         .from('user-uploads')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 604800); // 7 days = 604800 seconds
+
+      if (urlError || !signedUrlData?.signedUrl) {
+        throw new Error('Failed to generate secure URL');
+      }
 
       // Add file reference to input
-      setInput(prev => `${prev}\n[${file.name}](${publicUrl})`);
+      setInput(prev => `${prev}\n[${file.name}](${signedUrlData.signedUrl})`);
       
       toast.success("File uploaded successfully");
     } catch (error) {

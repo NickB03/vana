@@ -185,13 +185,18 @@ serve(async (req) => {
         console.error("Storage upload error:", uploadError);
         // Fallback to base64
       } else {
-        // Get public URL (no expiry, requires bucket to be public)
-        const { data: { publicUrl } } = supabase.storage
+        // Get signed URL (7 days expiry for user-only access)
+        const { data: signedUrlData, error: urlError } = await supabase.storage
           .from('generated-images')
-          .getPublicUrl(fileName);
+          .createSignedUrl(fileName, 604800); // 7 days = 604800 seconds
 
-        imageUrl = publicUrl;
-        console.log(`Image uploaded successfully with public URL`);
+        if (urlError || !signedUrlData?.signedUrl) {
+          console.error("Failed to create signed URL:", urlError);
+          // Fallback to base64
+        } else {
+          imageUrl = signedUrlData.signedUrl;
+          console.log(`Image uploaded successfully with signed URL (7 days expiry)`);
+        }
       }
     } catch (storageError) {
       console.error("Storage upload failed, using base64:", storageError);
