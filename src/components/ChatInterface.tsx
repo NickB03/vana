@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowUp, Copy, Pencil, Trash, ThumbsUp, ThumbsDown, Plus, WandSparkles, ImagePlus } from "lucide-react";
+import { ArrowUp, Copy, Pencil, Trash, ThumbsUp, ThumbsDown, Plus, WandSparkles, ImagePlus, Maximize2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { validateFile, sanitizeFilename } from "@/utils/fileValidation";
@@ -32,6 +32,7 @@ import { ArtifactCard } from "@/components/ArtifactCard";
 import { parseArtifacts } from "@/utils/artifactParser";
 import { ThinkingIndicator } from "@/components/ThinkingIndicator";
 import { InlineImage } from "@/components/InlineImage";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ChatInterfaceProps {
   sessionId?: string;
@@ -44,16 +45,17 @@ interface ChatInterfaceProps {
   onSendMessage?: (handleSend: (message?: string) => Promise<void>) => void;
 }
 
-export function ChatInterface({ 
-  sessionId, 
-  initialPrompt, 
-  isCanvasOpen = false, 
-  onCanvasToggle, 
+export function ChatInterface({
+  sessionId,
+  initialPrompt,
+  isCanvasOpen = false,
+  onCanvasToggle,
   onArtifactChange,
   input: parentInput,
   onInputChange: parentOnInputChange,
   onSendMessage
 }: ChatInterfaceProps) {
+  const isMobile = useIsMobile();
   const { messages, isLoading, streamChat } = useChatMessages(sessionId);
   const [localInput, setLocalInput] = useState("");
   const input = parentInput ?? localInput;
@@ -248,11 +250,9 @@ export function ChatInterface({
     onCanvasToggle?.(false);
   };
 
-  return (
+  // Render chat content (messages + input) - reusable for both mobile and desktop
+  const renderChatContent = () => (
     <div className="flex h-full flex-col">
-      <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
-        <ResizablePanel defaultSize={isCanvasOpen && currentArtifact ? 40 : 100} minSize={25} className="md:min-w-[300px]">
-          <div className="flex h-full flex-col">
             <ChatContainerRoot className="relative flex flex-1 flex-col min-h-0">
               <ChatContainerContent className="flex-1 space-y-0 px-5 py-12">
                 {messages.map((message, index) => {
@@ -495,21 +495,65 @@ export function ChatInterface({
               </div>
             </div>
           </div>
-        </ResizablePanel>
+  );
 
-        {isCanvasOpen && currentArtifact && (
-          <>
-            <ResizableHandle withHandle className="hidden md:flex" />
-            <ResizablePanel defaultSize={60} minSize={40} className="md:min-w-[400px]">
+  return (
+    <div className="flex h-full flex-col">
+      {isMobile ? (
+        // Mobile Layout: Fullscreen artifact overlay or chat
+        <div className="relative h-full">
+          {isCanvasOpen && currentArtifact ? (
+            // Mobile: Fullscreen artifact
+            <div className="fixed inset-0 z-50 bg-background">
               <Artifact
                 artifact={currentArtifact}
                 onClose={handleCloseCanvas}
                 onEdit={handleEditArtifact}
               />
-            </ResizablePanel>
-          </>
-        )}
-      </ResizablePanelGroup>
+            </div>
+          ) : (
+            // Mobile: Chat with floating artifact button
+            <>
+              {renderChatContent()}
+              {currentArtifact && !isCanvasOpen && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      className="fixed bottom-20 right-4 z-40 h-14 w-14 rounded-full bg-gradient-primary shadow-lg hover:opacity-90"
+                      style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
+                      onClick={() => onCanvasToggle?.(true)}
+                    >
+                      <Maximize2 className="h-6 w-6 text-white" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>View Artifact</TooltipContent>
+                </Tooltip>
+              )}
+            </>
+          )}
+        </div>
+      ) : (
+        // Desktop Layout: Side-by-side resizable panels (unchanged)
+        <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
+          <ResizablePanel defaultSize={isCanvasOpen && currentArtifact ? 40 : 100} minSize={25} className="md:min-w-[300px]">
+            {renderChatContent()}
+          </ResizablePanel>
+
+          {isCanvasOpen && currentArtifact && (
+            <>
+              <ResizableHandle withHandle className="hidden md:flex" />
+              <ResizablePanel defaultSize={60} minSize={40} className="md:min-w-[400px]">
+                <Artifact
+                  artifact={currentArtifact}
+                  onClose={handleCloseCanvas}
+                  onEdit={handleEditArtifact}
+                />
+              </ResizablePanel>
+            </>
+          )}
+        </ResizablePanelGroup>
+      )}
     </div>
   );
 }
