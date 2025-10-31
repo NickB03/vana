@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   ChatContainerContent,
   ChatContainerRoot,
-} from "@/components/prompt-kit/chat-container";
+} from "@/components/ui/chat-container";
 import {
   Message as MessageComponent,
   MessageContent,
@@ -23,7 +23,8 @@ import {
   PromptInputActions,
   PromptInputTextarea,
 } from "@/components/prompt-kit/prompt-input";
-import { ScrollButton } from "@/components/prompt-kit/scroll-button";
+import { ScrollButton } from "@/components/ui/scroll-button";
+import { Markdown } from "@/components/ui/markdown";
 import { useChatMessages, ChatMessage, type StreamProgress } from "@/hooks/useChatMessages";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Artifact, ArtifactData } from "@/components/Artifact";
@@ -65,13 +66,10 @@ export function ChatInterface({
     percentage: 0
   });
   const [hasInitialized, setHasInitialized] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [currentArtifact, setCurrentArtifact] = useState<ArtifactData | null>(null);
   const [isEditingArtifact, setIsEditingArtifact] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Reset when session changes
   useEffect(() => {
@@ -96,31 +94,6 @@ export function ChatInterface({
       handleSend(initialPrompt);
     }
   }, [sessionId, initialPrompt, hasInitialized]);
-
-  const scrollToBottom = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTo({
-        top: scrollContainerRef.current.scrollHeight,
-        behavior: "smooth"
-      });
-    }
-  };
-
-  const handleScroll = () => {
-    if (!scrollContainerRef.current) return;
-    
-    const element = scrollContainerRef.current;
-    const isNearBottom = 
-      element.scrollHeight - element.scrollTop - element.clientHeight < 150;
-    
-    setShouldAutoScroll(isNearBottom);
-  };
-
-  useEffect(() => {
-    if (shouldAutoScroll) {
-      scrollToBottom();
-    }
-  }, [messages, streamingMessage, shouldAutoScroll]);
 
   // Parse artifacts from messages
   useEffect(() => {
@@ -292,144 +265,124 @@ export function ChatInterface({
     <div className="flex h-full flex-col">
       <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
         <ResizablePanel defaultSize={isCanvasOpen && currentArtifact ? 50 : 100} minSize={30}>
-          <div className="flex h-full flex-col relative">
-            {/* Messages Area */}
-            <div
-              className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain prevent-scroll-chain"
-              ref={scrollContainerRef}
-              onScroll={handleScroll}
-              style={{
-                WebkitOverflowScrolling: 'touch',
-                scrollBehavior: 'smooth'
-              }}
-            >
-              <ChatContainerRoot className="min-h-full flex flex-col">
-                <ChatContainerContent className="flex-1 space-y-0 px-5 py-12" autoScroll={false}>
-                  {messages.map((message, index) => {
-                    const { artifacts, cleanContent } = parseArtifacts(message.content);
-                    const isAssistant = message.role === "assistant";
-                    const isLastMessage = index === messages.length - 1;
-                    
-                    // Separate image artifacts from other artifacts
-                    const imageArtifacts = artifacts.filter(a => a.type === 'image');
-                    const otherArtifacts = artifacts.filter(a => a.type !== 'image');
+          <ChatContainerRoot className="relative flex h-full flex-col">
+            <ChatContainerContent className="flex-1 space-y-0 px-5 py-12">
+                {messages.map((message, index) => {
+                  const { artifacts, cleanContent } = parseArtifacts(message.content);
+                  const isAssistant = message.role === "assistant";
+                  const isLastMessage = index === messages.length - 1;
 
-                    return (
-                      <MessageComponent
-                        key={message.id}
-                        className={cn(
-                          "chat-message mx-auto flex w-full max-w-3xl flex-col gap-2 px-6",
-                          isAssistant ? "items-start" : "items-end"
-                        )}
-                      >
-                        {isAssistant ? (
-                          <div className="group flex w-full flex-col gap-0">
-                            {message.reasoning && (
-                              <ThinkingIndicator status={message.reasoning} />
+                  // Separate image artifacts from other artifacts
+                  const imageArtifacts = artifacts.filter(a => a.type === 'image');
+                  const otherArtifacts = artifacts.filter(a => a.type !== 'image');
+
+                  return (
+                    <MessageComponent
+                      key={message.id}
+                      className={cn(
+                        "chat-message mx-auto flex w-full max-w-3xl flex-col gap-2 px-6",
+                        isAssistant ? "items-start" : "items-end"
+                      )}
+                    >
+                      {isAssistant ? (
+                        <div className="group flex w-full flex-col gap-0">
+                          {message.reasoning && (
+                            <ThinkingIndicator status={message.reasoning} />
+                          )}
+                          <MessageContent className="prose flex-1 rounded-lg bg-transparent p-0 text-foreground">
+                            <Markdown id={message.id}>{cleanContent}</Markdown>
+                          </MessageContent>
+
+                          {/* Render inline images */}
+                          {imageArtifacts.map(artifact => (
+                            <InlineImage
+                              key={artifact.id}
+                              artifact={artifact}
+                            />
+                          ))}
+
+                          <MessageActions
+                            className={cn(
+                              "-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100",
+                              isLastMessage && "opacity-100"
                             )}
-                            <MessageContent
-                              className="prose flex-1 rounded-lg bg-transparent p-0 text-foreground"
-                              markdown
-                            >
-                              {cleanContent}
-                            </MessageContent>
-                            
-                            {/* Render inline images */}
-                            {imageArtifacts.map(artifact => (
-                              <InlineImage
-                                key={artifact.id}
-                                artifact={artifact}
-                              />
-                            ))}
-                            
-                            <MessageActions
-                              className={cn(
-                                "-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100",
-                                isLastMessage && "opacity-100"
-                              )}
-                            >
-                              <MessageAction tooltip="Copy" delayDuration={100}>
-                                <Button variant="ghost" size="icon" className="rounded-full">
-                                  <Copy />
-                                </Button>
-                              </MessageAction>
-                              <MessageAction tooltip="Upvote" delayDuration={100}>
-                                <Button variant="ghost" size="icon" className="rounded-full">
-                                  <ThumbsUp />
-                                </Button>
-                              </MessageAction>
-                              <MessageAction tooltip="Downvote" delayDuration={100}>
-                                <Button variant="ghost" size="icon" className="rounded-full">
-                                  <ThumbsDown />
-                                </Button>
-                              </MessageAction>
-                            </MessageActions>
-                          </div>
-                        ) : (
-                          <div className="group flex flex-col items-end gap-1">
-                            <MessageContent className="w-auto max-w-2xl rounded-3xl bg-muted px-5 py-2.5 text-foreground">
-                              {cleanContent}
-                            </MessageContent>
-                            <MessageActions
-                              className={cn(
-                                "flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-                              )}
-                            >
-                              <MessageAction tooltip="Edit" delayDuration={100}>
-                                <Button variant="ghost" size="icon" className="rounded-full">
-                                  <Pencil />
-                                </Button>
-                              </MessageAction>
-                              <MessageAction tooltip="Delete" delayDuration={100}>
-                                <Button variant="ghost" size="icon" className="rounded-full">
-                                  <Trash />
-                                </Button>
-                              </MessageAction>
-                              <MessageAction tooltip="Copy" delayDuration={100}>
-                                <Button variant="ghost" size="icon" className="rounded-full">
-                                  <Copy />
-                                </Button>
-                              </MessageAction>
-                            </MessageActions>
-                          </div>
-                        )}
-                      </MessageComponent>
-                    );
-                  })}
-                  
-                  {isStreaming && streamingMessage && (
-                    <MessageComponent className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 items-start">
-                      <div className="group flex w-full flex-col gap-0">
-                        <ThinkingIndicator 
-                          status={streamProgress.message} 
-                          isStreaming 
-                          percentage={streamProgress.percentage}
-                        />
-                      </div>
+                          >
+                            <MessageAction tooltip="Copy" delayDuration={100}>
+                              <Button variant="ghost" size="icon" className="rounded-full">
+                                <Copy />
+                              </Button>
+                            </MessageAction>
+                            <MessageAction tooltip="Upvote" delayDuration={100}>
+                              <Button variant="ghost" size="icon" className="rounded-full">
+                                <ThumbsUp />
+                              </Button>
+                            </MessageAction>
+                            <MessageAction tooltip="Downvote" delayDuration={100}>
+                              <Button variant="ghost" size="icon" className="rounded-full">
+                                <ThumbsDown />
+                              </Button>
+                            </MessageAction>
+                          </MessageActions>
+                        </div>
+                      ) : (
+                        <div className="group flex flex-col items-end gap-1">
+                          <MessageContent className="w-auto max-w-2xl rounded-3xl bg-muted px-5 py-2.5 text-foreground">
+                            {cleanContent}
+                          </MessageContent>
+                          <MessageActions
+                            className={cn(
+                              "flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+                            )}
+                          >
+                            <MessageAction tooltip="Edit" delayDuration={100}>
+                              <Button variant="ghost" size="icon" className="rounded-full">
+                                <Pencil />
+                              </Button>
+                            </MessageAction>
+                            <MessageAction tooltip="Delete" delayDuration={100}>
+                              <Button variant="ghost" size="icon" className="rounded-full">
+                                <Trash />
+                              </Button>
+                            </MessageAction>
+                            <MessageAction tooltip="Copy" delayDuration={100}>
+                              <Button variant="ghost" size="icon" className="rounded-full">
+                                <Copy />
+                              </Button>
+                            </MessageAction>
+                          </MessageActions>
+                        </div>
+                      )}
                     </MessageComponent>
-                  )}
+                  );
+                })}
 
-                  {(isLoading || isStreaming) && !streamingMessage && (
-                    <MessageComponent className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 items-start">
-                      <div className="flex gap-1">
-                        <div className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.3s]" />
-                        <div className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.15s]" />
-                        <div className="h-2 w-2 animate-bounce rounded-full bg-primary" />
-                      </div>
-                    </MessageComponent>
-                  )}
-                  <div ref={messagesEndRef} />
-                </ChatContainerContent>
-              </ChatContainerRoot>
-            </div>
+                {isStreaming && streamingMessage && (
+                  <MessageComponent className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 items-start">
+                    <div className="group flex w-full flex-col gap-0">
+                      <ThinkingIndicator
+                        status={streamProgress.message}
+                        isStreaming
+                        percentage={streamProgress.percentage}
+                      />
+                    </div>
+                  </MessageComponent>
+                )}
 
-            {/* Scroll to bottom button */}
-            <div className="pointer-events-none absolute bottom-4 left-0 right-0 flex justify-center px-5">
-              <div className="pointer-events-auto w-full max-w-3xl flex justify-end">
-                <ScrollButton className="shadow-sm" onClick={scrollToBottom} />
-              </div>
+                {(isLoading || isStreaming) && !streamingMessage && (
+                  <MessageComponent className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 items-start">
+                    <div className="flex gap-1">
+                      <div className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.3s]" />
+                      <div className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.15s]" />
+                      <div className="h-2 w-2 animate-bounce rounded-full bg-primary" />
+                    </div>
+                  </MessageComponent>
+                )}
+              </ChatContainerContent>
+
+            <div className="absolute bottom-4 right-4">
+              <ScrollButton className="shadow-sm" />
             </div>
-          </div>
+          </ChatContainerRoot>
         </ResizablePanel>
 
         {isCanvasOpen && currentArtifact && (

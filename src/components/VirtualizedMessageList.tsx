@@ -2,7 +2,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useRef, memo } from "react";
 import { ChatMessage } from "@/hooks/useChatMessages";
 import { Message, MessageAvatar, MessageContent } from "@/components/prompt-kit/message";
-import { Markdown } from "@/components/prompt-kit/markdown";
+import { Markdown } from "@/components/ui/markdown";
 import { InlineImage } from "@/components/InlineImage";
 import { parseArtifacts } from "@/utils/artifactParser";
 
@@ -36,7 +36,7 @@ const MessageItem = memo(({ message, onArtifactChange }: {
       <MessageContent markdown={isAssistant}>
         {parsedContent ? (
           <>
-            {parsedContent.cleanContent && <Markdown>{parsedContent.cleanContent}</Markdown>}
+            {parsedContent.cleanContent && <Markdown id={message.id}>{parsedContent.cleanContent}</Markdown>}
             {parsedContent.artifacts?.map((artifact) => 
               artifact.type === "image" ? (
                 <InlineImage key={artifact.id} artifact={artifact} />
