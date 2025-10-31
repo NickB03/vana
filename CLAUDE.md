@@ -96,13 +96,15 @@ The application supports Google OAuth authentication for streamlined user sign-i
 2. Enable the **Google** provider
 3. Configure OAuth consent screen in [Google Cloud Console](https://console.cloud.google.com/)
 4. Add authorized redirect URIs in Google Cloud Console:
-   - Development: `http://localhost:8080/`
-   - Production: `https://your-production-domain.com/`
+   - Development: `http://localhost:8080/auth`
+   - Production: `https://your-production-domain.com/auth`
 5. Copy Client ID and Client Secret from Google Cloud Console to Supabase
 
 **Implementation:**
 - Shared hook: `useGoogleAuth` (`src/hooks/useGoogleAuth.ts`)
 - Used in both `LoginForm.tsx` and `SignupForm.tsx`
+- OAuth redirects to `/auth` page which handles session detection
+- Auth page redirects to `/` after successful authentication
 - Proper error handling with user-friendly messages
 - TypeScript-safe with `AuthError` types from `@supabase/supabase-js`
 - Includes specific error messages for popup blockers and network issues
