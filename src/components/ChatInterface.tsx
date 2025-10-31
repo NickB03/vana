@@ -28,6 +28,7 @@ import { Markdown } from "@/components/ui/markdown";
 import { useChatMessages, ChatMessage, type StreamProgress } from "@/hooks/useChatMessages";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Artifact, ArtifactData } from "@/components/Artifact";
+import { ArtifactCard } from "@/components/ArtifactCard";
 import { parseArtifacts } from "@/utils/artifactParser";
 import { ThinkingIndicator } from "@/components/ThinkingIndicator";
 import { InlineImage } from "@/components/InlineImage";
@@ -95,7 +96,7 @@ export function ChatInterface({
     }
   }, [sessionId, initialPrompt, hasInitialized]);
 
-  // Parse artifacts from messages
+  // Parse artifacts from messages (removed auto-open behavior)
   useEffect(() => {
     const allMessages = [...messages];
     if (streamingMessage) {
@@ -107,27 +108,13 @@ export function ChatInterface({
     if (lastAssistantMsg) {
       const { artifacts } = parseArtifacts(lastAssistantMsg.content);
       if (artifacts.length > 0) {
-        const newArtifact = artifacts[artifacts.length - 1];
-        
-        // Skip canvas system entirely for image artifacts
-        if (newArtifact.type === 'image') {
-          setCurrentArtifact(null);
-          onArtifactChange?.(false);
-        } else {
-          // Only set artifact and open canvas for non-image types
-          setCurrentArtifact(newArtifact);
-          onArtifactChange?.(true);
-          // Auto-open canvas when new artifact is detected
-          if (onCanvasToggle && !isCanvasOpen) {
-            onCanvasToggle(true);
-          }
-        }
+        // Set artifact but don't auto-open canvas
+        // User will click "Open" button on artifact card to open
+        onArtifactChange?.(true);
       } else {
-        setCurrentArtifact(null);
         onArtifactChange?.(false);
       }
     } else {
-      setCurrentArtifact(null);
       onArtifactChange?.(false);
     }
   }, [messages, streamingMessage]);
@@ -298,6 +285,21 @@ export function ChatInterface({
                             <InlineImage
                               key={artifact.id}
                               artifact={artifact}
+                            />
+                          ))}
+
+                          {/* Render artifact cards for non-image artifacts */}
+                          {otherArtifacts.map(artifact => (
+                            <ArtifactCard
+                              key={artifact.id}
+                              artifact={artifact}
+                              onOpen={() => {
+                                setCurrentArtifact(artifact);
+                                if (onCanvasToggle) {
+                                  onCanvasToggle(true);
+                                }
+                              }}
+                              className="mt-2"
                             />
                           ))}
 

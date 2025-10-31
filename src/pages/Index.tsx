@@ -5,7 +5,7 @@ import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatInterface } from "@/components/ChatInterface";
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from "@/components/prompt-kit/prompt-input";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Square, LogOut, Settings, Check, ChevronRight, Palette, Plus, ImageIcon, WandSparkles, Send } from "lucide-react";
+import { ArrowUp, Square, LogOut, Settings, Check, ChevronRight, ChevronLeft, Palette, Plus, ImageIcon, WandSparkles, Send, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 import { validateFile, sanitizeFilename } from "@/utils/fileValidation";
 import { cn } from "@/lib/utils";
@@ -138,11 +138,8 @@ const IndexContent = () => {
     setHasArtifact(hasContent);
     if (!hasContent) {
       setIsCanvasOpen(false);
-    } else {
-      // Auto-collapse sidebar when artifact appears
-      setIsCanvasOpen(true);
-      setOpen(false);
     }
+    // Don't auto-open canvas - user will click "Open" button on artifact card
   };
   const handleSessionSelect = (sessionId: string) => {
     setInput(""); // Clear input when switching sessions
@@ -509,14 +506,30 @@ const IndexContent = () => {
                               <TooltipContent>Generate Image</TooltipContent>
                             </Tooltip>
 
-                            {/* Create Button */}
+                            {/* Create/Canvas Toggle Button */}
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="size-9 rounded-full" onClick={showChat ? handleCanvasToggle : () => setInput("Help me create ")}>
-                                  <WandSparkles size={18} />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className={cn(
+                                    "size-9 rounded-full transition-colors",
+                                    showChat && isCanvasOpen && "bg-primary/10 text-primary hover:bg-primary/20"
+                                  )}
+                                  onClick={showChat ? handleCanvasToggle : () => setInput("Help me create ")}
+                                >
+                                  {showChat ? (
+                                    isCanvasOpen ? (
+                                      <PanelRightClose size={18} />
+                                    ) : (
+                                      <PanelRightOpen size={18} />
+                                    )
+                                  ) : (
+                                    <WandSparkles size={18} />
+                                  )}
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>{showChat ? isCanvasOpen ? "Hide canvas" : "Show canvas" : "Create"}</TooltipContent>
+                              <TooltipContent>{showChat ? isCanvasOpen ? "Close canvas" : "Open canvas" : "Create"}</TooltipContent>
                             </Tooltip>
                           </div>
 

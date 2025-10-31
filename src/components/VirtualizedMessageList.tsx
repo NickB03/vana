@@ -33,11 +33,11 @@ const MessageItem = memo(({ message, onArtifactChange }: {
           fallback="AI"
         />
       )}
-      <MessageContent markdown={isAssistant}>
+      <MessageContent>
         {parsedContent ? (
           <>
             {parsedContent.cleanContent && <Markdown id={message.id}>{parsedContent.cleanContent}</Markdown>}
-            {parsedContent.artifacts?.map((artifact) => 
+            {parsedContent.artifacts?.map((artifact) =>
               artifact.type === "image" ? (
                 <InlineImage key={artifact.id} artifact={artifact} />
               ) : null
