@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowUp, Copy, Pencil, Trash, ThumbsUp, ThumbsDown, Plus, WandSparkles } from "lucide-react";
+import { ArrowUp, Copy, Pencil, Trash, ThumbsUp, ThumbsDown, Plus, WandSparkles, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { validateFile, sanitizeFilename } from "@/utils/fileValidation";
@@ -252,8 +252,9 @@ export function ChatInterface({
     <div className="flex h-full flex-col">
       <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
         <ResizablePanel defaultSize={isCanvasOpen && currentArtifact ? 40 : 100} minSize={25} className="md:min-w-[300px]">
-          <ChatContainerRoot className="relative flex h-full flex-col">
-            <ChatContainerContent className="flex-1 space-y-0 px-5 py-12">
+          <div className="flex h-full flex-col">
+            <ChatContainerRoot className="relative flex flex-1 flex-col min-h-0">
+              <ChatContainerContent className="flex-1 space-y-0 px-5 py-12">
                 {messages.map((message, index) => {
                   const { artifacts, cleanContent } = parseArtifacts(message.content);
                   const isAssistant = message.role === "assistant";
@@ -381,10 +382,119 @@ export function ChatInterface({
                 )}
               </ChatContainerContent>
 
-            <div className="absolute bottom-4 right-4">
-              <ScrollButton className="shadow-sm" />
+              <div className="absolute bottom-4 right-4">
+                <ScrollButton className="shadow-sm" />
+              </div>
+            </ChatContainerRoot>
+
+            {/* Prompt Input - stays in left panel */}
+            <div className="shrink-0 bg-background px-3 pb-3 md:px-5 md:pb-5 safe-mobile-input" style={{
+              paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))'
+            }}>
+              <div className="mx-auto max-w-3xl">
+                <PromptInput
+                  value={input}
+                  onValueChange={setInput}
+                  isLoading={isLoading || isStreaming}
+                  onSubmit={handleSend}
+                  className="w-full relative rounded-3xl border border-input bg-popover p-0 pt-1 shadow-xs"
+                >
+                  <div className="flex flex-col">
+                    <PromptInputTextarea
+                      placeholder="Ask anything"
+                      className="min-h-[44px] pl-4 pt-3 text-base leading-[1.3]"
+                    />
+                    <PromptInputActions className="mt-5 flex w-full items-center justify-between gap-2 px-3 pb-3">
+                      {/* Left side actions */}
+                      <div className="flex items-center gap-2">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-9 rounded-full"
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={isUploadingFile}
+                            >
+                              {isUploadingFile ? (
+                                <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                              ) : (
+                                <Plus size={18} />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Upload file</TooltipContent>
+                        </Tooltip>
+
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          className="hidden"
+                          onChange={handleFileUpload}
+                          accept=".pdf,.docx,.txt,.md,.jpg,.jpeg,.png,.webp,.gif,.svg,.csv,.json,.xlsx,.js,.ts,.tsx,.jsx,.py,.html,.css,.mp3,.wav,.m4a,.ogg"
+                        />
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-9 rounded-full"
+                              onClick={() => setInput("Generate an image of ")}
+                            >
+                              <ImagePlus size={18} />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Generate Image</TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={cn(
+                                "size-9 rounded-full transition-colors",
+                                isCanvasOpen && "bg-primary/10 text-primary hover:bg-primary/20"
+                              )}
+                              onClick={handleCreateClick}
+                              disabled={!currentArtifact && isCanvasOpen}
+                            >
+                              <WandSparkles size={18} />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {!currentArtifact
+                              ? "Create"
+                              : isCanvasOpen
+                                ? "Close canvas"
+                                : "Open canvas"}
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+
+                      {/* Right side - Send button */}
+                      <PromptInputAction tooltip="Send message">
+                        <Button
+                          type="submit"
+                          size="icon"
+                          disabled={!input.trim() || isLoading || isStreaming}
+                          className="size-9 rounded-full bg-gradient-primary hover:opacity-90"
+                          onClick={handleSend}
+                        >
+                          {isLoading || isStreaming ? (
+                            <div className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          ) : (
+                            <ArrowUp size={18} className="text-white" />
+                          )}
+                        </Button>
+                      </PromptInputAction>
+                    </PromptInputActions>
+                  </div>
+                </PromptInput>
+              </div>
             </div>
-          </ChatContainerRoot>
+          </div>
         </ResizablePanel>
 
         {isCanvasOpen && currentArtifact && (

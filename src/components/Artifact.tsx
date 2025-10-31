@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Copy, Maximize2, Minimize2, X, AlertCircle, Download, Edit } from "lucide-react";
+import { Copy, Maximize2, Minimize2, X, AlertCircle, Download, Edit, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Markdown } from "./prompt-kit/markdown";
 import { validateArtifact, ValidationResult, categorizeError } from "@/utils/artifactValidator";
@@ -82,6 +82,50 @@ export const Artifact = ({ artifact, onClose, onEdit }: ArtifactProps) => {
   const handleCopy = () => {
     navigator.clipboard.writeText(artifact.content);
     toast.success("Copied to clipboard");
+  };
+
+  const handlePopOut = () => {
+    // Open a new window
+    const newWindow = window.open('', '_blank', 'width=1200,height=800');
+
+    if (!newWindow) {
+      toast.error("Popup blocked - please allow popups for this site");
+      return;
+    }
+
+    // Create complete HTML document for the new window
+    const isFullHTML = artifact.content.includes("<!DOCTYPE");
+
+    const popoutContent = isFullHTML
+      ? artifact.content
+      : `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${artifact.title}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  ${injectedCDNs}
+  ${generateCompleteIframeStyles()}
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+  </style>
+</head>
+<body>
+${artifact.content}
+</body>
+</html>`;
+
+    // Write content to new window
+    newWindow.document.open();
+    newWindow.document.write(popoutContent);
+    newWindow.document.close();
+
+    toast.success("Opened in new window");
   };
 
   // Listen for errors and ready state from iframe
@@ -805,6 +849,7 @@ ${artifact.content}
               size="icon"
               className="size-8"
               onClick={handleCopy}
+              title="Copy code"
             >
               <Copy className="size-4" />
             </Button>
@@ -812,7 +857,17 @@ ${artifact.content}
               variant="ghost"
               size="icon"
               className="size-8"
+              onClick={handlePopOut}
+              title="Open in new window"
+            >
+              <ExternalLink className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
               onClick={() => setIsMaximized(!isMaximized)}
+              title={isMaximized ? "Minimize" : "Maximize"}
             >
               {isMaximized ? (
                 <Minimize2 className="size-4" />
