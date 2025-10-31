@@ -54,7 +54,7 @@ export function ArtifactCard({ artifact, onOpen, className }: ArtifactCardProps)
             <div className="rounded-md bg-primary/10 p-2">
               {getArtifactIcon(artifact.type)}
             </div>
-            <div>
+            <div className="flex-1 min-w-0">
               <CardTitle className="text-base font-medium">{artifact.title}</CardTitle>
               <CardDescription className="text-xs">
                 {getArtifactLabel(artifact.type)}
@@ -64,20 +64,13 @@ export function ArtifactCard({ artifact, onOpen, className }: ArtifactCardProps)
           <Button
             size="sm"
             onClick={onOpen}
-            className="gap-1.5 transition-all group-hover:bg-primary group-hover:text-primary-foreground"
+            className="gap-1.5 transition-all group-hover:bg-primary group-hover:text-primary-foreground shrink-0"
           >
             <Maximize2 className="h-3.5 w-3.5" />
             Open
           </Button>
         </div>
       </CardHeader>
-      {artifact.content && artifact.content.length > 100 && (
-        <CardContent className="pt-0">
-          <div className="rounded-md bg-muted/40 px-3 py-2 font-mono text-xs text-muted-foreground line-clamp-3">
-            {artifact.content.substring(0, 150)}...
-          </div>
-        </CardContent>
-      )}
     </Card>
   );
 }
