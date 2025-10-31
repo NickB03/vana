@@ -434,6 +434,11 @@ All colors MUST be HSL.
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
+
+  /* Ensure headings use theme foreground color */
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-foreground;
+  }
   
   /* CSS Containment for isolated components */
   .chat-message {

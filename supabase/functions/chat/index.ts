@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
+import { shouldGenerateImage, getArtifactGuidance } from "./intent-detector.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -118,10 +119,9 @@ serve(async (req) => {
 
     console.log("Starting chat stream for session:", sessionId);
 
-    // Detect image generation requests
+    // Detect image generation requests using intent detection
     const lastUserMessage = messages[messages.length - 1];
-    const isImageRequest = lastUserMessage && 
-      /\b(generate|create|make|draw|design|show me|paint|illustrate)\s+(an?\s+)?(image|picture|photo|illustration|drawing|artwork)\b/i.test(lastUserMessage.content);
+    const isImageRequest = lastUserMessage && shouldGenerateImage(lastUserMessage.content);
 
     if (isImageRequest) {
       console.log("Image generation request detected");
@@ -192,6 +192,9 @@ serve(async (req) => {
       console.warn("Cache fetch failed, using provided messages:", cacheError);
     }
 
+    // Add artifact type guidance based on intent detection
+    const artifactGuidance = lastUserMessage ? getArtifactGuidance(lastUserMessage.content) : "";
+
     // Add artifact editing context if provided
     let artifactContext = "";
     if (currentArtifact) {
@@ -214,6 +217,11 @@ When the user asks for changes, modifications, or improvements, you should:
 
 Treat this as an iterative improvement of the existing artifact.`;
     }
+
+    // Combine artifact guidance with context
+    const fullArtifactContext = (artifactContext || artifactGuidance)
+      ? artifactContext + (artifactGuidance ? `\n\n${artifactGuidance}` : '')
+      : '';
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -349,6 +357,45 @@ Instead, you MUST:
 - Store all data in memory during the session
 
 **Exception**: If a user explicitly requests localStorage/sessionStorage, explain these APIs are not supported in this environment and will cause failure. Offer to implement using in-memory storage instead, or suggest they copy code to use in their own environment where browser storage is available.
+
+## Artifact Type Selection Guide
+
+**CRITICAL**: Choose the right artifact type based on the request:
+
+### When to use IMAGE GENERATION (via API):
+- ✅ Photo-realistic images, photographs, realistic scenes
+- ✅ Complex artwork with lighting, shadows, depth
+- ✅ Movie posters, album covers (unless explicitly requesting "simple" or "vector")
+- ✅ Backgrounds, wallpapers with realistic elements
+- ✅ Product photography, portraits, landscapes
+- ❌ NOT for logos, icons, simple graphics, diagrams
+
+### When to use SVG artifacts:
+- ✅ Logos, icons, badges, emblems
+- ✅ Simple illustrations with clean lines
+- ✅ Flat design, geometric shapes
+- ✅ Minimalist graphics, line art
+- ✅ Infographics with basic shapes
+- ❌ NOT for photo-realistic content or complex detailed artwork
+
+### When to use HTML artifacts:
+- ✅ Landing pages, marketing pages
+- ✅ Static websites, portfolio sites
+- ✅ Single-page sites without complex state
+- ❌ NOT for interactive apps with state management
+
+### When to use React artifacts:
+- ✅ Interactive applications (dashboards, calculators, games)
+- ✅ Tools with state management (todo apps, trackers)
+- ✅ Data visualizations with interactivity
+- ✅ Complex forms with validation
+- ❌ NOT for simple static pages
+
+### When to use Mermaid diagrams:
+- ✅ Flowcharts, sequence diagrams, timelines
+- ✅ Process flows, decision trees
+- ✅ System architecture diagrams
+- ❌ NOT for complex custom visualizations
 
 ## Artifact Instructions
 
@@ -573,7 +620,7 @@ When user asks to modify an artifact:
 5. Use the same artifact type and structure unless they explicitly want to change it
 6. Always provide COMPLETE updated artifact code, not just the changes
 
-${artifactContext}
+${fullArtifactContext}
 
 # Response Style
 

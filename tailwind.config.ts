@@ -104,6 +104,84 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.3s ease-out",
       },
+      typography: {
+        DEFAULT: {
+          css: {
+            // Override heading colors to use theme foreground
+            'h1, h2, h3, h4, h5, h6': {
+              color: 'hsl(var(--foreground))',
+            },
+            // Override strong/bold to use theme foreground
+            'strong': {
+              color: 'hsl(var(--foreground))',
+            },
+            // Override links to use theme primary
+            'a': {
+              color: 'hsl(var(--primary))',
+              '&:hover': {
+                color: 'hsl(var(--primary))',
+              },
+            },
+            // Override code to use theme colors
+            'code': {
+              color: 'hsl(var(--foreground))',
+              backgroundColor: 'hsl(var(--muted))',
+            },
+            // Override pre to use theme colors
+            'pre': {
+              color: 'hsl(var(--foreground))',
+              backgroundColor: 'hsl(var(--muted))',
+            },
+            // Override blockquote to use theme colors
+            'blockquote': {
+              color: 'hsl(var(--muted-foreground))',
+              borderLeftColor: 'hsl(var(--border))',
+            },
+            // Override th to use theme colors
+            'th': {
+              color: 'hsl(var(--foreground))',
+            },
+          },
+        },
+        invert: {
+          css: {
+            // Override heading colors for dark mode (prose-invert)
+            'h1, h2, h3, h4, h5, h6': {
+              color: 'hsl(var(--foreground))',
+            },
+            // Override strong/bold to use theme foreground in dark mode
+            'strong': {
+              color: 'hsl(var(--foreground))',
+            },
+            // Override links to use theme primary in dark mode
+            'a': {
+              color: 'hsl(var(--primary))',
+              '&:hover': {
+                color: 'hsl(var(--primary))',
+              },
+            },
+            // Override code to use theme colors in dark mode
+            'code': {
+              color: 'hsl(var(--foreground))',
+              backgroundColor: 'hsl(var(--muted))',
+            },
+            // Override pre to use theme colors in dark mode
+            'pre': {
+              color: 'hsl(var(--foreground))',
+              backgroundColor: 'hsl(var(--muted))',
+            },
+            // Override blockquote to use theme colors in dark mode
+            'blockquote': {
+              color: 'hsl(var(--muted-foreground))',
+              borderLeftColor: 'hsl(var(--border))',
+            },
+            // Override th to use theme colors in dark mode
+            'th': {
+              color: 'hsl(var(--foreground))',
+            },
+          },
+        },
+      },
     },
   },
   plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
