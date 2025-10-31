@@ -341,12 +341,24 @@ const suggestionPool: Suggestion[] = [
 ];
 
 /**
+ * Fisher-Yates shuffle for proper randomization
+ */
+function shuffle<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+/**
  * Randomly select N suggestions ensuring category diversity
  * Algorithm ensures we don't show too many from the same category
  */
 function selectRandomSuggestions(pool: Suggestion[], count: number): Suggestion[] {
-  // Shuffle the pool
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  // Properly shuffle the pool using Fisher-Yates
+  const shuffled = shuffle(pool);
 
   const selected: Suggestion[] = [];
   const categoryCount: Record<string, number> = {};
