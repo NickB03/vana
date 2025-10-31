@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowUp, Copy, Pencil, Trash, ThumbsUp, ThumbsDown, Plus, ImageIcon, WandSparkles } from "lucide-react";
+import { ArrowUp, Copy, Pencil, Trash, ThumbsUp, ThumbsDown, Plus, WandSparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { validateFile, sanitizeFilename } from "@/utils/fileValidation";
@@ -251,7 +251,7 @@ export function ChatInterface({
   return (
     <div className="flex h-full flex-col">
       <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
-        <ResizablePanel defaultSize={isCanvasOpen && currentArtifact ? 50 : 100} minSize={30}>
+        <ResizablePanel defaultSize={isCanvasOpen && currentArtifact ? 40 : 100} minSize={25}>
           <ChatContainerRoot className="relative flex h-full flex-col">
             <ChatContainerContent className="flex-1 space-y-0 px-5 py-12">
                 {messages.map((message, index) => {
@@ -390,9 +390,9 @@ export function ChatInterface({
         {isCanvasOpen && currentArtifact && (
           <>
             <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={50} minSize={30}>
-              <Artifact 
-                artifact={currentArtifact} 
+            <ResizablePanel defaultSize={60} minSize={40}>
+              <Artifact
+                artifact={currentArtifact}
                 onClose={handleCloseCanvas}
                 onEdit={handleEditArtifact}
               />
