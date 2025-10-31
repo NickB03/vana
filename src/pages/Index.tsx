@@ -5,7 +5,7 @@ import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatInterface } from "@/components/ChatInterface";
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from "@/components/prompt-kit/prompt-input";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Square, LogOut, Settings, Check, ChevronRight, ChevronLeft, Palette, Plus, ImageIcon, WandSparkles, Send, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { ArrowUp, Square, LogOut, Settings, Check, ChevronRight, ChevronLeft, Palette, Plus, WandSparkles, Send, ImagePlus } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 import { validateFile, sanitizeFilename } from "@/utils/fileValidation";
 import { cn } from "@/lib/utils";
@@ -412,7 +412,7 @@ const IndexContent = () => {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button variant="ghost" size="icon" className="size-9 rounded-full" onClick={() => setInput("Generate an image of ")}>
-                                <ImageIcon size={18} />
+                                <ImagePlus size={18} />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>Generate Image</TooltipContent>
@@ -500,7 +500,7 @@ const IndexContent = () => {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button variant="ghost" size="icon" className="size-9 rounded-full" onClick={() => setInput("Generate an image of ")}>
-                                  <ImageIcon size={18} />
+                                  <ImagePlus size={18} />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>Generate Image</TooltipContent>
@@ -519,15 +519,7 @@ const IndexContent = () => {
                                   onClick={showChat ? handleCanvasToggle : () => setInput("Help me create ")}
                                   disabled={showChat && !hasArtifact}
                                 >
-                                  {showChat ? (
-                                    isCanvasOpen ? (
-                                      <PanelRightClose size={18} />
-                                    ) : (
-                                      <PanelRightOpen size={18} />
-                                    )
-                                  ) : (
-                                    <WandSparkles size={18} />
-                                  )}
+                                  <WandSparkles size={18} />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>

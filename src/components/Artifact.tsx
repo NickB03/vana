@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import mermaid from "mermaid";
+import { generateCompleteIframeStyles } from "@/utils/themeUtils";
 
 export type ArtifactType = "code" | "markdown" | "html" | "svg" | "mermaid" | "react" | "image";
 
@@ -42,14 +43,30 @@ export const Artifact = ({ artifact, onClose, onEdit }: ArtifactProps) => {
   const mermaidRef = useRef<HTMLDivElement>(null);
   const [isEditingCode, setIsEditingCode] = useState(false);
   const [editedContent, setEditedContent] = useState(artifact.content);
+  const [themeRefreshKey, setThemeRefreshKey] = useState(0);
 
   // Initialize mermaid
   useEffect(() => {
-    mermaid.initialize({ 
+    mermaid.initialize({
       startOnLoad: false,
       theme: 'default',
       securityLevel: 'loose'
     });
+  }, []);
+
+  // Watch for theme changes to re-render iframes with updated theme
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      // Class attribute changed (filtered by attributeFilter), trigger iframe refresh
+      setThemeRefreshKey(prev => prev + 1);
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    return () => observer.disconnect();
   }, []);
 
   // Phase 4: Validate artifact on mount - debounced for performance
@@ -359,9 +376,9 @@ export const Artifact = ({ artifact, onClose, onEdit }: ArtifactProps) => {
     if (artifact.type === "code" || artifact.type === "html") {
       // Create a complete HTML document for preview
       const isFullHTML = artifact.content.includes("<!DOCTYPE");
-      
+
       const previewContent = isFullHTML
-        ? artifact.content 
+        ? artifact.content
         : `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -369,23 +386,21 @@ export const Artifact = ({ artifact, onClose, onEdit }: ArtifactProps) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
   ${injectedCDNs}
-  <style>
-    body { margin: 0; padding: 0; }
-  </style>
+  ${generateCompleteIframeStyles()}
   <script>
     // Error reporting to parent
     window.addEventListener('error', (e) => {
-      window.parent.postMessage({ 
-        type: 'artifact-error', 
-        message: e.message + ' at ' + e.filename + ':' + e.lineno 
+      window.parent.postMessage({
+        type: 'artifact-error',
+        message: e.message + ' at ' + e.filename + ':' + e.lineno
       }, '*');
       return true;
     });
-    
+
     window.addEventListener('unhandledrejection', (e) => {
-      window.parent.postMessage({ 
-        type: 'artifact-error', 
-        message: 'Promise rejection: ' + e.reason 
+      window.parent.postMessage({
+        type: 'artifact-error',
+        message: 'Promise rejection: ' + e.reason
       }, '*');
     });
 
@@ -393,17 +408,17 @@ export const Artifact = ({ artifact, onClose, onEdit }: ArtifactProps) => {
     const originalError = console.error;
     console.error = (...args) => {
       originalError.apply(console, args);
-      window.parent.postMessage({ 
-        type: 'artifact-error', 
-        message: args.join(' ') 
+      window.parent.postMessage({
+        type: 'artifact-error',
+        message: args.join(' ')
       }, '*');
     };
-    
+
     const originalWarn = console.warn;
     console.warn = (...args) => {
       originalWarn.apply(console, args);
     };
-    
+
     // Signal ready state
     window.addEventListener('load', () => {
       window.parent.postMessage({ type: 'artifact-ready' }, '*');
@@ -501,7 +516,7 @@ ${artifact.content}
               </div>
             )}
             <iframe
-              key={injectedCDNs} // Re-render when CDNs change
+              key={`${injectedCDNs}-${themeRefreshKey}`} // Re-render when CDNs or theme change
               srcDoc={previewContent}
               className="w-full h-full border-0 bg-background"
               title={artifact.title}
@@ -630,7 +645,7 @@ ${artifact.content}
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  
+
   <!-- Pre-approved libraries -->
   <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
   <script src="https://unpkg.com/recharts@2.5.0/dist/Recharts.js"></script>
@@ -639,32 +654,36 @@ ${artifact.content}
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   ${injectedCDNs}
-  
+
+  ${generateCompleteIframeStyles()}
   <style>
-    body { margin: 0; padding: 0; }
-    #root { width: 100%; height: 100vh; }
+    /* React app container */
+    #root {
+      width: 100%;
+      min-height: 100vh;
+    }
   </style>
 </head>
 <body>
   <div id="root"></div>
   <script type="text/babel">
     const { useState, useEffect, useReducer, useRef, useMemo, useCallback } = React;
-    
+
     ${artifact.content}
-    
+
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
   </script>
-  
+
   <script>
     // Error reporting
     window.addEventListener('error', (e) => {
-      window.parent.postMessage({ 
-        type: 'artifact-error', 
-        message: e.message 
+      window.parent.postMessage({
+        type: 'artifact-error',
+        message: e.message
       }, '*');
     });
-    
+
     window.addEventListener('load', () => {
       window.parent.postMessage({ type: 'artifact-ready' }, '*');
     });
@@ -690,7 +709,7 @@ ${artifact.content}
               </div>
             )}
             <iframe
-              key={injectedCDNs}
+              key={`${injectedCDNs}-${themeRefreshKey}`} // Re-render when CDNs or theme change
               srcDoc={reactPreviewContent}
               className="w-full h-full border-0 bg-background"
               title={artifact.title}
