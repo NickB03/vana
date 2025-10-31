@@ -489,8 +489,28 @@ All colors MUST be HSL.
   .pt-safe {
     padding-top: max(1rem, var(--safe-area-inset-top));
   }
-  
+
   .pb-safe {
     padding-bottom: max(1rem, var(--safe-area-inset-bottom));
+  }
+
+  /* Smooth scroll utilities for chat */
+  .overscroll-contain {
+    overscroll-behavior: contain;
+  }
+
+  /* Mobile momentum scrolling */
+  @supports (-webkit-overflow-scrolling: touch) {
+    .overflow-y-auto,
+    .overflow-x-auto,
+    .overflow-auto {
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  /* Prevent scroll chaining to parent on mobile */
+  .prevent-scroll-chain {
+    overscroll-behavior-y: contain;
+    overscroll-behavior-x: none;
   }
 }

@@ -98,7 +98,12 @@ export function ChatInterface({
   }, [sessionId, initialPrompt, hasInitialized]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: "smooth"
+      });
+    }
   };
 
   const handleScroll = () => {
@@ -285,13 +290,21 @@ export function ChatInterface({
 
   return (
     <div className="flex h-full flex-col">
-      <ResizablePanelGroup direction="horizontal" className="flex-1">
+      <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
         <ResizablePanel defaultSize={isCanvasOpen && currentArtifact ? 50 : 100} minSize={30}>
-          <div className="flex flex-1 min-h-0 flex-col">
+          <div className="flex h-full flex-col relative">
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto" ref={scrollContainerRef} onScroll={handleScroll}>
-              <ChatContainerRoot className="h-full">
-                <ChatContainerContent className="space-y-0 px-5 py-12" autoScroll={false}>
+            <div
+              className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain prevent-scroll-chain"
+              ref={scrollContainerRef}
+              onScroll={handleScroll}
+              style={{
+                WebkitOverflowScrolling: 'touch',
+                scrollBehavior: 'smooth'
+              }}
+            >
+              <ChatContainerRoot className="min-h-full flex flex-col">
+                <ChatContainerContent className="flex-1 space-y-0 px-5 py-12" autoScroll={false}>
                   {messages.map((message, index) => {
                     const { artifacts, cleanContent } = parseArtifacts(message.content);
                     const isAssistant = message.role === "assistant";
@@ -407,12 +420,15 @@ export function ChatInterface({
                   )}
                   <div ref={messagesEndRef} />
                 </ChatContainerContent>
-                <div className="absolute bottom-4 left-1/2 flex w-full max-w-3xl -translate-x-1/2 justify-end px-5">
-                  <ScrollButton className="shadow-sm" onClick={scrollToBottom} />
-                </div>
               </ChatContainerRoot>
             </div>
 
+            {/* Scroll to bottom button */}
+            <div className="pointer-events-none absolute bottom-4 left-0 right-0 flex justify-center px-5">
+              <div className="pointer-events-auto w-full max-w-3xl flex justify-end">
+                <ScrollButton className="shadow-sm" onClick={scrollToBottom} />
+              </div>
+            </div>
           </div>
         </ResizablePanel>
 
