@@ -251,7 +251,7 @@ export function ChatInterface({
   return (
     <div className="flex h-full flex-col">
       <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
-        <ResizablePanel defaultSize={isCanvasOpen && currentArtifact ? 40 : 100} minSize={25}>
+        <ResizablePanel defaultSize={isCanvasOpen && currentArtifact ? 40 : 100} minSize={25} className="md:min-w-[300px]">
           <ChatContainerRoot className="relative flex h-full flex-col">
             <ChatContainerContent className="flex-1 space-y-0 px-5 py-12">
                 {messages.map((message, index) => {
@@ -389,8 +389,8 @@ export function ChatInterface({
 
         {isCanvasOpen && currentArtifact && (
           <>
-            <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={60} minSize={40}>
+            <ResizableHandle withHandle className="hidden md:flex" />
+            <ResizablePanel defaultSize={60} minSize={40} className="md:min-w-[400px]">
               <Artifact
                 artifact={currentArtifact}
                 onClose={handleCloseCanvas}

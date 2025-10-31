@@ -88,6 +88,25 @@ src/
 - File upload validation: type, size, MIME type, content scanning
 - Sanitized filenames with user-scoped storage paths
 
+#### Google OAuth Setup
+The application supports Google OAuth authentication for streamlined user sign-in/sign-up.
+
+**Supabase Configuration:**
+1. Navigate to Supabase Dashboard → Authentication → Providers
+2. Enable the **Google** provider
+3. Configure OAuth consent screen in [Google Cloud Console](https://console.cloud.google.com/)
+4. Add authorized redirect URIs in Google Cloud Console:
+   - Development: `http://localhost:8080/`
+   - Production: `https://your-production-domain.com/`
+5. Copy Client ID and Client Secret from Google Cloud Console to Supabase
+
+**Implementation:**
+- Shared hook: `useGoogleAuth` (`src/hooks/useGoogleAuth.ts`)
+- Used in both `LoginForm.tsx` and `SignupForm.tsx`
+- Proper error handling with user-friendly messages
+- TypeScript-safe with `AuthError` types from `@supabase/supabase-js`
+- Includes specific error messages for popup blockers and network issues
+
 ### Database Schema (Supabase)
 ```typescript
 chat_sessions {

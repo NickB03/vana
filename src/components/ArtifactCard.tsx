@@ -45,30 +45,6 @@ const getArtifactLabel = (type: string) => {
   }
 };
 
-const getArtifactDescription = (artifact: ArtifactData): string => {
-  const label = getArtifactLabel(artifact.type);
-
-  // Return a clean description based on type
-  switch (artifact.type) {
-    case 'html':
-      return `Interactive ${artifact.title}`;
-    case 'react':
-      return `React component: ${artifact.title}`;
-    case 'code':
-      return `Code snippet${artifact.language ? ` (${artifact.language})` : ''}`;
-    case 'svg':
-      return `Vector graphic: ${artifact.title}`;
-    case 'mermaid':
-      return `Diagram: ${artifact.title}`;
-    case 'markdown':
-      return `Document: ${artifact.title}`;
-    case 'image':
-      return `Generated image: ${artifact.title}`;
-    default:
-      return artifact.title;
-  }
-};
-
 export function ArtifactCard({ artifact, onOpen, className }: ArtifactCardProps) {
   return (
     <Card className={cn("group relative overflow-hidden border-primary/20 bg-card/50 backdrop-blur-sm transition-all hover:border-primary/40 hover:bg-card/80", className)}>
