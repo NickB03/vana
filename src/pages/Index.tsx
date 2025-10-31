@@ -517,6 +517,7 @@ const IndexContent = () => {
                                     showChat && isCanvasOpen && "bg-primary/10 text-primary hover:bg-primary/20"
                                   )}
                                   onClick={showChat ? handleCanvasToggle : () => setInput("Help me create ")}
+                                  disabled={showChat && !hasArtifact}
                                 >
                                   {showChat ? (
                                     isCanvasOpen ? (
@@ -529,7 +530,13 @@ const IndexContent = () => {
                                   )}
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>{showChat ? isCanvasOpen ? "Close canvas" : "Open canvas" : "Create"}</TooltipContent>
+                              <TooltipContent>
+                                {showChat
+                                  ? hasArtifact
+                                    ? isCanvasOpen ? "Close canvas" : "Open canvas"
+                                    : "No artifact to display"
+                                  : "Create"}
+                              </TooltipContent>
                             </Tooltip>
                           </div>
 
