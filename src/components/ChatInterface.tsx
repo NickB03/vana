@@ -3,6 +3,7 @@ import { ArrowUp, Copy, Pencil, Trash, ThumbsUp, ThumbsDown, Plus, WandSparkles,
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { validateFile, sanitizeFilename } from "@/utils/fileValidation";
+import { ensureValidSession } from "@/utils/authHelpers";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -134,11 +135,12 @@ export function ChatInterface({
         return;
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error("You must be logged in to upload files");
+      const session = await ensureValidSession();
+      if (!session) {
+        toast.error("Authentication required. Please refresh the page or sign in again.");
         return;
       }
+      const { data: { user } } = await supabase.auth.getUser();
 
       // Sanitize filename and create upload path
       const sanitized = sanitizeFilename(file.name);

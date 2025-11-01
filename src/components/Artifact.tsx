@@ -61,12 +61,16 @@ export const Artifact = ({ artifact, onClose, onEdit }: ArtifactProps) => {
       setThemeRefreshKey(prev => prev + 1);
     });
 
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class']
-    });
+    if (document.documentElement) {
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class']
+      });
+    }
 
-    return () => observer.disconnect();
+    return () => {
+      observer?.disconnect();
+    };
   }, []);
 
   // Phase 4: Validate artifact on mount - debounced for performance
@@ -166,9 +170,11 @@ ${artifact.content}
           if (mermaidRef.current) {
             // Use safer DOM manipulation instead of innerHTML to prevent XSS
             const template = document.createElement('template');
-            template.innerHTML = svg.trim();
+            // Sanitize SVG content before insertion to prevent XSS
+            const cleanSvg = svg.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+            template.innerHTML = cleanSvg.trim();
             const svgElement = template.content.firstChild;
-            
+
             // Clear and append as DOM element (safer than innerHTML)
             mermaidRef.current.textContent = '';
             if (svgElement) {
