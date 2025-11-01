@@ -26,7 +26,7 @@ export default defineConfig(({ mode }) => ({
       ext: ".gz",
       threshold: 1024,
     }),
-    // PWA configuration
+    // PWA configuration - Optimized for fast updates on portfolio site
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "robots.txt"],
@@ -44,6 +44,9 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
+        // Immediate service worker activation for faster updates
+        clientsClaim: true,
+        skipWaiting: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
@@ -52,20 +55,21 @@ export default defineConfig(({ mode }) => ({
               cacheName: "supabase-cache",
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 300 // 5 minutes
+                maxAgeSeconds: 30 // 30 seconds (reduced from 5 minutes)
               },
-              networkTimeoutSeconds: 10
+              networkTimeoutSeconds: 5
             }
           },
           {
             urlPattern: /\.(png|jpg|jpeg|svg|gif|webp)$/,
-            handler: "CacheFirst",
+            handler: "NetworkFirst", // Changed from CacheFirst to NetworkFirst
             options: {
               cacheName: "images-cache",
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 86400 // 24 hours
-              }
+                maxAgeSeconds: 300 // 5 minutes (reduced from 24 hours)
+              },
+              networkTimeoutSeconds: 5
             }
           }
         ]
