@@ -64,9 +64,30 @@ src/
 #### Artifact System (`src/components/Artifact.tsx`)
 - Renders interactive artifacts in a sandboxed environment
 - Supported types: `code`, `html`, `react`, `svg`, `mermaid`, `markdown`, `image`
-- Library approval system for external CDN dependencies
+- **Auto-inject safe libraries** - 20+ trusted libraries automatically loaded when detected
 - Error categorization: syntax, runtime, import, unknown
 - Validation before rendering with `artifactValidator`
+
+**Safe Libraries Auto-Injected (HTML/JS artifacts):**
+- **Visualization**: chart.js, d3, plotly
+- **3D Graphics**: three.js
+- **Animation**: gsap, anime, framer-motion
+- **Creative Coding**: p5, particles, lottie
+- **Canvas**: fabric.js, konva, pixi.js
+- **Maps**: leaflet
+- **UI Utilities**: alpine, sortable
+- **Utilities**: moment, axios, marked, highlight.js, qrcode
+
+**Pre-loaded Libraries (React artifacts):**
+- **Icons**: lucide-react
+- **Charts**: recharts
+- **Data**: d3, plotly, lodash
+- **3D**: three.js
+- **Date/Time**: date-fns
+- **Utilities**: uuid, DOMPurify, axios, zustand
+- **Styling**: Tailwind CSS (always available)
+
+**Note**: shadcn/ui components cannot be used in artifacts as they require local imports (`@/components/ui/`) unavailable in sandboxed iframes. Use Tailwind CSS directly or pre-loaded libraries instead.
 
 #### Artifact Parser (`src/utils/artifactParser.ts`)
 - Extracts artifacts from XML-like tags in AI responses
