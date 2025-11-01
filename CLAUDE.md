@@ -64,30 +64,39 @@ src/
 #### Artifact System (`src/components/Artifact.tsx`)
 - Renders interactive artifacts in a sandboxed environment
 - Supported types: `code`, `html`, `react`, `svg`, `mermaid`, `markdown`, `image`
-- **Auto-inject safe libraries** - 20+ trusted libraries automatically loaded when detected
+- **Auto-inject safe libraries** - 27+ trusted libraries automatically loaded when detected
 - Error categorization: syntax, runtime, import, unknown
 - Validation before rendering with `artifactValidator`
 
-**Safe Libraries Auto-Injected (HTML/JS artifacts):**
+**Safe Libraries Auto-Injected (HTML/JS artifacts) - 27 libraries:**
 - **Visualization**: chart.js, d3, plotly
 - **3D Graphics**: three.js
-- **Animation**: gsap, anime, framer-motion
+- **Animation**: gsap, anime, framer-motion, animate.css
 - **Creative Coding**: p5, particles, lottie
 - **Canvas**: fabric.js, konva, pixi.js
 - **Maps**: leaflet
-- **UI Utilities**: alpine, sortable
+- **Icons**: feather, heroicons, phosphor
+- **UI Components**: Radix UI primitives (dialog, dropdown, popover)
+- **UI Utilities**: alpine, sortable, formkit (auto-animate)
 - **Utilities**: moment, axios, marked, highlight.js, qrcode
 
-**Pre-loaded Libraries (React artifacts):**
-- **Icons**: lucide-react
-- **Charts**: recharts
-- **Data**: d3, plotly, lodash
+**Pre-loaded Libraries (React artifacts) - 25+ libraries:**
+- **Icons**: lucide-react, feather-icons
+- **Charts**: recharts, d3, plotly
 - **3D**: three.js
-- **Date/Time**: date-fns
-- **Utilities**: uuid, DOMPurify, axios, zustand
+- **Utilities**: lodash, date-fns, uuid, DOMPurify, axios
+- **State Management**: zustand
+- **Animation**: framer-motion, animate.css
+- **Forms**: react-hook-form
+- **UI Primitives (Radix UI)**: Dialog, Dropdown Menu, Popover, Tooltip, Tabs, Switch, Slider
 - **Styling**: Tailwind CSS (always available)
 
-**Note**: shadcn/ui components cannot be used in artifacts as they require local imports (`@/components/ui/`) unavailable in sandboxed iframes. Use Tailwind CSS directly or pre-loaded libraries instead.
+**About shadcn/ui:**
+shadcn/ui components **cannot be directly used** in artifacts as they require local imports (`@/components/ui/`) which are unavailable in sandboxed iframes. However, **Radix UI primitives** (the foundation of shadcn/ui) are available! You can build custom components using:
+- ✅ **Radix UI primitives** (pre-loaded)
+- ✅ **Tailwind CSS** (always available)
+- ✅ **lucide-react icons** (pre-loaded)
+- ✅ This combination provides similar functionality to shadcn/ui
 
 #### Artifact Parser (`src/utils/artifactParser.ts`)
 - Extracts artifacts from XML-like tags in AI responses

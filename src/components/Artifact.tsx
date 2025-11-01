@@ -197,55 +197,125 @@ ${artifact.content}
   // Auto-detect and inject safe libraries without requiring approval
   const detectAndInjectLibraries = async (content: string): Promise<string> => {
     const cdnMap: Record<string, string[]> = {
+      // Data Visualization
       'chart.js': ['<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>'],
       'd3': ['<script src="https://d3js.org/d3.v7.min.js"></script>'],
+
+      // 3D Graphics
       'three.js': ['<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>'],
+
+      // Reactive Frameworks
       'alpine': ['<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>'],
+
+      // Animation Libraries
       'gsap': ['<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>'],
       'anime': ['<script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>'],
+      'framer-motion': ['<script src="https://cdn.jsdelivr.net/npm/framer-motion@11.0.3/dist/framer-motion.js"></script>'],
+
+      // Creative Coding
       'p5': ['<script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>'],
       'particles': ['<script src="https://cdn.jsdelivr.net/npm/tsparticles@3.0.3/tsparticles.bundle.min.js"></script>'],
+      'lottie': ['<script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>'],
+
+      // Maps
       'leaflet': [
         '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />',
         '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>'
       ],
+
+      // Canvas Libraries
+      'fabric.js': ['<script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>'],
+      'konva': ['<script src="https://cdn.jsdelivr.net/npm/konva@9.3.1/konva.min.js"></script>'],
+      'pixi.js': ['<script src="https://cdn.jsdelivr.net/npm/pixi.js@7.3.3/dist/pixi.min.js"></script>'],
+
+      // UI Utilities
       'sortable': ['<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>'],
-      'framer-motion': ['<script src="https://cdn.jsdelivr.net/npm/framer-motion@11.0.3/dist/framer-motion.js"></script>'],
+
+      // Utility Libraries
       'moment': ['<script src="https://cdn.jsdelivr.net/npm/moment@2.30.1/moment.min.js"></script>'],
       'axios': ['<script src="https://cdn.jsdelivr.net/npm/axios@1.6.5/dist/axios.min.js"></script>'],
       'marked': ['<script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>'],
+      'qrcode': ['<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>'],
+
+      // Syntax Highlighting
       'highlight.js': [
         '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" />',
         '<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>'
       ],
-      'fabric.js': ['<script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>'],
-      'konva': ['<script src="https://cdn.jsdelivr.net/npm/konva@9.3.1/konva.min.js"></script>'],
-      'pixi.js': ['<script src="https://cdn.jsdelivr.net/npm/pixi.js@7.3.3/dist/pixi.min.js"></script>'],
-      'lottie': ['<script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>'],
-      'qrcode': ['<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>'],
+
+      // Icon Libraries
+      'feather': ['<script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.1/dist/feather.min.js"></script>'],
+      'heroicons': ['<script src="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/index.js" type="module"></script>'],
+      'phosphor': ['<script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>'],
+
+      // UI Component Libraries (Headless)
+      'radix-ui': [
+        '<script src="https://cdn.jsdelivr.net/npm/@radix-ui/react-dialog@1.0.5/dist/index.umd.js"></script>',
+        '<script src="https://cdn.jsdelivr.net/npm/@radix-ui/react-dropdown-menu@2.0.6/dist/index.umd.js"></script>',
+        '<script src="https://cdn.jsdelivr.net/npm/@radix-ui/react-popover@1.0.7/dist/index.umd.js"></script>'
+      ],
+
+      // Form Libraries
+      'formkit': ['<script src="https://cdn.jsdelivr.net/npm/@formkit/auto-animate@0.8.1/index.mjs" type="module"></script>'],
+
+      // Utility CSS
+      'animate.css': ['<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />'],
     };
 
     const detectionPatterns: Record<string, RegExp> = {
+      // Data Visualization
       'chart.js': /new Chart\(|Chart\.register/i,
       'd3': /d3\.|from ['"]d3['"]/i,
+
+      // 3D Graphics
       'three.js': /new THREE\.|from ['"]three['"]/i,
+
+      // Reactive Frameworks
       'alpine': /x-data|x-bind|x-on|x-show|x-if/i,
+
+      // Animation Libraries
       'gsap': /gsap\.|TweenMax|TimelineMax|ScrollTrigger/i,
       'anime': /anime\(\{|anime\.timeline/i,
+      'framer-motion': /motion\.|useAnimation|animate\(/i,
+
+      // Creative Coding
       'p5': /createCanvas|draw\(\)|setup\(\)/i,
       'particles': /particlesJS|tsParticles/i,
+      'lottie': /lottie\.|bodymovin/i,
+
+      // Maps
       'leaflet': /L\.map\(|L\.marker\(/i,
-      'sortable': /new Sortable\(/i,
-      'framer-motion': /motion\.|useAnimation|animate\(/i,
-      'moment': /moment\(|\.format\(|\.fromNow\(/i,
-      'axios': /axios\.|axios\.get|axios\.post/i,
-      'marked': /marked\(|marked\.parse/i,
-      'highlight.js': /hljs\.|highlight\.js/i,
+
+      // Canvas Libraries
       'fabric.js': /new fabric\.|fabric\.Canvas/i,
       'konva': /new Konva\.|Konva\.Stage/i,
       'pixi.js': /PIXI\.|new PIXI/i,
-      'lottie': /lottie\.|bodymovin/i,
+
+      // UI Utilities
+      'sortable': /new Sortable\(/i,
+
+      // Utility Libraries
+      'moment': /moment\(|\.format\(|\.fromNow\(/i,
+      'axios': /axios\.|axios\.get|axios\.post/i,
+      'marked': /marked\(|marked\.parse/i,
       'qrcode': /new QRCode\(/i,
+
+      // Syntax Highlighting
+      'highlight.js': /hljs\.|highlight\.js/i,
+
+      // Icon Libraries
+      'feather': /feather\.|feather\.replace/i,
+      'heroicons': /heroicons|from ['"]@heroicons/i,
+      'phosphor': /ph-|phosphor/i,
+
+      // UI Component Libraries
+      'radix-ui': /@radix-ui|RadixUI|Radix\./i,
+
+      // Form Libraries
+      'formkit': /autoAnimate|formkit/i,
+
+      // Utility CSS
+      'animate.css': /animate__animated|class="animate-/i,
     };
 
     const cdnScripts: string[] = [];
@@ -539,17 +609,46 @@ ${artifact.content}
   <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- Pre-approved libraries for React artifacts -->
+  <!-- Icons & UI -->
   <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.1/dist/feather.min.js"></script>
+
+  <!-- Charts & Visualization -->
   <script src="https://unpkg.com/recharts@2.5.0/dist/Recharts.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+  <!-- 3D Graphics -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- Utilities -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/date-fns@3.0.6/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/uuid@9.0.1/dist/umd/uuidv4.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios@1.6.5/dist/axios.min.js"></script>
+
+  <!-- State Management -->
   <script src="https://cdn.jsdelivr.net/npm/zustand@4.4.7/index.umd.js"></script>
+
+  <!-- Animation -->
+  <script src="https://cdn.jsdelivr.net/npm/framer-motion@11.0.3/dist/framer-motion.js"></script>
+
+  <!-- Form Utilities -->
+  <script src="https://cdn.jsdelivr.net/npm/react-hook-form@7.49.3/dist/index.umd.js"></script>
+
+  <!-- UI Primitives (Radix UI) -->
+  <script src="https://unpkg.com/@radix-ui/react-dialog@1.0.5/dist/index.umd.js"></script>
+  <script src="https://unpkg.com/@radix-ui/react-dropdown-menu@2.0.6/dist/index.umd.js"></script>
+  <script src="https://unpkg.com/@radix-ui/react-popover@1.0.7/dist/index.umd.js"></script>
+  <script src="https://unpkg.com/@radix-ui/react-tooltip@1.0.7/dist/index.umd.js"></script>
+  <script src="https://unpkg.com/@radix-ui/react-tabs@1.0.4/dist/index.umd.js"></script>
+  <script src="https://unpkg.com/@radix-ui/react-switch@1.0.3/dist/index.umd.js"></script>
+  <script src="https://unpkg.com/@radix-ui/react-slider@1.1.2/dist/index.umd.js"></script>
+
+  <!-- CSS Utilities -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+
   ${injectedCDNs}
 
   ${generateCompleteIframeStyles()}
