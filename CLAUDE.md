@@ -35,6 +35,7 @@ src/
 ├── components/          # React components
 │   ├── ui/             # shadcn/ui components (69 files)
 │   ├── prompt-kit/     # Custom chat UI primitives
+│   ├── landing/        # Landing page components (Hero, ShowcaseSection, BenefitsSection, CTASection)
 │   ├── ChatInterface   # Main chat interface with artifact canvas
 │   ├── ChatSidebar     # Session list sidebar
 │   ├── Artifact        # Artifact renderer (code, HTML, React, Mermaid, SVG)
@@ -49,10 +50,42 @@ src/
 │   └── fileValidation  # File upload validation
 ├── integrations/
 │   └── supabase/       # Supabase client and type definitions
-└── pages/              # Route pages (Index, Auth, Signup, NotFound)
+└── pages/              # Route pages (Landing, Index, Auth, Signup, NotFound)
 ```
 
 ### Key Components
+
+#### Landing Page (`src/pages/Landing.tsx`)
+The landing page showcases the app's capabilities with multiple sections:
+
+**Components:**
+- **Hero** - Main hero section with CTA buttons
+- **ShowcaseSection** - Embla carousel displaying AI capability demos (research, code, visualization, diagrams, images, documents)
+- **BenefitsSection** - Feature benefits grid
+- **CTASection** - Call-to-action section
+
+**ShowcaseSection Carousel:**
+- Uses Embla Carousel with AutoScroll plugin
+- Implements edge fade using `mask-image` CSS property (not overlay divs)
+- Fade pattern: `linear-gradient(to right, transparent, black 8%, black 92%, transparent)`
+- Theme-aware, performant, and Safari-compatible
+- Auto-scrolls at 1px/s, pauses on hover
+- Manual navigation with chevron buttons (desktop) or prev/next buttons (mobile)
+- 6 showcase cards with gradient borders and hover effects
+
+**Implementation Pattern:**
+```tsx
+// Use mask-image for fade edges (preferred over overlay divs)
+<div
+  ref={emblaRef}
+  style={{
+    maskImage: 'linear-gradient(to right, transparent, black 8%, black 92%, transparent)',
+    WebkitMaskImage: 'linear-gradient(to right, transparent, black 8%, black 92%, transparent)'
+  }}
+>
+  {/* carousel content */}
+</div>
+```
 
 #### ChatInterface (`src/components/ChatInterface.tsx`)
 - Main chat UI with message list and input

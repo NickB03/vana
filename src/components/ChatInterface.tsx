@@ -390,7 +390,7 @@ export function ChatInterface({
             </ChatContainerRoot>
 
             {/* Prompt Input - stays in left panel */}
-            <div className="shrink-0 bg-background px-3 pb-3 md:px-5 md:pb-5 safe-mobile-input" style={{
+            <div className="shrink-0 bg-transparent px-3 pb-3 md:px-5 md:pb-5 safe-mobile-input" style={{
               paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))'
             }}>
               <div className="mx-auto max-w-3xl">

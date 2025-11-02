@@ -11,6 +11,8 @@ import { logVersionInfo } from "@/version";
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Signup = lazy(() => import("./pages/Signup"));
+const Landing = lazy(() => import("./pages/Landing"));
+const GalleryDemo = lazy(() => import("./pages/GalleryDemo"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Optimized React Query configuration for mobile
@@ -52,6 +54,8 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/landing" element={<Landing />} />
+              <Route path="/gallery-demo" element={<GalleryDemo />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

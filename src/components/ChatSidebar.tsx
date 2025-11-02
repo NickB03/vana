@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { MessageSquare, Search, Plus, MoreHorizontal } from "lucide-react";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader } from "@/components/ui/sidebar";
+import { CirclePlus, MoreHorizontal, PanelLeft } from "lucide-react";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ChatSession } from "@/hooks/useChatSessions";
 import { ViggleLogo } from "@/components/ViggleLogo";
+import { SidebarItem } from "@/components/SidebarItem";
 interface ChatSidebarProps {
   sessions: ChatSession[];
   currentSessionId?: string;
@@ -51,60 +51,122 @@ export function ChatSidebar({
   onDeleteSession,
   isLoading
 }: ChatSidebarProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showSearch, setShowSearch] = useState(false);
   const [hoveredSessionId, setHoveredSessionId] = useState<string | null>(null);
-  const filteredSessions = sessions.filter(session => session.title.toLowerCase().includes(searchQuery.toLowerCase()) || session.first_message && session.first_message.toLowerCase().includes(searchQuery.toLowerCase()));
-  const groupedSessions = groupChatsByPeriod(filteredSessions);
-  return <Sidebar>
-      <SidebarHeader className="flex flex-row items-center justify-between gap-2 px-2 py-4">
-        <button 
-          className="px-2 hover:bg-transparent h-auto cursor-pointer transition-opacity hover:opacity-80"
-          onClick={onNewChat}
-          aria-label="Return to home"
-        >
-          <ViggleLogo className="text-primary h-10 w-auto" />
-        </button>
-        <Button variant="ghost" size="icon" className="size-8" onClick={() => setShowSearch(!showSearch)}>
-          <Search className="size-4" />
-        </Button>
+  const [isLogoHovered, setIsLogoHovered] = useState(false);
+  const { state, toggleSidebar } = useSidebar();
+  const collapsed = state === "collapsed";
+
+  const groupedSessions = groupChatsByPeriod(sessions);
+
+  return <Sidebar collapsible="icon">
+      <SidebarHeader className={cn(
+        "group flex flex-row items-center py-2",
+        collapsed ? "justify-center px-0" : "justify-between px-3 gap-2"
+      )}>
+        {collapsed ? (
+          <button
+            className="flex items-center justify-center h-10 w-10 hover:bg-transparent cursor-pointer"
+            onClick={toggleSidebar}
+            aria-label="Expand sidebar"
+            onMouseEnter={() => setIsLogoHovered(true)}
+            onMouseLeave={() => setIsLogoHovered(false)}
+          >
+            {isLogoHovered ? (
+              <PanelLeft className="h-[20px] w-[20px] text-primary" strokeWidth={1.5} />
+            ) : (
+              <ViggleLogo className="text-primary h-6 w-6" />
+            )}
+          </button>
+        ) : (
+          <>
+            <button
+              className="px-2 hover:bg-transparent h-auto cursor-pointer"
+              onClick={onNewChat}
+              aria-label="Return to home"
+            >
+              <ViggleLogo className="text-primary h-6 w-auto" />
+            </button>
+
+            <div className="flex items-center gap-1">
+              <button
+                className="flex items-center justify-center size-10 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
+                onClick={toggleSidebar}
+                aria-label="Collapse sidebar"
+              >
+                <PanelLeft className="h-[20px] w-[20px]" strokeWidth={1.5} />
+              </button>
+            </div>
+          </>
+        )}
       </SidebarHeader>
 
-      <SidebarContent className="pt-4">
-        <div className="px-4 pb-4">
-          <Button onClick={onNewChat} className="w-full bg-gradient-primary hover:opacity-90">
-            <Plus className="h-4 w-4 mr-2" />
-            New Chat
-          </Button>
+      <SidebarContent className="pt-2">
+        <div className={cn("pb-1", collapsed ? "px-2" : "px-4")}>
+          {collapsed ? (
+            <Button
+              onClick={onNewChat}
+              variant="ghost"
+              className="w-full h-10 hover:bg-accent rounded-md p-0 flex items-center justify-center"
+            >
+              <CirclePlus className="h-6 w-6" strokeWidth={2} />
+            </Button>
+          ) : (
+            <Button
+              onClick={onNewChat}
+              variant="ghost"
+              className="w-full justify-start hover:bg-accent h-10 px-3 py-2"
+            >
+              <CirclePlus className="h-6 w-6 mr-2 shrink-0" strokeWidth={2} />
+              <span className="text-base whitespace-nowrap">New chat</span>
+            </Button>
+          )}
         </div>
 
-        {showSearch && <div className="px-4 pb-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Search chats..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9" />
-            </div>
-          </div>}
-
-        {groupedSessions.map(([period, periodSessions]) => <SidebarGroup key={period}>
-            <SidebarGroupLabel>{period}</SidebarGroupLabel>
+        {groupedSessions.map(([period, periodSessions]) => (
+          <SidebarGroup key={period} className="pt-1 pb-2">
+            {!collapsed && <SidebarGroupLabel className="px-4 pb-1">{period}</SidebarGroupLabel>}
             <SidebarGroupContent>
               <SidebarMenu>
-                {periodSessions.map(session => <SidebarMenuItem key={session.id}>
-                    <div className="relative flex items-center w-full" onMouseEnter={() => setHoveredSessionId(session.id)} onMouseLeave={() => setHoveredSessionId(null)}>
-                      <SidebarMenuButton onClick={() => onSessionSelect(session.id)} isActive={currentSessionId === session.id} className={cn("flex-1 justify-start hover:bg-accent/50 transition-colors", currentSessionId === session.id && "bg-accent")}>
-                        <span className="truncate text-sm">{session.title}</span>
+                {periodSessions.map(session => (
+                  <SidebarMenuItem key={session.id}>
+                    <div
+                      className="relative flex items-center w-full group/item"
+                      onMouseEnter={() => setHoveredSessionId(session.id)}
+                      onMouseLeave={() => setHoveredSessionId(null)}
+                    >
+                      <SidebarMenuButton
+                        onClick={() => onSessionSelect(session.id)}
+                        isActive={currentSessionId === session.id}
+                        tooltip={collapsed ? session.title : undefined}
+                        className={cn(
+                          "flex items-center hover:bg-accent/50 transition-all duration-300 ease-in-out overflow-hidden",
+                          collapsed ? "justify-center px-2" : "justify-start px-3",
+                          currentSessionId === session.id && "bg-accent"
+                        )}
+                      >
+                        {!collapsed && <span className="truncate text-base whitespace-nowrap">{session.title}</span>}
                       </SidebarMenuButton>
-                      {hoveredSessionId === session.id && <Button variant="ghost" size="icon" className="h-8 w-8 absolute right-2 transition-all" onClick={e => {
-                  e.stopPropagation();
-                  onDeleteSession(session.id);
-                }}>
+
+                      {!collapsed && hoveredSessionId === session.id && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 absolute right-2 opacity-0 group-hover/item:opacity-100 transition-opacity"
+                          onClick={e => {
+                            e.stopPropagation();
+                            onDeleteSession(session.id);
+                          }}
+                        >
                           <MoreHorizontal className="h-4 w-4" />
-                        </Button>}
+                        </Button>
+                      )}
                     </div>
-                  </SidebarMenuItem>)}
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
-          </SidebarGroup>)}
+          </SidebarGroup>
+        ))}
       </SidebarContent>
     </Sidebar>;
 }

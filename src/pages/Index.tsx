@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { SidebarProvider, SidebarInset, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset, useSidebar } from "@/components/ui/sidebar";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatInterface } from "@/components/ChatInterface";
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from "@/components/prompt-kit/prompt-input";
@@ -17,7 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { ensureValidSession } from "@/utils/authHelpers";
-import { PromptSuggestions } from "@/components/PromptSuggestions";
+import GalleryHoverCarousel from "@/components/ui/gallery-hover-carousel";
 const IndexContent = () => {
   const navigate = useNavigate();
   const {
@@ -280,15 +280,17 @@ const IndexContent = () => {
   };
   return <>
       <ChatSidebar sessions={sessions} currentSessionId={currentSessionId} onSessionSelect={handleSessionSelect} onNewChat={handleNewChat} onDeleteSession={deleteSession} isLoading={sessionsLoading} />
-      <SidebarInset>
+      <SidebarInset
+        className="relative"
+        style={{
+          background: 'radial-gradient(125% 125% at 50% 10%, #000000 40%, #1e293b 100%)'
+        }}
+      >
         <main className="flex h-[100dvh] flex-col overflow-hidden">
           {/* Header */}
-          <header className="bg-background sticky top-0 z-20 flex h-16 w-full shrink-0 items-center justify-between gap-2 border-b border-background px-4" style={{
+          <header className="bg-black/40 backdrop-blur-sm sticky top-0 z-20 flex h-16 w-full shrink-0 items-center justify-end gap-2 px-4" style={{
           paddingTop: 'var(--safe-area-inset-top)'
         }}>
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="min-h-[44px] min-w-[44px]" />
-            </div>
             <div className="flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -455,9 +457,147 @@ const IndexContent = () => {
                   </PromptInput>
                 </div>
 
-                  {/* Suggestion Cards - Below prompt */}
-                  <div className="w-full max-w-3xl mx-auto px-4 pb-4">
-                    <PromptSuggestions onSuggestionClick={handleSuggestionClick} />
+                  {/* Suggestion Carousel - Below prompt */}
+                  <div className="w-full max-w-5xl mx-auto pb-4">
+                    <GalleryHoverCarousel
+                      heading=""
+                      className="py-0 bg-transparent"
+                      onItemClick={(item) => handleSuggestionClick(item.prompt || item.summary)}
+                      items={[
+                        // Image Generation
+                        {
+                          id: "img-gen-1",
+                          title: "Generate an Image",
+                          summary: "Generate an image of Pikachu in a banana costume",
+                          prompt: "Generate an image of Pikachu in a banana costume",
+                          image: "https://images.unsplash.com/photo-1547891654-e66ed7ebb968?w=400&h=300&fit=crop"
+                        },
+                        {
+                          id: "img-gen-2",
+                          title: "Create Artwork",
+                          summary: "Generate a cyberpunk cityscape at sunset with flying cars",
+                          prompt: "Generate a cyberpunk cityscape at sunset with flying cars",
+                          image: "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?w=400&h=300&fit=crop"
+                        },
+                        {
+                          id: "img-gen-3",
+                          title: "Fantasy Character",
+                          summary: "Generate an image of a mystical elf warrior with glowing armor in an enchanted forest",
+                          prompt: "Generate an image of a mystical elf warrior with glowing armor in an enchanted forest",
+                          image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&h=300&fit=crop"
+                        },
+                        // Web Apps
+                        {
+                          id: "web-app-1",
+                          title: "Todo List App",
+                          summary: "Create an interactive todo list with categories, priorities, and deadlines",
+                          prompt: "Create an interactive todo list with categories, priorities, and deadlines",
+                          image: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=400&h=300&fit=crop"
+                        },
+                        {
+                          id: "web-app-2",
+                          title: "Shopping List",
+                          summary: "Create a smart shopping list app with item categorization and price tracking",
+                          prompt: "Create a smart shopping list app with item categorization and price tracking",
+                          image: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=400&h=300&fit=crop"
+                        },
+                        {
+                          id: "web-app-3",
+                          title: "Budget Tracker",
+                          summary: "Build a personal budget tracker with expense categories and spending insights",
+                          prompt: "Build a personal budget tracker with expense categories and spending insights",
+                          image: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400&h=300&fit=crop"
+                        },
+                        {
+                          id: "web-app-4",
+                          title: "Recipe Manager",
+                          summary: "Create a recipe management app with ingredients list and cooking timer",
+                          prompt: "Create a recipe management app with ingredients list and cooking timer",
+                          image: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=400&h=300&fit=crop"
+                        },
+                        // Data Visualization
+                        {
+                          id: "data-viz-1",
+                          title: "Sales Dashboard",
+                          summary: "Create an interactive sales dashboard with revenue trends and customer analytics",
+                          prompt: "Create an interactive sales dashboard with revenue trends and customer analytics",
+                          image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop"
+                        },
+                        {
+                          id: "data-viz-2",
+                          title: "Habit Tracker",
+                          summary: "Build a habit tracking dashboard with streaks visualization and progress stats",
+                          prompt: "Build a habit tracking dashboard with streaks visualization and progress stats",
+                          image: "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&h=300&fit=crop"
+                        },
+                        {
+                          id: "data-viz-3",
+                          title: "Weather Viz",
+                          summary: "Build an interactive weather visualization showing temperature and precipitation patterns",
+                          prompt: "Build an interactive weather visualization showing temperature and precipitation patterns",
+                          image: "https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?w=400&h=300&fit=crop"
+                        },
+                        // Games
+                        {
+                          id: "game-1",
+                          title: "Build a Game",
+                          summary: "Build a web-based Frogger game with arrow key controls",
+                          prompt: "Build a web-based Frogger game with arrow key controls",
+                          image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&h=300&fit=crop"
+                        },
+                        {
+                          id: "game-2",
+                          title: "Memory Card Game",
+                          summary: "Build a memory matching card game with different difficulty levels",
+                          prompt: "Build a memory matching card game with different difficulty levels",
+                          image: "https://images.unsplash.com/photo-1566576721346-d4a3b4eaeb55?w=400&h=300&fit=crop"
+                        },
+                        {
+                          id: "game-3",
+                          title: "Snake Game",
+                          summary: "Create a classic snake game with score tracking and increasing difficulty",
+                          prompt: "Create a classic snake game with score tracking and increasing difficulty",
+                          image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&h=300&fit=crop"
+                        },
+                        // Tools & Calculators
+                        {
+                          id: "tool-1",
+                          title: "Mortgage Calculator",
+                          summary: "Build a mortgage calculator with amortization schedule and payment breakdown",
+                          prompt: "Build a mortgage calculator with amortization schedule and payment breakdown",
+                          image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop"
+                        },
+                        {
+                          id: "tool-2",
+                          title: "Unit Converter",
+                          summary: "Build a comprehensive unit converter for length, weight, temperature, and currency",
+                          prompt: "Build a comprehensive unit converter for length, weight, temperature, and currency",
+                          image: "https://images.unsplash.com/photo-1453928582365-b6ad33cbcf64?w=400&h=300&fit=crop"
+                        },
+                        {
+                          id: "tool-3",
+                          title: "Pomodoro Timer",
+                          summary: "Build a Pomodoro productivity timer with work/break intervals and statistics",
+                          prompt: "Build a Pomodoro productivity timer with work/break intervals and statistics",
+                          image: "https://images.unsplash.com/photo-1501139083538-0139583c060f?w=400&h=300&fit=crop"
+                        },
+                        // Creative
+                        {
+                          id: "creative-1",
+                          title: "Color Palette",
+                          summary: "Build a color palette generator with hex codes and complementary colors",
+                          prompt: "Build a color palette generator with hex codes and complementary colors",
+                          image: "https://images.unsplash.com/photo-1525909002-1b05e0c869d8?w=400&h=300&fit=crop"
+                        },
+                        {
+                          id: "creative-2",
+                          title: "Music Player",
+                          summary: "Create an interactive music player interface with playlist management",
+                          prompt: "Create an interactive music player interface with playlist management",
+                          image: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=300&fit=crop"
+                        }
+                      ]}
+                    />
                   </div>
                 </div>
               </div>
