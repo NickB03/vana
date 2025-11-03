@@ -4,6 +4,9 @@ import AutoScroll from "embla-carousel-auto-scroll";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Sparkles, Image, BarChart3, Code2, FileText, GitBranch } from "lucide-react";
+import { motion } from "motion/react";
+import { hoverLift } from "@/utils/animationConstants";
+import { toast } from "sonner";
 
 interface ShowcaseItem {
   id: string;
@@ -320,25 +323,51 @@ export const ShowcaseSection = () => {
 
   const scrollPrev = useCallback(() => {
     if (!emblaApi) {
+      toast.error('Carousel not ready yet. Please wait a moment.', {
+        id: 'carousel-not-ready'
+      });
       console.warn('Carousel not initialized yet');
       return;
     }
     try {
       emblaApi.scrollPrev();
     } catch (error) {
-      console.error('Carousel navigation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Carousel navigation error:', errorMessage);
+      toast.error('Unable to navigate carousel. Try refreshing the page.', {
+        id: 'carousel-nav-error'
+      });
+      // Attempt recovery by reinitializing
+      try {
+        emblaApi.reInit();
+      } catch (reinitError) {
+        console.error('Carousel reinit failed:', reinitError);
+      }
     }
   }, [emblaApi]);
 
   const scrollNext = useCallback(() => {
     if (!emblaApi) {
+      toast.error('Carousel not ready yet. Please wait a moment.', {
+        id: 'carousel-not-ready'
+      });
       console.warn('Carousel not initialized yet');
       return;
     }
     try {
       emblaApi.scrollNext();
     } catch (error) {
-      console.error('Carousel navigation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Carousel navigation error:', errorMessage);
+      toast.error('Unable to navigate carousel. Try refreshing the page.', {
+        id: 'carousel-nav-error'
+      });
+      // Attempt recovery by reinitializing
+      try {
+        emblaApi.reInit();
+      } catch (reinitError) {
+        console.error('Carousel reinit failed:', reinitError);
+      }
     }
   }, [emblaApi]);
 
@@ -394,27 +423,31 @@ export const ShowcaseSection = () => {
                     key={`${item.id}-${index}`}
                     className="flex-[0_0_380px] min-w-0"
                   >
-                    <Card className="overflow-hidden h-full group hover:shadow-2xl transition-all duration-300 bg-card border-0 relative">
-                      {/* Gradient glow border effect */}
-                      <div className={`absolute inset-0 bg-gradient-to-r ${item.gradient} rounded-lg opacity-50 blur-xl group-hover:opacity-75 transition-opacity`}></div>
-                      <div className="absolute inset-[2px] bg-card rounded-lg"></div>
+                    <motion.div
+                      {...hoverLift}
+                    >
+                      <Card className="overflow-hidden h-full group hover:shadow-2xl transition-all duration-300 bg-card border-0 relative">
+                        {/* Gradient glow border effect */}
+                        <div className={`absolute inset-0 bg-gradient-to-r ${item.gradient} rounded-lg opacity-50 blur-xl group-hover:opacity-75 transition-opacity`}></div>
+                        <div className="absolute inset-[2px] bg-card rounded-lg"></div>
 
-                      {/* Content */}
-                      <div className="relative z-10 h-[420px] flex flex-col overflow-hidden">
-                        {/* Title overlay at top */}
-                        <div className="p-4 pb-0">
-                          <div className="flex items-center gap-2">
-                            <Icon className={`h-5 w-5 bg-gradient-to-r ${item.gradient} bg-clip-text text-transparent`} style={{ WebkitTextFillColor: 'transparent' }} />
-                            <h3 className="font-bold text-foreground">{item.title}</h3>
+                        {/* Content */}
+                        <div className="relative z-10 h-[420px] flex flex-col overflow-hidden">
+                          {/* Title overlay at top */}
+                          <div className="p-4 pb-0">
+                            <div className="flex items-center gap-2">
+                              <Icon className={`h-5 w-5 bg-gradient-to-r ${item.gradient} bg-clip-text text-transparent`} style={{ WebkitTextFillColor: 'transparent' }} />
+                              <h3 className="font-bold text-foreground">{item.title}</h3>
+                            </div>
+                          </div>
+
+                          {/* Full content area */}
+                          <div className="flex-1 p-4 pt-3 overflow-hidden">
+                            {item.content}
                           </div>
                         </div>
-
-                        {/* Full content area */}
-                        <div className="flex-1 p-4 pt-3 overflow-hidden">
-                          {item.content}
-                        </div>
-                      </div>
-                    </Card>
+                      </Card>
+                    </motion.div>
                   </div>
                 );
               })}

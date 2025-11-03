@@ -155,7 +155,7 @@ export default function GalleryHoverCarousel({
                     onClick={() => onItemClick?.(item)}
                     className="group block relative w-[180px] md:w-[200px] h-[160px] md:h-[180px] cursor-pointer"
                   >
-                    <Card className="overflow-hidden rounded-xl h-full w-full rounded-3xl">
+                    <Card className="overflow-hidden rounded-3xl h-full w-full transition-all duration-300">
                       {/* Image */}
                       <div className="relative h-full w-full transition-all duration-500 group-hover:h-1/2">
                         <img
