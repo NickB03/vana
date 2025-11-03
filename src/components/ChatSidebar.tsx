@@ -139,8 +139,8 @@ export function ChatSidebar({
                         isActive={currentSessionId === session.id}
                         tooltip={collapsed ? session.title : undefined}
                         className={cn(
-                          "flex items-center hover:bg-accent/50 transition-all duration-300 ease-in-out overflow-hidden",
-                          collapsed ? "justify-center px-2" : "justify-start px-3",
+                          "flex items-center hover:bg-accent/50 transition-all duration-150 ease-out overflow-hidden",
+                          collapsed ? "justify-center px-2" : "justify-start px-3 group-hover/item:pr-12",
                           currentSessionId === session.id && "bg-accent"
                         )}
                       >

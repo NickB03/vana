@@ -207,6 +207,80 @@ user_preferences {
 - Local state with useState/useEffect
 - No Redux/Zustand
 
+### Animation System (Motion/React)
+
+The application uses `motion/react` (Framer Motion) for declarative animations across the UI.
+
+#### Core Components
+- **AnimatedRoute** (`src/components/AnimatedRoute.tsx`) - Reusable route transition wrapper
+- **AnimationErrorBoundary** (`src/components/AnimationErrorBoundary.tsx`) - Catches animation failures gracefully
+- **Animation Constants** (`src/utils/animationConstants.ts`) - Centralized animation configuration
+
+#### Animation Constants
+All animations use standardized durations and easing from `animationConstants.ts`:
+
+**Durations:**
+- `fast` (0.15s) - Micro-interactions like hover states
+- `normal` (0.2s) - Standard transitions like focus states
+- `moderate` (0.3s) - Route transitions and page elements
+- `slow` (0.5s) - Staggered animations and hero content
+
+**Common Patterns:**
+- `fadeInUp` - Route transitions with fade + vertical slide
+- `scaleIn` - Chat messages with scale + fade + slide
+- `staggerContainer` / `staggerItem` - Coordinated child animations (hero sections)
+- `hoverLift` - Interactive card hover effects (lift + scale)
+
+#### Route Transitions
+All page routes animate on mount/unmount via `AnimatedRoutes` wrapper in `App.tsx`:
+- Pattern: fade + vertical slide (opacity: 0→1, y: 20→0→-20)
+- Duration: 300ms with easeInOut
+- Mode: "sync" - allows exit/entrance animations to overlap for better performance
+- Wrapped in `AnimationErrorBoundary` to prevent crashes from animation failures
+
+**Usage:**
+```tsx
+<Route path="/" element={<AnimatedRoute><Index /></AnimatedRoute>} />
+```
+
+#### Message Animations
+Chat messages in `ChatInterface.tsx` use conditional animation:
+- Only new messages (last message when not streaming) are animated
+- Prevents performance issues with long chat histories (100+ messages)
+- Pattern: scale in with fade (opacity + scale + y slide)
+- Duration: 300ms with easeOut
+
+**Performance Consideration:** Animating all messages in a long chat would cause frame drops. Only animating new messages maintains 60fps.
+
+#### Motion-Safe Animations
+Button and UI components use `motion-safe:` Tailwind prefix for accessibility:
+- `motion-safe:hover:scale-105` - Only scales if user hasn't enabled `prefers-reduced-motion`
+- Respects user motion sensitivity preferences
+- Automatically disabled for users with vestibular disorders or motion sickness
+
+**Example:**
+```tsx
+"motion-safe:hover:scale-105 hover:shadow-lg motion-safe:active:scale-[0.97]"
+```
+
+#### Error Handling
+**Critical:** All animation-heavy features wrapped in error boundaries
+- `AnimationErrorBoundary` catches motion/react failures
+- Falls back to non-animated content if animations fail
+- Logs errors for debugging without crashing the app
+- Carousel navigation shows user-facing toast messages on errors
+
+#### Performance Optimization
+- Route animations use "sync" mode (not "wait") to reduce memory usage
+- Message animations skip for existing messages in chat history
+- Hover animations use GPU acceleration (`transform-gpu`)
+- Stagger animations coordinate timing to prevent animation storms
+
+#### Browser Compatibility
+- Safari: Uses `-webkit-` prefixes for mask-image in carousel
+- All browsers: Graceful fallback if motion/react fails to load
+- Mobile: Respects reduced motion preferences by default
+
 ### Important Development Patterns
 
 #### Custom Routes

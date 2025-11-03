@@ -34,3 +34,7 @@ supabase/.temp/
 /archive/
 .claude/archive/
 docs/archive/
+docs/issue-updates.md
+
+# Archive directory for temporary files
+.archive/

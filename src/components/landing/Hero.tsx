@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { DemoPreview } from "./DemoPreview";
+import { motion } from "motion/react";
+import { staggerContainer, staggerItem } from "@/utils/animationConstants";
 
 export const Hero = () => {
   const scrollToDemo = () => {
@@ -14,26 +16,45 @@ export const Hero = () => {
       <div className="container max-w-7xl mx-auto relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left: Headline + CTAs */}
-          <div className="space-y-6 text-center lg:text-left">
-            <Badge variant="secondary" className="text-sm">
-              Powered by Claude AI
-            </Badge>
-            <h1 className="text-4xl md:text-6xl font-bold text-white">
+          <motion.div
+            className="space-y-6 text-center lg:text-left"
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+          >
+            <motion.div variants={staggerItem}>
+              <Badge variant="secondary" className="text-sm">
+                Powered by Claude AI
+              </Badge>
+            </motion.div>
+            <motion.h1
+              className="text-4xl md:text-6xl font-bold text-white"
+              variants={staggerItem}
+            >
               Chat with AI, Build Anything
-            </h1>
-            <p className="text-xl text-gray-300 max-w-2xl">
+            </motion.h1>
+            <motion.p
+              className="text-xl text-gray-300 max-w-2xl"
+              variants={staggerItem}
+            >
               Real-time AI conversations that generate interactive code, React
               components, diagrams, and more—all in one seamless interface.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+            </motion.p>
+            <motion.div
+              className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+              variants={staggerItem}
+            >
               <Button size="lg" className="bg-white hover:bg-gray-100 text-black" asChild>
                 <Link to="/auth">Get Started Free</Link>
               </Button>
               <Button size="lg" variant="outline" className="border-gray-700 text-white hover:bg-gray-800" onClick={scrollToDemo}>
                 Watch Demo
               </Button>
-            </div>
-            <div className="flex items-center gap-6 justify-center lg:justify-start text-sm text-gray-400 pt-4">
+            </motion.div>
+            <motion.div
+              className="flex items-center gap-6 justify-center lg:justify-start text-sm text-gray-400 pt-4"
+              variants={staggerItem}
+            >
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-green-500" />
                 <span>No credit card required</span>
@@ -42,8 +63,8 @@ export const Hero = () => {
                 <div className="h-2 w-2 rounded-full bg-green-500" />
                 <span>Free to start</span>
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
 
           {/* Right: Animated Preview */}
           <div className="order-first lg:order-last">

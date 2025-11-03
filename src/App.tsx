@@ -2,10 +2,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { lazy, Suspense, useEffect } from "react";
 import { logVersionInfo } from "@/version";
+import { AnimatePresence } from "motion/react";
+import { AnimatedRoute } from "@/components/AnimatedRoute";
+import { AnimationErrorBoundary } from "@/components/AnimationErrorBoundary";
 
 // Lazy load pages for code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -32,6 +35,30 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * AnimatedRoutes: Wraps all routes with motion animations and AnimatePresence
+ * - Manages page transition animations with fade + vertical slide effects
+ * - Uses "sync" mode to allow exit/entrance animations to overlap for better performance
+ * - Wrapped in AnimationErrorBoundary to gracefully handle animation failures
+ */
+const AnimatedRoutes = () => {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="sync">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<AnimatedRoute><Index /></AnimatedRoute>} />
+        <Route path="/auth" element={<AnimatedRoute><Auth /></AnimatedRoute>} />
+        <Route path="/signup" element={<AnimatedRoute><Signup /></AnimatedRoute>} />
+        <Route path="/landing" element={<AnimatedRoute><Landing /></AnimatedRoute>} />
+        <Route path="/gallery-demo" element={<AnimatedRoute><GalleryDemo /></AnimatedRoute>} />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<AnimatedRoute><NotFound /></AnimatedRoute>} />
+      </Routes>
+    </AnimatePresence>
+  );
+};
+
 const App = () => {
   // Log version info on app initialization
   useEffect(() => {
@@ -45,25 +72,19 @@ const App = () => {
           <Toaster />
           <Sonner />
           <BrowserRouter>
-          <Suspense fallback={
-            <div className="flex min-h-screen items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          }>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/landing" element={<Landing />} />
-              <Route path="/gallery-demo" element={<GalleryDemo />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+            <Suspense fallback={
+              <div className="flex min-h-screen items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            }>
+              <AnimationErrorBoundary>
+                <AnimatedRoutes />
+              </AnimationErrorBoundary>
+            </Suspense>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 };
 

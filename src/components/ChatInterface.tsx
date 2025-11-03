@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { motion } from "motion/react";
+import { scaleIn, ANIMATION_DURATIONS, ANIMATION_EASINGS } from "@/utils/animationConstants";
 import {
   ChatContainerContent,
   ChatContainerRoot,
@@ -266,9 +268,12 @@ export function ChatInterface({
                   const imageArtifacts = artifacts.filter(a => a.type === 'image');
                   const otherArtifacts = artifacts.filter(a => a.type !== 'image');
 
-                  return (
+                  // Only animate new messages (last message when not streaming)
+                  // This prevents performance issues with long chat histories
+                  const shouldAnimate = isLastMessage && !isStreaming;
+
+                  const messageContent = (
                     <MessageComponent
-                      key={message.id}
                       className={cn(
                         "chat-message mx-auto flex w-full max-w-3xl flex-col gap-2 px-6",
                         isAssistant ? "items-start" : "items-end"
@@ -357,7 +362,23 @@ export function ChatInterface({
                           </MessageActions>
                         </div>
                       )}
-                    </MessageComponent>
+                      </MessageComponent>
+                  );
+
+                  // Wrap with motion animation only for new messages to optimize performance
+                  return shouldAnimate ? (
+                    <motion.div
+                      key={message.id}
+                      {...scaleIn}
+                      transition={{
+                        duration: ANIMATION_DURATIONS.moderate,
+                        ease: ANIMATION_EASINGS.easeOut
+                      }}
+                    >
+                      {messageContent}
+                    </motion.div>
+                  ) : (
+                    <div key={message.id}>{messageContent}</div>
                   );
                 })}
 
