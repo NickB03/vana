@@ -30,5 +30,7 @@ dist-ssr
 # Supabase temp files
 supabase/.temp/
 
-# Archive directory for temporary documentation (root level only)
+# Archive directories for temporary documentation and development artifacts
 /archive/
+.claude/archive/
+docs/archive/
