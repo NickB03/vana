@@ -3,6 +3,8 @@
  *
  * This file is automatically updated on commits via pre-commit hook.
  * Used to verify code synchronization between GitHub and Lovable environments.
+ *
+ * Build hash is injected at build time by Vite to enable cache busting.
  */
 
 export const APP_VERSION = {
@@ -21,6 +23,8 @@ export const APP_VERSION = {
   build: {
     timestamp: '2025-10-30 01:50:29 UTC',
     date: new Date('2025-10-30T01:50:29.196Z'),
+    // Build hash injected at build time - unique per build for cache busting
+    hash: typeof __BUILD_HASH__ !== 'undefined' ? __BUILD_HASH__ : 'dev-' + Date.now(),
   },
 
   // Environment detection
@@ -80,4 +84,43 @@ export function isLatestVersion(): boolean {
   // This would need to fetch from GitHub API in production
   // For now, just return true if on main branch
   return APP_VERSION.commit.branch === 'main';
+}
+
+/**
+ * Get the build hash for cache busting verification
+ */
+export function getBuildHash(): string {
+  return APP_VERSION.build.hash;
+}
+
+/**
+ * Check if a different build hash is available (new deployment)
+ * Compares stored build hash with current one
+ */
+export function hasNewBuildAvailable(): boolean {
+  try {
+    const stored = sessionStorage.getItem('app-build-hash');
+    const current = getBuildHash();
+
+    if (!stored) {
+      sessionStorage.setItem('app-build-hash', current);
+      return false;
+    }
+
+    return stored !== current;
+  } catch (error) {
+    console.error('Error checking build hash:', error);
+    return false;
+  }
+}
+
+/**
+ * Update stored build hash to current version
+ */
+export function updateStoredBuildHash(): void {
+  try {
+    sessionStorage.setItem('app-build-hash', getBuildHash());
+  } catch (error) {
+    console.error('Error updating build hash:', error);
+  }
 }

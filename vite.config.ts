@@ -4,6 +4,14 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import compression from "vite-plugin-compression";
 import { VitePWA } from "vite-plugin-pwa";
+import { createHash } from "crypto";
+import fs from "fs";
+
+// Generate unique build hash for cache busting
+const buildHash = createHash('sha256')
+  .update(Date.now().toString() + Math.random().toString())
+  .digest('hex')
+  .substring(0, 8);
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -15,7 +23,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     // Brotli compression
-    compression({ 
+    compression({
       algorithm: "brotliCompress",
       ext: ".br",
       threshold: 1024,
@@ -74,7 +82,14 @@ export default defineConfig(({ mode }) => ({
           }
         ]
       }
-    })
+    }),
+    // Plugin to inject build hash into HTML for cache busting
+    {
+      name: 'inject-build-hash',
+      transformIndexHtml(html) {
+        return html.replace('data-build-hash="__BUILD_HASH__"', `data-build-hash="${buildHash}"`);
+      },
+    }
   ].filter(Boolean),
   resolve: {
     alias: {
@@ -84,6 +99,10 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       output: {
+        // Generate unique hashes for all assets for cache busting
+        entryFileNames: `assets/[name]-[hash].js`,
+        chunkFileNames: `assets/[name]-[hash].js`,
+        assetFileNames: `assets/[name]-[hash][extname]`,
         manualChunks: {
           "vendor-react": ["react", "react-dom", "react-router-dom"],
           "vendor-ui": [
@@ -112,5 +131,10 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: ["react", "react-dom", "react-router-dom"],
+  },
+  define: {
+    // Inject build hash as environment variable for cache busting
+    __BUILD_HASH__: JSON.stringify(buildHash),
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
   },
 }));

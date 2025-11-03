@@ -9,6 +9,8 @@ import { logVersionInfo } from "@/version";
 import { AnimatePresence } from "motion/react";
 import { AnimatedRoute } from "@/components/AnimatedRoute";
 import { AnimationErrorBoundary } from "@/components/AnimationErrorBoundary";
+import { UpdateNotification } from "@/components/UpdateNotification";
+import { storeVersionInfo, logCacheBustingInfo } from "@/utils/cacheBusting";
 
 // Lazy load pages for code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -60,9 +62,11 @@ const AnimatedRoutes = () => {
 };
 
 const App = () => {
-  // Log version info on app initialization
+  // Initialize version tracking and cache busting on app startup
   useEffect(() => {
     logVersionInfo();
+    storeVersionInfo();
+    logCacheBustingInfo();
   }, []);
 
   return (
@@ -82,6 +86,8 @@ const App = () => {
               </AnimationErrorBoundary>
             </Suspense>
           </BrowserRouter>
+          {/* Update notification for service worker updates */}
+          <UpdateNotification />
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>

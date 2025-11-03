@@ -17,6 +17,13 @@ npm run preview      # Preview production build
 npm run lint         # Run ESLint
 ```
 
+### Deployment
+```bash
+npm run build                                      # Build for production
+node scripts/verify-deployment.cjs                 # Verify local build artifacts
+node scripts/verify-deployment.cjs <url>           # Verify remote deployment
+```
+
 ### Package Management
 **CRITICAL**: Always use `npm` commands. Never use Bun, Yarn, or pnpm as this will create conflicting lock files.
 
@@ -715,6 +722,173 @@ await merge_branch({ branch_id: "..." });
 - Service worker with NetworkFirst strategy for Supabase
 - CacheFirst for images (24h TTL)
 - Safe area insets for mobile notches
+
+### Cache-Busting & Deployment Verification
+
+**CRITICAL**: This project implements enterprise-grade cache-busting to ensure users always receive the latest deployment. The verification checklist below MUST be followed for all deployments.
+
+#### Cache-Busting Architecture
+
+The application uses a multi-layered cache-busting strategy:
+
+1. **Build-Time Asset Hashing** (vite.config.ts)
+   - All assets get unique hashes: `Auth-Dd2qWCP9.js`, `index-D1IXJgy4.css`
+   - Pattern: `[name]-[hash].js` with 8-character hash
+   - Ensures browsers fetch new assets when files change
+
+2. **Build Hash Injection** (vite.config.ts:10-14, 88-92)
+   - Unique 8-character hash generated per build
+   - Injected into HTML: `<html data-build-hash="e6ee8730">`
+   - Available as `window.__BUILD_HASH__` for runtime verification
+   - Defined in TypeScript: `declare const __BUILD_HASH__: string`
+
+3. **HTML Cache Headers** (index.html:9-11)
+   - `Cache-Control: no-cache, no-store, must-revalidate, max-age=0`
+   - Forces browsers to check for new index.html on every visit
+   - Never caches the entry point HTML file
+
+4. **Service Worker Updates** (UpdateNotification.tsx, useServiceWorkerUpdate.ts)
+   - Polls for updates every 30 seconds
+   - Immediate activation with `skipWaiting: true` and `clientsClaim: true`
+   - User-friendly notification with "Reload Now" button
+   - Sends `SKIP_WAITING` message for instant activation
+
+5. **Version Tracking** (src/version.ts, src/utils/cacheBusting.ts)
+   - Stores version info on app initialization
+   - Compares build hashes to detect new deployments
+   - Provides cache clearing utilities
+   - Logs version info to console
+
+#### Deployment Verification Checklist
+
+**MANDATORY STEPS** - Every deployment MUST complete these steps:
+
+```bash
+# 1. Build the application with cache-busting
+npm run build
+
+# 2. Verify local build artifacts
+node scripts/verify-deployment.cjs
+
+# Expected output:
+# ✅ Cache-Control headers present in index.html
+# ✅ Build hash found: [8-char hash]
+# ✅ [N] files with hashes (JS/CSS assets)
+# ✅ Service worker (sw.js) found
+```
+
+**3. Deployment Verification** (CRITICAL)
+After deploying to production, verify the deployment succeeded:
+
+```bash
+# Verify remote deployment
+node scripts/verify-deployment.cjs https://your-production-url.com
+
+# Check:
+# ✅ Server returning 200 OK
+# ✅ Cache-Control headers present
+# ✅ Build hash present in remote HTML
+# ✅ Service worker registration code found
+```
+
+**4. Browser Verification** (Use Chrome DevTools MCP)
+After ANY code changes, bug fixes, or deployments, you MUST verify in a real browser:
+
+```typescript
+// Example browser verification workflow:
+
+// Navigate to application
+await browser.navigate({ url: "http://localhost:8080" });
+
+// Verify page loads without errors
+const console = await browser.getConsoleMessages({ onlyErrors: true });
+// Should be empty or only expected warnings
+
+// Take screenshot for visual verification
+await browser.screenshot({ filename: "deployment-verification.png" });
+
+// Verify network requests succeed
+const requests = await browser.getNetworkRequests();
+const failed = requests.filter(r => r.status >= 400);
+// Should be empty
+
+// Check service worker registration
+const sw = await browser.evaluate({
+  function: "() => navigator.serviceWorker.controller !== null"
+});
+// Should be true
+
+// Verify build hash is present
+const buildHash = await browser.evaluate({
+  function: "() => document.documentElement.dataset.buildHash"
+});
+// Should return an 8-character hash
+```
+
+#### Server Configuration (Production)
+
+**Nginx Example:**
+```nginx
+# Never cache index.html
+location = /index.html {
+  add_header Cache-Control "no-cache, no-store, must-revalidate, max-age=0";
+  add_header Pragma "no-cache";
+  add_header Expires "0";
+}
+
+# Cache hashed assets forever (immutable)
+location /assets/ {
+  add_header Cache-Control "public, max-age=31536000, immutable";
+}
+
+# Cache service worker for 1 hour
+location = /sw.js {
+  add_header Cache-Control "public, max-age=3600";
+}
+```
+
+**Cloudflare/CDN:**
+- Set page rules to respect origin cache headers
+- Configure cache TTL: index.html = 0s, /assets/* = 1 year
+- Purge entire cache on deployment
+- Enable Browser Cache TTL override
+
+#### When to Run Verification
+
+Run the full verification checklist:
+- ✅ Before creating a pull request
+- ✅ After merging to main/production branch
+- ✅ After any build configuration changes
+- ✅ After Vite/dependency upgrades
+- ✅ After fixing bugs that affect UI/UX
+- ✅ Weekly during active development
+
+#### Troubleshooting
+
+**Users seeing old version:**
+1. Check browser DevTools → Network tab for cache headers
+2. Verify build hash in HTML matches deployed version
+3. Check service worker status in Application tab
+4. Hard refresh: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows)
+
+**Service worker not updating:**
+1. Check sw.js has max-age=3600 header (not longer)
+2. Verify `skipWaiting: true` in vite.config.ts workbox config
+3. Check browser console for service worker errors
+4. Test in incognito mode to rule out cache issues
+
+**Build hash not changing:**
+1. Ensure clean build: `rm -rf dist && npm run build`
+2. Verify vite.config.ts has buildHash generation
+3. Check dist/index.html contains `data-build-hash` attribute
+4. Review plugin configuration in vite.config.ts:88-92
+
+#### Documentation
+
+For detailed information on the cache-busting implementation:
+- **Quick Start**: `docs/CACHE_BUSTING_QUICK_START.md`
+- **Full Strategy**: `docs/CACHE_BUSTING_STRATEGY.md`
+- **Implementation Details**: `docs/IMPLEMENTATION_SUMMARY.md`
 
 ### Known Quirks
 - ESLint configured to ignore unused TypeScript vars
