@@ -1,106 +1,942 @@
-# Welcome to your Lovable project
+# Vana - AI-Powered Development Assistant
 
-## Project info
+<div align="center">
 
-**URL**: https://lovable.dev/projects/f16fb528-308b-4eaa-ad6f-36a2da269284
+![Vana Banner](https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200&h=400&fit=crop)
 
-## Package Manager
+**Transform natural language into interactive code, components, and diagrams in real-time**
 
-This project uses **npm** as its package manager.
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18.3-61dafb?logo=react)](https://reactjs.org/)
+[![Vite](https://img.shields.io/badge/Vite-5.4-646cff?logo=vite)](https://vitejs.dev/)
+[![Supabase](https://img.shields.io/badge/Supabase-2.75-3ecf8e?logo=supabase)](https://supabase.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-### Requirements
-- Node.js & npm - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+[Features](#-features) • [Demo](#-demo) • [Getting Started](#-getting-started) • [Architecture](#-architecture) • [Deployment](#-deployment)
 
-**Important:** Always use npm commands to avoid dependency conflicts. Do not use Bun, Yarn, or pnpm.
+</div>
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 📋 Table of Contents
 
-**Use Lovable**
+- [Overview](#-overview)
+- [Features](#-features)
+- [Demo](#-demo)
+- [Technology Stack](#-technology-stack)
+- [Architecture](#-architecture)
+- [Getting Started](#-getting-started)
+- [Project Structure](#-project-structure)
+- [Key Features Deep Dive](#-key-features-deep-dive)
+- [Development Guide](#-development-guide)
+- [Deployment](#-deployment)
+- [Contributing](#-contributing)
+- [License](#-license)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/f16fb528-308b-4eaa-ad6f-36a2da269284) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🌟 Overview
 
-**Use your preferred IDE**
+**Vana** is an AI-powered development assistant that transforms natural language into production-ready code, interactive React components, diagrams, and more. Built with Claude AI, Vana provides a seamless chat interface where every conversation can generate interactive artifacts—fully functional components rendered in real-time alongside your chat.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Why Vana?
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- 🚀 **Real-time Generation**: Watch your ideas materialize with streaming AI responses
+- 🎨 **Interactive Artifacts**: Generate React components, HTML pages, Mermaid diagrams, and SVG graphics
+- 🔒 **Secure & Private**: Built on Supabase with authentication and Row-Level Security
+- 📱 **Responsive Design**: Optimized for both desktop and mobile experiences
+- 🎯 **Smart Context**: Maintains conversation history with intelligent summarization
+- 🔧 **Developer-Friendly**: Full TypeScript support with modern tooling
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## ✨ Features
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Core Capabilities
 
-# Step 3: Install the necessary dependencies.
+- **🤖 AI-Powered Chat**: Real-time conversations with Claude AI
+- **📦 Artifact System**: Generate and render interactive content
+  - React components with shadcn/ui support
+  - HTML pages with live preview
+  - Mermaid diagrams
+  - SVG graphics
+  - Code snippets with syntax highlighting
+  - Markdown documents
+  - AI-generated images
+- **💾 Session Management**: Persistent chat sessions with automatic title generation
+- **🔄 Version Control**: Track changes to artifacts with Git-like versioning
+- **🎨 Theme Support**: Dark/light mode with system preference detection
+- **📱 Mobile Optimized**: Responsive design with touch-friendly interactions
+- **🔐 Authentication**: Email/password and Google OAuth support
+- **🛡️ Security**: Library approval system for external dependencies
+- **⚡ Performance**: Optimized with code splitting, compression, and PWA support
+
+### Advanced Features
+
+- **Streaming Responses**: Real-time token streaming with progress indicators
+- **Artifact Validation**: Pre-render validation with error detection
+- **Context Management**: Intelligent conversation summarization for long chats
+- **File Upload**: Support for image uploads and analysis
+- **Error Recovery**: Automatic error detection and AI-powered fixes
+- **Keyboard Shortcuts**: Efficient navigation and actions
+
+---
+
+## 🎬 Demo
+
+### Live Preview
+
+Experience Vana in action: [View Demo](#) *(Add your deployment URL)*
+
+### Key Use Cases
+
+- **Rapid Prototyping**: Generate UI components and layouts instantly
+- **Code Generation**: Create functions, classes, and utilities with natural language
+- **Data Visualization**: Build charts and dashboards with Recharts
+- **Documentation**: Generate diagrams and technical documentation
+- **Image Creation**: AI-powered image generation for mockups and designs
+
+---
+
+## 🛠 Technology Stack
+
+### Frontend
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **React** | 18.3 | UI framework |
+| **TypeScript** | 5.8 | Type safety |
+| **Vite** | 5.4 | Build tool & dev server |
+| **Tailwind CSS** | 3.4 | Utility-first styling |
+| **shadcn/ui** | Latest | Component library |
+| **Radix UI** | Latest | Accessible primitives |
+| **TanStack Query** | 5.83 | Data fetching & caching |
+| **React Router** | 6.30 | Client-side routing |
+
+### Backend & Services
+
+| Service | Purpose |
+|---------|---------|
+| **Supabase** | PostgreSQL database, authentication, edge functions |
+| **Claude AI** | Language model for chat and generation |
+| **Lovable API** | AI model integration |
+
+### Key Libraries
+
+- **marked** - Markdown parsing
+- **mermaid** - Diagram rendering
+- **shiki** - Syntax highlighting
+- **react-markdown** - Markdown rendering
+- **lucide-react** - Icon library
+- **motion** - Animation library
+- **vitest** - Testing framework
+
+---
+
+## 🏗 Architecture
+
+### System Architecture
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        A[React App<br/>Vite + TypeScript]
+        B[Chat Interface]
+        C[Artifact Canvas]
+        D[Session Sidebar]
+    end
+
+    subgraph "State Management"
+        E[TanStack Query]
+        F[React Context]
+        G[Local Storage]
+    end
+
+    subgraph "Supabase Backend"
+        H[PostgreSQL Database]
+        I[Auth Service]
+        J[Edge Functions]
+        K[Storage]
+    end
+
+    subgraph "Edge Functions"
+        L[chat]
+        M[generate-title]
+        N[generate-image]
+        O[summarize-conversation]
+        P[cache-manager]
+    end
+
+    subgraph "External Services"
+        Q[Claude AI<br/>via Lovable API]
+        R[Image Generation API]
+    end
+
+    A --> B
+    A --> C
+    A --> D
+    B --> E
+    C --> E
+    D --> E
+    E --> F
+    F --> G
+
+    E --> I
+    E --> H
+    B --> J
+
+    J --> L
+    J --> M
+    J --> N
+    J --> O
+    J --> P
+
+    L --> Q
+    N --> R
+    L --> H
+    M --> H
+    O --> H
+
+    I -.JWT Auth.-> J
+    H -.RLS Policies.-> I
+
+    style A fill:#61dafb
+    style H fill:#3ecf8e
+    style Q fill:#8B7BF7
+    style I fill:#3ecf8e
+```
+
+### Component Hierarchy
+
+```mermaid
+graph TD
+    A[App.tsx] --> B[Router]
+    B --> C[Index Page]
+    B --> D[Auth Page]
+    B --> E[Landing Page]
+
+    C --> F[SidebarProvider]
+    F --> G[ChatSidebar]
+    F --> H[SidebarInset]
+
+    H --> I[ChatInterface]
+    I --> J[VirtualizedMessageList]
+    I --> K[ChatInput]
+    I --> L[ResizablePanels]
+
+    L --> M[Chat Panel]
+    L --> N[Artifact Panel]
+
+    M --> O[MessageContent]
+    M --> P[ArtifactCard]
+
+    N --> Q[Artifact Component]
+    Q --> R[Code Renderer]
+    Q --> S[HTML Preview]
+    Q --> T[React Preview]
+    Q --> U[Mermaid Renderer]
+    Q --> V[SVG Renderer]
+
+    G --> W[SessionList]
+    W --> X[SidebarItem]
+
+    style A fill:#61dafb
+    style I fill:#8B7BF7
+    style Q fill:#3ecf8e
+```
+
+### Authentication Flow
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant C as Client App
+    participant S as Supabase Auth
+    participant D as Database
+    participant E as Edge Function
+
+    U->>C: Visit App
+    C->>S: Check Session
+
+    alt No Session
+        S-->>C: No Session
+        C->>U: Redirect to /auth
+        U->>C: Login (Email/Google)
+        C->>S: signInWithPassword() or signInWithOAuth()
+        S->>D: Validate Credentials
+        D-->>S: User Data
+        S-->>C: Session + JWT
+        C->>C: Store in localStorage
+        C->>U: Redirect to /
+    else Valid Session
+        S-->>C: Session + JWT
+        C->>U: Show Chat Interface
+    end
+
+    U->>C: Send Chat Message
+    C->>E: POST /chat (with JWT)
+    E->>E: Verify JWT
+    E->>D: Save Message (RLS Check)
+    D-->>E: Success
+    E-->>C: Stream Response
+    C->>U: Display Response
+```
+
+### Data Flow
+
+```mermaid
+graph LR
+    A[User Input] --> B[ChatInterface]
+    B --> C[useChatMessages Hook]
+    C --> D[Save User Message]
+    D --> E[Supabase DB]
+
+    C --> F[Stream Chat API]
+    F --> G[Edge Function: chat]
+    G --> H[Claude AI]
+    H --> I[Stream Response]
+
+    I --> J[Parse Artifacts]
+    J --> K{Artifact Detected?}
+
+    K -->|Yes| L[Extract Artifact Data]
+    K -->|No| M[Display Text Only]
+
+    L --> N[Artifact Parser]
+    N --> O[Validate Artifact]
+    O --> P[Render in Canvas]
+
+    I --> Q[Save Assistant Message]
+    Q --> E
+
+    E --> R[Update UI]
+    R --> S[Display to User]
+
+    style B fill:#61dafb
+    style G fill:#3ecf8e
+    style H fill:#8B7BF7
+    style P fill:#FFD700
+```
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js** (v18 or higher) - [Install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **npm** (comes with Node.js)
+- **Git** - [Download](https://git-scm.com/downloads)
+
+### Installation
+
+1. **Clone the repository**
+
+```bash
+git clone https://github.com/NickB03/llm-chat-site.git
+cd llm-chat-site
+```
+
+2. **Install dependencies**
+
+```bash
 npm install
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+> ⚠️ **Important**: Always use `npm` for package management. Do not use Bun, Yarn, or pnpm as this will create conflicting lock files.
+
+3. **Set up environment variables**
+
+Create a `.env` file in the root directory:
+
+```env
+# Supabase Configuration
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
+VITE_SUPABASE_PROJECT_ID=your_project_id
+
+# Optional: Analytics
+VITE_ENABLE_ANALYTICS=false
+```
+
+4. **Set up Supabase**
+
+- Create a [Supabase](https://supabase.com) account
+- Create a new project
+- Run the migrations from `supabase/migrations/` in your Supabase SQL editor
+- Configure authentication providers (Email, Google OAuth)
+- Set up Edge Functions (see [Deployment](#-deployment))
+
+5. **Start the development server**
+
+```bash
 npm run dev
 ```
 
-**⚠️ Important:** Always use `npm` commands. Do not use other package managers (Bun, Yarn, pnpm) as this will create conflicting lock files.
+The app will be available at `http://localhost:8080`
 
-**Edit a file directly in GitHub**
+### Quick Start Commands
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+# Development
+npm run dev              # Start dev server (port 8080)
+npm run build            # Production build
+npm run build:dev        # Development build with sourcemaps
+npm run preview          # Preview production build
 
-**Use GitHub Codespaces**
+# Testing
+npm run test             # Run tests
+npm run test:ui          # Run tests with UI
+npm run test:coverage    # Generate coverage report
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Code Quality
+npm run lint             # Run ESLint
+```
 
-## What technologies are used for this project?
+---
 
-This project is built with:
+## 📁 Project Structure
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```
+llm-chat-site/
+├── src/
+│   ├── components/          # React components
+│   │   ├── ui/             # shadcn/ui components (69 files)
+│   │   ├── prompt-kit/     # Custom chat UI primitives
+│   │   ├── landing/        # Landing page components
+│   │   ├── Artifact.tsx    # Artifact renderer (main component)
+│   │   ├── ArtifactCard.tsx # Artifact preview cards
+│   │   ├── ChatInterface.tsx # Main chat interface
+│   │   ├── ChatSidebar.tsx  # Session list sidebar
+│   │   └── ...
+│   ├── hooks/              # Custom React hooks
+│   │   ├── useChatMessages.tsx  # Chat message CRUD & streaming
+│   │   ├── useChatSessions.tsx  # Session management
+│   │   ├── useGoogleAuth.ts     # Google OAuth integration
+│   │   └── ...
+│   ├── pages/              # Route pages
+│   │   ├── Index.tsx       # Main chat page
+│   │   ├── Auth.tsx        # Login page
+│   │   ├── Signup.tsx      # Registration page
+│   │   ├── Landing.tsx     # Marketing landing page
+│   │   └── ...
+│   ├── utils/              # Utility functions
+│   │   ├── artifactParser.ts    # Parse artifacts from AI responses
+│   │   ├── artifactValidator.ts # Validate artifact syntax
+│   │   ├── authHelpers.ts       # Authentication utilities
+│   │   ├── themeUtils.ts        # Theme management
+│   │   └── ...
+│   ├── integrations/       # External service integrations
+│   │   └── supabase/       # Supabase client & types
+│   ├── constants/          # Constants and configurations
+│   │   └── artifactTemplates.ts # Artifact templates
+│   ├── App.tsx             # Root component
+│   └── main.tsx            # Entry point
+├── supabase/
+│   ├── functions/          # Edge Functions
+│   │   ├── chat/           # Main chat streaming function
+│   │   ├── generate-title/ # Auto-generate session titles
+│   │   ├── generate-image/ # AI image generation
+│   │   ├── summarize-conversation/ # Context summarization
+│   │   └── cache-manager/  # Redis cache management
+│   ├── migrations/         # Database migrations
+│   └── config.toml         # Supabase configuration
+├── public/                 # Static assets
+├── docs/                   # Documentation
+├── package.json            # Dependencies
+├── vite.config.ts          # Vite configuration
+├── tailwind.config.ts      # Tailwind CSS configuration
+├── tsconfig.json           # TypeScript configuration
+└── README.md               # This file
+```
 
-## How can I deploy this project?
+### Key Files
 
-Simply open [Lovable](https://lovable.dev/projects/f16fb528-308b-4eaa-ad6f-36a2da269284) and click on Share -> Publish.
+| File | Purpose |
+|------|---------|
+| `src/components/Artifact.tsx` | Renders all artifact types (React, HTML, SVG, Mermaid, etc.) |
+| `src/components/ChatInterface.tsx` | Main chat UI with resizable panels |
+| `src/hooks/useChatMessages.tsx` | Manages chat messages and streaming |
+| `src/utils/artifactParser.ts` | Extracts artifacts from AI responses |
+| `supabase/functions/chat/index.ts` | Main chat API endpoint |
+| `vite.config.ts` | Build configuration with PWA support |
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 🎯 Key Features Deep Dive
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+### Artifact System
 
-## Troubleshooting
+Vana's artifact system allows AI to generate interactive content that renders alongside the chat. Artifacts are automatically detected and parsed from AI responses.
 
-### Dependency Conflicts
-If you encounter dependency issues:
+#### Supported Artifact Types
 
-1. Delete conflicting lock files and node_modules:
-   ```sh
-   rm -rf node_modules
-   rm -f bun.lockb yarn.lock pnpm-lock.yaml
-   ```
+| Type | Description | Use Cases |
+|------|-------------|-----------|
+| **React** | Full React components with shadcn/ui | Interactive UIs, forms, dashboards |
+| **HTML** | Standalone HTML pages | Landing pages, email templates |
+| **Code** | Syntax-highlighted code | Functions, classes, snippets |
+| **Mermaid** | Diagrams and flowcharts | Architecture diagrams, workflows |
+| **SVG** | Vector graphics | Icons, illustrations, logos |
+| **Markdown** | Formatted text | Documentation, notes |
+| **Image** | AI-generated images | Mockups, designs, illustrations |
 
-2. Reinstall with npm:
-   ```sh
-   npm install
-   ```
+#### Artifact Format
 
-3. Ensure you're using npm for all commands:
-   ```sh
-   npm run dev
-   npm run build
-   ```
+Artifacts are embedded in AI responses using XML-like tags:
+
+```xml
+<artifact type="application/vnd.ant.react" title="Dashboard Component">
+import { Card } from "@/components/ui/card"
+
+export default function Dashboard() {
+  return <Card>Hello World</Card>
+}
+</artifact>
+```
+
+#### Library Approval System
+
+For security, external CDN libraries require user approval before loading:
+
+- User is prompted when AI suggests a new library
+- Approved libraries are saved to user preferences
+- Auto-approval can be enabled in settings
+- Prevents malicious code execution
+
+### Session Management
+
+#### Features
+
+- **Automatic Title Generation**: AI generates descriptive titles from the first message
+- **Conversation Summarization**: Long conversations are automatically summarized to maintain context
+- **Persistent Storage**: All sessions stored in Supabase with RLS policies
+- **Session Grouping**: Sessions organized by time period (Today, Yesterday, Last 7 Days, etc.)
+
+#### Database Schema
+
+```typescript
+// chat_sessions table
+{
+  id: string (UUID)
+  user_id: string (FK to auth.users)
+  title: string
+  first_message: string
+  conversation_summary: string | null
+  created_at: timestamp
+  updated_at: timestamp
+}
+
+// chat_messages table
+{
+  id: string (UUID)
+  session_id: string (FK to chat_sessions)
+  role: "user" | "assistant"
+  content: string
+  reasoning: string | null
+  token_count: number
+  created_at: timestamp
+}
+```
+
+### Authentication
+
+#### Supported Methods
+
+1. **Email/Password**: Traditional authentication with email confirmation
+2. **Google OAuth**: One-click sign-in with Google
+
+#### Security Features
+
+- JWT-based authentication
+- Row-Level Security (RLS) policies on all tables
+- Automatic session refresh
+- Secure token storage in localStorage
+- CSRF protection on Edge Functions
+
+### Streaming & Real-time Updates
+
+#### How Streaming Works
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant C as ChatInterface
+    participant H as useChatMessages Hook
+    participant E as Edge Function
+    participant AI as Claude AI
+
+    U->>C: Send Message
+    C->>H: streamChat()
+    H->>E: POST /chat (SSE)
+    E->>AI: Stream Request
+
+    loop Token Streaming
+        AI-->>E: Token Chunk
+        E-->>H: SSE Event
+        H-->>C: onDelta(chunk)
+        C-->>U: Update UI
+    end
+
+    AI-->>E: [DONE]
+    E-->>H: Complete
+    H->>H: Save Message
+    H-->>C: onDone()
+    C-->>U: Final UI Update
+```
+
+#### Progress Indicators
+
+The streaming system provides real-time progress updates:
+
+- **Analyzing**: Understanding the request
+- **Planning**: Determining the approach
+- **Generating**: Creating the response
+- **Finalizing**: Completing the artifact
+- **Complete**: Ready for interaction
+
+---
+
+## 💻 Development Guide
+
+### Code Organization
+
+#### Component Patterns
+
+```typescript
+// Example: Custom hook pattern
+export function useChatMessages(sessionId: string) {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch messages on mount
+  useEffect(() => {
+    fetchMessages();
+  }, [sessionId]);
+
+  return { messages, isLoading, streamChat, saveMessage };
+}
+```
+
+#### Artifact Parser Pattern
+
+```typescript
+// Extract artifacts from AI response
+export function parseArtifacts(content: string): {
+  artifacts: ArtifactData[];
+  cleanContent: string;
+} {
+  const artifacts: ArtifactData[] = [];
+  let cleanContent = content;
+
+  // Regex to match artifact tags
+  const artifactRegex = /<artifact type="([^"]+)" title="([^"]+)"(?:\s+language="([^"]+)")?>(.+?)<\/artifact>/gs;
+
+  // Extract and process artifacts
+  // ...
+
+  return { artifacts, cleanContent };
+}
+```
+
+### Adding New Artifact Types
+
+1. **Update the type definition** in `src/components/Artifact.tsx`:
+
+```typescript
+export type ArtifactType = "code" | "html" | "react" | "svg" | "mermaid" | "markdown" | "image" | "your-new-type";
+```
+
+2. **Add renderer logic** in the `Artifact` component:
+
+```typescript
+if (artifact.type === "your-new-type") {
+  return <YourCustomRenderer content={artifact.content} />;
+}
+```
+
+3. **Update the parser** in `src/utils/artifactParser.ts`:
+
+```typescript
+const mimeTypeMap: Record<string, ArtifactType> = {
+  // ... existing types
+  'application/vnd.your-type': 'your-new-type',
+};
+```
+
+### Testing
+
+```bash
+# Run all tests
+npm run test
+
+# Run tests in watch mode
+npm run test -- --watch
+
+# Run tests with UI
+npm run test:ui
+
+# Generate coverage report
+npm run test:coverage
+```
+
+#### Example Test
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { parseArtifacts } from '@/utils/artifactParser';
+
+describe('artifactParser', () => {
+  it('should extract React artifacts', () => {
+    const content = '<artifact type="application/vnd.ant.react" title="Test">code</artifact>';
+    const { artifacts } = parseArtifacts(content);
+
+    expect(artifacts).toHaveLength(1);
+    expect(artifacts[0].type).toBe('react');
+  });
+});
+```
+
+---
+## 🚢 Deployment
+
+### Supabase Setup
+
+1. **Create a Supabase project**
+   - Visit [Supabase](https://supabase.com) and create a new project
+   - Note your project URL and anon key
+
+2. **Run database migrations**
+   - Navigate to SQL Editor in Supabase dashboard
+   - Run each migration file from `supabase/migrations/` in order
+
+3. **Configure authentication**
+   - Enable Email provider in Authentication > Providers
+   - Configure Google OAuth (optional):
+     - Add Google OAuth credentials
+     - Set redirect URL: `https://your-project.supabase.co/auth/v1/callback`
+
+4. **Deploy Edge Functions**
+
+```bash
+# Install Supabase CLI
+npm install -g supabase
+
+# Login to Supabase
+supabase login
+
+# Link your project
+supabase link --project-ref your-project-ref
+
+# Deploy all functions
+supabase functions deploy chat
+supabase functions deploy generate-title
+supabase functions deploy generate-image
+supabase functions deploy summarize-conversation
+supabase functions deploy cache-manager
+```
+
+5. **Set environment secrets**
+
+```bash
+# Set API keys for Edge Functions
+supabase secrets set LOVABLE_API_KEY=your_api_key
+supabase secrets set IMAGE_API_KEY=your_image_api_key
+```
+
+### Frontend Deployment
+
+#### Option 1: Lovable (Recommended)
+
+1. Visit your [Lovable Project](https://lovable.dev/projects/f16fb528-308b-4eaa-ad6f-36a2da269284)
+2. Click **Share** → **Publish**
+3. Your app will be deployed automatically
+
+#### Option 2: Netlify
+
+1. **Build the project**
+
+```bash
+npm run build
+```
+
+2. **Deploy to Netlify**
+
+```bash
+# Install Netlify CLI
+npm install -g netlify-cli
+
+# Deploy
+netlify deploy --prod --dir=dist
+```
+
+3. **Configure environment variables** in Netlify dashboard:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY`
+   - `VITE_SUPABASE_PROJECT_ID`
+
+#### Option 3: Vercel
+
+1. **Install Vercel CLI**
+
+```bash
+npm install -g vercel
+```
+
+2. **Deploy**
+
+```bash
+vercel --prod
+```
+
+3. **Set environment variables** in Vercel dashboard
+
+### Build Optimization
+
+The production build includes:
+
+- **Code Splitting**: Vendor chunks for React, UI libraries, and Supabase
+- **Compression**: Brotli and Gzip compression
+- **Minification**: Terser with console removal
+- **PWA**: Service worker for offline support
+- **Tree Shaking**: Removes unused code
+
+### Performance Metrics
+
+Target metrics for production:
+
+- **First Contentful Paint (FCP)**: < 1.5s
+- **Largest Contentful Paint (LCP)**: < 2.5s
+- **Time to Interactive (TTI)**: < 3.5s
+- **Cumulative Layout Shift (CLS)**: < 0.1
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please follow these guidelines:
+
+### Development Workflow
+
+1. **Fork the repository**
+2. **Create a feature branch**
+
+```bash
+git checkout -b feature/your-feature-name
+```
+
+3. **Make your changes**
+   - Follow the existing code style
+   - Add tests for new features
+   - Update documentation as needed
+
+4. **Run tests and linting**
+
+```bash
+npm run test
+npm run lint
+```
+
+5. **Commit your changes**
+
+```bash
+git commit -m "feat: add your feature description"
+```
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `docs:` - Documentation changes
+- `style:` - Code style changes (formatting, etc.)
+- `refactor:` - Code refactoring
+- `test:` - Adding or updating tests
+- `chore:` - Maintenance tasks
+
+6. **Push to your fork**
+
+```bash
+git push origin feature/your-feature-name
+```
+
+7. **Create a Pull Request**
+   - Provide a clear description of changes
+   - Reference any related issues
+   - Ensure all checks pass
+
+### Code Style
+
+- Use TypeScript for all new code
+- Follow the existing component patterns
+- Use functional components with hooks
+- Prefer named exports over default exports
+- Add JSDoc comments for complex functions
+
+### Reporting Issues
+
+When reporting issues, please include:
+
+- Clear description of the problem
+- Steps to reproduce
+- Expected vs actual behavior
+- Screenshots (if applicable)
+- Browser and OS information
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+### Technologies
+
+- [Claude AI](https://www.anthropic.com/claude) - Powering the AI conversations
+- [Supabase](https://supabase.com) - Backend infrastructure
+- [shadcn/ui](https://ui.shadcn.com) - Beautiful component library
+- [Vite](https://vitejs.dev) - Lightning-fast build tool
+- [React](https://reactjs.org) - UI framework
+
+### Inspiration
+
+This project was inspired by:
+- [Anthropic's Claude Artifacts](https://www.anthropic.com/news/claude-3-5-sonnet)
+- [Vercel's v0](https://v0.dev)
+- [ChatGPT Code Interpreter](https://openai.com/blog/chatgpt-plugins)
+
+---
+
+## 📞 Support
+
+### Documentation
+
+- [Supabase Docs](https://supabase.com/docs)
+- [React Docs](https://react.dev)
+- [Vite Docs](https://vitejs.dev/guide/)
+- [shadcn/ui Docs](https://ui.shadcn.com)
+
+### Community
+
+- **Issues**: [GitHub Issues](https://github.com/NickB03/llm-chat-site/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/NickB03/llm-chat-site/discussions)
+
+### Project Links
+
+- **Repository**: [github.com/NickB03/llm-chat-site](https://github.com/NickB03/llm-chat-site)
+- **Lovable Project**: [lovable.dev/projects/f16fb528-308b-4eaa-ad6f-36a2da269284](https://lovable.dev/projects/f16fb528-308b-4eaa-ad6f-36a2da269284)
+
+---
+
+<div align="center">
+
+**Built with ❤️ using Claude AI, React, and Supabase**
+
+⭐ Star this repo if you find it helpful!
+
+</div>
+

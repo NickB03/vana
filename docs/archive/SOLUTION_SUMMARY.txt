@@ -1,0 +1,72 @@
+================================================================================
+POSTGREST SCHEMA CACHE ISSUE - INVESTIGATION COMPLETE
+================================================================================
+
+PROBLEM CONFIRMED:
+- artifact_ids column exists in database (verified via migration)
+- PostgREST schema cache is stale (returns error 42703)
+- Application is working with retry workaround in place
+
+ROOT CAUSE:
+- PostgREST caches database schema for performance
+- After DDL changes, cache needs manual or automatic refresh
+- In Supabase cloud, cache TTL is 10-15 minutes
+- NOTIFY commands work but require correct connection
+
+SOLUTION STATUS:
+✅ WORKAROUND IMPLEMENTED (Production-Safe)
+- Location: src/hooks/useChatMessages.tsx lines 94-114
+- Behavior: Retries without artifact_ids if cache error occurs
+- Impact: App continues working, artifact_ids saved after cache refresh
+
+NEXT STEPS (Choose One):
+
+1. MANUAL REFRESH (Instant - Recommended)
+   a. Browser opened to: https://supabase.com/dashboard/project/xfwlneedhqealtktaacv/sql/new
+   b. Run SQL: NOTIFY pgrst, 'reload schema';
+   c. Wait 10 seconds
+   d. Test: node test_artifact_ids.mjs
+   e. Remove workaround if successful
+
+2. AUTO REFRESH (15 minutes)
+   a. Wait for PostgREST auto-refresh
+   b. Monitor: node monitor_schema_refresh.mjs
+   c. Remove workaround after success notification
+
+3. CONTINUE WITH WORKAROUND
+   - App works normally with current code
+   - Remove workaround after cache refreshes naturally
+   - No urgency - can be done anytime
+
+FILES CREATED:
+Documentation:
+  - POSTGREST_CACHE_SOLUTION.md (complete technical analysis)
+  - README_SCHEMA_CACHE_FIX.md (quick fix guide)
+  - SOLUTION_SUMMARY.txt (this file)
+
+Testing:
+  - test_artifact_ids.mjs (verify schema status)
+  - monitor_schema_refresh.mjs (auto-monitor every 30s)
+
+Helpers:
+  - manual_refresh_instructions.sh (browser + instructions)
+
+Migrations:
+  - supabase/migrations/20251102192809_force_postgrest_reload.sql
+
+VERIFICATION COMMAND:
+node test_artifact_ids.mjs
+
+EXPECTED SUCCESS OUTPUT:
+✓ SELECT successful
+✓ INSERT successful with artifact_ids: [ 'test-1', 'test-2' ]
+
+CURRENT STATUS: WAITING FOR CACHE REFRESH
+
+OPTIONS:
+1. Execute SQL in browser (already opened)
+2. Run monitor: node monitor_schema_refresh.mjs
+3. Continue working - workaround handles this gracefully
+
+NO CRITICAL ISSUES - App is functional with workaround in place
+================================================================================
