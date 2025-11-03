@@ -1,0 +1,155 @@
+/* ArtifactDiffViewer Custom Styles */
+
+/* Override react-diff-view default styles for better integration */
+.diff-container {
+  background: var(--background);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.diff-view {
+  --diff-gutter-insert-background-color: hsl(142, 76%, 95%);
+  --diff-gutter-insert-text-color: hsl(142, 76%, 36%);
+  --diff-gutter-delete-background-color: hsl(0, 72%, 95%);
+  --diff-gutter-delete-text-color: hsl(0, 72%, 41%);
+  --diff-code-insert-background-color: hsl(142, 76%, 97%);
+  --diff-code-insert-edit-background-color: hsl(142, 76%, 85%);
+  --diff-code-delete-background-color: hsl(0, 72%, 97%);
+  --diff-code-delete-edit-background-color: hsl(0, 72%, 88%);
+}
+
+/* Dark mode adjustments */
+.dark .diff-view {
+  --diff-gutter-insert-background-color: hsl(142, 76%, 15%);
+  --diff-gutter-insert-text-color: hsl(142, 76%, 70%);
+  --diff-gutter-delete-background-color: hsl(0, 72%, 15%);
+  --diff-gutter-delete-text-color: hsl(0, 72%, 70%);
+  --diff-code-insert-background-color: hsl(142, 76%, 12%);
+  --diff-code-insert-edit-background-color: hsl(142, 76%, 20%);
+  --diff-code-delete-background-color: hsl(0, 72%, 12%);
+  --diff-code-delete-edit-background-color: hsl(0, 72%, 20%);
+}
+
+/* Gutter styling */
+.diff-view .diff-gutter {
+  user-select: none;
+  min-width: 50px;
+  text-align: right;
+  padding: 0 8px;
+  color: var(--muted-foreground);
+  background-color: var(--muted);
+  border-right: 1px solid var(--border);
+}
+
+.diff-view .diff-gutter-insert {
+  background-color: var(--diff-gutter-insert-background-color);
+  color: var(--diff-gutter-insert-text-color);
+}
+
+.diff-view .diff-gutter-delete {
+  background-color: var(--diff-gutter-delete-background-color);
+  color: var(--diff-gutter-delete-text-color);
+}
+
+/* Code cell styling */
+.diff-view .diff-code {
+  padding: 0 8px;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.diff-view .diff-code-insert {
+  background-color: var(--diff-code-insert-background-color);
+}
+
+.diff-view .diff-code-delete {
+  background-color: var(--diff-code-delete-background-color);
+}
+
+/* Highlight edited portions within lines */
+.diff-view .diff-code-insert .diff-code-edit {
+  background-color: var(--diff-code-insert-edit-background-color);
+}
+
+.diff-view .diff-code-delete .diff-code-edit {
+  background-color: var(--diff-code-delete-edit-background-color);
+}
+
+/* Split view specific */
+.diff-view.split-view {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.diff-view.split-view .diff-hunk {
+  display: table-row;
+}
+
+.diff-view.split-view .diff-line {
+  display: table-cell;
+  width: 50%;
+  vertical-align: top;
+}
+
+/* Unified view specific */
+.diff-view.unified-view .diff-line {
+  display: table-row;
+}
+
+.diff-view.unified-view .diff-gutter,
+.diff-view.unified-view .diff-code {
+  display: table-cell;
+}
+
+/* Hunk header */
+.diff-view .diff-hunk-header {
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+  padding: 4px 8px;
+  font-weight: 500;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Add/delete indicators */
+.diff-view .diff-code-insert::before {
+  content: "+ ";
+  color: var(--diff-gutter-insert-text-color);
+}
+
+.diff-view .diff-code-delete::before {
+  content: "- ";
+  color: var(--diff-gutter-delete-text-color);
+}
+
+/* Scrollbar styling for diff content */
+.diff-container ::-webkit-scrollbar {
+  height: 8px;
+}
+
+.diff-container ::-webkit-scrollbar-track {
+  background: var(--muted);
+}
+
+.diff-container ::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 4px;
+}
+
+.diff-container ::-webkit-scrollbar-thumb:hover {
+  background: var(--foreground);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .diff-view .diff-gutter {
+    min-width: 35px;
+    padding: 0 4px;
+    font-size: 0.75rem;
+  }
+
+  .diff-view .diff-code {
+    padding: 0 4px;
+    font-size: 0.8rem;
+  }
+}
