@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Sparkles, Image, BarChart3, Code2, FileText, GitBranch } from "lucide-react";
 import { motion } from "motion/react";
-import { hoverLift } from "@/utils/animationConstants";
+import { hoverLift, scrollFadeIn } from "@/utils/animationConstants";
 import { toast } from "sonner";
 
 interface ShowcaseItem {
@@ -373,7 +373,10 @@ export const ShowcaseSection = () => {
 
   return (
     <section id="showcase" className="py-24 px-4">
-      <div className="container max-w-7xl mx-auto">
+      <motion.div
+        className="container max-w-7xl mx-auto"
+        {...scrollFadeIn}
+      >
         <div className="text-center space-y-4 mb-16">
           <h2 className="text-3xl md:text-5xl font-bold">
             See What's Possible with Vana
@@ -466,7 +469,7 @@ export const ShowcaseSection = () => {
             </Button>
           </div>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 };

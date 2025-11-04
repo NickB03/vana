@@ -99,6 +99,103 @@ export const hoverLift = {
 };
 
 /**
+ * Landing to app transition variants
+ * Used for: Scroll-triggered page transformation
+ */
+export const landingTransition = {
+  landing: {
+    fadeOut: {
+      initial: { opacity: 1, y: 0, scale: 1 },
+      transitioning: (progress: number) => ({
+        opacity: 1 - progress,
+        y: -50 * progress,
+        scale: 1 - 0.05 * progress,
+      }),
+      complete: { opacity: 0, y: -50, scale: 0.95 },
+    },
+    blurOut: {
+      initial: { filter: 'blur(0px)' },
+      transitioning: (progress: number) => ({
+        filter: `blur(${10 * progress}px)`,
+      }),
+      complete: { filter: 'blur(10px)' },
+    },
+  },
+  app: {
+    fadeIn: {
+      initial: { opacity: 0, y: 50, scale: 0.95 },
+      transitioning: (progress: number) => ({
+        opacity: progress,
+        y: 50 - 50 * progress,
+        scale: 0.95 + 0.05 * progress,
+      }),
+      complete: { opacity: 1, y: 0, scale: 1 },
+    },
+  },
+};
+
+/**
+ * Reduced motion variants (respects prefers-reduced-motion)
+ * Instant transitions with crossfade only
+ */
+export const landingTransitionReduced = {
+  landing: {
+    fadeOut: {
+      initial: { opacity: 1 },
+      transitioning: (progress: number) => ({ opacity: 1 - progress }),
+      complete: { opacity: 0 },
+    },
+  },
+  app: {
+    fadeIn: {
+      initial: { opacity: 0 },
+      transitioning: (progress: number) => ({ opacity: progress }),
+      complete: { opacity: 1 },
+    },
+  },
+};
+
+/**
+ * Scroll-triggered fade in animation
+ * Used for: Landing page sections that should animate into view on scroll
+ */
+export const scrollFadeIn = {
+  initial: { opacity: 0, y: 40 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, amount: 0.3 }, // Trigger when 30% visible, only once
+  transition: {
+    duration: ANIMATION_DURATIONS.slow,
+    ease: ANIMATION_EASINGS.easeOut,
+  },
+};
+
+/**
+ * Scroll-triggered stagger container
+ * Used for: Groups of items that should stagger in on scroll
+ */
+export const scrollStaggerContainer = {
+  initial: { opacity: 0 },
+  whileInView: { opacity: 1 },
+  viewport: { once: true, amount: 0.2 },
+  transition: {
+    staggerChildren: 0.1,
+    delayChildren: 0.2,
+  },
+};
+
+/**
+ * Scroll-triggered stagger item (child of scrollStaggerContainer)
+ */
+export const scrollStaggerItem = {
+  initial: { opacity: 0, y: 30 },
+  whileInView: { opacity: 1, y: 0 },
+  transition: {
+    duration: ANIMATION_DURATIONS.moderate,
+    ease: ANIMATION_EASINGS.easeOut,
+  },
+};
+
+/**
  * Tailwind CSS duration classes mapping
  * Use these class names in Tailwind for consistency with Motion animations
  */
