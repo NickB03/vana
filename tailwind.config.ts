@@ -13,6 +13,10 @@ export default {
       },
     },
     extend: {
+      screens: {
+        /** Tablet breakpoint: 900px (fills gap between md:768px and lg:1024px) */
+        tablet: '900px',
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -34,6 +38,12 @@ export default {
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
+          /** Accessible muted text - Higher contrast for WCAG AA compliance (4.5:1 minimum)
+           * Light mode: ~60% opacity instead of 45% (muted-foreground)
+           * Dark mode: ~70% opacity instead of 55% (muted-foreground)
+           * Use for critical secondary text that needs better readability
+           */
+          "foreground-accessible": "hsl(var(--muted-foreground-accessible))",
         },
         accent: {
           DEFAULT: "hsl(var(--accent))",

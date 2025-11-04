@@ -23,6 +23,7 @@ All colors MUST be HSL.
     --secondary-foreground: 215 13.7931% 34.1176%;
     --muted: 20 5.8824% 90%;
     --muted-foreground: 220 8.9362% 46.0784%;
+    --muted-foreground-accessible: 220 8.9362% 35%; /* WCAG AA: 4.5:1 contrast ratio */
     --accent: 292.5 44.4444% 92.9412%;
     --accent-foreground: 216.9231 19.1176% 26.6667%;
     --destructive: 0 84.2365% 60.1961%;
@@ -57,6 +58,7 @@ All colors MUST be HSL.
     --secondary-foreground: 240 5% 96%;
     --muted: 240 6% 15%;
     --muted-foreground: 240 4% 60%;
+    --muted-foreground-accessible: 240 4% 75%; /* WCAG AA: 4.5:1 contrast ratio */
     --accent: 240 6% 15%;
     --accent-foreground: 240 5% 96%;
     --destructive: 0 63% 50%;
@@ -90,6 +92,7 @@ All colors MUST be HSL.
     --secondary-foreground: 210 50% 10%;
     --muted: 210 20% 88%;
     --muted-foreground: 210 30% 35%;
+    --muted-foreground-accessible: 210 30% 28%; /* WCAG AA: 4.5:1 contrast ratio */
     --accent: 210 25% 92%;
     --accent-foreground: 210 50% 10%;
     --destructive: 0 63% 50%;
@@ -123,6 +126,7 @@ All colors MUST be HSL.
     --secondary-foreground: 210 40% 98%;
     --muted: 210 35% 18%;
     --muted-foreground: 210 30% 65%;
+    --muted-foreground-accessible: 210 30% 75%; /* WCAG AA: 4.5:1 contrast ratio */
     --accent: 210 35% 18%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 63% 50%;
@@ -156,6 +160,7 @@ All colors MUST be HSL.
     --secondary-foreground: 220 40% 15%;
     --muted: 30 15% 85%;
     --muted-foreground: 220 25% 35%;
+    --muted-foreground-accessible: 220 25% 28%; /* WCAG AA: 4.5:1 contrast ratio */
     --accent: 30 20% 90%;
     --accent-foreground: 220 40% 15%;
     --destructive: 0 63% 50%;
@@ -189,6 +194,7 @@ All colors MUST be HSL.
     --secondary-foreground: 30 15% 95%;
     --muted: 220 25% 20%;
     --muted-foreground: 220 15% 65%;
+    --muted-foreground-accessible: 220 15% 75%; /* WCAG AA: 4.5:1 contrast ratio */
     --accent: 220 25% 20%;
     --accent-foreground: 30 15% 95%;
     --destructive: 0 63% 50%;
@@ -222,6 +228,7 @@ All colors MUST be HSL.
     --secondary-foreground: 25 30% 18%;
     --muted: 25 12% 84%;
     --muted-foreground: 25 20% 35%;
+    --muted-foreground-accessible: 25 20% 28%; /* WCAG AA: 4.5:1 contrast ratio */
     --accent: 25 15% 88%;
     --accent-foreground: 25 30% 18%;
     --destructive: 0 63% 50%;
@@ -255,6 +262,7 @@ All colors MUST be HSL.
     --secondary-foreground: 25 15% 92%;
     --muted: 25 20% 22%;
     --muted-foreground: 25 12% 65%;
+    --muted-foreground-accessible: 25 12% 75%; /* WCAG AA: 4.5:1 contrast ratio */
     --accent: 25 20% 22%;
     --accent-foreground: 25 15% 92%;
     --destructive: 0 63% 50%;
@@ -288,6 +296,7 @@ All colors MUST be HSL.
     --secondary-foreground: 220 10% 10%;
     --muted: 220 8% 85%;
     --muted-foreground: 220 8% 40%;
+    --muted-foreground-accessible: 220 8% 32%; /* WCAG AA: 4.5:1 contrast ratio */
     --accent: 218 88% 90%;
     --accent-foreground: 220 10% 10%;
     --destructive: 0 63% 50%;
@@ -321,6 +330,7 @@ All colors MUST be HSL.
     --secondary-foreground: 220 5% 96%;
     --muted: 220 6% 18%;
     --muted-foreground: 220 4% 60%;
+    --muted-foreground-accessible: 220 4% 75%; /* WCAG AA: 4.5:1 contrast ratio */
     --accent: 218 88% 76%;
     --accent-foreground: 220 8% 14%;
     --destructive: 0 63% 50%;
@@ -354,6 +364,7 @@ All colors MUST be HSL.
     --secondary-foreground: 0 0% 10%;
     --muted: 0 0% 80%;
     --muted-foreground: 0 0% 40%;
+    --muted-foreground-accessible: 0 0% 32%; /* WCAG AA: 4.5:1 contrast ratio */
     --accent: 0 0% 85%;
     --accent-foreground: 0 0% 10%;
     --destructive: 0 63% 50%;
@@ -387,6 +398,7 @@ All colors MUST be HSL.
     --secondary-foreground: 0 0% 96%;
     --muted: 0 0% 25%;
     --muted-foreground: 0 0% 65%;
+    --muted-foreground-accessible: 0 0% 75%; /* WCAG AA: 4.5:1 contrast ratio */
     --accent: 0 0% 30%;
     --accent-foreground: 0 0% 96%;
     --destructive: 0 63% 50%;

@@ -38,7 +38,7 @@ const showcaseItems: ShowcaseItem[] = [
                 <p>Quantum computing leverages quantum mechanical phenomena like superposition and entanglement...</p>
                 <div className="mt-3 bg-muted/30 border border-primary/20 rounded-lg p-3">
                   <p className="font-medium text-primary text-xs mb-2">Key Concepts:</p>
-                  <ul className="space-y-1 text-xs text-muted-foreground">
+                  <ul className="space-y-1 text-xs text-muted-foreground-accessible">
                     <li className="flex items-start gap-2">
                       <span className="text-ring mt-0.5">•</span>
                       <span>Qubits can exist in multiple states simultaneously</span>
@@ -57,7 +57,7 @@ const showcaseItems: ShowcaseItem[] = [
             </div>
           </div>
           <div className="mt-auto pt-3 border-t border-border/50">
-            <div className="text-xs text-muted-foreground">Sources: 12 research papers analyzed</div>
+            <div className="text-xs text-muted-foreground-accessible">Sources: 12 research papers analyzed</div>
           </div>
         </div>
       </div>
@@ -74,7 +74,7 @@ const showcaseItems: ShowcaseItem[] = [
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-ring/10 pointer-events-none"></div>
 
         <div className="relative z-10 flex flex-col h-full">
-          <div className="flex items-center gap-2 mb-3 text-muted-foreground">
+          <div className="flex items-center gap-2 mb-3 text-muted-foreground-accessible">
             <Code2 className="h-4 w-4 text-primary" />
             <span className="text-xs">debounce.ts</span>
             <div className="ml-auto px-2 py-0.5 rounded bg-primary/20 border border-primary/30 text-[10px] text-primary">
@@ -135,7 +135,7 @@ const search = debounce(
           <div className="space-y-3 flex-1">
             <div className="bg-muted/50 border border-green-500/20 rounded-lg p-3">
               <div className="flex justify-between text-xs mb-2">
-                <span className="text-muted-foreground">Revenue Growth</span>
+                <span className="text-muted-foreground-accessible">Revenue Growth</span>
                 <span className="font-semibold text-green-400">+34%</span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -144,7 +144,7 @@ const search = debounce(
             </div>
             <div className="bg-muted/50 border border-blue-500/20 rounded-lg p-3">
               <div className="flex justify-between text-xs mb-2">
-                <span className="text-muted-foreground">User Engagement</span>
+                <span className="text-muted-foreground-accessible">User Engagement</span>
                 <span className="font-semibold text-blue-400">+56%</span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -156,15 +156,15 @@ const search = debounce(
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-2">
                 <div className="text-xl font-bold text-green-400">12K</div>
-                <div className="text-[10px] text-muted-foreground">New Users</div>
+                <div className="text-[10px] text-muted-foreground-accessible">New Users</div>
               </div>
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2">
                 <div className="text-xl font-bold text-blue-400">98%</div>
-                <div className="text-[10px] text-muted-foreground">Uptime</div>
+                <div className="text-[10px] text-muted-foreground-accessible">Uptime</div>
               </div>
               <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-2">
                 <div className="text-xl font-bold text-cyan-400">4.8</div>
-                <div className="text-[10px] text-muted-foreground">Rating</div>
+                <div className="text-[10px] text-muted-foreground-accessible">Rating</div>
               </div>
             </div>
           </div>
@@ -213,7 +213,7 @@ const search = debounce(
             </div>
           </div>
           <div className="mt-auto pt-3 border-t border-border/50">
-            <div className="text-xs text-muted-foreground">Interactive flowchart • Auto-generated from description</div>
+            <div className="text-xs text-muted-foreground-accessible">Interactive flowchart • Auto-generated from description</div>
           </div>
         </div>
       </div>
@@ -239,7 +239,7 @@ const search = debounce(
             </div>
           </div>
           <div className="mt-4 text-center bg-orange-500/10 border border-orange-500/20 rounded-lg px-4 py-2">
-            <p className="text-xs text-muted-foreground">Generated in <span className="text-orange-400 font-semibold">2.3 seconds</span></p>
+            <p className="text-xs text-muted-foreground-accessible">Generated in <span className="text-orange-400 font-semibold">2.3 seconds</span></p>
           </div>
         </div>
       </div>
@@ -289,11 +289,11 @@ const search = debounce(
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-yellow-500/10 border border-yellow-500/20 rounded p-2">
                   <div className="font-semibold text-[10px] text-yellow-300">Framework</div>
-                  <div className="text-muted-foreground text-[10px]">React 18+</div>
+                  <div className="text-muted-foreground-accessible text-[10px]">React 18+</div>
                 </div>
                 <div className="bg-yellow-500/10 border border-yellow-500/20 rounded p-2">
                   <div className="font-semibold text-[10px] text-yellow-300">Database</div>
-                  <div className="text-muted-foreground text-[10px]">PostgreSQL</div>
+                  <div className="text-muted-foreground-accessible text-[10px]">PostgreSQL</div>
                 </div>
               </div>
             </div>
@@ -381,7 +381,7 @@ export const ShowcaseSection = () => {
           <h2 className="text-3xl md:text-5xl font-bold">
             See What's Possible with Vana
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground-accessible max-w-2xl mx-auto">
             Real examples of AI-powered creation—from research to code, visuals to documentation.
           </p>
         </div>
