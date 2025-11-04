@@ -1,10 +1,11 @@
 import { Check } from "lucide-react";
 import { motion } from "motion/react";
 import { fadeInUp } from "@/utils/animationConstants";
+import { SECTION_SPACING, combineSpacing } from "@/utils/spacingConstants";
 
 export const BenefitsSection = () => {
   return (
-    <section className="py-24 px-4 w-full">
+    <section className={combineSpacing("w-full", SECTION_SPACING.full)}>
       <div className="container max-w-6xl mx-auto w-full">
         <motion.div
           className="text-center space-y-4 mb-16"

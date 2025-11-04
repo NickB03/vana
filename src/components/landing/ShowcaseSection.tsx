@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Sparkles, Image, BarChart3, Code2, FileText, GitBranch } from "lucide-react";
 import { motion } from "motion/react";
 import { hoverLift, fadeInUp } from "@/utils/animationConstants";
+import { SECTION_SPACING, combineSpacing } from "@/utils/spacingConstants";
 import { toast } from "sonner";
 
 interface ShowcaseItem {
@@ -372,7 +373,7 @@ export const ShowcaseSection = () => {
   }, [emblaApi]);
 
   return (
-    <section id="showcase" className="py-24 px-4 w-full">
+    <section id="showcase" className={combineSpacing("w-full", SECTION_SPACING.full)}>
       <motion.div
         className="container max-w-7xl mx-auto w-full"
         {...fadeInUp}
@@ -424,9 +425,10 @@ export const ShowcaseSection = () => {
                 return (
                   <div
                     key={`${item.id}-${index}`}
-                    className="flex-[0_0_380px] min-w-0"
+                    className="flex-[0_0_100%] sm:flex-[0_0_340px] tablet:flex-[0_0_360px] md:flex-[0_0_380px] min-w-0"
                   >
                     <motion.div
+                      className="will-change-transform transform-gpu"
                       {...hoverLift}
                     >
                       <Card className="overflow-hidden h-full group hover:shadow-2xl transition-all duration-300 bg-card border-0 relative">

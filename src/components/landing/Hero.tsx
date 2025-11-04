@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { DemoPreview } from "./DemoPreview";
 import { motion } from "motion/react";
 import { staggerContainer, staggerItem } from "@/utils/animationConstants";
+import { SECTION_SPACING, combineSpacing } from "@/utils/spacingConstants";
 
 export const Hero = () => {
   const scrollToDemo = () => {
@@ -12,12 +13,12 @@ export const Hero = () => {
   };
 
   return (
-    <section className="relative min-h-[100dvh] w-full flex items-center justify-center px-4 py-20">
+    <section className={combineSpacing("relative min-h-[100dvh] w-full flex items-center justify-center", SECTION_SPACING.full)}>
       <div className="container max-w-7xl mx-auto relative z-10 w-full">
         <div className="grid lg:grid-cols-2 gap-12 items-center w-full">
           {/* Left: Headline + CTAs */}
           <motion.div
-            className="space-y-6 text-center lg:text-left"
+            className="space-y-6 text-center lg:text-left will-change-transform transform-gpu"
             variants={staggerContainer}
             initial="hidden"
             animate="visible"

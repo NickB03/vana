@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
+import { SECTION_SPACING, combineSpacing } from "@/utils/spacingConstants";
 
 export const CTASection = () => {
   return (
-    <section className="py-20 px-4 text-white relative w-full">
+    <section className={combineSpacing("text-white relative w-full", SECTION_SPACING.full)}>
       <div className="container max-w-4xl mx-auto text-center space-y-6 relative z-10 w-full">
         <h2 className="text-3xl md:text-5xl font-bold">
           Ready to Build Something Amazing?

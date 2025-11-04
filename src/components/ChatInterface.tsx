@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { motion } from "motion/react";
 import { scaleIn, ANIMATION_DURATIONS, ANIMATION_EASINGS } from "@/utils/animationConstants";
+import { CHAT_SPACING, SAFE_AREA_SPACING, combineSpacing } from "@/utils/spacingConstants";
 import {
   ChatContainerContent,
   ChatContainerRoot,
@@ -258,7 +259,7 @@ export function ChatInterface({
   const renderChatContent = () => (
     <div className="flex h-full flex-col">
             <ChatContainerRoot className="relative flex flex-1 flex-col min-h-0">
-              <ChatContainerContent className="flex-1 space-y-0 px-5 py-12">
+              <ChatContainerContent className={combineSpacing("flex-1 space-y-0", CHAT_SPACING.messageList)}>
                 {messages.map((message, index) => {
                   const { artifacts, cleanContent } = parseArtifacts(message.content);
                   const isAssistant = message.role === "assistant";
@@ -369,6 +370,7 @@ export function ChatInterface({
                   return shouldAnimate ? (
                     <motion.div
                       key={message.id}
+                      className="will-change-transform transform-gpu"
                       {...scaleIn}
                       transition={{
                         duration: ANIMATION_DURATIONS.moderate,
@@ -411,9 +413,7 @@ export function ChatInterface({
             </ChatContainerRoot>
 
             {/* Prompt Input - stays in left panel */}
-            <div className="shrink-0 bg-transparent px-3 pb-3 md:px-5 md:pb-5 safe-mobile-input" style={{
-              paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))'
-            }}>
+            <div className={combineSpacing("shrink-0 bg-transparent safe-mobile-input", CHAT_SPACING.input.container, SAFE_AREA_SPACING.bottom)}>
               <div className="mx-auto max-w-3xl">
                 <PromptInput
                   value={input}
@@ -425,7 +425,7 @@ export function ChatInterface({
                   <div className="flex flex-col">
                     <PromptInputTextarea
                       placeholder="Ask anything"
-                      className="min-h-[44px] pl-4 pt-3 text-base leading-[1.3]"
+                      className={combineSpacing("min-h-[44px] text-base leading-[1.3]", CHAT_SPACING.input.textarea)}
                     />
                     <PromptInputActions className="mt-5 flex w-full items-center justify-between gap-2 px-3 pb-3">
                       {/* Left side actions */}
