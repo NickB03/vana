@@ -6,8 +6,6 @@ import { Copy, Maximize2, Minimize2, X, AlertCircle, Download, Edit, ExternalLin
 import { toast } from "sonner";
 import { Markdown } from "./prompt-kit/markdown";
 import { validateArtifact, ValidationResult, categorizeError } from "@/utils/artifactValidator";
-import { LibraryApprovalDialog, DetectedLibrary } from "./LibraryApprovalDialog";
-import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import mermaid from "mermaid";
@@ -36,10 +34,7 @@ export const Artifact = ({ artifact, onClose, onEdit }: ArtifactProps) => {
   const [errorCategory, setErrorCategory] = useState<'syntax' | 'runtime' | 'import' | 'unknown'>('unknown');
   const [isLoading, setIsLoading] = useState(true);
   const [validation, setValidation] = useState<ValidationResult | null>(null);
-  const [libraryApprovalOpen, setLibraryApprovalOpen] = useState(false);
-  const [detectedLibraries, setDetectedLibraries] = useState<DetectedLibrary[]>([]);
   const [injectedCDNs, setInjectedCDNs] = useState<string>('');
-  const [librariesChecked, setLibrariesChecked] = useState(false);
   const mermaidRef = useRef<HTMLDivElement>(null);
   const [isEditingCode, setIsEditingCode] = useState(false);
   const [editedContent, setEditedContent] = useState(artifact.content);
@@ -192,235 +187,158 @@ ${artifact.content}
     }
   }, [artifact.content, artifact.type]);
 
-  // Phase 7: Check for libraries when content changes
+  // Auto-inject safe libraries when content changes
   useEffect(() => {
     if (artifact.type === "html" || artifact.type === "code" || artifact.type === "react") {
-      setLibrariesChecked(false);
       setInjectedCDNs('');
       checkLibraries();
     }
   }, [artifact.content]);
 
   const checkLibraries = async () => {
-    const { cdn, needsApproval, libraries } = await detectAndRequestLibraries(artifact.content);
-    
-    if (needsApproval && libraries.length > 0) {
-      setDetectedLibraries(libraries);
-      setLibraryApprovalOpen(true);
-    } else {
-      setInjectedCDNs(cdn);
-    }
-    setLibrariesChecked(true);
+    const cdn = await detectAndInjectLibraries(artifact.content);
+    setInjectedCDNs(cdn);
   };
 
-  // Phase 7: Detect libraries and check approval
-  const detectAndRequestLibraries = async (content: string): Promise<{ 
-    cdn: string; 
-    needsApproval: boolean;
-    libraries: DetectedLibrary[];
-  }> => {
-    const cdnMap: Record<string, { scripts: string[]; purpose: string; provider: string }> = {
-      'chart.js': {
-        scripts: ['<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>'],
-        purpose: 'Interactive charts and data visualizations',
-        provider: 'jsDelivr'
-      },
-      'd3': {
-        scripts: ['<script src="https://d3js.org/d3.v7.min.js"></script>'],
-        purpose: 'Data-driven DOM manipulation and visualizations',
-        provider: 'd3js.org'
-      },
-      'shadcn': {
-        scripts: [], // shadcn is imported via ES modules, not CDN
-        purpose: 'shadcn/ui component library (imported as ES modules)',
-        provider: 'internal'
-      },
-      'three.js': {
-        scripts: ['<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>'],
-        purpose: '3D graphics and WebGL rendering',
-        provider: 'jsDelivr'
-      },
-      'alpine': {
-        scripts: ['<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>'],
-        purpose: 'Lightweight reactive JavaScript framework',
-        provider: 'jsDelivr'
-      },
-      'gsap': {
-        scripts: ['<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>'],
-        purpose: 'Professional-grade animation library',
-        provider: 'jsDelivr'
-      },
-      'anime': {
-        scripts: ['<script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>'],
-        purpose: 'Lightweight animation engine',
-        provider: 'jsDelivr'
-      },
-      'p5': {
-        scripts: ['<script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>'],
-        purpose: 'Creative coding and canvas drawing',
-        provider: 'jsDelivr'
-      },
-      'particles': {
-        scripts: ['<script src="https://cdn.jsdelivr.net/npm/tsparticles@3.0.3/tsparticles.bundle.min.js"></script>'],
-        purpose: 'Particle effects and animations',
-        provider: 'jsDelivr'
-      },
-      'leaflet': {
-        scripts: [
-          '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />',
-          '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>'
-        ],
-        purpose: 'Interactive maps',
-        provider: 'unpkg'
-      },
-      'sortable': {
-        scripts: ['<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>'],
-        purpose: 'Drag-and-drop list reordering',
-        provider: 'jsDelivr'
-      },
+  // Auto-detect and inject safe libraries without requiring approval
+  const detectAndInjectLibraries = async (content: string): Promise<string> => {
+    const cdnMap: Record<string, string[]> = {
+      // Data Visualization
+      'chart.js': ['<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>'],
+      'd3': ['<script src="https://d3js.org/d3.v7.min.js"></script>'],
+
+      // 3D Graphics
+      'three.js': ['<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>'],
+
+      // Reactive Frameworks
+      'alpine': ['<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>'],
+
+      // Animation Libraries
+      'gsap': ['<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>'],
+      'anime': ['<script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>'],
+      'framer-motion': ['<script src="https://cdn.jsdelivr.net/npm/framer-motion@11.0.3/dist/framer-motion.js"></script>'],
+
+      // Creative Coding
+      'p5': ['<script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>'],
+      'particles': ['<script src="https://cdn.jsdelivr.net/npm/tsparticles@3.0.3/tsparticles.bundle.min.js"></script>'],
+      'lottie': ['<script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>'],
+
+      // Maps
+      'leaflet': [
+        '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />',
+        '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>'
+      ],
+
+      // Canvas Libraries
+      'fabric.js': ['<script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>'],
+      'konva': ['<script src="https://cdn.jsdelivr.net/npm/konva@9.3.1/konva.min.js"></script>'],
+      'pixi.js': ['<script src="https://cdn.jsdelivr.net/npm/pixi.js@7.3.3/dist/pixi.min.js"></script>'],
+
+      // UI Utilities
+      'sortable': ['<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>'],
+
+      // Utility Libraries
+      'moment': ['<script src="https://cdn.jsdelivr.net/npm/moment@2.30.1/moment.min.js"></script>'],
+      'axios': ['<script src="https://cdn.jsdelivr.net/npm/axios@1.6.5/dist/axios.min.js"></script>'],
+      'marked': ['<script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>'],
+      'qrcode': ['<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>'],
+
+      // Syntax Highlighting
+      'highlight.js': [
+        '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" />',
+        '<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>'
+      ],
+
+      // Icon Libraries
+      'feather': ['<script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.1/dist/feather.min.js"></script>'],
+      'heroicons': ['<script src="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/index.js" type="module"></script>'],
+      'phosphor': ['<script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>'],
+
+      // UI Component Libraries (Headless)
+      'radix-ui': [
+        '<script src="https://cdn.jsdelivr.net/npm/@radix-ui/react-dialog@1.0.5/dist/index.umd.js"></script>',
+        '<script src="https://cdn.jsdelivr.net/npm/@radix-ui/react-dropdown-menu@2.0.6/dist/index.umd.js"></script>',
+        '<script src="https://cdn.jsdelivr.net/npm/@radix-ui/react-popover@1.0.7/dist/index.umd.js"></script>'
+      ],
+
+      // Form Libraries
+      'formkit': ['<script src="https://cdn.jsdelivr.net/npm/@formkit/auto-animate@0.8.1/index.mjs" type="module"></script>'],
+
+      // Utility CSS
+      'animate.css': ['<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />'],
     };
 
     const detectionPatterns: Record<string, RegExp> = {
+      // Data Visualization
       'chart.js': /new Chart\(|Chart\.register/i,
       'd3': /d3\.|from ['"]d3['"]/i,
+
+      // 3D Graphics
       'three.js': /new THREE\.|from ['"]three['"]/i,
+
+      // Reactive Frameworks
       'alpine': /x-data|x-bind|x-on|x-show|x-if/i,
+
+      // Animation Libraries
       'gsap': /gsap\.|TweenMax|TimelineMax|ScrollTrigger/i,
       'anime': /anime\(\{|anime\.timeline/i,
+      'framer-motion': /motion\.|useAnimation|animate\(/i,
+
+      // Creative Coding
       'p5': /createCanvas|draw\(\)|setup\(\)/i,
       'particles': /particlesJS|tsParticles/i,
+      'lottie': /lottie\.|bodymovin/i,
+
+      // Maps
       'leaflet': /L\.map\(|L\.marker\(/i,
+
+      // Canvas Libraries
+      'fabric.js': /new fabric\.|fabric\.Canvas/i,
+      'konva': /new Konva\.|Konva\.Stage/i,
+      'pixi.js': /PIXI\.|new PIXI/i,
+
+      // UI Utilities
       'sortable': /new Sortable\(/i,
+
+      // Utility Libraries
+      'moment': /moment\(|\.format\(|\.fromNow\(/i,
+      'axios': /axios\.|axios\.get|axios\.post/i,
+      'marked': /marked\(|marked\.parse/i,
+      'qrcode': /new QRCode\(/i,
+
+      // Syntax Highlighting
+      'highlight.js': /hljs\.|highlight\.js/i,
+
+      // Icon Libraries
+      'feather': /feather\.|feather\.replace/i,
+      'heroicons': /heroicons|from ['"]@heroicons/i,
+      'phosphor': /ph-|phosphor/i,
+
+      // UI Component Libraries
+      'radix-ui': /@radix-ui|RadixUI|Radix\./i,
+
+      // Form Libraries
+      'formkit': /autoAnimate|formkit/i,
+
+      // Utility CSS
+      'animate.css': /animate__animated|class="animate-/i,
     };
 
-    const detectedLibs: DetectedLibrary[] = [];
-    
-    // Phase 1: Detect shadcn/ui component imports
-    const shadcnPattern = /import\s+\{[^}]+\}\s+from\s+['"]@\/components\/ui\//;
-    const usesShadcn = shadcnPattern.test(content);
-    
-    if (usesShadcn) {
-      detectedLibs.push({
-        name: 'shadcn/ui',
-        url: 'internal://shadcn-ui',
-        purpose: 'Modern React component library',
-        cdnProvider: 'internal'
-      });
-    }
-    
+    const cdnScripts: string[] = [];
+
     for (const [lib, pattern] of Object.entries(detectionPatterns)) {
       if (pattern.test(content)) {
-        const libInfo = cdnMap[lib];
-        const cdnScripts = libInfo.scripts;
-        const alreadyIncluded = cdnScripts.some(script => content.includes(script));
+        const scripts = cdnMap[lib];
+        const alreadyIncluded = scripts.some(script => content.includes(script));
         if (!alreadyIncluded) {
-          cdnScripts.forEach(script => {
-            const urlMatch = script.match(/(?:src|href)="([^"]+)"/);
-            if (urlMatch) {
-              detectedLibs.push({
-                name: lib,
-                url: urlMatch[1],
-                purpose: libInfo.purpose,
-                cdnProvider: libInfo.provider
-              });
-            }
-          });
+          cdnScripts.push(...scripts);
         }
       }
     }
 
-    if (detectedLibs.length === 0) {
-      return { cdn: '', needsApproval: false, libraries: [] };
-    }
-
-    // Check user preferences
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: prefs } = await supabase
-          .from('user_preferences')
-          .select('auto_approve_libraries, approved_libraries')
-          .eq('user_id', user.id)
-          .single();
-
-        if (prefs?.auto_approve_libraries) {
-          // Auto-approve enabled
-          const cdnCode = detectedLibs.map(lib => {
-            const libInfo = cdnMap[lib.name];
-            return libInfo.scripts.join('\n');
-          }).join('\n');
-          return { cdn: cdnCode, needsApproval: false, libraries: detectedLibs };
-        }
-
-        // Check if all libraries are already approved
-        const approvedLibs = Array.isArray(prefs?.approved_libraries) 
-          ? prefs.approved_libraries.filter((l): l is string => typeof l === 'string')
-          : [];
-        const allApproved = detectedLibs.every(lib => approvedLibs.includes(lib.url));
-        
-        if (allApproved) {
-          const cdnCode = detectedLibs.map(lib => {
-            const libInfo = cdnMap[lib.name];
-            return libInfo.scripts.join('\n');
-          }).join('\n');
-          return { cdn: cdnCode, needsApproval: false, libraries: detectedLibs };
-        }
-      }
-    } catch (error) {
-      console.error('Error checking user preferences:', error);
-    }
-
-    // Need approval
-    return { cdn: '', needsApproval: true, libraries: detectedLibs };
+    return cdnScripts.join('\n');
   };
 
-  const handleLibraryApproval = async (remember: boolean) => {
-    try {
-      if (remember) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: prefs } = await supabase
-            .from('user_preferences')
-            .select('approved_libraries')
-            .eq('user_id', user.id)
-            .single();
-
-          const existingLibs = Array.isArray(prefs?.approved_libraries)
-            ? prefs.approved_libraries.filter((l): l is string => typeof l === 'string')
-            : [];
-          const newLibs = [...new Set([...existingLibs, ...detectedLibraries.map(l => l.url)])];
-
-          await supabase
-            .from('user_preferences')
-            .upsert({
-              user_id: user.id,
-              approved_libraries: newLibs
-            }, { onConflict: 'user_id' });
-        }
-      }
-
-      // Inject libraries
-      const cdnCode = detectedLibraries.map(lib => {
-        const script = lib.url.includes('.css') 
-          ? `<link rel="stylesheet" href="${lib.url}" />`
-          : `<script src="${lib.url}"></script>`;
-        return script;
-      }).join('\n');
-
-      setInjectedCDNs(cdnCode);
-      setLibraryApprovalOpen(false);
-      toast.success("Libraries approved and loaded");
-    } catch (error) {
-      console.error('Error approving libraries:', error);
-      toast.error("Failed to approve libraries");
-    }
-  };
-
-  const handleLibraryDenial = () => {
-    setLibraryApprovalOpen(false);
-    setInjectedCDNs('');
-    toast.info("Libraries not loaded. Artifact may not work as intended.");
-  };
 
   const renderPreview = () => {
     if (artifact.type === "code" || artifact.type === "html") {
@@ -696,13 +614,47 @@ ${artifact.content}
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Pre-approved libraries -->
+  <!-- Pre-approved libraries for React artifacts -->
+  <!-- Icons & UI -->
   <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.1/dist/feather.min.js"></script>
+
+  <!-- Charts & Visualization -->
   <script src="https://unpkg.com/recharts@2.5.0/dist/Recharts.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+  <!-- 3D Graphics -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- Utilities -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/date-fns@3.0.6/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/uuid@9.0.1/dist/umd/uuidv4.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.5/dist/axios.min.js"></script>
+
+  <!-- State Management -->
+  <script src="https://cdn.jsdelivr.net/npm/zustand@4.4.7/index.umd.js"></script>
+
+  <!-- Animation -->
+  <script src="https://cdn.jsdelivr.net/npm/framer-motion@11.0.3/dist/framer-motion.js"></script>
+
+  <!-- Form Utilities -->
+  <script src="https://cdn.jsdelivr.net/npm/react-hook-form@7.49.3/dist/index.umd.js"></script>
+
+  <!-- UI Primitives (Radix UI) -->
+  <script src="https://unpkg.com/@radix-ui/react-dialog@1.0.5/dist/index.umd.js"></script>
+  <script src="https://unpkg.com/@radix-ui/react-dropdown-menu@2.0.6/dist/index.umd.js"></script>
+  <script src="https://unpkg.com/@radix-ui/react-popover@1.0.7/dist/index.umd.js"></script>
+  <script src="https://unpkg.com/@radix-ui/react-tooltip@1.0.7/dist/index.umd.js"></script>
+  <script src="https://unpkg.com/@radix-ui/react-tabs@1.0.4/dist/index.umd.js"></script>
+  <script src="https://unpkg.com/@radix-ui/react-switch@1.0.3/dist/index.umd.js"></script>
+  <script src="https://unpkg.com/@radix-ui/react-slider@1.1.2/dist/index.umd.js"></script>
+
+  <!-- CSS Utilities -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+
   ${injectedCDNs}
 
   ${generateCompleteIframeStyles()}
@@ -912,14 +864,6 @@ ${artifact.content}
           </TabsContent>
         </Tabs>
       </Card>
-
-      {/* Phase 7: Library Approval Dialog */}
-      <LibraryApprovalDialog
-        open={libraryApprovalOpen}
-        libraries={detectedLibraries}
-        onApprove={handleLibraryApproval}
-        onDeny={handleLibraryDenial}
-      />
     </>
   );
 };
