@@ -42,3 +42,4 @@ docs/artifact-prompt-dont-archive.md
 
 # Verification screenshots
 verification-*.png
+.claude/settings.local.json

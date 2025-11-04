@@ -29,6 +29,7 @@ export const useScrollTransition = (enabled: boolean = true): ScrollTransitionRe
   const triggerElementRef = useRef<HTMLElement | null>(null);
   const lastScrollTime = useRef(0);
   const rafId = useRef<number>();
+  const hasTransitionedToApp = useRef(false); // One-way lock: once in app, stay in app
 
   // Set the element that triggers the transition (e.g., BenefitsSection)
   const setTriggerElement = useCallback((element: HTMLElement | null) => {
@@ -45,12 +46,10 @@ export const useScrollTransition = (enabled: boolean = true): ScrollTransitionRe
   /**
    * Performance optimized scroll handler with single state update
    * Reduces re-renders by batching phase, progress, and scrollY updates
+   * One-way transition: landing → transitioning → app (stays in app permanently)
    */
   useEffect(() => {
     if (!enabled) return;
-
-    // Once we've reached the app phase, stop tracking scroll
-    if (state.phase === "app") return;
 
     const handleScroll = () => {
       const now = Date.now();
@@ -69,12 +68,18 @@ export const useScrollTransition = (enabled: boolean = true): ScrollTransitionRe
       rafId.current = requestAnimationFrame(() => {
         const currentScrollY = window.pageYOffset || document.documentElement.scrollTop;
 
+        // Once transitioned to app, stay in app (one-way lock)
+        if (hasTransitionedToApp.current) {
+          setState({ phase: "app", progress: 1, scrollY: currentScrollY });
+          return;
+        }
+
         // Calculate distance past trigger point
         const distancePastTrigger = currentScrollY - triggerPoint;
 
-        // Determine phase and progress - single state update
+        // Determine phase and progress - one-way state machine: landing → transitioning → app
         if (distancePastTrigger < 0) {
-          // Before trigger point - landing phase
+          // Before trigger point - stay in landing
           setState({ phase: "landing", progress: 0, scrollY: currentScrollY });
         } else if (distancePastTrigger < TRANSITION_DURATION_PX) {
           // During transition
@@ -85,7 +90,8 @@ export const useScrollTransition = (enabled: boolean = true): ScrollTransitionRe
             scrollY: currentScrollY,
           });
         } else {
-          // Past transition - app phase (lock it here)
+          // Past transition - lock into app phase permanently
+          hasTransitionedToApp.current = true;
           setState({ phase: "app", progress: 1, scrollY: currentScrollY });
         }
       });
@@ -97,9 +103,9 @@ export const useScrollTransition = (enabled: boolean = true): ScrollTransitionRe
     // Listen to scroll events with passive flag for better performance
     window.addEventListener("scroll", handleScroll, { passive: true });
 
-    // Recalculate trigger point on resize
+    // Recalculate trigger point on resize (only if not locked in app phase)
     const handleResize = () => {
-      if (triggerElementRef.current && state.phase !== "app") {
+      if (triggerElementRef.current && !hasTransitionedToApp.current) {
         setTriggerElement(triggerElementRef.current);
       }
     };

@@ -212,42 +212,42 @@ const Home = () => {
   const isTransitioning = phase === "transitioning";
 
   return (
-    <SidebarProvider defaultOpen={isAuthenticated}>
-      <div className="relative min-h-screen">
-        {/* Landing page content - renders in normal flow for scrolling */}
-        {phase !== "app" && (
-          <motion.div
-            className="relative"
-            style={{
-              pointerEvents: phase === "landing" ? "auto" : "none",
-            }}
-            animate={
-              isTransitioning
-                ? transitions.landing.fadeOut.transitioning(progress)
-                : phase === "landing"
-                ? transitions.landing.fadeOut.initial
-                : transitions.landing.fadeOut.complete
-            }
-            transition={{ duration: 0 }}
-          >
-            <GradientBackground
-              gradientFrom="#000000"
-              gradientTo="#1e293b"
-              gradientPosition="50% 20%"
-              gradientSize="150% 150%"
-              gradientStop="30%"
-            />
-            <Hero />
-            <ShowcaseSection />
-            <div ref={benefitsSectionRef}>
-              <BenefitsSection />
-            </div>
-            {/* Spacer to allow scrolling to the bottom */}
-            <div className="h-[300px]" />
-          </motion.div>
-        )}
+    <>
+      {/* Landing page content - renders in normal flow for scrolling */}
+      {phase !== "app" && (
+        <motion.div
+          className="relative"
+          style={{
+            pointerEvents: phase === "landing" ? "auto" : "none",
+          }}
+          animate={
+            isTransitioning
+              ? transitions.landing.fadeOut.transitioning(progress)
+              : phase === "landing"
+              ? transitions.landing.fadeOut.initial
+              : transitions.landing.fadeOut.complete
+          }
+          transition={{ duration: 0 }}
+        >
+          <GradientBackground
+            gradientFrom="#000000"
+            gradientTo="#1e293b"
+            gradientPosition="50% 20%"
+            gradientSize="150% 150%"
+            gradientStop="30%"
+          />
+          <Hero />
+          <ShowcaseSection />
+          <div ref={benefitsSectionRef}>
+            <BenefitsSection />
+          </div>
+          {/* Spacer to allow scrolling to the bottom */}
+          <div className="h-[300px]" />
+        </motion.div>
+      )}
 
-        {/* App interface - fixed overlay during transition, normal flow when complete */}
+      {/* App interface - fixed overlay during transition, normal flow when complete */}
+      {phase !== "landing" && (
         <motion.div
           className={phase === "app" ? "relative min-h-screen" : "fixed inset-0 z-50"}
           style={{
@@ -262,7 +262,7 @@ const Home = () => {
           }
           transition={{ duration: 0 }}
         >
-          {isAuthenticated && (
+          <SidebarProvider defaultOpen={true}>
             <ChatSidebar
               sessions={sessions}
               currentSessionId={currentSessionId}
@@ -271,14 +271,13 @@ const Home = () => {
               onDeleteSession={deleteSession}
               isLoading={sessionsLoading}
             />
-          )}
 
-          <SidebarInset
-            className="relative"
-            style={{
-              background: 'radial-gradient(125% 125% at 50% 10%, #000000 40%, #1e293b 100%)',
-            }}
-          >
+            <SidebarInset
+              className="relative"
+              style={{
+                background: 'radial-gradient(125% 125% at 50% 10%, #000000 40%, #1e293b 100%)',
+              }}
+            >
             <main className="flex h-[100dvh] flex-col overflow-hidden">
               {/* Header */}
               <header className="bg-black/40 backdrop-blur-sm sticky top-0 z-20 flex h-16 w-full shrink-0 items-center justify-between gap-2 px-4">
@@ -439,7 +438,7 @@ const Home = () => {
                         </PromptInput>
                       </div>
 
-                      <div className="w-full max-w-5xl mx-auto pb-4">
+                      <div className="w-full max-w-3xl mx-auto pb-4">
                         <GalleryHoverCarousel
                           heading=""
                           className="py-0 bg-transparent"
@@ -493,15 +492,16 @@ const Home = () => {
               </div>
             </main>
           </SidebarInset>
-        </motion.div>
+        </SidebarProvider>
+      </motion.div>
+      )}
 
-        {/* Guest limit dialog */}
-        <GuestLimitDialog
-          open={showLimitDialog}
-          onOpenChange={setShowLimitDialog}
-        />
-      </div>
-    </SidebarProvider>
+      {/* Guest limit dialog */}
+      <GuestLimitDialog
+        open={showLimitDialog}
+        onOpenChange={setShowLimitDialog}
+      />
+    </>
   );
 };
 
