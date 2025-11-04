@@ -12,9 +12,9 @@ export const Hero = () => {
   };
 
   return (
-    <section className="relative min-h-[100dvh] flex items-center justify-center px-4 py-20">
-      <div className="container max-w-7xl mx-auto relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+    <section className="relative min-h-[100dvh] w-full flex items-center justify-center px-4 py-20">
+      <div className="container max-w-7xl mx-auto relative z-10 w-full">
+        <div className="grid lg:grid-cols-2 gap-12 items-center w-full">
           {/* Left: Headline + CTAs */}
           <motion.div
             className="space-y-6 text-center lg:text-left"

@@ -4,8 +4,8 @@ import { ArrowRight } from "lucide-react";
 
 export const CTASection = () => {
   return (
-    <section className="py-20 px-4 text-white relative">
-      <div className="container max-w-4xl mx-auto text-center space-y-6 relative z-10">
+    <section className="py-20 px-4 text-white relative w-full">
+      <div className="container max-w-4xl mx-auto text-center space-y-6 relative z-10 w-full">
         <h2 className="text-3xl md:text-5xl font-bold">
           Ready to Build Something Amazing?
         </h2>

@@ -99,6 +99,63 @@ export const hoverLift = {
 };
 
 /**
+ * Landing page scroll transition animations
+ * Progressive animations for smooth landing → app transition
+ */
+export const landingTransition = {
+  landing: {
+    fadeOut: {
+      initial: { opacity: 1, y: 0, scale: 1 },
+      transitioning: (progress: number) => ({
+        opacity: 1 - progress,
+        y: -50 * progress,
+        scale: 1 - 0.05 * progress,
+      }),
+      complete: { opacity: 0, y: -50, scale: 0.95 },
+    },
+    blurOut: {
+      initial: { filter: 'blur(0px)' },
+      transitioning: (progress: number) => ({
+        filter: `blur(${10 * progress}px)`,
+      }),
+      complete: { filter: 'blur(10px)' },
+    },
+  },
+  app: {
+    fadeIn: {
+      initial: { opacity: 0, y: 50, scale: 0.95 },
+      transitioning: (progress: number) => ({
+        opacity: progress,
+        y: 50 - 50 * progress,
+        scale: 0.95 + 0.05 * progress,
+      }),
+      complete: { opacity: 1, y: 0, scale: 1 },
+    },
+  },
+};
+
+/**
+ * Reduced motion variants (respects prefers-reduced-motion)
+ * Instant transitions with crossfade only
+ */
+export const landingTransitionReduced = {
+  landing: {
+    fadeOut: {
+      initial: { opacity: 1 },
+      transitioning: (progress: number) => ({ opacity: 1 - progress }),
+      complete: { opacity: 0 },
+    },
+  },
+  app: {
+    fadeIn: {
+      initial: { opacity: 0 },
+      transitioning: (progress: number) => ({ opacity: progress }),
+      complete: { opacity: 1 },
+    },
+  },
+};
+
+/**
  * Tailwind CSS duration classes mapping
  * Use these class names in Tailwind for consistency with Motion animations
  */

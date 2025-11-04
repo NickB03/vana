@@ -13,6 +13,7 @@ import { UpdateNotification } from "@/components/UpdateNotification";
 import { storeVersionInfo, logCacheBustingInfo } from "@/utils/cacheBusting";
 
 // Lazy load pages for code splitting
+const Home = lazy(() => import("./pages/Home"));
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Signup = lazy(() => import("./pages/Signup"));
@@ -49,7 +50,8 @@ const AnimatedRoutes = () => {
   return (
     <AnimatePresence mode="sync">
       <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<AnimatedRoute><Index /></AnimatedRoute>} />
+        <Route path="/" element={<AnimatedRoute><Home /></AnimatedRoute>} />
+        <Route path="/app" element={<AnimatedRoute><Index /></AnimatedRoute>} />
         <Route path="/auth" element={<AnimatedRoute><Auth /></AnimatedRoute>} />
         <Route path="/signup" element={<AnimatedRoute><Signup /></AnimatedRoute>} />
         <Route path="/landing" element={<AnimatedRoute><Landing /></AnimatedRoute>} />

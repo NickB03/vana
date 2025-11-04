@@ -6,7 +6,7 @@ import { GradientBackground } from "@/components/ui/bg-gredient";
 
 const Landing = () => {
   return (
-    <main className="relative min-h-screen">
+    <main className="relative min-h-screen w-full overflow-x-hidden">
       {/* Global Gradient Background for entire landing page */}
       <GradientBackground
         gradientFrom="#000000"
@@ -20,6 +20,9 @@ const Landing = () => {
       <ShowcaseSection />
       <BenefitsSection />
       <CTASection />
+
+      {/* Footer spacer to ensure proper scroll ending */}
+      <div className="h-20" />
     </main>
   );
 };
