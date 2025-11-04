@@ -17,13 +17,8 @@
     ],
     "SessionStart": [
       {
-        "matcher": {},
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash -c 'CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo \"unknown\"); if [ \"$CURRENT_BRANCH\" = \"main\" ]; then echo \"⚠️  WARNING: You are on the main branch!\"; echo \"   Consider creating a feature branch to protect production.\"; echo \"   Command: git checkout -b feature/your-feature\"; echo \"\"; fi'"
-          }
-        ]
+        "type": "command",
+        "command": "bash -c 'CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo \"unknown\"); if [ \"$CURRENT_BRANCH\" = \"main\" ]; then echo \"⚠️  WARNING: You are on the main branch!\"; echo \"   Consider creating a feature branch to protect production.\"; echo \"   Command: git checkout -b feature/your-feature\"; echo \"\"; fi'"
       }
     ]
   }
