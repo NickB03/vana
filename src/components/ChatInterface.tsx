@@ -61,7 +61,7 @@ export function ChatInterface({
   const isMobile = useIsMobile();
   const { messages, isLoading, streamChat } = useChatMessages(sessionId);
   const [localInput, setLocalInput] = useState("");
-  const input = parentInput ?? localInput;
+  const input = typeof parentInput === 'string' ? parentInput : localInput;
   const setInput = parentOnInputChange ?? setLocalInput;
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -216,7 +216,7 @@ export function ChatInterface({
 
   const handleSend = async (message?: string) => {
     const messageToSend = message || input;
-    if (!messageToSend.trim() || isLoading || isStreaming) return;
+    if (typeof messageToSend !== 'string' || !messageToSend.trim() || isLoading || isStreaming) return;
 
     setInput("");
     setIsStreaming(true);
