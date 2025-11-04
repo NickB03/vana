@@ -1,21 +1,29 @@
 import { Check } from "lucide-react";
+import { motion } from "motion/react";
+import { fadeInUp } from "@/utils/animationConstants";
 
 export const BenefitsSection = () => {
   return (
-    <section className="py-24 px-4">
-      <div className="container max-w-6xl mx-auto">
-        <div className="text-center space-y-4 mb-16">
+    <section className="py-24 px-4 w-full">
+      <div className="container max-w-6xl mx-auto w-full">
+        <motion.div
+          className="text-center space-y-4 mb-16"
+          {...fadeInUp}
+        >
           <h2 className="text-3xl md:text-5xl font-bold">
             What is Vana?
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             An AI-powered development assistant that transforms natural language into interactive code, components, and diagrams in real-time.
           </p>
-        </div>
+        </motion.div>
 
         <div className="space-y-20">
           {/* Benefit 1: Real-time Generation */}
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <motion.div
+            className="grid lg:grid-cols-2 gap-12 items-center"
+            {...fadeInUp}
+          >
             <div className="space-y-4">
               <h3 className="text-2xl font-bold">From idea to code in seconds</h3>
               <p className="text-lg text-muted-foreground">
@@ -39,10 +47,13 @@ export const BenefitsSection = () => {
             <div className="order-first lg:order-last">
               <div className="aspect-video bg-gradient-to-br from-card via-muted/50 to-card rounded-lg border border-border/50" />
             </div>
-          </div>
+          </motion.div>
 
           {/* Benefit 2: Interactive Artifacts */}
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <motion.div
+            className="grid lg:grid-cols-2 gap-12 items-center"
+            {...fadeInUp}
+          >
             <div className="aspect-video bg-gradient-to-br from-card via-muted/50 to-card rounded-lg border border-border/50" />
             <div className="space-y-4">
               <h3 className="text-2xl font-bold">More than just chat</h3>
@@ -64,10 +75,13 @@ export const BenefitsSection = () => {
                 </li>
               </ul>
             </div>
-          </div>
+          </motion.div>
 
           {/* Benefit 3: Secure & Private */}
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <motion.div
+            className="grid lg:grid-cols-2 gap-12 items-center"
+            {...fadeInUp}
+          >
             <div className="space-y-4">
               <h3 className="text-2xl font-bold">Built with security in mind</h3>
               <p className="text-lg text-muted-foreground">
@@ -91,7 +105,7 @@ export const BenefitsSection = () => {
             <div className="order-first lg:order-last">
               <div className="aspect-video bg-gradient-to-br from-card via-muted/50 to-card rounded-lg border border-border/50" />
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>
