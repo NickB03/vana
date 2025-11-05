@@ -120,10 +120,13 @@ export function useChatMessages(sessionId: string | undefined) {
       // Save user message
       await saveMessage("user", userMessage);
 
-      // Ensure we have a valid session before making the API call
-      const session = await ensureValidSession();
-      if (!session) {
-        throw new Error("Authentication required. Please refresh the page or sign in again.");
+      // Only validate session for authenticated users (those with a sessionId)
+      let session = null;
+      if (sessionId) {
+        session = await ensureValidSession();
+        if (!session) {
+          throw new Error("Authentication required. Please refresh the page or sign in again.");
+        }
       }
 
       const response = await fetch(
@@ -132,14 +135,16 @@ export function useChatMessages(sessionId: string | undefined) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
+            // Only add Authorization header for authenticated users
+            ...(session ? { Authorization: `Bearer ${session.access_token}` } : {})
           },
           body: JSON.stringify({
             messages: messages
               .concat([{ role: "user", content: userMessage } as ChatMessage])
               .map((m) => ({ role: m.role, content: m.content })),
-            sessionId,
+            sessionId,  // Will be undefined for guests
             currentArtifact,
+            isGuest: !sessionId  // Signal guest mode to backend
           }),
         }
       );
