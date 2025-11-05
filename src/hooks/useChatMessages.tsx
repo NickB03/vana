@@ -112,21 +112,20 @@ export function useChatMessages(sessionId: string | undefined) {
     onDone: () => void,
     currentArtifact?: { title: string; type: string; content: string }
   ) => {
-    if (!sessionId) return;
-
     setIsLoading(true);
 
     try {
-      // Save user message
-      await saveMessage("user", userMessage);
+      // Get actual auth status from server (not client flags)
+      const { data: { session } } = await supabase.auth.getSession();
+      const isAuthenticated = !!session;
 
-      // Only validate session for authenticated users (those with a sessionId)
-      let session = null;
-      if (sessionId) {
-        session = await ensureValidSession();
-        if (!session) {
-          throw new Error("Authentication required. Please refresh the page or sign in again.");
-        }
+      // Save user message (only for authenticated users with sessionId)
+      if (sessionId && isAuthenticated) {
+        await saveMessage("user", userMessage);
+      } else if (sessionId && !isAuthenticated) {
+        // Expired session - clear stale state
+        console.warn("Session expired, clearing stale sessionId");
+        // Note: Parent component should handle clearing sessionId
       }
 
       const response = await fetch(
@@ -135,16 +134,14 @@ export function useChatMessages(sessionId: string | undefined) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            // Only add Authorization header for authenticated users
             ...(session ? { Authorization: `Bearer ${session.access_token}` } : {})
           },
           body: JSON.stringify({
             messages: messages
               .concat([{ role: "user", content: userMessage } as ChatMessage])
               .map((m) => ({ role: m.role, content: m.content })),
-            sessionId,  // Will be undefined for guests
+            sessionId: isAuthenticated ? sessionId : undefined,
             currentArtifact,
-            isGuest: !sessionId  // Signal guest mode to backend
           }),
         }
       );
