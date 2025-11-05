@@ -5,6 +5,8 @@ import { DemoPreview } from "./DemoPreview";
 import { motion } from "motion/react";
 import { staggerContainer, staggerItem } from "@/utils/animationConstants";
 import { SECTION_SPACING, combineSpacing } from "@/utils/spacingConstants";
+import { TYPOGRAPHY } from "@/utils/typographyConstants";
+import { cn } from "@/lib/utils";
 
 export const Hero = () => {
   const scrollToDemo = () => {
@@ -29,13 +31,13 @@ export const Hero = () => {
               </Badge>
             </motion.div>
             <motion.h1
-              className="text-4xl md:text-6xl font-bold text-white"
+              className={cn(TYPOGRAPHY.DISPLAY.xl.full, "font-bold text-white")}
               variants={staggerItem}
             >
               Chat with AI, Build Anything
             </motion.h1>
             <motion.p
-              className="text-xl text-gray-300 max-w-2xl"
+              className={cn(TYPOGRAPHY.BODY.lg.full, "text-gray-300 max-w-2xl")}
               variants={staggerItem}
             >
               Real-time AI conversations that generate interactive code, React

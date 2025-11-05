@@ -11,6 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { Loader2 } from "lucide-react";
+import { LINK_STATES } from "@/utils/interactionConstants";
+import { cn } from "@/lib/utils";
 
 const signupSchema = z.object({
   fullName: z.string().min(2, { message: "Full name must be at least 2 characters" }),
@@ -191,7 +193,7 @@ export function SignupForm() {
         </form>
         <div className="mt-4 text-center text-sm">
           Already have an account?{" "}
-          <Link to="/auth" className="underline">
+          <Link to="/auth" className={cn("underline", LINK_STATES.default)}>
             Sign in
           </Link>
         </div>

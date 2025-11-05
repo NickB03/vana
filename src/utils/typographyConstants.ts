@@ -219,3 +219,22 @@ export const COMBO = {
 export const combineTypography = (...classes: string[]): string => {
   return classes.join(' ');
 };
+
+/**
+ * Unified TYPOGRAPHY export for convenience
+ *
+ * @example
+ * import { TYPOGRAPHY } from '@/utils/typographyConstants'
+ * <h1 className={TYPOGRAPHY.DISPLAY.xl.full}>Hero</h1>
+ */
+export const TYPOGRAPHY = {
+  DISPLAY,
+  HEADING,
+  BODY,
+  WEIGHT,
+  LINE_HEIGHT,
+  TRACKING,
+  ALIGN,
+  TRUNCATE,
+  COMBO,
+} as const;

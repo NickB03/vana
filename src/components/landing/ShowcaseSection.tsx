@@ -7,7 +7,10 @@ import { ChevronLeft, ChevronRight, Sparkles, Image, BarChart3, Code2, FileText,
 import { motion } from "motion/react";
 import { hoverLift, fadeInUp } from "@/utils/animationConstants";
 import { SECTION_SPACING, combineSpacing } from "@/utils/spacingConstants";
+import { TYPOGRAPHY } from "@/utils/typographyConstants";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { CARD_STATES } from "@/utils/interactionConstants";
 
 interface ShowcaseItem {
   id: string;
@@ -379,10 +382,10 @@ export const ShowcaseSection = () => {
         {...fadeInUp}
       >
         <div className="text-center space-y-4 mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold">
+          <h2 className={cn(TYPOGRAPHY.HEADING.lg.full, "font-bold")}>
             See What's Possible with Vana
           </h2>
-          <p className="text-xl text-muted-foreground-accessible max-w-2xl mx-auto">
+          <p className={cn(TYPOGRAPHY.BODY.lg.full, "text-muted-foreground-accessible max-w-2xl mx-auto")}>
             Real examples of AI-powered creation—from research to code, visuals to documentation.
           </p>
         </div>
@@ -430,8 +433,11 @@ export const ShowcaseSection = () => {
                     <motion.div
                       className="will-change-transform transform-gpu"
                       {...hoverLift}
+                      tabIndex={0}
+                      role="article"
+                      aria-label={item.title}
                     >
-                      <Card className="overflow-hidden h-full group hover:shadow-2xl transition-all duration-300 bg-card border-0 relative">
+                      <Card className={cn("overflow-hidden h-full group hover:shadow-2xl transition-all duration-300 bg-card border-0 relative", "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none")}>
                         {/* Gradient glow border effect */}
                         <div className={`absolute inset-0 bg-gradient-to-r ${item.gradient} rounded-lg opacity-50 blur-xl group-hover:opacity-75 transition-opacity`}></div>
                         <div className="absolute inset-[2px] bg-card rounded-lg"></div>

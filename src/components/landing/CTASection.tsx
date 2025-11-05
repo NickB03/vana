@@ -2,15 +2,17 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { SECTION_SPACING, combineSpacing } from "@/utils/spacingConstants";
+import { TYPOGRAPHY } from "@/utils/typographyConstants";
+import { cn } from "@/lib/utils";
 
 export const CTASection = () => {
   return (
     <section className={combineSpacing("text-white relative w-full", SECTION_SPACING.full)}>
       <div className="container max-w-4xl mx-auto text-center space-y-6 relative z-10 w-full">
-        <h2 className="text-3xl md:text-5xl font-bold">
+        <h2 className={cn(TYPOGRAPHY.HEADING.lg.full, "font-bold")}>
           Ready to Build Something Amazing?
         </h2>
-        <p className="text-xl text-white/90 max-w-2xl mx-auto">
+        <p className={cn(TYPOGRAPHY.BODY.lg.full, "text-white/90 max-w-2xl mx-auto")}>
           Join thousands of developers using AI to create faster. Start your
           first project in under 30 seconds.
         </p>

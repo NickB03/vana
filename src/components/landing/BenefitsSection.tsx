@@ -2,6 +2,8 @@ import { Check } from "lucide-react";
 import { motion } from "motion/react";
 import { fadeInUp } from "@/utils/animationConstants";
 import { SECTION_SPACING, combineSpacing } from "@/utils/spacingConstants";
+import { TYPOGRAPHY } from "@/utils/typographyConstants";
+import { cn } from "@/lib/utils";
 
 export const BenefitsSection = () => {
   return (
@@ -11,10 +13,10 @@ export const BenefitsSection = () => {
           className="text-center space-y-4 mb-16"
           {...fadeInUp}
         >
-          <h2 className="text-3xl md:text-5xl font-bold">
+          <h2 className={cn(TYPOGRAPHY.HEADING.lg.full, "font-bold")}>
             What is Vana?
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className={cn(TYPOGRAPHY.BODY.lg.full, "text-muted-foreground max-w-2xl mx-auto")}>
             An AI-powered development assistant that transforms natural language into interactive code, components, and diagrams in real-time.
           </p>
         </motion.div>
@@ -26,8 +28,8 @@ export const BenefitsSection = () => {
             {...fadeInUp}
           >
             <div className="space-y-4">
-              <h3 className="text-2xl font-bold">From idea to code in seconds</h3>
-              <p className="text-lg text-muted-foreground">
+              <h3 className={cn(TYPOGRAPHY.HEADING.md.full, "font-bold")}>From idea to code in seconds</h3>
+              <p className={cn(TYPOGRAPHY.BODY.lg.full, "text-muted-foreground")}>
                 Vana uses Claude AI to generate production-ready code as you type. Watch your ideas materialize with streaming responses that render instantly in an interactive preview canvas.
               </p>
               <ul className="space-y-2">
@@ -57,8 +59,8 @@ export const BenefitsSection = () => {
           >
             <div className="aspect-video bg-gradient-to-br from-card via-muted/50 to-card rounded-lg border border-border/50" />
             <div className="space-y-4">
-              <h3 className="text-2xl font-bold">More than just chat</h3>
-              <p className="text-lg text-muted-foreground">
+              <h3 className={cn(TYPOGRAPHY.HEADING.md.full, "font-bold")}>More than just chat</h3>
+              <p className={cn(TYPOGRAPHY.BODY.lg.full, "text-muted-foreground")}>
                 Every conversation can generate interactive artifacts—fully functional React components, validated HTML pages, Mermaid diagrams, and SVG graphics—all rendered in a sandboxed environment alongside your chat.
               </p>
               <ul className="space-y-2">
@@ -84,8 +86,8 @@ export const BenefitsSection = () => {
             {...fadeInUp}
           >
             <div className="space-y-4">
-              <h3 className="text-2xl font-bold">Built with security in mind</h3>
-              <p className="text-lg text-muted-foreground">
+              <h3 className={cn(TYPOGRAPHY.HEADING.md.full, "font-bold")}>Built with security in mind</h3>
+              <p className={cn(TYPOGRAPHY.BODY.lg.full, "text-muted-foreground")}>
                 Vana is built on Supabase with authentication, Row-Level Security policies, and sandboxed execution. Your conversations and artifacts remain private and secure.
               </p>
               <ul className="space-y-2">

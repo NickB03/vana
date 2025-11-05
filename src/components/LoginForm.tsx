@@ -11,6 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { Loader2 } from "lucide-react";
+import { LINK_STATES } from "@/utils/interactionConstants";
+import { cn } from "@/lib/utils";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
@@ -161,7 +163,7 @@ export function LoginForm() {
         </form>
         <div className="mt-4 text-center text-sm">
           Don't have an account?{" "}
-          <Link to="/signup" className="underline">
+          <Link to="/signup" className={cn("underline", LINK_STATES.default)}>
             Sign up
           </Link>
         </div>

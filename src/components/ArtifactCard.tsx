@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Code, FileCode, Image, Maximize2 } from "lucide-react";
 import { ArtifactData } from "./Artifact";
 import { cn } from "@/lib/utils";
+import { CARD_STATES } from "@/utils/interactionConstants";
 
 interface ArtifactCardProps {
   artifact: ArtifactData;
@@ -47,7 +48,7 @@ const getArtifactLabel = (type: string) => {
 
 export function ArtifactCard({ artifact, onOpen, className }: ArtifactCardProps) {
   return (
-    <Card className={cn("group relative overflow-hidden border-primary/20 bg-card/50 backdrop-blur-sm transition-all hover:border-primary/40 hover:bg-card/80", className)}>
+    <Card className={cn("group relative overflow-hidden border-primary/20 bg-card/50 backdrop-blur-sm hover:border-primary/40 hover:bg-card/80", CARD_STATES.interactive, className)}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2">

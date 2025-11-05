@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { motion } from "motion/react";
 import { scaleIn, ANIMATION_DURATIONS, ANIMATION_EASINGS } from "@/utils/animationConstants";
 import { CHAT_SPACING, SAFE_AREA_SPACING, combineSpacing } from "@/utils/spacingConstants";
+import { MessageSkeleton } from "@/components/ui/message-skeleton";
 import {
   ChatContainerContent,
   ChatContainerRoot,
@@ -427,13 +428,7 @@ export function ChatInterface({
                 )}
 
                 {(isLoading || isStreaming) && !streamingMessage && (
-                  <MessageComponent className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 items-start">
-                    <div className="flex gap-1">
-                      <div className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.3s]" />
-                      <div className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.15s]" />
-                      <div className="h-2 w-2 animate-bounce rounded-full bg-primary" />
-                    </div>
-                  </MessageComponent>
+                  <MessageSkeleton variant="assistant" />
                 )}
               </ChatContainerContent>
 
