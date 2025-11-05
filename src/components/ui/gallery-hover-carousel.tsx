@@ -150,10 +150,10 @@ export default function GalleryHoverCarousel({
           >
             <CarouselContent className="-ml-2 md:-ml-4">
               {items.map((item) => (
-                <CarouselItem key={item.id} className="pl-3 basis-auto">
+                <CarouselItem key={item.id} className="pl-3 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
                   <div
                     onClick={() => onItemClick?.(item)}
-                    className="group block relative w-[180px] md:w-[200px] h-[160px] md:h-[180px] cursor-pointer"
+                    className="group block relative w-full h-[160px] md:h-[180px] cursor-pointer"
                   >
                     <Card className="overflow-hidden rounded-3xl h-full w-full transition-all duration-300">
                       {/* Image */}

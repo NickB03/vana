@@ -449,6 +449,7 @@ const Home = () => {
                           className="py-0 bg-transparent"
                           onItemClick={(item) => handleSuggestionClick(item.prompt || item.summary)}
                           items={[
+                            // Image Generation (5 options)
                             {
                               id: "img-gen-1",
                               title: "Generate an Image",
@@ -457,12 +458,70 @@ const Home = () => {
                               image: "https://images.unsplash.com/photo-1547891654-e66ed7ebb968?w=400&h=300&fit=crop"
                             },
                             {
+                              id: "img-gen-2",
+                              title: "Create Artwork",
+                              summary: "Generate a cyberpunk cityscape at sunset with flying cars",
+                              prompt: "Generate a cyberpunk cityscape at sunset with flying cars",
+                              image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&h=300&fit=crop"
+                            },
+                            {
+                              id: "img-gen-3",
+                              title: "Fantasy Character",
+                              summary: "Generate an image of a mystical elf warrior with glowing armor in an enchanted forest",
+                              prompt: "Generate an image of a mystical elf warrior with glowing armor in an enchanted forest",
+                              image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&h=300&fit=crop"
+                            },
+                            {
+                              id: "img-gen-4",
+                              title: "Movie Poster",
+                              summary: "Create a dramatic movie poster for a sci-fi thriller about AI taking over",
+                              prompt: "Create a dramatic movie poster for a sci-fi thriller about AI taking over",
+                              image: "https://images.unsplash.com/photo-1594908900066-3f47337549d8?w=400&h=300&fit=crop"
+                            },
+                            {
+                              id: "img-gen-5",
+                              title: "Product Design",
+                              summary: "Generate a sleek modern smartwatch design with holographic display",
+                              prompt: "Generate a sleek modern smartwatch design with holographic display",
+                              image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=300&fit=crop"
+                            },
+                            // Web Apps (5 options)
+                            {
                               id: "web-app-1",
                               title: "Todo List App",
                               summary: "Create an interactive todo list with categories, priorities, and deadlines",
                               prompt: "Create an interactive todo list with categories, priorities, and deadlines",
                               image: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=400&h=300&fit=crop"
                             },
+                            {
+                              id: "web-app-2",
+                              title: "Build a Web App",
+                              summary: "Build a protein tracker web app",
+                              prompt: "Build a protein tracker web app",
+                              image: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=400&h=300&fit=crop"
+                            },
+                            {
+                              id: "web-app-3",
+                              title: "Budget Tracker",
+                              summary: "Build a personal budget tracker with expense categories and spending insights",
+                              prompt: "Build a personal budget tracker with expense categories and spending insights",
+                              image: "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=400&h=300&fit=crop"
+                            },
+                            {
+                              id: "web-app-4",
+                              title: "Recipe Manager",
+                              summary: "Create a recipe management app with ingredients list and cooking timer",
+                              prompt: "Create a recipe management app with ingredients list and cooking timer",
+                              image: "https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400&h=300&fit=crop"
+                            },
+                            {
+                              id: "web-app-5",
+                              title: "Workout Logger",
+                              summary: "Build a workout tracking app with exercise library and progress charts",
+                              prompt: "Build a workout tracking app with exercise library and progress charts",
+                              image: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=400&h=300&fit=crop"
+                            },
+                            // Data Visualization (5 options)
                             {
                               id: "data-viz-1",
                               title: "Sales Dashboard",
@@ -471,11 +530,68 @@ const Home = () => {
                               image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop"
                             },
                             {
+                              id: "data-viz-2",
+                              title: "Weather Viz",
+                              summary: "Build an interactive weather visualization showing temperature and precipitation patterns",
+                              prompt: "Build an interactive weather visualization showing temperature and precipitation patterns",
+                              image: "https://images.unsplash.com/photo-1561484930-998b6a7b22e8?w=400&h=300&fit=crop"
+                            },
+                            {
+                              id: "data-viz-3",
+                              title: "Stock Tracker",
+                              summary: "Create a real-time stock market tracker with interactive price charts",
+                              prompt: "Create a real-time stock market tracker with interactive price charts",
+                              image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&h=300&fit=crop"
+                            },
+                            {
+                              id: "data-viz-4",
+                              title: "Habit Tracker",
+                              summary: "Build a habit tracking dashboard with streaks visualization and progress stats",
+                              prompt: "Build a habit tracking dashboard with streaks visualization and progress stats",
+                              image: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=400&h=300&fit=crop"
+                            },
+                            {
+                              id: "data-viz-5",
+                              title: "Analytics Report",
+                              summary: "Create a comprehensive analytics report with charts showing user engagement metrics",
+                              prompt: "Create a comprehensive analytics report with charts showing user engagement metrics",
+                              image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop"
+                            },
+                            // Games (5 options)
+                            {
                               id: "game-1",
                               title: "Build a Game",
                               summary: "Build a web-based Frogger game with arrow key controls",
                               prompt: "Build a web-based Frogger game with arrow key controls",
                               image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&h=300&fit=crop"
+                            },
+                            {
+                              id: "game-2",
+                              title: "Snake Game",
+                              summary: "Create a classic snake game with score tracking and increasing difficulty",
+                              prompt: "Create a classic snake game with score tracking and increasing difficulty",
+                              image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&h=300&fit=crop"
+                            },
+                            {
+                              id: "game-3",
+                              title: "Memory Card Game",
+                              summary: "Build a memory matching card game with different difficulty levels",
+                              prompt: "Build a memory matching card game with different difficulty levels",
+                              image: "https://images.unsplash.com/photo-1606503153255-59d8b8b82176?w=400&h=300&fit=crop"
+                            },
+                            {
+                              id: "game-4",
+                              title: "Trivia Quiz",
+                              summary: "Create an interactive trivia quiz game with multiple categories and scoring",
+                              prompt: "Create an interactive trivia quiz game with multiple categories and scoring",
+                              image: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=400&h=300&fit=crop"
+                            },
+                            {
+                              id: "game-5",
+                              title: "Tic Tac Toe",
+                              summary: "Build a tic-tac-toe game with AI opponent and win detection",
+                              prompt: "Build a tic-tac-toe game with AI opponent and win detection",
+                              image: "https://images.unsplash.com/photo-1611996575749-79a3a250f948?w=400&h=300&fit=crop"
                             },
                           ]}
                         />
