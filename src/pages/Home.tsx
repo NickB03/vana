@@ -7,6 +7,7 @@ import { GradientBackground } from "@/components/ui/bg-gredient";
 import { Hero } from "@/components/landing/Hero";
 import { ShowcaseSection } from "@/components/landing/ShowcaseSection";
 import { BenefitsSection } from "@/components/landing/BenefitsSection";
+import { CTASection } from "@/components/landing/CTASection";
 import { GuestLimitBanner } from "@/components/GuestLimitBanner";
 import { GuestLimitDialog } from "@/components/GuestLimitDialog";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -58,8 +59,8 @@ const Home = () => {
   const chatSendHandlerRef = useRef<((message?: string) => Promise<void>) | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Scroll transition
-  const benefitsSectionRef = useRef<HTMLDivElement>(null);
+  // Scroll transition - triggers at the end of CTA section
+  const ctaSectionRef = useRef<HTMLDivElement>(null);
   const { phase, progress, setTriggerElement } = useScrollTransition(true);
 
   // Guest session
@@ -70,10 +71,10 @@ const Home = () => {
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const transitions = prefersReducedMotion ? landingTransitionReduced : landingTransition;
 
-  // Set trigger element for scroll detection
+  // Set trigger element for scroll detection - CTA section marks the end of landing content
   useEffect(() => {
-    if (benefitsSectionRef.current) {
-      setTriggerElement(benefitsSectionRef.current);
+    if (ctaSectionRef.current) {
+      setTriggerElement(ctaSectionRef.current);
     }
   }, [setTriggerElement]);
 
@@ -241,11 +242,12 @@ const Home = () => {
           />
           <Hero />
           <ShowcaseSection />
-          <div ref={benefitsSectionRef}>
-            <BenefitsSection />
+          <BenefitsSection />
+          <div ref={ctaSectionRef}>
+            <CTASection />
           </div>
-          {/* Spacer to allow scrolling to the bottom */}
-          <div className="h-[300px]" />
+          {/* Spacer to allow scrolling past CTA section for transition trigger */}
+          <div className="h-[100vh]" />
         </motion.div>
       )}
 
