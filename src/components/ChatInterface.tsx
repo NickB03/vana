@@ -37,6 +37,8 @@ import { parseArtifacts } from "@/utils/artifactParser";
 import { ThinkingIndicator } from "@/components/ThinkingIndicator";
 import { InlineImage } from "@/components/InlineImage";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { SystemMessage } from "@/components/ui/system-message";
+import { useNavigate } from "react-router-dom";
 
 interface ChatInterfaceProps {
   sessionId?: string;
@@ -47,6 +49,9 @@ interface ChatInterfaceProps {
   input?: string;
   onInputChange?: (value: string) => void;
   onSendMessage?: (handleSend: (message?: string) => Promise<void>) => void;
+  isGuest?: boolean;
+  guestMessageCount?: number;
+  guestMaxMessages?: number;
 }
 
 export function ChatInterface({
@@ -57,9 +62,13 @@ export function ChatInterface({
   onArtifactChange,
   input: parentInput,
   onInputChange: parentOnInputChange,
-  onSendMessage
+  onSendMessage,
+  isGuest = false,
+  guestMessageCount = 0,
+  guestMaxMessages = 10
 }: ChatInterfaceProps) {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const { messages, isLoading, streamChat } = useChatMessages(sessionId);
   const [localInput, setLocalInput] = useState("");
   const input = typeof parentInput === 'string' ? parentInput : localInput;
@@ -96,7 +105,8 @@ export function ChatInterface({
   }, [onSendMessage]);
 
   useEffect(() => {
-    if (initialPrompt && sessionId && !hasInitialized) {
+    // Allow auto-send for both authenticated (with sessionId) AND guests (without sessionId)
+    if (initialPrompt && !hasInitialized) {
       setHasInitialized(true);
       handleSend(initialPrompt);
     }
@@ -260,6 +270,26 @@ export function ChatInterface({
     <div className="flex h-full flex-col">
             <ChatContainerRoot className="relative flex flex-1 flex-col min-h-0">
               <ChatContainerContent className={combineSpacing("flex-1 space-y-0", CHAT_SPACING.messageList)}>
+                {/* Guest mode system message - show after first message */}
+                {isGuest && messages.length > 0 && (
+                  <div className="mx-auto w-full max-w-3xl px-6 py-3">
+                    <SystemMessage
+                      variant="action"
+                      fill
+                      cta={{
+                        label: "Sign In",
+                        onClick: () => navigate("/auth")
+                      }}
+                    >
+                      {guestMessageCount < guestMaxMessages ? (
+                        <>You have <strong>{guestMaxMessages - guestMessageCount}</strong> free message{guestMaxMessages - guestMessageCount !== 1 ? 's' : ''} remaining. Sign in for increased limits on the free tier!</>
+                      ) : (
+                        <>You've reached your free message limit. Sign in to continue chatting with increased limits!</>
+                      )}
+                    </SystemMessage>
+                  </div>
+                )}
+
                 {messages.map((message, index) => {
                   const { artifacts, cleanContent } = parseArtifacts(message.content);
                   const isAssistant = message.role === "assistant";

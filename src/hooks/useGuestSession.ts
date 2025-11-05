@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 
 const GUEST_SESSION_KEY = "vana_guest_session";
-const MAX_GUEST_MESSAGES = 5;
+const MAX_GUEST_MESSAGES = 10;
 const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 export interface GuestSession {
@@ -23,7 +23,7 @@ interface GuestSessionReturn {
 
 /**
  * Manages guest user session tracking for message limits
- * Allows 5 free messages before requiring authentication
+ * Allows 10 free messages before requiring authentication
  */
 export const useGuestSession = (isAuthenticated: boolean): GuestSessionReturn => {
   const [guestSession, setGuestSession] = useState<GuestSession | null>(null);

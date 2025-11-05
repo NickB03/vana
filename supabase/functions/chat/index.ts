@@ -26,7 +26,7 @@ serve(async (req) => {
 
   try {
     const requestBody = await req.json();
-    const { messages, sessionId, currentArtifact } = requestBody;
+    const { messages, sessionId, currentArtifact, isGuest } = requestBody;
     
     // Input validation
     if (!messages || !Array.isArray(messages)) {
@@ -74,43 +74,50 @@ serve(async (req) => {
       }
     }
     
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "No authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    let user = null;
+    let supabase = null;
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    // Authenticated users - require auth
+    if (!isGuest) {
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: "No authorization header" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+      supabase = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+        { global: { headers: { Authorization: authHeader } } }
+      );
 
-    // Verify session ownership if sessionId is provided
-    if (sessionId) {
-      const { data: session, error: sessionError } = await supabase
-        .from('chat_sessions')
-        .select('user_id')
-        .eq('id', sessionId)
-        .single();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      user = authUser;
 
-      if (sessionError || !session || session.user_id !== user.id) {
-        return new Response(
-          JSON.stringify({ error: 'Unauthorized access to session' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        // Verify session ownership if sessionId is provided
+        const { data: session, error: sessionError } = await supabase
+          .from('chat_sessions')
+          .select('user_id')
+          .eq('id', sessionId)
+          .single();
+
+        if (sessionError || !session || session.user_id !== user.id) {
+          return new Response(
+            JSON.stringify({ error: 'Unauthorized access to session' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
       }
     }
+    // Guest users - skip auth and database checks
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {

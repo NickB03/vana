@@ -54,6 +54,7 @@ const Home = () => {
   const [showChat, setShowChat] = useState(false);
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   const [hasArtifact, setHasArtifact] = useState(false);
+  const [guestInitialPrompt, setGuestInitialPrompt] = useState<string | undefined>();
   const chatSendHandlerRef = useRef<((message?: string) => Promise<void>) | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -154,6 +155,8 @@ const Home = () => {
     // Homepage mode - create new session
     if (!isAuthenticated) {
       // For guests, just show chat without creating session
+      setGuestInitialPrompt(input);  // Store the message to send
+      setInput("");  // Clear input
       setShowChat(true);
       guestSession.incrementMessageCount();
     } else {
@@ -480,13 +483,16 @@ const Home = () => {
                 ) : (
                   <ChatInterface
                     sessionId={currentSessionId}
-                    initialPrompt={input}
+                    initialPrompt={!isAuthenticated ? guestInitialPrompt : input}
                     isCanvasOpen={isCanvasOpen}
                     onCanvasToggle={handleCanvasToggle}
                     onArtifactChange={handleArtifactChange}
                     input={input}
                     onInputChange={setInput}
                     onSendMessage={handler => { chatSendHandlerRef.current = handler; }}
+                    isGuest={!isAuthenticated}
+                    guestMessageCount={guestSession.messageCount}
+                    guestMaxMessages={guestSession.maxMessages}
                   />
                 )}
               </div>
