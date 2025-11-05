@@ -11,6 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import mermaid from "mermaid";
 import { generateCompleteIframeStyles } from "@/utils/themeUtils";
 import { detectAndInjectLibraries } from "@/utils/libraryDetection";
+import { TYPOGRAPHY } from "@/utils/typographyConstants";
+import { cn } from "@/lib/utils";
+import { ArtifactSkeleton } from "@/components/ui/artifact-skeleton";
 
 export type ArtifactType = "code" | "markdown" | "html" | "svg" | "mermaid" | "react" | "image";
 
@@ -290,10 +293,7 @@ ${artifact.content}
           <div className="flex-1 relative">
             {isLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-20">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-                  <p className="text-sm text-muted-foreground">Loading preview...</p>
-                </div>
+                <ArtifactSkeleton type={artifact.type} />
               </div>
             )}
             {previewError && !isLoading && (
@@ -557,10 +557,7 @@ ${artifact.content}
           <div className="flex-1 relative">
             {isLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-20">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-                  <p className="text-sm text-muted-foreground">Loading React component...</p>
-                </div>
+                <ArtifactSkeleton type="react" />
               </div>
             )}
             {previewError && !isLoading && (
@@ -648,7 +645,7 @@ ${artifact.content}
       }`}>
         <div className="flex items-center justify-between gap-2 border-b px-4 py-2 bg-muted/50">
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <h3 className="font-semibold text-sm truncate">{artifact.title}</h3>
+            <h3 className={cn(TYPOGRAPHY.BODY.sm.mobile, "font-semibold truncate")}>{artifact.title}</h3>
             {validation && validation.errors.length > 0 && (
               <Badge variant="destructive" className="text-xs">
                 {validation.errors.length} error{validation.errors.length > 1 ? 's' : ''}
