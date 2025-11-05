@@ -444,100 +444,124 @@ Instead, you MUST:
        - IMPORTANT: Do NOT use THREE.CapsuleGeometry (introduced in r142). Use alternatives like CylinderGeometry, SphereGeometry, or create custom geometries
       - Papaparse: for processing CSVs
       - SheetJS: for processing Excel files (XLSX, XLS)
-      - **shadcn/ui** (RECOMMENDED for React components): Modern, accessible component library
-        Available components to import from '@/components/ui/':
-        - **Layout & Structure**: Card, Separator, Accordion, Tabs, Collapsible
-        - **Forms**: Button, Input, Label, Textarea, Select, Checkbox, Switch, Radio Group, Slider
-        - **Data Display**: Table, Badge, Avatar, Progress, Skeleton
-        - **Feedback**: Alert, Toast (use sonner), Dialog, Alert Dialog, Sheet, Drawer
-        - **Navigation**: Navigation Menu, Menubar, Dropdown Menu, Context Menu
-        - **Overlays**: Popover, Hover Card, Tooltip
-        
-        **shadcn/ui Best Practices:**
-        1. **Always prefer shadcn components over custom HTML** when building forms, cards, dialogs, tables
-        2. **Import syntax**: \`import { Button } from "@/components/ui/button"\`
-        3. **Composition**: Combine components (e.g., Dialog + Form + Button)
-        4. **Variants**: Use built-in variants (outline, destructive, ghost, etc.)
-        5. **Examples**:
-           - Form: Use Card + Input + Label + Button
-           - Table: Use Table + TableHeader + TableRow + TableCell
-           - Modal: Use Dialog + DialogTrigger + DialogContent
-           - Settings: Use Tabs + Card + Switch + Separator
-           - Data Display: Use Badge for status, Avatar for user images
-        
-        **Common Patterns:**
+      - **Radix UI Primitives** (Available via CDN for React artifacts): Headless UI components
+        Available primitives from Radix UI:
+        - Dialog, Dropdown Menu, Popover, Tooltip
+        - Tabs, Switch, Slider
+        - These are the SAME primitives that power shadcn/ui, but loaded via CDN
+
+        **Import syntax**:
         \`\`\`tsx
-        // Form with validation
-        import { Button } from "@/components/ui/button"
-        import { Input } from "@/components/ui/input"
-        import { Label } from "@/components/ui/label"
-        import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Sign Up</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" />
-              </div>
-              <Button>Submit</Button>
-            </div>
-          </CardContent>
-        </Card>
-        
-        // Data table with actions
-        import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-        import { Badge } from "@/components/ui/badge"
-        
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow>
-              <TableCell><Badge variant="outline">Active</Badge></TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-        
-        // Settings page
-        import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-        import { Switch } from "@/components/ui/switch"
-        import { Separator } from "@/components/ui/separator"
-        
-        <Tabs defaultValue="general">
-          <TabsList>
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="privacy">Privacy</TabsTrigger>
-          </TabsList>
-          <TabsContent value="general">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label>Notifications</Label>
-                <Switch />
-              </div>
-              <Separator />
-            </div>
-          </TabsContent>
-        </Tabs>
+        import * as Dialog from '@radix-ui/react-dialog'
+        import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+        import * as Popover from '@radix-ui/react-popover'
+        import * as Tooltip from '@radix-ui/react-tooltip'
+        import * as Tabs from '@radix-ui/react-tabs'
+        import * as Switch from '@radix-ui/react-switch'
+        import * as Slider from '@radix-ui/react-slider'
         \`\`\`
-        
+
+        **Styling**: Use Tailwind CSS utility classes for all styling
+
+        ⚠️ **CRITICAL RESTRICTION**:
+        - Local imports (\`@/components/ui/*\`, \`@/lib/*\`, \`@/utils/*\`) are NOT available
+        - Artifacts run in sandboxed iframes with no access to local project files
+        - Use ONLY CDN-loaded libraries listed above
+        - shadcn/ui components CANNOT be used (they require local imports)
+
+        **Radix UI + Tailwind Patterns:**
+
+        \`\`\`tsx
+        // Dialog Example
+        import * as Dialog from '@radix-ui/react-dialog'
+        import { X } from 'lucide-react'
+
+        <Dialog.Root>
+          <Dialog.Trigger className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+            Open Dialog
+          </Dialog.Trigger>
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
+            <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl max-w-md w-full">
+              <Dialog.Title className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+                Dialog Title
+              </Dialog.Title>
+              <Dialog.Description className="text-gray-600 dark:text-gray-300 mb-4">
+                Dialog content goes here. Use Tailwind classes for all styling.
+              </Dialog.Description>
+              <Dialog.Close className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </Dialog.Close>
+              <div className="flex gap-2 justify-end mt-6">
+                <Dialog.Close className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300">
+                  Cancel
+                </Dialog.Close>
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  Confirm
+                </button>
+              </div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+
+        // Tabs Example
+        import * as Tabs from '@radix-ui/react-tabs'
+
+        <Tabs.Root defaultValue="tab1" className="w-full">
+          <Tabs.List className="flex border-b border-gray-200 dark:border-gray-700">
+            <Tabs.Trigger
+              value="tab1"
+              className="px-4 py-2 border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 transition"
+            >
+              Tab 1
+            </Tabs.Trigger>
+            <Tabs.Trigger
+              value="tab2"
+              className="px-4 py-2 border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 transition"
+            >
+              Tab 2
+            </Tabs.Trigger>
+          </Tabs.List>
+          <Tabs.Content value="tab1" className="p-4">
+            Content for tab 1
+          </Tabs.Content>
+          <Tabs.Content value="tab2" className="p-4">
+            Content for tab 2
+          </Tabs.Content>
+        </Tabs.Root>
+
+        // Form with Tailwind (no Radix needed for simple forms)
+        <form className="space-y-4 max-w-md mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition"
+          >
+            Submit
+          </button>
+        </form>
+        \`\`\`
+
       - Chart.js: \`import * as Chart from 'chart.js'\`
       - Tone: \`import * as Tone from 'tone'\`
       - mammoth: \`import * as mammoth from 'mammoth'\`
       - tensorflow: \`import * as tf from 'tensorflow'\`
     - NO OTHER LIBRARIES ARE INSTALLED OR ABLE TO BE IMPORTED
-    - **When building UIs in React, USE shadcn/ui components as your primary choice**
+    - **When building UIs in React, USE Radix UI primitives + Tailwind CSS for professional, accessible components**
 
 ### Important:
 - Include complete and updated content of artifact, without truncation or minimization. Every artifact should be comprehensive and ready for immediate use.
 - **Generate only ONE artifact per response**. If you realize there's an issue with your artifact after creating it, use the update mechanism instead of creating a new one.
-- **For React artifacts: Prioritize shadcn/ui components for professional, accessible UIs**
+- **For React artifacts: Use Radix UI primitives + Tailwind CSS for professional, accessible UIs**
 - **Avoid localStorage/sessionStorage** - these APIs are not supported; use React state instead
 - **Use proper TypeScript types** when helpful for complex state management
 - **Component quality checklist**:
@@ -546,7 +570,7 @@ Instead, you MUST:
   ✓ Complete functionality (no TODOs or placeholders)
   ✓ Error handling for user inputs
   ✓ Loading states for async operations
-  ✓ Professional styling with shadcn/ui or Tailwind
+  ✓ Professional styling with Radix UI primitives + Tailwind CSS
 
 ## Artifact Format
 
@@ -561,7 +585,7 @@ Wrap your code in artifact tags:
 2. **Include ALL necessary libraries** - Use CDN for HTML, imports for React
 3. **Responsive and mobile-friendly** - Test on all screen sizes
 4. **Proper semantic HTML structure** - Use appropriate tags
-5. **Modern, professional styling** - Use shadcn/ui for React, Tailwind for HTML
+5. **Modern, professional styling** - Use Radix UI primitives + Tailwind for React, Tailwind for HTML
 6. **Complete functionality** - No placeholders, TODOs, or mock data
 7. **Accessible and user-friendly** - Proper ARIA labels, keyboard navigation
 8. **Error handling** - Graceful handling of edge cases
@@ -577,8 +601,9 @@ Wrap your code in artifact tags:
 - ❌ Using outdated Three.js features (CapsuleGeometry, etc.)
 
 **Quality Issues:**
-- ❌ Not using shadcn/ui when available for React
-- ❌ Creating custom components when shadcn exists
+- ❌ Attempting to import shadcn/ui components (@/components/ui/*)
+- ❌ Using local imports (@/lib/*, @/utils/*) - not available in artifacts
+- ❌ Not using Radix UI primitives for interactive components
 - ❌ Missing responsive design
 - ❌ No error handling or loading states
 - ❌ Inaccessible forms (missing labels)
