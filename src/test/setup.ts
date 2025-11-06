@@ -7,3 +7,10 @@ global.console = {
   error: vi.fn(),
   warn: vi.fn()
 };
+
+// Mock ResizeObserver for Radix UI components
+global.ResizeObserver = class ResizeObserver {
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+};
