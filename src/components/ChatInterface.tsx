@@ -32,7 +32,7 @@ import { ScrollButton } from "@/components/ui/scroll-button";
 import { Markdown } from "@/components/ui/markdown";
 import { useChatMessages, ChatMessage, type StreamProgress } from "@/hooks/useChatMessages";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import { Artifact, ArtifactData } from "@/components/Artifact";
+import { ArtifactContainer as Artifact, ArtifactData } from "@/components/ArtifactContainer";
 import { ArtifactCard } from "@/components/ArtifactCard";
 import { parseArtifacts } from "@/utils/artifactParser";
 import { ThinkingIndicator } from "@/components/ThinkingIndicator";
