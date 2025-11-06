@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,14 @@ import { detectAndInjectLibraries } from "@/utils/libraryDetection";
 import { TYPOGRAPHY } from "@/utils/typographyConstants";
 import { cn } from "@/lib/utils";
 import { ArtifactSkeleton } from "@/components/ui/artifact-skeleton";
+import { detectNpmImports, extractNpmDependencies } from '@/utils/npmDetection';
+
+// Lazy load Sandpack component for code splitting
+const SandpackArtifactRenderer = lazy(() =>
+  import('./SandpackArtifactRenderer').then(module => ({
+    default: module.SandpackArtifactRenderer
+  }))
+);
 
 export type ArtifactType = "code" | "markdown" | "html" | "svg" | "mermaid" | "react" | "image";
 
@@ -43,6 +51,14 @@ export const Artifact = ({ artifact, onClose, onEdit }: ArtifactProps) => {
   const [isEditingCode, setIsEditingCode] = useState(false);
   const [editedContent, setEditedContent] = useState(artifact.content);
   const [themeRefreshKey, setThemeRefreshKey] = useState(0);
+
+  // Determine if Sandpack should be used for this artifact
+  const needsSandpack = useMemo(() => {
+    if (artifact.type !== 'react') return false;
+    const sandpackEnabled = import.meta.env.VITE_ENABLE_SANDPACK !== 'false';
+    if (!sandpackEnabled) return false;
+    return detectNpmImports(artifact.content);
+  }, [artifact.content, artifact.type]);
 
   // Initialize mermaid
   useEffect(() => {
@@ -88,7 +104,13 @@ export const Artifact = ({ artifact, onClose, onEdit }: ArtifactProps) => {
   };
 
   const handlePopOut = () => {
-    // Open a new window
+    // Route Sandpack artifacts to CodeSandbox
+    if (artifact.type === "react" && needsSandpack) {
+      handleOpenInCodeSandbox();
+      return;
+    }
+
+    // For regular artifacts, open in new window
     const newWindow = window.open('', '_blank', 'width=1200,height=800');
 
     if (!newWindow) {
@@ -129,6 +151,80 @@ ${artifact.content}
     newWindow.document.close();
 
     toast.success("Opened in new window");
+  };
+
+  const handleOpenInCodeSandbox = () => {
+    // Extract dependencies for CodeSandbox
+    const dependencies = extractNpmDependencies(artifact.content);
+
+    // Create CodeSandbox configuration
+    const sandboxConfig = {
+      files: {
+        'package.json': {
+          content: JSON.stringify({
+            name: artifact.title.toLowerCase().replace(/\s+/g, '-'),
+            version: '1.0.0',
+            description: `Generated from ${artifact.title}`,
+            main: 'index.js',
+            dependencies: {
+              react: '^18.3.0',
+              'react-dom': '^18.3.0',
+              'react-scripts': '^5.0.1',
+              ...dependencies,
+            },
+          }, null, 2),
+        },
+        'public/index.html': {
+          content: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${artifact.title}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root"></div>
+</body>
+</html>`,
+        },
+        'src/App.js': {
+          content: artifact.content,
+        },
+        'src/index.js': {
+          content: `import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);`,
+        },
+      },
+    };
+
+    // Compress and encode the configuration
+    const parameters = btoa(JSON.stringify(sandboxConfig));
+
+    // Open CodeSandbox with the configuration
+    const codesandboxUrl = `https://codesandbox.io/api/v1/sandboxes/define?parameters=${parameters}`;
+
+    // Use a form to POST the data (handles large payloads better)
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'https://codesandbox.io/api/v1/sandboxes/define';
+    form.target = '_blank';
+
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'parameters';
+    input.value = parameters;
+
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+
+    toast.success("Opening in CodeSandbox...");
   };
 
   // Listen for errors and ready state from iframe
@@ -462,6 +558,26 @@ ${artifact.content}
       );
     }
 
+    // Use Sandpack for React artifacts with npm imports
+    if (artifact.type === "react" && needsSandpack) {
+      return (
+        <div className="w-full h-full relative">
+          <Suspense fallback={<ArtifactSkeleton type="react" />}>
+            <SandpackArtifactRenderer
+              code={artifact.content}
+              title={artifact.title}
+              showEditor={false}
+              onError={(error) => {
+                setPreviewError(error);
+                setIsLoading(false);
+              }}
+              onReady={() => setIsLoading(false)}
+            />
+          </Suspense>
+        </div>
+      );
+    }
+
     if (artifact.type === "react") {
       const reactPreviewContent = `<!DOCTYPE html>
 <html lang="en">
@@ -600,6 +716,20 @@ ${artifact.content}
   };
 
   const renderCode = () => {
+    // Use Sandpack editor for React artifacts with npm imports
+    if (artifact.type === "react" && needsSandpack) {
+      return (
+        <Suspense fallback={<ArtifactSkeleton type="react" />}>
+          <SandpackArtifactRenderer
+            code={editedContent}
+            title={artifact.title}
+            showEditor={true}
+            onError={(error) => setPreviewError(error)}
+          />
+        </Suspense>
+      );
+    }
+
     return (
       <div className="w-full h-full flex flex-col overflow-hidden">
         <div className="flex-1 overflow-auto bg-muted">

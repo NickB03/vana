@@ -1,6 +1,6 @@
 # AI Chat Assistant - Project Instructions
 
-AI-powered chat application with real-time streaming, artifact rendering, and Supabase backend.
+AI-powered chat application with real-time streaming, artifact rendering, image generation. It is being built as a personal project focused on high quality and secure but may not require the same code standards as an enterprise application.
 
 ## 🚀 Quick Start
 
