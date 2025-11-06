@@ -436,7 +436,7 @@ ${artifact.content}
               srcDoc={previewContent}
               className="w-full h-full border-0 bg-background"
               title={artifact.title}
-              sandbox="allow-scripts allow-same-origin"
+              sandbox="allow-scripts allow-same-origin allow-downloads allow-popups"
             />
           </div>
         </div>
@@ -639,7 +639,7 @@ ${artifact.content}
               srcDoc={reactPreviewContent}
               className="w-full h-full border-0 bg-background"
               title={artifact.title}
-              sandbox="allow-scripts allow-same-origin"
+              sandbox="allow-scripts allow-same-origin allow-downloads allow-popups"
             />
           </div>
         </div>
