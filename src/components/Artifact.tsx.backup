@@ -1,0 +1,855 @@
+import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from "react";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Copy, Maximize2, Minimize2, X, AlertCircle, Download, Edit, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
+import { Markdown } from "./prompt-kit/markdown";
+import { validateArtifact, ValidationResult, categorizeError } from "@/utils/artifactValidator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import mermaid from "mermaid";
+import { generateCompleteIframeStyles } from "@/utils/themeUtils";
+import { detectAndInjectLibraries } from "@/utils/libraryDetection";
+import { TYPOGRAPHY } from "@/utils/typographyConstants";
+import { cn } from "@/lib/utils";
+import { ArtifactSkeleton } from "@/components/ui/artifact-skeleton";
+import { detectNpmImports, extractNpmDependencies } from '@/utils/npmDetection';
+
+// Lazy load Sandpack component for code splitting
+const SandpackArtifactRenderer = lazy(() =>
+  import('./SandpackArtifactRenderer').then(module => ({
+    default: module.SandpackArtifactRenderer
+  }))
+);
+
+export type ArtifactType = "code" | "markdown" | "html" | "svg" | "mermaid" | "react" | "image";
+
+export interface ArtifactData {
+  id: string;
+  type: ArtifactType;
+  title: string;
+  content: string;
+  language?: string;
+}
+
+interface ArtifactProps {
+  artifact: ArtifactData;
+  onClose?: () => void;
+  onEdit?: (suggestion?: string) => void;
+}
+
+
+export const Artifact = ({ artifact, onClose, onEdit }: ArtifactProps) => {
+  const [isMaximized, setIsMaximized] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [errorCategory, setErrorCategory] = useState<'syntax' | 'runtime' | 'import' | 'unknown'>('unknown');
+  const [isLoading, setIsLoading] = useState(true);
+  const [validation, setValidation] = useState<ValidationResult | null>(null);
+  const [injectedCDNs, setInjectedCDNs] = useState<string>('');
+  const mermaidRef = useRef<HTMLDivElement>(null);
+  const [isEditingCode, setIsEditingCode] = useState(false);
+  const [editedContent, setEditedContent] = useState(artifact.content);
+  const [themeRefreshKey, setThemeRefreshKey] = useState(0);
+
+  // Determine if Sandpack should be used for this artifact
+  const needsSandpack = useMemo(() => {
+    if (artifact.type !== 'react') return false;
+    const sandpackEnabled = import.meta.env.VITE_ENABLE_SANDPACK !== 'false';
+    if (!sandpackEnabled) return false;
+    return detectNpmImports(artifact.content);
+  }, [artifact.content, artifact.type]);
+
+  // Initialize mermaid
+  useEffect(() => {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'default',
+      securityLevel: 'loose'
+    });
+  }, []);
+
+  // Watch for theme changes to re-render iframes with updated theme
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      // Class attribute changed (filtered by attributeFilter), trigger iframe refresh
+      setThemeRefreshKey(prev => prev + 1);
+    });
+
+    if (document.documentElement) {
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class']
+      });
+    }
+
+    return () => {
+      observer?.disconnect();
+    };
+  }, []);
+
+  // Phase 4: Validate artifact on mount - debounced for performance
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      const validationResult = validateArtifact(artifact.content, artifact.type);
+      setValidation(validationResult);
+    }, 300); // Debounce validation by 300ms
+    
+    return () => clearTimeout(timeoutId);
+  }, [artifact.content, artifact.type]);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(artifact.content);
+    toast.success("Copied to clipboard");
+  };
+
+  const handlePopOut = () => {
+    // Route Sandpack artifacts to CodeSandbox
+    if (artifact.type === "react" && needsSandpack) {
+      handleOpenInCodeSandbox();
+      return;
+    }
+
+    // For regular artifacts, open in new window
+    const newWindow = window.open('', '_blank', 'width=1200,height=800');
+
+    if (!newWindow) {
+      toast.error("Popup blocked - please allow popups for this site");
+      return;
+    }
+
+    // Create complete HTML document for the new window
+    const isFullHTML = artifact.content.includes("<!DOCTYPE");
+
+    const popoutContent = isFullHTML
+      ? artifact.content
+      : `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${artifact.title}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  ${injectedCDNs}
+  ${generateCompleteIframeStyles()}
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+  </style>
+</head>
+<body>
+${artifact.content}
+</body>
+</html>`;
+
+    // Write content to new window
+    newWindow.document.open();
+    newWindow.document.write(popoutContent);
+    newWindow.document.close();
+
+    toast.success("Opened in new window");
+  };
+
+  const handleOpenInCodeSandbox = () => {
+    // Extract dependencies for CodeSandbox
+    const dependencies = extractNpmDependencies(artifact.content);
+
+    // Create CodeSandbox configuration
+    const sandboxConfig = {
+      files: {
+        'package.json': {
+          content: JSON.stringify({
+            name: artifact.title.toLowerCase().replace(/\s+/g, '-'),
+            version: '1.0.0',
+            description: `Generated from ${artifact.title}`,
+            main: 'index.js',
+            dependencies: {
+              react: '^18.3.0',
+              'react-dom': '^18.3.0',
+              'react-scripts': '^5.0.1',
+              ...dependencies,
+            },
+          }, null, 2),
+        },
+        'public/index.html': {
+          content: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${artifact.title}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root"></div>
+</body>
+</html>`,
+        },
+        'src/App.js': {
+          content: artifact.content,
+        },
+        'src/index.js': {
+          content: `import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);`,
+        },
+      },
+    };
+
+    // Compress and encode the configuration
+    const parameters = btoa(JSON.stringify(sandboxConfig));
+
+    // Open CodeSandbox with the configuration
+    const codesandboxUrl = `https://codesandbox.io/api/v1/sandboxes/define?parameters=${parameters}`;
+
+    // Use a form to POST the data (handles large payloads better)
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'https://codesandbox.io/api/v1/sandboxes/define';
+    form.target = '_blank';
+
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'parameters';
+    input.value = parameters;
+
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+
+    toast.success("Opening in CodeSandbox...");
+  };
+
+  // Listen for errors and ready state from iframe
+  useEffect(() => {
+    setIsLoading(true);
+    setPreviewError(null);
+    
+    const handleIframeMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'artifact-error') {
+        const errorInfo = categorizeError(e.data.message);
+        setPreviewError(e.data.message);
+        setErrorCategory(errorInfo.category);
+        setIsLoading(false);
+      } else if (e.data?.type === 'artifact-ready') {
+        setIsLoading(false);
+      }
+    };
+    
+    const loadTimeout = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000);
+    
+    window.addEventListener('message', handleIframeMessage);
+    return () => {
+      window.removeEventListener('message', handleIframeMessage);
+      clearTimeout(loadTimeout);
+    };
+  }, [artifact.content]);
+
+  // Render mermaid diagrams
+  useEffect(() => {
+    if (artifact.type === "mermaid" && mermaidRef.current) {
+      const renderMermaid = async () => {
+        try {
+          setIsLoading(true);
+          const id = `mermaid-${Date.now()}`;
+          const { svg } = await mermaid.render(id, artifact.content);
+          if (mermaidRef.current) {
+            // Use safer DOM manipulation instead of innerHTML to prevent XSS
+            const template = document.createElement('template');
+            // Sanitize SVG content before insertion to prevent XSS
+            const cleanSvg = svg.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+            template.innerHTML = cleanSvg.trim();
+            const svgElement = template.content.firstChild;
+
+            // Clear and append as DOM element (safer than innerHTML)
+            mermaidRef.current.textContent = '';
+            if (svgElement) {
+              mermaidRef.current.appendChild(svgElement);
+            }
+          }
+          setIsLoading(false);
+        } catch (error) {
+          console.error('Mermaid render error:', error);
+          setPreviewError(error instanceof Error ? error.message : 'Failed to render diagram');
+          setIsLoading(false);
+        }
+      };
+      renderMermaid();
+    }
+  }, [artifact.content, artifact.type]);
+
+  // Auto-inject safe libraries when content changes
+  useEffect(() => {
+    if (artifact.type === "html" || artifact.type === "code" || artifact.type === "react") {
+      setInjectedCDNs('');
+      const cdn = detectAndInjectLibraries(artifact.content);
+      setInjectedCDNs(cdn);
+    }
+  }, [artifact.content]);
+
+
+
+  const renderPreview = () => {
+    if (artifact.type === "code" || artifact.type === "html") {
+      // Create a complete HTML document for preview
+      const isFullHTML = artifact.content.includes("<!DOCTYPE");
+
+      const previewContent = isFullHTML
+        ? artifact.content
+        : `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  ${injectedCDNs}
+  ${generateCompleteIframeStyles()}
+  <script>
+    // Error reporting to parent
+    window.addEventListener('error', (e) => {
+      window.parent.postMessage({
+        type: 'artifact-error',
+        message: e.message + ' at ' + e.filename + ':' + e.lineno
+      }, '*');
+      return true;
+    });
+
+    window.addEventListener('unhandledrejection', (e) => {
+      window.parent.postMessage({
+        type: 'artifact-error',
+        message: 'Promise rejection: ' + e.reason
+      }, '*');
+    });
+
+    // Capture console errors and warnings
+    const originalError = console.error;
+    console.error = (...args) => {
+      originalError.apply(console, args);
+      window.parent.postMessage({
+        type: 'artifact-error',
+        message: args.join(' ')
+      }, '*');
+    };
+
+    const originalWarn = console.warn;
+    console.warn = (...args) => {
+      originalWarn.apply(console, args);
+    };
+
+    // Signal ready state
+    window.addEventListener('load', () => {
+      window.parent.postMessage({ type: 'artifact-ready' }, '*');
+    });
+  </script>
+</head>
+<body>
+${artifact.content}
+</body>
+</html>`;
+
+      return (
+        <div className="w-full h-full relative flex flex-col">
+          {/* Phase 4: Validation UI */}
+          {validation && !validation.isValid && (
+            <Alert variant="destructive" className="m-2 mb-0">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                <strong>Validation Errors:</strong>
+                <ul className="list-disc pl-4 mt-1">
+                  {validation.errors.map((err, idx) => (
+                    <li key={idx}>{err.message}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
+          {validation && validation.warnings.length > 0 && (
+            <Alert className="m-2 mb-0">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                <strong>Warnings:</strong>
+                <ul className="list-disc pl-4 mt-1">
+                  {validation.warnings.slice(0, 3).map((warn, idx) => (
+                    <li key={idx}>{warn.message}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          <div className="flex-1 relative">
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-20">
+                <ArtifactSkeleton type={artifact.type} />
+              </div>
+            )}
+            {previewError && !isLoading && (
+              <div className={`absolute top-2 left-2 right-2 text-xs p-3 rounded z-10 flex flex-col gap-2 ${
+                errorCategory === 'syntax' ? 'bg-red-50 border border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200' :
+                errorCategory === 'runtime' ? 'bg-orange-50 border border-orange-200 text-orange-800 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-200' :
+                errorCategory === 'import' ? 'bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200' :
+                'bg-destructive/10 border border-destructive text-destructive'
+              }`}>
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold shrink-0">
+                    {errorCategory === 'syntax' ? '🔴 Syntax Error:' :
+                     errorCategory === 'runtime' ? '🟠 Runtime Error:' :
+                     errorCategory === 'import' ? '🟡 Import Error:' :
+                     '⚠️ Error:'}
+                  </span>
+                  <span className="flex-1 break-words font-mono text-xs">{previewError}</span>
+                </div>
+                {categorizeError(previewError).suggestion && (
+                  <div className="text-xs opacity-80 pl-6">
+                    💡 {categorizeError(previewError).suggestion}
+                  </div>
+                )}
+                <div className="flex gap-2 pl-6">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="h-6 text-xs"
+                    onClick={() => {
+                      navigator.clipboard.writeText(previewError);
+                      toast.success("Error copied to clipboard");
+                    }}
+                  >
+                    Copy Error
+                  </Button>
+                  {onEdit && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="h-6 text-xs"
+                      onClick={() => onEdit(`Fix this error: ${previewError}`)}
+                    >
+                      Ask AI to Fix
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+            <iframe
+              key={`${injectedCDNs}-${themeRefreshKey}`} // Re-render when CDNs or theme change
+              srcDoc={previewContent}
+              className="w-full h-full border-0 bg-background"
+              title={artifact.title}
+              sandbox="allow-scripts allow-same-origin"
+            />
+          </div>
+        </div>
+      );
+    }
+
+    if (artifact.type === "markdown") {
+      return (
+        <div className="w-full h-full flex flex-col">
+          {isEditingCode ? (
+            <div className="flex-1 overflow-auto p-4 bg-muted">
+              <textarea
+                value={editedContent}
+                onChange={(e) => setEditedContent(e.target.value)}
+                className="w-full h-full p-4 text-sm bg-muted text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                spellCheck={false}
+              />
+            </div>
+          ) : (
+            <div className="flex-1 overflow-auto p-4 bg-background">
+              <Markdown>{artifact.content}</Markdown>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (artifact.type === "svg") {
+      // Ensure SVG has proper dimensions
+      const hasViewBox = artifact.content.includes('viewBox');
+      const hasWidthHeight = artifact.content.includes('width=') && artifact.content.includes('height=');
+      
+      let svgContent = artifact.content.trim();
+      
+      // If SVG lacks dimensions, add default viewBox
+      if (!hasViewBox && !hasWidthHeight) {
+        svgContent = svgContent.replace(
+          /<svg([^>]*)>/,
+          '<svg$1 viewBox="0 0 800 600" width="800" height="600">'
+        );
+      }
+      
+      // Convert to data URL for proper SVG namespace handling
+      const svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgContent)}`;
+      
+      return (
+        <div className="w-full h-full overflow-auto p-4 bg-background flex items-center justify-center">
+          <img 
+            src={svgDataUrl}
+            alt={artifact.title}
+            className="max-w-full max-h-full object-contain"
+            onError={(e) => {
+              console.error('SVG rendering error:', artifact.content);
+            }}
+          />
+        </div>
+      );
+    }
+
+    if (artifact.type === "mermaid") {
+      return (
+        <div className="w-full h-full overflow-auto p-4 bg-background flex items-center justify-center">
+          {isLoading && (
+            <div className="flex flex-col items-center gap-2">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+              <p className="text-sm text-muted-foreground">Rendering diagram...</p>
+            </div>
+          )}
+          {previewError && !isLoading && (
+            <div className="bg-destructive/10 border border-destructive text-destructive text-xs p-2 rounded flex items-start gap-2">
+              <span className="font-semibold shrink-0">⚠️ Error:</span>
+              <span className="flex-1 break-words">{previewError}</span>
+            </div>
+          )}
+          <div ref={mermaidRef} className={isLoading || previewError ? 'hidden' : ''} />
+        </div>
+      );
+    }
+
+    if (artifact.type === "image") {
+      return (
+        <div className="w-full h-full overflow-auto p-6 bg-muted/30 flex flex-col items-center justify-center gap-4">
+          <img 
+            src={artifact.content} 
+            alt={artifact.title}
+            className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
+          />
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => {
+                const link = document.createElement('a');
+                link.href = artifact.content;
+                link.download = `${artifact.title.replace(/\s+/g, '_')}.png`;
+                link.click();
+                toast.success("Image downloaded");
+              }}
+              variant="outline"
+              size="sm"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </Button>
+            <Button 
+              onClick={() => onEdit?.(`Edit this image: ${artifact.title}. `)}
+              size="sm"
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Image
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    // Use Sandpack for React artifacts with npm imports
+    if (artifact.type === "react" && needsSandpack) {
+      return (
+        <div className="w-full h-full relative">
+          <Suspense fallback={<ArtifactSkeleton type="react" />}>
+            <SandpackArtifactRenderer
+              code={artifact.content}
+              title={artifact.title}
+              showEditor={false}
+              onError={(error) => {
+                setPreviewError(error);
+                setIsLoading(false);
+              }}
+              onReady={() => setIsLoading(false)}
+            />
+          </Suspense>
+        </div>
+      );
+    }
+
+    if (artifact.type === "react") {
+      const reactPreviewContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Pre-approved libraries for React artifacts -->
+  <!-- Icons & UI -->
+  <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.1/dist/feather.min.js"></script>
+
+  <!-- Charts & Visualization -->
+  <script src="https://unpkg.com/recharts@2.5.0/dist/Recharts.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+  <!-- 3D Graphics -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- Utilities -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/date-fns@3.0.6/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/uuid@9.0.1/dist/umd/uuidv4.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.5/dist/axios.min.js"></script>
+
+  <!-- State Management -->
+  <script src="https://cdn.jsdelivr.net/npm/zustand@4.4.7/index.umd.js"></script>
+
+  <!-- Animation -->
+  <script src="https://cdn.jsdelivr.net/npm/framer-motion@11.0.3/dist/framer-motion.js"></script>
+
+  <!-- Form Utilities -->
+  <script src="https://cdn.jsdelivr.net/npm/react-hook-form@7.49.3/dist/index.umd.js"></script>
+
+  <!-- UI Primitives (Radix UI) -->
+  <script src="https://unpkg.com/@radix-ui/react-dialog@1.0.5/dist/index.umd.js"></script>
+  <script src="https://unpkg.com/@radix-ui/react-dropdown-menu@2.0.6/dist/index.umd.js"></script>
+  <script src="https://unpkg.com/@radix-ui/react-popover@1.0.7/dist/index.umd.js"></script>
+  <script src="https://unpkg.com/@radix-ui/react-tooltip@1.0.7/dist/index.umd.js"></script>
+  <script src="https://unpkg.com/@radix-ui/react-tabs@1.0.4/dist/index.umd.js"></script>
+  <script src="https://unpkg.com/@radix-ui/react-switch@1.0.3/dist/index.umd.js"></script>
+  <script src="https://unpkg.com/@radix-ui/react-slider@1.1.2/dist/index.umd.js"></script>
+
+  <!-- CSS Utilities -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+
+  ${injectedCDNs}
+
+  ${generateCompleteIframeStyles()}
+  <style>
+    /* React app container */
+    #root {
+      width: 100%;
+      min-height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useReducer, useRef, useMemo, useCallback } = React;
+
+    ${artifact.content}
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+
+  <script>
+    // Error reporting
+    window.addEventListener('error', (e) => {
+      window.parent.postMessage({
+        type: 'artifact-error',
+        message: e.message
+      }, '*');
+    });
+
+    window.addEventListener('load', () => {
+      window.parent.postMessage({ type: 'artifact-ready' }, '*');
+    });
+  </script>
+</body>
+</html>`;
+
+      return (
+        <div className="w-full h-full relative flex flex-col">
+          <div className="flex-1 relative">
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-20">
+                <ArtifactSkeleton type="react" />
+              </div>
+            )}
+            {previewError && !isLoading && (
+              <div className="absolute top-2 left-2 right-2 bg-destructive/10 border border-destructive text-destructive text-xs p-2 rounded z-10 flex items-start gap-2">
+                <span className="font-semibold shrink-0">⚠️ Error:</span>
+                <span className="flex-1 break-words">{previewError}</span>
+              </div>
+            )}
+            <iframe
+              key={`${injectedCDNs}-${themeRefreshKey}`} // Re-render when CDNs or theme change
+              srcDoc={reactPreviewContent}
+              className="w-full h-full border-0 bg-background"
+              title={artifact.title}
+              sandbox="allow-scripts allow-same-origin"
+            />
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  const handleEditToggle = () => {
+    if (isEditingCode) {
+      // Save changes
+      artifact.content = editedContent;
+      toast.success("Code updated");
+      setIsEditingCode(false);
+    } else {
+      // Enter edit mode
+      setEditedContent(artifact.content);
+      setIsEditingCode(true);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditedContent(artifact.content);
+    setIsEditingCode(false);
+  };
+
+  const renderCode = () => {
+    // Use Sandpack editor for React artifacts with npm imports
+    if (artifact.type === "react" && needsSandpack) {
+      return (
+        <Suspense fallback={<ArtifactSkeleton type="react" />}>
+          <SandpackArtifactRenderer
+            code={editedContent}
+            title={artifact.title}
+            showEditor={true}
+            onError={(error) => setPreviewError(error)}
+          />
+        </Suspense>
+      );
+    }
+
+    return (
+      <div className="w-full h-full flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-auto bg-muted">
+          {isEditingCode ? (
+            <textarea
+              value={editedContent}
+              onChange={(e) => setEditedContent(e.target.value)}
+              className="w-full h-full p-4 text-sm font-mono bg-muted text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+              spellCheck={false}
+            />
+          ) : (
+            <pre className="p-4 text-sm font-mono overflow-auto">
+              <code className="text-foreground whitespace-pre-wrap break-words">{artifact.content}</code>
+            </pre>
+          )}
+        </div>
+        {isEditingCode && (
+          <div className="flex items-center justify-end gap-2 border-t px-4 py-2 bg-muted/50">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCancelEdit}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleEditToggle}
+            >
+              Save Changes
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <Card className={`flex flex-col overflow-hidden transition-all !rounded-none ${
+        isMaximized ? "fixed inset-4 z-50" : "h-full"
+      }`}>
+        <div className="flex items-center justify-between gap-2 border-b px-4 py-2 bg-muted/50">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <h3 className={cn(TYPOGRAPHY.BODY.sm.mobile, "font-semibold truncate")}>{artifact.title}</h3>
+            {validation && validation.errors.length > 0 && (
+              <Badge variant="destructive" className="text-xs">
+                {validation.errors.length} error{validation.errors.length > 1 ? 's' : ''}
+              </Badge>
+            )}
+            {validation && validation.warnings.length > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                {validation.warnings.length} warning{validation.warnings.length > 1 ? 's' : ''}
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              onClick={handleCopy}
+              title="Copy code"
+            >
+              <Copy className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              onClick={handlePopOut}
+              title="Open in new window"
+            >
+              <ExternalLink className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              onClick={() => setIsMaximized(!isMaximized)}
+              title={isMaximized ? "Minimize" : "Maximize"}
+            >
+              {isMaximized ? (
+                <Minimize2 className="size-4" />
+              ) : (
+                <Maximize2 className="size-4" />
+              )}
+            </Button>
+            {onClose && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8"
+                onClick={onClose}
+              >
+                <X className="size-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+
+
+        <Tabs 
+          defaultValue="preview" 
+          className="flex-1 flex flex-col min-h-0 overflow-hidden"
+          onValueChange={(value) => setIsEditingCode(value === "code")}
+        >
+          <TabsList className="w-full justify-start rounded-none border-b bg-muted/30">
+            <TabsTrigger value="preview">Preview</TabsTrigger>
+            <TabsTrigger value="code">Edit</TabsTrigger>
+          </TabsList>
+          <TabsContent value="preview" className="flex-1 m-0 p-0 data-[state=active]:flex flex-col overflow-hidden">
+            {renderPreview()}
+          </TabsContent>
+          <TabsContent value="code" className="flex-1 m-0 p-0 data-[state=active]:flex overflow-hidden">
+            {renderCode()}
+          </TabsContent>
+        </Tabs>
+      </Card>
+    </>
+  );
+};
