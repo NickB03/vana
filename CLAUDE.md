@@ -6,12 +6,22 @@ AI-powered chat application with real-time streaming, artifact rendering, image 
 
 ```bash
 npm install          # Install dependencies (npm only!)
+chrome-mcp start     # Start Chrome debug instance (first time)
 npm run dev          # Start dev server → http://localhost:8080
 npm run build        # Production build
 npm run test         # Run tests with Vitest
 ```
 
 **Stack**: Vite + React 18.3 + TypeScript 5.8 + shadcn/ui + Tailwind + Supabase + Motion/React
+
+### Chrome DevTools MCP Setup
+```bash
+# Prevent duplicate browser instances
+chrome-mcp start     # Start single Chrome instance
+chrome-mcp status    # Check if running
+chrome-mcp restart   # Clean restart if issues occur
+```
+**Setup guide**: `.claude/chrome-mcp-setup.md`
 
 ## 🎯 MUST Rules (Non-Negotiable)
 

@@ -11,14 +11,21 @@ interface VirtualizedMessageListProps {
   onArtifactChange: (hasArtifact: boolean) => void;
 }
 
-const MessageItem = memo(({ message, onArtifactChange }: { 
+const MessageItem = memo(({ message, onArtifactChange }: {
   message: ChatMessage;
   onArtifactChange: (hasArtifact: boolean) => void;
 }) => {
   const isAssistant = message.role === "assistant";
   const parsedContent = isAssistant ? parseArtifacts(message.content) : null;
-  
+
   if (parsedContent) {
+    // Log warnings if present (P2 will add toast notifications)
+    if (parsedContent.warnings && parsedContent.warnings.length > 0) {
+      parsedContent.warnings.forEach(warning => {
+        console.warn(`Artifact "${warning.artifactTitle}":`, warning.messages.join(', '));
+      });
+    }
+
     const hasArtifacts = parsedContent.artifacts && parsedContent.artifacts.length > 0;
     if (hasArtifacts) {
       onArtifactChange(true);

@@ -246,20 +246,37 @@ export function validateReact(content: string): ValidationResult {
     });
   }
 
-  // Check for shadcn imports without proper path
+  // Check for shadcn/ui imports - these CANNOT work in artifacts (sandbox limitation)
   const shadcnPattern = /import\s+\{[^}]+\}\s+from\s+['"]@\/components\/ui\/([^'"]+)['"]/g;
-  const shadcnComponents = ['button', 'card', 'alert', 'badge', 'input', 'label', 'dialog', 'tabs', 'accordion'];
   let shadcnMatch;
-  
+
   while ((shadcnMatch = shadcnPattern.exec(content)) !== null) {
     const componentPath = shadcnMatch[1];
-    if (!shadcnComponents.includes(componentPath)) {
-      warnings.push({
-        type: 'best-practice',
-        message: `Importing from @/components/ui/${componentPath} - verify component exists`,
-        suggestion: 'Only use available shadcn/ui components'
-      });
-    }
+    errors.push({
+      type: 'structure',
+      message: `Cannot import '@/components/ui/${componentPath}' in artifacts - local imports are not available in sandbox environment`,
+      severity: 'critical'
+    });
+    warnings.push({
+      type: 'best-practice',
+      message: `Use Radix UI primitives instead of shadcn/ui for ${componentPath}`,
+      suggestion: `Replace with @radix-ui/react-${componentPath} and Tailwind CSS classes. See .claude/artifacts.md for examples`
+    });
+  }
+
+  // Check for any local path imports (@/)
+  const localImportPattern = /import\s+.*from\s+['"]@\/[^'"]+['"]/g;
+  const localImports = content.match(localImportPattern);
+  if (localImports) {
+    localImports.forEach(imp => {
+      if (!imp.includes('@/components/ui/')) { // Already caught above
+        errors.push({
+          type: 'structure',
+          message: `Local import detected: ${imp.match(/['"]@\/[^'"]+['"]/)?.[0]} - artifacts cannot access local files`,
+          severity: 'critical'
+        });
+      }
+    });
   }
 
   // Run standard JS validation

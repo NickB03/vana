@@ -118,7 +118,7 @@ describe('ArtifactContainer', () => {
       render(<ArtifactContainer artifact={htmlArtifact} />);
 
       const iframe = screen.getByTitle('HTML Test') as HTMLIFrameElement;
-      expect(iframe.getAttribute('sandbox')).toBe('allow-scripts allow-same-origin');
+      expect(iframe.getAttribute('sandbox')).toBe('allow-scripts allow-same-origin allow-downloads allow-popups');
     });
   });
 

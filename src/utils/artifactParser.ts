@@ -8,6 +8,36 @@ function generateStableId(content: string, type: ArtifactType, index: number): s
   return `artifact-${hash}`;
 }
 
+// Detect invalid local imports in artifact content
+function detectInvalidImports(content: string, type: ArtifactType): string[] {
+  const warnings: string[] = [];
+
+  // Only check React and code artifacts
+  if (type !== 'react' && type !== 'code') {
+    return warnings;
+  }
+
+  // Check for local imports (@/)
+  const localImportPattern = /import\s+.*from\s+['"]@\/([^'"]+)['"]/g;
+  const matches = content.matchAll(localImportPattern);
+
+  for (const match of matches) {
+    const importPath = match[1];
+    warnings.push(`Found invalid local import: @/${importPath}`);
+  }
+
+  // Check for shadcn/ui specific patterns
+  if (/@\/components\/ui\//.test(content)) {
+    warnings.push("Found shadcn/ui component imports - these will not work in artifacts");
+  }
+
+  if (/@\/lib\/utils/.test(content)) {
+    warnings.push("Found @/lib/utils import - cn() function not available in artifacts");
+  }
+
+  return warnings;
+}
+
 // Map MIME types to internal artifact types
 const mimeTypeMap: Record<string, ArtifactType> = {
   'application/vnd.ant.code': 'code',
@@ -20,8 +50,13 @@ const mimeTypeMap: Record<string, ArtifactType> = {
 };
 
 // Parse message content to extract artifacts
-export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cleanContent: string } => {
+export const parseArtifacts = (content: string): {
+  artifacts: ArtifactData[];
+  cleanContent: string;
+  warnings: Array<{ artifactTitle: string; messages: string[] }>;
+} => {
   const artifacts: ArtifactData[] = [];
+  const warnings: Array<{ artifactTitle: string; messages: string[] }> = [];
   let cleanContent = content;
 
   // Match artifact blocks with format: <artifact type="..." title="...">content</artifact>
@@ -43,6 +78,16 @@ export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cl
       language: language || undefined,
     });
 
+    // Check for invalid imports
+    const importWarnings = detectInvalidImports(artifactContent.trim(), mappedType);
+    if (importWarnings.length > 0) {
+      warnings.push({
+        artifactTitle: title,
+        messages: importWarnings
+      });
+      console.warn(`Artifact "${title}" has import warnings:`, importWarnings);
+    }
+
     // Remove artifact tags completely - artifacts render as cards now
     cleanContent = cleanContent.replace(fullMatch, '');
   }
@@ -51,5 +96,5 @@ export const parseArtifacts = (content: string): { artifacts: ArtifactData[]; cl
   // Regular code blocks (```) should be rendered inline with syntax highlighting
   // This prevents treating every code snippet as an artifact
 
-  return { artifacts, cleanContent };
+  return { artifacts, cleanContent, warnings };
 };

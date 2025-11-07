@@ -10,7 +10,7 @@ import { AnimatePresence } from "motion/react";
 import { AnimatedRoute } from "@/components/AnimatedRoute";
 import { AnimationErrorBoundary } from "@/components/AnimationErrorBoundary";
 import { UpdateNotification } from "@/components/UpdateNotification";
-import { storeVersionInfo, logCacheBustingInfo } from "@/utils/cacheBusting";
+import { storeVersionInfo, logCacheBustingInfo, isNewVersionAvailable, clearAllCaches } from "@/utils/cacheBusting";
 
 // Lazy load pages for code splitting
 const Home = lazy(() => import("./pages/Home"));
@@ -66,9 +66,17 @@ const AnimatedRoutes = () => {
 const App = () => {
   // Initialize version tracking and cache busting on app startup
   useEffect(() => {
-    logVersionInfo();
-    storeVersionInfo();
-    logCacheBustingInfo();
+    const checkVersion = async () => {
+      logVersionInfo();
+      storeVersionInfo();
+      logCacheBustingInfo();
+      if (isNewVersionAvailable()) {
+        console.log('A new version is available, clearing cache and reloading...');
+        await clearAllCaches();
+        window.location.reload();
+      }
+    };
+    checkVersion();
   }, []);
 
   return (

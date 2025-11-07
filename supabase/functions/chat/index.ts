@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { shouldGenerateImage, getArtifactGuidance } from "./intent-detector.ts";
+import { validateArtifactRequest, generateGuidanceFromValidation } from "./artifact-validator.ts";
+import { transformArtifactCode } from "./artifact-transformer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -102,7 +104,8 @@ serve(async (req) => {
       }
       user = authUser;
 
-        // Verify session ownership if sessionId is provided
+      // Verify session ownership if sessionId is provided
+      if (sessionId) {
         const { data: session, error: sessionError } = await supabase
           .from('chat_sessions')
           .select('user_id')
@@ -200,7 +203,17 @@ serve(async (req) => {
     }
 
     // Add artifact type guidance based on intent detection
-    const artifactGuidance = lastUserMessage ? getArtifactGuidance(lastUserMessage.content) : "";
+    let artifactGuidance = lastUserMessage ? getArtifactGuidance(lastUserMessage.content) : "";
+
+    // Validate artifact request for potential import issues
+    if (lastUserMessage) {
+      const validation = validateArtifactRequest(lastUserMessage.content);
+      if (!validation.isValid) {
+        const validationGuidance = generateGuidanceFromValidation(validation);
+        artifactGuidance += validationGuidance;
+        console.log("Artifact validation warnings:", validation.warnings);
+      }
+    }
 
     // Add artifact editing context if provided
     let artifactContext = "";
@@ -241,7 +254,18 @@ Treat this as an iterative improvement of the existing artifact.`;
         messages: [
           {
             role: "system",
-            content: `You are a helpful AI assistant. The current date is ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.
+            content: `🚨🚨🚨 CRITICAL RULE - READ THIS FIRST 🚨🚨🚨
+
+**NEVER EVER import from @/components/ui/** in artifacts. NEVER use shadcn/ui components.
+**ONLY use: Radix UI primitives (import * as Dialog from '@radix-ui/react-dialog') + Tailwind CSS**
+**If you import from @/, the artifact WILL FAIL. This is NON-NEGOTIABLE.**
+
+Examples of FORBIDDEN imports that will BREAK the artifact:
+❌ import { Button } from "@/components/ui/button"
+❌ import { Card } from "@/components/ui/card"
+❌ import anything from "@/..."
+
+You are a helpful AI assistant. The current date is ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.
 
 # Core Communication Principles
 
@@ -438,6 +462,27 @@ Instead, you MUST:
    - Use only Tailwind's core utility classes for styling. THIS IS CRITICAL. No Tailwind compiler available, so limited to pre-defined classes in Tailwind's base stylesheet.
    - Base React is available to import. To use hooks, first import at top of artifact: \`import { useState } from "react"\`
    - **NEVER use localStorage or sessionStorage** - always use React state (useState, useReducer)
+
+   🚨🚨🚨 CRITICAL IMPORT RESTRICTIONS 🚨🚨🚨
+
+   **ARTIFACTS CANNOT USE LOCAL IMPORTS - THEY WILL FAIL**
+
+   ❌ **FORBIDDEN** (Will cause artifact to break):
+   - \`import { Button } from "@/components/ui/button"\` ← NEVER
+   - \`import { Card } from "@/components/ui/card"\` ← NEVER
+   - \`import { cn } from "@/lib/utils"\` ← NEVER
+   - \`import anything from "@/..."\` ← NEVER
+   - Any path starting with \`@/\` ← NEVER
+
+   ✅ **ALLOWED** (Available via CDN):
+   - \`import * as Dialog from '@radix-ui/react-dialog'\` ← YES
+   - \`import { Check } from 'lucide-react'\` ← YES
+   - Libraries listed below ← YES
+
+   **Why this matters:** Artifacts run in isolated sandboxes (iframes) with NO access to your local project files. Only CDN-loaded libraries work.
+
+   **How to build UIs:** Use Radix UI primitives (same foundation as shadcn/ui) + Tailwind CSS classes
+
    - Available libraries:
      - lucide-react@0.263.1: \`import { Camera } from "lucide-react"\`
      - recharts: \`import { LineChart, XAxis, ... } from "recharts"\`
@@ -470,11 +515,14 @@ Instead, you MUST:
 
         **Styling**: Use Tailwind CSS utility classes for all styling
 
-        ⚠️ **CRITICAL RESTRICTION**:
+        ⚠️ **CRITICAL RESTRICTION - READ THIS**:
         - Local imports (\`@/components/ui/*\`, \`@/lib/*\`, \`@/utils/*\`) are NOT available
         - Artifacts run in sandboxed iframes with no access to local project files
         - Use ONLY CDN-loaded libraries listed above
         - shadcn/ui components CANNOT be used (they require local imports)
+
+        **This is not optional - artifacts with local imports WILL FAIL**
+        **Use Radix UI primitives + Tailwind CSS instead**
 
         **Radix UI + Tailwind Patterns:**
 
@@ -565,6 +613,8 @@ Instead, you MUST:
     - NO OTHER LIBRARIES ARE INSTALLED OR ABLE TO BE IMPORTED
     - **When building UIs in React, USE Radix UI primitives + Tailwind CSS for professional, accessible components**
 
+   ⚠️ **FINAL REMINDER**: If you see \`@/\` in any import, STOP and rewrite it with Radix UI or remove it. Artifacts with local imports will fail.
+
 ### Important:
 - Include complete and updated content of artifact, without truncation or minimization. Every artifact should be comprehensive and ready for immediate use.
 - **Generate only ONE artifact per response**. If you realize there's an issue with your artifact after creating it, use the update mechanism instead of creating a new one.
@@ -608,13 +658,15 @@ Wrap your code in artifact tags:
 - ❌ Using outdated Three.js features (CapsuleGeometry, etc.)
 
 **Quality Issues:**
-- ❌ Attempting to import shadcn/ui components (@/components/ui/*)
-- ❌ Using local imports (@/lib/*, @/utils/*) - not available in artifacts
+- ❌ **MOST COMMON MISTAKE**: Attempting to import shadcn/ui components (@/components/ui/*) - THIS WILL FAIL
+- ❌ **CRITICAL ERROR**: Using local imports (@/lib/*, @/utils/*) - not available in artifacts
 - ❌ Not using Radix UI primitives for interactive components
 - ❌ Missing responsive design
 - ❌ No error handling or loading states
 - ❌ Inaccessible forms (missing labels)
 - ❌ Non-semantic HTML structure
+
+**IF YOU USE @/ IMPORTS, THE ARTIFACT WILL NOT WORK. Use Radix UI + Tailwind instead.**
 
 ## Common Libraries via CDN
 
@@ -744,24 +796,102 @@ Bad Response (too wordy):
       });
     }
 
-    // Trigger background tasks (fire and forget)
-    (async () => {
-      try {
-        // Update cache
-        await supabase.functions.invoke("cache-manager", {
-          body: { sessionId, operation: "update" },
-        });
-        
-        // Trigger summarization check
-        await supabase.functions.invoke("summarize-conversation", {
-          body: { sessionId },
-        });
-      } catch (bgError) {
-        console.warn("Background task error:", bgError);
-      }
-    })();
+    // Trigger background tasks (fire and forget) - only for authenticated users
+    if (supabase) {
+      (async () => {
+        try {
+          // Update cache
+          await supabase.functions.invoke("cache-manager", {
+            body: { sessionId, operation: "update" },
+          });
 
-    return new Response(response.body, {
+          // Trigger summarization check
+          await supabase.functions.invoke("summarize-conversation", {
+            body: { sessionId },
+          });
+        } catch (bgError) {
+          console.warn("Background task error:", bgError);
+        }
+      })();
+    }
+
+    // Transform streaming response to fix artifact imports
+    // Uses closure-scoped state per stream instance (truly isolated)
+    const transformedStream = response.body!.pipeThrough(new TextDecoderStream()).pipeThrough(
+      (() => {
+        // Closure-scoped state variables - unique per stream instance
+        let buffer = '';
+        let insideArtifact = false;
+
+        return new TransformStream({
+          transform(chunk, controller) {
+            buffer += chunk;
+
+            // Check if we're entering an artifact
+            if (!insideArtifact && buffer.includes('<artifact')) {
+              const artifactStartMatch = buffer.match(/<artifact[^>]*>/);
+              if (artifactStartMatch) {
+                insideArtifact = true;
+              }
+            }
+
+            // Check if we have complete artifact(s) and process ALL of them
+            if (insideArtifact && buffer.includes('</artifact>')) {
+              // Loop to handle multiple artifacts in a single response
+              while (true) {
+                const fullArtifactMatch = buffer.match(/(<artifact[^>]*>)([\s\S]*?)(<\/artifact>)/);
+                if (!fullArtifactMatch) break; // No more complete artifacts
+
+                const [fullMatch, openTag, content, closeTag] = fullArtifactMatch;
+
+                try {
+                  const result = transformArtifactCode(content);
+
+                  if (result.hadIssues) {
+                    console.log("🔧 Auto-fixed artifact imports:", result.changes);
+                    // Replace the artifact content with transformed version
+                    buffer = buffer.replace(fullMatch, openTag + result.transformedContent + closeTag);
+                  }
+                } catch (error) {
+                  console.error("❌ Transform failed, sending original artifact:", error);
+                  // Continue with original artifact - better than breaking the stream
+                  break;
+                }
+
+                // Check if there are more artifacts to process
+                if (!buffer.includes('</artifact>')) {
+                  insideArtifact = false;
+                  break;
+                }
+              }
+              insideArtifact = false;
+            }
+
+            // Send everything before the current artifact (or everything if no artifact)
+            if (!insideArtifact) {
+              // No active artifact - send the buffer
+              controller.enqueue(buffer);
+              buffer = '';
+            } else if (buffer.length > 50000) {
+              // Safety: if buffer gets too large, send it anyway to avoid memory issues
+              console.warn("⚠️ Buffer overflow - sending untransformed artifact");
+              controller.enqueue(buffer);
+              buffer = '';
+              insideArtifact = false;
+            }
+            // Otherwise, keep buffering until artifact is complete
+          },
+          flush(controller) {
+            // Send any remaining buffered content
+            if (buffer) {
+              controller.enqueue(buffer);
+            }
+          }
+        });
+      })()
+    ).pipeThrough(new TextEncoderStream());
+
+    return new Response(transformedStream, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
