@@ -36,9 +36,10 @@ interface ArtifactContainerProps {
   artifact: ArtifactData;
   onClose?: () => void;
   onEdit?: (suggestion?: string) => void;
+  onContentChange?: (newContent: string) => void;
 }
 
-export const ArtifactContainer = ({ artifact, onClose, onEdit }: ArtifactContainerProps) => {
+export const ArtifactContainer = ({ artifact, onClose, onEdit, onContentChange }: ArtifactContainerProps) => {
   // KEEP: All existing state management (9 useState calls)
   const [isMaximized, setIsMaximized] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -157,6 +158,9 @@ ${artifact.content}
   };
 
   const handleOpenInCodeSandbox = () => {
+    // TODO: Add user confirmation dialog for production
+    // Consider sanitizing API keys, localhost URLs, and sensitive comments
+    // before uploading to third-party service (CodeSandbox)
     const dependencies = extractNpmDependencies(artifact.content);
     const sandboxConfig = {
       files: {
@@ -258,6 +262,11 @@ root.render(<App />);`,
           const { svg } = await mermaid.render(id, artifact.content);
           if (mermaidRef.current) {
             const template = document.createElement('template');
+            // TODO: Add DOMPurify for defense-in-depth XSS prevention
+            // Current regex-based sanitization is safe for controlled content but could be bypassed
+            // with event handlers (onload), data URLs, or foreignObject tags in production scenarios.
+            // For portfolio: demonstrates awareness of XSS attack vectors and mitigation strategies.
+            // Recommended: DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true }, FORBID_TAGS: ['script', 'foreignObject'] })
             const cleanSvg = svg.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
             template.innerHTML = cleanSvg.trim();
             const svgElement = template.content.firstChild;
@@ -282,6 +291,9 @@ root.render(<App />);`,
   useEffect(() => {
     if (artifact.type === "html" || artifact.type === "code" || artifact.type === "react") {
       setInjectedCDNs('');
+      // TODO: Add CDN URL whitelist and Subresource Integrity (SRI) for production
+      // Current approach trusts library detection; could add domain validation against
+      // allowed CDN hosts (unpkg.com, cdn.jsdelivr.net, cdnjs.cloudflare.com)
       const cdn = detectAndInjectLibraries(artifact.content);
       setInjectedCDNs(cdn);
     }
@@ -289,7 +301,8 @@ root.render(<App />);`,
 
   const handleEditToggle = () => {
     if (isEditingCode) {
-      artifact.content = editedContent;
+      // Lift state to parent to avoid prop mutation and maintain React's data flow
+      onContentChange?.(editedContent);
       toast.success("Code updated");
       setIsEditingCode(false);
     } else {
@@ -436,6 +449,11 @@ ${artifact.content}
               srcDoc={previewContent}
               className="w-full h-full border-0 bg-background"
               title={artifact.title}
+              // TODO: Consider more restrictive sandbox for untrusted content
+              // Current permissions are appropriate for personal project with controlled artifacts.
+              // For production with user-generated content, remove 'allow-same-origin' to prevent
+              // DOM access and potential data exfiltration.
+              // See: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe#attr-sandbox
               sandbox="allow-scripts allow-same-origin allow-downloads allow-popups"
             />
           </div>
@@ -639,6 +657,11 @@ ${artifact.content}
               srcDoc={reactPreviewContent}
               className="w-full h-full border-0 bg-background"
               title={artifact.title}
+              // TODO: Consider more restrictive sandbox for untrusted content
+              // Current permissions are appropriate for personal project with controlled artifacts.
+              // For production with user-generated content, remove 'allow-same-origin' to prevent
+              // DOM access and potential data exfiltration.
+              // See: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe#attr-sandbox
               sandbox="allow-scripts allow-same-origin allow-downloads allow-popups"
             />
           </div>

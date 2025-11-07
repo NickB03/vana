@@ -557,6 +557,9 @@ export function ChatInterface({
                 artifact={currentArtifact}
                 onClose={handleCloseCanvas}
                 onEdit={handleEditArtifact}
+                onContentChange={(newContent) => {
+                  setCurrentArtifact({ ...currentArtifact, content: newContent });
+                }}
               />
             </div>
           ) : (
@@ -596,6 +599,9 @@ export function ChatInterface({
                   artifact={currentArtifact}
                   onClose={handleCloseCanvas}
                   onEdit={handleEditArtifact}
+                  onContentChange={(newContent) => {
+                    setCurrentArtifact({ ...currentArtifact, content: newContent });
+                  }}
                 />
               </ResizablePanel>
             </>
