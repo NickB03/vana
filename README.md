@@ -515,15 +515,6 @@ export default function Dashboard() {
 </artifact>
 ```
 
-#### Library Approval System
-
-For security, external CDN libraries require user approval before loading:
-
-- User is prompted when AI suggests a new library
-- Approved libraries are saved to user preferences
-- Auto-approval can be enabled in settings
-- Prevents malicious code execution
-
 #### Import Validation System
 
 **NEW: Multi-layer defense against invalid imports (5 layers)**
