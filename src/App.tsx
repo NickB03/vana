@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { lazy, Suspense, useEffect } from "react";
 import { logVersionInfo } from "@/version";
@@ -14,7 +14,6 @@ import { storeVersionInfo, logCacheBustingInfo, isNewVersionAvailable, clearAllC
 
 // Lazy load pages for code splitting
 const Home = lazy(() => import("./pages/Home"));
-const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Signup = lazy(() => import("./pages/Signup"));
 const Landing = lazy(() => import("./pages/Landing"));
@@ -51,7 +50,8 @@ const AnimatedRoutes = () => {
     <AnimatePresence mode="sync">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<AnimatedRoute><Home /></AnimatedRoute>} />
-        <Route path="/app" element={<AnimatedRoute><Index /></AnimatedRoute>} />
+        {/* Redirect old /app route to new home page */}
+        <Route path="/app" element={<Navigate to="/" replace />} />
         <Route path="/auth" element={<AnimatedRoute><Auth /></AnimatedRoute>} />
         <Route path="/signup" element={<AnimatedRoute><Signup /></AnimatedRoute>} />
         <Route path="/landing" element={<AnimatedRoute><Landing /></AnimatedRoute>} />
