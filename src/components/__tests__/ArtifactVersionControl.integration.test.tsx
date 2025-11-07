@@ -127,7 +127,7 @@ describe('ArtifactVersionControl Integration Tests', () => {
         content: 'const App = () => <div>Hello</div>;'
       };
 
-      renderWithProviders(<Artifact artifact={artifact} messageId="msg-123" />);
+      renderWithProviders(<Artifact artifact={artifact} />);
 
       // Verify History button appears with version count
       const historyButton = screen.getByTitle(/Version history \(3\)/i);
@@ -159,7 +159,7 @@ describe('ArtifactVersionControl Integration Tests', () => {
         content: 'const App = () => <div>Hello</div>;'
       };
 
-      renderWithProviders(<Artifact artifact={artifact} messageId="msg-123" />);
+      renderWithProviders(<Artifact artifact={artifact} />);
 
       // Click History button
       const historyButton = screen.getByTitle(/Version history/i);
@@ -261,7 +261,7 @@ describe('ArtifactVersionControl Integration Tests', () => {
         content: 'const App = () => <div>Hello</div>;'
       };
 
-      renderWithProviders(<Artifact artifact={artifact} messageId="msg-123" />);
+      renderWithProviders(<Artifact artifact={artifact} />);
 
       // Verify navigation buttons exist
       expect(screen.getByTitle(/Previous version/i)).toBeInTheDocument();
@@ -295,7 +295,7 @@ describe('ArtifactVersionControl Integration Tests', () => {
         content: 'const App = () => <div>Latest</div>;'
       };
 
-      renderWithProviders(<Artifact artifact={artifact} messageId="msg-123" />);
+      renderWithProviders(<Artifact artifact={artifact} />);
 
       // Click previous button (should go from latest to version 3)
       const prevButton = screen.getByTitle(/Previous version/i);
@@ -332,7 +332,7 @@ describe('ArtifactVersionControl Integration Tests', () => {
         content: 'const App = () => <div>Latest</div>;'
       };
 
-      const { rerender } = renderWithProviders(<Artifact artifact={artifact} messageId="msg-123" />);
+      const { rerender } = renderWithProviders(<Artifact artifact={artifact} />);
 
       // Navigate to version 2 first
       const prevButton = screen.getByTitle(/Previous version/i);
@@ -373,7 +373,7 @@ describe('ArtifactVersionControl Integration Tests', () => {
         content: 'const App = () => <div>Hello</div>;'
       };
 
-      renderWithProviders(<Artifact artifact={artifact} messageId="msg-123" />);
+      renderWithProviders(<Artifact artifact={artifact} />);
 
       // Navigate to version 2 (first in array)
       const prevButton = screen.getByTitle(/Previous version/i);
@@ -413,7 +413,7 @@ describe('ArtifactVersionControl Integration Tests', () => {
         content: 'const App = () => <div>Latest</div>;'
       };
 
-      renderWithProviders(<Artifact artifact={artifact} messageId="msg-123" />);
+      renderWithProviders(<Artifact artifact={artifact} />);
 
       // At latest version, next button should be disabled
       const nextButton = screen.getByTitle(/Next version/i);
@@ -744,7 +744,7 @@ const App = () => <Button>Click</Button>;`
         language: 'javascript'
       };
 
-      renderWithProviders(<Artifact artifact={artifact} messageId="msg-123" />);
+      renderWithProviders(<Artifact artifact={artifact} />);
 
       // Switch to Edit tab
       const editTab = screen.getByRole('tab', { name: /edit/i });
@@ -797,7 +797,7 @@ const App = () => <Button>Click</Button>;`
         content: '# Original'
       };
 
-      renderWithProviders(<Artifact artifact={artifact} messageId="msg-123" />);
+      renderWithProviders(<Artifact artifact={artifact} />);
 
       // Switch to Edit tab
       const editTab = screen.getByRole('tab', { name: /edit/i });
@@ -846,7 +846,7 @@ const App = () => <Button>Click</Button>;`
         language: 'javascript'
       };
 
-      renderWithProviders(<Artifact artifact={artifact} messageId="msg-123" />);
+      renderWithProviders(<Artifact artifact={artifact} />);
 
       // Switch to Edit tab
       const editTab = screen.getByRole('tab', { name: /edit/i });

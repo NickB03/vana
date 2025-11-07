@@ -77,9 +77,15 @@ serve(async (req) => {
     }
     
     let user = null;
-    let supabase = null;
 
-    // Authenticated users - require auth
+    // Create supabase client for ALL users (guest and authenticated)
+    // Guests get basic anon key access, auth users get enhanced client
+    let supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    );
+
+    // Authenticated users - verify auth and recreate client with auth header
     if (!isGuest) {
       const authHeader = req.headers.get("Authorization");
       if (!authHeader) {
@@ -89,6 +95,7 @@ serve(async (req) => {
         });
       }
 
+      // Recreate client with auth header for authenticated access
       supabase = createClient(
         Deno.env.get("SUPABASE_URL") ?? "",
         Deno.env.get("SUPABASE_ANON_KEY") ?? "",
@@ -120,7 +127,7 @@ serve(async (req) => {
         }
       }
     }
-    // Guest users - skip auth and database checks
+    // Guest users already have supabase client initialized above
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {

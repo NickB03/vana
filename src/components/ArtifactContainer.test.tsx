@@ -300,7 +300,7 @@ describe('ArtifactContainer', () => {
       const { validateArtifact } = await import('@/utils/artifactValidator');
       vi.mocked(validateArtifact).mockReturnValue({
         isValid: false,
-        errors: [{ message: 'Syntax error on line 5', line: 5, column: 10 }],
+        errors: [{ type: 'syntax', message: 'Syntax error on line 5', severity: 'high' }],
         warnings: [],
       });
 
@@ -325,8 +325,8 @@ describe('ArtifactContainer', () => {
         isValid: true,
         errors: [],
         warnings: [
-          { message: 'Missing alt attribute', line: 3, column: 5 },
-          { message: 'Deprecated tag used', line: 7, column: 1 },
+          { type: 'accessibility', message: 'Missing alt attribute', suggestion: 'Add alt text to images' },
+          { type: 'best-practice', message: 'Deprecated tag used', suggestion: 'Use modern HTML5 tags' },
         ],
       });
 

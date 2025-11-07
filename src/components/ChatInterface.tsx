@@ -528,7 +528,7 @@ export function ChatInterface({
                           size="icon"
                           disabled={!input.trim() || isLoading || isStreaming}
                           className="size-9 rounded-full bg-gradient-primary hover:opacity-90"
-                          onClick={handleSend}
+                          onClick={() => handleSend()}
                         >
                           {isLoading || isStreaming ? (
                             <div className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
