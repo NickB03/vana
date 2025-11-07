@@ -13,6 +13,7 @@ dist-ssr
 *.local
 
 # Environment files
+.env
 .env.development
 .env.production
 .env.backup
@@ -50,3 +51,4 @@ verification-*.png
 debug-*.txt
 snapshot-*.txt
 test-*.png
+.env
