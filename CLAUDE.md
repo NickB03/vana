@@ -21,7 +21,13 @@ chrome-mcp start     # Start single Chrome instance
 chrome-mcp status    # Check if running
 chrome-mcp restart   # Clean restart if issues occur
 ```
-**Setup guide**: `.claude/chrome-mcp-setup.md`
+
+**Slash commands** (in Claude Code):
+- `/chrome-status` - Check Chrome MCP status and resources
+- `/chrome-restart` - Gentle restart of Chrome instance
+- `/kill-chromedev` - Nuclear option: kill all processes and restart clean
+
+**Guides**: `.claude/chrome-mcp-setup.md` | `.claude/CHROME_MCP_COMMANDS.md`
 
 ## 🎯 MUST Rules (Non-Negotiable)
 
@@ -29,7 +35,10 @@ chrome-mcp restart   # Clean restart if issues occur
 2. **Session Validation**: Always call `await ensureValidSession()` before DB operations
 3. **Browser Verification**: Test with Chrome DevTools MCP after EVERY change
 4. **Route Order**: Add new routes ABOVE the `*` catch-all in App.tsx
-5. **Artifact Imports**: Cannot use `@/components/ui/*` in artifacts (use Radix UI primitives)
+5. **Artifact Imports**: **CRITICAL** - Cannot use `@/components/ui/*` in artifacts (use Radix UI primitives)
+   - System has 5-layer defense against invalid imports
+   - See `.claude/artifact-import-restrictions.md` for complete guide
+   - Auto-transformation fixes most common mistakes
 6. **Animation Performance**: Only animate new messages, not entire chat history
 7. **Deployment**: Run verification script before marking deployment complete
 
@@ -113,7 +122,13 @@ await browser.screenshot({ filename: "verification.png" });
 ### Artifact System
 - **Auto-injected libraries (27+)**: D3, Chart.js, Three.js, GSAP, Lodash, Moment
 - **React artifacts include**: Recharts, Framer Motion, lucide-react, Radix UI
-- **Validation**: All artifacts pass through `artifactValidator` before rendering
+- **Validation**: Multi-layer defense system against invalid imports
+  - Layer 1: System prompt warnings (pre-generation)
+  - Layer 2: Template examples (learn-by-example)
+  - Layer 3: Pre-generation validation (request analysis)
+  - Layer 4: Post-generation transformation (auto-fix invalid imports)
+  - Layer 5: Runtime validation (block rendering if critical errors)
+- **UI Framework**: ai-elements primitives (ArtifactContainer wrapper)
 - **Details**: See `.claude/artifacts.md` for complete library list
 
 ### Artifact Suggestions UI
@@ -214,15 +229,24 @@ node scripts/verify-deployment.cjs https://your-domain.com
 
 - **Detailed Guides** (when needed):
   - `.claude/artifacts.md` - Complete artifact system documentation
+  - `.claude/artifact-import-restrictions.md` - Critical: Artifact import rules
+  - `.claude/ARTIFACT_IMPORT_FIX_SUMMARY.md` - Multi-layer validation system
   - `.claude/mcp-chrome-devtools.md` - Browser automation patterns
   - `.claude/mcp-supabase.md` - Database operations guide
   - `.claude/deployment.md` - Cache-busting & deployment details
   - `.claude/troubleshooting.md` - Common issues & solutions
+  - `.claude/AI_ELEMENTS_SUMMARY.md` - ai-elements integration status
+  - `.claude/chrome-mcp-setup.md` - Chrome DevTools MCP configuration
 
 - **Command Templates** (reusable workflows):
   - `.claude/commands/verify-ui.md` - UI verification workflow
   - `.claude/commands/test-artifact.md` - Artifact testing steps
   - `.claude/commands/debug-auth.md` - Authentication debugging
+
+- **Session Notes** (recent work):
+  - `.claude/PROJECT_STATUS_UPDATE.md` - Latest implementation status
+  - `.claude/PEER_REVIEW_PACKAGE.md` - Code review guidelines
+  - `DOCUMENTATION_PLAN.md` - Comprehensive documentation roadmap
 
 ## 📝 Environment Variables
 
