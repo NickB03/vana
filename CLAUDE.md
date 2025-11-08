@@ -43,6 +43,7 @@ chrome-mcp restart   # Clean restart if issues occur
 7. **Security DEFINER Functions**: Always include `SET search_path = public, pg_temp` to prevent schema injection
 8. **CORS Configuration**: Never use wildcard `*` origins in production (use `supabase/functions/_shared/cors-config.ts`)
 9. **Deployment**: Run verification script before marking deployment complete
+10. **Artifact Prompts**: Use structured format (Context → Task → Requirements → Output) for better AI generation
 
 ## 🏗️ Architecture Overview
 
@@ -144,6 +145,24 @@ await browser.screenshot({ filename: "verification.png" });
 - **Responsive**: Adapts from 2 cards (mobile) to 5 cards (desktop)
 - **Implementation**: `GalleryHoverCarousel` component in Home.tsx
 - **Interaction**: Click any card to populate chat input with prompt
+- **Prompt Engineering**: All 20 prompts use structured format (Nov 2025)
+  - Context → Task → Requirements → Output structure
+  - Explicit library mentions (Radix UI, Recharts, D3, Framer Motion)
+  - Clear constraints (no localStorage, no @/ imports)
+  - Organized by feature category for better AI parsing
+
+### Artifact Export System (Nov 2025)
+- **Export Menu**: Replaced simple download with comprehensive export options
+- **Format-Specific Exports**:
+  - Copy to clipboard (all artifact types)
+  - Download with proper file extension (.jsx, .html, .svg, .mmd, .md)
+  - Export HTML as standalone with CDN library injection
+  - Export React as JSX component with imports
+  - Export Mermaid as rendered SVG or source .mmd file
+  - Export with version history (JSON format)
+- **Multi-Artifact Support**: ZIP export for artifacts with dependencies
+- **Implementation**: `ExportMenu` component integrated into `ArtifactContainer`
+- **Dependencies**: jszip for multi-file archives
 
 ### Database Schema (Supabase)
 ```sql
@@ -253,6 +272,7 @@ node scripts/verify-deployment.cjs https://your-domain.com
 
 - **Session Notes** (recent work):
   - `.claude/CODE_REVIEW_FIXES_SUMMARY.md` - Security fixes documentation (Nov 2025)
+  - `.claude/ARTIFACT_PROMPT_OPTIMIZATION.md` - Structured prompt engineering (Nov 2025)
 
 ## 📝 Environment Variables
 
@@ -289,4 +309,4 @@ ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 See `.claude/CODE_REVIEW_FIXES_SUMMARY.md` for complete details.
 
 ---
-*Last Updated: 2025-11-07 | Claude Code v1.x compatible*
+*Last Updated: 2025-11-08 | Claude Code v1.x compatible*

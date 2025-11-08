@@ -37,7 +37,9 @@
 
 ## 🌟 Overview
 
-**Vana** is an AI-powered development assistant that transforms natural language into production-ready code, interactive React components, diagrams, and more. Built with Claude AI, Vana provides a seamless chat interface where every conversation can generate interactive artifacts—fully functional components rendered in real-time alongside your chat.
+**Vana** is an AI-powered development assistant that transforms natural language into production-ready code, interactive React components, diagrams, and more. Powered by Google's Gemini 2.5 AI, Vana provides a seamless chat interface where every conversation can generate interactive artifacts—fully functional components rendered in real-time alongside your chat.
+
+> **Note**: This project uses Claude Code (Anthropic's CLI tool) for development assistance, but the production application is powered by Google Gemini 2.5 via Google AI Studio.
 
 ### Why Vana?
 
@@ -51,18 +53,24 @@
 
 ### Recent Major Improvements
 
+**November 2025 - Feature Enhancements & UX:**
+- 🚀 **Artifact Export System**: Multi-format export with clipboard, download, standalone HTML, and ZIP support
+- 📝 **Structured Prompt Engineering**: All 20 artifact sample prompts optimized with Context→Task→Requirements→Output format
+- 🎨 **AI-Powered Error Fixing**: Automatic detection and repair of artifact errors with detailed explanations
+- ⚡ **Instant Build Suggestions**: Click any suggestion card to instantly populate chat and start building
+
 **November 2025 - Production Security Hardening:**
 - 🔒 **Database Security**: All SECURITY DEFINER functions protected against schema injection
 - 🛡️ **Guest Rate Limiting**: IP-based rate limiting (10 requests/24h) prevents API quota abuse
 - 🔐 **CORS Validation**: Environment-based origin whitelist replaces dangerous wildcard configuration
 - ⚡ **Performance**: 52% smaller chat function bundle (system prompt externalization)
 
-**January 2025 - Architecture & Testing:**
+**October 2025 - Architecture & Testing:**
 - ✅ **ai-elements Integration**: Modern UI primitives for cleaner artifact rendering
 - ✅ **5-Layer Import Validation**: Comprehensive defense against artifact failures
 - ✅ **Auto-Transformation**: Automatically fixes common coding mistakes in generated artifacts
 - ✅ **Chrome DevTools MCP**: Advanced browser automation for testing and verification
-- ✅ **Enhanced Test Coverage**: 232+ tests with improved infrastructure
+- ✅ **Enhanced Test Coverage**: 238 tests passing with improved infrastructure
 - ✅ **Component Refactoring**: Eliminated prop mutations and improved code organization
 
 ---
@@ -71,7 +79,7 @@
 
 ### Core Capabilities
 
-- **🤖 AI-Powered Chat**: Real-time conversations with Claude AI
+- **🤖 AI-Powered Chat**: Real-time conversations with Google Gemini 2.5
 - **📦 Artifact System**: Generate and render interactive content
   - React components with shadcn/ui support
   - HTML pages with live preview
@@ -82,10 +90,11 @@
   - AI-generated images
 - **💾 Session Management**: Persistent chat sessions with automatic title generation
 - **🔄 Version Control**: Track changes to artifacts with Git-like versioning
+- **📤 Artifact Export**: Multi-format export system with clipboard, download, standalone HTML, and ZIP
 - **🎨 Theme Support**: Dark/light mode with system preference detection
 - **📱 Mobile Optimized**: Responsive design with touch-friendly interactions
 - **🔐 Authentication**: Email/password and Google OAuth support
-- **🛡️ Security**: Library approval system for external dependencies
+- **🛡️ Security**: Row-Level Security, rate limiting, and CORS validation
 - **⚡ Performance**: Optimized with code splitting, compression, and PWA support
 
 ### Advanced Features
@@ -101,7 +110,16 @@
   - 150+ lines of reusable UI components
 - **Context Management**: Intelligent conversation summarization for long chats
 - **File Upload**: Support for image uploads and analysis
-- **Error Recovery**: Automatic error detection and AI-powered fixes
+- **Error Recovery**: Automatic error detection and AI-powered fixes with detailed explanations
+- **Artifact Export**: Comprehensive export system
+  - Copy to clipboard (all artifact types)
+  - Download with proper file extensions (.jsx, .html, .svg, .mmd, .md)
+  - Export HTML as standalone with auto-injected CDN libraries
+  - Export React as JSX component with import statements
+  - Export Mermaid as rendered SVG or source .mmd file
+  - Export with version history (JSON format)
+  - Multi-artifact ZIP export for projects with dependencies
+- **Structured Prompts**: 20 optimized artifact suggestions using Context→Task→Requirements→Output format
 - **Keyboard Shortcuts**: Efficient navigation and actions
 
 ### Security Features (Nov 2025)
@@ -331,7 +349,7 @@ graph LR
 
     C --> F[Stream Chat API]
     F --> G[Edge Function: chat]
-    G --> H[Claude AI]
+    G --> H[Google Gemini 2.5]
     H --> I[Stream Response]
 
     I --> J[Parse Artifacts]
@@ -614,7 +632,7 @@ sequenceDiagram
     participant C as ChatInterface
     participant H as useChatMessages Hook
     participant E as Edge Function
-    participant AI as Claude AI
+    participant AI as Google Gemini 2.5
 
     U->>C: Send Message
     C->>H: streamChat()
@@ -941,25 +959,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 🙏 Acknowledgments
-
-### Technologies
-
-- [Claude AI](https://www.anthropic.com/claude) - Powering the AI conversations
-- [Supabase](https://supabase.com) - Backend infrastructure
-- [shadcn/ui](https://ui.shadcn.com) - Beautiful component library
-- [Vite](https://vitejs.dev) - Lightning-fast build tool
-- [React](https://reactjs.org) - UI framework
-
-### Inspiration
-
-This project was inspired by:
-- [Anthropic's Claude Artifacts](https://www.anthropic.com/news/claude-3-5-sonnet)
-- [Vercel's v0](https://v0.dev)
-- [ChatGPT Code Interpreter](https://openai.com/blog/chatgpt-plugins)
-
----
-
 ## 📞 Support
 
 ### Documentation
@@ -979,12 +978,4 @@ This project was inspired by:
 - **Repository**: [github.com/NickB03/llm-chat-site](https://github.com/NickB03/llm-chat-site)
 
 ---
-
-<div align="center">
-
-**Built with ❤️ using Claude AI, React, and Supabase**
-
-⭐ Star this repo if you find it helpful!
-
-</div>
 
