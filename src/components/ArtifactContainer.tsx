@@ -14,6 +14,7 @@ import { detectAndInjectLibraries } from "@/utils/libraryDetection";
 import { cn } from "@/lib/utils";
 import { ArtifactSkeleton } from "@/components/ui/artifact-skeleton";
 import { detectNpmImports, extractNpmDependencies } from '@/utils/npmDetection';
+import { supabase } from "@/utils/supabase";
 
 // Lazy load Sandpack component for code splitting
 const SandpackArtifactRenderer = lazy(() =>
@@ -51,6 +52,7 @@ export const ArtifactContainer = ({ artifact, onClose, onEdit, onContentChange }
   const [isEditingCode, setIsEditingCode] = useState(false);
   const [editedContent, setEditedContent] = useState(artifact.content);
   const [themeRefreshKey, setThemeRefreshKey] = useState(0);
+  const [isFixingError, setIsFixingError] = useState(false);
 
   // KEEP: needsSandpack logic
   const needsSandpack = useMemo(() => {
@@ -316,6 +318,57 @@ root.render(<App />);`,
     setIsEditingCode(false);
   };
 
+  const handleAIFix = async () => {
+    if (!previewError) return;
+
+    setIsFixingError(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Authentication required");
+        setIsFixingError(false);
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-artifact-fix`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            content: artifact.content,
+            type: artifact.type,
+            errorMessage: previewError,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to generate fix");
+      }
+
+      const { fixedCode } = await response.json();
+
+      if (fixedCode) {
+        // Apply the fix using the parent's content change handler
+        onContentChange?.(fixedCode);
+        toast.success("Artifact fixed! Check the preview.");
+        setPreviewError(null); // Clear error since we fixed it
+      } else {
+        toast.error("No fix could be generated");
+      }
+    } catch (error) {
+      console.error("AI fix error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to fix artifact");
+    } finally {
+      setIsFixingError(false);
+    }
+  };
+
   // KEEP: renderPreview function (shortened for brevity - includes all types)
   const renderPreview = () => {
     // Code/HTML rendering
@@ -419,6 +472,12 @@ ${artifact.content}
                     💡 {categorizeError(previewError).suggestion}
                   </div>
                 )}
+                {isFixingError && (
+                  <div className="flex items-center gap-2 pl-6 text-xs">
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                    <span>AI is fixing the error...</span>
+                  </div>
+                )}
                 <div className="flex gap-2 pl-6">
                   <Button
                     size="sm"
@@ -428,8 +487,18 @@ ${artifact.content}
                       navigator.clipboard.writeText(previewError);
                       toast.success("Error copied to clipboard");
                     }}
+                    disabled={isFixingError}
                   >
                     Copy Error
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-6 text-xs"
+                    onClick={handleAIFix}
+                    disabled={isFixingError}
+                  >
+                    {isFixingError ? "Fixing..." : "🤖 Ask AI to Fix"}
                   </Button>
                   {onEdit && (
                     <Button
@@ -437,8 +506,9 @@ ${artifact.content}
                       variant="outline"
                       className="h-6 text-xs"
                       onClick={() => onEdit(`Fix this error: ${previewError}`)}
+                      disabled={isFixingError}
                     >
-                      Ask AI to Fix
+                      Ask in Chat
                     </Button>
                   )}
                 </div>
@@ -647,9 +717,51 @@ ${artifact.content}
               </div>
             )}
             {previewError && !isLoading && (
-              <div className="absolute top-2 left-2 right-2 bg-destructive/10 border border-destructive text-destructive text-xs p-2 rounded z-10 flex items-start gap-2">
-                <span className="font-semibold shrink-0">⚠️ Error:</span>
-                <span className="flex-1 break-words">{previewError}</span>
+              <div className="absolute top-2 left-2 right-2 bg-destructive/10 border border-destructive text-destructive text-xs p-3 rounded z-10 flex flex-col gap-2">
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold shrink-0">⚠️ Error:</span>
+                  <span className="flex-1 break-words font-mono">{previewError}</span>
+                </div>
+                {isFixingError && (
+                  <div className="flex items-center gap-2 pl-6 text-xs">
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                    <span>AI is fixing the error...</span>
+                  </div>
+                )}
+                <div className="flex gap-2 pl-6">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-6 text-xs"
+                    onClick={() => {
+                      navigator.clipboard.writeText(previewError);
+                      toast.success("Error copied to clipboard");
+                    }}
+                    disabled={isFixingError}
+                  >
+                    Copy Error
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-6 text-xs"
+                    onClick={handleAIFix}
+                    disabled={isFixingError}
+                  >
+                    {isFixingError ? "Fixing..." : "🤖 Ask AI to Fix"}
+                  </Button>
+                  {onEdit && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 text-xs"
+                      onClick={() => onEdit(`Fix this error: ${previewError}`)}
+                      disabled={isFixingError}
+                    >
+                      Ask in Chat
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
             <iframe
