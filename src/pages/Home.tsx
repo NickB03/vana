@@ -452,145 +452,145 @@ const Home = () => {
                             // Image Generation (5 options)
                             {
                               id: "img-gen-1",
-                              title: "Generate an Image",
-                              summary: "Generate an image of Pikachu in a banana costume",
-                              prompt: "Generate an image of Pikachu in a banana costume",
+                              title: "Retro Character Art",
+                              summary: "Generate a vibrant pixel art style image of Pikachu wearing a banana costume, standing in a sunny tropical beach scene with palm trees and coconuts, retro 16-bit gaming aesthetic with bright yellow and orange color palette",
+                              prompt: "Generate a vibrant pixel art style image of Pikachu wearing a banana costume, standing in a sunny tropical beach scene with palm trees and coconuts, retro 16-bit gaming aesthetic with bright yellow and orange color palette",
                               image: "https://images.unsplash.com/photo-1547891654-e66ed7ebb968?w=400&h=300&fit=crop"
                             },
                             {
                               id: "img-gen-2",
-                              title: "Create Artwork",
-                              summary: "Generate a cyberpunk cityscape at sunset with flying cars",
-                              prompt: "Generate a cyberpunk cityscape at sunset with flying cars",
+                              title: "Cyberpunk Cityscape",
+                              summary: "Generate a breathtaking cyberpunk cityscape at golden hour sunset with neon-lit skyscrapers, flying cars leaving light trails, holographic billboards, rain-slicked streets reflecting purple and pink neon lights, cinematic wide angle composition",
+                              prompt: "Generate a breathtaking cyberpunk cityscape at golden hour sunset with neon-lit skyscrapers, flying cars leaving light trails, holographic billboards, rain-slicked streets reflecting purple and pink neon lights, cinematic wide angle composition",
                               image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&h=300&fit=crop"
                             },
                             {
                               id: "img-gen-3",
                               title: "Fantasy Character",
-                              summary: "Generate an image of a mystical elf warrior with glowing armor in an enchanted forest",
-                              prompt: "Generate an image of a mystical elf warrior with glowing armor in an enchanted forest",
+                              summary: "Generate a mystical elven warrior woman with luminescent silver armor adorned with ancient runes, standing in an enchanted forest with bioluminescent plants, magical fireflies, ethereal mist, dramatic rim lighting, photorealistic fantasy art style",
+                              prompt: "Generate a mystical elven warrior woman with luminescent silver armor adorned with ancient runes, standing in an enchanted forest with bioluminescent plants, magical fireflies, ethereal mist, dramatic rim lighting, photorealistic fantasy art style",
                               image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&h=300&fit=crop"
                             },
                             {
                               id: "img-gen-4",
-                              title: "Movie Poster",
-                              summary: "Create a dramatic movie poster for a sci-fi thriller about AI taking over",
-                              prompt: "Create a dramatic movie poster for a sci-fi thriller about AI taking over",
+                              title: "Sci-Fi Movie Poster",
+                              summary: "Create a dramatic movie poster for a sci-fi thriller titled 'Silicon Awakening' featuring a massive AI quantum computer core with glowing blue circuits, silhouettes of people below, ominous storm clouds, bold typography, dark moody color grading with electric blue accents",
+                              prompt: "Create a dramatic movie poster for a sci-fi thriller titled 'Silicon Awakening' featuring a massive AI quantum computer core with glowing blue circuits, silhouettes of people below, ominous storm clouds, bold typography, dark moody color grading with electric blue accents",
                               image: "https://images.unsplash.com/photo-1594908900066-3f47337549d8?w=400&h=300&fit=crop"
                             },
                             {
                               id: "img-gen-5",
-                              title: "Product Design",
-                              summary: "Generate a sleek modern smartwatch design with holographic display",
-                              prompt: "Generate a sleek modern smartwatch design with holographic display",
+                              title: "Futuristic Product",
+                              summary: "Generate a sleek modern smartwatch product photograph with holographic transparent display showing health metrics, curved sapphire glass, titanium body with rose gold accents, floating in space with soft studio lighting, premium tech product aesthetic, 8K resolution",
+                              prompt: "Generate a sleek modern smartwatch product photograph with holographic transparent display showing health metrics, curved sapphire glass, titanium body with rose gold accents, floating in space with soft studio lighting, premium tech product aesthetic, 8K resolution",
                               image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=300&fit=crop"
                             },
                             // Web Apps (5 options)
                             {
                               id: "web-app-1",
                               title: "Todo List App",
-                              summary: "Create an interactive todo list with categories, priorities, and deadlines",
-                              prompt: "Create an interactive todo list with categories, priorities, and deadlines",
+                              summary: "Create a React todo list app with drag-and-drop reordering, color-coded priority tags (high/medium/low), category filters (work/personal/health), due date calendar picker, completion animations, and a modern glassmorphism UI using Radix UI Dialog and Tailwind CSS with dark mode support",
+                              prompt: "Create a React todo list app with drag-and-drop reordering, color-coded priority tags (high/medium/low), category filters (work/personal/health), due date calendar picker, completion animations, and a modern glassmorphism UI using Radix UI Dialog and Tailwind CSS with dark mode support",
                               image: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=400&h=300&fit=crop"
                             },
                             {
                               id: "web-app-2",
-                              title: "Build a Web App",
-                              summary: "Build a protein tracker web app",
-                              prompt: "Build a protein tracker web app",
+                              title: "Nutrition Tracker",
+                              summary: "Build a React protein and nutrition tracker with meal logging, macro breakdown (protein/carbs/fats) displayed in colorful progress rings, daily goal setting, meal history with timestamps, searchable food database, and an animated progress dashboard using Recharts for visualizing weekly protein intake trends",
+                              prompt: "Build a React protein and nutrition tracker with meal logging, macro breakdown (protein/carbs/fats) displayed in colorful progress rings, daily goal setting, meal history with timestamps, searchable food database, and an animated progress dashboard using Recharts for visualizing weekly protein intake trends",
                               image: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=400&h=300&fit=crop"
                             },
                             {
                               id: "web-app-3",
                               title: "Budget Tracker",
-                              summary: "Build a personal budget tracker with expense categories and spending insights",
-                              prompt: "Build a personal budget tracker with expense categories and spending insights",
+                              summary: "Build a React personal finance tracker with expense entry form using Radix UI components, categorized spending (food/transport/entertainment), monthly budget limits with visual progress bars, transaction history table with sorting and filtering, spending insights with Recharts pie charts, and export to CSV functionality",
+                              prompt: "Build a React personal finance tracker with expense entry form using Radix UI components, categorized spending (food/transport/entertainment), monthly budget limits with visual progress bars, transaction history table with sorting and filtering, spending insights with Recharts pie charts, and export to CSV functionality",
                               image: "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=400&h=300&fit=crop"
                             },
                             {
                               id: "web-app-4",
                               title: "Recipe Manager",
-                              summary: "Create a recipe management app with ingredients list and cooking timer",
-                              prompt: "Create a recipe management app with ingredients list and cooking timer",
+                              summary: "Create a React recipe book app with add/edit recipe cards using Radix UI Dialog, ingredient list with checkboxes, step-by-step cooking instructions, built-in cooking timer with audio alerts, serving size calculator, recipe search and filter by cuisine type, and a beautiful card grid layout with food photography placeholders",
+                              prompt: "Create a React recipe book app with add/edit recipe cards using Radix UI Dialog, ingredient list with checkboxes, step-by-step cooking instructions, built-in cooking timer with audio alerts, serving size calculator, recipe search and filter by cuisine type, and a beautiful card grid layout with food photography placeholders",
                               image: "https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400&h=300&fit=crop"
                             },
                             {
                               id: "web-app-5",
                               title: "Workout Logger",
-                              summary: "Build a workout tracking app with exercise library and progress charts",
-                              prompt: "Build a workout tracking app with exercise library and progress charts",
+                              summary: "Build a React workout tracking app with exercise library (categorized by muscle group), workout session builder with sets/reps/weight inputs, rest timer with countdown, personal records tracking, progress charts using Recharts showing strength gains over time, workout history calendar, and motivational achievement badges with celebration animations",
+                              prompt: "Build a React workout tracking app with exercise library (categorized by muscle group), workout session builder with sets/reps/weight inputs, rest timer with countdown, personal records tracking, progress charts using Recharts showing strength gains over time, workout history calendar, and motivational achievement badges with celebration animations",
                               image: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=400&h=300&fit=crop"
                             },
                             // Data Visualization (5 options)
                             {
                               id: "data-viz-1",
                               title: "Sales Dashboard",
-                              summary: "Create an interactive sales dashboard with revenue trends and customer analytics",
-                              prompt: "Create an interactive sales dashboard with revenue trends and customer analytics",
+                              summary: "Create a React sales analytics dashboard using Recharts with a multi-line revenue trend chart (monthly/quarterly/yearly views), donut chart showing sales by category, bar chart for top performing products, key metrics cards with percentage changes, date range selector with Radix UI Popover, and smooth animations on data updates with gradient fills",
+                              prompt: "Create a React sales analytics dashboard using Recharts with a multi-line revenue trend chart (monthly/quarterly/yearly views), donut chart showing sales by category, bar chart for top performing products, key metrics cards with percentage changes, date range selector with Radix UI Popover, and smooth animations on data updates with gradient fills",
                               image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop"
                             },
                             {
                               id: "data-viz-2",
-                              title: "Weather Viz",
-                              summary: "Build an interactive weather visualization showing temperature and precipitation patterns",
-                              prompt: "Build an interactive weather visualization showing temperature and precipitation patterns",
+                              title: "Weather Dashboard",
+                              summary: "Build a React weather visualization using Recharts with a 7-day temperature line chart with area fill, precipitation bar chart, interactive tooltips showing hourly forecasts, animated weather icons, heat map showing temperature patterns throughout the day, UV index gauge, and a beautiful gradient background that changes based on weather conditions",
+                              prompt: "Build a React weather visualization using Recharts with a 7-day temperature line chart with area fill, precipitation bar chart, interactive tooltips showing hourly forecasts, animated weather icons, heat map showing temperature patterns throughout the day, UV index gauge, and a beautiful gradient background that changes based on weather conditions",
                               image: "https://images.unsplash.com/photo-1561484930-998b6a7b22e8?w=400&h=300&fit=crop"
                             },
                             {
                               id: "data-viz-3",
-                              title: "Stock Tracker",
-                              summary: "Create a real-time stock market tracker with interactive price charts",
-                              prompt: "Create a real-time stock market tracker with interactive price charts",
+                              title: "Stock Portfolio",
+                              summary: "Create a React stock portfolio tracker using Recharts with candlestick-style price charts, real-time mock price updates, portfolio allocation pie chart, performance comparison line chart for multiple stocks, gain/loss indicators with color coding (green/red), interactive legend to toggle stocks, and animated number counters for total portfolio value",
+                              prompt: "Create a React stock portfolio tracker using Recharts with candlestick-style price charts, real-time mock price updates, portfolio allocation pie chart, performance comparison line chart for multiple stocks, gain/loss indicators with color coding (green/red), interactive legend to toggle stocks, and animated number counters for total portfolio value",
                               image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&h=300&fit=crop"
                             },
                             {
                               id: "data-viz-4",
                               title: "Habit Tracker",
-                              summary: "Build a habit tracking dashboard with streaks visualization and progress stats",
-                              prompt: "Build a habit tracking dashboard with streaks visualization and progress stats",
+                              summary: "Build a React habit tracking dashboard with a GitHub-style contribution heat map calendar using D3, streak counter with fire emoji animations, completion rate radial progress charts using Recharts, weekly bar chart showing consistency trends, habit list with checkboxes and completion celebrations, and motivational statistics cards with animated count-ups",
+                              prompt: "Build a React habit tracking dashboard with a GitHub-style contribution heat map calendar using D3, streak counter with fire emoji animations, completion rate radial progress charts using Recharts, weekly bar chart showing consistency trends, habit list with checkboxes and completion celebrations, and motivational statistics cards with animated count-ups",
                               image: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=400&h=300&fit=crop"
                             },
                             {
                               id: "data-viz-5",
-                              title: "Analytics Report",
-                              summary: "Create a comprehensive analytics report with charts showing user engagement metrics",
-                              prompt: "Create a comprehensive analytics report with charts showing user engagement metrics",
+                              title: "Analytics Dashboard",
+                              summary: "Create a React web analytics dashboard using Recharts with visitor traffic area chart with real-time mock updates, funnel chart showing conversion rates, geographic heat map of user locations, device breakdown pie chart (mobile/desktop/tablet), engagement metrics with sparkline trends, bounce rate gauge, and time range filter tabs with smooth chart transitions",
+                              prompt: "Create a React web analytics dashboard using Recharts with visitor traffic area chart with real-time mock updates, funnel chart showing conversion rates, geographic heat map of user locations, device breakdown pie chart (mobile/desktop/tablet), engagement metrics with sparkline trends, bounce rate gauge, and time range filter tabs with smooth chart transitions",
                               image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop"
                             },
                             // Games (5 options)
                             {
                               id: "game-1",
-                              title: "Build a Game",
-                              summary: "Build a web-based Frogger game with arrow key controls",
-                              prompt: "Build a web-based Frogger game with arrow key controls",
+                              title: "Frogger Game",
+                              summary: "Build a React Frogger-style game using HTML5 Canvas with arrow key controls, animated traffic lanes with cars moving at different speeds, safe lily pads on water, collision detection, lives system with heart icons, score counter, progressive difficulty (faster cars each level), retro pixel art graphics, sound effect triggers, and a game over modal with restart button",
+                              prompt: "Build a React Frogger-style game using HTML5 Canvas with arrow key controls, animated traffic lanes with cars moving at different speeds, safe lily pads on water, collision detection, lives system with heart icons, score counter, progressive difficulty (faster cars each level), retro pixel art graphics, sound effect triggers, and a game over modal with restart button",
                               image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&h=300&fit=crop"
                             },
                             {
                               id: "game-2",
                               title: "Snake Game",
-                              summary: "Create a classic snake game with score tracking and increasing difficulty",
-                              prompt: "Create a classic snake game with score tracking and increasing difficulty",
+                              summary: "Create a React classic snake game with WASD or arrow key controls, food collection that grows the snake, collision detection for walls and self-collision, score tracking with high score persistence, speed increase as snake grows longer, colorful gradient snake body, animated food particles, pause functionality, and a neon grid aesthetic with dark background",
+                              prompt: "Create a React classic snake game with WASD or arrow key controls, food collection that grows the snake, collision detection for walls and self-collision, score tracking with high score persistence, speed increase as snake grows longer, colorful gradient snake body, animated food particles, pause functionality, and a neon grid aesthetic with dark background",
                               image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&h=300&fit=crop"
                             },
                             {
                               id: "game-3",
                               title: "Memory Card Game",
-                              summary: "Build a memory matching card game with different difficulty levels",
-                              prompt: "Build a memory matching card game with different difficulty levels",
+                              summary: "Build a React memory matching game with animated card flip effects using Framer Motion, 4x4 grid of cards with colorful emoji icons, difficulty selector (easy/medium/hard with different grid sizes), move counter, timer, match celebration animations with confetti, unmatched cards flip back with delay, win screen with performance stats, and a modern gradient card design",
+                              prompt: "Build a React memory matching game with animated card flip effects using Framer Motion, 4x4 grid of cards with colorful emoji icons, difficulty selector (easy/medium/hard with different grid sizes), move counter, timer, match celebration animations with confetti, unmatched cards flip back with delay, win screen with performance stats, and a modern gradient card design",
                               image: "https://images.unsplash.com/photo-1606503153255-59d8b8b82176?w=400&h=300&fit=crop"
                             },
                             {
                               id: "game-4",
                               title: "Trivia Quiz",
-                              summary: "Create an interactive trivia quiz game with multiple categories and scoring",
-                              prompt: "Create an interactive trivia quiz game with multiple categories and scoring",
+                              summary: "Create a React interactive trivia game with 10 questions covering multiple categories (science/history/entertainment), multiple choice answers with button selection, visual feedback for correct/incorrect answers (green/red color changes), score tracking with percentage, progress bar showing question count, timer countdown for each question, lifelines (50/50, skip), and final results screen with grade and share option",
+                              prompt: "Create a React interactive trivia game with 10 questions covering multiple categories (science/history/entertainment), multiple choice answers with button selection, visual feedback for correct/incorrect answers (green/red color changes), score tracking with percentage, progress bar showing question count, timer countdown for each question, lifelines (50/50, skip), and final results screen with grade and share option",
                               image: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=400&h=300&fit=crop"
                             },
                             {
                               id: "game-5",
-                              title: "Tic Tac Toe",
-                              summary: "Build a tic-tac-toe game with AI opponent and win detection",
-                              prompt: "Build a tic-tac-toe game with AI opponent and win detection",
+                              title: "Tic Tac Toe AI",
+                              summary: "Build a React tic-tac-toe game with minimax AI opponent (unbeatable), player selection (X or O), animated piece placement with scale effects, win detection with highlighted winning line animation, draw game detection, score tracking across multiple rounds, difficulty selector (easy/medium/impossible), visual board with gradient cells, reset button, and celebration confetti on player win",
+                              prompt: "Build a React tic-tac-toe game with minimax AI opponent (unbeatable), player selection (X or O), animated piece placement with scale effects, win detection with highlighted winning line animation, draw game detection, score tracking across multiple rounds, difficulty selector (easy/medium/impossible), visual board with gradient cells, reset button, and celebration confetti on player win",
                               image: "https://images.unsplash.com/photo-1611996575749-79a3a250f948?w=400&h=300&fit=crop"
                             },
                           ]}
