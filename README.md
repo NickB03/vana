@@ -135,8 +135,7 @@ Experience Vana in action: [View Demo](#) *(Add your deployment URL)*
 | Service | Purpose |
 |---------|---------|
 | **Supabase** | PostgreSQL database, authentication, edge functions |
-| **Claude AI** | Language model for chat and generation |
-| **Lovable API** | AI model integration |
+| **Google AI Studio** | Gemini 2.5 models for chat, image generation, and summarization |
 
 ### Key Libraries
 
@@ -185,8 +184,7 @@ graph TB
     end
 
     subgraph "External Services"
-        Q[Claude AI<br/>via Lovable API]
-        R[Image Generation API]
+        Q[Google Gemini 2.5<br/>via AI Studio]
     end
 
     A --> B
@@ -766,20 +764,15 @@ supabase functions deploy cache-manager
 5. **Set environment secrets**
 
 ```bash
-# Set API keys for Edge Functions
-supabase secrets set LOVABLE_API_KEY=your_api_key
-supabase secrets set IMAGE_API_KEY=your_image_api_key
+# Set API key for Edge Functions
+supabase secrets set GOOGLE_AI_STUDIO_KEY=your_google_ai_studio_key
 ```
+
+Get your API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
 
 ### Frontend Deployment
 
-#### Option 1: Lovable (Recommended)
-
-1. Visit your [Lovable Project](https://lovable.dev/projects/f16fb528-308b-4eaa-ad6f-36a2da269284)
-2. Click **Share** → **Publish**
-3. Your app will be deployed automatically
-
-#### Option 2: Netlify
+#### Option 1: Netlify
 
 1. **Build the project**
 
@@ -952,7 +945,6 @@ This project was inspired by:
 ### Project Links
 
 - **Repository**: [github.com/NickB03/llm-chat-site](https://github.com/NickB03/llm-chat-site)
-- **Lovable Project**: [lovable.dev/projects/f16fb528-308b-4eaa-ad6f-36a2da269284](https://lovable.dev/projects/f16fb528-308b-4eaa-ad6f-36a2da269284)
 
 ---
 

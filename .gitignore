@@ -52,3 +52,15 @@ debug-*.txt
 snapshot-*.txt
 test-*.png
 .env
+
+# Backup files from migrations
+*.lovable-backup
+*.bak
+.env.lovable-cloud-backup
+.env.local.vana-dev-backup
+config.toml.lovable-backup
+
+# Test scripts (temporary)
+scripts/test-*.sh
+scripts/test-*.js
+scripts/test-*.html
