@@ -40,7 +40,9 @@ chrome-mcp restart   # Clean restart if issues occur
    - See `.claude/artifact-import-restrictions.md` for complete guide
    - Auto-transformation fixes most common mistakes
 6. **Animation Performance**: Only animate new messages, not entire chat history
-7. **Deployment**: Run verification script before marking deployment complete
+7. **Security DEFINER Functions**: Always include `SET search_path = public, pg_temp` to prevent schema injection
+8. **CORS Configuration**: Never use wildcard `*` origins in production (use `supabase/functions/_shared/cors-config.ts`)
+9. **Deployment**: Run verification script before marking deployment complete
 
 ## 🏗️ Architecture Overview
 
@@ -147,9 +149,15 @@ await browser.screenshot({ filename: "verification.png" });
 ```sql
 chat_sessions { id, user_id, title, created_at, updated_at }
 chat_messages { id, session_id, role, content, created_at }
-user_preferences { id, user_id, approved_libraries, auto_approve_libraries }
+guest_rate_limits { id, ip_address, request_count, window_start, last_request }
 ```
-RLS policies enforce user-scoped access. Check with: `get_advisors({ type: "security" })`
+
+**Security Features:**
+- ✅ Row-Level Security (RLS) enforces user-scoped access
+- ✅ All SECURITY DEFINER functions use `search_path = public, pg_temp`
+- ✅ Guest rate limiting: 10 requests per 24-hour window (IP-based)
+- ✅ CORS origin validation (no wildcard `*` in production)
+- ✅ Check security status: `get_advisors({ type: "security" })`
 
 ### Performance Optimizations
 - Virtual scrolling for long chats (100+ messages)
@@ -244,16 +252,41 @@ node scripts/verify-deployment.cjs https://your-domain.com
   - `.claude/commands/debug-auth.md` - Authentication debugging
 
 - **Session Notes** (recent work):
-  - `.claude/PROJECT_STATUS_UPDATE.md` - Latest implementation status
-  - `.claude/PEER_REVIEW_PACKAGE.md` - Code review guidelines
-  - `DOCUMENTATION_PLAN.md` - Comprehensive documentation roadmap
+  - `.claude/CODE_REVIEW_FIXES_SUMMARY.md` - Security fixes documentation (Nov 2025)
 
 ## 📝 Environment Variables
 
+### Frontend (.env)
 ```env
-VITE_SUPABASE_URL=https://xfwlneedhqealtktaacv.supabase.co
+VITE_SUPABASE_URL=https://vznhbocnuykdmjvujaka.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your_key_here
+VITE_SUPABASE_PROJECT_ID=vznhbocnuykdmjvujaka
 ```
 
+### Edge Functions (Supabase Secrets)
+```bash
+# Required for all AI functions
+GOOGLE_AI_STUDIO_KEY=your_api_key_here
+
+# Optional: Production CORS origins (comma-separated)
+ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+```
+
+**Get API Key:** [Google AI Studio](https://aistudio.google.com/app/apikey)
+
+## 🔒 Security Notes (November 2025 Updates)
+
+### Recent Security Improvements
+1. ✅ **Schema Injection Protection** - All SECURITY DEFINER functions use `search_path = public, pg_temp`
+2. ✅ **Guest Rate Limiting** - 10 requests per 24 hours per IP (automatic cleanup after 7 days)
+3. ✅ **CORS Origin Validation** - Replaced wildcard `*` with environment-based whitelist
+4. ✅ **System Prompt Externalization** - Reduced chat function bundle size by 52%
+
+### Manual Configuration Required
+1. **Leaked Password Protection**: Enable in Supabase Dashboard → Authentication → Password Security
+2. **Production CORS**: Set `ALLOWED_ORIGINS` environment variable in Edge Functions settings
+
+See `.claude/CODE_REVIEW_FIXES_SUMMARY.md` for complete details.
+
 ---
-*Last Updated: 2025-01-05 | Claude Code v1.x compatible*
+*Last Updated: 2025-11-07 | Claude Code v1.x compatible*

@@ -49,8 +49,15 @@
 - 🔧 **Developer-Friendly**: Full TypeScript support with modern tooling
 - ✨ **Enterprise-Grade Quality**: Multi-layer validation, auto-error correction, and modern UI primitives
 
-### Recent Major Improvements (2025-01)
+### Recent Major Improvements
 
+**November 2025 - Production Security Hardening:**
+- 🔒 **Database Security**: All SECURITY DEFINER functions protected against schema injection
+- 🛡️ **Guest Rate Limiting**: IP-based rate limiting (10 requests/24h) prevents API quota abuse
+- 🔐 **CORS Validation**: Environment-based origin whitelist replaces dangerous wildcard configuration
+- ⚡ **Performance**: 52% smaller chat function bundle (system prompt externalization)
+
+**January 2025 - Architecture & Testing:**
 - ✅ **ai-elements Integration**: Modern UI primitives for cleaner artifact rendering
 - ✅ **5-Layer Import Validation**: Comprehensive defense against artifact failures
 - ✅ **Auto-Transformation**: Automatically fixes common coding mistakes in generated artifacts
@@ -96,6 +103,22 @@
 - **File Upload**: Support for image uploads and analysis
 - **Error Recovery**: Automatic error detection and AI-powered fixes
 - **Keyboard Shortcuts**: Efficient navigation and actions
+
+### Security Features (Nov 2025)
+
+- **Database Hardening**:
+  - All SECURITY DEFINER functions use `SET search_path = public, pg_temp`
+  - Prevents privilege escalation through schema injection attacks
+
+- **API Protection**:
+  - Guest rate limiting: 10 requests per 24-hour window (IP-based)
+  - CORS origin validation with environment-based whitelist
+  - No wildcard `*` origins in production
+
+- **Performance Optimizations**:
+  - System prompt externalized to reduce bundle size by 52%
+  - Shared CORS configuration module
+  - Automatic cleanup of rate limit records (7-day retention)
 
 ---
 
@@ -367,14 +390,16 @@ npm install
 Create a `.env` file in the root directory:
 
 ```env
-# Supabase Configuration
-VITE_SUPABASE_URL=your_supabase_url
+# Supabase Configuration (vana-dev project)
+VITE_SUPABASE_URL=https://vznhbocnuykdmjvujaka.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
-VITE_SUPABASE_PROJECT_ID=your_project_id
+VITE_SUPABASE_PROJECT_ID=vznhbocnuykdmjvujaka
 
 # Optional: Analytics
 VITE_ENABLE_ANALYTICS=false
 ```
+
+> **Note**: This project migrated from Lovable Cloud to Google Gemini (Nov 2025). For new deployments, simply follow the setup instructions below.
 
 4. **Set up Supabase**
 
@@ -766,9 +791,16 @@ supabase functions deploy cache-manager
 ```bash
 # Set API key for Edge Functions
 supabase secrets set GOOGLE_AI_STUDIO_KEY=your_google_ai_studio_key
+
+# Optional: Set production CORS origins (comma-separated)
+supabase secrets set ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 ```
 
 Get your API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
+
+**Security Configuration (Manual Steps):**
+1. Enable "Leaked Password Protection" in Supabase Dashboard → Authentication → Password Security
+2. Configure `ALLOWED_ORIGINS` environment variable for production deployments
 
 ### Frontend Deployment
 
