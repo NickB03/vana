@@ -14,7 +14,8 @@ import { detectAndInjectLibraries } from "@/utils/libraryDetection";
 import { cn } from "@/lib/utils";
 import { ArtifactSkeleton } from "@/components/ui/artifact-skeleton";
 import { detectNpmImports, extractNpmDependencies } from '@/utils/npmDetection';
-import { supabase } from "@/utils/supabase";
+import { supabase } from "@/integrations/supabase/client";
+import { ExportMenu } from "./ExportMenu";
 
 // Lazy load Sandpack component for code splitting
 const SandpackArtifactRenderer = lazy(() =>
@@ -856,7 +857,7 @@ ${artifact.content}
         </div>
         <ArtifactActions>
           <ArtifactAction icon={Copy} label="Copy code" tooltip="Copy to clipboard" onClick={handleCopy} />
-          <ArtifactAction icon={Download} label="Download" tooltip="Download file" onClick={handleDownload} />
+          <ExportMenu artifact={artifact} injectedCDNs={injectedCDNs} />
           <ArtifactAction icon={ExternalLink} label="Pop out" tooltip="Open in new window" onClick={handlePopOut} />
           <ArtifactAction
             icon={isMaximized ? Minimize2 : Maximize2}
