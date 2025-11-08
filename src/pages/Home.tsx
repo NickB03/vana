@@ -56,6 +56,7 @@ const Home = () => {
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   const [hasArtifact, setHasArtifact] = useState(false);
   const [guestInitialPrompt, setGuestInitialPrompt] = useState<string | undefined>();
+  const [autoOpenCanvas, setAutoOpenCanvas] = useState(false);
   const chatSendHandlerRef = useRef<((message?: string) => Promise<void>) | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -109,6 +110,7 @@ const Home = () => {
     setShowChat(false);
     setIsCanvasOpen(false);
     setHasArtifact(false);
+    setAutoOpenCanvas(false);
   }, []);
 
   /**
@@ -185,11 +187,53 @@ const Home = () => {
   }, [input, isAuthenticated, guestSession, showChat, toast, navigate, createSession]);
 
   /**
-   * Sets input value from suggestion card click
+   * Handles instant build when clicking suggestion cards
+   * Immediately starts building artifact without manual send
    */
-  const handleSuggestionClick = useCallback((prompt: string) => {
-    setInput(prompt);
-  }, []);
+  const handleSuggestionClick = useCallback(async (prompt: string) => {
+    // Show immediate feedback
+    toast({
+      title: "Starting your project...",
+      description: "Building your artifact",
+    });
+
+    // Set flag to auto-open canvas when artifact is detected
+    setAutoOpenCanvas(true);
+
+    // Check guest limit
+    if (!isAuthenticated && !guestSession.canSendMessage) {
+      setShowLimitDialog(true);
+      return;
+    }
+
+    // For guests: show chat and send via initialPrompt mechanism
+    if (!isAuthenticated) {
+      setGuestInitialPrompt(prompt);
+      setShowChat(true);
+      guestSession.incrementMessageCount();
+    } else {
+      // For authenticated users: create session and show chat
+      const session = await ensureValidSession();
+      if (!session) {
+        toast({
+          title: "Authentication required",
+          description: "Please refresh the page or sign in again",
+          variant: "destructive",
+        });
+        setIsAuthenticated(false);
+        navigate("/auth");
+        return;
+      }
+
+      setIsLoading(true);
+      const sessionId = await createSession(prompt);
+      if (sessionId) {
+        setCurrentSessionId(sessionId);
+        setShowChat(true);
+      }
+      setIsLoading(false);
+    }
+  }, [isAuthenticated, guestSession, toast, navigate, createSession]);
 
   /**
    * Toggles artifact canvas visibility
@@ -202,13 +246,18 @@ const Home = () => {
 
   /**
    * Updates artifact state when content changes
+   * Auto-opens canvas if triggered from suggestion click
    */
   const handleArtifactChange = useCallback((hasContent: boolean) => {
     setHasArtifact(hasContent);
     if (!hasContent) {
       setIsCanvasOpen(false);
+    } else if (autoOpenCanvas) {
+      // Auto-open canvas when artifact is detected (from suggestion click)
+      setIsCanvasOpen(true);
+      setAutoOpenCanvas(false); // Reset flag after opening
     }
-  }, []);
+  }, [autoOpenCanvas]);
 
   // Determine what content to show based on transition phase
   const showLanding = phase !== "app";
