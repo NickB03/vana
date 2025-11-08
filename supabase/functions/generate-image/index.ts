@@ -1,14 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { callGemini } from "../_shared/gemini-client.ts";
+import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 
 serve(async (req) => {
+  const origin = req.headers.get("Origin");
+  const corsHeaders = getCorsHeaders(origin);
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return handleCorsPreflightRequest(req);
   }
 
   try {
@@ -65,64 +65,54 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GOOGLE_AI_STUDIO_KEY = Deno.env.get("GOOGLE_AI_STUDIO_KEY_IMAGE");
+    if (!GOOGLE_AI_STUDIO_KEY) {
+      throw new Error("GOOGLE_AI_STUDIO_KEY_IMAGE is not configured");
     }
 
     console.log(`Image ${mode} request from user ${user.id}:`, prompt.substring(0, 100));
 
-    // Construct messages based on mode
-    let messages;
+    // Construct Gemini messages based on mode
+    let contents;
     if (mode === "generate") {
-      messages = [
-        { role: "user", content: prompt }
-      ];
-    } else {
-      // Edit mode
-      messages = [
+      contents = [
         {
           role: "user",
-          content: [
-            { type: "text", text: prompt },
+          parts: [{ text: prompt }]
+        }
+      ];
+    } else {
+      // Edit mode - extract base64 data from data URL
+      const base64Data = baseImage.split(',')[1];
+      const mimeType = baseImage.match(/data:([^;]+);/)?.[1] || 'image/png';
+
+      contents = [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
             {
-              type: "image_url",
-              image_url: { url: baseImage }
+              inlineData: {
+                mimeType,
+                data: base64Data
+              }
             }
           ]
         }
       ];
     }
 
-    // Call Lovable AI with image generation model
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image-preview",
-        messages,
-        modalities: ["image", "text"]
-      }),
-    });
+    // Call Gemini image generation API
+    const response = await callGemini("gemini-2.5-flash-image", contents);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Lovable AI error:", response.status, errorText);
+      console.error("Google AI Studio error:", response.status, errorText);
 
-      if (response.status === 429) {
+      if (response.status === 429 || response.status === 403) {
         return new Response(
-          JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
+          JSON.stringify({ error: "API quota exceeded. Please try again in a moment." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Workspace quota exceeded. Please upgrade your plan." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
@@ -133,28 +123,29 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log("Lovable AI response received");
+    console.log("Google AI Studio response received");
 
-    // Extract base64 image - check multiple possible locations
-    let imageData = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    
-    // Fallback: check if image is directly in content
-    if (!imageData && data.choices?.[0]?.message?.content) {
-      const content = data.choices[0].message.content;
-      // Check if content contains base64 image data
-      if (typeof content === 'string' && content.includes('data:image/')) {
-        const match = content.match(/data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/);
-        if (match) {
-          imageData = match[0];
+    // Extract base64 image from Gemini response
+    // Gemini format: data.candidates[0].content.parts[0].inlineData.data
+    let imageData: string | undefined;
+
+    const candidate = data.candidates?.[0];
+    if (candidate?.content?.parts) {
+      for (const part of candidate.content.parts) {
+        if (part.inlineData?.data) {
+          // Convert to data URL format
+          const mimeType = part.inlineData.mimeType || 'image/png';
+          imageData = `data:${mimeType};base64,${part.inlineData.data}`;
+          break;
         }
       }
     }
 
     if (!imageData) {
-      console.error("No image data in response:", JSON.stringify(data));
+      console.error("No image data in Gemini response:", JSON.stringify(data));
       return new Response(
-        JSON.stringify({ 
-          error: "The AI model failed to generate an image. This may be due to content restrictions or a temporary issue. Please try again with a different prompt." 
+        JSON.stringify({
+          error: "The AI model failed to generate an image. This may be due to content restrictions or a temporary issue. Please try again with a different prompt."
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
