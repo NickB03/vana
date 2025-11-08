@@ -89,7 +89,11 @@ const createMockVersion = (versionNumber: number): ArtifactVersion => ({
   created_at: new Date(Date.now() - versionNumber * 3600000).toISOString()
 });
 
-describe('ArtifactVersionControl Integration Tests', () => {
+// TODO: Re-enable these tests when artifact version control UI is re-implemented
+// See: GitHub Issues - Artifact Version Control UI
+// These tests were written for a version control UI that was removed from the codebase
+// and is tracked as a future enhancement.
+describe.skip('ArtifactVersionControl Integration Tests', () => {
   let user: ReturnType<typeof userEvent.setup>;
 
   beforeEach(() => {

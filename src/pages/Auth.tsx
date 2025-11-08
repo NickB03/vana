@@ -57,24 +57,55 @@ export default function Auth() {
       setIsProcessingOAuth(true);
     }
 
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Check if user is already logged in with VALID session
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       console.log('Initial session check:', session ? 'Session exists' : 'No session');
+
+      if (error) {
+        console.error('Session check error:', error);
+        return;
+      }
+
       if (session) {
-        console.log('Redirecting to / with existing session');
+        // Verify session is actually valid by making a test auth call
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          // Session exists but is invalid/expired - clear it
+          console.log('Session invalid/expired, clearing and staying on auth page');
+          await supabase.auth.signOut();
+          return;
+        }
+
+        // Session is valid - redirect to home
+        console.log('Valid session found, redirecting to /');
         navigate("/");
       }
     });
 
     // Listen for auth changes (critical for OAuth)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session ? 'Session exists' : 'No session');
+
+      if (event === 'SIGNED_OUT') {
+        console.log('User signed out, staying on auth page');
+        return;
+      }
 
       if (event === 'SIGNED_IN' && session) {
         console.log('User signed in via OAuth, redirecting to /');
         navigate("/");
       } else if (session) {
-        console.log('Session detected, redirecting to /');
+        // Validate session before redirecting
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          console.log('Invalid session in auth state change, staying on auth page');
+          await supabase.auth.signOut();
+          return;
+        }
+
+        console.log('Valid session detected, redirecting to /');
         navigate("/");
       }
     });

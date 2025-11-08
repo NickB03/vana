@@ -148,7 +148,11 @@ export function useChatMessages(sessionId: string | undefined) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to get response");
+        console.error("Edge function error response:", errorData);
+        const errorMsg = errorData.details
+          ? `${errorData.error}: ${errorData.details}`
+          : errorData.error || "Failed to get response";
+        throw new Error(errorMsg);
       }
 
       if (!response.body) throw new Error("No response body");
@@ -225,9 +229,12 @@ export function useChatMessages(sessionId: string | undefined) {
 
           try {
             const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as
-              | string
-              | undefined;
+            // Support both Gemini and OpenAI formats
+            // Gemini: candidates[0].content.parts[0].text
+            // OpenAI (legacy): choices[0].delta.content
+            const content = (parsed.candidates?.[0]?.content?.parts?.[0]?.text ||
+              parsed.choices?.[0]?.delta?.content) as string | undefined;
+
             if (content) {
               fullResponse += content;
               tokenCount += content.split(/\s+/).length;

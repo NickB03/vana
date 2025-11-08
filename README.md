@@ -49,8 +49,15 @@
 - 🔧 **Developer-Friendly**: Full TypeScript support with modern tooling
 - ✨ **Enterprise-Grade Quality**: Multi-layer validation, auto-error correction, and modern UI primitives
 
-### Recent Major Improvements (2025-01)
+### Recent Major Improvements
 
+**November 2025 - Production Security Hardening:**
+- 🔒 **Database Security**: All SECURITY DEFINER functions protected against schema injection
+- 🛡️ **Guest Rate Limiting**: IP-based rate limiting (10 requests/24h) prevents API quota abuse
+- 🔐 **CORS Validation**: Environment-based origin whitelist replaces dangerous wildcard configuration
+- ⚡ **Performance**: 52% smaller chat function bundle (system prompt externalization)
+
+**January 2025 - Architecture & Testing:**
 - ✅ **ai-elements Integration**: Modern UI primitives for cleaner artifact rendering
 - ✅ **5-Layer Import Validation**: Comprehensive defense against artifact failures
 - ✅ **Auto-Transformation**: Automatically fixes common coding mistakes in generated artifacts
@@ -97,6 +104,22 @@
 - **Error Recovery**: Automatic error detection and AI-powered fixes
 - **Keyboard Shortcuts**: Efficient navigation and actions
 
+### Security Features (Nov 2025)
+
+- **Database Hardening**:
+  - All SECURITY DEFINER functions use `SET search_path = public, pg_temp`
+  - Prevents privilege escalation through schema injection attacks
+
+- **API Protection**:
+  - Guest rate limiting: 10 requests per 24-hour window (IP-based)
+  - CORS origin validation with environment-based whitelist
+  - No wildcard `*` origins in production
+
+- **Performance Optimizations**:
+  - System prompt externalized to reduce bundle size by 52%
+  - Shared CORS configuration module
+  - Automatic cleanup of rate limit records (7-day retention)
+
 ---
 
 ## 🎬 Demo
@@ -135,8 +158,7 @@ Experience Vana in action: [View Demo](#) *(Add your deployment URL)*
 | Service | Purpose |
 |---------|---------|
 | **Supabase** | PostgreSQL database, authentication, edge functions |
-| **Claude AI** | Language model for chat and generation |
-| **Lovable API** | AI model integration |
+| **Google AI Studio** | Gemini 2.5 models for chat, image generation, and summarization |
 
 ### Key Libraries
 
@@ -185,8 +207,7 @@ graph TB
     end
 
     subgraph "External Services"
-        Q[Claude AI<br/>via Lovable API]
-        R[Image Generation API]
+        Q[Google Gemini 2.5<br/>via AI Studio]
     end
 
     A --> B
@@ -369,14 +390,16 @@ npm install
 Create a `.env` file in the root directory:
 
 ```env
-# Supabase Configuration
-VITE_SUPABASE_URL=your_supabase_url
+# Supabase Configuration (vana-dev project)
+VITE_SUPABASE_URL=https://vznhbocnuykdmjvujaka.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
-VITE_SUPABASE_PROJECT_ID=your_project_id
+VITE_SUPABASE_PROJECT_ID=vznhbocnuykdmjvujaka
 
 # Optional: Analytics
 VITE_ENABLE_ANALYTICS=false
 ```
+
+> **Note**: This project migrated from Lovable Cloud to Google Gemini (Nov 2025). For new deployments, simply follow the setup instructions below.
 
 4. **Set up Supabase**
 
@@ -766,20 +789,22 @@ supabase functions deploy cache-manager
 5. **Set environment secrets**
 
 ```bash
-# Set API keys for Edge Functions
-supabase secrets set LOVABLE_API_KEY=your_api_key
-supabase secrets set IMAGE_API_KEY=your_image_api_key
+# Set API key for Edge Functions
+supabase secrets set GOOGLE_AI_STUDIO_KEY=your_google_ai_studio_key
+
+# Optional: Set production CORS origins (comma-separated)
+supabase secrets set ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 ```
+
+Get your API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
+
+**Security Configuration (Manual Steps):**
+1. Enable "Leaked Password Protection" in Supabase Dashboard → Authentication → Password Security
+2. Configure `ALLOWED_ORIGINS` environment variable for production deployments
 
 ### Frontend Deployment
 
-#### Option 1: Lovable (Recommended)
-
-1. Visit your [Lovable Project](https://lovable.dev/projects/f16fb528-308b-4eaa-ad6f-36a2da269284)
-2. Click **Share** → **Publish**
-3. Your app will be deployed automatically
-
-#### Option 2: Netlify
+#### Option 1: Netlify
 
 1. **Build the project**
 
@@ -952,7 +977,6 @@ This project was inspired by:
 ### Project Links
 
 - **Repository**: [github.com/NickB03/llm-chat-site](https://github.com/NickB03/llm-chat-site)
-- **Lovable Project**: [lovable.dev/projects/f16fb528-308b-4eaa-ad6f-36a2da269284](https://lovable.dev/projects/f16fb528-308b-4eaa-ad6f-36a2da269284)
 
 ---
 

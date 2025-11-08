@@ -1,16 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { callGemini, extractTextFromGeminiResponse } from "../_shared/gemini-client.ts";
+import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 
 const SUMMARIZATION_THRESHOLD = 10; // Summarize every 10 messages
 
 serve(async (req) => {
+  const origin = req.headers.get("Origin");
+  const corsHeaders = getCorsHeaders(origin);
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return handleCorsPreflightRequest(req);
   }
 
   try {
@@ -104,10 +104,10 @@ serve(async (req) => {
 
     // Prepare messages for summarization
     const messagesToSummarize = allMessages.slice(checkpoint);
-    
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+
+    const GOOGLE_AI_STUDIO_KEY = Deno.env.get("GOOGLE_AI_STUDIO_KEY_CHAT");
+    if (!GOOGLE_AI_STUDIO_KEY) {
+      throw new Error("GOOGLE_AI_STUDIO_KEY_CHAT is not configured");
     }
 
     // Create summarization prompt
@@ -115,36 +115,31 @@ serve(async (req) => {
       .map(m => `${m.role}: ${m.content}`)
       .join("\n\n");
 
-    const systemPrompt = session.conversation_summary
+    const systemInstruction = session.conversation_summary
       ? `Previous summary: ${session.conversation_summary}\n\nCreate a concise summary that builds on the previous summary and incorporates the new conversation below. Focus on key topics, decisions, and important information.`
       : "Create a concise summary of the following conversation. Focus on key topics, decisions, and important information.";
 
     console.log("Calling AI for summarization...");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: conversationText }
-        ],
-        stream: false,
-      }),
+    const contents = [
+      {
+        role: "user",
+        parts: [{ text: conversationText }]
+      }
+    ];
+
+    const response = await callGemini("gemini-2.5-flash-lite", contents, {
+      systemInstruction
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      console.error("Google AI Studio error:", response.status, errorText);
       throw new Error("Failed to generate summary");
     }
 
     const data = await response.json();
-    const summary = data.choices[0]?.message?.content;
+    const summary = extractTextFromGeminiResponse(data);
 
     if (!summary) {
       throw new Error("No summary generated");
