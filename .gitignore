@@ -1,66 +1,10 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Existing .gitignore content
+$(cat .gitignore 2>/dev/null || echo "")
 
-node_modules
-dist
-dist-ssr
-*.local
+# Debug screenshots (temporary)
+/*.png
+/*.jpg
+/*.jpeg
 
-# Environment files
-.env
-.env.development
-.env.production
-.env.backup
-.env.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Supabase temp files
-supabase/.temp/
-
-# Archive directories for temporary documentation and development artifacts
-/archive/
-.claude/archive/
-docs/archive/
-docs/issue-updates.md
-
-# Archive directory for temporary files
-.archive/
-docs/artifact-prompt-dont-archive.md
-
-# Verification screenshots
-verification-*.png
-.claude/settings.local.json
-
-# Debug and development artifacts
-debug-*.txt
-snapshot-*.txt
-test-*.png
-.env
-
-# Backup files from migrations
-*.lovable-backup
-*.bak
-.env.lovable-cloud-backup
-.env.local.vana-dev-backup
-config.toml.lovable-backup
-
-# Test scripts (temporary)
-scripts/test-*.sh
-scripts/test-*.js
-scripts/test-*.html
+# One-off debug scripts (archived)
+scripts/archive/
