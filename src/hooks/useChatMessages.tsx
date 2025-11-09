@@ -125,32 +125,23 @@ export function useChatMessages(
     userMessage: string,
     onDelta: (chunk: string, progress: StreamProgress) => void,
     onDone: () => void,
-    currentArtifact?: { title: string; type: string; content: string }
+    currentArtifact?: { title: string; type: string; content: string },
+    retryCount = 0
   ) => {
+    const MAX_RETRIES = 3;
+    const RETRY_DELAYS = [2000, 5000, 10000]; // Exponential backoff: 2s, 5s, 10s
+
     setIsLoading(true);
 
     try {
-      // Client-side throttling: 1 request per second
-      if (!chatRequestThrottle.canMakeRequest()) {
-        const waitTime = chatRequestThrottle.getTimeUntilNextToken();
-        toast({
-          title: "Please wait",
-          description: `Please wait ${Math.ceil(waitTime / 1000)} second(s) before sending another message.`,
-          variant: "default",
-        });
-        setIsLoading(false);
-        onDone();
-        return;
-      }
-
-      // Consume throttle token
-      chatRequestThrottle.tryConsume();
+      // Client-side throttling: silently wait for token (protects API from burst requests)
+      await chatRequestThrottle.waitForToken();
       // Get actual auth status from server (not client flags)
       const { data: { session } } = await supabase.auth.getSession();
       const isAuthenticated = !!session;
 
-      // Save user message (only for authenticated users with sessionId)
-      if (sessionId && isAuthenticated) {
+      // Save user message ONLY on first attempt (not on retries to avoid duplicates)
+      if (retryCount === 0 && sessionId && isAuthenticated) {
         await saveMessage("user", userMessage);
       } else if (sessionId && !isAuthenticated) {
         // Expired session - clear stale state
@@ -227,6 +218,12 @@ export function useChatMessages(
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Edge function error response:", errorData);
+
+        // Handle retryable errors (503 - service temporarily unavailable)
+        if (response.status === 503 && errorData.retryable) {
+          throw new Error("SERVICE_UNAVAILABLE");
+        }
+
         const errorMsg = errorData.details
           ? `${errorData.error}: ${errorData.details}`
           : errorData.error || "Failed to get response";
@@ -342,10 +339,31 @@ export function useChatMessages(
       onDone();
     } catch (error: any) {
       console.error("Stream error:", error);
+
+      // Handle retryable errors with exponential backoff
+      if (error.message === "SERVICE_UNAVAILABLE" && retryCount < MAX_RETRIES) {
+        const delay = RETRY_DELAYS[retryCount];
+        const retryNumber = retryCount + 1;
+
+        toast({
+          title: "AI service busy",
+          description: `The AI is temporarily overloaded. Retrying in ${delay / 1000} seconds... (Attempt ${retryNumber}/${MAX_RETRIES})`,
+          variant: "default",
+        });
+
+        // Wait and retry
+        await new Promise(resolve => setTimeout(resolve, delay));
+
+        // Recursive retry with incremented count
+        return streamChat(userMessage, onDelta, onDone, currentArtifact, retryCount + 1);
+      }
+
       const errorMessage = getAuthErrorMessage(error);
       toast({
         title: "Error",
-        description: errorMessage,
+        description: errorMessage === error.message && error.message === "SERVICE_UNAVAILABLE"
+          ? "The AI service is temporarily unavailable. Please try again in a few moments."
+          : errorMessage,
         variant: "destructive",
       });
       onDone();

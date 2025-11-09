@@ -276,19 +276,27 @@ serve(async (req) => {
 
     if (isImageRequest) {
       console.log("Image generation request detected");
-      
+
       try {
-        // Call generate-image edge function
+        // Get auth header to pass to generate-image function
+        const authHeader = req.headers.get("Authorization");
+
+        // Call generate-image edge function with auth header
         const imageResponse = await supabase.functions.invoke('generate-image', {
           body: {
             prompt: lastUserMessage.content,
             mode: 'generate',
             sessionId
-          }
+          },
+          headers: authHeader ? { Authorization: authHeader } : {}
         });
 
         if (imageResponse.error) {
-          console.error("Image generation error:", imageResponse.error);
+          console.error("Image generation error:", {
+            error: imageResponse.error,
+            status: imageResponse.status,
+            data: imageResponse.data
+          });
           const errorMessage = "I encountered an issue generating the image. Please try again.";
           return new Response(
             `data: ${JSON.stringify({ choices: [{ delta: { content: errorMessage } }] })}\n\ndata: [DONE]\n\n`,
@@ -423,6 +431,22 @@ Treat this as an iterative improvement of the existing artifact.`;
           JSON.stringify({ error: "API quota exceeded. Please try again later.", details: errorText }),
           {
             status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      // Preserve 503 status for transient "model overloaded" errors
+      if (response.status === 503) {
+        return new Response(
+          JSON.stringify({
+            error: "AI service temporarily unavailable",
+            status: response.status,
+            details: errorText,
+            retryable: true
+          }),
+          {
+            status: 503,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           }
         );

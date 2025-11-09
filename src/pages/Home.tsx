@@ -230,6 +230,7 @@ const Home = () => {
       const sessionId = await createSession(prompt);
       if (sessionId) {
         setCurrentSessionId(sessionId);
+        setInput(prompt); // Set input so ChatInterface receives the prompt via initialPrompt prop
         setShowChat(true);
       }
       setIsLoading(false);

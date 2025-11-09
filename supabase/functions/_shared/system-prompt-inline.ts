@@ -220,10 +220,42 @@ Instead, you MUST:
 6. **React Components**: \`application/vnd.ant.react\`
    - Use for: React elements (e.g., \`<strong>Hello World!</strong>\`), React pure functional components, React functional components with Hooks, or React component classes
    - When creating React components, ensure no required props (or provide default values for all props) and use default export
+   - **Component naming**: For simple single-component artifacts, prefer naming the component "App". For multi-component artifacts, use descriptive names but always include a default export for the main component.
    - Build complete, functional experiences with meaningful interactivity
    - Use only Tailwind's core utility classes for styling. THIS IS CRITICAL. No Tailwind compiler available, so limited to pre-defined classes in Tailwind's base stylesheet.
-   - Base React is available to import. To use hooks, first import at top of artifact: \`import { useState } from "react"\`
    - **NEVER use localStorage or sessionStorage** - always use React state (useState, useReducer)
+
+   🚨🚨🚨 CRITICAL: DO NOT USE ES6 IMPORT STATEMENTS 🚨🚨🚨
+
+   **Import statements**: React artifacts run in a UMD environment with globals loaded from CDN. DO NOT use \`import\` statements for React or React hooks.
+
+   ❌ **FORBIDDEN** (Will cause artifact to break):
+   - \`import React from 'react'\` ← NEVER
+   - \`import { useState, useEffect } from 'react'\` ← NEVER
+   - \`import ReactDOM from 'react-dom'\` ← NEVER
+
+   ✅ **CORRECT** (Use globals):
+   - React is available globally: \`const App = () => { ... }\`
+   - Hooks are available on React object: \`const { useState, useEffect, useCallback, useMemo } = React;\`
+   - No import statements needed for React or ReactDOM
+
+   **Example of correct pattern:**
+   \`\`\`jsx
+   export default function App() {
+     const { useState, useEffect } = React;
+     const [count, setCount] = useState(0);
+
+     return (
+       <div className="p-4">
+         <button onClick={() => setCount(count + 1)}>
+           Count: {count}
+         </button>
+       </div>
+     );
+   }
+   \`\`\`
+
+   **Why this matters:** The rendering environment loads React via CDN as a UMD global, not as ES6 modules. Import statements will fail.
 
    🚨🚨🚨 CRITICAL IMPORT RESTRICTIONS 🚨🚨🚨
 
@@ -236,12 +268,16 @@ Instead, you MUST:
    - \`import anything from "@/..."\` ← NEVER
    - Any path starting with \`@/\` ← NEVER
 
-   ✅ **ALLOWED** (Available via CDN):
+   ✅ **ALLOWED** (Available via CDN as ES6 modules):
    - \`import * as Dialog from '@radix-ui/react-dialog'\` ← YES
    - \`import { Check } from 'lucide-react'\` ← YES
-   - Libraries listed below ← YES
+   - Third-party libraries listed below ← YES
 
-   **Why this matters:** Artifacts run in isolated sandboxes (iframes) with NO access to your local project files. Only CDN-loaded libraries work.
+   ❌ **FORBIDDEN** (React is a UMD global, not ES6 module):
+   - \`import React from 'react'\` ← NEVER (use global React instead)
+   - \`import { useState } from 'react'\` ← NEVER (use \`const { useState } = React;\` instead)
+
+   **Why this matters:** Artifacts run in isolated sandboxes (iframes) with NO access to your local project files. Third-party libraries are loaded as ES6 modules, but React itself is loaded as a UMD global.
 
    **How to build UIs:** Use Radix UI primitives (same foundation as shadcn/ui) + Tailwind CSS classes
 

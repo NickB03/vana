@@ -43,34 +43,39 @@ serve(async (req) => {
       );
     }
 
+    // Support both authenticated and guest users (similar to chat function)
+    let user = null;
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "No authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
-    const supabase = createClient(
+    // Create supabase client for storage operations (works for both auth and guest)
+    let supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (authHeader) {
+      // Authenticated user - verify token and recreate client with auth
+      supabase = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+        { global: { headers: { Authorization: authHeader } } }
+      );
+
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        user = authUser;
+      }
     }
+
+    // Guest users are allowed (user will be null)
 
     const GOOGLE_AI_STUDIO_KEY = Deno.env.get("GOOGLE_AI_STUDIO_KEY_IMAGE");
     if (!GOOGLE_AI_STUDIO_KEY) {
       throw new Error("GOOGLE_AI_STUDIO_KEY_IMAGE is not configured");
     }
 
-    console.log(`Image ${mode} request from user ${user.id}:`, prompt.substring(0, 100));
+    const userType = user ? `user ${user.id}` : "guest";
+    console.log(`Image ${mode} request from ${userType}:`, prompt.substring(0, 100));
 
     // Construct Gemini messages based on mode
     let contents;
@@ -102,8 +107,10 @@ serve(async (req) => {
       ];
     }
 
-    // Call Gemini image generation API
-    const response = await callGemini("gemini-2.5-flash-image", contents);
+    // Call Gemini image generation API with correct API key
+    const response = await callGemini("gemini-2.5-flash-image", contents, {
+      keyName: "GOOGLE_AI_STUDIO_KEY_IMAGE"
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -125,6 +132,16 @@ serve(async (req) => {
     const data = await response.json();
     console.log("Google AI Studio response received");
 
+    // CRITICAL DEBUG: Log full API response structure to diagnose image generation issues
+    console.log("=== GEMINI API RESPONSE DEBUG ===");
+    console.log("Full response:", JSON.stringify(data, null, 2));
+    console.log("Has candidates?", !!data.candidates);
+    console.log("Candidate count:", data.candidates?.length);
+    if (data.candidates?.[0]) {
+      console.log("First candidate parts:", JSON.stringify(data.candidates[0].content?.parts, null, 2));
+    }
+    console.log("=== END DEBUG ===");
+
     // Extract base64 image from Gemini response
     // Gemini format: data.candidates[0].content.parts[0].inlineData.data
     let imageData: string | undefined;
@@ -132,20 +149,38 @@ serve(async (req) => {
     const candidate = data.candidates?.[0];
     if (candidate?.content?.parts) {
       for (const part of candidate.content.parts) {
+        // Log each part to see what we're getting
+        console.log("Checking part:", {
+          hasInlineData: !!part.inlineData,
+          hasText: !!part.text,
+          partKeys: Object.keys(part)
+        });
+
         if (part.inlineData?.data) {
           // Convert to data URL format
           const mimeType = part.inlineData.mimeType || 'image/png';
           imageData = `data:${mimeType};base64,${part.inlineData.data}`;
+          console.log("✅ Found image data, mimeType:", mimeType, "size:", part.inlineData.data.length);
           break;
+        } else if (part.text) {
+          // DIAGNOSTIC: Model returned text instead of image
+          console.warn("⚠️ Model returned TEXT instead of IMAGE:", part.text.substring(0, 200));
         }
       }
     }
 
     if (!imageData) {
-      console.error("No image data in Gemini response:", JSON.stringify(data));
+      console.error("❌ No image data found in Gemini response");
+      console.error("Full response for debugging:", JSON.stringify(data));
       return new Response(
         JSON.stringify({
-          error: "The AI model failed to generate an image. This may be due to content restrictions or a temporary issue. Please try again with a different prompt."
+          error: "The AI model failed to generate an image. This may be due to content restrictions or a temporary issue. Please try again with a different prompt.",
+          debug: {
+            hasResponse: !!data,
+            hasCandidates: !!data.candidates,
+            candidateCount: data.candidates?.length || 0,
+            firstPartType: data.candidates?.[0]?.content?.parts?.[0] ? Object.keys(data.candidates[0].content.parts[0])[0] : 'none'
+          }
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -164,7 +199,8 @@ serve(async (req) => {
 
       // Generate unique filename with random token for security
       const randomToken = crypto.randomUUID();
-      const fileName = `${user.id}/${randomToken}_${Date.now()}.png`;
+      const userFolder = user ? user.id : "guest";
+      const fileName = `${userFolder}/${randomToken}_${Date.now()}.png`;
 
       // Upload to storage
       const { data: uploadData, error: uploadError } = await supabase.storage

@@ -1,12 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { callGemini } from "../_shared/gemini-client.ts";
+import { getCorsHeaders } from "../_shared/cors-config.ts";
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -66,12 +65,12 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GOOGLE_AI_STUDIO_KEY = Deno.env.get("GOOGLE_AI_STUDIO_KEY_FIX");
+    if (!GOOGLE_AI_STUDIO_KEY) {
+      throw new Error("GOOGLE_AI_STUDIO_KEY_FIX is not configured");
     }
 
-    console.log("Generating fix for artifact type:", type, "error:", errorMessage.substring(0, 100));
+    console.log(`Generating fix for artifact type: ${type}, user: ${user.id}, error:`, errorMessage.substring(0, 100));
 
     // Build context-aware system prompt based on artifact type
     let systemPrompt = `You are an expert code debugger and fixer. Your task is to analyze the provided code and fix the error.
@@ -105,38 +104,33 @@ IMPORTANT RULES:
 - Avoid using eval() for security`;
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.0-flash-thinking-exp",
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt,
-          },
-          {
-            role: "user",
-            content: `Fix this ${type} artifact that has the following error:
+    // Prepare Gemini API request
+    const contents = [
+      {
+        role: "user",
+        parts: [{
+          text: `Fix this ${type} artifact that has the following error:
 
 ERROR: ${errorMessage}
 
 CODE:
 ${content}
 
-Return ONLY the fixed code without any explanations or markdown formatting.`,
-          },
-        ],
-        temperature: 0.3, // Lower temperature for more deterministic fixes
-      }),
+Return ONLY the fixed code without any explanations or markdown formatting.`
+        }]
+      }
+    ];
+
+    // Call Gemini API using shared client
+    const response = await callGemini("gemini-2.5-pro", contents, {
+      systemInstruction: systemPrompt,
+      temperature: 0.3, // Lower temperature for more deterministic fixes
+      keyName: "GOOGLE_AI_STUDIO_KEY_FIX"
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      console.error("Google AI Studio error:", response.status, errorText);
 
       if (response.status === 429) {
         return new Response(
@@ -148,24 +142,14 @@ Return ONLY the fixed code without any explanations or markdown formatting.`,
         );
       }
 
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Payment required" }),
-          {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
+      return new Response(JSON.stringify({ error: "AI API error" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const data = await response.json();
-    let fixedCode = data.choices?.[0]?.message?.content?.trim();
+    let fixedCode = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
     if (!fixedCode) {
       throw new Error("No fixed code returned from AI");

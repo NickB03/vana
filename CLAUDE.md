@@ -285,14 +285,51 @@ VITE_SUPABASE_PROJECT_ID=vznhbocnuykdmjvujaka
 
 ### Edge Functions (Supabase Secrets)
 ```bash
-# Required for all AI functions
-GOOGLE_AI_STUDIO_KEY=your_api_key_here
+# Required: 3 separate API keys for independent rate limits per project
+GOOGLE_AI_STUDIO_KEY_CHAT=your_chat_api_key_here      # For chat, titles, summaries (gemini-2.5-pro)
+GOOGLE_AI_STUDIO_KEY_IMAGE=your_image_api_key_here    # For image generation (gemini-2.5-flash-preview-image)
+GOOGLE_AI_STUDIO_KEY_FIX=your_fix_api_key_here        # For artifact fixing (gemini-2.5-pro)
 
 # Optional: Production CORS origins (comma-separated)
 ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 ```
 
-**Get API Key:** [Google AI Studio](https://aistudio.google.com/app/apikey)
+**Get API Keys:** [Google AI Studio](https://aistudio.google.com/app/apikey)
+
+**Why 3 Keys?** Each key is tied to a separate Google Cloud project, giving you **independent rate limits** for each feature:
+- Chat key: High-volume conversations (2 RPM, 50 RPD)
+- Image key: Image generation (15 RPM, 1,500 RPD)
+- Fix key: Artifact error fixing (2 RPM, 50 RPD)
+
+This prevents one feature from exhausting the quota for others.
+
+### 🔄 API Key Rotation (Optional - Recommended for Heavy Usage)
+
+**Problem:** Free tier rate limits (2-15 RPM) can be restrictive during active development.
+
+**Solution:** Use **LiteLLM Proxy** to rotate through multiple API keys automatically.
+
+**Benefits:**
+- ✅ 3x-5x more API capacity (e.g., 45 RPM for images instead of 15 RPM)
+- ✅ Automatic failover when a key hits rate limit
+- ✅ Response caching (saves 20-30% of API calls)
+- ✅ Real-time monitoring dashboard
+- ✅ Zero code changes to Supabase functions
+
+**Quick Setup (5 minutes):**
+```bash
+# 1. Get 2-3 API keys per feature from different Google accounts
+# 2. Copy configuration files
+cp .env.example .env
+
+# 3. Start LiteLLM proxy
+docker-compose up -d
+
+# 4. Access dashboard
+open http://localhost:4000/ui
+```
+
+**Full Guide:** See `LITELLM_QUICKSTART.md` and `.claude/API_KEY_ROTATION_GUIDE.md`
 
 ## 🔒 Security Notes (November 2025 Updates)
 

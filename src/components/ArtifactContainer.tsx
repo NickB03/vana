@@ -663,6 +663,22 @@ ${artifact.content}
 
     // React without Sandpack (iframe with React UMD)
     if (artifact.type === "react") {
+      // Transform artifact code: strip markdown fences, ES6 imports, and export statements
+      // This ensures compatibility with UMD globals loaded via CDN
+      const processedCode = artifact.content
+        .replace(/^```[\w]*\n?/gm, '')           // Strip opening markdown fences (```tsx, ```jsx, etc)
+        .replace(/^```\n?$/gm, '')                // Strip closing markdown fences
+        .replace(/^import\s+.*?from\s+['"]react['"];?\s*$/gm, '')  // Strip React imports
+        .replace(/^import\s+.*?from\s+['"]react-dom['"];?\s*$/gm, '')  // Strip ReactDOM imports
+        .replace(/^import\s+React.*$/gm, '')      // Strip any other React imports
+        .replace(/^export\s+default\s+/gm, '')    // Strip export default (component accessible directly)
+        .trim();
+
+      // Extract component name from original or processed code
+      // Handles: export default function ComponentName() or export default ComponentName or function ComponentName()
+      const componentMatch = artifact.content.match(/(?:export\s+default\s+)?(?:function\s+)?(\w+)(?=\s*\(|\s*=)/);
+      const componentName = componentMatch?.[1] || 'App';
+
       const reactPreviewContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -671,6 +687,17 @@ ${artifact.content}
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script>
+    // Ensure React is globally available for Babel transformer
+    // React UMD exposes itself, but we explicitly verify it's accessible
+    if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+      console.error('React or ReactDOM failed to load');
+      window.parent.postMessage({
+        type: 'artifact-error',
+        message: 'React libraries failed to load. Please refresh the page.'
+      }, '*');
+    }
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
   <script src="https://unpkg.com/recharts@2.5.0/dist/Recharts.js"></script>
@@ -689,11 +716,27 @@ ${artifact.content}
 </head>
 <body>
   <div id="root"></div>
-  <script type="text/babel">
+  <script type="text/babel" data-type="module" data-presets="react">
     const { useState, useEffect, useReducer, useRef, useMemo, useCallback } = React;
-    ${artifact.content}
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
+    ${processedCode}
+
+    // Dynamically render the exported component
+    try {
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      const Component = ${componentName};
+
+      if (typeof Component === 'undefined') {
+        throw new Error('Component "${componentName}" is not defined. Make sure you have "export default ${componentName}" in your code.');
+      }
+
+      root.render(<Component />);
+    } catch (error) {
+      window.parent.postMessage({
+        type: 'artifact-error',
+        message: error.message || 'Failed to render component'
+      }, '*');
+      console.error('Render error:', error);
+    }
   </script>
   <script>
     window.addEventListener('error', (e) => {

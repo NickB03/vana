@@ -1,0 +1,54 @@
+model_list:
+  # Chat models (gemini-2.5-pro) - Add 2-3 keys for load balancing
+  - model_name: gemini-pro-chat
+    litellm_params:
+      model: gemini/gemini-2.5-pro
+      api_key: os.environ/GEMINI_CHAT_KEY_1
+  - model_name: gemini-pro-chat
+    litellm_params:
+      model: gemini/gemini-2.5-pro
+      api_key: os.environ/GEMINI_CHAT_KEY_2
+  - model_name: gemini-pro-chat
+    litellm_params:
+      model: gemini/gemini-2.5-pro
+      api_key: os.environ/GEMINI_CHAT_KEY_3
+
+  # Image models (gemini-2.5-flash-preview-image) - Add 2-3 keys
+  - model_name: gemini-image
+    litellm_params:
+      model: gemini/gemini-2.5-flash-preview-image
+      api_key: os.environ/GEMINI_IMAGE_KEY_1
+  - model_name: gemini-image
+    litellm_params:
+      model: gemini/gemini-2.5-flash-preview-image
+      api_key: os.environ/GEMINI_IMAGE_KEY_2
+  - model_name: gemini-image
+    litellm_params:
+      model: gemini/gemini-2.5-flash-preview-image
+      api_key: os.environ/GEMINI_IMAGE_KEY_3
+
+  # Fix models (gemini-2.5-pro) - Add 2 keys
+  - model_name: gemini-pro-fix
+    litellm_params:
+      model: gemini/gemini-2.5-pro
+      api_key: os.environ/GEMINI_FIX_KEY_1
+  - model_name: gemini-pro-fix
+    litellm_params:
+      model: gemini/gemini-2.5-pro
+      api_key: os.environ/GEMINI_FIX_KEY_2
+
+router_settings:
+  routing_strategy: simple-shuffle  # Round-robin with randomization
+  num_retries: 3  # Retry up to 3 times on 429 errors
+  timeout: 60  # 60 second timeout per request
+  allowed_fails: 2  # Mark key as down after 2 consecutive failures
+  cooldown_time: 300  # Retry failed key after 5 minutes
+
+litellm_settings:
+  drop_params: true  # Drop unsupported params gracefully
+  set_verbose: false  # Disable verbose logging
+  cache: true  # Enable response caching to save API calls
+  cache_params:
+    type: redis  # Use Redis for caching
+    ttl: 600  # Cache responses for 10 minutes
+

@@ -19,10 +19,12 @@ export function detectIntent(prompt: string): IntentResult {
   // High confidence patterns for image generation
   const imageHighConfidence = [
     /\b(photograph|photo|picture|realistic|photorealistic)\b/i,
-    /\b(generate|create|make|show me)\s+(a|an)?\s*(photo|picture|image)\s+of\b/i,
+    /\b(generate|create|make|show me)\s+(a|an)?\s*(photo|picture|image)\b/i, // Removed requirement for " of"
+    /\b(generate|create)\s+(an?\s+)?image\b/i, // "generate image" or "create an image"
     /\b(movie poster|album cover|book cover|magazine cover)\b/i,
     /\b(portrait|landscape photo|headshot|profile picture)\b/i,
     /\b(wallpaper|background|backdrop|scene)\b.*\b(realistic|detailed|photographic)\b/i,
+    /\b(pixel art|8-bit|16-bit|retro pixel|pixelated)\b/i, // Pixel art is image generation
   ];
 
   // Medium confidence - could be image or SVG
