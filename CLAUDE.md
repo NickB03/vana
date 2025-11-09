@@ -303,18 +303,53 @@ ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 
 This prevents one feature from exhausting the quota for others.
 
-### 🔄 API Key Rotation (Optional - Recommended for Heavy Usage)
+### 🔄 API Key Rotation (Production-Ready)
 
 **Problem:** Free tier rate limits (2-15 RPM) can be restrictive during active development.
 
-**Solution:** Use **LiteLLM Proxy** to rotate through multiple API keys automatically.
+**Solution:** Built-in **round-robin rotation** across multiple API keys (no external infrastructure needed).
+
+**Current Implementation:**
+- ✅ Lightweight rotation built into Supabase Edge Functions
+- ✅ 2x capacity increase per feature (e.g., 30 RPM for images instead of 15 RPM)
+- ✅ Automatic load distribution across keys
+- ✅ Zero external dependencies or infrastructure
+- ✅ Production-ready and deployed
+
+**Key Pool Configuration:**
+```bash
+# Chat pool (2 keys) - 4 RPM total
+GOOGLE_AI_STUDIO_KEY_CHAT_1=AIzaSy...
+GOOGLE_AI_STUDIO_KEY_CHAT_2=AIzaSy...
+
+# Image pool (2 keys) - 30 RPM total
+GOOGLE_AI_STUDIO_KEY_IMAGE_1=AIzaSy...
+GOOGLE_AI_STUDIO_KEY_IMAGE_2=AIzaSy...
+
+# Fix pool (2 keys) - 4 RPM total
+GOOGLE_AI_STUDIO_KEY_FIX_1=AIzaSy...
+GOOGLE_AI_STUDIO_KEY_FIX_2=AIzaSy...
+```
+
+**How It Works:**
+- Functions automatically rotate through available keys using round-robin
+- Each key pool is independent (chat, image, fix)
+- Rotation state persists per Edge Function isolate
+- Logs show which key is being used: `🔑 Using GOOGLE_AI_STUDIO_KEY_CHAT key #1 of 2`
+
+**Full Guide:** See `.claude/ROUND_ROBIN_KEY_ROTATION.md`
+
+---
+
+### 🔄 Advanced: LiteLLM Proxy (Optional - For Heavy Usage)
+
+For even more capacity and advanced features like response caching and monitoring:
 
 **Benefits:**
-- ✅ 3x-5x more API capacity (e.g., 45 RPM for images instead of 15 RPM)
-- ✅ Automatic failover when a key hits rate limit
-- ✅ Response caching (saves 20-30% of API calls)
+- ✅ 3x-5x more API capacity (e.g., 45 RPM for images with 3 keys)
+- ✅ Response caching with Redis (saves 20-30% of API calls)
 - ✅ Real-time monitoring dashboard
-- ✅ Zero code changes to Supabase functions
+- ✅ Automatic failover with retry logic
 
 **Quick Setup (5 minutes):**
 ```bash

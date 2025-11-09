@@ -5,14 +5,47 @@
  */
 
 /**
- * Get and validate Google AI Studio API key
- * Throws descriptive error if key is missing or invalid
- * @param keyName - Environment variable name (default: GOOGLE_AI_STUDIO_KEY)
+ * Round-robin counter for key rotation
+ * Persists across function invocations within the same isolate
+ */
+const keyRotationCounters: Record<string, number> = {};
+
+/**
+ * Get list of available API keys for a given key pool
+ * Supports multiple keys with _1, _2, _3 suffixes for round-robin rotation
+ * @param baseKeyName - Base environment variable name (e.g., "GOOGLE_AI_STUDIO_KEY_CHAT")
+ * @returns Array of available API keys
+ */
+function getAvailableKeys(baseKeyName: string): string[] {
+  const keys: string[] = [];
+
+  // Try base key first (without suffix)
+  const baseKey = Deno.env.get(baseKeyName);
+  if (baseKey) {
+    keys.push(baseKey);
+  }
+
+  // Try numbered keys (_1, _2, _3, etc.)
+  for (let i = 1; i <= 6; i++) {
+    const key = Deno.env.get(`${baseKeyName}_${i}`);
+    if (key) {
+      keys.push(key);
+    }
+  }
+
+  return keys;
+}
+
+/**
+ * Get next API key using round-robin rotation
+ * Automatically rotates through available keys to distribute load
+ * @param keyName - Environment variable name (e.g., "GOOGLE_AI_STUDIO_KEY_CHAT")
+ * @returns API key string
  */
 function getValidatedApiKey(keyName: string = "GOOGLE_AI_STUDIO_KEY"): string {
-  const GOOGLE_API_KEY = Deno.env.get(keyName);
+  const availableKeys = getAvailableKeys(keyName);
 
-  if (!GOOGLE_API_KEY) {
+  if (availableKeys.length === 0) {
     throw new Error(
       `${keyName} not configured. ` +
       `Set it with: supabase secrets set ${keyName}=your_key\n` +
@@ -20,15 +53,38 @@ function getValidatedApiKey(keyName: string = "GOOGLE_AI_STUDIO_KEY"): string {
     );
   }
 
+  // Initialize counter for this key pool if not exists
+  if (!(keyName in keyRotationCounters)) {
+    keyRotationCounters[keyName] = 0;
+  }
+
+  // Get next key using round-robin
+  const keyIndex = keyRotationCounters[keyName] % availableKeys.length;
+  const selectedKey = availableKeys[keyIndex];
+
+  // Increment counter for next request
+  keyRotationCounters[keyName] = (keyRotationCounters[keyName] + 1) % availableKeys.length;
+
   // Validate API key format (Google AI Studio keys start with "AIza")
-  if (!GOOGLE_API_KEY.startsWith("AIza") || GOOGLE_API_KEY.length < 30) {
+  if (!selectedKey.startsWith("AIza") || selectedKey.length < 30) {
     console.warn(
-      `⚠️ ${keyName} may be invalid. ` +
+      `⚠️ ${keyName} key #${keyIndex + 1} may be invalid. ` +
       "Expected format: AIzaSy... (39 characters)"
     );
   }
 
-  return GOOGLE_API_KEY;
+  console.log(`🔑 Using ${keyName} key #${keyIndex + 1} of ${availableKeys.length}`);
+
+  return selectedKey;
+}
+
+/**
+ * Public API to get an API key with round-robin rotation
+ * @param keyName - Environment variable name (e.g., "GOOGLE_AI_STUDIO_KEY_CHAT")
+ * @returns API key string
+ */
+export function getApiKey(keyName: string = "GOOGLE_AI_STUDIO_KEY"): string {
+  return getValidatedApiKey(keyName);
 }
 
 export interface GeminiMessage {

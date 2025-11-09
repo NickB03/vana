@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { shouldGenerateImage, getArtifactGuidance } from "./intent-detector.ts";
 import { validateArtifactRequest, generateGuidanceFromValidation } from "./artifact-validator.ts";
 import { transformArtifactCode } from "./artifact-transformer.ts";
-import { convertToGeminiFormat, extractSystemMessage } from "../_shared/gemini-client.ts";
+import { convertToGeminiFormat, extractSystemMessage, getApiKey } from "../_shared/gemini-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 import { getSystemInstruction } from "../_shared/system-prompt-inline.ts";
 
@@ -260,12 +260,8 @@ serve(async (req) => {
     // Guest users already have supabase client initialized above
 
     console.log("Checking for API key...");
-    const GOOGLE_AI_STUDIO_KEY = Deno.env.get("GOOGLE_AI_STUDIO_KEY_CHAT");
-    if (!GOOGLE_AI_STUDIO_KEY) {
-      console.error("❌ GOOGLE_AI_STUDIO_KEY_CHAT not found in environment");
-      console.error("Available env vars:", Object.keys(Deno.env.toObject()).filter(k => k.includes('GOOGLE')));
-      throw new Error("GOOGLE_AI_STUDIO_KEY_CHAT is not configured");
-    }
+    // Get API key with automatic round-robin rotation
+    const GOOGLE_AI_STUDIO_KEY = getApiKey("GOOGLE_AI_STUDIO_KEY_CHAT");
     console.log("✅ API key found, length:", GOOGLE_AI_STUDIO_KEY.length);
 
     console.log("Starting chat stream for session:", sessionId);

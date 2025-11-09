@@ -76,7 +76,8 @@ serve(async (req) => {
     ];
 
     const response = await callGemini("gemini-2.5-flash-lite", contents, {
-      systemInstruction
+      systemInstruction,
+      keyName: "GOOGLE_AI_STUDIO_KEY_CHAT"  // Use shared chat key pool for title generation
     });
 
     if (!response.ok) {
