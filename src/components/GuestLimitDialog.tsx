@@ -8,17 +8,19 @@ import {
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Lock, Sparkles, History, Cloud } from "lucide-react";
+import { CountdownTimer } from "@/components/CountdownTimer";
 
 interface GuestLimitDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  resetTime?: number | null; // Unix timestamp when limit resets
 }
 
 /**
- * Modal dialog shown when guest user reaches message limit
- * Encourages sign-up with feature highlights
+ * Modal dialog shown when guest user reaches message limit (20 messages)
+ * Displays countdown timer and encourages sign-up with feature highlights
  */
-export const GuestLimitDialog = ({ open, onOpenChange }: GuestLimitDialogProps) => {
+export const GuestLimitDialog = ({ open, onOpenChange, resetTime }: GuestLimitDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -27,10 +29,15 @@ export const GuestLimitDialog = ({ open, onOpenChange }: GuestLimitDialogProps) 
             <Lock className="h-6 w-6 text-primary" />
           </div>
           <DialogTitle className="text-center text-2xl">
-            You've used all 5 free messages
+            You've used all 20 free messages
           </DialogTitle>
           <DialogDescription className="text-center text-base pt-2">
             Sign in to continue chatting and unlock premium features
+            {resetTime && (
+              <div className="mt-2">
+                <CountdownTimer resetTime={resetTime} className="text-sm" />
+              </div>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -41,9 +48,9 @@ export const GuestLimitDialog = ({ open, onOpenChange }: GuestLimitDialogProps) 
               <Sparkles className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <p className="font-medium">Unlimited messages</p>
+              <p className="font-medium">100 messages per 5 hours</p>
               <p className="text-sm text-muted-foreground">
-                Chat without limits and generate unlimited artifacts
+                Generous rate limits for authenticated users with automatic resets
               </p>
             </div>
           </div>

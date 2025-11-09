@@ -3,33 +3,38 @@ import { Link } from "react-router-dom";
 import { Gift, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useState } from "react";
+import { CountdownTimer } from "@/components/CountdownTimer";
 
 interface GuestLimitBannerProps {
   messageCount: number;
   maxMessages: number;
+  resetTime?: number | null; // Unix timestamp when limit resets
   className?: string;
 }
 
 /**
  * Displays message count for guest users
- * Shows a subtle banner with remaining messages and sign-in CTA
+ * Shows banner at 75% threshold (15/20 messages)
+ * Displays countdown timer and updated messaging (20 messages/5 hours)
  */
 export const GuestLimitBanner = ({
   messageCount,
   maxMessages,
+  resetTime,
   className = "",
 }: GuestLimitBannerProps) => {
   const [isDismissed, setIsDismissed] = useState(false);
   const remaining = maxMessages - messageCount;
   const percentage = (messageCount / maxMessages) * 100;
+  const WARNING_THRESHOLD = 0.75; // Show at 75% (15/20 messages)
 
-  // Show banner when user has sent at least 1 message
-  const shouldShow = messageCount > 0 && !isDismissed;
+  // Show banner when user reaches warning threshold (75%)
+  const shouldShow = messageCount >= Math.floor(maxMessages * WARNING_THRESHOLD) && !isDismissed;
 
   // Determine variant based on remaining messages
   const getVariant = () => {
     if (remaining === 0) return "error";
-    if (remaining <= 2) return "warning";
+    if (remaining <= 5) return "warning"; // Warning when 5 or fewer remaining
     return "info";
   };
 
@@ -67,12 +72,21 @@ export const GuestLimitBanner = ({
             {/* Left: Icon + Message */}
             <div className="flex items-center gap-3">
               <Gift className="h-5 w-5 flex-shrink-0" />
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                <span className="text-sm font-medium">
-                  Guest Mode: {remaining} {remaining === 1 ? "message" : "messages"} remaining
-                </span>
-                <span className="hidden sm:inline text-xs opacity-70">•</span>
-                <span className="text-xs opacity-90">Sign in for unlimited</span>
+              <div className="flex flex-col gap-1">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                  <span className="text-sm font-medium">
+                    Guest Mode: {remaining}/{maxMessages} messages remaining
+                  </span>
+                  <span className="hidden sm:inline text-xs opacity-70">•</span>
+                  <span className="text-xs opacity-90">Sign in for 100 messages/5h</span>
+                </div>
+                {resetTime && (
+                  <CountdownTimer
+                    resetTime={resetTime}
+                    showIcon={false}
+                    className="text-xs opacity-80"
+                  />
+                )}
               </div>
             </div>
 

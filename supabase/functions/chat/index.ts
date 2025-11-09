@@ -5,7 +5,7 @@ import { validateArtifactRequest, generateGuidanceFromValidation } from "./artif
 import { transformArtifactCode } from "./artifact-transformer.ts";
 import { convertToGeminiFormat, extractSystemMessage } from "../_shared/gemini-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
-import { getSystemInstruction } from "../_shared/system-prompt-loader.ts";
+import { getSystemInstruction } from "../_shared/system-prompt-inline.ts";
 
 // Helper function to extract meaningful title from prompt
 function extractImageTitle(prompt: string): string {
@@ -30,7 +30,10 @@ serve(async (req) => {
   try {
     const requestBody = await req.json();
     const { messages, sessionId, currentArtifact, isGuest } = requestBody;
-    
+
+    // Debug logging
+    console.log("Request body:", JSON.stringify({ messages: messages?.length, sessionId, isGuest, hasArtifact: !!currentArtifact }));
+
     // Input validation
     if (!messages || !Array.isArray(messages)) {
       return new Response(
@@ -86,24 +89,58 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
-    // Guest rate limiting (10 requests per 24 hours)
+    // Create service_role client for rate limiting checks
+    const serviceClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // Check Gemini API throttle (15 RPM) - applies to all requests
+    const { data: apiThrottleResult, error: apiThrottleError } = await serviceClient
+      .rpc("check_api_throttle", {
+        p_api_name: "gemini",
+        p_max_requests: 15,
+        p_window_seconds: 60
+      });
+
+    if (apiThrottleError) {
+      console.error("API throttle check error:", apiThrottleError);
+      // Continue anyway to avoid blocking users due to throttle errors
+    } else if (apiThrottleResult && !apiThrottleResult.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: "API rate limit exceeded. Please try again in a moment.",
+          rateLimitExceeded: true,
+          resetAt: apiThrottleResult.reset_at,
+          retryAfter: apiThrottleResult.retry_after
+        }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+            "X-RateLimit-Limit": apiThrottleResult.total.toString(),
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": new Date(apiThrottleResult.reset_at).getTime().toString(),
+            "Retry-After": apiThrottleResult.retry_after.toString()
+          }
+        }
+      );
+    }
+
+    // Guest rate limiting (20 requests per 5 hours)
+    let rateLimitHeaders = {};
     if (isGuest) {
       // Get client identifier (IP address or fallback)
       const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0].trim()
         || req.headers.get("x-real-ip")
         || "unknown";
 
-      // Create service_role client to check rate limit
-      const serviceClient = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-      );
-
       const { data: rateLimitResult, error: rateLimitError } = await serviceClient
         .rpc("check_guest_rate_limit", {
           p_identifier: clientIp,
-          p_max_requests: 10,
-          p_window_hours: 24
+          p_max_requests: 20,
+          p_window_hours: 5
         });
 
       if (rateLimitError) {
@@ -127,6 +164,13 @@ serve(async (req) => {
             }
           }
         );
+      } else if (rateLimitResult) {
+        // Add rate limit headers to successful responses
+        rateLimitHeaders = {
+          "X-RateLimit-Limit": rateLimitResult.total.toString(),
+          "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
+          "X-RateLimit-Reset": new Date(rateLimitResult.reset_at).getTime().toString()
+        };
       }
     }
 
@@ -134,7 +178,10 @@ serve(async (req) => {
     if (!isGuest) {
       const authHeader = req.headers.get("Authorization");
       if (!authHeader) {
-        return new Response(JSON.stringify({ error: "No authorization header" }), {
+        return new Response(JSON.stringify({
+          error: "No authorization header",
+          debug: { isGuest, type: typeof isGuest, notIsGuest: !isGuest }
+        }), {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -155,6 +202,44 @@ serve(async (req) => {
         });
       }
       user = authUser;
+
+      // Authenticated user rate limiting (100 requests per 5 hours)
+      const { data: userRateLimitResult, error: userRateLimitError } = await serviceClient
+        .rpc("check_user_rate_limit", {
+          p_user_id: user.id,
+          p_max_requests: 100,
+          p_window_hours: 5
+        });
+
+      if (userRateLimitError) {
+        console.error("User rate limit check error:", userRateLimitError);
+        // Continue anyway to avoid blocking users due to rate limit errors
+      } else if (userRateLimitResult && !userRateLimitResult.allowed) {
+        return new Response(
+          JSON.stringify({
+            error: "Rate limit exceeded. Please try again later.",
+            rateLimitExceeded: true,
+            resetAt: userRateLimitResult.reset_at
+          }),
+          {
+            status: 429,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+              "X-RateLimit-Limit": userRateLimitResult.total.toString(),
+              "X-RateLimit-Remaining": "0",
+              "X-RateLimit-Reset": new Date(userRateLimitResult.reset_at).getTime().toString()
+            }
+          }
+        );
+      } else if (userRateLimitResult) {
+        // Add rate limit headers to successful responses
+        rateLimitHeaders = {
+          "X-RateLimit-Limit": userRateLimitResult.total.toString(),
+          "X-RateLimit-Remaining": userRateLimitResult.remaining.toString(),
+          "X-RateLimit-Reset": new Date(userRateLimitResult.reset_at).getTime().toString()
+        };
+      }
 
       // Verify session ownership if sessionId is provided
       if (sessionId) {
@@ -207,28 +292,28 @@ serve(async (req) => {
           const errorMessage = "I encountered an issue generating the image. Please try again.";
           return new Response(
             `data: ${JSON.stringify({ choices: [{ delta: { content: errorMessage } }] })}\n\ndata: [DONE]\n\n`,
-            { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } }
+            { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream" } }
           );
         }
 
         // Use storage URL for both display and database
         const { imageUrl, prompt } = imageResponse.data;
         const title = extractImageTitle(prompt);
-        
+
         // Stream storage URL (works for both display and saving)
         const artifactResponse = `I've generated an image for you: ${title}\n\n<artifact type="image" title="${title}">${imageUrl}</artifact>`;
-        
+
         // Stream the response - frontend will save this URL to database
         return new Response(
           `data: ${JSON.stringify({ choices: [{ delta: { content: artifactResponse } }] })}\n\ndata: [DONE]\n\n`,
-          { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } }
+          { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream" } }
         );
       } catch (imgError) {
         console.error("Image generation failed:", imgError);
         const errorMessage = "I encountered an issue generating the image. Please try again.";
         return new Response(
           `data: ${JSON.stringify({ choices: [{ delta: { content: errorMessage } }] })}\n\ndata: [DONE]\n\n`,
-          { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } }
+          { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream" } }
         );
       }
     }
@@ -299,8 +384,8 @@ Treat this as an iterative improvement of the existing artifact.`;
       ? artifactContext + (artifactGuidance ? `\n\n${artifactGuidance}` : '')
       : '';
 
-    // Load system instruction from external file (improves maintainability and reduces bundle size)
-    const systemInstruction = await getSystemInstruction({ fullArtifactContext });
+    // Load system instruction from inline template (works in both local and deployed Edge Functions)
+    const systemInstruction = getSystemInstruction({ fullArtifactContext });
 
 
     // Prepare messages for Gemini API (convert from OpenAI format)
@@ -445,7 +530,11 @@ Treat this as an iterative improvement of the existing artifact.`;
     ).pipeThrough(new TextEncoderStream());
 
     return new Response(transformedStream, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: {
+        ...corsHeaders,
+        ...rateLimitHeaders,
+        "Content-Type": "text/event-stream"
+      },
     });
   } catch (e) {
     console.error("❌ Chat function error:", e);

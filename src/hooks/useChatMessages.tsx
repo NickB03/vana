@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ensureValidSession, getAuthErrorMessage } from "@/utils/authHelpers";
+import { chatRequestThrottle } from "@/utils/requestThrottle";
 
 export interface ChatMessage {
   id: string;
@@ -26,7 +27,21 @@ export interface StreamProgress {
   percentage: number;
 }
 
-export function useChatMessages(sessionId: string | undefined) {
+export interface RateLimitHeaders {
+  limit: number;
+  remaining: number;
+  reset: number; // Unix timestamp
+  retryAfter?: number; // Seconds to wait (for 429 responses)
+}
+
+export interface UseChatMessagesOptions {
+  onRateLimitUpdate?: (headers: RateLimitHeaders) => void;
+}
+
+export function useChatMessages(
+  sessionId: string | undefined,
+  options?: UseChatMessagesOptions
+) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -115,6 +130,21 @@ export function useChatMessages(sessionId: string | undefined) {
     setIsLoading(true);
 
     try {
+      // Client-side throttling: 1 request per second
+      if (!chatRequestThrottle.canMakeRequest()) {
+        const waitTime = chatRequestThrottle.getTimeUntilNextToken();
+        toast({
+          title: "Please wait",
+          description: `Please wait ${Math.ceil(waitTime / 1000)} second(s) before sending another message.`,
+          variant: "default",
+        });
+        setIsLoading(false);
+        onDone();
+        return;
+      }
+
+      // Consume throttle token
+      chatRequestThrottle.tryConsume();
       // Get actual auth status from server (not client flags)
       const { data: { session } } = await supabase.auth.getSession();
       const isAuthenticated = !!session;
@@ -142,9 +172,57 @@ export function useChatMessages(sessionId: string | undefined) {
               .map((m) => ({ role: m.role, content: m.content })),
             sessionId: isAuthenticated ? sessionId : undefined,
             currentArtifact,
+            isGuest: !isAuthenticated,
           }),
         }
       );
+
+      // Parse rate limit headers from response
+      const parseRateLimitHeaders = (headers: Headers): RateLimitHeaders | null => {
+        const limit = headers.get("X-RateLimit-Limit");
+        const remaining = headers.get("X-RateLimit-Remaining");
+        const reset = headers.get("X-RateLimit-Reset");
+        const retryAfter = headers.get("Retry-After");
+
+        if (limit && remaining && reset) {
+          return {
+            limit: parseInt(limit, 10),
+            remaining: parseInt(remaining, 10),
+            reset: parseInt(reset, 10),
+            retryAfter: retryAfter ? parseInt(retryAfter, 10) : undefined,
+          };
+        }
+        return null;
+      };
+
+      // Handle rate limit exceeded (429)
+      if (response.status === 429) {
+        const errorData = await response.json();
+        const rateLimitHeaders = parseRateLimitHeaders(response.headers);
+
+        if (rateLimitHeaders && options?.onRateLimitUpdate) {
+          options.onRateLimitUpdate(rateLimitHeaders);
+        }
+
+        const resetTime = errorData.resetAt
+          ? new Date(errorData.resetAt).toLocaleTimeString()
+          : "soon";
+
+        const retryMessage = rateLimitHeaders?.retryAfter
+          ? `Please try again in ${rateLimitHeaders.retryAfter} seconds.`
+          : `Rate limit resets at ${resetTime}.`;
+
+        toast({
+          title: "Rate Limit Exceeded",
+          description: `${errorData.error || "Too many requests."} ${retryMessage}`,
+          variant: "destructive",
+          duration: 10000,
+        });
+
+        setIsLoading(false);
+        onDone();
+        return;
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -153,6 +231,12 @@ export function useChatMessages(sessionId: string | undefined) {
           ? `${errorData.error}: ${errorData.details}`
           : errorData.error || "Failed to get response";
         throw new Error(errorMsg);
+      }
+
+      // Parse and update rate limit headers on success
+      const rateLimitHeaders = parseRateLimitHeaders(response.headers);
+      if (rateLimitHeaders && options?.onRateLimitUpdate) {
+        options.onRateLimitUpdate(rateLimitHeaders);
       }
 
       if (!response.body) throw new Error("No response body");

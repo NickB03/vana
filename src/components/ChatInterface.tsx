@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { ArrowUp, Copy, Pencil, Trash, ThumbsUp, ThumbsDown, Plus, WandSparkles, ImagePlus, Maximize2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -88,6 +88,39 @@ export function ChatInterface({
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Define handleSend early using useCallback to avoid initialization errors
+  const handleSend = useCallback(async (message?: string) => {
+    const messageToSend = message || input;
+
+    if (typeof messageToSend !== 'string' || !messageToSend.trim() || isLoading || isStreaming) {
+      return;
+    }
+
+    setInput("");
+    setIsStreaming(true);
+    setStreamingMessage("");
+
+    await streamChat(
+      messageToSend,
+      (chunk, progress) => {
+        setStreamingMessage((prev) => prev + chunk);
+        setStreamProgress(progress);
+      },
+      () => {
+        setStreamingMessage("");
+        setIsStreaming(false);
+        setIsEditingArtifact(false);
+        setStreamProgress({
+          stage: "complete",
+          message: "",
+          artifactDetected: false,
+          percentage: 100
+        });
+      },
+      currentArtifact && isEditingArtifact ? currentArtifact : undefined
+    );
+  }, [input, isLoading, isStreaming, sessionId, setInput, streamChat, currentArtifact, isEditingArtifact]);
+
   // Reset when session changes
   useEffect(() => {
     setStreamingMessage("");
@@ -96,14 +129,14 @@ export function ChatInterface({
     setCurrentArtifact(null);
     setIsEditingArtifact(false);
     onArtifactChange?.(false);
-  }, [sessionId]);
+  }, [sessionId, onArtifactChange]);
 
   // Expose handleSend to parent component
   useEffect(() => {
     if (onSendMessage) {
       onSendMessage(handleSend);
     }
-  }, [onSendMessage]);
+  }, [onSendMessage, handleSend]);
 
   useEffect(() => {
     // Allow auto-send for both authenticated (with sessionId) AND guests (without sessionId)
@@ -111,7 +144,7 @@ export function ChatInterface({
       setHasInitialized(true);
       handleSend(initialPrompt);
     }
-  }, [sessionId, initialPrompt, hasInitialized]);
+  }, [sessionId, initialPrompt, hasInitialized, handleSend]);
 
   // Parse artifacts from messages (removed auto-open behavior)
   useEffect(() => {
@@ -224,35 +257,6 @@ export function ChatInterface({
       // Canvas exists but closed - open it
       onCanvasToggle?.(true);
     }
-  };
-
-  const handleSend = async (message?: string) => {
-    const messageToSend = message || input;
-    if (typeof messageToSend !== 'string' || !messageToSend.trim() || isLoading || isStreaming) return;
-
-    setInput("");
-    setIsStreaming(true);
-    setStreamingMessage("");
-
-    await streamChat(
-      messageToSend,
-      (chunk, progress) => {
-        setStreamingMessage((prev) => prev + chunk);
-        setStreamProgress(progress);
-      },
-      () => {
-        setStreamingMessage("");
-        setIsStreaming(false);
-        setIsEditingArtifact(false);
-        setStreamProgress({
-          stage: "complete",
-          message: "",
-          artifactDetected: false,
-          percentage: 100
-        });
-      },
-      currentArtifact && isEditingArtifact ? currentArtifact : undefined
-    );
   };
 
   const handleEditArtifact = (suggestion?: string) => {

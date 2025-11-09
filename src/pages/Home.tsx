@@ -72,6 +72,7 @@ const Home = () => {
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const transitions = prefersReducedMotion ? landingTransitionReduced : landingTransition;
 
+
   // Set trigger element for scroll detection - CTA section marks the end of landing content
   useEffect(() => {
     if (ctaSectionRef.current) {

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 
 const GUEST_SESSION_KEY = "vana_guest_session";
-const MAX_GUEST_MESSAGES = 10;
-const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+const MAX_GUEST_MESSAGES = 20; // Updated from 10
+const SESSION_DURATION = 5 * 60 * 60 * 1000; // 5 hours (updated from 24)
+const WARNING_THRESHOLD = 0.75; // Show warning at 75% (15/20 messages)
 
 export interface GuestSession {
   id: string;
@@ -19,11 +20,14 @@ interface GuestSessionReturn {
   incrementMessageCount: () => void;
   resetSession: () => void;
   hasReachedLimit: boolean;
+  showWarning: boolean; // True when at 75% threshold (15/20 messages)
+  resetTime: number | null; // Timestamp when the session resets
 }
 
 /**
  * Manages guest user session tracking for message limits
- * Allows 10 free messages before requiring authentication
+ * Allows 20 free messages per 5-hour window before requiring authentication
+ * Shows warning at 75% threshold (15/20 messages)
  */
 export const useGuestSession = (isAuthenticated: boolean): GuestSessionReturn => {
   const [guestSession, setGuestSession] = useState<GuestSession | null>(null);
@@ -159,6 +163,8 @@ export const useGuestSession = (isAuthenticated: boolean): GuestSessionReturn =>
   const messageCount = guestSession?.messageCount || 0;
   const hasReachedLimit = messageCount >= MAX_GUEST_MESSAGES;
   const canSendMessage = isAuthenticated || !hasReachedLimit;
+  const showWarning = messageCount >= Math.floor(MAX_GUEST_MESSAGES * WARNING_THRESHOLD);
+  const resetTime = guestSession?.sessionExpiry || null;
 
   return {
     isGuest: !isAuthenticated,
@@ -168,5 +174,7 @@ export const useGuestSession = (isAuthenticated: boolean): GuestSessionReturn =>
     incrementMessageCount,
     resetSession,
     hasReachedLimit,
+    showWarning,
+    resetTime,
   };
 };
