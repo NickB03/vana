@@ -71,6 +71,22 @@ scripts/test-*.sh
 scripts/test-*.js
 scripts/test-*.html
 scripts/test-*.mjs
+test-*.sh
+test-*.js
+test-*.html
+check-*.js
+verify-*.sh
+
+# SQL test/debug scripts (temporary)
+check-*.sql
+test-*.sql
+fix-*.sql
+diagnose-*.sql
+
+# Debug/development logs and notes (temporary)
+chatlog.md
+check-logs-*.md
+diagnose-*.md
 
 # Archived debug scripts
 scripts/archive/
