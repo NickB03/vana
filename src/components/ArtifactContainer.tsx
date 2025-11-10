@@ -671,6 +671,11 @@ ${artifact.content}
         .replace(/^import\s+.*?from\s+['"]react['"];?\s*$/gm, '')  // Strip React imports
         .replace(/^import\s+.*?from\s+['"]react-dom['"];?\s*$/gm, '')  // Strip ReactDOM imports
         .replace(/^import\s+React.*$/gm, '')      // Strip any other React imports
+        .replace(/^import\s+.*?from\s+['"]lucide-react['"];?\s*$/gm, '')  // Strip lucide-react imports
+        .replace(/^import\s+\{[^}]*\}\s+from\s+['"]lucide-react['"];?\s*$/gm, '')  // Strip named lucide-react imports
+        .replace(/^import\s+.*?from\s+['"]recharts['"];?\s*$/gm, '')  // Strip recharts imports
+        .replace(/^import\s+.*?from\s+['"]framer-motion['"];?\s*$/gm, '')  // Strip framer-motion imports
+        .replace(/^import\s+.*?from\s+['"]@radix-ui\/[^'"]+['"];?\s*$/gm, '')  // Strip radix-ui imports
         .replace(/^export\s+default\s+/gm, '')    // Strip export default (component accessible directly)
         .trim();
 
@@ -697,6 +702,13 @@ ${artifact.content}
         message: 'React libraries failed to load. Please refresh the page.'
       }, '*');
     }
+
+    // CRITICAL: Expose React as lowercase 'react' for lucide-react UMD compatibility
+    // The lucide-react UMD module expects global.react (lowercase) in its factory function,
+    // but React exposes itself as window.React (uppercase). Without this bridge,
+    // createLucideIcon() receives undefined and fails with "Cannot read properties of undefined (reading 'forwardRef')"
+    window.react = window.React;
+    window.reactDOM = window.ReactDOM;
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
@@ -718,6 +730,44 @@ ${artifact.content}
   <div id="root"></div>
   <script type="text/babel" data-type="module" data-presets="react">
     const { useState, useEffect, useReducer, useRef, useMemo, useCallback } = React;
+
+    // Expose lucide-react icons as globals (if loaded)
+    const LucideIcons = window.LucideReact || window.lucideReact || {};
+    const {
+      // Common icons
+      Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
+      ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
+      Plus, Minus, Edit, Trash, Save, Download, Upload,
+      Search, Filter, Settings, User, Menu, MoreVertical,
+      // Game/UI icons
+      Trophy, Star, Heart, Flag, Target, Award,
+      PlayCircle, PauseCircle, SkipForward, SkipBack,
+      // Status icons
+      AlertCircle, CheckCircle, XCircle, Info, HelpCircle,
+      Loader, Clock, Calendar, Mail, Phone,
+      // Layout icons
+      Grid, List, Layout, Sidebar, Maximize, Minimize,
+      Copy, Eye, EyeOff, Lock, Unlock, Share, Link,
+      // Spread all remaining icons
+      ...LucideIcons
+    } = LucideIcons;
+
+    // Expose Radix UI primitives (if loaded)
+    const RadixDialog = window.RadixDialog || {};
+    const RadixDropdownMenu = window.RadixDropdownMenu || {};
+    const RadixTabs = window.RadixTabs || {};
+
+    // Expose Recharts (if loaded)
+    const Recharts = window.Recharts || {};
+    const {
+      BarChart, LineChart, PieChart, AreaChart, ScatterChart,
+      Bar, Line, Pie, Area, Scatter, XAxis, YAxis, CartesianGrid,
+      Tooltip, Legend, ResponsiveContainer
+    } = Recharts;
+
+    // Expose Framer Motion (if loaded)
+    const { motion, AnimatePresence } = window.Motion || {};
+
     ${processedCode}
 
     // Dynamically render the exported component
