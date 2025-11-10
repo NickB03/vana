@@ -59,11 +59,6 @@ serve(async (req) => {
       });
     }
 
-    const GOOGLE_AI_STUDIO_KEY = Deno.env.get("GOOGLE_AI_STUDIO_KEY_CHAT");
-    if (!GOOGLE_AI_STUDIO_KEY) {
-      throw new Error("GOOGLE_AI_STUDIO_KEY_CHAT is not configured");
-    }
-
     console.log("Generating title for message:", message.substring(0, 50));
 
     const systemInstruction = "You are a title generator. Generate a short, concise title (max 6 words) for the conversation based on the user's first message. Return ONLY the title, nothing else.";
@@ -76,7 +71,8 @@ serve(async (req) => {
     ];
 
     const response = await callGemini("gemini-2.5-flash-lite", contents, {
-      systemInstruction
+      systemInstruction,
+      keyName: "GOOGLE_AI_STUDIO_KEY_CHAT"  // Use shared chat key pool for title generation
     });
 
     if (!response.ok) {

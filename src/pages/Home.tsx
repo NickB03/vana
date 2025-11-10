@@ -8,6 +8,8 @@ import { Hero } from "@/components/landing/Hero";
 import { ShowcaseSection } from "@/components/landing/ShowcaseSection";
 import { BenefitsSection } from "@/components/landing/BenefitsSection";
 import { CTASection } from "@/components/landing/CTASection";
+import { ScrollIndicator } from "@/components/landing/ScrollIndicator";
+import ScrollProgressBar from "@/components/ui/scroll-progress-bar";
 import { GuestLimitBanner } from "@/components/GuestLimitBanner";
 import { GuestLimitDialog } from "@/components/GuestLimitDialog";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -72,6 +74,20 @@ const Home = () => {
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const transitions = prefersReducedMotion ? landingTransitionReduced : landingTransition;
 
+  // Track if user has scrolled (for scroll indicator visibility)
+  const [hasScrolled, setHasScrolled] = useState(false);
+
+  // Detect initial scroll to hide indicator
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 50) {
+        setHasScrolled(true);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Set trigger element for scroll detection - CTA section marks the end of landing content
   useEffect(() => {
@@ -80,10 +96,22 @@ const Home = () => {
     }
   }, [setTriggerElement]);
 
+  /**
+   * Smooth scroll to showcase section when indicator is clicked
+   */
+  const handleScrollIndicatorClick = useCallback(() => {
+    const showcaseSection = document.getElementById("showcase");
+    if (showcaseSection) {
+      showcaseSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      setHasScrolled(true);
+    }
+  }, []);
+
   // Check authentication
   useEffect(() => {
     const checkAuth = async () => {
-      const session = await ensureValidSession();
+      // Simple session check without refresh attempt
+      const { data: { session } } = await supabase.auth.getSession();
       setIsAuthenticated(!!session);
     };
     checkAuth();
@@ -292,13 +320,31 @@ const Home = () => {
             gradientStop="30%"
           />
           <Hero />
-          <ShowcaseSection />
+          <div id="showcase">
+            <ShowcaseSection />
+          </div>
           <BenefitsSection />
           <div ref={ctaSectionRef}>
             <CTASection />
           </div>
           {/* Spacer to allow scrolling past CTA section for transition trigger */}
           <div className="h-[100vh]" />
+
+          {/* Scroll indicator - only visible on landing phase before user scrolls */}
+          <ScrollIndicator
+            visible={phase === "landing" && !hasScrolled}
+            onClick={handleScrollIndicatorClick}
+          />
+
+          {/* Scroll progress bar - shows progress through landing page */}
+          {phase === "landing" && (
+            <ScrollProgressBar
+              type="circle"
+              position="bottom-right"
+              strokeSize={3}
+              showPercentage={false}
+            />
+          )}
         </motion.div>
       )}
 

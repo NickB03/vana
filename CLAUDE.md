@@ -285,10 +285,24 @@ VITE_SUPABASE_PROJECT_ID=vznhbocnuykdmjvujaka
 
 ### Edge Functions (Supabase Secrets)
 ```bash
-# Required: 3 separate API keys for independent rate limits per project
-GOOGLE_AI_STUDIO_KEY_CHAT=your_chat_api_key_here      # For chat, titles, summaries (gemini-2.5-pro)
-GOOGLE_AI_STUDIO_KEY_IMAGE=your_image_api_key_here    # For image generation (gemini-2.5-flash-preview-image)
-GOOGLE_AI_STUDIO_KEY_FIX=your_fix_api_key_here        # For artifact fixing (gemini-2.5-pro)
+# Required: 10 API keys distributed across 3 feature pools
+# Each key MUST be from a different Google Cloud project for independent rate limits
+
+# Chat pool (Flash model) - Keys 1-2
+GOOGLE_KEY_1=AIzaSy...  # Chat key 1
+GOOGLE_KEY_2=AIzaSy...  # Chat key 2
+
+# Artifact pool (Pro model) - Keys 3-6
+GOOGLE_KEY_3=AIzaSy...  # Artifact key 1
+GOOGLE_KEY_4=AIzaSy...  # Artifact key 2
+GOOGLE_KEY_5=AIzaSy...  # Artifact key 3
+GOOGLE_KEY_6=AIzaSy...  # Artifact key 4
+
+# Image pool (Flash-Image model) - Keys 7-10
+GOOGLE_KEY_7=AIzaSy...   # Image key 1
+GOOGLE_KEY_8=AIzaSy...   # Image key 2
+GOOGLE_KEY_9=AIzaSy...   # Image key 3
+GOOGLE_KEY_10=AIzaSy...  # Image key 4
 
 # Optional: Production CORS origins (comma-separated)
 ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
@@ -296,25 +310,69 @@ ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 
 **Get API Keys:** [Google AI Studio](https://aistudio.google.com/app/apikey)
 
-**Why 3 Keys?** Each key is tied to a separate Google Cloud project, giving you **independent rate limits** for each feature:
-- Chat key: High-volume conversations (2 RPM, 50 RPD)
-- Image key: Image generation (15 RPM, 1,500 RPD)
-- Fix key: Artifact error fixing (2 RPM, 50 RPD)
+**Why 10 Keys?** Each key is from a separate Google Cloud project with independent rate limits:
+- **Chat (Flash)**: 2 keys = 4 RPM total (2 RPM per key)
+- **Artifacts (Pro)**: 4 keys = 8 RPM total (2 RPM per key) - shared by generation + fixing
+- **Images (Flash-Image)**: 4 keys = 60 RPM total (15 RPM per key)
 
-This prevents one feature from exhausting the quota for others.
+This architecture prevents overflow and ensures each feature has dedicated capacity.
 
-### 🔄 API Key Rotation (Optional - Recommended for Heavy Usage)
+### 🔄 API Key Rotation (Production-Ready)
 
 **Problem:** Free tier rate limits (2-15 RPM) can be restrictive during active development.
 
-**Solution:** Use **LiteLLM Proxy** to rotate through multiple API keys automatically.
+**Solution:** Built-in **random + round-robin rotation** across multiple API keys (no external infrastructure needed).
+
+**Current Implementation:**
+- ✅ Lightweight rotation built into Supabase Edge Functions
+- ✅ Random starting point handles Edge Function cold starts
+- ✅ Automatic load distribution across all keys
+- ✅ Zero external dependencies or infrastructure
+- ✅ Production-ready and deployed
+
+**Key Pool Architecture:**
+```
+CHAT Pool (Flash Model)
+├── Keys: 1-2
+├── Capacity: 4 RPM (2 keys × 2 RPM)
+└── Used by: chat function
+
+ARTIFACT Pool (Pro Model)
+├── Keys: 3-6
+├── Capacity: 8 RPM (4 keys × 2 RPM)
+└── Used by: generate-artifact + generate-artifact-fix
+
+IMAGE Pool (Flash-Image Model)
+├── Keys: 7-10
+├── Capacity: 60 RPM (4 keys × 15 RPM)
+└── Used by: generate-image
+```
+
+**How It Works:**
+1. **Cold Start**: Pick random key from pool (handles frequent Edge Function restarts)
+2. **Subsequent Requests**: Round-robin through keys sequentially
+3. **Next Cold Start**: Pick different random key (ensures distribution)
+
+**Logs Example:**
+```
+🔑 Using GOOGLE_KEY_1 (position 1/2 in pool)  # Chat
+🔑 Using GOOGLE_KEY_3 (position 1/4 in pool)  # Artifact
+🔑 Using GOOGLE_KEY_7 (position 1/4 in pool)  # Image
+```
+
+**Full Guide:** See `KEY_POOL_ARCHITECTURE.md` and `FINAL_KEY_ROTATION_SUMMARY.md`
+
+---
+
+### 🔄 Advanced: LiteLLM Proxy (Optional - For Heavy Usage)
+
+For even more capacity and advanced features like response caching and monitoring:
 
 **Benefits:**
-- ✅ 3x-5x more API capacity (e.g., 45 RPM for images instead of 15 RPM)
-- ✅ Automatic failover when a key hits rate limit
-- ✅ Response caching (saves 20-30% of API calls)
+- ✅ 3x-5x more API capacity (e.g., 45 RPM for images with 3 keys)
+- ✅ Response caching with Redis (saves 20-30% of API calls)
 - ✅ Real-time monitoring dashboard
-- ✅ Zero code changes to Supabase functions
+- ✅ Automatic failover with retry logic
 
 **Quick Setup (5 minutes):**
 ```bash

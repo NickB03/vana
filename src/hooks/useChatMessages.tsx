@@ -88,8 +88,21 @@ export function useChatMessages(
     content: string,
     reasoning?: string
   ) => {
-    if (!sessionId) return;
+    // For guest users (no sessionId), add message to local state only
+    if (!sessionId) {
+      const guestMessage: ChatMessage = {
+        id: crypto.randomUUID(),
+        session_id: "guest",
+        role,
+        content,
+        reasoning: reasoning || null,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, guestMessage]);
+      return guestMessage;
+    }
 
+    // For authenticated users, save to database
     try {
       const { data, error } = await supabase
         .from("chat_messages")
@@ -141,12 +154,18 @@ export function useChatMessages(
       const isAuthenticated = !!session;
 
       // Save user message ONLY on first attempt (not on retries to avoid duplicates)
-      if (retryCount === 0 && sessionId && isAuthenticated) {
-        await saveMessage("user", userMessage);
-      } else if (sessionId && !isAuthenticated) {
-        // Expired session - clear stale state
-        console.warn("Session expired, clearing stale sessionId");
-        // Note: Parent component should handle clearing sessionId
+      if (retryCount === 0) {
+        if (isAuthenticated && sessionId) {
+          // Authenticated user: save to database
+          await saveMessage("user", userMessage);
+        } else if (!isAuthenticated) {
+          // Guest user: save to local state only
+          await saveMessage("user", userMessage);
+        } else if (sessionId && !isAuthenticated) {
+          // Expired session - clear stale state
+          console.warn("Session expired, clearing stale sessionId");
+          // Note: Parent component should handle clearing sessionId
+        }
       }
 
       const response = await fetch(

@@ -69,11 +69,6 @@ serve(async (req) => {
 
     // Guest users are allowed (user will be null)
 
-    const GOOGLE_AI_STUDIO_KEY = Deno.env.get("GOOGLE_AI_STUDIO_KEY_IMAGE");
-    if (!GOOGLE_AI_STUDIO_KEY) {
-      throw new Error("GOOGLE_AI_STUDIO_KEY_IMAGE is not configured");
-    }
-
     const userType = user ? `user ${user.id}` : "guest";
     console.log(`Image ${mode} request from ${userType}:`, prompt.substring(0, 100));
 
@@ -108,7 +103,8 @@ serve(async (req) => {
     }
 
     // Call Gemini image generation API with correct API key
-    const response = await callGemini("gemini-2.5-flash-image", contents, {
+    // Using preview model as stable may not be available yet
+    const response = await callGemini("gemini-2.5-flash-image-preview", contents, {
       keyName: "GOOGLE_AI_STUDIO_KEY_IMAGE"
     });
 

@@ -209,6 +209,27 @@ export function shouldGenerateImage(prompt: string): boolean {
 }
 
 /**
+ * Determines if a prompt should trigger artifact generation (non-image artifacts)
+ * Returns false for chat and image intents (handled separately)
+ */
+export function shouldGenerateArtifact(prompt: string): boolean {
+  const intent = detectIntent(prompt);
+  // Generate artifact for all non-chat, non-image types with medium+ confidence
+  return intent.type !== 'chat' && intent.type !== 'image' && intent.confidence !== 'low';
+}
+
+/**
+ * Gets the detected artifact type for delegation to generate-artifact function
+ */
+export function getArtifactType(prompt: string): string | null {
+  const intent = detectIntent(prompt);
+  if (intent.type === 'chat' || intent.type === 'image') {
+    return null;
+  }
+  return intent.type;
+}
+
+/**
  * Provides context to AI about artifact type selection
  */
 export function getArtifactGuidance(prompt: string): string {
