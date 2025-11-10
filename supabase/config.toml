@@ -3,6 +3,12 @@ project_id = "vznhbocnuykdmjvujaka"
 [functions.chat]
 verify_jwt = false
 
+[functions.generate-artifact]
+verify_jwt = false
+
+[functions.generate-artifact-fix]
+verify_jwt = false
+
 [functions.generate-title]
 verify_jwt = true
 
@@ -13,4 +19,4 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.generate-image]
-verify_jwt = true
+verify_jwt = false

@@ -1,34 +1,36 @@
-# Round-Robin API Key Rotation - Production Implementation
+# API Key Rotation - Production Implementation
 
-**Status:** ✅ Implemented (November 2025)  
+**Status:** ✅ Implemented and Optimized (November 2025)
 **Deployment:** Production-ready, no external dependencies
+**Strategy:** Random starting point + round-robin rotation
 
 ---
 
 ## 🎯 Overview
 
-Lightweight round-robin API key rotation built directly into Supabase Edge Functions. Automatically distributes requests across multiple Google AI Studio API keys to increase rate limits without requiring external infrastructure like LiteLLM.
+Lightweight API key rotation built directly into Supabase Edge Functions. Uses **random starting point + round-robin** strategy to automatically distribute requests across multiple Google AI Studio API keys, handling Edge Function cold starts gracefully.
 
 ---
 
 ## 📊 Key Pool Configuration
 
-### **Current Setup (6 Keys Total)**
+### **Current Setup (10 Keys Total)**
 
-| Key Pool | Keys | Models | Total RPM | Functions |
-|----------|------|--------|-----------|-----------|
-| `GOOGLE_AI_STUDIO_KEY_CHAT` | 2 keys | gemini-2.5-pro<br>gemini-2.5-flash-lite | 4 RPM (pro)<br>30 RPM (flash) | chat<br>generate-title<br>summarize-conversation |
-| `GOOGLE_AI_STUDIO_KEY_IMAGE` | 2 keys | gemini-2.5-flash-image | 30 RPM | generate-image |
-| `GOOGLE_AI_STUDIO_KEY_FIX` | 2 keys | gemini-2.5-pro | 4 RPM | generate-artifact-fix |
+| Key Pool | Keys | Model | RPM per Key | Total RPM | Functions |
+|----------|------|-------|-------------|-----------|-----------|
+| `CHAT` | 1-2 | gemini-2.5-flash | 2 | **4 RPM** | chat |
+| `ARTIFACT` | 3-6 | gemini-2.5-pro | 2 | **8 RPM** | generate-artifact<br>generate-artifact-fix |
+| `IMAGE` | 7-10 | gemini-2.5-flash-image | 15 | **60 RPM** | generate-image |
 
-### **Capacity Increase**
+### **Capacity Summary**
 
-| Feature | Before | After | Improvement |
-|---------|--------|-------|-------------|
-| Chat | 2 RPM | 4 RPM | 2x |
-| Image Generation | 15 RPM | 30 RPM | 2x |
-| Artifact Fixing | 2 RPM | 4 RPM | 2x |
-| Title/Summary | 15 RPM | 30 RPM | 2x (shared pool) |
+| Feature | Keys | Total RPM | Total RPD | Notes |
+|---------|------|-----------|-----------|-------|
+| Chat | 2 | 4 RPM | 100 RPD | Fast Flash model |
+| Artifacts | 4 | 8 RPM | 200 RPD | Pro model (generation + fixing) |
+| Images | 4 | 60 RPM | 6,000 RPD | High-capacity image generation |
+
+**Total System Capacity:** 72 RPM, 6,300 RPD
 
 ---
 
@@ -36,45 +38,60 @@ Lightweight round-robin API key rotation built directly into Supabase Edge Funct
 
 ### **1. Key Naming Convention**
 
-Keys are organized into pools with numbered suffixes:
+Keys are numbered sequentially and mapped to feature pools:
 
 ```bash
-# Chat pool (2 keys)
-GOOGLE_AI_STUDIO_KEY_CHAT_1=AIzaSy...
-GOOGLE_AI_STUDIO_KEY_CHAT_2=AIzaSy...
+# Chat pool (Flash model) - Keys 1-2
+GOOGLE_KEY_1=AIzaSy...
+GOOGLE_KEY_2=AIzaSy...
 
-# Image pool (2 keys)
-GOOGLE_AI_STUDIO_KEY_IMAGE_1=AIzaSy...
-GOOGLE_AI_STUDIO_KEY_IMAGE_2=AIzaSy...
+# Artifact pool (Pro model) - Keys 3-6
+GOOGLE_KEY_3=AIzaSy...
+GOOGLE_KEY_4=AIzaSy...
+GOOGLE_KEY_5=AIzaSy...
+GOOGLE_KEY_6=AIzaSy...
 
-# Fix pool (2 keys)
-GOOGLE_AI_STUDIO_KEY_FIX_1=AIzaSy...
-GOOGLE_AI_STUDIO_KEY_FIX_2=AIzaSy...
+# Image pool (Flash-Image model) - Keys 7-10
+GOOGLE_KEY_7=AIzaSy...
+GOOGLE_KEY_8=AIzaSy...
+GOOGLE_KEY_9=AIzaSy...
+GOOGLE_KEY_10=AIzaSy...
 ```
 
-### **2. Automatic Rotation**
+### **2. Random Starting Point + Round-Robin**
 
-The `getApiKey()` function in `_shared/gemini-client.ts`:
-1. Discovers all keys in a pool (base key + numbered keys)
-2. Maintains a counter per pool
-3. Returns next key using modulo arithmetic
-4. Logs which key is being used
+The rotation strategy in `_shared/gemini-client.ts`:
 
-```typescript
-// Example: First 4 requests to chat pool
-Request 1 → GOOGLE_AI_STUDIO_KEY_CHAT_1
-Request 2 → GOOGLE_AI_STUDIO_KEY_CHAT_2
-Request 3 → GOOGLE_AI_STUDIO_KEY_CHAT_1
-Request 4 → GOOGLE_AI_STUDIO_KEY_CHAT_2
+1. **Cold Start**: Pick random key from pool
+   ```typescript
+   keyRotationCounters[keyName] = getRandomInt(availableKeys.length);
+   ```
+
+2. **Subsequent Requests**: Round-robin through keys
+   ```typescript
+   const keyIndex = keyRotationCounters[keyName] % availableKeys.length;
+   keyRotationCounters[keyName] = (keyRotationCounters[keyName] + 1) % availableKeys.length;
+   ```
+
+3. **Next Cold Start**: Pick different random key (stateless)
+
+**Example: Chat pool (keys 1-2)**
+```
+Cold Start 1 → Random pick: KEY_2
+Request 1 → KEY_2 (position 2/2)
+Request 2 → KEY_1 (position 1/2)
+Request 3 → KEY_2 (position 2/2)
+
+Cold Start 2 → Random pick: KEY_1
+Request 4 → KEY_1 (position 1/2)
+Request 5 → KEY_2 (position 2/2)
 ```
 
-### **3. Per-Isolate State**
+### **3. Why Random Starting Point?**
 
-Rotation counters persist within each Deno isolate (Edge Function instance). This means:
-- ✅ Efficient (no database lookups)
-- ✅ Automatic load distribution
-- ✅ No coordination needed between instances
-- ⚠️ Not perfectly round-robin across all instances (acceptable trade-off)
+**Problem**: Edge Functions cold-start frequently, resetting counter to 0
+**Solution**: Random starting point ensures distribution even with cold starts
+**Result**: All keys get used evenly over time, no single key is overused
 
 ---
 
@@ -82,22 +99,29 @@ Rotation counters persist within each Deno isolate (Edge Function instance). Thi
 
 ### **Step 1: Generate API Keys**
 
-Create 6 API keys from different Google accounts:
+Create 10 API keys from different Google Cloud projects:
 1. Visit https://aistudio.google.com/app/apikey
-2. Create 2 keys for chat (from 2 different accounts)
-3. Create 2 keys for images (from 2 different accounts)
-4. Create 2 keys for fixing (from 2 different accounts)
+2. Create keys from 10 different Google accounts/projects
+3. **CRITICAL**: Each key must be from a separate project for independent rate limits
 
 ### **Step 2: Set Supabase Secrets**
 
 ```bash
-# Chat pool
-npx supabase secrets set GOOGLE_AI_STUDIO_KEY_CHAT_1=AIzaSy...your_first_chat_key
-npx supabase secrets set GOOGLE_AI_STUDIO_KEY_CHAT_2=AIzaSy...your_second_chat_key
+# Chat pool (Flash model) - Keys 1-2
+supabase secrets set GOOGLE_KEY_1=AIzaSy...your_chat_key_1
+supabase secrets set GOOGLE_KEY_2=AIzaSy...your_chat_key_2
 
-# Image pool
-npx supabase secrets set GOOGLE_AI_STUDIO_KEY_IMAGE_1=AIzaSy...your_first_image_key
-npx supabase secrets set GOOGLE_AI_STUDIO_KEY_IMAGE_2=AIzaSy...your_second_image_key
+# Artifact pool (Pro model) - Keys 3-6
+supabase secrets set GOOGLE_KEY_3=AIzaSy...your_artifact_key_1
+supabase secrets set GOOGLE_KEY_4=AIzaSy...your_artifact_key_2
+supabase secrets set GOOGLE_KEY_5=AIzaSy...your_artifact_key_3
+supabase secrets set GOOGLE_KEY_6=AIzaSy...your_artifact_key_4
+
+# Image pool (Flash-Image model) - Keys 7-10
+supabase secrets set GOOGLE_KEY_7=AIzaSy...your_image_key_1
+supabase secrets set GOOGLE_KEY_8=AIzaSy...your_image_key_2
+supabase secrets set GOOGLE_KEY_9=AIzaSy...your_image_key_3
+supabase secrets set GOOGLE_KEY_10=AIzaSy...your_image_key_4
 
 # Fix pool
 npx supabase secrets set GOOGLE_AI_STUDIO_KEY_FIX_1=AIzaSy...your_first_fix_key

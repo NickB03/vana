@@ -217,9 +217,11 @@ graph TB
     end
 
     subgraph "Edge Functions"
-        L[chat]
+        L[chat - Flash]
+        LA[generate-artifact - Pro]
+        LB[generate-artifact-fix - Pro]
         M[generate-title]
-        N[generate-image]
+        N[generate-image - Flash-Image]
         O[summarize-conversation]
         P[cache-manager]
     end
@@ -494,9 +496,11 @@ llm-chat-site/
 │   └── main.tsx            # Entry point
 ├── supabase/
 │   ├── functions/          # Edge Functions
-│   │   ├── chat/           # Main chat streaming function
+│   │   ├── chat/           # Main chat streaming (gemini-2.5-flash)
+│   │   ├── generate-artifact/ # Artifact generation (gemini-2.5-pro)
+│   │   ├── generate-artifact-fix/ # Artifact error fixing (gemini-2.5-pro)
 │   │   ├── generate-title/ # Auto-generate session titles
-│   │   ├── generate-image/ # AI image generation
+│   │   ├── generate-image/ # AI image generation (gemini-2.5-flash-image)
 │   │   ├── summarize-conversation/ # Context summarization
 │   │   └── cache-manager/  # Redis cache management
 │   ├── migrations/         # Database migrations
@@ -807,14 +811,35 @@ supabase functions deploy cache-manager
 5. **Set environment secrets**
 
 ```bash
-# Set API key for Edge Functions
-supabase secrets set GOOGLE_AI_STUDIO_KEY=your_google_ai_studio_key
+# Set 10 API keys for rotation (each from different Google Cloud project)
+# Chat pool (Flash model) - Keys 1-2
+supabase secrets set GOOGLE_KEY_1=your_chat_key_1
+supabase secrets set GOOGLE_KEY_2=your_chat_key_2
+
+# Artifact pool (Pro model) - Keys 3-6
+supabase secrets set GOOGLE_KEY_3=your_artifact_key_1
+supabase secrets set GOOGLE_KEY_4=your_artifact_key_2
+supabase secrets set GOOGLE_KEY_5=your_artifact_key_3
+supabase secrets set GOOGLE_KEY_6=your_artifact_key_4
+
+# Image pool (Flash-Image model) - Keys 7-10
+supabase secrets set GOOGLE_KEY_7=your_image_key_1
+supabase secrets set GOOGLE_KEY_8=your_image_key_2
+supabase secrets set GOOGLE_KEY_9=your_image_key_3
+supabase secrets set GOOGLE_KEY_10=your_image_key_4
 
 # Optional: Set production CORS origins (comma-separated)
 supabase secrets set ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 ```
 
-Get your API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
+Get your API keys from [Google AI Studio](https://aistudio.google.com/app/apikey)
+
+**Important**: Each key must be from a **different Google Cloud project** to get independent rate limits:
+- Chat: 2 keys = 4 RPM total (2 RPM per key)
+- Artifacts: 4 keys = 8 RPM total (2 RPM per key)
+- Images: 4 keys = 60 RPM total (15 RPM per key)
+
+See `KEY_POOL_ARCHITECTURE.md` for complete details on the rotation system.
 
 **Security Configuration (Manual Steps):**
 1. Enable "Leaked Password Protection" in Supabase Dashboard → Authentication → Password Security

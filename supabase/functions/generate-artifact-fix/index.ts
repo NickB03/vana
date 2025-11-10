@@ -65,11 +65,6 @@ serve(async (req) => {
       });
     }
 
-    const GOOGLE_AI_STUDIO_KEY = Deno.env.get("GOOGLE_AI_STUDIO_KEY_FIX");
-    if (!GOOGLE_AI_STUDIO_KEY) {
-      throw new Error("GOOGLE_AI_STUDIO_KEY_FIX is not configured");
-    }
-
     console.log(`Generating fix for artifact type: ${type}, user: ${user.id}, error:`, errorMessage.substring(0, 100));
 
     // Build context-aware system prompt based on artifact type
@@ -125,7 +120,7 @@ Return ONLY the fixed code without any explanations or markdown formatting.`
     const response = await callGemini("gemini-2.5-pro", contents, {
       systemInstruction: systemPrompt,
       temperature: 0.3, // Lower temperature for more deterministic fixes
-      keyName: "GOOGLE_AI_STUDIO_KEY_FIX"
+      keyName: "GOOGLE_AI_STUDIO_KEY_ARTIFACT" // Share artifact key pool (GOOGLE_KEY_3-6, 8 RPM total)
     });
 
     if (!response.ok) {

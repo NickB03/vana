@@ -7,29 +7,50 @@
 /**
  * Round-robin counter for key rotation
  * Persists across function invocations within the same isolate
+ * Note: Edge Functions may cold-start frequently, so we also use random selection as fallback
  */
 const keyRotationCounters: Record<string, number> = {};
 
 /**
+ * Get a random integer between 0 (inclusive) and max (exclusive)
+ */
+function getRandomInt(max: number): number {
+  return Math.floor(Math.random() * max);
+}
+
+/**
  * Get list of available API keys for a given key pool
- * Supports multiple keys with _1, _2, _3 suffixes for round-robin rotation
+ * Maps feature-specific key pools to the existing GOOGLE_KEY_1 through GOOGLE_KEY_6 secrets
  * @param baseKeyName - Base environment variable name (e.g., "GOOGLE_AI_STUDIO_KEY_CHAT")
  * @returns Array of available API keys
  */
 function getAvailableKeys(baseKeyName: string): string[] {
   const keys: string[] = [];
 
-  // Try base key first (without suffix)
-  const baseKey = Deno.env.get(baseKeyName);
-  if (baseKey) {
-    keys.push(baseKey);
-  }
+  // Map feature-specific key pools to existing numbered secrets
+  // This allows us to use the existing GOOGLE_KEY_1 through GOOGLE_KEY_10 without renaming
+  const keyMapping: Record<string, number[]> = {
+    "GOOGLE_AI_STUDIO_KEY_CHAT": [1, 2],         // Chat (Flash model) uses keys 1-2 (4 RPM total)
+    "GOOGLE_AI_STUDIO_KEY_ARTIFACT": [3, 4, 5, 6], // Artifact generation + fixing (Pro model) uses keys 3-6 (8 RPM total)
+    "GOOGLE_AI_STUDIO_KEY_IMAGE": [7, 8, 9, 10], // Image generation uses keys 7-10 (60 RPM total)
+  };
 
-  // Try numbered keys (_1, _2, _3, etc.)
-  for (let i = 1; i <= 6; i++) {
-    const key = Deno.env.get(`${baseKeyName}_${i}`);
-    if (key) {
-      keys.push(key);
+  // Get the key indices for this pool
+  const keyIndices = keyMapping[baseKeyName];
+
+  if (keyIndices) {
+    // Use the mapped indices to get keys from GOOGLE_KEY_N
+    for (const index of keyIndices) {
+      const key = Deno.env.get(`GOOGLE_KEY_${index}`);
+      if (key) {
+        keys.push(key);
+      }
+    }
+  } else {
+    // Fallback: try the base key name directly (for backwards compatibility)
+    const baseKey = Deno.env.get(baseKeyName);
+    if (baseKey) {
+      keys.push(baseKey);
     }
   }
 
@@ -46,34 +67,59 @@ function getValidatedApiKey(keyName: string = "GOOGLE_AI_STUDIO_KEY"): string {
   const availableKeys = getAvailableKeys(keyName);
 
   if (availableKeys.length === 0) {
+    // Provide helpful error message based on the key pool
+    const keyMapping: Record<string, string> = {
+      "GOOGLE_AI_STUDIO_KEY_CHAT": "GOOGLE_KEY_1 and GOOGLE_KEY_2",
+      "GOOGLE_AI_STUDIO_KEY_ARTIFACT": "GOOGLE_KEY_3, GOOGLE_KEY_4, GOOGLE_KEY_5, and GOOGLE_KEY_6",
+      "GOOGLE_AI_STUDIO_KEY_IMAGE": "GOOGLE_KEY_7, GOOGLE_KEY_8, GOOGLE_KEY_9, and GOOGLE_KEY_10",
+    };
+    const requiredKeys = keyMapping[keyName] || keyName;
+
     throw new Error(
-      `${keyName} not configured. ` +
-      `Set it with: supabase secrets set ${keyName}=your_key\n` +
-      "Get your key from: https://aistudio.google.com/app/apikey"
+      `${keyName} not configured. Required secrets: ${requiredKeys}\n` +
+      `Set them with: supabase secrets set GOOGLE_KEY_N=your_key\n` +
+      "Get keys from: https://aistudio.google.com/app/apikey"
     );
   }
 
   // Initialize counter for this key pool if not exists
+  // Use random starting point to distribute load even with cold starts
   if (!(keyName in keyRotationCounters)) {
-    keyRotationCounters[keyName] = 0;
+    keyRotationCounters[keyName] = getRandomInt(availableKeys.length);
   }
 
-  // Get next key using round-robin
+  // Get next key using round-robin (with random starting point)
   const keyIndex = keyRotationCounters[keyName] % availableKeys.length;
   const selectedKey = availableKeys[keyIndex];
 
-  // Increment counter for next request
+  // Increment counter for next request (within this isolate)
   keyRotationCounters[keyName] = (keyRotationCounters[keyName] + 1) % availableKeys.length;
+
+  // DEBUG: Log which key is being used (without exposing the actual key)
+  const keyMapping: Record<string, number[]> = {
+    "GOOGLE_AI_STUDIO_KEY_CHAT": [1, 2],
+    "GOOGLE_AI_STUDIO_KEY_ARTIFACT": [3, 4, 5, 6],
+    "GOOGLE_AI_STUDIO_KEY_IMAGE": [7, 8, 9, 10],
+  };
+  const mappedIndices = keyMapping[keyName];
+  if (mappedIndices) {
+    const actualKeyIndex = mappedIndices[keyIndex];
+    console.log(`🔑 Using GOOGLE_KEY_${actualKeyIndex} (position ${keyIndex + 1}/${availableKeys.length} in pool)`);
+  }
 
   // Validate API key format (Google AI Studio keys start with "AIza")
   if (!selectedKey.startsWith("AIza") || selectedKey.length < 30) {
+    // Extract pool name without index to avoid information disclosure
+    const poolName = keyName.split('_').pop() || 'unknown';
     console.warn(
-      `⚠️ ${keyName} key #${keyIndex + 1} may be invalid. ` +
-      "Expected format: AIzaSy... (39 characters)"
+      `⚠️ Invalid API key format detected in ${poolName} pool. ` +
+      "Expected format: AIzaSy... (39 characters). Check your secrets configuration."
     );
   }
 
-  console.log(`🔑 Using ${keyName} key #${keyIndex + 1} of ${availableKeys.length}`);
+  // Log key pool being used without exposing key indices
+  const poolName = keyName.split('_').pop() || 'unknown';
+  console.log(`🔑 Using key pool: ${poolName} (${availableKeys.length} keys available)`);
 
   return selectedKey;
 }
