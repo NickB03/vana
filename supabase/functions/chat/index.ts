@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { shouldGenerateImage, getArtifactGuidance } from "./intent-detector.ts";
+import { shouldGenerateImage, shouldGenerateArtifact, getArtifactType, getArtifactGuidance } from "./intent-detector.ts";
 import { validateArtifactRequest, generateGuidanceFromValidation } from "./artifact-validator.ts";
 import { transformArtifactCode } from "./artifact-transformer.ts";
 import { convertToGeminiFormat, extractSystemMessage, getApiKey } from "../_shared/gemini-client.ts";
@@ -31,51 +31,61 @@ serve(async (req) => {
     const requestBody = await req.json();
     const { messages, sessionId, currentArtifact, isGuest } = requestBody;
 
+    // Generate unique request ID for observability and error correlation
+    const requestId = crypto.randomUUID();
+    console.log(`[${requestId}] Processing request for session:`, sessionId);
+
     // Debug logging
-    console.log("Request body:", JSON.stringify({ messages: messages?.length, sessionId, isGuest, hasArtifact: !!currentArtifact }));
+    console.log(`[${requestId}] Request body:`, JSON.stringify({ messages: messages?.length, sessionId, isGuest, hasArtifact: !!currentArtifact }));
 
     // Input validation
     if (!messages || !Array.isArray(messages)) {
+      console.error(`[${requestId}] Invalid messages format`);
       return new Response(
-        JSON.stringify({ error: "Invalid messages format" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Invalid messages format", requestId }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
       );
     }
-    
+
     if (messages.length > 100) {
+      console.error(`[${requestId}] Too many messages in conversation:`, messages.length);
       return new Response(
-        JSON.stringify({ error: "Too many messages in conversation" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Too many messages in conversation", requestId }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
       );
     }
-    
+
     // Validate each message
     for (const msg of messages) {
       if (!msg.role || !msg.content) {
+        console.error(`[${requestId}] Invalid message format:`, msg);
         return new Response(
-          JSON.stringify({ error: "Invalid message format" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "Invalid message format", requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
         );
       }
-      
+
       if (!["user", "assistant", "system"].includes(msg.role)) {
+        console.error(`[${requestId}] Invalid message role:`, msg.role);
         return new Response(
-          JSON.stringify({ error: "Invalid message role" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "Invalid message role", requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
         );
       }
-      
+
       if (typeof msg.content !== "string" || msg.content.length > 50000) {
+        console.error(`[${requestId}] Message content too long:`, typeof msg.content, msg.content?.length);
         return new Response(
-          JSON.stringify({ error: "Message content too long" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "Message content too long", requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
         );
       }
-      
+
       if (msg.content.trim().length === 0) {
+        console.error(`[${requestId}] Empty message content`);
         return new Response(
-          JSON.stringify({ error: "Message content cannot be empty" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "Message content cannot be empty", requestId }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
         );
       }
     }
@@ -95,17 +105,44 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Check Gemini API throttle (15 RPM) - applies to all requests
-    const { data: apiThrottleResult, error: apiThrottleError } = await serviceClient
-      .rpc("check_api_throttle", {
+    // Parallelize API throttle and guest rate limit checks for faster response
+    const [
+      { data: apiThrottleResult, error: apiThrottleError },
+      guestRateLimitResult
+    ] = await Promise.all([
+      // Check Gemini API throttle (15 RPM) - applies to all requests
+      serviceClient.rpc("check_api_throttle", {
         p_api_name: "gemini",
         p_max_requests: 15,
         p_window_seconds: 60
-      });
+      }),
+      // Check guest rate limit if applicable
+      isGuest ? (async () => {
+        // Get client IP address (trusted headers set by Supabase Edge infrastructure)
+        // X-Forwarded-For is sanitized by Supabase proxy to prevent spoofing
+        const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0].trim()
+          || req.headers.get("x-real-ip")
+          || "unknown";
 
+        return await serviceClient.rpc("check_guest_rate_limit", {
+          p_identifier: clientIp,
+          p_max_requests: 20,
+          p_window_hours: 5
+        });
+      })() : Promise.resolve({ data: null, error: null })
+    ]);
+
+    // Handle API throttle check results
     if (apiThrottleError) {
-      console.error("API throttle check error:", apiThrottleError);
-      // Continue anyway to avoid blocking users due to throttle errors
+      console.error(`[${requestId}] API throttle check error:`, apiThrottleError);
+      return new Response(
+        JSON.stringify({
+          error: "Service temporarily unavailable",
+          requestId,
+          retryable: true
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
+      );
     } else if (apiThrottleResult && !apiThrottleResult.allowed) {
       return new Response(
         JSON.stringify({
@@ -128,24 +165,21 @@ serve(async (req) => {
       );
     }
 
-    // Guest rate limiting (20 requests per 5 hours)
+    // Handle guest rate limit check results
     let rateLimitHeaders = {};
-    if (isGuest) {
-      // Get client identifier (IP address or fallback)
-      const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0].trim()
-        || req.headers.get("x-real-ip")
-        || "unknown";
-
-      const { data: rateLimitResult, error: rateLimitError } = await serviceClient
-        .rpc("check_guest_rate_limit", {
-          p_identifier: clientIp,
-          p_max_requests: 20,
-          p_window_hours: 5
-        });
+    if (isGuest && guestRateLimitResult) {
+      const { data: rateLimitResult, error: rateLimitError } = guestRateLimitResult;
 
       if (rateLimitError) {
-        console.error("Rate limit check error:", rateLimitError);
-        // Continue anyway to avoid blocking users due to rate limit errors
+        console.error(`[${requestId}] Guest rate limit check error:`, rateLimitError);
+        return new Response(
+          JSON.stringify({
+            error: "Service temporarily unavailable",
+            requestId,
+            retryable: true
+          }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
+        );
       } else if (rateLimitResult && !rateLimitResult.allowed) {
         return new Response(
           JSON.stringify({
@@ -178,12 +212,14 @@ serve(async (req) => {
     if (!isGuest) {
       const authHeader = req.headers.get("Authorization");
       if (!authHeader) {
+        console.error(`[${requestId}] No authorization header for authenticated user`);
         return new Response(JSON.stringify({
           error: "No authorization header",
+          requestId,
           debug: { isGuest, type: typeof isGuest, notIsGuest: !isGuest }
         }), {
           status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId },
         });
       }
 
@@ -196,9 +232,10 @@ serve(async (req) => {
 
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        console.error(`[${requestId}] Invalid auth token`);
+        return new Response(JSON.stringify({ error: "Unauthorized", requestId }), {
           status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId },
         });
       }
       user = authUser;
@@ -212,8 +249,15 @@ serve(async (req) => {
         });
 
       if (userRateLimitError) {
-        console.error("User rate limit check error:", userRateLimitError);
-        // Continue anyway to avoid blocking users due to rate limit errors
+        console.error(`[${requestId}] User rate limit check error:`, userRateLimitError);
+        return new Response(
+          JSON.stringify({
+            error: "Service temporarily unavailable",
+            requestId,
+            retryable: true
+          }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
+        );
       } else if (userRateLimitResult && !userRateLimitResult.allowed) {
         return new Response(
           JSON.stringify({
@@ -250,9 +294,10 @@ serve(async (req) => {
           .single();
 
         if (sessionError || !session || session.user_id !== user.id) {
+          console.error(`[${requestId}] Unauthorized session access:`, { sessionId, userId: user.id, sessionError });
           return new Response(
-            JSON.stringify({ error: 'Unauthorized access to session' }),
-            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            JSON.stringify({ error: 'Unauthorized access to session', requestId }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Request-ID': requestId } }
           );
         }
       }
@@ -266,12 +311,27 @@ serve(async (req) => {
 
     console.log("Starting chat stream for session:", sessionId);
 
-    // Detect image generation requests using intent detection
+    // ============================================================================
+    // 🎯 ARCHITECTURE DECISION: Intelligent Model Routing
+    // ============================================================================
+    // Split requests by intent to use the optimal AI model for each task:
+    // - Regular chat: Flash model (fast, cheap, ~2s response)
+    // - Code artifacts: Pro model (high quality, ~5s response)
+    // - Images: Flash-Image model (specialized capability, ~10s)
+    //
+    // This gives us:
+    // ✅ Independent rate limits per feature (separate API key pools)
+    // ✅ Cost optimization (don't use Pro for simple chat)
+    // ✅ Better user experience (faster response for common queries)
+    // ============================================================================
+
+    // Analyze user prompt to determine which specialized model to use
     const lastUserMessage = messages[messages.length - 1];
     const isImageRequest = lastUserMessage && shouldGenerateImage(lastUserMessage.content);
 
     if (isImageRequest) {
-      console.log("Image generation request detected");
+      console.log("🎯 Intent detected: IMAGE generation");
+      console.log("🔀 Routing to: generate-image (Flash-Image model)");
 
       try {
         // Get auth header to pass to generate-image function
@@ -288,15 +348,15 @@ serve(async (req) => {
         });
 
         if (imageResponse.error) {
-          console.error("Image generation error:", {
+          console.error(`[${requestId}] Image generation error:`, {
             error: imageResponse.error,
             status: imageResponse.status,
             data: imageResponse.data
           });
-          const errorMessage = "I encountered an issue generating the image. Please try again.";
+          const errorMessage = `I encountered an issue generating the image. Please try again. (Request ID: ${requestId})`;
           return new Response(
             `data: ${JSON.stringify({ choices: [{ delta: { content: errorMessage } }] })}\n\ndata: [DONE]\n\n`,
-            { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream" } }
+            { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream", "X-Request-ID": requestId } }
           );
         }
 
@@ -310,14 +370,67 @@ serve(async (req) => {
         // Stream the response - frontend will save this URL to database
         return new Response(
           `data: ${JSON.stringify({ choices: [{ delta: { content: artifactResponse } }] })}\n\ndata: [DONE]\n\n`,
-          { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream" } }
+          { headers: { ...corsHeaders, ...rateLimitHeaders, "X-Request-ID": requestId, "Content-Type": "text/event-stream" } }
         );
       } catch (imgError) {
-        console.error("Image generation failed:", imgError);
-        const errorMessage = "I encountered an issue generating the image. Please try again.";
+        console.error(`[${requestId}] Image generation failed:`, imgError);
+        const errorMessage = `I encountered an issue generating the image. Please try again. (Request ID: ${requestId})`;
         return new Response(
           `data: ${JSON.stringify({ choices: [{ delta: { content: errorMessage } }] })}\n\ndata: [DONE]\n\n`,
-          { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream" } }
+          { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream", "X-Request-ID": requestId } }
+        );
+      }
+    }
+
+    // Detect artifact generation requests (non-image artifacts)
+    const isArtifactRequest = lastUserMessage && shouldGenerateArtifact(lastUserMessage.content);
+
+    if (isArtifactRequest) {
+      const artifactType = getArtifactType(lastUserMessage.content);
+      console.log(`🎯 Intent detected: ARTIFACT generation (${artifactType})`);
+      console.log("🔀 Routing to: generate-artifact (Pro model)");
+
+      try {
+        // Get auth header to pass to generate-artifact function
+        const authHeader = req.headers.get("Authorization");
+
+        // Call generate-artifact edge function with auth header
+        const artifactResponse = await supabase.functions.invoke('generate-artifact', {
+          body: {
+            prompt: lastUserMessage.content,
+            artifactType,
+            sessionId
+          },
+          headers: authHeader ? { Authorization: authHeader } : {}
+        });
+
+        if (artifactResponse.error) {
+          console.error(`[${requestId}] Artifact generation error:`, {
+            error: artifactResponse.error,
+            status: artifactResponse.status,
+            data: artifactResponse.data
+          });
+          const errorMessage = `I encountered an issue generating the artifact. Please try again. (Request ID: ${requestId})`;
+          return new Response(
+            `data: ${JSON.stringify({ choices: [{ delta: { content: errorMessage } }] })}\n\ndata: [DONE]\n\n`,
+            { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream", "X-Request-ID": requestId } }
+          );
+        }
+
+        // Get artifact code from response
+        const { artifactCode } = artifactResponse.data;
+
+        // Stream the artifact response
+        return new Response(
+          `data: ${JSON.stringify({ choices: [{ delta: { content: artifactCode } }] })}\n\ndata: [DONE]\n\n`,
+          { headers: { ...corsHeaders, ...rateLimitHeaders, "X-Request-ID": requestId, "Content-Type": "text/event-stream" } }
+        );
+      } catch (artifactError) {
+        console.error(`[${requestId}] Artifact generation failed:`, artifactError);
+        const errorMessage = `I encountered an issue generating the artifact. Please try again. (Request ID: ${requestId})`;
+        return new Response(
+          `data: ${JSON.stringify({ choices: [{ delta: { content: errorMessage } }] })}\n\ndata: [DONE]\n\n`,
+          { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream", "X-Request-ID": requestId } }
         );
       }
     }
@@ -395,9 +508,15 @@ Treat this as an iterative improvement of the existing artifact.`;
     // Prepare messages for Gemini API (convert from OpenAI format)
     const geminiMessages = convertToGeminiFormat(contextMessages);
 
-    // Call Gemini streaming API
+    // 🎯 Intent detected: REGULAR CHAT (no artifacts or images)
+    // 🔀 Using: Flash model (fast, cost-effective for conversation)
+    console.log("🎯 Intent detected: REGULAR CHAT");
+    console.log("🔀 Using: Flash model (inline, streaming response)");
+
+    // Call Gemini streaming API with Flash model (fast, cost-effective for chat)
+    // Artifacts are handled by separate generate-artifact function with Pro model
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:streamGenerateContent?alt=sse&key=${GOOGLE_AI_STUDIO_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${GOOGLE_AI_STUDIO_KEY}`,
       {
         method: "POST",
         headers: {
@@ -419,15 +538,19 @@ Treat this as an iterative improvement of the existing artifact.`;
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("🔴 Google AI Studio error:", response.status, errorText);
-      console.error("🔴 Response headers:", JSON.stringify(Object.fromEntries(response.headers)));
+      console.error(`[${requestId}] 🔴 Google AI Studio error:`, response.status, errorText);
+      console.error(`[${requestId}] 🔴 Response headers:`, JSON.stringify(Object.fromEntries(response.headers)));
 
       if (response.status === 429 || response.status === 403) {
         return new Response(
-          JSON.stringify({ error: "API quota exceeded. Please try again later.", details: errorText }),
+          JSON.stringify({
+            error: "API quota exceeded. Please try again later.",
+            requestId,
+            details: errorText
+          }),
           {
             status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId },
           }
         );
       }
@@ -437,20 +560,26 @@ Treat this as an iterative improvement of the existing artifact.`;
         return new Response(
           JSON.stringify({
             error: "AI service temporarily unavailable",
+            requestId,
             status: response.status,
             details: errorText,
             retryable: true
           }),
           {
             status: 503,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId },
           }
         );
       }
 
-      return new Response(JSON.stringify({ error: "AI service error", status: response.status, details: errorText }), {
+      return new Response(JSON.stringify({
+        error: "AI service error",
+        requestId,
+        status: response.status,
+        details: errorText
+      }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId },
       });
     }
 
@@ -553,22 +682,31 @@ Treat this as an iterative improvement of the existing artifact.`;
       headers: {
         ...corsHeaders,
         ...rateLimitHeaders,
+        "X-Request-ID": requestId,
         "Content-Type": "text/event-stream"
       },
     });
   } catch (e) {
-    console.error("❌ Chat function error:", e);
-    console.error("Error name:", e?.name);
-    console.error("Error message:", e?.message);
-    console.error("Error stack:", e?.stack);
+    // Generate request ID if not already created (error happened before request ID generation)
+    const errorRequestId = typeof requestId !== 'undefined' ? requestId : crypto.randomUUID();
+
+    console.error(`[${errorRequestId}] ❌ Chat function error:`, e);
+    console.error(`[${errorRequestId}] Error name:`, e?.name);
+    console.error(`[${errorRequestId}] Error message:`, e?.message);
+    console.error(`[${errorRequestId}] Error stack:`, e?.stack);
     return new Response(
       JSON.stringify({
         error: "An error occurred while processing your request",
+        requestId: errorRequestId,
         details: e?.message || String(e)
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: {
+          ...getCorsHeaders(req.headers.get("Origin")),
+          "Content-Type": "application/json",
+          "X-Request-ID": errorRequestId
+        },
       }
     );
   }
