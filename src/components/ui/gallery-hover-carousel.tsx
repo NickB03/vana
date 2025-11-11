@@ -154,10 +154,10 @@ export default function GalleryHoverCarousel({
               {items.map((item) => {
                 const isLoading = loadingItemId === item.id;
                 return (
-                <CarouselItem key={item.id} className="pl-3 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
+                <CarouselItem key={item.id} className="pl-3 basis-1/2 sm:basis-1/3 md:basis-1/3 lg:basis-1/4">
                   <div
                     onClick={() => !isLoading && onItemClick?.(item)}
-                    className={`group block relative w-full h-[160px] md:h-[180px] ${isLoading ? 'cursor-wait' : 'cursor-pointer'}`}
+                    className={`group block relative w-full h-[180px] md:h-[200px] ${isLoading ? 'cursor-wait' : 'cursor-pointer'}`}
                   >
                     <Card className={`overflow-hidden rounded-3xl h-full w-full transition-all duration-300 hover:scale-105 ${isLoading ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
                       {/* Image */}
