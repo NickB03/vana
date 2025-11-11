@@ -4,13 +4,15 @@ import { fadeInUp } from "@/utils/animationConstants";
 import { SECTION_SPACING, combineSpacing } from "@/utils/spacingConstants";
 import { TYPOGRAPHY } from "@/utils/typographyConstants";
 import { cn } from "@/lib/utils";
-import BackgroundPaths from "./BackgroundPaths";
+import {
+  StreamingCodeIllustration,
+  InteractiveArtifactsIllustration,
+  SecurityIllustration,
+} from "./BenefitIllustrations";
 
 export const BenefitsSection = () => {
   return (
     <section className={combineSpacing("relative w-full", SECTION_SPACING.full)}>
-      {/* Animated background paths */}
-      <BackgroundPaths />
 
       <div className="container max-w-6xl mx-auto w-full relative z-10">
         <motion.div
@@ -52,7 +54,7 @@ export const BenefitsSection = () => {
               </ul>
             </div>
             <div className="order-first lg:order-last">
-              <div className="aspect-video bg-gradient-to-br from-card via-muted/50 to-card rounded-lg border border-border/50" />
+              <StreamingCodeIllustration />
             </div>
           </motion.div>
 
@@ -61,7 +63,7 @@ export const BenefitsSection = () => {
             className="grid lg:grid-cols-2 gap-12 items-center"
             {...fadeInUp}
           >
-            <div className="aspect-video bg-gradient-to-br from-card via-muted/50 to-card rounded-lg border border-border/50" />
+            <InteractiveArtifactsIllustration />
             <div className="space-y-4">
               <h3 className={cn(TYPOGRAPHY.HEADING.md.full, "font-bold")}>More than just chat</h3>
               <p className={cn(TYPOGRAPHY.BODY.lg.full, "text-muted-foreground")}>
@@ -110,7 +112,7 @@ export const BenefitsSection = () => {
               </ul>
             </div>
             <div className="order-first lg:order-last">
-              <div className="aspect-video bg-gradient-to-br from-card via-muted/50 to-card rounded-lg border border-border/50" />
+              <SecurityIllustration />
             </div>
           </motion.div>
         </div>

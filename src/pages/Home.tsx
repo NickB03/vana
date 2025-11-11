@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { useScrollTransition } from "@/hooks/useScrollTransition";
 import { useGuestSession } from "@/hooks/useGuestSession";
 import { landingTransition, landingTransitionReduced } from "@/utils/animationConstants";
-import { GradientBackground } from "@/components/ui/bg-gredient";
+import { ShaderBackground } from "@/components/ui/shader-background";
 import { Hero } from "@/components/landing/Hero";
 import { ShowcaseSection } from "@/components/landing/ShowcaseSection";
 import { BenefitsSection } from "@/components/landing/BenefitsSection";
@@ -59,6 +59,7 @@ const Home = () => {
   const [hasArtifact, setHasArtifact] = useState(false);
   const [guestInitialPrompt, setGuestInitialPrompt] = useState<string | undefined>();
   const [autoOpenCanvas, setAutoOpenCanvas] = useState(false);
+  const [loadingSuggestionId, setLoadingSuggestionId] = useState<string | null>(null);
   const chatSendHandlerRef = useRef<((message?: string) => Promise<void>) | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -219,7 +220,10 @@ const Home = () => {
    * Handles instant build when clicking suggestion cards
    * Immediately starts building artifact without manual send
    */
-  const handleSuggestionClick = useCallback(async (prompt: string) => {
+  const handleSuggestionClick = useCallback(async (prompt: string, cardId: string) => {
+    // Set loading state for the clicked card
+    setLoadingSuggestionId(cardId);
+
     // Show immediate feedback
     toast({
       title: "Starting your project...",
@@ -231,6 +235,7 @@ const Home = () => {
 
     // Check guest limit
     if (!isAuthenticated && !guestSession.canSendMessage) {
+      setLoadingSuggestionId(null);
       setShowLimitDialog(true);
       return;
     }
@@ -240,6 +245,7 @@ const Home = () => {
       setGuestInitialPrompt(prompt);
       setShowChat(true);
       guestSession.incrementMessageCount();
+      setLoadingSuggestionId(null);
     } else {
       // For authenticated users: create session and show chat
       const session = await ensureValidSession();
@@ -251,6 +257,7 @@ const Home = () => {
         });
         setIsAuthenticated(false);
         navigate("/auth");
+        setLoadingSuggestionId(null);
         return;
       }
 
@@ -262,6 +269,7 @@ const Home = () => {
         setShowChat(true);
       }
       setIsLoading(false);
+      setLoadingSuggestionId(null);
     }
   }, [isAuthenticated, guestSession, toast, navigate, createSession]);
 
@@ -315,14 +323,8 @@ const Home = () => {
       {/* Landing page content - renders in normal flow for scrolling */}
       {phase !== "app" && (
         <div className="relative">
-          {/* Gradient background - NOT affected by blur */}
-          <GradientBackground
-            gradientFrom="#000000"
-            gradientTo="#1e293b"
-            gradientPosition="50% 20%"
-            gradientSize="150% 150%"
-            gradientStop="30%"
-          />
+          {/* Shader background - animated WebGL grid NOT affected by blur */}
+          <ShaderBackground />
 
           {/* Content layer - affected by blur and fade */}
           <motion.div
@@ -389,6 +391,11 @@ const Home = () => {
           }
           transition={{ duration: 0 }}
         >
+          {/* Extended shader background for visual continuity */}
+          <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -1 }}>
+            <ShaderBackground className="opacity-30" />
+          </div>
+
           <SidebarProvider defaultOpen={true}>
             <ChatSidebar
               sessions={sessions}
@@ -490,7 +497,7 @@ const Home = () => {
                     <div></div>
 
                     <div className="text-center w-full">
-                      <h1 className="bg-gradient-primary bg-clip-text text-3xl sm:text-4xl md:text-5xl font-bold text-transparent mb-4">
+                      <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
                         Hi, I'm Vana.
                       </h1>
                       <p className="text-foreground/80 text-sm sm:text-base">
@@ -549,7 +556,11 @@ const Home = () => {
                                     type="submit"
                                     size="icon"
                                     disabled={isLoading || !input.trim()}
-                                    className="size-9 rounded-full bg-gradient-primary hover:opacity-90"
+                                    className="size-9 rounded-full hover:brightness-115 hover:-translate-y-1 transition-all duration-200"
+                                    style={{
+                                      background: 'linear-gradient(135deg, hsl(var(--accent-primary)), hsl(var(--accent-primary-bright)))',
+                                      boxShadow: '0 4px 14px hsl(var(--accent-primary) / 0.4)',
+                                    }}
                                     onClick={handleSubmit}
                                   >
                                     {isLoading ? (
@@ -565,11 +576,12 @@ const Home = () => {
                         </PromptInput>
                       </div>
 
-                      <div className="w-full max-w-3xl mx-auto pb-4">
+                      <div className="w-full px-4 pb-4">
                         <GalleryHoverCarousel
                           heading=""
                           className="py-0 bg-transparent"
-                          onItemClick={(item) => handleSuggestionClick(item.prompt || item.summary)}
+                          onItemClick={(item) => handleSuggestionClick(item.prompt || item.summary, item.id)}
+                          loadingItemId={loadingSuggestionId}
                           items={[
                             // Image Generation (5 options)
                             {

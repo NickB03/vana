@@ -16,13 +16,15 @@ export function ThinkingIndicator({ status, isStreaming = false, percentage }: T
         <Sparkles className={cn("h-4 w-4", isStreaming && "animate-pulse text-primary")} />
         <span className="text-sm font-medium">{status}</span>
         {percentage !== undefined && (
-          <span className="text-sm font-semibold text-primary">{percentage}%</span>
+          <span className="text-sm font-semibold text-primary">
+            {percentage}%
+          </span>
         )}
       </div>
       {percentage !== undefined && (
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div 
-            className="h-full bg-primary transition-all duration-300 ease-out"
+          <div
+            className="h-full bg-primary transition-all duration-300 ease-out shadow-lg shadow-primary/20"
             style={{ width: `${percentage}%` }}
           />
         </div>

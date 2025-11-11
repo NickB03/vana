@@ -19,7 +19,7 @@ export const CTASection = () => {
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
           <Button
             size="lg"
-            className="bg-white hover:bg-gray-100 text-black font-semibold"
+            className="bg-white hover:bg-gray-100 text-black font-semibold transition-all hover:scale-105 active:scale-95"
             asChild
           >
             <Link to="/auth" className="flex items-center gap-2">
@@ -30,7 +30,7 @@ export const CTASection = () => {
           <Button
             size="lg"
             variant="outline"
-            className="bg-white/10 hover:bg-white/20 text-white border-white/30 font-semibold"
+            className="bg-white/10 hover:bg-white/20 text-white border-white/30 font-semibold transition-all hover:scale-105 active:scale-95"
             asChild
           >
             <Link to="/signup">Sign Up with Google</Link>

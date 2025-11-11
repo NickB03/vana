@@ -106,17 +106,17 @@ export function ChatSidebar({
             <Button
               onClick={onNewChat}
               variant="ghost"
-              className="w-full h-10 hover:bg-accent rounded-md p-0 flex items-center justify-center"
+              className="w-full h-10 hover:bg-accent rounded-md p-0 flex items-center justify-center transition-all hover:scale-105 active:scale-95 group"
             >
-              <CirclePlus className="h-6 w-6" strokeWidth={2} />
+              <CirclePlus className="h-6 w-6 group-hover:text-primary transition-colors" strokeWidth={2} />
             </Button>
           ) : (
             <Button
               onClick={onNewChat}
               variant="ghost"
-              className="w-full justify-start hover:bg-accent h-10 px-3 py-2"
+              className="w-full justify-start hover:bg-accent h-10 px-3 py-2 transition-all hover:scale-105 active:scale-95 group"
             >
-              <CirclePlus className="h-6 w-6 mr-2 shrink-0" strokeWidth={2} />
+              <CirclePlus className="h-6 w-6 mr-2 shrink-0 group-hover:text-primary transition-colors" strokeWidth={2} />
               <span className="text-base whitespace-nowrap">New chat</span>
             </Button>
           )}
@@ -139,10 +139,13 @@ export function ChatSidebar({
                         isActive={currentSessionId === session.id}
                         tooltip={collapsed ? session.title : undefined}
                         className={cn(
-                          "flex items-center hover:bg-accent/50 transition-all duration-150 ease-out overflow-hidden",
+                          "flex items-center hover:bg-accent/50 transition-all duration-150 ease-out overflow-hidden border-l-4 border-transparent",
                           collapsed ? "justify-center px-2" : "justify-start px-3 group-hover/item:pr-12",
-                          currentSessionId === session.id && "bg-accent"
                         )}
+                        style={currentSessionId === session.id ? {
+                          backgroundColor: 'hsl(var(--accent-primary) / 0.12)',
+                          borderLeftColor: 'hsl(var(--accent-primary))',
+                        } : undefined}
                       >
                         {!collapsed && <span className="truncate text-base whitespace-nowrap">{session.title}</span>}
                       </SidebarMenuButton>

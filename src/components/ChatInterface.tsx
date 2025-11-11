@@ -320,7 +320,12 @@ export function ChatInterface({
                           {message.reasoning && (
                             <ThinkingIndicator status={message.reasoning} />
                           )}
-                          <MessageContent className="prose flex-1 rounded-lg bg-transparent p-0 text-foreground">
+                          <MessageContent
+                            className="prose flex-1 rounded-lg bg-transparent p-0 pl-3 text-foreground border-l-4 transition-all duration-150"
+                            style={{
+                              borderLeftColor: 'hsl(var(--accent-ai) / 0.4)',
+                            }}
+                          >
                             <Markdown id={message.id}>{cleanContent}</Markdown>
                           </MessageContent>
 
@@ -372,7 +377,13 @@ export function ChatInterface({
                         </div>
                       ) : (
                         <div className="group flex flex-col items-end gap-1">
-                          <MessageContent className="w-auto max-w-2xl rounded-3xl bg-muted px-5 py-2.5 text-foreground">
+                          <MessageContent
+                            className="w-auto max-w-2xl rounded-3xl px-5 py-2.5 text-foreground border transition-all duration-150"
+                            style={{
+                              backgroundColor: 'hsl(var(--accent-user) / 0.08)',
+                              borderColor: 'hsl(var(--accent-user) / 0.15)',
+                            }}
+                          >
                             {cleanContent}
                           </MessageContent>
                           <MessageActions
@@ -531,7 +542,11 @@ export function ChatInterface({
                           type="submit"
                           size="icon"
                           disabled={!input.trim() || isLoading || isStreaming}
-                          className="size-9 rounded-full bg-gradient-primary hover:opacity-90"
+                          className="size-9 rounded-full hover:brightness-115 hover:-translate-y-1 transition-all duration-200"
+                          style={{
+                            background: 'linear-gradient(135deg, hsl(var(--accent-primary)), hsl(var(--accent-primary-bright)))',
+                            boxShadow: '0 4px 14px hsl(var(--accent-primary) / 0.4)',
+                          }}
                           onClick={() => handleSend()}
                         >
                           {isLoading || isStreaming ? (
@@ -575,7 +590,7 @@ export function ChatInterface({
                   <TooltipTrigger asChild>
                     <Button
                       size="icon"
-                      className="fixed bottom-20 right-4 z-40 h-14 w-14 rounded-full bg-gradient-primary shadow-lg hover:opacity-90"
+                      className="fixed bottom-20 right-4 z-40 h-14 w-14 rounded-full bg-primary shadow-lg shadow-primary/30 hover:brightness-110 hover:-translate-y-0.5 transition-all"
                       style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
                       onClick={() => onCanvasToggle?.(true)}
                     >

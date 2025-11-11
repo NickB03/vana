@@ -48,11 +48,20 @@ const getArtifactLabel = (type: string) => {
 
 export function ArtifactCard({ artifact, onOpen, className }: ArtifactCardProps) {
   return (
-    <Card className={cn("group relative overflow-hidden border-primary/20 bg-card/50 backdrop-blur-sm hover:border-primary/40 hover:bg-card/80", CARD_STATES.interactive, className)}>
+    <Card className={cn(
+      "group relative overflow-hidden",
+      "border bg-card",
+      "hover:border-primary/40",
+      "hover:shadow-xl hover:shadow-primary/10",
+      "transition-all duration-300 ease-out",
+      "hover:scale-[1.02]",
+      CARD_STATES.interactive,
+      className
+    )}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2">
-            <div className="rounded-md bg-primary/10 p-2">
+            <div className="rounded-md bg-primary/10 p-2 group-hover:bg-primary/20 transition-colors">
               {getArtifactIcon(artifact.type)}
             </div>
             <div className="flex-1 min-w-0">
