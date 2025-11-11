@@ -3,13 +3,13 @@ import { TYPOGRAPHY } from "@/utils/typographyConstants";
 import { cn } from "@/lib/utils";
 
 /**
- * Animated text component with character-by-character reveal
+ * Animated text component with optimized word-level reveal
  *
  * Features:
- * - Character-by-character fade and scale animation
- * - Spring physics for natural bounce effect
+ * - Smooth fade and scale animation (optimized for performance)
  * - Gradient text styling for highlighted portion
- * - Customizable delay and stagger timing
+ * - Customizable delay timing
+ * - Reduced animation overhead compared to character-by-character
  *
  * @example
  * <VanaTextAnimation
@@ -22,13 +22,13 @@ import { cn } from "@/lib/utils";
 interface VanaTextAnimationProps {
   /** Text before the highlighted portion (appears instantly) */
   prefix?: string;
-  /** Text to animate with gradient (character-by-character reveal) */
+  /** Text to animate with gradient (word-level reveal for better performance) */
   highlight: string;
   /** Optional CSS classes */
   className?: string;
   /** Delay before animation starts (ms) */
   initialDelay?: number;
-  /** Delay between each character (ms) */
+  /** @deprecated No longer used - kept for backward compatibility */
   staggerDelay?: number;
 }
 
@@ -37,11 +37,7 @@ export const VanaTextAnimation = ({
   highlight,
   className = "",
   initialDelay = 300,
-  staggerDelay = 50,
 }: VanaTextAnimationProps) => {
-  // Split highlighted text into individual characters
-  const characters = highlight.split("");
-
   return (
     <h1 className={cn(TYPOGRAPHY.DISPLAY.xl.full, "font-bold", className)}>
       {/* Prefix appears instantly */}
@@ -51,38 +47,27 @@ export const VanaTextAnimation = ({
         </span>
       )}
 
-      {/* Animated characters with gradient */}
-      <span className="inline-block">
-        {characters.map((char, index) => (
-          <motion.span
-            key={`${char}-${index}`}
-            className="inline-block bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent"
-            initial={{
-              opacity: 0,
-              scale: 0.8,
-              y: 20,
-            }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-              y: 0,
-            }}
-            transition={{
-              type: "spring",
-              stiffness: 200,
-              damping: 15,
-              delay: initialDelay / 1000 + (index * staggerDelay) / 1000,
-            }}
-            style={{
-              display: "inline-block",
-              // Preserve spaces
-              whiteSpace: char === " " ? "pre" : "normal",
-            }}
-          >
-            {char}
-          </motion.span>
-        ))}
-      </span>
+      {/* Optimized word-level animation (reduces overhead from 4 motion components to 1) */}
+      <motion.span
+        className="inline-block text-white"
+        initial={{
+          opacity: 0,
+          scale: 0.95,
+          y: 10,
+        }}
+        animate={{
+          opacity: 1,
+          scale: 1,
+          y: 0,
+        }}
+        transition={{
+          duration: 0.5,
+          ease: "easeOut",
+          delay: initialDelay / 1000,
+        }}
+      >
+        {highlight}
+      </motion.span>
     </h1>
   );
 };

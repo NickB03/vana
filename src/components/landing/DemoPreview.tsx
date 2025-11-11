@@ -110,7 +110,7 @@ export const DemoPreview = () => {
         {/* Artifact card - dashboard preview (appears after Vana response) */}
         {step >= 3 && (
           <div className="animate-in fade-in slide-in-from-bottom-5 duration-700">
-            <Card className="p-3 border-primary/50 bg-gradient-to-br from-primary/5 to-purple-500/5">
+            <Card className="p-3 border-primary/50 bg-primary/5">
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 bg-primary/10 rounded-lg">
@@ -128,29 +128,38 @@ export const DemoPreview = () => {
               <div className="bg-background/50 rounded-md p-2 space-y-1.5">
                 {/* Mini dashboard preview */}
                 <div className="grid grid-cols-3 gap-1.5">
-                  <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded p-1.5 border border-blue-500/20">
-                    <TrendingUp className="h-3 w-3 text-blue-500 mb-0.5" />
-                    <div className="text-[10px] font-semibold text-blue-600">+24%</div>
+                  <div className="bg-purple-500/10 rounded p-1.5 border border-purple-500/20">
+                    <TrendingUp className="h-3 w-3 text-purple-400 mb-0.5" />
+                    <div className="text-[10px] font-semibold text-purple-400">+24%</div>
                     <div className="text-[8px] text-muted-foreground">Q3 Growth</div>
                   </div>
-                  <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded p-1.5 border border-purple-500/20">
-                    <Users className="h-3 w-3 text-purple-500 mb-0.5" />
-                    <div className="text-[10px] font-semibold text-purple-600">8.2k</div>
+                  <div className="bg-cyan-500/10 rounded p-1.5 border border-cyan-500/20">
+                    <Users className="h-3 w-3 text-cyan-400 mb-0.5" />
+                    <div className="text-[10px] font-semibold text-cyan-400">8.2k</div>
                     <div className="text-[8px] text-muted-foreground">New Users</div>
                   </div>
-                  <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded p-1.5 border border-green-500/20">
-                    <DollarSign className="h-3 w-3 text-green-500 mb-0.5" />
-                    <div className="text-[10px] font-semibold text-green-600">$124k</div>
+                  <div className="bg-emerald-500/10 rounded p-1.5 border border-emerald-500/20">
+                    <DollarSign className="h-3 w-3 text-emerald-400 mb-0.5" />
+                    <div className="text-[10px] font-semibold text-emerald-400">$124k</div>
                     <div className="text-[8px] text-muted-foreground">Revenue</div>
                   </div>
                 </div>
-                {/* Mini chart representation */}
+                {/* Mini chart representation - colorful gradient bars */}
                 <div className="flex items-end gap-0.5 h-8 justify-between px-1">
-                  {[40, 65, 45, 80, 55, 90, 70, 85].map((height, i) => (
+                  {[
+                    { height: 40, color: 'bg-blue-500' },
+                    { height: 65, color: 'bg-purple-500' },
+                    { height: 45, color: 'bg-cyan-500' },
+                    { height: 80, color: 'bg-emerald-500' },
+                    { height: 55, color: 'bg-blue-500' },
+                    { height: 90, color: 'bg-purple-500' },
+                    { height: 70, color: 'bg-cyan-500' },
+                    { height: 85, color: 'bg-emerald-500' },
+                  ].map((bar, i) => (
                     <div
                       key={i}
-                      className="flex-1 bg-gradient-to-t from-primary to-purple-500 rounded-sm opacity-70"
-                      style={{ height: `${height}%` }}
+                      className={`flex-1 ${bar.color} rounded-sm opacity-80`}
+                      style={{ height: `${bar.height}%` }}
                     />
                   ))}
                 </div>
