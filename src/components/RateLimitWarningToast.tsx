@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { AlertTriangle } from "lucide-react";
 import { CountdownTimer } from "@/components/CountdownTimer";
 
@@ -71,13 +72,17 @@ export const RateLimitWarningToast = ({
         description,
         variant: "default",
         duration: 10000, // 10 seconds
-        action: {
-          label: "Dismiss",
-          onClick: () => {
-            sessionStorage.setItem(TOAST_STORAGE_KEY, "true");
-            onDismiss?.();
-          },
-        },
+        action: (
+          <ToastAction 
+            altText="Dismiss" 
+            onClick={() => {
+              sessionStorage.setItem(TOAST_STORAGE_KEY, "true");
+              onDismiss?.();
+            }}
+          >
+            Dismiss
+          </ToastAction>
+        ),
       });
 
       setHasShown(true);

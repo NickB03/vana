@@ -86,7 +86,7 @@ export default defineConfig(({ mode }) => ({
     // Plugin to inject build hash into HTML for cache busting
     {
       name: 'inject-build-hash',
-      transformIndexHtml(html) {
+      transformIndexHtml(html: string) {
         return html.replace('data-build-hash="__BUILD_HASH__"', `data-build-hash="${buildHash}"`);
       },
     }
