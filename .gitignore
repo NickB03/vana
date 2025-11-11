@@ -90,3 +90,4 @@ diagnose-*.md
 
 # Archived debug scripts
 scripts/archive/
+.archive/
