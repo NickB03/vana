@@ -10,11 +10,26 @@ interface ScrollTransitionReturn {
   setTriggerElement: (element: HTMLElement | null) => void;
 }
 
-const TRANSITION_DURATION_PX = 300; // pixels to complete transition
+const TRANSITION_DURATION_MS = 800; // 800ms smooth timed animation
 const SCROLL_THROTTLE_MS = 16; // ~60fps
+const TRIGGER_THRESHOLD_PX = 100; // Scroll 100px past trigger to start transition
 
 /**
- * Detects scroll position and manages smooth transition from landing to app
+ * Easing function for smooth, natural motion
+ * Cubic ease-out: fast start, slow end
+ */
+const easeOutCubic = (t: number): number => {
+  return 1 - Math.pow(1 - t, 3);
+};
+
+/**
+ * Detects scroll position and manages smooth timed transition from landing to app
+ *
+ * Key Features:
+ * - Scroll-triggered: User scrolls past trigger point to start transition
+ * - Timed animation: 800ms smooth animation decoupled from scroll position
+ * - Easing: Cubic ease-out for natural motion feel
+ * - One-way: Once transitioned, stays in app phase
  *
  * @param enabled - Whether scroll detection is active
  * @returns Transition state and progress
@@ -30,6 +45,8 @@ export const useScrollTransition = (enabled: boolean = true): ScrollTransitionRe
   const lastScrollTime = useRef(0);
   const rafId = useRef<number>();
   const hasTransitionedToApp = useRef(false); // One-way lock: once in app, stay in app
+  const animationStartTime = useRef<number | null>(null); // Timestamp when animation started
+  const animationRafId = useRef<number>(); // Separate RAF for animation loop
 
   // Set the element that triggers the transition (e.g., BenefitsSection)
   const setTriggerElement = useCallback((element: HTMLElement | null) => {
@@ -44,9 +61,45 @@ export const useScrollTransition = (enabled: boolean = true): ScrollTransitionRe
   }, []);
 
   /**
-   * Performance optimized scroll handler with single state update
-   * Reduces re-renders by batching phase, progress, and scrollY updates
-   * One-way transition: landing → transitioning → app (stays in app permanently)
+   * Smooth timed animation loop
+   * Runs independently once triggered by scroll threshold
+   */
+  const runTransitionAnimation = useCallback(() => {
+    if (!animationStartTime.current) {
+      animationStartTime.current = Date.now();
+    }
+
+    const animate = () => {
+      const elapsed = Date.now() - animationStartTime.current!;
+      const rawProgress = Math.min(elapsed / TRANSITION_DURATION_MS, 1);
+      const easedProgress = easeOutCubic(rawProgress);
+
+      if (rawProgress < 1) {
+        // Animation in progress
+        setState(prev => ({
+          ...prev,
+          phase: "transitioning",
+          progress: easedProgress,
+        }));
+        animationRafId.current = requestAnimationFrame(animate);
+      } else {
+        // Animation complete - lock into app phase
+        hasTransitionedToApp.current = true;
+        setState(prev => ({
+          ...prev,
+          phase: "app",
+          progress: 1,
+        }));
+        animationStartTime.current = null;
+      }
+    };
+
+    animate();
+  }, []);
+
+  /**
+   * Scroll detection: Triggers timed animation when threshold is crossed
+   * Decouples scroll position from animation execution for smoother feel
    */
   useEffect(() => {
     if (!enabled) return;
@@ -70,29 +123,21 @@ export const useScrollTransition = (enabled: boolean = true): ScrollTransitionRe
 
         // Once transitioned to app, stay in app (one-way lock)
         if (hasTransitionedToApp.current) {
-          setState({ phase: "app", progress: 1, scrollY: currentScrollY });
+          setState(prev => ({ ...prev, scrollY: currentScrollY }));
           return;
         }
 
-        // Calculate distance past trigger point
+        // Update scrollY for landing phase
+        if (animationStartTime.current === null) {
+          setState(prev => ({ ...prev, scrollY: currentScrollY }));
+        }
+
+        // Check if we've scrolled past trigger threshold
         const distancePastTrigger = currentScrollY - triggerPoint;
 
-        // Determine phase and progress - one-way state machine: landing → transitioning → app
-        if (distancePastTrigger < 0) {
-          // Before trigger point - stay in landing
-          setState({ phase: "landing", progress: 0, scrollY: currentScrollY });
-        } else if (distancePastTrigger < TRANSITION_DURATION_PX) {
-          // During transition
-          const transitionProgress = distancePastTrigger / TRANSITION_DURATION_PX;
-          setState({
-            phase: "transitioning",
-            progress: Math.min(1, Math.max(0, transitionProgress)),
-            scrollY: currentScrollY,
-          });
-        } else {
-          // Past transition - lock into app phase permanently
-          hasTransitionedToApp.current = true;
-          setState({ phase: "app", progress: 1, scrollY: currentScrollY });
+        if (distancePastTrigger >= TRIGGER_THRESHOLD_PX && animationStartTime.current === null) {
+          // Trigger point crossed - start timed animation
+          runTransitionAnimation();
         }
       });
     };
@@ -117,8 +162,11 @@ export const useScrollTransition = (enabled: boolean = true): ScrollTransitionRe
       if (rafId.current) {
         cancelAnimationFrame(rafId.current);
       }
+      if (animationRafId.current) {
+        cancelAnimationFrame(animationRafId.current);
+      }
     };
-  }, [enabled, triggerPoint, setTriggerElement]);
+  }, [enabled, triggerPoint, setTriggerElement, runTransitionAnimation]);
 
   return {
     phase: state.phase,

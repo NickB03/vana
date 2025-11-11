@@ -296,22 +296,26 @@ const Home = () => {
 
   return (
     <>
-      {/* Landing page content - renders in normal flow for scrolling */}
-      {phase !== "app" && (
+      {/* Backdrop overlay - creates dramatic transition moment */}
+      {phase !== "landing" && (
         <motion.div
-          className="relative"
-          style={{
-            pointerEvents: phase === "landing" ? "auto" : "none",
-          }}
+          className="fixed inset-0 bg-black pointer-events-none"
+          style={{ zIndex: 40 }}
           animate={
             isTransitioning
-              ? transitions.landing.fadeOut.transitioning(progress)
-              : phase === "landing"
-              ? transitions.landing.fadeOut.initial
-              : transitions.landing.fadeOut.complete
+              ? transitions.backdrop.transitioning(progress)
+              : phase === "app"
+              ? transitions.backdrop.complete
+              : transitions.backdrop.initial
           }
           transition={{ duration: 0 }}
-        >
+        />
+      )}
+
+      {/* Landing page content - renders in normal flow for scrolling */}
+      {phase !== "app" && (
+        <div className="relative">
+          {/* Gradient background - NOT affected by blur */}
           <GradientBackground
             gradientFrom="#000000"
             gradientTo="#1e293b"
@@ -319,16 +323,37 @@ const Home = () => {
             gradientSize="150% 150%"
             gradientStop="30%"
           />
-          <Hero />
-          <div id="showcase">
-            <ShowcaseSection />
-          </div>
-          <BenefitsSection />
-          <div ref={ctaSectionRef}>
-            <CTASection />
-          </div>
-          {/* Spacer to allow scrolling past CTA section for transition trigger */}
-          <div className="h-[100vh]" />
+
+          {/* Content layer - affected by blur and fade */}
+          <motion.div
+            style={{
+              pointerEvents: phase === "landing" ? "auto" : "none",
+            }}
+            animate={{
+              ...(isTransitioning
+                ? transitions.landing.fadeOut.transitioning(progress)
+                : phase === "landing"
+                ? transitions.landing.fadeOut.initial
+                : transitions.landing.fadeOut.complete),
+              ...(isTransitioning
+                ? transitions.landing.blurOut.transitioning(progress)
+                : phase === "landing"
+                ? transitions.landing.blurOut.initial
+                : transitions.landing.blurOut.complete),
+            }}
+            transition={{ duration: 0 }}
+          >
+            <Hero />
+            <div id="showcase">
+              <ShowcaseSection />
+            </div>
+            <BenefitsSection />
+            <div ref={ctaSectionRef}>
+              <CTASection />
+            </div>
+            {/* Spacer to allow scrolling past CTA section for transition trigger */}
+            <div className="h-[100vh]" />
+          </motion.div>
 
           {/* Scroll indicator - only visible on landing phase before user scrolls */}
           <ScrollIndicator
@@ -345,7 +370,7 @@ const Home = () => {
               showPercentage={false}
             />
           )}
-        </motion.div>
+        </div>
       )}
 
       {/* App interface - fixed overlay during transition, normal flow when complete */}
