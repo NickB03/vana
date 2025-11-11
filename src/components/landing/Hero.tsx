@@ -7,6 +7,8 @@ import { staggerContainer, staggerItem } from "@/utils/animationConstants";
 import { SECTION_SPACING, combineSpacing } from "@/utils/spacingConstants";
 import { TYPOGRAPHY } from "@/utils/typographyConstants";
 import { cn } from "@/lib/utils";
+import BackgroundPaths from "./BackgroundPaths";
+import VanaTextAnimation from "./VanaTextAnimation";
 
 export const Hero = () => {
   const scrollToDemo = () => {
@@ -16,6 +18,9 @@ export const Hero = () => {
 
   return (
     <section className={combineSpacing("relative min-h-[100dvh] w-full flex items-center justify-center", SECTION_SPACING.full)}>
+      {/* Animated background paths */}
+      <BackgroundPaths />
+
       <div className="container max-w-7xl mx-auto relative z-10 w-full">
         <div className="grid lg:grid-cols-2 gap-12 items-center w-full">
           {/* Left: Headline + CTAs */}
@@ -30,12 +35,14 @@ export const Hero = () => {
                 Powered by Claude AI
               </Badge>
             </motion.div>
-            <motion.h1
-              className={cn(TYPOGRAPHY.DISPLAY.xl.full, "font-bold text-white")}
-              variants={staggerItem}
-            >
-              Chat with AI, Build Anything
-            </motion.h1>
+            <motion.div variants={staggerItem}>
+              <VanaTextAnimation
+                prefix="Hi, I'm "
+                highlight="Vana"
+                initialDelay={200}
+                staggerDelay={60}
+              />
+            </motion.div>
             <motion.p
               className={cn(TYPOGRAPHY.BODY.lg.full, "text-gray-300 max-w-2xl")}
               variants={staggerItem}

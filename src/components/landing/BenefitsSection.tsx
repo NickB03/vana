@@ -4,11 +4,15 @@ import { fadeInUp } from "@/utils/animationConstants";
 import { SECTION_SPACING, combineSpacing } from "@/utils/spacingConstants";
 import { TYPOGRAPHY } from "@/utils/typographyConstants";
 import { cn } from "@/lib/utils";
+import BackgroundPaths from "./BackgroundPaths";
 
 export const BenefitsSection = () => {
   return (
-    <section className={combineSpacing("w-full", SECTION_SPACING.full)}>
-      <div className="container max-w-6xl mx-auto w-full">
+    <section className={combineSpacing("relative w-full", SECTION_SPACING.full)}>
+      {/* Animated background paths */}
+      <BackgroundPaths />
+
+      <div className="container max-w-6xl mx-auto w-full relative z-10">
         <motion.div
           className="text-center space-y-4 mb-16"
           {...fadeInUp}

@@ -11,6 +11,7 @@ import { TYPOGRAPHY } from "@/utils/typographyConstants";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { CARD_STATES } from "@/utils/interactionConstants";
+import BackgroundPaths from "./BackgroundPaths";
 
 interface ShowcaseItem {
   id: string;
@@ -376,9 +377,12 @@ export const ShowcaseSection = () => {
   }, [emblaApi]);
 
   return (
-    <section id="showcase" className={combineSpacing("w-full", SECTION_SPACING.full)}>
+    <section id="showcase" className={combineSpacing("relative w-full", SECTION_SPACING.full)}>
+      {/* Animated background paths */}
+      <BackgroundPaths />
+
       <motion.div
-        className="container max-w-7xl mx-auto w-full"
+        className="container max-w-7xl mx-auto w-full relative z-10"
         {...fadeInUp}
       >
         <div className="text-center space-y-4 mb-16">
