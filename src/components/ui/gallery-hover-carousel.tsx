@@ -129,17 +129,17 @@ export default function GalleryHoverCarousel({
               variant="outline"
               size="icon"
               onClick={handlePrev}
-              className="h-10 w-10 rounded-full pointer-events-auto bg-background/30 backdrop-blur-sm hover:bg-background/50 border-white/30 opacity-70 hover:opacity-100 transition-opacity"
+              className="h-12 w-12 rounded-full pointer-events-auto bg-background/30 backdrop-blur-sm hover:bg-background/50 border-white/30 opacity-70 hover:opacity-100 transition-opacity"
             >
-              <ChevronLeft className="h-5 w-5" />
+              <ChevronLeft className="h-6 w-6" />
             </Button>
             <Button
               variant="outline"
               size="icon"
               onClick={handleNext}
-              className="h-10 w-10 rounded-full pointer-events-auto bg-background/30 backdrop-blur-sm hover:bg-background/50 border-white/30 opacity-70 hover:opacity-100 transition-opacity"
+              className="h-12 w-12 rounded-full pointer-events-auto bg-background/30 backdrop-blur-sm hover:bg-background/50 border-white/30 opacity-70 hover:opacity-100 transition-opacity"
             >
-              <ChevronRight className="h-5 w-5" />
+              <ChevronRight className="h-6 w-6" />
             </Button>
           </div>
           <Carousel
@@ -154,7 +154,7 @@ export default function GalleryHoverCarousel({
               {items.map((item) => {
                 const isLoading = loadingItemId === item.id;
                 return (
-                <CarouselItem key={item.id} className="pl-3 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-1/6">
+                <CarouselItem key={item.id} className="pl-3 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5 2xl:basis-1/6">
                   <div
                     onClick={() => !isLoading && onItemClick?.(item)}
                     className={`group block relative w-full h-[160px] md:h-[180px] ${isLoading ? 'cursor-wait' : 'cursor-pointer'}`}
@@ -167,6 +167,9 @@ export default function GalleryHoverCarousel({
                           alt={item.title}
                           className={`h-full w-full object-cover object-center transition-all ${isLoading ? 'blur-sm opacity-70' : ''}`}
                           loading="lazy"
+                          width={400}
+                          height={300}
+                          style={{ aspectRatio: '4/3' }}
                         />
                         {/* Loading overlay */}
                         {isLoading && (
