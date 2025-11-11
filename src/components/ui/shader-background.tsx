@@ -34,7 +34,10 @@ export function ShaderBackground({ className = '' }: ShaderBackgroundProps) {
       }
     `;
 
-    // Fragment shader - plasma wave lines (exact reference values)
+    // Mobile detection for shader optimization
+    const isMobileDevice = window.innerWidth < 768;
+
+    // Fragment shader - plasma wave lines with mobile optimization
     const fragmentShaderSource = `
       precision highp float;
       uniform vec2 iResolution;
@@ -56,7 +59,7 @@ export function ShaderBackground({ className = '' }: ShaderBackgroundProps) {
       const float offsetSpeed = 1.33 * overallSpeed;
       const float minOffsetSpread = 0.6;
       const float maxOffsetSpread = 2.0;
-      const int linesPerGroup = 14;  // Reduced from 20 for performance
+      const int linesPerGroup = ${isMobileDevice ? 8 : 14};  // Fewer lines on mobile for performance
       const float scale = 5.0;
 
       #define drawSmoothLine(pos, halfWidth, t) smoothstep(halfWidth, 0.0, abs(pos - (t)))
@@ -177,11 +180,18 @@ export function ShaderBackground({ className = '' }: ShaderBackgroundProps) {
     const resolutionLocation = gl.getUniformLocation(program, 'iResolution');
     const timeLocation = gl.getUniformLocation(program, 'iTime');
 
-    // Handle canvas resize
+    // Handle canvas resize with mobile optimization
     function resizeCanvas() {
       if (!canvas) return;
 
-      const dpr = window.devicePixelRatio || 1;
+      // Mobile detection and optimization
+      const isMobile = window.innerWidth < 768;
+
+      // Cap device pixel ratio on mobile to save GPU/battery
+      const dpr = isMobile
+        ? Math.min(window.devicePixelRatio || 1, 1.5)  // Cap at 1.5x on mobile
+        : (window.devicePixelRatio || 1);
+
       const displayWidth = canvas.clientWidth * dpr;
       const displayHeight = canvas.clientHeight * dpr;
 
@@ -196,10 +206,11 @@ export function ShaderBackground({ className = '' }: ShaderBackgroundProps) {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Animation loop with 60 FPS cap for optimal performance
+    // Animation loop with mobile-adaptive FPS for optimal performance
+    const isMobile = window.innerWidth < 768;
     let startTime = Date.now();
     let lastFrameTime = 0;
-    const targetFPS = 60;
+    const targetFPS = isMobile ? 30 : 60;  // 30fps on mobile, 60fps on desktop
     const frameInterval = 1000 / targetFPS;
 
     function render(currentTime: number) {

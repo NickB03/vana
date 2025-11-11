@@ -9,10 +9,33 @@ import {
   InteractiveArtifactsIllustration,
   SecurityIllustration,
 } from "./BenefitIllustrations";
+import { useEffect, useRef, useState } from "react";
 
 export const BenefitsSection = () => {
+  // Lazy mount illustrations when section is near viewport
+  const [shouldMountIllustrations, setShouldMountIllustrations] = useState(false);
+  const sectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldMountIllustrations(true);
+          observer.disconnect(); // Only mount once
+        }
+      },
+      { rootMargin: '200px' } // Load 200px before visible
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section className={combineSpacing("relative w-full", SECTION_SPACING.full)}>
+    <section ref={sectionRef} className={combineSpacing("relative w-full", SECTION_SPACING.full)}>
 
       <div className="container max-w-6xl mx-auto w-full relative z-10">
         <motion.div
@@ -54,7 +77,11 @@ export const BenefitsSection = () => {
               </ul>
             </div>
             <div className="order-first lg:order-last">
-              <StreamingCodeIllustration />
+              {shouldMountIllustrations ? (
+                <StreamingCodeIllustration />
+              ) : (
+                <div className="aspect-video bg-muted/20 animate-pulse rounded-lg" />
+              )}
             </div>
           </motion.div>
 
@@ -63,7 +90,11 @@ export const BenefitsSection = () => {
             className="grid lg:grid-cols-2 gap-12 items-center"
             {...fadeInUp}
           >
-            <InteractiveArtifactsIllustration />
+            {shouldMountIllustrations ? (
+              <InteractiveArtifactsIllustration />
+            ) : (
+              <div className="aspect-video bg-muted/20 animate-pulse rounded-lg" />
+            )}
             <div className="space-y-4">
               <h3 className={cn(TYPOGRAPHY.HEADING.md.full, "font-bold")}>More than just chat</h3>
               <p className={cn(TYPOGRAPHY.BODY.lg.full, "text-muted-foreground")}>
@@ -112,7 +143,11 @@ export const BenefitsSection = () => {
               </ul>
             </div>
             <div className="order-first lg:order-last">
-              <SecurityIllustration />
+              {shouldMountIllustrations ? (
+                <SecurityIllustration />
+              ) : (
+                <div className="aspect-video bg-muted/20 animate-pulse rounded-lg" />
+              )}
             </div>
           </motion.div>
         </div>

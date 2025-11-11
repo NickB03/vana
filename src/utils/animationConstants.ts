@@ -64,8 +64,8 @@ export const staggerContainer = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1,  // 100ms delay between each child
-      delayChildren: 0.2,    // 200ms delay before first child
+      staggerChildren: 0.08,  // 80ms delay between each child (optimized from 100ms)
+      delayChildren: 0.1,     // 100ms delay before first child (optimized from 200ms)
     },
   },
 };

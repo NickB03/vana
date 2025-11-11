@@ -350,6 +350,17 @@ export const ShowcaseSection = () => {
     [autoScrollPlugin.current]
   );
 
+  // Track carousel ready state to prevent error toasts on early clicks
+  const [isCarouselReady, setIsCarouselReady] = useState(false);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+
+    // Wait for embla to be fully initialized
+    const timer = setTimeout(() => setIsCarouselReady(true), 100);
+    return () => clearTimeout(timer);
+  }, [emblaApi]);
+
   // Control auto-scroll based on viewport visibility
   useEffect(() => {
     if (!emblaApi || !autoScrollPlugin.current) return;
@@ -361,16 +372,34 @@ export const ShowcaseSection = () => {
     }
   }, [isInView, emblaApi]);
 
+  // Track last manual interaction time for pause-on-interaction
+  const lastInteractionTime = useRef<number>(0);
+  const AUTO_SCROLL_PAUSE_DURATION = 10000; // 10 seconds
+
+  // Resume auto-scroll after pause duration
+  useEffect(() => {
+    if (!emblaApi || !isInView) return;
+
+    const checkAutoScroll = setInterval(() => {
+      const timeSinceInteraction = Date.now() - lastInteractionTime.current;
+      if (timeSinceInteraction > AUTO_SCROLL_PAUSE_DURATION) {
+        autoScrollPlugin.current?.play();
+      }
+    }, 1000);
+
+    return () => clearInterval(checkAutoScroll);
+  }, [emblaApi, isInView]);
+
   const scrollPrev = useCallback(() => {
-    if (!emblaApi) {
-      toast.error('Carousel not ready yet. Please wait a moment.', {
-        id: 'carousel-not-ready'
-      });
-      console.warn('Carousel not initialized yet');
+    if (!emblaApi || !isCarouselReady) {
+      // Silently ignore if carousel isn't ready yet (prevents error toasts)
       return;
     }
     try {
       emblaApi.scrollPrev();
+      // Pause auto-scroll on manual interaction
+      lastInteractionTime.current = Date.now();
+      autoScrollPlugin.current?.stop();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Carousel navigation error:', errorMessage);
@@ -384,18 +413,18 @@ export const ShowcaseSection = () => {
         console.error('Carousel reinit failed:', reinitError);
       }
     }
-  }, [emblaApi]);
+  }, [emblaApi, isCarouselReady]);
 
   const scrollNext = useCallback(() => {
-    if (!emblaApi) {
-      toast.error('Carousel not ready yet. Please wait a moment.', {
-        id: 'carousel-not-ready'
-      });
-      console.warn('Carousel not initialized yet');
+    if (!emblaApi || !isCarouselReady) {
+      // Silently ignore if carousel isn't ready yet (prevents error toasts)
       return;
     }
     try {
       emblaApi.scrollNext();
+      // Pause auto-scroll on manual interaction
+      lastInteractionTime.current = Date.now();
+      autoScrollPlugin.current?.stop();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Carousel navigation error:', errorMessage);
@@ -409,7 +438,7 @@ export const ShowcaseSection = () => {
         console.error('Carousel reinit failed:', reinitError);
       }
     }
-  }, [emblaApi]);
+  }, [emblaApi, isCarouselReady]);
 
   return (
     <section ref={sectionRef} id="showcase" className={combineSpacing("relative w-full", SECTION_SPACING.full)}>
@@ -503,11 +532,25 @@ export const ShowcaseSection = () => {
 
           {/* Mobile Navigation Hint */}
           <div className="flex md:hidden justify-center gap-4 mt-6">
-            <Button variant="outline" size="sm" onClick={scrollPrev} disabled={!emblaApi} aria-label="Previous showcase item">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={scrollPrev}
+              disabled={!emblaApi || !isCarouselReady}
+              className={!isCarouselReady ? 'opacity-50 cursor-not-allowed' : ''}
+              aria-label="Previous showcase item"
+            >
               <ChevronLeft className="h-4 w-4 mr-1" />
               Previous
             </Button>
-            <Button variant="outline" size="sm" onClick={scrollNext} disabled={!emblaApi} aria-label="Next showcase item">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={scrollNext}
+              disabled={!emblaApi || !isCarouselReady}
+              className={!isCarouselReady ? 'opacity-50 cursor-not-allowed' : ''}
+              aria-label="Next showcase item"
+            >
               Next
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
