@@ -15,7 +15,7 @@ describe('Storage URL Generation', () => {
       const expectedUrl = 'https://example.supabase.co/storage/v1/sign/test.jpg?token=test';
 
       const result = await mockSupabase.storage
-        .from()
+        .from('user-uploads')
         .createSignedUrl(testFileName, 604800);
 
       expect(result.data?.signedUrl).toBe(expectedUrl);
@@ -36,7 +36,7 @@ describe('Storage URL Generation', () => {
       }));
 
       const result = await mockSupabase.storage
-        .from()
+        .from('user-uploads')
         .createSignedUrl(testFileName, 604800);
 
       expect(result.error?.message).toBe(errorMessage);
@@ -56,7 +56,7 @@ describe('Storage URL Generation', () => {
       }));
 
       const result = await mockSupabase.storage
-        .from()
+        .from('user-uploads')
         .createSignedUrl(testFileName, 604800);
 
       expect(result.data?.signedUrl).toBeUndefined();
@@ -88,7 +88,7 @@ describe('Storage URL Generation', () => {
       }));
 
       // Simulate upload flow
-      const storage = mockSupabase.storage.from();
+      const storage = mockSupabase.storage.from('user-uploads');
       const uploadResult = await storage.upload(testFileName, testFile);
       expect(uploadResult.error).toBeNull();
 
@@ -119,7 +119,7 @@ describe('Storage URL Generation', () => {
         getPublicUrl: vi.fn()
       }));
 
-      const storage = mockSupabase.storage.from();
+      const storage = mockSupabase.storage.from('user-uploads');
 
       // Upload should succeed
       const uploadResult = await storage.upload(testFileName, testFile);

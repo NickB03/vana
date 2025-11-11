@@ -14,53 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      artifact_versions: {
-        Row: {
-          artifact_content: string
-          artifact_id: string
-          artifact_language: string | null
-          artifact_title: string
-          artifact_type: string
-          content_hash: string
-          created_at: string
-          id: string
-          message_id: string
-          version_number: number
-        }
-        Insert: {
-          artifact_content: string
-          artifact_id: string
-          artifact_language?: string | null
-          artifact_title: string
-          artifact_type: string
-          content_hash: string
-          created_at?: string
-          id?: string
-          message_id: string
-          version_number: number
-        }
-        Update: {
-          artifact_content?: string
-          artifact_id?: string
-          artifact_language?: string | null
-          artifact_title?: string
-          artifact_type?: string
-          content_hash?: string
-          created_at?: string
-          id?: string
-          message_id?: string
-          version_number?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "artifact_versions_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "chat_messages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       chat_messages: {
         Row: {
           content: string
@@ -135,36 +88,6 @@ export type Database = {
         }
         Relationships: []
       }
-      rate_limits: {
-        Row: {
-          created_at: string
-          id: string
-          request_count: number
-          reset_at: string
-          updated_at: string
-          user_id: string
-          window_start: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          request_count?: number
-          reset_at: string
-          updated_at?: string
-          user_id: string
-          window_start?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          request_count?: number
-          reset_at?: string
-          updated_at?: string
-          user_id?: string
-          window_start?: string
-        }
-        Relationships: []
-      }
       user_preferences: {
         Row: {
           approved_libraries: Json | null
@@ -197,38 +120,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      create_artifact_version_atomic: {
-        Args: {
-          p_artifact_content: string
-          p_artifact_id: string
-          p_artifact_language: string
-          p_artifact_title: string
-          p_artifact_type: string
-          p_content_hash: string
-          p_message_id: string
-        }
-        Returns: {
-          artifact_content: string
-          artifact_id: string
-          artifact_language: string
-          artifact_title: string
-          artifact_type: string
-          content_hash: string
-          created_at: string
-          id: string
-          message_id: string
-          version_number: number
-        }[]
-      }
-      get_user_rate_limit_status: {
-        Args: never
-        Returns: {
-          remaining: number
-          reset_at: string
-          total: number
-          used: number
-        }[]
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

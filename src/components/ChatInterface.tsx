@@ -11,8 +11,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { motion } from "motion/react";
 import { scaleIn, ANIMATION_DURATIONS, ANIMATION_EASINGS } from "@/utils/animationConstants";
 import { CHAT_SPACING, SAFE_AREA_SPACING, combineSpacing } from "@/utils/spacingConstants";
-import { TYPOGRAPHY } from "@/utils/typographyConstants";
-import { BUTTON_STATES } from "@/utils/interactionConstants";
 import { MessageSkeleton } from "@/components/ui/message-skeleton";
 import {
   ChatContainerContent,

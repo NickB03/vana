@@ -349,20 +349,21 @@ const Home = () => {
       )}
 
       {/* App interface - fixed overlay during transition, normal flow when complete */}
-      <motion.div
-        className={phase === "app" ? "relative min-h-screen" : "fixed inset-0 z-50"}
-        style={{
-          pointerEvents: "auto",
-        }}
-        animate={
-          isTransitioning
-            ? transitions.app.fadeIn.transitioning(progress)
-            : phase === "app"
-            ? transitions.app.fadeIn.complete
-            : transitions.app.fadeIn.initial
-        }
-        transition={{ duration: 0 }}
-      >
+      {phase !== "landing" && (
+        <motion.div
+          className={phase === "app" ? "relative min-h-screen" : "fixed inset-0 z-50"}
+          style={{
+            pointerEvents: phase !== "landing" ? "auto" : "none",
+          }}
+          animate={
+            isTransitioning
+              ? transitions.app.fadeIn.transitioning(progress)
+              : phase === "app"
+              ? transitions.app.fadeIn.complete
+              : transitions.app.fadeIn.initial
+          }
+          transition={{ duration: 0 }}
+        >
           <SidebarProvider defaultOpen={true}>
             <ChatSidebar
               sessions={sessions}
@@ -714,6 +715,7 @@ const Home = () => {
           </SidebarInset>
         </SidebarProvider>
       </motion.div>
+      )}
 
       {/* Guest limit dialog */}
       <GuestLimitDialog

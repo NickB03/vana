@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { ChatSession } from "@/hooks/useChatSessions";
 import { ViggleLogo } from "@/components/ViggleLogo";
 import { SidebarItem } from "@/components/SidebarItem";
-import { TYPOGRAPHY } from "@/utils/typographyConstants";
 interface ChatSidebarProps {
   sessions: ChatSession[];
   currentSessionId?: string;
@@ -118,7 +117,7 @@ export function ChatSidebar({
               className="w-full justify-start hover:bg-accent h-10 px-3 py-2"
             >
               <CirclePlus className="h-6 w-6 mr-2 shrink-0" strokeWidth={2} />
-              <span className={cn(TYPOGRAPHY.BODY.md.full, "whitespace-nowrap")}>New chat</span>
+              <span className="text-base whitespace-nowrap">New chat</span>
             </Button>
           )}
         </div>
@@ -145,7 +144,7 @@ export function ChatSidebar({
                           currentSessionId === session.id && "bg-accent"
                         )}
                       >
-                        {!collapsed && <span className={cn(TYPOGRAPHY.BODY.md.full, "truncate whitespace-nowrap")}>{session.title}</span>}
+                        {!collapsed && <span className="truncate text-base whitespace-nowrap">{session.title}</span>}
                       </SidebarMenuButton>
 
                       {!collapsed && hoveredSessionId === session.id && (

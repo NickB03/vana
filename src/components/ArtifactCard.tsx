@@ -4,7 +4,6 @@ import { Code, FileCode, Image, Maximize2 } from "lucide-react";
 import { ArtifactData } from "./Artifact";
 import { cn } from "@/lib/utils";
 import { CARD_STATES } from "@/utils/interactionConstants";
-import { TYPOGRAPHY } from "@/utils/typographyConstants";
 
 interface ArtifactCardProps {
   artifact: ArtifactData;
@@ -57,8 +56,8 @@ export function ArtifactCard({ artifact, onOpen, className }: ArtifactCardProps)
               {getArtifactIcon(artifact.type)}
             </div>
             <div className="flex-1 min-w-0">
-              <CardTitle className={TYPOGRAPHY.HEADING.sm.full}>{artifact.title}</CardTitle>
-              <CardDescription className={TYPOGRAPHY.BODY.xs.full}>
+              <CardTitle className="text-base font-medium">{artifact.title}</CardTitle>
+              <CardDescription className="text-xs">
                 {getArtifactLabel(artifact.type)}
               </CardDescription>
             </div>
