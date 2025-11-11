@@ -22,6 +22,7 @@ export default function GalleryHoverCarousel({
   heading = "Featured Projects",
   demoUrl = "#",
   onItemClick,
+  loadingItemId,
   className,
   items = [
     {
@@ -74,6 +75,7 @@ export default function GalleryHoverCarousel({
   heading?: string;
   demoUrl?: string;
   onItemClick?: (item: GalleryHoverCarouselItem) => void;
+  loadingItemId?: string | null;
   className?: string;
   items?: GalleryHoverCarouselItem[];
 }) {
@@ -148,22 +150,33 @@ export default function GalleryHoverCarousel({
             }}
             className="relative w-full max-w-full"
           >
-            <CarouselContent className="-ml-2 md:-ml-4">
-              {items.map((item) => (
+            <CarouselContent className="-ml-2 md:-ml-4 py-4">
+              {items.map((item) => {
+                const isLoading = loadingItemId === item.id;
+                return (
                 <CarouselItem key={item.id} className="pl-3 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
                   <div
-                    onClick={() => onItemClick?.(item)}
-                    className="group block relative w-full h-[160px] md:h-[180px] cursor-pointer"
+                    onClick={() => !isLoading && onItemClick?.(item)}
+                    className={`group block relative w-full h-[160px] md:h-[180px] ${isLoading ? 'cursor-wait' : 'cursor-pointer'}`}
                   >
-                    <Card className="overflow-hidden rounded-3xl h-full w-full transition-all duration-300">
+                    <Card className={`overflow-hidden rounded-3xl h-full w-full transition-all duration-300 hover:scale-105 ${isLoading ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
                       {/* Image */}
                       <div className="relative h-full w-full transition-all duration-500 group-hover:h-1/2">
                         <img
                           src={item.image}
                           alt={item.title}
-                          className="h-full w-full object-cover object-center"
+                          className={`h-full w-full object-cover object-center transition-all ${isLoading ? 'blur-sm opacity-70' : ''}`}
                           loading="lazy"
                         />
+                        {/* Loading overlay */}
+                        {isLoading && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                            <div className="flex flex-col items-center gap-2">
+                              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                              <span className="text-xs text-white font-medium">Creating...</span>
+                            </div>
+                          </div>
+                        )}
                         {/* Fade overlay at bottom */}
                         <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       </div>
@@ -185,7 +198,8 @@ export default function GalleryHoverCarousel({
                     </Card>
                   </div>
                 </CarouselItem>
-              ))}
+              )
+              })}
             </CarouselContent>
           </Carousel>
         </div>
