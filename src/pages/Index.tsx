@@ -18,6 +18,8 @@ import { useToast } from "@/hooks/use-toast";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { ensureValidSession } from "@/utils/authHelpers";
 import GalleryHoverCarousel from "@/components/ui/gallery-hover-carousel";
+import { TYPOGRAPHY } from "@/utils/typographyConstants";
+import { BUTTON_STATES } from "@/utils/interactionConstants";
 const IndexContent = () => {
   const navigate = useNavigate();
   const {
@@ -361,10 +363,10 @@ const IndexContent = () => {
 
                 {/* Centered heading */}
                 <div className="text-center w-full">
-                  <h1 className="bg-gradient-primary bg-clip-text text-3xl sm:text-4xl md:text-5xl font-bold text-transparent mb-4">
+                  <h1 className={cn(TYPOGRAPHY.DISPLAY.xl.full, TYPOGRAPHY.WEIGHT.extrabold, "bg-gradient-primary bg-clip-text text-transparent mb-4")}>
                     Hi, I'm Vana.
                   </h1>
-                  <p className="text-foreground/80 text-sm sm:text-base">
+                  <p className={cn(TYPOGRAPHY.BODY.md.full, "text-foreground/80")}>
                     Get started by choosing from an idea below or tell me what you want to do in chat
                   </p>
                 </div>

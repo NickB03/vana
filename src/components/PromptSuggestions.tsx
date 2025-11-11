@@ -6,6 +6,9 @@ import {
   Zap, Target, TrendingUp, Film, Coffee, Dumbbell,
   ShoppingCart, Calendar, MessageSquare, Heart
 } from "lucide-react";
+import { TYPOGRAPHY } from "@/utils/typographyConstants";
+import { CARD_STATES } from "@/utils/interactionConstants";
+import { cn } from "@/lib/utils";
 
 interface Suggestion {
   title: string;
@@ -410,7 +413,7 @@ export function PromptSuggestions({ onSuggestionClick }: PromptSuggestionsProps)
         {suggestions.map((suggestion, index) => (
           <Card
             key={index}
-            className="group cursor-pointer overflow-hidden border border-border bg-card transition-all hover:border-primary hover:shadow-lg hover:scale-105"
+            className={cn("overflow-hidden border border-border bg-card hover:border-primary", CARD_STATES.interactive)}
             onClick={() => onSuggestionClick(suggestion.prompt)}
           >
             {/* Preview Thumbnail */}
@@ -423,8 +426,8 @@ export function PromptSuggestions({ onSuggestionClick }: PromptSuggestionsProps)
 
             {/* Text Area */}
             <div className="p-2">
-              <h3 className="font-semibold text-[10px] mb-0.5 line-clamp-1">{suggestion.title}</h3>
-              <p className="text-[9px] text-muted-foreground line-clamp-2 leading-tight">{suggestion.prompt}</p>
+              <h3 className={cn(TYPOGRAPHY.WEIGHT.semibold, "text-[10px] mb-0.5 line-clamp-1")}>{suggestion.title}</h3>
+              <p className={cn(TYPOGRAPHY.BODY.xs.full, "text-muted-foreground line-clamp-2 leading-tight")}>{suggestion.prompt}</p>
             </div>
           </Card>
         ))}
