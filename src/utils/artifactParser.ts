@@ -49,6 +49,17 @@ const mimeTypeMap: Record<string, ArtifactType> = {
   'image': 'image'
 };
 
+// Strip markdown code fences from artifact content
+function stripMarkdownFences(content: string): string {
+  // Remove opening fences: ```jsx, ```typescript, ```javascript, ```html, etc.
+  let cleaned = content.replace(/^```[\w]*\n?/gm, '');
+
+  // Remove closing fences: ```
+  cleaned = cleaned.replace(/^```\n?$/gm, '');
+
+  return cleaned.trim();
+}
+
 // Parse message content to extract artifacts
 export const parseArtifacts = (content: string): {
   artifacts: ArtifactData[];
@@ -70,16 +81,21 @@ export const parseArtifacts = (content: string): {
     // Map MIME type to internal type
     const mappedType = mimeTypeMap[type] || type as ArtifactType;
 
+    // CRITICAL FIX: Strip markdown code fences before storing
+    // AI models sometimes wrap artifact code in ```jsx or ``` blocks
+    // This causes "Script error" when trying to execute the fences as JavaScript
+    const processedContent = stripMarkdownFences(artifactContent.trim());
+
     artifacts.push({
-      id: generateStableId(artifactContent.trim(), mappedType, artifactIndex++),
+      id: generateStableId(processedContent, mappedType, artifactIndex++),
       type: mappedType,
       title: title,
-      content: artifactContent.trim(),
+      content: processedContent,
       language: language || undefined,
     });
 
-    // Check for invalid imports
-    const importWarnings = detectInvalidImports(artifactContent.trim(), mappedType);
+    // Check for invalid imports (after fence stripping)
+    const importWarnings = detectInvalidImports(processedContent, mappedType);
     if (importWarnings.length > 0) {
       warnings.push({
         artifactTitle: title,

@@ -97,6 +97,10 @@ export function detectIntent(prompt: string): IntentResult {
     /\b(todo|task|note|budget|expense|habit|fitness|workout)\s+(app|tracker|manager)\b/i,
     /\b(game|quiz|survey|form|wizard)\b/i,
     /\b(chart|graph|visualization)\b.*\b(interactive|dynamic)\b/i,
+    // Simple component requests (added 2025-11-12)
+    /\b(create|make|build)\s+(a|an)?\s*(react|component)\b/i,  // "create a React button"
+    /\b(button|input|form|card|modal|dropdown|slider|toggle|switch)\b.*\b(react|component|interactive)\b/i,
+    /\b(counter|timer|clock)\b/i,  // Simple interactive elements
   ];
 
   const reactKeywords = ['app', 'dashboard', 'tracker', 'calculator', 'game', 'interactive', 'tool'];

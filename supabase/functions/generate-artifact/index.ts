@@ -3,6 +3,69 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { callGemini, extractTextFromGeminiResponse } from "../_shared/gemini-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 
+// Retry configuration for handling transient API failures
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  initialDelayMs: 1000,
+  maxDelayMs: 10000,
+  backoffMultiplier: 2,
+};
+
+// Retry wrapper with exponential backoff for rate limiting and transient failures
+async function callGeminiWithRetry(
+  modelName: string,
+  contents: any,
+  options: any,
+  requestId: string,
+  retryCount = 0
+): Promise<Response> {
+  try {
+    const response = await callGemini(modelName, contents, options);
+
+    if (response.ok) {
+      return response;
+    }
+
+    // Handle rate limiting (429) and service overload (503) with exponential backoff
+    if (response.status === 429 || response.status === 503) {
+      if (retryCount < RETRY_CONFIG.maxRetries) {
+        const delayMs = Math.min(
+          RETRY_CONFIG.initialDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, retryCount),
+          RETRY_CONFIG.maxDelayMs
+        );
+
+        const retryAfter = response.headers.get('Retry-After');
+        const actualDelayMs = retryAfter ? parseInt(retryAfter) * 1000 : delayMs;
+
+        const errorType = response.status === 429 ? "Rate limited" : "Service overloaded";
+        console.log(`[${requestId}] ${errorType} (${response.status}). Retry ${retryCount + 1}/${RETRY_CONFIG.maxRetries} after ${actualDelayMs}ms`);
+
+        await new Promise(resolve => setTimeout(resolve, actualDelayMs));
+
+        return callGeminiWithRetry(modelName, contents, options, requestId, retryCount + 1);
+      } else {
+        console.error(`[${requestId}] Max retries exceeded (status: ${response.status})`);
+      }
+    }
+
+    return response;
+  } catch (error) {
+    if (retryCount < RETRY_CONFIG.maxRetries) {
+      const delayMs = Math.min(
+        RETRY_CONFIG.initialDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, retryCount),
+        RETRY_CONFIG.maxDelayMs
+      );
+      console.log(`[${requestId}] Network error, retrying after ${delayMs}ms:`, error);
+
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+
+      return callGeminiWithRetry(modelName, contents, options, requestId, retryCount + 1);
+    }
+
+    throw error;
+  }
+}
+
 // Enhanced artifact system prompt - optimized for Pro model
 const ARTIFACT_SYSTEM_PROMPT = `# 🚨 CRITICAL TECHNICAL RESTRICTIONS 🚨
 
@@ -239,6 +302,9 @@ serve(async (req) => {
   }
 
   try {
+    // Generate unique request ID for tracking
+    const requestId = crypto.randomUUID();
+
     const requestBody = await req.json();
     const { prompt, artifactType, sessionId } = requestBody;
 
@@ -287,7 +353,7 @@ serve(async (req) => {
     }
 
     const userType = user ? `user ${user.id}` : "guest";
-    console.log(`Artifact generation request from ${userType}:`, prompt.substring(0, 100));
+    console.log(`[${requestId}] Artifact generation request from ${userType}:`, prompt.substring(0, 100));
 
     // Construct Gemini API request
     const contents = [
@@ -301,51 +367,104 @@ serve(async (req) => {
       }
     ];
 
-    // Call Gemini Pro API with specialized artifact prompt
-    const response = await callGemini("gemini-2.5-pro", contents, {
+    // Call Gemini Pro API with specialized artifact prompt and retry logic
+    const response = await callGeminiWithRetry("gemini-2.5-pro", contents, {
       systemInstruction: ARTIFACT_SYSTEM_PROMPT,
       temperature: 0.7, // Balanced creativity and consistency
       keyName: "GOOGLE_AI_STUDIO_KEY_ARTIFACT" // Use artifact key pool (GOOGLE_KEY_3-6, 8 RPM total)
-    });
+    }, requestId);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Google AI Studio error:", response.status, errorText);
+      console.error(`[${requestId}] Google AI Studio error:`, response.status, errorText.substring(0, 200));
 
       if (response.status === 429 || response.status === 403) {
         return new Response(
-          JSON.stringify({ error: "API quota exceeded. Please try again in a moment." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({
+            error: "API quota exceeded. Please try again in a moment.",
+            requestId
+          }),
+          {
+            status: 429,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+              "X-Request-ID": requestId
+            }
+          }
+        );
+      }
+
+      if (response.status === 503) {
+        return new Response(
+          JSON.stringify({
+            error: "AI service is temporarily overloaded. Please try again in a moment.",
+            requestId,
+            retryable: true
+          }),
+          {
+            status: 503,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+              "X-Request-ID": requestId
+            }
+          }
         );
       }
 
       return new Response(
-        JSON.stringify({ error: "Artifact generation failed. Please try again." }),
-        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          error: "Artifact generation failed. Please try again.",
+          requestId
+        }),
+        {
+          status: response.status,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+            "X-Request-ID": requestId
+          }
+        }
       );
     }
 
     const data = await response.json();
-    const artifactCode = extractTextFromGeminiResponse(data);
+    const artifactCode = extractTextFromGeminiResponse(data, requestId);
 
     if (!artifactCode || artifactCode.trim().length === 0) {
-      console.error("Empty artifact code returned from API");
+      console.error(`[${requestId}] Empty artifact code returned from API`);
       return new Response(
-        JSON.stringify({ error: "Failed to generate artifact. Please try again with a different prompt." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          error: "Failed to generate artifact. Please try again with a different prompt.",
+          requestId
+        }),
+        {
+          status: 500,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+            "X-Request-ID": requestId
+          }
+        }
       );
     }
 
-    console.log(`Artifact generated successfully, length: ${artifactCode.length} characters`);
+    console.log(`[${requestId}] Artifact generated successfully, length: ${artifactCode.length} characters`);
 
     return new Response(
       JSON.stringify({
         success: true,
         artifactCode,
-        prompt
+        prompt,
+        requestId
       }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          "X-Request-ID": requestId
+        },
       }
     );
 
