@@ -1,70 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { callGemini, extractTextFromGeminiResponse } from "../_shared/gemini-client.ts";
+import { callKimiWithRetry, extractTextFromKimi, extractTokenUsage, calculateKimiCost, logAIUsage } from "../_shared/openrouter-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 
-// Retry configuration for handling transient API failures
-const RETRY_CONFIG = {
-  maxRetries: 3,
-  initialDelayMs: 1000,
-  maxDelayMs: 10000,
-  backoffMultiplier: 2,
-};
-
-// Retry wrapper with exponential backoff for rate limiting and transient failures
-async function callGeminiWithRetry(
-  modelName: string,
-  contents: any,
-  options: any,
-  requestId: string,
-  retryCount = 0
-): Promise<Response> {
-  try {
-    const response = await callGemini(modelName, contents, options);
-
-    if (response.ok) {
-      return response;
-    }
-
-    // Handle rate limiting (429) and service overload (503) with exponential backoff
-    if (response.status === 429 || response.status === 503) {
-      if (retryCount < RETRY_CONFIG.maxRetries) {
-        const delayMs = Math.min(
-          RETRY_CONFIG.initialDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, retryCount),
-          RETRY_CONFIG.maxDelayMs
-        );
-
-        const retryAfter = response.headers.get('Retry-After');
-        const actualDelayMs = retryAfter ? parseInt(retryAfter) * 1000 : delayMs;
-
-        const errorType = response.status === 429 ? "Rate limited" : "Service overloaded";
-        console.log(`[${requestId}] ${errorType} (${response.status}). Retry ${retryCount + 1}/${RETRY_CONFIG.maxRetries} after ${actualDelayMs}ms`);
-
-        await new Promise(resolve => setTimeout(resolve, actualDelayMs));
-
-        return callGeminiWithRetry(modelName, contents, options, requestId, retryCount + 1);
-      } else {
-        console.error(`[${requestId}] Max retries exceeded (status: ${response.status})`);
-      }
-    }
-
-    return response;
-  } catch (error) {
-    if (retryCount < RETRY_CONFIG.maxRetries) {
-      const delayMs = Math.min(
-        RETRY_CONFIG.initialDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, retryCount),
-        RETRY_CONFIG.maxDelayMs
-      );
-      console.log(`[${requestId}] Network error, retrying after ${delayMs}ms:`, error);
-
-      await new Promise(resolve => setTimeout(resolve, delayMs));
-
-      return callGeminiWithRetry(modelName, contents, options, requestId, retryCount + 1);
-    }
-
-    throw error;
-  }
-}
+// NOTE: Retry logic moved to openrouter-client.ts
+// callKimiWithRetry() now handles exponential backoff automatically
 
 // Enhanced artifact system prompt - optimized for Pro model
 const ARTIFACT_SYSTEM_PROMPT = `# 🚨 CRITICAL TECHNICAL RESTRICTIONS 🚨
@@ -355,28 +295,29 @@ serve(async (req) => {
     const userType = user ? `user ${user.id}` : "guest";
     console.log(`[${requestId}] Artifact generation request from ${userType}:`, prompt.substring(0, 100));
 
-    // Construct Gemini API request
-    const contents = [
-      {
-        role: "user",
-        parts: [{
-          text: artifactType
-            ? `Create a ${artifactType} artifact for: ${prompt}\n\nIMPORTANT: Return the COMPLETE artifact wrapped in XML tags like: <artifact type="application/vnd.ant.react" title="Descriptive Title">YOUR CODE HERE</artifact>\n\nInclude the opening <artifact> tag, the complete code, and the closing </artifact> tag.`
-            : `Create an artifact for: ${prompt}\n\nIMPORTANT: Return the COMPLETE artifact wrapped in XML tags like: <artifact type="application/vnd.ant.react" title="Descriptive Title">YOUR CODE HERE</artifact>\n\nInclude the opening <artifact> tag, the complete code, and the closing </artifact> tag.`
-        }]
-      }
-    ];
+    // Track timing for latency calculation
+    const startTime = Date.now();
 
-    // Call Gemini Pro API with specialized artifact prompt and retry logic
-    const response = await callGeminiWithRetry("gemini-2.5-pro", contents, {
-      systemInstruction: ARTIFACT_SYSTEM_PROMPT,
-      temperature: 0.7, // Balanced creativity and consistency
-      keyName: "GOOGLE_AI_STUDIO_KEY_ARTIFACT" // Use artifact key pool (GOOGLE_KEY_3-6, 8 RPM total)
-    }, requestId);
+    // Construct user prompt for Kimi K2-Thinking
+    const userPrompt = artifactType
+      ? `Create a ${artifactType} artifact for: ${prompt}\n\nIMPORTANT: Return the COMPLETE artifact wrapped in XML tags like: <artifact type="application/vnd.ant.react" title="Descriptive Title">YOUR CODE HERE</artifact>\n\nInclude the opening <artifact> tag, the complete code, and the closing </artifact> tag.`
+      : `Create an artifact for: ${prompt}\n\nIMPORTANT: Return the COMPLETE artifact wrapped in XML tags like: <artifact type="application/vnd.ant.react" title="Descriptive Title">YOUR CODE HERE</artifact>\n\nInclude the opening <artifact> tag, the complete code, and the closing </artifact> tag.`;
+
+    // Call Kimi K2-Thinking via OpenRouter with retry logic
+    console.log(`[${requestId}] 🚀 Routing to Kimi K2-Thinking (reasoning model for code generation)`);
+    const response = await callKimiWithRetry(
+      ARTIFACT_SYSTEM_PROMPT,
+      userPrompt,
+      {
+        temperature: 0.7, // Balanced creativity and consistency
+        max_tokens: 8000,
+        requestId
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[${requestId}] Google AI Studio error:`, response.status, errorText.substring(0, 200));
+      console.error(`[${requestId}] Kimi K2-Thinking API error:`, response.status, errorText.substring(0, 200));
 
       if (response.status === 429 || response.status === 403) {
         return new Response(
@@ -430,7 +371,39 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const artifactCode = extractTextFromGeminiResponse(data, requestId);
+    const artifactCode = extractTextFromKimi(data, requestId);
+
+    // Extract token usage for cost tracking
+    const tokenUsage = extractTokenUsage(data);
+    const estimatedCost = calculateKimiCost(tokenUsage.inputTokens, tokenUsage.outputTokens);
+
+    console.log(`[${requestId}] 💰 Token usage:`, {
+      input: tokenUsage.inputTokens,
+      output: tokenUsage.outputTokens,
+      total: tokenUsage.totalTokens,
+      estimatedCost: `$${estimatedCost.toFixed(4)}`
+    });
+
+    // Log usage to database for admin dashboard (fire-and-forget, non-blocking)
+    const latencyMs = Date.now() - startTime;
+    logAIUsage({
+      requestId,
+      functionName: 'generate-artifact',
+      provider: 'openrouter',
+      model: 'moonshotai/kimi-k2-thinking',
+      userId: user?.id,
+      isGuest: !user,
+      inputTokens: tokenUsage.inputTokens,
+      outputTokens: tokenUsage.outputTokens,
+      totalTokens: tokenUsage.totalTokens,
+      latencyMs,
+      statusCode: 200,
+      estimatedCost,
+      retryCount: 0,
+      promptPreview: prompt.substring(0, 200),
+      responseLength: artifactCode.length
+    }).catch(err => console.error(`[${requestId}] Failed to log usage:`, err));
+    console.log(`[${requestId}] 📊 Usage logged to database`);
 
     if (!artifactCode || artifactCode.trim().length === 0) {
       console.error(`[${requestId}] Empty artifact code returned from API`);

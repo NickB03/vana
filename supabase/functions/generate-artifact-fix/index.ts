@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { callGemini } from "../_shared/gemini-client.ts";
+import { callKimiWithRetry, extractTextFromKimi, extractTokenUsage, calculateKimiCost, logAIUsage } from "../_shared/openrouter-client.ts";
 import { getCorsHeaders } from "../_shared/cors-config.ts";
 
 serve(async (req) => {
@@ -65,7 +65,12 @@ serve(async (req) => {
       });
     }
 
-    console.log(`Generating fix for artifact type: ${type}, user: ${user.id}, error:`, errorMessage.substring(0, 100));
+    // Generate unique request ID for tracking
+    const requestId = crypto.randomUUID();
+    console.log(`[${requestId}] Generating fix for artifact type: ${type}, user: ${user.id}, error:`, errorMessage.substring(0, 100));
+
+    // Track timing for latency calculation
+    const startTime = Date.now();
 
     // Build context-aware system prompt based on artifact type
     let systemPrompt = `You are an expert code debugger and fixer. Your task is to analyze the provided code and fix the error.
@@ -99,33 +104,31 @@ IMPORTANT RULES:
 - Avoid using eval() for security`;
     }
 
-    // Prepare Gemini API request
-    const contents = [
-      {
-        role: "user",
-        parts: [{
-          text: `Fix this ${type} artifact that has the following error:
+    // Prepare user prompt for Kimi K2-Thinking
+    const userPrompt = `Fix this ${type} artifact that has the following error:
 
 ERROR: ${errorMessage}
 
 CODE:
 ${content}
 
-Return ONLY the fixed code without any explanations or markdown formatting.`
-        }]
-      }
-    ];
+Return ONLY the fixed code without any explanations or markdown formatting.`;
 
-    // Call Gemini API using shared client
-    const response = await callGemini("gemini-2.5-pro", contents, {
-      systemInstruction: systemPrompt,
-      temperature: 0.3, // Lower temperature for more deterministic fixes
-      keyName: "GOOGLE_AI_STUDIO_KEY_ARTIFACT" // Share artifact key pool (GOOGLE_KEY_3-6, 8 RPM total)
-    });
+    // Call Kimi K2-Thinking via OpenRouter with retry logic
+    console.log(`[${requestId}] 🚀 Routing to Kimi K2-Thinking for artifact fix (reasoning model)`);
+    const response = await callKimiWithRetry(
+      systemPrompt,
+      userPrompt,
+      {
+        temperature: 0.3, // Lower temperature for more deterministic fixes
+        max_tokens: 8000,
+        requestId
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Google AI Studio error:", response.status, errorText);
+      console.error(`[${requestId}] Kimi K2-Thinking API error:`, response.status, errorText);
 
       if (response.status === 429) {
         return new Response(
@@ -144,7 +147,7 @@ Return ONLY the fixed code without any explanations or markdown formatting.`
     }
 
     const data = await response.json();
-    let fixedCode = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    let fixedCode = extractTextFromKimi(data, requestId);
 
     if (!fixedCode) {
       throw new Error("No fixed code returned from AI");
@@ -153,13 +156,44 @@ Return ONLY the fixed code without any explanations or markdown formatting.`
     // Clean up any markdown code blocks that might have been added
     fixedCode = fixedCode.replace(/^```[\w]*\n/, '').replace(/\n```$/, '').trim();
 
-    console.log("Generated fix, original length:", content.length, "fixed length:", fixedCode.length);
+    // Extract token usage for cost tracking
+    const tokenUsage = extractTokenUsage(data);
+    const estimatedCost = calculateKimiCost(tokenUsage.inputTokens, tokenUsage.outputTokens);
+
+    console.log(`[${requestId}] Generated fix, original length: ${content.length}, fixed length: ${fixedCode.length}`);
+    console.log(`[${requestId}] 💰 Token usage:`, {
+      input: tokenUsage.inputTokens,
+      output: tokenUsage.outputTokens,
+      total: tokenUsage.totalTokens,
+      estimatedCost: `$${estimatedCost.toFixed(4)}`
+    });
+
+    // Log usage to database for admin dashboard (fire-and-forget, non-blocking)
+    const latencyMs = Date.now() - startTime;
+    logAIUsage({
+      requestId,
+      functionName: 'generate-artifact-fix',
+      provider: 'openrouter',
+      model: 'moonshotai/kimi-k2-thinking',
+      userId: user.id,
+      isGuest: false,
+      inputTokens: tokenUsage.inputTokens,
+      outputTokens: tokenUsage.outputTokens,
+      totalTokens: tokenUsage.totalTokens,
+      latencyMs,
+      statusCode: 200,
+      estimatedCost,
+      retryCount: 0,
+      promptPreview: errorMessage.substring(0, 200),
+      responseLength: fixedCode.length
+    }).catch(err => console.error(`[${requestId}] Failed to log usage:`, err));
+    console.log(`[${requestId}] 📊 Usage logged to database`);
 
     return new Response(JSON.stringify({ fixedCode }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("Generate artifact fix error:", e);
+    console.error(`Generate artifact fix error:`, e);
     return new Response(
       JSON.stringify({ error: "An error occurred while generating the fix" }),
       {

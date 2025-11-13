@@ -70,13 +70,22 @@ export const parseArtifacts = (content: string): {
   const warnings: Array<{ artifactTitle: string; messages: string[] }> = [];
   let cleanContent = content;
 
-  // Match artifact blocks with format: <artifact type="..." title="...">content</artifact>
-  const artifactRegex = /<artifact\s+type="([^"]+)"\s+title="([^"]+)"(?:\s+language="([^"]+)")?>([\s\S]*?)<\/artifact>/g;
+  // Match artifact blocks - accepts attributes in any order (type, title, language)
+  const artifactRegex = /<artifact([^>]*)>([\s\S]*?)<\/artifact>/g;
 
   let match;
   let artifactIndex = 0;
   while ((match = artifactRegex.exec(content)) !== null) {
-    const [fullMatch, type, title, language, artifactContent] = match;
+    const [fullMatch, attributesStr, artifactContent] = match;
+
+    // Extract attributes from the attribute string (handles any order)
+    const typeMatch = attributesStr.match(/type="([^"]+)"/);
+    const titleMatch = attributesStr.match(/title="([^"]+)"/);
+    const languageMatch = attributesStr.match(/language="([^"]+)"/);
+
+    const type = typeMatch ? typeMatch[1] : '';
+    const title = titleMatch ? titleMatch[1] : '';
+    const language = languageMatch ? languageMatch[1] : undefined;
 
     // Map MIME type to internal type
     const mappedType = mimeTypeMap[type] || type as ArtifactType;

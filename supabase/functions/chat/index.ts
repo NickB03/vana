@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { shouldGenerateImage, shouldGenerateArtifact, getArtifactType, getArtifactGuidance } from "./intent-detector.ts";
+import { shouldGenerateImage, shouldGenerateArtifact, getArtifactType, getArtifactGuidance } from "./intent-detector-embeddings.ts";
 import { validateArtifactRequest, generateGuidanceFromValidation } from "./artifact-validator.ts";
 import { transformArtifactCode } from "./artifact-transformer.ts";
 import { convertToGeminiFormat, extractSystemMessage, getApiKey } from "../_shared/gemini-client.ts";
@@ -327,7 +327,7 @@ serve(async (req) => {
 
     // Analyze user prompt to determine which specialized model to use
     const lastUserMessage = messages[messages.length - 1];
-    const isImageRequest = lastUserMessage && shouldGenerateImage(lastUserMessage.content);
+    const isImageRequest = lastUserMessage && await shouldGenerateImage(lastUserMessage.content);
 
     if (isImageRequest) {
       console.log("🎯 Intent detected: IMAGE generation");
@@ -383,10 +383,10 @@ serve(async (req) => {
     }
 
     // Detect artifact generation requests (non-image artifacts)
-    const isArtifactRequest = lastUserMessage && shouldGenerateArtifact(lastUserMessage.content);
+    const isArtifactRequest = lastUserMessage && await shouldGenerateArtifact(lastUserMessage.content);
 
     if (isArtifactRequest) {
-      const artifactType = getArtifactType(lastUserMessage.content);
+      const artifactType = await getArtifactType(lastUserMessage.content);
       console.log(`🎯 Intent detected: ARTIFACT generation (${artifactType})`);
       console.log("🔀 Routing to: generate-artifact (Pro model)");
 

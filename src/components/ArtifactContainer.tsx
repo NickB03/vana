@@ -745,7 +745,7 @@ ${artifact.content}
   <script src="https://cdn.jsdelivr.net/npm/@radix-ui/react-dialog@1.0.5/dist/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@radix-ui/react-dropdown-menu@2.0.6/dist/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@radix-ui/react-tabs@1.0.4/dist/index.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/framer-motion@11.0.3/dist/framer-motion.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/framer-motion@11.11.11/dist/size-rollup-motion.js"></script>
   ${injectedCDNs}
   ${generateCompleteIframeStyles()}
   <style>
@@ -802,7 +802,16 @@ ${artifact.content}
     } = Recharts;
 
     // Expose Framer Motion (if loaded)
-    const { motion, AnimatePresence } = window.Motion || {};
+    const FramerMotion = window.Motion || {};
+    const { motion, AnimatePresence } = FramerMotion;
+
+    // Expose all Framer Motion exports globally for artifact access
+    // This follows the same pattern as LucideIcons above
+    Object.keys(FramerMotion).forEach(exportName => {
+      if (typeof window[exportName] === 'undefined') {
+        window[exportName] = FramerMotion[exportName];
+      }
+    });
 
     ${processedCode}
 
