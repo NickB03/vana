@@ -5,9 +5,9 @@ import { LayoutDashboard, Sparkles, TrendingUp, Users, DollarSign, FileSpreadshe
 
 export const DemoPreview = () => {
   const [step, setStep] = useState(0);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [scrollOffset, setScrollOffset] = useState(0);
 
-  // Animation sequence with smooth transitions
+  // Animation sequence with smooth transitions using transform
   // Runs once on mount and sets up infinite animation loop
   // Empty dependency array ensures proper cleanup on unmount and prevents memory leaks
   useEffect(() => {
@@ -20,25 +20,18 @@ export const DemoPreview = () => {
       // Step 1: Show assistant response
       timers.push(setTimeout(() => setStep(2), 2500));
 
-      // Step 2: Show artifact and auto-scroll
+      // Step 2: Show artifact and scroll down using transform
       timers.push(setTimeout(() => {
         setStep(3);
-        // Auto-scroll to bottom when artifact appears
-        if (chatContainerRef.current) {
-          chatContainerRef.current.scrollTo({
-            top: chatContainerRef.current.scrollHeight,
-            behavior: 'smooth'
-          });
-        }
+        // Scroll down to show artifact (approximate height of user + assistant messages)
+        setScrollOffset(200);
       }, 4200));
 
       // Step 3: Hold for viewing, then reset and loop
       timers.push(setTimeout(() => {
         setStep(0);
         // Reset scroll position
-        if (chatContainerRef.current) {
-          chatContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+        setScrollOffset(0);
         // Restart the animation loop
         runAnimation();
       }, 8200));
@@ -65,10 +58,11 @@ export const DemoPreview = () => {
       </div>
 
       {/* Chat simulation */}
-      <div
-        ref={chatContainerRef}
-        className="p-4 space-y-3 h-[calc(100%-3rem)] overflow-y-auto scroll-smooth"
-      >
+      <div className="p-4 h-[calc(100%-3rem)] overflow-hidden relative">
+        <div
+          className="space-y-3 transition-transform duration-500 ease-in-out"
+          style={{ transform: `translateY(-${scrollOffset}px)` }}
+        >
         {/* User message with attachment */}
         {step >= 1 && (
           <div className="flex justify-end animate-in fade-in slide-in-from-right-5 duration-500">
@@ -167,6 +161,7 @@ export const DemoPreview = () => {
             </Card>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

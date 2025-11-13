@@ -161,6 +161,11 @@ export const landingTransitionReduced = {
       transitioning: (progress: number) => ({ opacity: 1 - progress }),
       complete: { opacity: 0 },
     },
+    blurOut: {
+      initial: { filter: 'blur(0px)' },
+      transitioning: () => ({ filter: 'blur(0px)' }), // No blur for reduced motion
+      complete: { filter: 'blur(0px)' },
+    },
   },
   app: {
     fadeIn: {

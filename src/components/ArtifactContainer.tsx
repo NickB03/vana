@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, useMemo, lazy, Suspense, useCallback } from "react";
 import { Artifact, ArtifactHeader, ArtifactTitle, ArtifactContent, ArtifactActions, ArtifactAction, ArtifactClose } from '@/components/ai-elements/artifact';
+import { WebPreview, WebPreviewBody, WebPreviewNavigation, WebPreviewUrl, WebPreviewNavigationButton } from '@/components/ai-elements/web-preview';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Copy, Maximize2, Minimize2, Download, Edit, ExternalLink, AlertCircle } from "lucide-react";
+import { Copy, Maximize2, Minimize2, Download, Edit, ExternalLink, AlertCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Markdown } from "./prompt-kit/markdown";
 import { validateArtifact, ValidationResult, categorizeError } from "@/utils/artifactValidator";
@@ -227,6 +228,16 @@ root.render(<App />);`,
 
     toast.success("Opening in CodeSandbox...");
   };
+
+  // WebPreview helper functions
+  const handleRefresh = useCallback(() => {
+    setThemeRefreshKey(prev => prev + 1);
+    toast.success("Preview refreshed");
+  }, []);
+
+  const handleFullScreen = useCallback(() => {
+    setIsMaximized(true);
+  }, []);
 
   // KEEP: Listen for iframe messages
   useEffect(() => {
@@ -515,18 +526,36 @@ ${artifact.content}
                 </div>
               </div>
             )}
-            <iframe
-              key={`${injectedCDNs}-${themeRefreshKey}`}
-              srcDoc={previewContent}
-              className="w-full h-full border-0 bg-background"
-              title={artifact.title}
-              // TODO: Consider more restrictive sandbox for untrusted content
-              // Current permissions are appropriate for personal project with controlled artifacts.
-              // For production with user-generated content, remove 'allow-same-origin' to prevent
-              // DOM access and potential data exfiltration.
-              // See: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe#attr-sandbox
-              sandbox="allow-scripts allow-same-origin allow-downloads allow-popups"
-            />
+            <WebPreview defaultUrl="about:blank" key={`webpreview-${themeRefreshKey}`}>
+              <WebPreviewNavigation>
+                <WebPreviewNavigationButton
+                  tooltip="Refresh preview"
+                  onClick={handleRefresh}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </WebPreviewNavigationButton>
+                <WebPreviewUrl />
+                <WebPreviewNavigationButton
+                  tooltip="Full screen"
+                  onClick={handleFullScreen}
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </WebPreviewNavigationButton>
+              </WebPreviewNavigation>
+              <WebPreviewBody
+                srcDoc={previewContent}
+                key={`${injectedCDNs}-${themeRefreshKey}`}
+                loading={isLoading ? <ArtifactSkeleton type={artifact.type} /> : undefined}
+                className="w-full h-full border-0 bg-background"
+                title={artifact.title}
+                // TODO: Consider more restrictive sandbox for untrusted content
+                // Current permissions are appropriate for personal project with controlled artifacts.
+                // For production with user-generated content, remove 'allow-same-origin' to prevent
+                // DOM access and potential data exfiltration.
+                // See: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe#attr-sandbox
+                sandbox="allow-scripts allow-same-origin allow-downloads allow-popups"
+              />
+            </WebPreview>
           </div>
         </div>
       );
@@ -712,11 +741,11 @@ ${artifact.content}
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
-  <script src="https://unpkg.com/recharts@2.5.0/dist/Recharts.js"></script>
-  <script src="https://unpkg.com/@radix-ui/react-dialog@1.0.5/dist/index.umd.js"></script>
-  <script src="https://unpkg.com/@radix-ui/react-dropdown-menu@2.0.6/dist/index.umd.js"></script>
-  <script src="https://unpkg.com/@radix-ui/react-tabs@1.0.4/dist/index.umd.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/framer-motion@11.0.3/dist/framer-motion.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/recharts@2.5.0/dist/Recharts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@radix-ui/react-dialog@1.0.5/dist/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@radix-ui/react-dropdown-menu@2.0.6/dist/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@radix-ui/react-tabs@1.0.4/dist/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/framer-motion@11.11.11/dist/size-rollup-motion.js"></script>
   ${injectedCDNs}
   ${generateCompleteIframeStyles()}
   <style>
@@ -747,10 +776,17 @@ ${artifact.content}
       Loader, Clock, Calendar, Mail, Phone,
       // Layout icons
       Grid, List, Layout, Sidebar, Maximize, Minimize,
-      Copy, Eye, EyeOff, Lock, Unlock, Share, Link,
-      // Spread all remaining icons
-      ...LucideIcons
+      Copy, Eye, EyeOff, Lock, Unlock, Share, Link
     } = LucideIcons;
+
+    // BUGFIX (2025-11-12): Cannot use spread operator (...LucideIcons) while destructuring
+    // from the same variable. This created a syntax error: "Identifier 'LucideIcons' has already been declared"
+    // Solution: Expose all remaining icons globally via Object.keys loop
+    Object.keys(LucideIcons).forEach(iconName => {
+      if (typeof window[iconName] === 'undefined') {
+        window[iconName] = LucideIcons[iconName];
+      }
+    });
 
     // Expose Radix UI primitives (if loaded)
     const RadixDialog = window.RadixDialog || {};
@@ -766,7 +802,16 @@ ${artifact.content}
     } = Recharts;
 
     // Expose Framer Motion (if loaded)
-    const { motion, AnimatePresence } = window.Motion || {};
+    const FramerMotion = window.Motion || {};
+    const { motion, AnimatePresence } = FramerMotion;
+
+    // Expose all Framer Motion exports globally for artifact access
+    // This follows the same pattern as LucideIcons above
+    Object.keys(FramerMotion).forEach(exportName => {
+      if (typeof window[exportName] === 'undefined') {
+        window[exportName] = FramerMotion[exportName];
+      }
+    });
 
     ${processedCode}
 
@@ -858,18 +903,36 @@ ${artifact.content}
                 </div>
               </div>
             )}
-            <iframe
-              key={`${injectedCDNs}-${themeRefreshKey}`}
-              srcDoc={reactPreviewContent}
-              className="w-full h-full border-0 bg-background"
-              title={artifact.title}
-              // TODO: Consider more restrictive sandbox for untrusted content
-              // Current permissions are appropriate for personal project with controlled artifacts.
-              // For production with user-generated content, remove 'allow-same-origin' to prevent
-              // DOM access and potential data exfiltration.
-              // See: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe#attr-sandbox
-              sandbox="allow-scripts allow-same-origin allow-downloads allow-popups"
-            />
+            <WebPreview defaultUrl="about:blank" key={`webpreview-react-${themeRefreshKey}`}>
+              <WebPreviewNavigation>
+                <WebPreviewNavigationButton
+                  tooltip="Refresh preview"
+                  onClick={handleRefresh}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </WebPreviewNavigationButton>
+                <WebPreviewUrl />
+                <WebPreviewNavigationButton
+                  tooltip="Full screen"
+                  onClick={handleFullScreen}
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </WebPreviewNavigationButton>
+              </WebPreviewNavigation>
+              <WebPreviewBody
+                srcDoc={reactPreviewContent}
+                key={`${injectedCDNs}-${themeRefreshKey}`}
+                loading={isLoading ? <ArtifactSkeleton type={artifact.type} /> : undefined}
+                className="w-full h-full border-0 bg-background"
+                title={artifact.title}
+                // TODO: Consider more restrictive sandbox for untrusted content
+                // Current permissions are appropriate for personal project with controlled artifacts.
+                // For production with user-generated content, remove 'allow-same-origin' to prevent
+                // DOM access and potential data exfiltration.
+                // See: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe#attr-sandbox
+                sandbox="allow-scripts allow-same-origin allow-downloads allow-popups"
+              />
+            </WebPreview>
           </div>
         </div>
       );

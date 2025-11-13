@@ -1,7 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { callGemini, extractTextFromGeminiResponse } from "../_shared/gemini-client.ts";
+import { callKimiWithRetry, extractTextFromKimi, extractTokenUsage, calculateKimiCost, logAIUsage } from "../_shared/openrouter-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
+
+// NOTE: Retry logic moved to openrouter-client.ts
+// callKimiWithRetry() now handles exponential backoff automatically
 
 // Enhanced artifact system prompt - optimized for Pro model
 const ARTIFACT_SYSTEM_PROMPT = `# 🚨 CRITICAL TECHNICAL RESTRICTIONS 🚨
@@ -239,6 +242,9 @@ serve(async (req) => {
   }
 
   try {
+    // Generate unique request ID for tracking
+    const requestId = crypto.randomUUID();
+
     const requestBody = await req.json();
     const { prompt, artifactType, sessionId } = requestBody;
 
@@ -287,65 +293,151 @@ serve(async (req) => {
     }
 
     const userType = user ? `user ${user.id}` : "guest";
-    console.log(`Artifact generation request from ${userType}:`, prompt.substring(0, 100));
+    console.log(`[${requestId}] Artifact generation request from ${userType}:`, prompt.substring(0, 100));
 
-    // Construct Gemini API request
-    const contents = [
+    // Track timing for latency calculation
+    const startTime = Date.now();
+
+    // Construct user prompt for Kimi K2-Thinking
+    const userPrompt = artifactType
+      ? `Create a ${artifactType} artifact for: ${prompt}\n\nIMPORTANT: Return the COMPLETE artifact wrapped in XML tags like: <artifact type="application/vnd.ant.react" title="Descriptive Title">YOUR CODE HERE</artifact>\n\nInclude the opening <artifact> tag, the complete code, and the closing </artifact> tag.`
+      : `Create an artifact for: ${prompt}\n\nIMPORTANT: Return the COMPLETE artifact wrapped in XML tags like: <artifact type="application/vnd.ant.react" title="Descriptive Title">YOUR CODE HERE</artifact>\n\nInclude the opening <artifact> tag, the complete code, and the closing </artifact> tag.`;
+
+    // Call Kimi K2-Thinking via OpenRouter with retry logic
+    console.log(`[${requestId}] 🚀 Routing to Kimi K2-Thinking (reasoning model for code generation)`);
+    const response = await callKimiWithRetry(
+      ARTIFACT_SYSTEM_PROMPT,
+      userPrompt,
       {
-        role: "user",
-        parts: [{
-          text: artifactType
-            ? `Create a ${artifactType} artifact for: ${prompt}\n\nIMPORTANT: Return the COMPLETE artifact wrapped in XML tags like: <artifact type="application/vnd.ant.react" title="Descriptive Title">YOUR CODE HERE</artifact>\n\nInclude the opening <artifact> tag, the complete code, and the closing </artifact> tag.`
-            : `Create an artifact for: ${prompt}\n\nIMPORTANT: Return the COMPLETE artifact wrapped in XML tags like: <artifact type="application/vnd.ant.react" title="Descriptive Title">YOUR CODE HERE</artifact>\n\nInclude the opening <artifact> tag, the complete code, and the closing </artifact> tag.`
-        }]
+        temperature: 0.7, // Balanced creativity and consistency
+        max_tokens: 8000,
+        requestId
       }
-    ];
-
-    // Call Gemini Pro API with specialized artifact prompt
-    const response = await callGemini("gemini-2.5-pro", contents, {
-      systemInstruction: ARTIFACT_SYSTEM_PROMPT,
-      temperature: 0.7, // Balanced creativity and consistency
-      keyName: "GOOGLE_AI_STUDIO_KEY_ARTIFACT" // Use artifact key pool (GOOGLE_KEY_3-6, 8 RPM total)
-    });
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Google AI Studio error:", response.status, errorText);
+      console.error(`[${requestId}] Kimi K2-Thinking API error:`, response.status, errorText.substring(0, 200));
 
       if (response.status === 429 || response.status === 403) {
         return new Response(
-          JSON.stringify({ error: "API quota exceeded. Please try again in a moment." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({
+            error: "API quota exceeded. Please try again in a moment.",
+            requestId
+          }),
+          {
+            status: 429,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+              "X-Request-ID": requestId
+            }
+          }
+        );
+      }
+
+      if (response.status === 503) {
+        return new Response(
+          JSON.stringify({
+            error: "AI service is temporarily overloaded. Please try again in a moment.",
+            requestId,
+            retryable: true
+          }),
+          {
+            status: 503,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+              "X-Request-ID": requestId
+            }
+          }
         );
       }
 
       return new Response(
-        JSON.stringify({ error: "Artifact generation failed. Please try again." }),
-        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          error: "Artifact generation failed. Please try again.",
+          requestId
+        }),
+        {
+          status: response.status,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+            "X-Request-ID": requestId
+          }
+        }
       );
     }
 
     const data = await response.json();
-    const artifactCode = extractTextFromGeminiResponse(data);
+    const artifactCode = extractTextFromKimi(data, requestId);
+
+    // Extract token usage for cost tracking
+    const tokenUsage = extractTokenUsage(data);
+    const estimatedCost = calculateKimiCost(tokenUsage.inputTokens, tokenUsage.outputTokens);
+
+    console.log(`[${requestId}] 💰 Token usage:`, {
+      input: tokenUsage.inputTokens,
+      output: tokenUsage.outputTokens,
+      total: tokenUsage.totalTokens,
+      estimatedCost: `$${estimatedCost.toFixed(4)}`
+    });
+
+    // Log usage to database for admin dashboard (fire-and-forget, non-blocking)
+    const latencyMs = Date.now() - startTime;
+    logAIUsage({
+      requestId,
+      functionName: 'generate-artifact',
+      provider: 'openrouter',
+      model: 'moonshotai/kimi-k2-thinking',
+      userId: user?.id,
+      isGuest: !user,
+      inputTokens: tokenUsage.inputTokens,
+      outputTokens: tokenUsage.outputTokens,
+      totalTokens: tokenUsage.totalTokens,
+      latencyMs,
+      statusCode: 200,
+      estimatedCost,
+      retryCount: 0,
+      promptPreview: prompt.substring(0, 200),
+      responseLength: artifactCode.length
+    }).catch(err => console.error(`[${requestId}] Failed to log usage:`, err));
+    console.log(`[${requestId}] 📊 Usage logged to database`);
 
     if (!artifactCode || artifactCode.trim().length === 0) {
-      console.error("Empty artifact code returned from API");
+      console.error(`[${requestId}] Empty artifact code returned from API`);
       return new Response(
-        JSON.stringify({ error: "Failed to generate artifact. Please try again with a different prompt." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          error: "Failed to generate artifact. Please try again with a different prompt.",
+          requestId
+        }),
+        {
+          status: 500,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+            "X-Request-ID": requestId
+          }
+        }
       );
     }
 
-    console.log(`Artifact generated successfully, length: ${artifactCode.length} characters`);
+    console.log(`[${requestId}] Artifact generated successfully, length: ${artifactCode.length} characters`);
 
     return new Response(
       JSON.stringify({
         success: true,
         artifactCode,
-        prompt
+        prompt,
+        requestId
       }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          "X-Request-ID": requestId
+        },
       }
     );
 

@@ -49,6 +49,17 @@ const mimeTypeMap: Record<string, ArtifactType> = {
   'image': 'image'
 };
 
+// Strip markdown code fences from artifact content
+function stripMarkdownFences(content: string): string {
+  // Remove opening fences: ```jsx, ```typescript, ```javascript, ```html, etc.
+  let cleaned = content.replace(/^```[\w]*\n?/gm, '');
+
+  // Remove closing fences: ```
+  cleaned = cleaned.replace(/^```\n?$/gm, '');
+
+  return cleaned.trim();
+}
+
 // Parse message content to extract artifacts
 export const parseArtifacts = (content: string): {
   artifacts: ArtifactData[];
@@ -59,27 +70,41 @@ export const parseArtifacts = (content: string): {
   const warnings: Array<{ artifactTitle: string; messages: string[] }> = [];
   let cleanContent = content;
 
-  // Match artifact blocks with format: <artifact type="..." title="...">content</artifact>
-  const artifactRegex = /<artifact\s+type="([^"]+)"\s+title="([^"]+)"(?:\s+language="([^"]+)")?>([\s\S]*?)<\/artifact>/g;
+  // Match artifact blocks - accepts attributes in any order (type, title, language)
+  const artifactRegex = /<artifact([^>]*)>([\s\S]*?)<\/artifact>/g;
 
   let match;
   let artifactIndex = 0;
   while ((match = artifactRegex.exec(content)) !== null) {
-    const [fullMatch, type, title, language, artifactContent] = match;
+    const [fullMatch, attributesStr, artifactContent] = match;
+
+    // Extract attributes from the attribute string (handles any order)
+    const typeMatch = attributesStr.match(/type="([^"]+)"/);
+    const titleMatch = attributesStr.match(/title="([^"]+)"/);
+    const languageMatch = attributesStr.match(/language="([^"]+)"/);
+
+    const type = typeMatch ? typeMatch[1] : '';
+    const title = titleMatch ? titleMatch[1] : '';
+    const language = languageMatch ? languageMatch[1] : undefined;
 
     // Map MIME type to internal type
     const mappedType = mimeTypeMap[type] || type as ArtifactType;
 
+    // CRITICAL FIX: Strip markdown code fences before storing
+    // AI models sometimes wrap artifact code in ```jsx or ``` blocks
+    // This causes "Script error" when trying to execute the fences as JavaScript
+    const processedContent = stripMarkdownFences(artifactContent.trim());
+
     artifacts.push({
-      id: generateStableId(artifactContent.trim(), mappedType, artifactIndex++),
+      id: generateStableId(processedContent, mappedType, artifactIndex++),
       type: mappedType,
       title: title,
-      content: artifactContent.trim(),
+      content: processedContent,
       language: language || undefined,
     });
 
-    // Check for invalid imports
-    const importWarnings = detectInvalidImports(artifactContent.trim(), mappedType);
+    // Check for invalid imports (after fence stripping)
+    const importWarnings = detectInvalidImports(processedContent, mappedType);
     if (importWarnings.length > 0) {
       warnings.push({
         artifactTitle: title,

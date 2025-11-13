@@ -262,9 +262,34 @@ export async function callGemini(
 /**
  * Extract text content from Gemini response
  * Handles the candidates[0].content.parts[0].text structure
+ * Now with enhanced logging for debugging
  */
-export function extractTextFromGeminiResponse(responseData: any): string {
-  return responseData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+export function extractTextFromGeminiResponse(responseData: any, requestId?: string): string {
+  const logPrefix = requestId ? `[${requestId}]` : "";
+
+  // Try standard format: candidates[0].content.parts[0].text
+  if (responseData?.candidates?.[0]?.content?.parts?.[0]?.text) {
+    const text = responseData.candidates[0].content.parts[0].text;
+    console.log(`${logPrefix} Extracted text from candidates format, length: ${text.length}`);
+    return text;
+  }
+
+  // Try direct content.parts format
+  if (responseData?.content?.parts?.[0]?.text) {
+    const text = responseData.content.parts[0].text;
+    console.log(`${logPrefix} Extracted text from direct content format, length: ${text.length}`);
+    return text;
+  }
+
+  // Try root-level text
+  if (responseData?.text && typeof responseData.text === 'string') {
+    console.log(`${logPrefix} Extracted text from root level, length: ${responseData.text.length}`);
+    return responseData.text;
+  }
+
+  // Log structure if extraction failed
+  console.error(`${logPrefix} Failed to extract text. Response structure:`, JSON.stringify(responseData, null, 2).substring(0, 500));
+  return "";
 }
 
 /**

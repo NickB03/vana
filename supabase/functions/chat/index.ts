@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { shouldGenerateImage, shouldGenerateArtifact, getArtifactType, getArtifactGuidance } from "./intent-detector.ts";
+import { shouldGenerateImage, shouldGenerateArtifact, getArtifactType, getArtifactGuidance } from "./intent-detector-embeddings.ts";
 import { validateArtifactRequest, generateGuidanceFromValidation } from "./artifact-validator.ts";
 import { transformArtifactCode } from "./artifact-transformer.ts";
 import { convertToGeminiFormat, extractSystemMessage, getApiKey } from "../_shared/gemini-client.ts";
@@ -327,7 +327,7 @@ serve(async (req) => {
 
     // Analyze user prompt to determine which specialized model to use
     const lastUserMessage = messages[messages.length - 1];
-    const isImageRequest = lastUserMessage && shouldGenerateImage(lastUserMessage.content);
+    const isImageRequest = lastUserMessage && await shouldGenerateImage(lastUserMessage.content);
 
     if (isImageRequest) {
       console.log("🎯 Intent detected: IMAGE generation");
@@ -383,56 +383,107 @@ serve(async (req) => {
     }
 
     // Detect artifact generation requests (non-image artifacts)
-    const isArtifactRequest = lastUserMessage && shouldGenerateArtifact(lastUserMessage.content);
+    const isArtifactRequest = lastUserMessage && await shouldGenerateArtifact(lastUserMessage.content);
 
     if (isArtifactRequest) {
-      const artifactType = getArtifactType(lastUserMessage.content);
+      const artifactType = await getArtifactType(lastUserMessage.content);
       console.log(`🎯 Intent detected: ARTIFACT generation (${artifactType})`);
       console.log("🔀 Routing to: generate-artifact (Pro model)");
 
-      try {
-        // Get auth header to pass to generate-artifact function
-        const authHeader = req.headers.get("Authorization");
+      // Retry configuration for artifact generation
+      const MAX_ARTIFACT_RETRIES = 2; // Total of 3 attempts (initial + 2 retries)
+      const ARTIFACT_RETRY_DELAYS = [3000, 6000]; // 3s, 6s delays
 
-        // Call generate-artifact edge function with auth header
-        const artifactResponse = await supabase.functions.invoke('generate-artifact', {
-          body: {
-            prompt: lastUserMessage.content,
-            artifactType,
-            sessionId
-          },
-          headers: authHeader ? { Authorization: authHeader } : {}
-        });
+      let lastError: any = null;
 
-        if (artifactResponse.error) {
-          console.error(`[${requestId}] Artifact generation error:`, {
-            error: artifactResponse.error,
-            status: artifactResponse.status,
-            data: artifactResponse.data
+      console.log(`[${requestId}] Starting artifact generation with retry logic (max ${MAX_ARTIFACT_RETRIES + 1} attempts)`);
+
+      for (let attempt = 0; attempt <= MAX_ARTIFACT_RETRIES; attempt++) {
+        try {
+          if (attempt > 0) {
+            const delay = ARTIFACT_RETRY_DELAYS[attempt - 1];
+            console.log(`[${requestId}] Retrying artifact generation (attempt ${attempt + 1}/${MAX_ARTIFACT_RETRIES + 1}) after ${delay}ms`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          } else {
+            console.log(`[${requestId}] First attempt at artifact generation`);
+          }
+
+          // Get auth header to pass to generate-artifact function
+          const authHeader = req.headers.get("Authorization");
+
+          // Call generate-artifact edge function with auth header
+          const artifactResponse = await supabase.functions.invoke('generate-artifact', {
+            body: {
+              prompt: lastUserMessage.content,
+              artifactType,
+              sessionId
+            },
+            headers: authHeader ? { Authorization: authHeader } : {}
           });
-          const errorMessage = `I encountered an issue generating the artifact. Please try again. (Request ID: ${requestId})`;
+
+          // Check for retryable errors (503 service overloaded)
+          // Supabase functions.invoke returns { data, error } structure
+          if (artifactResponse.error) {
+            const errorData = artifactResponse.data;
+            // Check if this is a retryable 503 error
+            const isRetryable = errorData?.retryable === true;
+
+            // Enhanced logging for debugging
+            console.error(`[${requestId}] Artifact generation error (attempt ${attempt + 1}/${MAX_ARTIFACT_RETRIES + 1}):`, {
+              error: artifactResponse.error,
+              errorMessage: artifactResponse.error?.message,
+              retryable: isRetryable,
+              errorData: errorData,
+              fullResponse: JSON.stringify(artifactResponse)
+            });
+
+            // If retryable and we have retries left, continue to next iteration
+            if (isRetryable && attempt < MAX_ARTIFACT_RETRIES) {
+              lastError = artifactResponse;
+              console.log(`[${requestId}] Will retry after ${ARTIFACT_RETRY_DELAYS[attempt]}ms...`);
+              continue; // This will trigger the retry with delay
+            }
+
+            // Non-retryable error or out of retries
+            const errorMessage = errorData?.error || `I encountered an issue generating the artifact. Please try again. (Request ID: ${requestId})`;
+            console.error(`[${requestId}] Returning error to user: ${errorMessage}`);
+            return new Response(
+              `data: ${JSON.stringify({ choices: [{ delta: { content: errorMessage } }] })}\n\ndata: [DONE]\n\n`,
+              { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream", "X-Request-ID": requestId } }
+            );
+          }
+
+          // Success! Get artifact code from response
+          const { artifactCode } = artifactResponse.data;
+
+          if (attempt > 0) {
+            console.log(`[${requestId}] Artifact generation succeeded on attempt ${attempt + 1}`);
+          }
+
+          // Stream the artifact response
           return new Response(
-            `data: ${JSON.stringify({ choices: [{ delta: { content: errorMessage } }] })}\n\ndata: [DONE]\n\n`,
-            { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream", "X-Request-ID": requestId } }
+            `data: ${JSON.stringify({ choices: [{ delta: { content: artifactCode } }] })}\n\ndata: [DONE]\n\n`,
+            { headers: { ...corsHeaders, ...rateLimitHeaders, "X-Request-ID": requestId, "Content-Type": "text/event-stream" } }
           );
+
+        } catch (artifactError) {
+          console.error(`[${requestId}] Artifact generation exception (attempt ${attempt + 1}):`, artifactError);
+          lastError = artifactError;
+
+          // If we have retries left, continue to next iteration
+          if (attempt < MAX_ARTIFACT_RETRIES) {
+            continue;
+          }
         }
-
-        // Get artifact code from response
-        const { artifactCode } = artifactResponse.data;
-
-        // Stream the artifact response
-        return new Response(
-          `data: ${JSON.stringify({ choices: [{ delta: { content: artifactCode } }] })}\n\ndata: [DONE]\n\n`,
-          { headers: { ...corsHeaders, ...rateLimitHeaders, "X-Request-ID": requestId, "Content-Type": "text/event-stream" } }
-        );
-      } catch (artifactError) {
-        console.error(`[${requestId}] Artifact generation failed:`, artifactError);
-        const errorMessage = `I encountered an issue generating the artifact. Please try again. (Request ID: ${requestId})`;
-        return new Response(
-          `data: ${JSON.stringify({ choices: [{ delta: { content: errorMessage } }] })}\n\ndata: [DONE]\n\n`,
-          { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream", "X-Request-ID": requestId } }
-        );
       }
+
+      // All retries exhausted
+      console.error(`[${requestId}] Artifact generation failed after ${MAX_ARTIFACT_RETRIES + 1} attempts`);
+      const errorMessage = `I encountered an issue generating the artifact after multiple attempts. The AI service may be temporarily overloaded. Please try again in a moment. (Request ID: ${requestId})`;
+      return new Response(
+        `data: ${JSON.stringify({ choices: [{ delta: { content: errorMessage } }] })}\n\ndata: [DONE]\n\n`,
+        { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream", "X-Request-ID": requestId } }
+      );
     }
 
     // Try to get cached context with summary
