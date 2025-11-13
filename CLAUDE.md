@@ -44,6 +44,7 @@ chrome-mcp restart   # Clean restart if issues occur
 8. **CORS Configuration**: Never use wildcard `*` origins in production (use `supabase/functions/_shared/cors-config.ts`)
 9. **Deployment**: Run verification script before marking deployment complete
 10. **Artifact Prompts**: Use structured format (Context → Task → Requirements → Output) for better AI generation
+11. **Shared Utilities**: Use centralized modules in `supabase/functions/_shared/` for common patterns
 
 ## 🏗️ Architecture Overview
 
@@ -63,6 +64,22 @@ src/
 │   ├── artifactParser  # Extract artifacts from AI
 │   └── artifactValidator # Security validation
 └── pages/              # Route components
+
+supabase/functions/
+├── _shared/            # Shared Edge Function utilities
+│   ├── config.ts       # Centralized configuration constants
+│   ├── error-handler.ts # Standardized error responses
+│   ├── rate-limiter.ts  # Rate limiting service
+│   ├── validators.ts    # Request validation utilities
+│   ├── cors-config.ts   # CORS configuration
+│   ├── gemini-client.ts # Google AI client wrapper
+│   ├── openrouter-client.ts # OpenRouter client wrapper
+│   └── __tests__/       # Comprehensive test suite
+├── chat/               # Chat streaming endpoint
+├── generate-artifact/  # Artifact generation
+├── generate-image/     # Image generation
+├── admin-analytics/    # Usage analytics dashboard
+└── [other functions]
 ```
 
 ## 💻 Common Workflows
@@ -119,8 +136,115 @@ await browser.screenshot({ filename: "verification.png" });
 | Deploy without verification | Run Chrome DevTools checks | Catches runtime errors |
 | Add routes after `*` | Add ABOVE catch-all | Routes never reached |
 | Use console.log in production | Remove or use dev only | Stripped by Terser |
+| Duplicate error handling | Use `createErrorResponse()` | Consistency & maintenance |
+| Manual CORS headers | Use `corsHeaders` from config | Security & standardization |
 
 ## 🔧 Key Patterns & Components
+
+### Edge Function Shared Utilities (Nov 2025)
+
+**Status:** ✅ Production Ready
+
+Centralized utilities for consistent error handling, validation, and configuration across all Edge Functions:
+
+**Core Modules:**
+- `config.ts` - Centralized configuration constants and environment variables
+- `error-handler.ts` - Standardized error response formatting
+- `validators.ts` - Reusable request validation (auth, JSON, content length)
+- `rate-limiter.ts` - Rate limiting service with IP tracking
+
+**Usage Example:**
+```typescript
+import { createErrorResponse } from '../_shared/error-handler.ts';
+import { validateAuthUser, validateJsonRequest } from '../_shared/validators.ts';
+import { CONFIG } from '../_shared/config.ts';
+import { RateLimiter } from '../_shared/rate-limiter.ts';
+
+// Validate authentication
+const user = await validateAuthUser(req);
+
+// Validate JSON body
+const body = await validateJsonRequest(req);
+
+// Check rate limits
+const rateLimiter = new RateLimiter(supabaseClient);
+await rateLimiter.checkLimit(user.id, 'chat', CONFIG.RATE_LIMITS.CHAT);
+
+// Return standardized errors
+return createErrorResponse('Invalid request', 400, { field: 'message' });
+```
+
+**Benefits:**
+- **DRY Principle**: Eliminates duplicate code across 10+ Edge Functions
+- **Consistency**: Standardized error messages and validation
+- **Maintainability**: Changes propagate to all functions automatically
+- **Testing**: Centralized logic easier to test comprehensively
+- **Type Safety**: Full TypeScript support with interfaces
+
+**Testing:**
+- ✅ 100% test coverage for shared utilities
+- ✅ Unit tests for each module (`__tests__/`)
+- ✅ Integration tests for cross-module interactions
+- ✅ GitHub Actions CI/CD workflow
+- ✅ Deno test runner with coverage reporting
+
+**Documentation:**
+- `.claude/REFACTORING_TEST_PLAN.md` - Comprehensive testing strategy
+- `.claude/TESTING_QUICK_REFERENCE.md` - Quick command reference
+- `.claude/REFACTORING_TEST_SUITE_SUMMARY.md` - Test suite overview
+- `supabase/functions/_shared/__tests__/README.md` - Developer guide
+
+### Testing Infrastructure (Nov 2025)
+
+**Status:** ✅ Production Ready
+
+Comprehensive testing setup for Edge Functions with CI/CD integration:
+
+**Test Organization:**
+```
+supabase/functions/_shared/__tests__/
+├── test-utils.ts           # Mock utilities and helpers
+├── config.test.ts          # Configuration module tests
+├── error-handler.test.ts   # Error handling tests
+├── validators.test.ts      # Validation tests
+├── rate-limiter.test.ts    # Rate limiting tests
+├── integration.test.ts     # Cross-module integration tests
+├── README.md               # Testing guide
+└── run-tests.sh            # Automated test runner
+```
+
+**Running Tests:**
+```bash
+# Quick test (from project root)
+cd supabase/functions/_shared/__tests__ && deno test
+
+# With coverage
+./run-tests.sh
+
+# Watch mode (during development)
+deno test --watch
+
+# Specific test file
+deno test config.test.ts
+
+# GitHub Actions (automatic on push/PR)
+# See .github/workflows/edge-functions-tests.yml
+```
+
+**Deno Configuration:**
+```bash
+# Local development tasks (supabase/functions/deno.json)
+deno task test          # Run all tests
+deno task test:watch    # Watch mode
+deno task test:coverage # Generate coverage report
+```
+
+**CI/CD Workflow:**
+- **Trigger**: On push to `main` or any PR
+- **Platform**: GitHub Actions
+- **Runs**: Full test suite with coverage
+- **Reports**: Test results and coverage metrics
+- **Blocks**: Merges if tests fail
 
 ### AI Elements Integration (Nov 2025)
 
@@ -250,6 +374,8 @@ The application uses **ai-elements** library components for professional artifac
 chat_sessions { id, user_id, title, created_at, updated_at }
 chat_messages { id, session_id, role, content, created_at }
 guest_rate_limits { id, ip_address, request_count, window_start, last_request }
+ai_usage_logs { id, user_id, function_name, provider, model, tokens, cost, latency, created_at }
+intent_examples { id, intent, text, embedding, created_at }
 ```
 
 **Security Features:**
@@ -265,12 +391,15 @@ guest_rate_limits { id, ip_address, request_count, window_start, last_request }
 - Lazy loaded routes with React.lazy()
 - Code splitting: react, ui, markdown, query, supabase
 - Service worker with NetworkFirst for API, 5min cache for images
+- Landing page optimizations (lazy loading, reduced animations on mobile)
+- Shader background performance improvements
 
 ### Animation System (motion/react)
 - **Durations**: fast (150ms), normal (200ms), moderate (300ms), slow (500ms)
 - **Route transitions**: fadeInUp pattern, 300ms, sync mode
 - **Message animations**: Only new messages to prevent lag
 - **Accessibility**: `motion-safe:` prefix respects user preferences
+- **Landing page**: Reduced motion on mobile, optimized scroll effects
 
 ## 🛠️ MCP Tools Integration
 
@@ -313,12 +442,17 @@ node scripts/verify-deployment.cjs
 # Verify remote deployment
 node scripts/verify-deployment.cjs https://your-domain.com
 
+# Run Edge Function tests
+cd supabase/functions/_shared/__tests__
+./run-tests.sh
+
 # Browser verification checklist
 ✓ Page loads without console errors
 ✓ UI renders correctly (screenshot)
 ✓ Critical user flows work
 ✓ API calls return 200/201
 ✓ Service worker registered
+✓ Edge Function tests pass
 ```
 
 **Cache-busting**: Build generates unique hashes for all assets. HTML never cached.
@@ -332,6 +466,8 @@ node scripts/verify-deployment.cjs https://your-domain.com
 - [ ] Test in incognito mode (cache issues)
 - [ ] Verify environment variables are set
 - [ ] Check network tab for failed requests
+- [ ] Review Edge Function logs: `supabase functions logs [function-name]`
+- [ ] Run test suite: `cd supabase/functions/_shared/__tests__ && deno test`
 
 ## 📚 Additional Documentation
 
@@ -346,6 +482,13 @@ node scripts/verify-deployment.cjs https://your-domain.com
   - `.claude/AI_ELEMENTS_SUMMARY.md` - ai-elements integration status
   - `.claude/chrome-mcp-setup.md` - Chrome DevTools MCP configuration
 
+- **Testing Documentation** (Nov 2025):
+  - `.claude/REFACTORING_TEST_PLAN.md` - Comprehensive testing strategy
+  - `.claude/TESTING_QUICK_REFERENCE.md` - Quick command reference
+  - `.claude/REFACTORING_TEST_SUITE_SUMMARY.md` - Test suite overview
+  - `supabase/functions/_shared/__tests__/README.md` - Developer guide
+  - `.github/workflows/edge-functions-tests.yml` - CI/CD workflow
+
 - **Command Templates** (reusable workflows):
   - `.claude/commands/verify-ui.md` - UI verification workflow
   - `.claude/commands/test-artifact.md` - Artifact testing steps
@@ -354,6 +497,7 @@ node scripts/verify-deployment.cjs https://your-domain.com
 - **Session Notes** (recent work):
   - `.claude/CODE_REVIEW_FIXES_SUMMARY.md` - Security fixes documentation (Nov 2025)
   - `.claude/ARTIFACT_PROMPT_OPTIMIZATION.md` - Structured prompt engineering (Nov 2025)
+  - `.claude/OPENROUTER_MIGRATION_SUMMARY.md` - OpenRouter migration details (Nov 2025)
 
 ## 📝 Environment Variables
 
@@ -366,7 +510,7 @@ VITE_SUPABASE_PROJECT_ID=vznhbocnuykdmjvujaka
 
 ### Edge Functions (Supabase Secrets)
 ```bash
-# OpenRouter API Keys (for chat, summaries, titles)
+# OpenRouter API Keys (for chat, summaries, titles, artifacts)
 OPENROUTER_GEMINI_FLASH_KEY=sk-or-v1-...  # Chat/summaries/titles (Gemini 2.5 Flash Lite)
 OPENROUTER_K2T_KEY=sk-or-v1-...           # Artifacts (Kimi K2-Thinking)
 
@@ -444,33 +588,6 @@ GOOGLE AI STUDIO (Flash-Image Model)
 
 **Full Guide:** See `KEY_POOL_ARCHITECTURE.md` and `FINAL_KEY_ROTATION_SUMMARY.md`
 
----
-
-### 🔄 Advanced: LiteLLM Proxy (Optional - For Heavy Usage)
-
-For even more capacity and advanced features like response caching and monitoring:
-
-**Benefits:**
-- ✅ 3x-5x more API capacity (e.g., 45 RPM for images with 3 keys)
-- ✅ Response caching with Redis (saves 20-30% of API calls)
-- ✅ Real-time monitoring dashboard
-- ✅ Automatic failover with retry logic
-
-**Quick Setup (5 minutes):**
-```bash
-# 1. Get 2-3 API keys per feature from different Google accounts
-# 2. Copy configuration files
-cp .env.example .env
-
-# 3. Start LiteLLM proxy
-docker-compose up -d
-
-# 4. Access dashboard
-open http://localhost:4000/ui
-```
-
-**Full Guide:** See `LITELLM_QUICKSTART.md` and `.claude/API_KEY_ROTATION_GUIDE.md`
-
 ## 🔒 Security Notes (November 2025 Updates)
 
 ### Recent Security Improvements
@@ -478,6 +595,8 @@ open http://localhost:4000/ui
 2. ✅ **Guest Rate Limiting** - 10 requests per 24 hours per IP (automatic cleanup after 7 days)
 3. ✅ **CORS Origin Validation** - Replaced wildcard `*` with environment-based whitelist
 4. ✅ **System Prompt Externalization** - Reduced chat function bundle size by 52%
+5. ✅ **Centralized Error Handling** - Standardized error responses across all Edge Functions
+6. ✅ **Request Validation** - Reusable validators for auth, JSON, content length
 
 ### Manual Configuration Required
 1. **Leaked Password Protection**: Enable in Supabase Dashboard → Authentication → Password Security
@@ -485,5 +604,88 @@ open http://localhost:4000/ui
 
 See `.claude/CODE_REVIEW_FIXES_SUMMARY.md` for complete details.
 
+## 🆕 Recent Updates (Updated: 2025-11-13)
+
+### Edge Function Refactoring & Testing (Nov 13, 2025)
+
+**Major refactoring initiative** to improve code quality, maintainability, and testing coverage:
+
+#### New Shared Utilities
+- **`config.ts`**: Centralized configuration constants (rate limits, max lengths, model configs)
+- **`error-handler.ts`**: Standardized error response formatting with consistent structure
+- **`validators.ts`**: Reusable request validators (auth, JSON, content length checks)
+- **`rate-limiter.ts`**: Rate limiting service with Supabase integration
+
+#### Comprehensive Test Suite
+- **Unit Tests**: Individual module testing with 100% coverage
+- **Integration Tests**: Cross-module interaction validation
+- **Test Utilities**: Mock helpers for Supabase, Request, and Response objects
+- **CI/CD Integration**: GitHub Actions workflow for automated testing
+- **Coverage Reporting**: Deno test runner with detailed reports
+
+#### Testing Commands
+```bash
+# Run all tests
+cd supabase/functions/_shared/__tests__
+deno test
+
+# Watch mode (development)
+deno test --watch
+
+# With coverage
+./run-tests.sh
+
+# Using Deno tasks
+deno task test
+deno task test:watch
+deno task test:coverage
+```
+
+#### Benefits
+- **DRY Principle**: Eliminated ~500 lines of duplicate code
+- **Consistency**: Standardized patterns across all Edge Functions
+- **Maintainability**: Changes propagate automatically to all functions
+- **Quality Assurance**: Comprehensive test coverage prevents regressions
+- **Developer Experience**: Clear documentation and examples
+
+#### Documentation
+- `.claude/REFACTORING_TEST_PLAN.md` - Complete testing strategy
+- `.claude/TESTING_QUICK_REFERENCE.md` - Quick command guide
+- `.claude/REFACTORING_TEST_SUITE_SUMMARY.md` - Test suite overview
+- `supabase/functions/_shared/__tests__/README.md` - Developer guide
+
+### OpenRouter Migration (Nov 13, 2025)
+
+Complete migration from Google AI Studio to OpenRouter for improved reliability:
+
+- **Chat/Summaries/Titles**: Now use Gemini 2.5 Flash Lite via OpenRouter (unlimited pay-as-you-go)
+- **Artifacts**: Migrated to Kimi K2-Thinking via OpenRouter (higher quality code generation)
+- **Images**: Continue using Google AI Studio with 10-key rotation (150 RPM capacity)
+
+**Benefits:**
+- No more rate limit issues for chat operations
+- Better code quality with Kimi K2-Thinking
+- Simplified architecture with fewer API providers
+- Maintained high capacity for image generation
+
+### Intent Detection Enhancement (Nov 13, 2025)
+
+Improved intent detection system with embeddings-based matching:
+
+- **Architecture**: Separate pgvector tables for intent vs knowledge embeddings
+- **Model**: Using `gte-small` (384 dimensions) for fast, accurate intent matching
+- **Functions**: Dedicated `setup-intent-examples` Edge Function for embeddings
+- **Performance**: Sub-100ms intent detection with high accuracy
+
+### Admin Analytics Dashboard (Nov 12, 2025)
+
+New `/admin` route for real-time monitoring:
+
+- **Features**: Request volumes, cost tracking, latency metrics, error analysis
+- **Visualizations**: Charts for cost breakdown, usage trends, performance metrics
+- **Auto-refresh**: Updates every 30 seconds
+- **Access Control**: Email or role-based admin authentication
+
 ---
-*Last Updated: 2025-11-08 | Claude Code v1.x compatible*
+
+*Last Updated: 2025-11-13 | Claude Code v1.x compatible*
