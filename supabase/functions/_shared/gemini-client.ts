@@ -28,11 +28,9 @@ function getAvailableKeys(baseKeyName: string): string[] {
   const keys: string[] = [];
 
   // Map feature-specific key pools to existing numbered secrets
-  // This allows us to use the existing GOOGLE_KEY_1 through GOOGLE_KEY_10 without renaming
+  // Chat/summaries/titles now use OpenRouter, so all 10 Google keys are dedicated to images
   const keyMapping: Record<string, number[]> = {
-    "GOOGLE_AI_STUDIO_KEY_CHAT": [1, 2],         // Chat (Flash model) uses keys 1-2 (4 RPM total)
-    "GOOGLE_AI_STUDIO_KEY_ARTIFACT": [3, 4, 5, 6], // Artifact generation + fixing (Pro model) uses keys 3-6 (8 RPM total)
-    "GOOGLE_AI_STUDIO_KEY_IMAGE": [7, 8, 9, 10], // Image generation uses keys 7-10 (60 RPM total)
+    "GOOGLE_AI_STUDIO_KEY_IMAGE": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], // Image generation uses ALL keys (150 RPM total - 10 keys × 15 RPM)
   };
 
   // Get the key indices for this pool
@@ -69,9 +67,7 @@ function getValidatedApiKey(keyName: string = "GOOGLE_AI_STUDIO_KEY"): string {
   if (availableKeys.length === 0) {
     // Provide helpful error message based on the key pool
     const keyMapping: Record<string, string> = {
-      "GOOGLE_AI_STUDIO_KEY_CHAT": "GOOGLE_KEY_1 and GOOGLE_KEY_2",
-      "GOOGLE_AI_STUDIO_KEY_ARTIFACT": "GOOGLE_KEY_3, GOOGLE_KEY_4, GOOGLE_KEY_5, and GOOGLE_KEY_6",
-      "GOOGLE_AI_STUDIO_KEY_IMAGE": "GOOGLE_KEY_7, GOOGLE_KEY_8, GOOGLE_KEY_9, and GOOGLE_KEY_10",
+      "GOOGLE_AI_STUDIO_KEY_IMAGE": "GOOGLE_KEY_1 through GOOGLE_KEY_10 (all 10 keys for image generation)",
     };
     const requiredKeys = keyMapping[keyName] || keyName;
 
@@ -96,12 +92,10 @@ function getValidatedApiKey(keyName: string = "GOOGLE_AI_STUDIO_KEY"): string {
   keyRotationCounters[keyName] = (keyRotationCounters[keyName] + 1) % availableKeys.length;
 
   // DEBUG: Log which key is being used (without exposing the actual key)
-  const keyMapping: Record<string, number[]> = {
-    "GOOGLE_AI_STUDIO_KEY_CHAT": [1, 2],
-    "GOOGLE_AI_STUDIO_KEY_ARTIFACT": [3, 4, 5, 6],
-    "GOOGLE_AI_STUDIO_KEY_IMAGE": [7, 8, 9, 10],
+  const debugKeyMapping: Record<string, number[]> = {
+    "GOOGLE_AI_STUDIO_KEY_IMAGE": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
   };
-  const mappedIndices = keyMapping[keyName];
+  const mappedIndices = debugKeyMapping[keyName];
   if (mappedIndices) {
     const actualKeyIndex = mappedIndices[keyIndex];
     console.log(`🔑 Using GOOGLE_KEY_${actualKeyIndex} (position ${keyIndex + 1}/${availableKeys.length} in pool)`);

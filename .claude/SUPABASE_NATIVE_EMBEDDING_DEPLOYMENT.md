@@ -57,11 +57,11 @@ SELECT match_intent_examples('[0.1, 0.2, ...]'::vector(384), 1);
 
 ```bash
 # Deploy the one-time setup function
-supabase functions deploy setup-intent-examples
+supabase functions deploy intent-examples
 
 # Run it once to embed all 128 examples
 curl -X POST \
-  "https://YOUR_PROJECT_ID.supabase.co/functions/v1/setup-intent-examples" \
+  "https://YOUR_PROJECT_ID.supabase.co/functions/v1/intent-examples" \
   -H "Authorization: Bearer YOUR_ANON_KEY"
 ```
 
@@ -284,7 +284,7 @@ SELECT COUNT(*) FROM intent_examples;
 ## 📝 Files Changed
 
 1. `supabase/migrations/20250112_intent_examples_v2.sql` - Database schema (384 dims)
-2. `supabase/functions/setup-intent-examples/index.ts` - Native AI setup
+2. `supabase/functions/intent-examples/index.ts` - Native AI setup
 3. `supabase/functions/chat/intent-detector-embeddings.ts` - Native detector
 4. `supabase/functions/chat/index.ts` - Already using async detection ✓
 

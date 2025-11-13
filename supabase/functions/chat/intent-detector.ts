@@ -27,7 +27,7 @@ export function detectIntent(prompt: string): IntentResult {
     // --- Specific, High-Value Intents (should win most of the time) ---
     { intent: 'mermaid', pattern: /\b(flowchart|flow chart|sequence diagram|class diagram|state diagram|gantt chart|er diagram|entity relationship diagram|decision tree)\b/i, score: 25 },
     { intent: 'svg', pattern: /\b(logo|icon|badge|emblem|vector|svg|scalable|wireframe)\b/i, score: 25 },
-    { intent: 'image', pattern: /\b(photograph|photo|picture|realistic|photorealistic|movie poster|album cover|pixel art|wallpaper)\b/i, score: 25 },
+    { intent: 'image', pattern: /\b(image|photograph|photo|picture|realistic|photorealistic|movie poster|album cover|pixel art|wallpaper|scene|landscape|portrait)\b/i, score: 25 },
     { intent: 'code', pattern: /\b(function|script|algorithm|code|api|backend|server)\b.*\b(python|javascript|typescript|java|c\+\+|rust|go)\b/i, score: 20 },
     { intent: 'markdown', pattern: /\b(document|article|essay|report|guide|tutorial|documentation|readme|blog post)\b/i, score: 20 },
 

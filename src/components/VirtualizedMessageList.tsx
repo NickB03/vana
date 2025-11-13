@@ -1,33 +1,36 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useRef, memo } from "react";
+import { useRef, memo, useState } from "react";
 import { ChatMessage } from "@/hooks/useChatMessages";
-import { Message, MessageAvatar, MessageContent } from "@/components/prompt-kit/message";
-import { Markdown } from "@/components/ui/markdown";
-import { InlineImage } from "@/components/InlineImage";
+import { Message, MessageAvatar } from "@/components/prompt-kit/message";
+import { MessageWithArtifacts } from "@/components/MessageWithArtifacts";
+import { ArtifactData } from "@/components/ArtifactContainer";
 import { parseArtifacts } from "@/utils/artifactParser";
 
 interface VirtualizedMessageListProps {
   messages: ChatMessage[];
   onArtifactChange: (hasArtifact: boolean) => void;
+  onArtifactOpen: (artifact: ArtifactData) => void;
 }
 
-const MessageItem = memo(({ message, onArtifactChange }: {
+const MessageItem = memo(({ message, onArtifactChange, onArtifactOpen }: {
   message: ChatMessage;
   onArtifactChange: (hasArtifact: boolean) => void;
+  onArtifactOpen: (artifact: ArtifactData) => void;
 }) => {
   const isAssistant = message.role === "assistant";
-  const parsedContent = isAssistant ? parseArtifacts(message.content) : null;
 
-  if (parsedContent) {
-    // Log warnings if present (P2 will add toast notifications)
-    if (parsedContent.warnings && parsedContent.warnings.length > 0) {
-      parsedContent.warnings.forEach(warning => {
+  // Check for artifacts to update parent state
+  if (isAssistant) {
+    const { artifacts, warnings } = parseArtifacts(message.content);
+
+    // Log warnings if present
+    if (warnings && warnings.length > 0) {
+      warnings.forEach(warning => {
         console.warn(`Artifact "${warning.artifactTitle}":`, warning.messages.join(', '));
       });
     }
 
-    const hasArtifacts = parsedContent.artifacts && parsedContent.artifacts.length > 0;
-    if (hasArtifacts) {
+    if (artifacts.length > 0) {
       onArtifactChange(true);
     }
   }
@@ -35,32 +38,27 @@ const MessageItem = memo(({ message, onArtifactChange }: {
   return (
     <Message className={isAssistant ? "justify-start" : "justify-end"}>
       {isAssistant && (
-        <MessageAvatar 
+        <MessageAvatar
           src="https://storage.googleapis.com/gpt-engineer-file-uploads/OC7fxCsI8GZ5WHrbh3LxjMoliXA3/uploads/1761355340262-nebius.png"
           fallback="AI"
         />
       )}
-      <MessageContent>
-        {parsedContent ? (
-          <>
-            {parsedContent.cleanContent && <Markdown id={message.id}>{parsedContent.cleanContent}</Markdown>}
-            {parsedContent.artifacts?.map((artifact) =>
-              artifact.type === "image" ? (
-                <InlineImage key={artifact.id} artifact={artifact} />
-              ) : null
-            )}
-          </>
-        ) : (
-          message.content
-        )}
-      </MessageContent>
+      {isAssistant ? (
+        <MessageWithArtifacts
+          content={message.content}
+          messageId={message.id}
+          onArtifactOpen={onArtifactOpen}
+        />
+      ) : (
+        <div className="prose">{message.content}</div>
+      )}
     </Message>
   );
 }, (prev, next) => prev.message.id === next.message.id && prev.message.content === next.message.content);
 
 MessageItem.displayName = "MessageItem";
 
-export const VirtualizedMessageList = memo(({ messages, onArtifactChange }: VirtualizedMessageListProps) => {
+export const VirtualizedMessageList = memo(({ messages, onArtifactChange, onArtifactOpen }: VirtualizedMessageListProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
   const virtualizer = useVirtualizer({
@@ -90,9 +88,10 @@ export const VirtualizedMessageList = memo(({ messages, onArtifactChange }: Virt
               transform: `translateY(${virtualItem.start}px)`,
             }}
           >
-            <MessageItem 
-              message={messages[virtualItem.index]} 
+            <MessageItem
+              message={messages[virtualItem.index]}
               onArtifactChange={onArtifactChange}
+              onArtifactOpen={onArtifactOpen}
             />
           </div>
         ))}

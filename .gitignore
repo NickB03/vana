@@ -91,3 +91,8 @@ diagnose-*.md
 # Archived debug scripts
 scripts/archive/
 .archive/
+
+# Large session logs (archive these instead of tracking)
+.claude/imagelog.md
+.claude/chatlog.md
+.claude/*log.md

@@ -122,6 +122,87 @@ await browser.screenshot({ filename: "verification.png" });
 
 ## 🔧 Key Patterns & Components
 
+### AI Elements Integration (Nov 2025)
+
+**Status:** ✅ Production Ready
+
+The application uses **ai-elements** library components for professional artifact rendering with browser-style controls:
+
+**Core Components:**
+- `Artifact` - Composable container with header, actions, and content areas
+- `WebPreview` - Browser-style preview with navigation bar and URL display
+
+**Implementation:**
+- `src/components/ai-elements/artifact.tsx` (144 lines, 8 sub-components)
+  - `Artifact`, `ArtifactHeader`, `ArtifactTitle`, `ArtifactDescription`, `ArtifactContent`, `ArtifactActions`, `ArtifactAction`, `ArtifactClose`
+
+- `src/components/ai-elements/web-preview.tsx` (263 lines, 6 sub-components)
+  - `WebPreview`, `WebPreviewNavigation`, `WebPreviewUrl`, `WebPreviewBody`, `WebPreviewConsole`, `WebPreviewNavigationButton`
+
+**Usage Example:**
+```tsx
+// Artifact container with actions
+<Artifact>
+  <ArtifactHeader>
+    <ArtifactTitle>Interactive Chart</ArtifactTitle>
+    <ArtifactActions>
+      <ArtifactAction icon={Copy} tooltip="Copy code" onClick={handleCopy} />
+      <ArtifactAction icon={Download} tooltip="Download" onClick={handleDownload} />
+    </ArtifactActions>
+  </ArtifactHeader>
+  <ArtifactContent>
+    {/* Artifact content */}
+  </ArtifactContent>
+</Artifact>
+
+// HTML/React artifacts with WebPreview
+<WebPreview defaultUrl="about:blank">
+  <WebPreviewNavigation>
+    <WebPreviewNavigationButton tooltip="Refresh" onClick={handleRefresh}>
+      <RefreshCw className="h-4 w-4" />
+    </WebPreviewNavigationButton>
+    <WebPreviewUrl />
+    <WebPreviewNavigationButton tooltip="Full screen" onClick={handleFullScreen}>
+      <Maximize2 className="h-4 w-4" />
+    </WebPreviewNavigationButton>
+  </WebPreviewNavigation>
+  <WebPreviewBody srcDoc={htmlContent} sandbox="allow-scripts allow-same-origin" />
+</WebPreview>
+```
+
+**Features:**
+- Composable sub-components for flexible layouts
+- Built-in tooltip support via shadcn/ui
+- Browser-style navigation controls (refresh, full-screen)
+- URL bar display (shows "about:blank" for inline content)
+- Loading states with skeleton fallbacks
+- Secure iframe sandboxing
+- Theme-aware refresh mechanism
+- Accessibility improvements (sr-only labels)
+
+**Architecture:**
+- Zero Vercel AI SDK dependencies (pure React primitives)
+- 100% backward compatible with existing artifact system
+- Minimal integration (UI chrome only, all logic preserved)
+- Uses `srcDoc` for inline HTML (no blob URL memory leaks)
+
+**Testing:**
+- ✅ 11/12 test cases passing (mobile testing pending)
+- ✅ No regressions in other artifact types
+- ✅ Export, validation, error handling preserved
+- ✅ Theme switching works correctly
+
+**Known Limitations:**
+- Console logging not integrated (use browser DevTools)
+- URL bar shows "about:blank" (inline content has no real URL)
+- Mobile navigation controls need verification
+
+**Documentation:**
+- `.claude/AI_ELEMENTS_INTEGRATION_FINAL.md` - Complete integration history
+- `.claude/AI_ELEMENTS_QUICK_REFERENCE.md` - Component API reference
+- `.claude/WEBPREVIEW_INTEGRATION_GUIDE.md` - Implementation guide
+- `.claude/artifacts.md` (WebPreview section) - Usage patterns
+
 ### Artifact System
 - **Auto-injected libraries (27+)**: D3, Chart.js, Three.js, GSAP, Lodash, Moment
 - **React artifacts include**: Recharts, Framer Motion, lucide-react, Radix UI
@@ -131,7 +212,7 @@ await browser.screenshot({ filename: "verification.png" });
   - Layer 3: Pre-generation validation (request analysis)
   - Layer 4: Post-generation transformation (auto-fix invalid imports)
   - Layer 5: Runtime validation (block rendering if critical errors)
-- **UI Framework**: ai-elements primitives (ArtifactContainer wrapper)
+- **Rendering**: ai-elements `Artifact` + `WebPreview` components (see above)
 - **Details**: See `.claude/artifacts.md` for complete library list
 
 ### Artifact Suggestions UI
@@ -285,37 +366,38 @@ VITE_SUPABASE_PROJECT_ID=vznhbocnuykdmjvujaka
 
 ### Edge Functions (Supabase Secrets)
 ```bash
-# Required: 10 API keys distributed across 3 feature pools
+# OpenRouter API Keys (for chat, summaries, titles)
+OPENROUTER_GEMINI_FLASH_KEY=sk-or-v1-...  # Chat/summaries/titles (Gemini 2.5 Flash Lite)
+OPENROUTER_K2T_KEY=sk-or-v1-...           # Artifacts (Kimi K2-Thinking)
+
+# Google AI Studio Keys (for image generation ONLY)
+# All 10 keys dedicated to images - 150 RPM total (10 keys × 15 RPM each)
 # Each key MUST be from a different Google Cloud project for independent rate limits
-
-# Chat pool (Flash model) - Keys 1-2
-GOOGLE_KEY_1=AIzaSy...  # Chat key 1
-GOOGLE_KEY_2=AIzaSy...  # Chat key 2
-
-# Artifact pool (Pro model) - Keys 3-6
-GOOGLE_KEY_3=AIzaSy...  # Artifact key 1
-GOOGLE_KEY_4=AIzaSy...  # Artifact key 2
-GOOGLE_KEY_5=AIzaSy...  # Artifact key 3
-GOOGLE_KEY_6=AIzaSy...  # Artifact key 4
-
-# Image pool (Flash-Image model) - Keys 7-10
-GOOGLE_KEY_7=AIzaSy...   # Image key 1
-GOOGLE_KEY_8=AIzaSy...   # Image key 2
-GOOGLE_KEY_9=AIzaSy...   # Image key 3
-GOOGLE_KEY_10=AIzaSy...  # Image key 4
+GOOGLE_KEY_1=AIzaSy...   # Image key 1
+GOOGLE_KEY_2=AIzaSy...   # Image key 2
+GOOGLE_KEY_3=AIzaSy...   # Image key 3
+GOOGLE_KEY_4=AIzaSy...   # Image key 4
+GOOGLE_KEY_5=AIzaSy...   # Image key 5
+GOOGLE_KEY_6=AIzaSy...   # Image key 6
+GOOGLE_KEY_7=AIzaSy...   # Image key 7
+GOOGLE_KEY_8=AIzaSy...   # Image key 8
+GOOGLE_KEY_9=AIzaSy...   # Image key 9
+GOOGLE_KEY_10=AIzaSy...  # Image key 10
 
 # Optional: Production CORS origins (comma-separated)
 ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 ```
 
-**Get API Keys:** [Google AI Studio](https://aistudio.google.com/app/apikey)
+**Get API Keys:**
+- **OpenRouter:** [https://openrouter.ai/keys](https://openrouter.ai/keys)
+- **Google AI Studio:** [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
 
-**Why 10 Keys?** Each key is from a separate Google Cloud project with independent rate limits:
-- **Chat (Flash)**: 2 keys = 4 RPM total (2 RPM per key)
-- **Artifacts (Pro)**: 4 keys = 8 RPM total (2 RPM per key) - shared by generation + fixing
-- **Images (Flash-Image)**: 4 keys = 60 RPM total (15 RPM per key)
+**Current Architecture (Nov 2025):**
+- **Chat/Summaries/Titles**: OpenRouter Gemini 2.5 Flash Lite (reliable, fast, no rate limit issues)
+- **Artifacts**: OpenRouter Kimi K2-Thinking (high quality code generation)
+- **Images**: Google AI Studio Gemini Flash-Image (150 RPM with 10 keys)
 
-This architecture prevents overflow and ensures each feature has dedicated capacity.
+This architecture provides better reliability and 2.5× more image generation capacity than the previous setup.
 
 ### 🔄 API Key Rotation (Production-Ready)
 
@@ -332,32 +414,32 @@ This architecture prevents overflow and ensures each feature has dedicated capac
 
 **Key Pool Architecture:**
 ```
-CHAT Pool (Flash Model)
-├── Keys: 1-2
-├── Capacity: 4 RPM (2 keys × 2 RPM)
-└── Used by: chat function
+OPENROUTER (Gemini 2.5 Flash Lite)
+├── Key: OPENROUTER_GEMINI_FLASH_KEY
+├── Usage: Unlimited (pay-as-you-go)
+└── Used by: chat, generate-title, summarize-conversation
 
-ARTIFACT Pool (Pro Model)
-├── Keys: 3-6
-├── Capacity: 8 RPM (4 keys × 2 RPM)
-└── Used by: generate-artifact + generate-artifact-fix
+OPENROUTER (Kimi K2-Thinking)
+├── Key: OPENROUTER_K2T_KEY
+├── Usage: Unlimited (pay-as-you-go)
+└── Used by: generate-artifact, generate-artifact-fix
 
-IMAGE Pool (Flash-Image Model)
-├── Keys: 7-10
-├── Capacity: 60 RPM (4 keys × 15 RPM)
+GOOGLE AI STUDIO (Flash-Image Model)
+├── Keys: 1-10 (all dedicated to images!)
+├── Capacity: 150 RPM (10 keys × 15 RPM)
 └── Used by: generate-image
 ```
 
-**How It Works:**
+**How Image Key Rotation Works:**
 1. **Cold Start**: Pick random key from pool (handles frequent Edge Function restarts)
 2. **Subsequent Requests**: Round-robin through keys sequentially
 3. **Next Cold Start**: Pick different random key (ensures distribution)
 
 **Logs Example:**
 ```
-🔑 Using GOOGLE_KEY_1 (position 1/2 in pool)  # Chat
-🔑 Using GOOGLE_KEY_3 (position 1/4 in pool)  # Artifact
-🔑 Using GOOGLE_KEY_7 (position 1/4 in pool)  # Image
+🚀 Routing to Gemini 2.5 Flash Lite via OpenRouter (stream: true)    # Chat
+🤖 Routing to Kimi K2-Thinking via OpenRouter                        # Artifact
+🔑 Using GOOGLE_KEY_7 (position 7/10 in pool)                        # Image
 ```
 
 **Full Guide:** See `KEY_POOL_ARCHITECTURE.md` and `FINAL_KEY_ROTATION_SUMMARY.md`

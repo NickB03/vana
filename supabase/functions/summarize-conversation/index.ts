@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { callGemini, extractTextFromGeminiResponse } from "../_shared/gemini-client.ts";
+import { callGeminiFlashWithRetry, extractTextFromGeminiFlash, type OpenRouterMessage } from "../_shared/openrouter-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 
 const SUMMARIZATION_THRESHOLD = 10; // Summarize every 10 messages
@@ -105,42 +105,41 @@ serve(async (req) => {
     // Prepare messages for summarization
     const messagesToSummarize = allMessages.slice(checkpoint);
 
-    const GOOGLE_AI_STUDIO_KEY = Deno.env.get("GOOGLE_AI_STUDIO_KEY_CHAT");
-    if (!GOOGLE_AI_STUDIO_KEY) {
-      throw new Error("GOOGLE_AI_STUDIO_KEY_CHAT is not configured");
-    }
-
     // Create summarization prompt
     const conversationText = messagesToSummarize
       .map(m => `${m.role}: ${m.content}`)
       .join("\n\n");
 
-    const systemInstruction = session.conversation_summary
+    const systemContent = session.conversation_summary
       ? `Previous summary: ${session.conversation_summary}\n\nCreate a concise summary that builds on the previous summary and incorporates the new conversation below. Focus on key topics, decisions, and important information.`
       : "Create a concise summary of the following conversation. Focus on key topics, decisions, and important information.";
 
     console.log("Calling AI for summarization...");
 
-    const contents = [
+    const messages: OpenRouterMessage[] = [
+      {
+        role: "system",
+        content: systemContent
+      },
       {
         role: "user",
-        parts: [{ text: conversationText }]
+        content: conversationText
       }
     ];
 
-    const response = await callGemini("gemini-2.5-flash-lite", contents, {
-      systemInstruction,
-      keyName: "GOOGLE_AI_STUDIO_KEY_CHAT"  // Use shared chat key pool for summaries
+    const response = await callGeminiFlashWithRetry(messages, {
+      temperature: 0.7,
+      max_tokens: 1000
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Google AI Studio error:", response.status, errorText);
+      console.error("OpenRouter error:", response.status, errorText);
       throw new Error("Failed to generate summary");
     }
 
     const data = await response.json();
-    const summary = extractTextFromGeminiResponse(data);
+    const summary = extractTextFromGeminiFlash(data);
 
     if (!summary) {
       throw new Error("No summary generated");

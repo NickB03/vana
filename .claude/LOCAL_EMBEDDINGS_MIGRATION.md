@@ -222,7 +222,7 @@ Try these prompts in your chat interface and check the logs:
 
 ### Adding New Intent Examples
 
-1. Edit `supabase/functions/setup-intent-examples/index.ts`
+1. Edit `supabase/functions/intent-examples/index.ts`
 2. Add new examples to the appropriate category
 3. Re-run embedding generation:
    ```bash

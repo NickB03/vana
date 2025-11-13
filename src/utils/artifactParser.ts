@@ -46,7 +46,13 @@ const mimeTypeMap: Record<string, ArtifactType> = {
   'image/svg+xml': 'svg',
   'application/vnd.ant.mermaid': 'mermaid',
   'application/vnd.ant.react': 'react',
-  'image': 'image'
+  'image': 'image',
+  // Support standard image MIME types
+  'image/png': 'image',
+  'image/jpeg': 'image',
+  'image/jpg': 'image',
+  'image/gif': 'image',
+  'image/webp': 'image'
 };
 
 // Strip markdown code fences from artifact content

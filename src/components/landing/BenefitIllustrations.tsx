@@ -103,6 +103,7 @@ export const StreamingCodeIllustration = () => {
           width="3"
           height="12"
           className="fill-primary"
+          initial={{ opacity: 1 }}
           animate={isVisible ? { opacity: [1, 0, 1] } : { opacity: 1 }}
           transition={{
             duration: 1,
@@ -291,6 +292,7 @@ export const InteractiveArtifactsIllustration = () => {
             cy={60 + index * 20}
             r="2"
             className="fill-yellow-400"
+            initial={{ scale: 0, opacity: 0 }}
             animate={isVisible ? {
               scale: [0, 1.5, 0],
               opacity: [0, 1, 0],
@@ -437,6 +439,7 @@ export const SecurityIllustration = () => {
 
         {/* Checkmark pulse animation */}
         <motion.g
+          initial={{ scale: 1, opacity: 0.8 }}
           animate={isVisible ? {
             scale: [1, 1.1, 1],
             opacity: [0.8, 1, 0.8],

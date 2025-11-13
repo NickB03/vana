@@ -33,10 +33,9 @@ import { Markdown } from "@/components/ui/markdown";
 import { useChatMessages, ChatMessage, type StreamProgress } from "@/hooks/useChatMessages";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ArtifactContainer as Artifact, ArtifactData } from "@/components/ArtifactContainer";
-import { ArtifactCard } from "@/components/ArtifactCard";
+import { MessageWithArtifacts } from "@/components/MessageWithArtifacts";
 import { parseArtifacts } from "@/utils/artifactParser";
 import { ThinkingIndicator } from "@/components/ThinkingIndicator";
-import { InlineImage } from "@/components/InlineImage";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SystemMessage } from "@/components/ui/system-message";
 import { useNavigate } from "react-router-dom";
@@ -296,13 +295,8 @@ export function ChatInterface({
                 )}
 
                 {messages.map((message, index) => {
-                  const { artifacts, cleanContent } = parseArtifacts(message.content);
                   const isAssistant = message.role === "assistant";
                   const isLastMessage = index === messages.length - 1;
-
-                  // Separate image artifacts from other artifacts
-                  const imageArtifacts = artifacts.filter(a => a.type === 'image');
-                  const otherArtifacts = artifacts.filter(a => a.type !== 'image');
 
                   // Only animate new messages (last message when not streaming)
                   // This prevents performance issues with long chat histories
@@ -320,37 +314,16 @@ export function ChatInterface({
                           {message.reasoning && (
                             <ThinkingIndicator status={message.reasoning} />
                           )}
-                          <MessageContent
-                            className="prose flex-1 rounded-lg bg-transparent p-0 pl-3 text-foreground border-l-4 transition-all duration-150"
-                            style={{
-                              borderLeftColor: 'hsl(var(--accent-ai) / 0.4)',
+                          <MessageWithArtifacts
+                            content={message.content}
+                            messageId={message.id}
+                            onArtifactOpen={(artifact) => {
+                              setCurrentArtifact(artifact);
+                              if (onCanvasToggle) {
+                                onCanvasToggle(true);
+                              }
                             }}
-                          >
-                            <Markdown id={message.id}>{cleanContent}</Markdown>
-                          </MessageContent>
-
-                          {/* Render inline images */}
-                          {imageArtifacts.map(artifact => (
-                            <InlineImage
-                              key={artifact.id}
-                              artifact={artifact}
-                            />
-                          ))}
-
-                          {/* Render artifact cards for non-image artifacts */}
-                          {otherArtifacts.map(artifact => (
-                            <ArtifactCard
-                              key={artifact.id}
-                              artifact={artifact}
-                              onOpen={() => {
-                                setCurrentArtifact(artifact);
-                                if (onCanvasToggle) {
-                                  onCanvasToggle(true);
-                                }
-                              }}
-                              className="mt-2"
-                            />
-                          ))}
+                          />
 
                           <MessageActions
                             className={cn(
@@ -384,7 +357,7 @@ export function ChatInterface({
                               borderColor: 'hsl(var(--accent-user) / 0.15)',
                             }}
                           >
-                            {cleanContent}
+                            {message.content}
                           </MessageContent>
                           <MessageActions
                             className={cn(
@@ -437,6 +410,15 @@ export function ChatInterface({
                         status={streamProgress.message}
                         isStreaming
                         percentage={streamProgress.percentage}
+                      />
+                      <MessageWithArtifacts
+                        content={streamingMessage}
+                        onArtifactOpen={(artifact) => {
+                          setCurrentArtifact(artifact);
+                          if (onCanvasToggle) {
+                            onCanvasToggle(true);
+                          }
+                        }}
                       />
                     </div>
                   </MessageComponent>

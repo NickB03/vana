@@ -1,7 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { callGemini } from "../_shared/gemini-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
+
+const OPENROUTER_GEMINI_IMAGE_KEY = Deno.env.get("OPENROUTER_GEMINI_IMAGE_KEY");
+const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 serve(async (req) => {
   const origin = req.headers.get("Origin");
@@ -14,8 +16,11 @@ serve(async (req) => {
   try {
     const { prompt, mode, baseImage, sessionId } = await req.json();
 
+    console.log(`🎨 [generate-image] Request received: mode=${mode}, prompt length=${prompt?.length}`);
+
     // Input validation
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
+      console.error("❌ [generate-image] Invalid prompt");
       return new Response(
         JSON.stringify({ error: "Prompt is required and must be non-empty" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -69,120 +74,163 @@ serve(async (req) => {
 
     // Guest users are allowed (user will be null)
 
-    const userType = user ? `user ${user.id}` : "guest";
-    console.log(`Image ${mode} request from ${userType}:`, prompt.substring(0, 100));
+    if (!OPENROUTER_GEMINI_IMAGE_KEY) {
+      console.error("❌ OPENROUTER_GEMINI_IMAGE_KEY not configured");
+      return new Response(
+        JSON.stringify({ error: "Image generation service not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    // Construct Gemini messages based on mode
-    let contents;
+    const userType = user ? `user ${user.id}` : "guest";
+    console.log(`🎨 Image ${mode} request from ${userType}:`, prompt.substring(0, 100));
+
+    // Build OpenRouter message format
+    let messages;
     if (mode === "generate") {
-      contents = [
+      messages = [
         {
           role: "user",
-          parts: [{ text: prompt }]
+          content: prompt
         }
       ];
     } else {
-      // Edit mode - extract base64 data from data URL
-      const base64Data = baseImage.split(',')[1];
-      const mimeType = baseImage.match(/data:([^;]+);/)?.[1] || 'image/png';
-
-      contents = [
+      // Edit mode - include image in message
+      messages = [
         {
           role: "user",
-          parts: [
-            { text: prompt },
-            {
-              inlineData: {
-                mimeType,
-                data: base64Data
-              }
-            }
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: baseImage } }
           ]
         }
       ];
     }
 
-    // Call Gemini image generation API with correct API key
-    // Using preview model as stable may not be available yet
-    const response = await callGemini("gemini-2.5-flash-image-preview", contents, {
-      keyName: "GOOGLE_AI_STUDIO_KEY_IMAGE"
+    // Call OpenRouter Gemini Flash Image API
+    console.log(`🎨 Calling OpenRouter (google/gemini-2.5-flash-image)`);
+    const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_GEMINI_IMAGE_KEY}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": Deno.env.get("SUPABASE_URL") || "https://your-domain.com",
+        "X-Title": "AI Chat Assistant - Image Generation"
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image",
+        messages,
+        temperature: 0.7,
+        max_tokens: 1024,
+        image_config: {
+          aspect_ratio: "1:1"  // Square images by default
+        }
+      })
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Google AI Studio error:", response.status, errorText);
+      console.error("❌ OpenRouter error:", response.status, errorText);
 
       if (response.status === 429 || response.status === 403) {
         return new Response(
-          JSON.stringify({ error: "API quota exceeded. Please try again in a moment." }),
+          JSON.stringify({
+            error: "API quota exceeded. Please try again in a moment.",
+            retryable: true
+          }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
       return new Response(
-        JSON.stringify({ error: "Image generation failed. Please try again." }),
+        JSON.stringify({
+          error: "Image generation failed",
+          details: errorText.substring(0, 200),
+          retryable: true
+        }),
         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const data = await response.json();
-    console.log("Google AI Studio response received");
+    console.log("✅ OpenRouter response received");
 
-    // CRITICAL DEBUG: Log full API response structure to diagnose image generation issues
-    console.log("=== GEMINI API RESPONSE DEBUG ===");
+    // CRITICAL DEBUG: Log full API response structure
+    console.log("=== OPENROUTER API RESPONSE DEBUG ===");
     console.log("Full response:", JSON.stringify(data, null, 2));
-    console.log("Has candidates?", !!data.candidates);
-    console.log("Candidate count:", data.candidates?.length);
-    if (data.candidates?.[0]) {
-      console.log("First candidate parts:", JSON.stringify(data.candidates[0].content?.parts, null, 2));
+    console.log("Has choices?", !!data.choices);
+    console.log("Choice count:", data.choices?.length);
+    if (data.choices?.[0]) {
+      console.log("First choice message:", JSON.stringify(data.choices[0].message, null, 2));
     }
     console.log("=== END DEBUG ===");
 
-    // Extract base64 image from Gemini response
-    // Gemini format: data.candidates[0].content.parts[0].inlineData.data
+    // Extract image from OpenRouter response
+    // OpenRouter format for Gemini Flash Image: data.choices[0].message.images[0].url
     let imageData: string | undefined;
 
-    const candidate = data.candidates?.[0];
-    if (candidate?.content?.parts) {
-      for (const part of candidate.content.parts) {
-        // Log each part to see what we're getting
-        console.log("Checking part:", {
-          hasInlineData: !!part.inlineData,
-          hasText: !!part.text,
-          partKeys: Object.keys(part)
-        });
+    const message = data.choices?.[0]?.message;
 
-        if (part.inlineData?.data) {
-          // Convert to data URL format
-          const mimeType = part.inlineData.mimeType || 'image/png';
-          imageData = `data:${mimeType};base64,${part.inlineData.data}`;
-          console.log("✅ Found image data, mimeType:", mimeType, "size:", part.inlineData.data.length);
-          break;
-        } else if (part.text) {
-          // DIAGNOSTIC: Model returned text instead of image
-          console.warn("⚠️ Model returned TEXT instead of IMAGE:", part.text.substring(0, 200));
+    // First, check for images array (Gemini Flash Image format)
+    if (message?.images && Array.isArray(message.images) && message.images.length > 0) {
+      const imageUrl = message.images[0].image_url?.url;
+      if (imageUrl) {
+        imageData = imageUrl;
+        console.log("✅ Found image URL in images array:", imageUrl.substring(0, 100));
+      }
+    }
+    // Fallback: check content field
+    else if (message?.content) {
+      const content = message.content;
+
+      // Check if content is a string (might be URL or base64)
+      if (typeof content === 'string') {
+        // If it starts with http, it's a URL
+        if (content.startsWith('http')) {
+          imageData = content;
+          console.log("✅ Found image URL in content:", content.substring(0, 100));
+        }
+        // If it starts with data:image, it's already a data URL
+        else if (content.startsWith('data:image')) {
+          imageData = content;
+          console.log("✅ Found image data URL");
+        }
+        // Otherwise might be base64 without prefix
+        else if (content.length > 100 && !content.includes(' ')) {
+          imageData = `data:image/png;base64,${content}`;
+          console.log("✅ Found base64 image data (added prefix)");
+        }
+      }
+      // Check if content is an array (multipart response)
+      else if (Array.isArray(content)) {
+        for (const part of content) {
+          if (part.type === 'image_url' && part.image_url?.url) {
+            imageData = part.image_url.url;
+            console.log("✅ Found image URL in multipart content");
+            break;
+          }
         }
       }
     }
 
     if (!imageData) {
-      console.error("❌ No image data found in Gemini response");
+      console.error("❌ No image data found in OpenRouter response");
       console.error("Full response for debugging:", JSON.stringify(data));
       return new Response(
         JSON.stringify({
-          error: "The AI model failed to generate an image. This may be due to content restrictions or a temporary issue. Please try again with a different prompt.",
+          error: "The AI model failed to generate an image. The response format was unexpected. Please try again.",
           debug: {
             hasResponse: !!data,
-            hasCandidates: !!data.candidates,
-            candidateCount: data.candidates?.length || 0,
-            firstPartType: data.candidates?.[0]?.content?.parts?.[0] ? Object.keys(data.candidates[0].content.parts[0])[0] : 'none'
+            hasChoices: !!data.choices,
+            choiceCount: data.choices?.length || 0,
+            messageContentType: typeof message?.content
           }
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Image ${mode} successful, size: ${imageData.length} bytes`);
+    console.log(`✅ Image ${mode} successful`);
 
     // Upload to Supabase Storage with signed URL
     let imageUrl = imageData; // Default to base64 if upload fails

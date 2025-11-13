@@ -1,20 +1,22 @@
 /**
- * OpenRouter API Client - For Kimi K2-Thinking (Artifact Generation Only)
+ * OpenRouter API Client
  *
- * This client is specifically designed for artifact generation and fixing,
- * replacing the unreliable Gemini Pro free tier with Kimi K2-Thinking.
+ * Supports two AI providers via OpenRouter:
+ * 1. Kimi K2-Thinking - For artifact generation and fixing (high quality code)
+ * 2. Gemini 2.5 Flash Lite - For chat, summaries, and titles (fast, reliable)
  *
  * Key Features:
- * - Reasoning model optimized for code generation
- * - Reliable (no 503 errors like Gemini free tier)
- * - Cost-effective ($0.15 input / $2.50 output per 1M tokens)
  * - OpenAI-compatible API format
- * - Automatic usage logging for admin dashboard
+ * - Automatic retry with exponential backoff
+ * - Usage logging for admin dashboard
+ * - Cost tracking and analytics
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 
-const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_K2T_KEY");
+// Separate API keys for different use cases
+const OPENROUTER_K2T_KEY = Deno.env.get("OPENROUTER_K2T_KEY");
+const OPENROUTER_GEMINI_FLASH_KEY = Deno.env.get("OPENROUTER_GEMINI_FLASH_KEY");
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 // Retry configuration for handling transient API failures
@@ -25,11 +27,21 @@ const RETRY_CONFIG = {
   backoffMultiplier: 2,
 };
 
-if (!OPENROUTER_API_KEY) {
-  throw new Error(
-    "OPENROUTER_K2T_KEY not configured.\n" +
+// Validate K2T key (for artifact generation)
+if (!OPENROUTER_K2T_KEY) {
+  console.warn(
+    "⚠️  OPENROUTER_K2T_KEY not configured - artifact generation will fail.\n" +
     "Get your key from: https://openrouter.ai/keys\n" +
     "Set it with: supabase secrets set OPENROUTER_K2T_KEY=sk-or-v1-..."
+  );
+}
+
+// Validate Gemini Flash key (for chat/summaries/titles)
+if (!OPENROUTER_GEMINI_FLASH_KEY) {
+  console.warn(
+    "⚠️  OPENROUTER_GEMINI_FLASH_KEY not configured - chat/summaries/titles will fail.\n" +
+    "Get your key from: https://openrouter.ai/keys\n" +
+    "Set it with: supabase secrets set OPENROUTER_GEMINI_FLASH_KEY=sk-or-v1-..."
   );
 }
 
@@ -68,12 +80,16 @@ export async function callKimi(
     requestId = crypto.randomUUID()
   } = options || {};
 
+  if (!OPENROUTER_K2T_KEY) {
+    throw new Error("OPENROUTER_K2T_KEY not configured");
+  }
+
   console.log(`[${requestId}] 🤖 Routing to Kimi K2-Thinking via OpenRouter`);
 
   const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+      "Authorization": `Bearer ${OPENROUTER_K2T_KEY}`,
       "Content-Type": "application/json",
       "HTTP-Referer": Deno.env.get("SITE_URL") || "https://your-domain.com",
       "X-Title": "AI Chat App - Artifact Generation"
@@ -286,4 +302,168 @@ export async function logAIUsage(logData: {
     console.error(`[${logData.requestId}] Exception logging AI usage:`, error);
     // Swallow error - logging is best-effort
   }
+}
+
+// ============================================================================
+// Gemini 2.5 Flash Lite Functions (for Chat, Summaries, Titles)
+// ============================================================================
+
+export interface GeminiFlashOptions {
+  temperature?: number;
+  max_tokens?: number;
+  requestId?: string;
+  stream?: boolean;
+}
+
+/**
+ * Call Gemini 2.5 Flash Lite via OpenRouter for chat, summaries, and titles
+ * Uses OpenAI-compatible format with streaming support
+ *
+ * @param messages - Array of messages in OpenAI format
+ * @param options - Configuration options
+ * @returns Response object (streamed or complete)
+ */
+export async function callGeminiFlash(
+  messages: OpenRouterMessage[],
+  options?: GeminiFlashOptions
+): Promise<Response> {
+  const {
+    temperature = 0.7,
+    max_tokens = 8000,
+    requestId = crypto.randomUUID(),
+    stream = false
+  } = options || {};
+
+  if (!OPENROUTER_GEMINI_FLASH_KEY) {
+    throw new Error(
+      "OPENROUTER_GEMINI_FLASH_KEY not configured.\n" +
+      "Set it with: supabase secrets set OPENROUTER_GEMINI_FLASH_KEY=sk-or-v1-..."
+    );
+  }
+
+  console.log(`[${requestId}] 🚀 Routing to Gemini 2.5 Flash Lite via OpenRouter (stream: ${stream})`);
+
+  const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${OPENROUTER_GEMINI_FLASH_KEY}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": Deno.env.get("SITE_URL") || Deno.env.get("SUPABASE_URL") || "https://your-domain.com",
+      "X-Title": "AI Chat Assistant"
+    },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash-lite-preview-09-2025",
+      messages,
+      temperature,
+      max_tokens,
+      stream,
+      // OpenRouter-specific optimizations
+      transforms: stream ? ["middle-out"] : undefined
+    })
+  });
+
+  return response;
+}
+
+/**
+ * Call Gemini Flash with exponential backoff retry logic
+ * Handles transient failures gracefully
+ *
+ * @param messages - Array of messages
+ * @param options - Configuration options
+ * @param retryCount - Current retry attempt (internal)
+ * @returns Response object
+ */
+export async function callGeminiFlashWithRetry(
+  messages: OpenRouterMessage[],
+  options?: GeminiFlashOptions,
+  retryCount = 0
+): Promise<Response> {
+  const requestId = options?.requestId || crypto.randomUUID();
+
+  try {
+    const response = await callGeminiFlash(messages, {
+      ...options,
+      requestId
+    });
+
+    if (response.ok) {
+      return response;
+    }
+
+    // Handle rate limiting (429) and service overload (503) with exponential backoff
+    if (response.status === 429 || response.status === 503) {
+      if (retryCount < RETRY_CONFIG.maxRetries) {
+        const delayMs = Math.min(
+          RETRY_CONFIG.initialDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, retryCount),
+          RETRY_CONFIG.maxDelayMs
+        );
+
+        const retryAfter = response.headers.get('Retry-After');
+        const actualDelayMs = retryAfter ? parseInt(retryAfter) * 1000 : delayMs;
+
+        const errorType = response.status === 429 ? "Rate limited" : "Service overloaded";
+        console.log(`[${requestId}] ${errorType} (${response.status}). Retry ${retryCount + 1}/${RETRY_CONFIG.maxRetries} after ${actualDelayMs}ms`);
+
+        await new Promise(resolve => setTimeout(resolve, actualDelayMs));
+
+        return callGeminiFlashWithRetry(messages, options, retryCount + 1);
+      } else {
+        console.error(`[${requestId}] Max retries exceeded (status: ${response.status})`);
+      }
+    }
+
+    return response;
+  } catch (error) {
+    if (retryCount < RETRY_CONFIG.maxRetries) {
+      const delayMs = Math.min(
+        RETRY_CONFIG.initialDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, retryCount),
+        RETRY_CONFIG.maxDelayMs
+      );
+      console.log(`[${requestId}] Network error, retrying after ${delayMs}ms:`, error);
+
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+
+      return callGeminiFlashWithRetry(messages, options, retryCount + 1);
+    }
+
+    throw error;
+  }
+}
+
+/**
+ * Extract text from Gemini Flash response (OpenAI-compatible format)
+ * Handles both streaming chunks and complete responses
+ *
+ * @param responseData - JSON response from OpenRouter
+ * @param requestId - Optional request ID for logging
+ * @returns Extracted text content
+ */
+export function extractTextFromGeminiFlash(responseData: any, requestId?: string): string {
+  const logPrefix = requestId ? `[${requestId}]` : "";
+
+  // Streaming chunk format: choices[0].delta.content
+  if (responseData?.choices?.[0]?.delta?.content) {
+    return responseData.choices[0].delta.content;
+  }
+
+  // Complete response format: choices[0].message.content
+  if (responseData?.choices?.[0]?.message?.content) {
+    const text = responseData.choices[0].message.content;
+    console.log(`${logPrefix} ✅ Extracted text from Gemini Flash, length: ${text.length} characters`);
+    return text;
+  }
+
+  // Direct content field
+  if (responseData?.content && typeof responseData.content === 'string') {
+    console.log(`${logPrefix} ✅ Extracted text from direct content field, length: ${responseData.content.length}`);
+    return responseData.content;
+  }
+
+  // Error case - log the structure for debugging
+  console.error(
+    `${logPrefix} ❌ Failed to extract text from response:`,
+    JSON.stringify(responseData).substring(0, 200)
+  );
+  return "";
 }

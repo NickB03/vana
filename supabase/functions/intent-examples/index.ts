@@ -40,8 +40,21 @@ const EXAMPLES = {
     "build a GraphQL playground"
   ],
 
-  // IMAGE - 25 examples (default for all visuals - logos, icons, photos)
+  // IMAGE - 40 examples (default for all visuals - logos, icons, photos)
   image: [
+    // Common "generate/create an image" patterns
+    "generate an image of a sunset",
+    "create an image of a cat",
+    "make an image of a mountain",
+    "generate an image of a beach",
+    "create an image of a forest",
+    "generate an image of a city",
+    "make an image of a car",
+    "create an image of a dog",
+    "generate an image of a person",
+    "make an image showing a landscape",
+
+    // Existing examples
     "generate a sunset over mountains",
     "create a photorealistic portrait",
     "show me product photography of a watch",
@@ -66,7 +79,14 @@ const EXAMPLES = {
     "diagram of a dog",
     "show me what a quantum computer looks like",
     "generate album cover art",
-    "create Instagram post design"
+    "create Instagram post design",
+
+    // Additional common patterns
+    "draw a picture of a house",
+    "paint a scene with trees",
+    "illustrate a character design",
+    "design a poster for an event",
+    "create artwork for a book cover"
   ],
 
   // CODE - 20 examples (programming snippets with language specified)
@@ -163,8 +183,43 @@ const EXAMPLES = {
   ]
 };
 
+// Configuration for OpenRouter embeddings (matches intent-detector-embeddings.ts)
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/embeddings";
+const OPENROUTER_MODEL = "qwen/qwen3-embedding-0.6b"; // 1024 dimensions
+const QUERY_PROMPT = "Represent this sentence for searching relevant passages: ";
+
+async function generateEmbedding(text: string): Promise<number[]> {
+  const openrouterKey = Deno.env.get('OPENROUTER_EMBEDDING_KEY');
+  if (!openrouterKey) {
+    throw new Error('OPENROUTER_EMBEDDING_KEY not set in Supabase secrets');
+  }
+
+  const response = await fetch(OPENROUTER_URL, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openrouterKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': Deno.env.get('SUPABASE_URL') || 'https://example.com',
+      'X-Title': 'Intent Examples Setup'
+    },
+    body: JSON.stringify({
+      model: OPENROUTER_MODEL,
+      input: QUERY_PROMPT + text,
+      dimensions: 1024
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`OpenRouter API error: ${response.status} - ${error}`);
+  }
+
+  const data = await response.json();
+  return data.data[0].embedding;
+}
+
 Deno.serve(async (req) => {
-  console.log('🚀 Starting intent examples setup with Supabase native embeddings...\n');
+  console.log('🚀 Starting intent examples setup with OpenRouter embeddings (qwen3-embedding-0.6b)...\n');
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -177,8 +232,6 @@ Deno.serve(async (req) => {
   };
 
   try {
-    // Create embedding session using Supabase's native AI inference
-    const session = new Supabase.ai.Session('gte-small');
 
     for (const [intent, texts] of Object.entries(EXAMPLES)) {
       console.log(`📝 Processing ${intent} (${texts.length} examples)...`);
@@ -193,17 +246,14 @@ Deno.serve(async (req) => {
         console.log(`  📦 Batch ${batchNum}/${totalBatches}: Processing ${batch.length} examples...`);
 
         for (const text of batch) {
-          // Generate embedding using Supabase native AI (FREE, no external API!)
-          const embedding = await session.run(text, {
-            mean_pool: true,
-            normalize: true,
-          });
+          // Generate embedding using OpenRouter (matches runtime intent detection)
+          const embedding = await generateEmbedding(text);
 
           // Store in Supabase pgvector
           const { error } = await supabase.from('intent_examples').insert({
             intent,
             text,
-            embedding: Array.from(embedding) // Convert to array for pgvector
+            embedding: embedding // Already an array from OpenRouter
           });
 
           if (error) {
@@ -225,7 +275,7 @@ Deno.serve(async (req) => {
 
     console.log('✅ Setup Complete!\n');
     console.log(`   Total examples: ${stats.total}`);
-    console.log(`   Cost: $0 (Supabase native embeddings)`);
+    console.log(`   Model: ${OPENROUTER_MODEL} (1024 dimensions)`);
     console.log(`   By intent:`, stats.byIntent);
     console.log('\n🎯 Intent detection system is ready to use!');
 

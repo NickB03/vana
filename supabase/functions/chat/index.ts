@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { shouldGenerateImage, shouldGenerateArtifact, getArtifactType, getArtifactGuidance } from "./intent-detector-embeddings.ts";
 import { validateArtifactRequest, generateGuidanceFromValidation } from "./artifact-validator.ts";
 import { transformArtifactCode } from "./artifact-transformer.ts";
-import { convertToGeminiFormat, extractSystemMessage, getApiKey } from "../_shared/gemini-client.ts";
+import { callGeminiFlashWithRetry, extractTextFromGeminiFlash, type OpenRouterMessage } from "../_shared/openrouter-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 import { getSystemInstruction } from "../_shared/system-prompt-inline.ts";
 
@@ -304,11 +304,6 @@ serve(async (req) => {
     }
     // Guest users already have supabase client initialized above
 
-    console.log("Checking for API key...");
-    // Get API key with automatic round-robin rotation
-    const GOOGLE_AI_STUDIO_KEY = getApiKey("GOOGLE_AI_STUDIO_KEY_CHAT");
-    console.log("✅ API key found, length:", GOOGLE_AI_STUDIO_KEY.length);
-
     console.log("Starting chat stream for session:", sessionId);
 
     // ============================================================================
@@ -327,7 +322,11 @@ serve(async (req) => {
 
     // Analyze user prompt to determine which specialized model to use
     const lastUserMessage = messages[messages.length - 1];
+
+    // DEBUG: Log intent detection result
+    console.log(`[${requestId}] Analyzing prompt for intent:`, lastUserMessage.content.substring(0, 100));
     const isImageRequest = lastUserMessage && await shouldGenerateImage(lastUserMessage.content);
+    console.log(`[${requestId}] Image intent detected:`, isImageRequest);
 
     if (isImageRequest) {
       console.log("🎯 Intent detected: IMAGE generation");
@@ -347,13 +346,30 @@ serve(async (req) => {
           headers: authHeader ? { Authorization: authHeader } : {}
         });
 
+        // Enhanced error logging for debugging
+        console.log(`[${requestId}] Image response structure:`, {
+          hasError: !!imageResponse.error,
+          error: imageResponse.error,
+          status: imageResponse.status,
+          hasData: !!imageResponse.data,
+          dataKeys: imageResponse.data ? Object.keys(imageResponse.data) : []
+        });
+
         if (imageResponse.error) {
-          console.error(`[${requestId}] Image generation error:`, {
+          // Log the full error for debugging
+          console.error(`[${requestId}] ❌ Image generation error details:`, {
             error: imageResponse.error,
+            errorMessage: imageResponse.error?.message,
             status: imageResponse.status,
-            data: imageResponse.data
+            dataError: imageResponse.data?.error,
+            dataDetails: imageResponse.data?.details,
+            fullData: JSON.stringify(imageResponse.data).substring(0, 500)
           });
-          const errorMessage = `I encountered an issue generating the image. Please try again. (Request ID: ${requestId})`;
+
+          // Check if the error data contains useful information
+          const errorDetails = imageResponse.data?.details || imageResponse.data?.error || imageResponse.error?.message || "Unknown error";
+
+          const errorMessage = `I encountered an issue generating the image. ${errorDetails}. Please try again. (Request ID: ${requestId})`;
           return new Response(
             `data: ${JSON.stringify({ choices: [{ delta: { content: errorMessage } }] })}\n\ndata: [DONE]\n\n`,
             { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream", "X-Request-ID": requestId } }
@@ -555,47 +571,38 @@ Treat this as an iterative improvement of the existing artifact.`;
     // Load system instruction from inline template (works in both local and deployed Edge Functions)
     const systemInstruction = getSystemInstruction({ fullArtifactContext });
 
-
-    // Prepare messages for Gemini API (convert from OpenAI format)
-    const geminiMessages = convertToGeminiFormat(contextMessages);
+    // Prepare messages for OpenRouter (OpenAI-compatible format)
+    const openRouterMessages: OpenRouterMessage[] = [
+      { role: "system", content: systemInstruction },
+      ...contextMessages.filter(m => m.role !== "system").map(m => ({
+        role: m.role as "user" | "assistant",
+        content: m.content
+      }))
+    ];
 
     // 🎯 Intent detected: REGULAR CHAT (no artifacts or images)
-    // 🔀 Using: Flash model (fast, cost-effective for conversation)
+    // 🔀 Using: Gemini 2.5 Flash Lite via OpenRouter (fast, reliable streaming)
     console.log("🎯 Intent detected: REGULAR CHAT");
-    console.log("🔀 Using: Flash model (inline, streaming response)");
+    console.log("🔀 Using: Gemini 2.5 Flash Lite via OpenRouter (streaming response)");
 
-    // Call Gemini streaming API with Flash model (fast, cost-effective for chat)
-    // Artifacts are handled by separate generate-artifact function with Pro model
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${GOOGLE_AI_STUDIO_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: geminiMessages,
-          systemInstruction: {
-            parts: [{ text: systemInstruction }]
-          },
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-          }
-        })
-      }
-    );
+    // Call OpenRouter with Gemini 2.5 Flash Lite model (fast, reliable for chat)
+    // Artifacts are handled by separate generate-artifact function
+    const response = await callGeminiFlashWithRetry(openRouterMessages, {
+      temperature: 0.7,
+      max_tokens: 8000,
+      requestId,
+      stream: true
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[${requestId}] 🔴 Google AI Studio error:`, response.status, errorText);
+      console.error(`[${requestId}] 🔴 OpenRouter error:`, response.status, errorText);
       console.error(`[${requestId}] 🔴 Response headers:`, JSON.stringify(Object.fromEntries(response.headers)));
 
       if (response.status === 429 || response.status === 403) {
         return new Response(
           JSON.stringify({
-            error: "API quota exceeded. Please try again later.",
+            error: "API rate limit exceeded. Please try again later.",
             requestId,
             details: errorText
           }),

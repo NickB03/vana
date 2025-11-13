@@ -742,10 +742,8 @@ ${artifact.content}
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/recharts@2.5.0/dist/Recharts.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@radix-ui/react-dialog@1.0.5/dist/index.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@radix-ui/react-dropdown-menu@2.0.6/dist/index.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@radix-ui/react-tabs@1.0.4/dist/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/framer-motion@11.11.11/dist/size-rollup-motion.js"></script>
+  <!-- Radix UI removed: Not compatible with browser UMD loading (uses CommonJS require) and artifacts cannot use @radix-ui/* imports -->
   ${injectedCDNs}
   ${generateCompleteIframeStyles()}
   <style>
@@ -788,10 +786,7 @@ ${artifact.content}
       }
     });
 
-    // Expose Radix UI primitives (if loaded)
-    const RadixDialog = window.RadixDialog || {};
-    const RadixDropdownMenu = window.RadixDropdownMenu || {};
-    const RadixTabs = window.RadixTabs || {};
+    // Radix UI removed - not compatible with browser UMD loading
 
     // Expose Recharts (if loaded)
     const Recharts = window.Recharts || {};

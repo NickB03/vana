@@ -326,6 +326,7 @@ const Home = () => {
         <motion.div
           className="fixed inset-0 bg-black pointer-events-none"
           style={{ zIndex: 40 }}
+          initial={transitions.backdrop.initial}
           animate={
             isTransitioning
               ? transitions.backdrop.transitioning(progress)
@@ -347,6 +348,10 @@ const Home = () => {
           <motion.div
             style={{
               pointerEvents: phase === "landing" ? "auto" : "none",
+            }}
+            initial={{
+              ...transitions.landing.fadeOut.initial,
+              ...transitions.landing.blurOut.initial,
             }}
             animate={{
               ...(isTransitioning
@@ -399,6 +404,7 @@ const Home = () => {
           style={{
             pointerEvents: phase !== "landing" ? "auto" : "none",
           }}
+          initial={transitions.app.fadeIn.initial}
           animate={
             isTransitioning
               ? transitions.app.fadeIn.transitioning(progress)

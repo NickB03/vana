@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { callGemini, extractTextFromGeminiResponse } from "../_shared/gemini-client.ts";
+import { callGeminiFlashWithRetry, extractTextFromGeminiFlash, type OpenRouterMessage } from "../_shared/openrouter-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 
 serve(async (req) => {
@@ -61,27 +61,29 @@ serve(async (req) => {
 
     console.log("Generating title for message:", message.substring(0, 50));
 
-    const systemInstruction = "You are a title generator. Generate a short, concise title (max 6 words) for the conversation based on the user's first message. Return ONLY the title, nothing else.";
-
-    const contents = [
+    const messages: OpenRouterMessage[] = [
+      {
+        role: "system",
+        content: "You are a title generator. Generate a short, concise title (max 6 words) for the conversation based on the user's first message. Return ONLY the title, nothing else."
+      },
       {
         role: "user",
-        parts: [{ text: message }]
+        content: message
       }
     ];
 
-    const response = await callGemini("gemini-2.5-flash-lite", contents, {
-      systemInstruction,
-      keyName: "GOOGLE_AI_STUDIO_KEY_CHAT"  // Use shared chat key pool for title generation
+    const response = await callGeminiFlashWithRetry(messages, {
+      temperature: 0.7,
+      max_tokens: 50
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Google AI Studio error:", response.status, errorText);
+      console.error("OpenRouter error:", response.status, errorText);
 
       if (response.status === 429 || response.status === 403) {
         return new Response(
-          JSON.stringify({ error: "API quota exceeded" }),
+          JSON.stringify({ error: "API rate limit exceeded" }),
           {
             status: 429,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -96,7 +98,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const title = extractTextFromGeminiResponse(data).trim() || "New Chat";
+    const title = extractTextFromGeminiFlash(data).trim() || "New Chat";
 
     console.log("Generated title:", title);
 

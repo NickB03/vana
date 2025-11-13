@@ -64,7 +64,7 @@ SELECT match_intent_examples('[0.1, 0.2, ...]'::vector(768), 1);
 
 ```bash
 # Deploy the one-time setup function
-supabase functions deploy setup-intent-examples
+supabase functions deploy intent-examples
 ```
 
 **What this does:**
@@ -77,7 +77,7 @@ supabase functions deploy setup-intent-examples
 ```bash
 # Invoke the setup function to embed all examples
 curl -X POST \
-  "https://YOUR_PROJECT_ID.supabase.co/functions/v1/setup-intent-examples" \
+  "https://YOUR_PROJECT_ID.supabase.co/functions/v1/intent-examples" \
   -H "Authorization: Bearer YOUR_ANON_KEY"
 ```
 
@@ -383,7 +383,7 @@ CREATE TABLE intent_logs (
 ## 📝 Files Created
 
 1. `supabase/migrations/20250112_intent_examples.sql` - Database schema
-2. `supabase/functions/setup-intent-examples/index.ts` - One-time setup
+2. `supabase/functions/intent-examples/index.ts` - One-time setup
 3. `supabase/functions/chat/intent-detector-embeddings.ts` - New detector
 4. `supabase/functions/chat/index.ts` - Updated to use async detection
 

@@ -89,7 +89,7 @@ export async function detectIntent(prompt: string): Promise<IntentResult> {
     const { data: matches, error } = await supabase.rpc('match_intent_examples', {
       query_embedding: queryEmbedding,
       match_count: 1,
-      similarity_threshold: 0.5
+      similarity_threshold: 0.3 // Temporarily lowered from 0.5 to help with matching
     });
 
     if (error) {
@@ -98,14 +98,16 @@ export async function detectIntent(prompt: string): Promise<IntentResult> {
     }
 
     if (!matches || matches.length === 0) {
-      return {
-        type: 'chat',
-        confidence: 'low',
-        reasoning: 'No similar examples found (similarity < 50%)'
-      };
+      console.log('🔍 [detectIntent] No matches found (similarity < 30%), falling back to regex');
+      return detectIntentRegex(prompt);
     }
 
     const bestMatch = matches[0];
+    console.log('🔍 [detectIntent] Best match:', {
+      intent: bestMatch.intent,
+      similarity: bestMatch.similarity,
+      text: bestMatch.text?.substring(0, 50)
+    });
 
     // Step 3: Determine confidence based on similarity score
     let confidence: 'high' | 'medium' | 'low';
@@ -122,6 +124,8 @@ export async function detectIntent(prompt: string): Promise<IntentResult> {
       confidence,
       reasoning: `${(bestMatch.similarity * 100).toFixed(1)}% match: "${bestMatch.text}"`
     };
+
+    console.log('🔍 [detectIntent] Final result:', result);
 
     // Observability logging
     const latencyMs = Date.now() - startTime;
@@ -157,8 +161,18 @@ function fallbackToChat(reason: string): IntentResult {
  * Determines if a prompt should trigger image generation API
  */
 export async function shouldGenerateImage(prompt: string): Promise<boolean> {
-  const intent = await detectIntent(prompt);
-  return intent.type === 'image' && intent.confidence !== 'low';
+  try {
+    console.log('🔍 [shouldGenerateImage] Analyzing prompt:', prompt.substring(0, 100));
+    const intent = await detectIntent(prompt);
+    console.log('🔍 [shouldGenerateImage] Intent result:', { type: intent.type, confidence: intent.confidence });
+    const result = intent.type === 'image' && intent.confidence !== 'low';
+    console.log('🔍 [shouldGenerateImage] Final decision:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ [shouldGenerateImage] Error detecting intent:', error);
+    // Fallback to false on error (don't generate image)
+    return false;
+  }
 }
 
 /**

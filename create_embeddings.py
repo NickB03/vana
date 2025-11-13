@@ -3,7 +3,7 @@ import json
 import requests
 import time
 
-# This data is copied directly from supabase/functions/setup-intent-examples/index.ts
+# This data is copied directly from supabase/functions/intent-examples/index.ts
 EXAMPLES = {
   "react": [
     "build a cryptocurrency dashboard with live prices", "create a chat interface like ChatGPT",
