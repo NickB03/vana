@@ -35,6 +35,8 @@ import { ArtifactContainer as Artifact, ArtifactData } from "@/components/Artifa
 import { MessageWithArtifacts } from "@/components/MessageWithArtifacts";
 import { parseArtifacts } from "@/utils/artifactParser";
 import { ThinkingIndicator } from "@/components/ThinkingIndicator";
+import { ReasoningIndicator } from "@/components/ReasoningIndicator";
+import { ReasoningErrorBoundary } from "@/components/ReasoningErrorBoundary";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SystemMessage } from "@/components/ui/system-message";
 import { useNavigate } from "react-router-dom";
@@ -330,8 +332,13 @@ export function ChatInterface({
                     >
                       {isAssistant ? (
                         <div className="group flex w-full flex-col gap-0">
-                          {message.reasoning && (
-                            <ThinkingIndicator status={message.reasoning} />
+                          {(message.reasoning || message.reasoning_steps) && (
+                            <ReasoningErrorBoundary>
+                              <ReasoningIndicator
+                                reasoning={message.reasoning}
+                                reasoningSteps={message.reasoning_steps}
+                              />
+                            </ReasoningErrorBoundary>
                           )}
                           <MessageWithArtifacts
                             content={message.content}
@@ -425,11 +432,14 @@ export function ChatInterface({
                 {isStreaming && streamingMessage && (
                   <MessageComponent className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 items-start">
                     <div className="group flex w-full flex-col gap-0">
-                      <ThinkingIndicator
-                        status={streamProgress.message}
-                        isStreaming
-                        percentage={streamProgress.percentage}
-                      />
+                      <ReasoningErrorBoundary fallback={<ThinkingIndicator status="Loading reasoning..." />}>
+                        <ReasoningIndicator
+                          reasoning={streamProgress.message}
+                          reasoningSteps={streamProgress.reasoningSteps}
+                          isStreaming
+                          percentage={streamProgress.percentage}
+                        />
+                      </ReasoningErrorBoundary>
                       <MessageWithArtifacts
                         content={streamingMessage}
                         onArtifactOpen={(artifact) => {

@@ -6,6 +6,7 @@ import { transformArtifactCode } from "./artifact-transformer.ts";
 import { callGeminiFlashWithRetry, extractTextFromGeminiFlash, type OpenRouterMessage } from "../_shared/openrouter-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 import { getSystemInstruction } from "../_shared/system-prompt-inline.ts";
+import { generateStructuredReasoning, createFallbackReasoning, type StructuredReasoning } from "../_shared/reasoning-generator.ts";
 
 // Helper function to extract meaningful title from prompt
 function extractImageTitle(prompt: string): string {
@@ -29,7 +30,7 @@ serve(async (req) => {
 
   try {
     const requestBody = await req.json();
-    const { messages, sessionId, currentArtifact, isGuest, forceImageMode, forceArtifactMode } = requestBody;
+    const { messages, sessionId, currentArtifact, isGuest, forceImageMode, forceArtifactMode, includeReasoning = false } = requestBody;
 
     // Generate unique request ID for observability and error correlation
     const requestId = crypto.randomUUID();
@@ -624,6 +625,32 @@ Treat this as an iterative improvement of the existing artifact.`;
     console.log("🎯 Intent detected: REGULAR CHAT");
     console.log("🔀 Using: Gemini 2.5 Flash Lite via OpenRouter (streaming response)");
 
+    // ========================================
+    // CHAIN OF THOUGHT: Generate structured reasoning BEFORE chat stream
+    // ========================================
+    let structuredReasoning: StructuredReasoning | null = null;
+
+    if (includeReasoning && lastUserMessage) {
+      console.log(`[${requestId}] 🧠 Generating reasoning for: "${lastUserMessage.content.substring(0, 50)}..."`);
+
+      try {
+        structuredReasoning = await generateStructuredReasoning(
+          lastUserMessage.content,
+          contextMessages.filter(m => m.role !== 'system') as OpenRouterMessage[],
+          {
+            maxSteps: 3,  // Limit for faster generation
+            timeout: 8000  // 8s timeout
+          }
+        );
+
+        console.log(`[${requestId}] ✅ Reasoning generated: ${structuredReasoning.steps.length} steps`);
+      } catch (reasoningError) {
+        console.error(`[${requestId}] ⚠️ Reasoning generation failed:`, reasoningError);
+        // Use fallback reasoning instead of blocking the response
+        structuredReasoning = createFallbackReasoning(reasoningError.message);
+      }
+    }
+
     // Call OpenRouter with Gemini 2.5 Flash Lite model (fast, reliable for chat)
     // Artifacts are handled by separate generate-artifact function
     const response = await callGeminiFlashWithRetry(openRouterMessages, {
@@ -699,15 +726,34 @@ Treat this as an iterative improvement of the existing artifact.`;
       })();
     }
 
-    // Transform streaming response to fix artifact imports
+    // Transform streaming response to fix artifact imports + inject reasoning
     // Uses closure-scoped state per stream instance (truly isolated)
     const transformedStream = response.body!.pipeThrough(new TextDecoderStream()).pipeThrough(
       (() => {
         // Closure-scoped state variables - unique per stream instance
         let buffer = '';
         let insideArtifact = false;
+        let reasoningSent = false;  // Track if reasoning event was sent
 
         return new TransformStream({
+          start(controller) {
+            // ========================================
+            // CHAIN OF THOUGHT: Send reasoning as FIRST SSE event
+            // ========================================
+            if (structuredReasoning && !reasoningSent) {
+              const reasoningEvent = {
+                type: 'reasoning',
+                sequence: 0,
+                timestamp: Date.now(),
+                data: structuredReasoning
+              };
+
+              controller.enqueue(`data: ${JSON.stringify(reasoningEvent)}\n\n`);
+              reasoningSent = true;
+
+              console.log(`[${requestId}] 📤 Sent reasoning event with ${structuredReasoning.steps.length} steps`);
+            }
+          },
           transform(chunk, controller) {
             buffer += chunk;
 

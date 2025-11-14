@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ensureValidSession, getAuthErrorMessage } from "@/utils/authHelpers";
 import { chatRequestThrottle } from "@/utils/requestThrottle";
+import { StructuredReasoning } from "@/types/reasoning";
 
 export interface ChatMessage {
   id: string;
@@ -10,10 +11,11 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   reasoning?: string | null;
+  reasoning_steps?: StructuredReasoning | null; // New: structured reasoning data
   created_at: string;
 }
 
-export type GenerationStage = 
+export type GenerationStage =
   | "analyzing"
   | "planning"
   | "generating"
@@ -25,6 +27,7 @@ export interface StreamProgress {
   message: string;
   artifactDetected: boolean;
   percentage: number;
+  reasoningSteps?: StructuredReasoning; // New: structured reasoning for streaming
 }
 
 export interface RateLimitHeaders {
@@ -86,7 +89,8 @@ export function useChatMessages(
   const saveMessage = async (
     role: "user" | "assistant",
     content: string,
-    reasoning?: string
+    reasoning?: string,
+    reasoningSteps?: StructuredReasoning
   ) => {
     // For guest users (no sessionId), add message to local state only
     if (!sessionId) {
@@ -96,6 +100,7 @@ export function useChatMessages(
         role,
         content,
         reasoning: reasoning || null,
+        reasoning_steps: reasoningSteps || null, // NEW: Include reasoning steps
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, guestMessage]);
@@ -111,6 +116,7 @@ export function useChatMessages(
           role,
           content,
           reasoning,
+          reasoning_steps: reasoningSteps, // NEW: Include reasoning steps
         })
         .select()
         .single();
@@ -179,6 +185,7 @@ export function useChatMessages(
         isGuest: !isAuthenticated,
         forceImageMode,
         forceArtifactMode,
+        includeReasoning: true, // Enable Chain of Thought reasoning
       };
 
       console.log("🚀 [useChatMessages.streamChat] Sending request:", {
@@ -276,6 +283,8 @@ export function useChatMessages(
       let tokenCount = 0;
       let artifactDetected = false;
       let artifactClosed = false;
+      let reasoningSteps: StructuredReasoning | undefined; // Store reasoning data
+      let lastSequence = 0; // Track SSE event sequence
 
       const updateProgress = (): StreamProgress => {
         // Detect artifact tags
@@ -313,11 +322,12 @@ export function useChatMessages(
           percentage = 40 + Math.min(45, (tokenCount / 1000) * 45);
         }
 
-        return { 
-          stage, 
-          message, 
+        return {
+          stage,
+          message,
           artifactDetected,
-          percentage: Math.min(99, Math.round(percentage))
+          percentage: Math.min(99, Math.round(percentage)),
+          reasoningSteps // Include reasoning in progress updates
         };
       };
 
@@ -341,6 +351,26 @@ export function useChatMessages(
 
           try {
             const parsed = JSON.parse(jsonStr);
+
+            // ========================================
+            // CHAIN OF THOUGHT: Handle reasoning events
+            // ========================================
+            if (parsed.type === 'reasoning') {
+              // Check sequence number to prevent out-of-order updates
+              if (parsed.sequence <= lastSequence) {
+                console.warn('[StreamProgress] Ignoring out-of-order reasoning event');
+                continue;
+              }
+              lastSequence = parsed.sequence;
+
+              reasoningSteps = parsed.data;
+              const progress = updateProgress();
+              onDelta('', progress); // Trigger UI update with reasoning
+
+              console.log('[StreamProgress] Received reasoning:', reasoningSteps);
+              continue; // Skip to next event
+            }
+
             // Support both Gemini and OpenAI formats
             // Gemini: candidates[0].content.parts[0].text
             // OpenAI (legacy): choices[0].delta.content
@@ -362,7 +392,7 @@ export function useChatMessages(
 
       // Save assistant message first, then signal completion
       // This prevents a race condition where streamingMessage is cleared before the saved message appears
-      await saveMessage("assistant", fullResponse);
+      await saveMessage("assistant", fullResponse, undefined, reasoningSteps);
 
       // Small delay to ensure React state updates have propagated
       await new Promise(resolve => setTimeout(resolve, 50));
