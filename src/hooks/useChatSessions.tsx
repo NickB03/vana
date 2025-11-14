@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -15,7 +15,7 @@ export function useChatSessions() {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("chat_sessions")
@@ -34,11 +34,11 @@ export function useChatSessions() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchSessions();
-  }, []);
+  }, [fetchSessions]);
 
   const createSession = async (firstMessage: string): Promise<string | null> => {
     try {

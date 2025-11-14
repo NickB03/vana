@@ -242,8 +242,8 @@ export async function exportMultipleAsZip(
 
 // Export artifact with version history as JSON bundle
 export function exportWithVersionHistory(
-  artifact: any,
-  versions: any[]
+  artifact: { id: string; type: string; title: string; language?: string; content: string },
+  versions: Array<{ version_number: number; artifact_content: string; created_at: string }>
 ): void {
   const bundle = {
     artifact: {

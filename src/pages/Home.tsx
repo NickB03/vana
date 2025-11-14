@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import { Settings } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
-import { useTheme } from "@/components/ThemeProvider";
+import { useTheme } from "@/hooks/use-theme";
 import { Check, Palette } from "lucide-react";
 import { PromptInput, PromptInputTextarea } from "@/components/prompt-kit/prompt-input";
 import { PromptInputControls } from "@/components/prompt-kit/prompt-input-controls";

@@ -25,7 +25,7 @@ export function getCurrentVersionInfo(): VersionInfo {
     version: APP_VERSION.version,
     commit: APP_VERSION.commit.short,
     buildTime: APP_VERSION.build.date.getTime(),
-    buildHash: (window as any).__BUILD_HASH__ || 'unknown',
+    buildHash: (window as { __BUILD_HASH__?: string }).__BUILD_HASH__ || 'unknown',
   };
 }
 
@@ -166,7 +166,7 @@ export async function verifyDeployment(): Promise<boolean> {
     
     // Check if new build hash is present in HTML
     const buildHashMatch = html.match(/data-build-hash="([^"]+)"/);
-    const currentHash = (window as any).__BUILD_HASH__;
+    const currentHash = (window as { __BUILD_HASH__?: string }).__BUILD_HASH__;
 
     if (buildHashMatch && buildHashMatch[1] !== currentHash) {
       console.log('✅ New deployment detected');

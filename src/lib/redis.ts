@@ -22,7 +22,7 @@ export class RedisCache {
     this.token = token;
   }
 
-  private async execute(command: string[]): Promise<any> {
+  private async execute(command: string[]): Promise<unknown> {
     const response = await fetch(`${this.baseUrl}`, {
       method: 'POST',
       headers: {

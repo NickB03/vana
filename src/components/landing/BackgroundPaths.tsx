@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { useTheme } from "@/components/ThemeProvider";
+import { useTheme } from "@/hooks/use-theme";
 
 /**
  * Animated SVG background paths that flow across the viewport

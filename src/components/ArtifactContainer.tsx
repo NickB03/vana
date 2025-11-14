@@ -311,7 +311,7 @@ root.render(<App />);`,
       const cdn = detectAndInjectLibraries(artifact.content);
       setInjectedCDNs(cdn);
     }
-  }, [artifact.content]);
+  }, [artifact.content, artifact.type]);
 
   const handleEditToggle = () => {
     if (isEditingCode) {

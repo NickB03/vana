@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle } from "lucide-react";
 import { CountdownTimer } from "@/components/CountdownTimer";
 
-interface RateLimitWarningToastProps {
+export interface RateLimitWarningToastProps {
   remaining: number;
   total: number;
   resetTime: number | string;
@@ -85,13 +84,5 @@ export const RateLimitWarningToast = ({
   }, [remaining, total, resetTime, isGuest, hasShown, toast, onDismiss]);
 
   return null; // This component doesn't render anything directly
-};
-
-/**
- * Hook to show rate limit warning toast
- * Usage: useRateLimitWarning({ remaining, total, resetTime, isGuest })
- */
-export const useRateLimitWarning = (props: RateLimitWarningToastProps) => {
-  return <RateLimitWarningToast {...props} />;
 };
 

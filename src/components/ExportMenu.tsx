@@ -36,7 +36,7 @@ import { toast } from "sonner";
 interface ExportMenuProps {
   artifact: ArtifactData;
   injectedCDNs?: string;
-  versions?: any[];
+  versions?: Array<{ version_number: number; artifact_content: string; created_at: string }>;
 }
 
 export const ExportMenu = ({ artifact, injectedCDNs = '', versions = [] }: ExportMenuProps) => {

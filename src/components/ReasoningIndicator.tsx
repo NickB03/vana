@@ -8,8 +8,8 @@ import {
   ChainOfThoughtTrigger,
   ChainOfThoughtContent,
   ChainOfThoughtItem,
-  getIconComponent,
 } from "./prompt-kit/chain-of-thought";
+import { getIconComponent } from "./prompt-kit/chain-of-thought-utils";
 import {
   StructuredReasoning,
   ReasoningStep,

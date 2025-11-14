@@ -8,7 +8,7 @@ interface PendingRequest<T> {
   timestamp: number;
 }
 
-const pendingRequests = new Map<string, PendingRequest<any>>();
+const pendingRequests = new Map<string, PendingRequest<unknown>>();
 const CACHE_DURATION = 5000; // 5 seconds
 
 /**

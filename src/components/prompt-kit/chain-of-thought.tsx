@@ -6,22 +6,8 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import { ChevronDown, Circle, Search, Lightbulb, Target, Sparkles } from "lucide-react";
+import { ChevronDown, Circle } from "lucide-react";
 import React, { useState } from "react";
-
-// Icon mapping for reasoning steps
-const iconMap = {
-  search: Search,
-  lightbulb: Lightbulb,
-  target: Target,
-  sparkles: Sparkles,
-} as const;
-
-export function getIconComponent(icon?: string) {
-  if (!icon || !(icon in iconMap)) return null;
-  const IconComponent = iconMap[icon as keyof typeof iconMap];
-  return <IconComponent className="h-4 w-4" />;
-}
 
 export type ChainOfThoughtItemProps = React.ComponentProps<"div">;
 

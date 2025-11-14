@@ -49,7 +49,7 @@ export interface PromptInputControlsProps {
 
   // Canvas/Create control (legacy - kept for backward compatibility)
   isCanvasOpen?: boolean;
-  currentArtifact?: any; // Can be null/undefined or an artifact object
+  currentArtifact?: unknown; // Can be null/undefined or an artifact object
   onCreateClick?: () => void;
 
   // Send button control

@@ -34,14 +34,15 @@ export async function ensureValidSession() {
 /**
  * Creates a user-friendly error message based on the error type
  */
-export function getAuthErrorMessage(error: any): string {
-  if (error?.message?.includes("Not authenticated")) {
+export function getAuthErrorMessage(error: unknown): string {
+  const err = error as { message?: string };
+  if (err?.message?.includes("Not authenticated")) {
     return "Your session has expired. Please refresh the page to continue.";
   }
-  
-  if (error?.message?.includes("JWT")) {
+
+  if (err?.message?.includes("JWT")) {
     return "Authentication token invalid. Please sign in again.";
   }
-  
-  return error?.message || "An authentication error occurred";
+
+  return err?.message || "An authentication error occurred";
 }

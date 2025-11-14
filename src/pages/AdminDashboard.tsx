@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,13 +20,19 @@ interface OverviewData {
   byFunction: Array<{ function_name: string; requests: number; cost: number; avg_latency: number }>;
 }
 
+interface DailyData {
+  day: string;
+  requests: number;
+  cost: number;
+}
+
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [overview, setOverview] = useState<OverviewData | null>(null);
-  const [dailyData, setDailyData] = useState<any[]>([]);
+  const [dailyData, setDailyData] = useState<DailyData[]>([]);
   const [timeRange, setTimeRange] = useState(30);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -64,7 +70,7 @@ export default function AdminDashboard() {
   }, [navigate]);
 
   // Fetch overview data
-  const fetchOverview = async () => {
+  const fetchOverview = useCallback(async () => {
     try {
       const { data, error } = await supabase.functions.invoke('admin-analytics', {
         body: { metric: 'overview', days: timeRange }
@@ -80,10 +86,10 @@ export default function AdminDashboard() {
         variant: "destructive"
       });
     }
-  };
+  }, [timeRange]);
 
   // Fetch daily data
-  const fetchDailyData = async () => {
+  const fetchDailyData = useCallback(async () => {
     try {
       const { data, error } = await supabase.functions.invoke('admin-analytics', {
         body: { metric: 'daily', days: timeRange }
@@ -94,7 +100,7 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error("Failed to fetch daily data:", error);
     }
-  };
+  }, [timeRange]);
 
   // Initial load
   useEffect(() => {
@@ -106,7 +112,7 @@ export default function AdminDashboard() {
       setLoading(false);
     };
     loadData();
-  }, [timeRange, isAdmin]);
+  }, [timeRange, isAdmin, fetchOverview, fetchDailyData]);
 
   // Auto-refresh
   useEffect(() => {
@@ -118,7 +124,7 @@ export default function AdminDashboard() {
     }, 30000); // Refresh every 30 seconds
 
     return () => clearInterval(interval);
-  }, [autoRefresh, timeRange, isAdmin]);
+  }, [autoRefresh, timeRange, isAdmin, fetchOverview, fetchDailyData]);
 
   if (loading) {
     return (

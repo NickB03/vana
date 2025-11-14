@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ensureValidSession, getAuthErrorMessage } from "@/utils/authHelpers";
@@ -49,16 +49,7 @@ export function useChatMessages(
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (sessionId) {
-      setMessages([]); // Clear messages when session changes
-      fetchMessages();
-    } else {
-      setMessages([]);
-    }
-  }, [sessionId]);
-
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     if (!sessionId) return;
 
     try {
@@ -69,12 +60,12 @@ export function useChatMessages(
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      
+
       const typedData = (data || []).map(msg => ({
         ...msg,
         role: msg.role as "user" | "assistant"
       }));
-      
+
       setMessages(typedData);
     } catch (error: any) {
       console.error("Error fetching messages:", error);
@@ -84,7 +75,16 @@ export function useChatMessages(
         variant: "destructive",
       });
     }
-  };
+  }, [sessionId, toast]);
+
+  useEffect(() => {
+    if (sessionId) {
+      setMessages([]); // Clear messages when session changes
+      fetchMessages();
+    } else {
+      setMessages([]);
+    }
+  }, [sessionId, fetchMessages]);
 
   const saveMessage = async (
     role: "user" | "assistant",

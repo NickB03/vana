@@ -65,7 +65,7 @@ export interface MultiArtifactContextType {
   hasArtifact: (artifactId: string) => boolean;
 }
 
-const MultiArtifactContext = createContext<MultiArtifactContextType | undefined>(undefined);
+export const MultiArtifactContext = createContext<MultiArtifactContextType | undefined>(undefined);
 
 const STORAGE_KEY = "multi-artifact-state";
 const MAX_ARTIFACTS = 5;
@@ -288,16 +288,4 @@ export function MultiArtifactProvider({ children }: MultiArtifactProviderProps) 
       {children}
     </MultiArtifactContext.Provider>
   );
-}
-
-/**
- * Hook to access multi-artifact context
- * @throws Error if used outside of MultiArtifactProvider
- */
-export function useMultiArtifact() {
-  const context = useContext(MultiArtifactContext);
-  if (context === undefined) {
-    throw new Error("useMultiArtifact must be used within a MultiArtifactProvider");
-  }
-  return context;
 }

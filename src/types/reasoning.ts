@@ -10,7 +10,7 @@ export const ReasoningStepSchema = z.object({
   phase: z.enum(['research', 'analysis', 'solution', 'custom']),
   title: z.string().min(1).max(500),
   icon: z.enum(['search', 'lightbulb', 'target', 'sparkles']).optional(),
-  items: z.array(z.string().max(2000)).min(1).max(20),
+  items: z.array(z.string().min(1).max(2000)).min(1).max(20),
   timestamp: z.number().optional(),
 });
 

@@ -139,7 +139,7 @@ export function ChatInterface({
       shouldGenerateImage,
       shouldGenerateArtifact
     );
-  }, [input, isLoading, isStreaming, sessionId, setInput, streamChat, currentArtifact, isEditingArtifact, imageMode, artifactMode]);
+  }, [input, isLoading, isStreaming, setInput, streamChat, currentArtifact, isEditingArtifact, imageMode, artifactMode]);
 
   // Reset when session changes
   useEffect(() => {
@@ -170,7 +170,13 @@ export function ChatInterface({
   useEffect(() => {
     const allMessages = [...messages];
     if (streamingMessage) {
-      allMessages.push({ role: "assistant", content: streamingMessage } as any);
+      allMessages.push({
+        id: 'streaming-temp',
+        session_id: sessionId || '',
+        role: "assistant" as const,
+        content: streamingMessage,
+        created_at: new Date().toISOString()
+      });
     }
 
     // Get the last assistant message
@@ -187,7 +193,7 @@ export function ChatInterface({
     } else {
       onArtifactChange?.(false);
     }
-  }, [messages, streamingMessage]);
+  }, [messages, streamingMessage, onArtifactChange, sessionId]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
