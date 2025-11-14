@@ -335,7 +335,7 @@ serve(async (req) => {
     console.log(`[${requestId}] Analyzing prompt for intent:`, lastUserMessage.content.substring(0, 100));
 
     // Check if we need clarification FIRST (unless force mode is enabled)
-    if (!forceImageMode && lastUserMessage) {
+    if (!forceImageMode && !forceArtifactMode && lastUserMessage) {
       const clarificationQuestion = await needsClarification(lastUserMessage.content);
       if (clarificationQuestion) {
         console.log(`[${requestId}] ❓ Medium confidence - requesting clarification`);
