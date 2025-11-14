@@ -43,6 +43,7 @@ import { useNavigate } from "react-router-dom";
 interface ChatInterfaceProps {
   sessionId?: string;
   initialPrompt?: string;
+  initialImageMode?: boolean;
   isCanvasOpen?: boolean;
   onCanvasToggle?: (isOpen: boolean) => void;
   onArtifactChange?: (hasContent: boolean) => void;
@@ -57,6 +58,7 @@ interface ChatInterfaceProps {
 export function ChatInterface({
   sessionId,
   initialPrompt,
+  initialImageMode = false,
   isCanvasOpen = false,
   onCanvasToggle,
   onArtifactChange,
@@ -85,6 +87,7 @@ export function ChatInterface({
   const [currentArtifact, setCurrentArtifact] = useState<ArtifactData | null>(null);
   const [isEditingArtifact, setIsEditingArtifact] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [imageMode, setImageMode] = useState(initialImageMode);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Define handleSend early using useCallback to avoid initialization errors
@@ -98,6 +101,10 @@ export function ChatInterface({
     setInput("");
     setIsStreaming(true);
     setStreamingMessage("");
+
+    // Capture imageMode state and reset it after sending
+    const shouldGenerateImage = imageMode;
+    setImageMode(false);
 
     await streamChat(
       messageToSend,
@@ -116,9 +123,10 @@ export function ChatInterface({
           percentage: 100
         });
       },
-      currentArtifact && isEditingArtifact ? currentArtifact : undefined
+      currentArtifact && isEditingArtifact ? currentArtifact : undefined,
+      shouldGenerateImage
     );
-  }, [input, isLoading, isStreaming, sessionId, setInput, streamChat, currentArtifact, isEditingArtifact]);
+  }, [input, isLoading, isStreaming, sessionId, setInput, streamChat, currentArtifact, isEditingArtifact, imageMode]);
 
   // Reset when session changes
   useEffect(() => {
@@ -484,13 +492,22 @@ export function ChatInterface({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="size-9 rounded-full"
-                              onClick={() => setInput("Generate an image of ")}
+                              className={cn(
+                                "size-9 rounded-full transition-colors",
+                                imageMode && "bg-primary/10 text-primary hover:bg-primary/20"
+                              )}
+                              onClick={() => {
+                                console.log("ImagePlus clicked, current imageMode:", imageMode);
+                                setImageMode(!imageMode);
+                                console.log("ImagePlus toggled to:", !imageMode);
+                              }}
                             >
                               <ImagePlus size={18} />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Generate Image</TooltipContent>
+                          <TooltipContent>
+                            {imageMode ? "Image mode enabled" : "Enable image mode"}
+                          </TooltipContent>
                         </Tooltip>
 
                         <Tooltip>

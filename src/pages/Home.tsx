@@ -22,6 +22,7 @@ import { ensureValidSession } from "@/utils/authHelpers";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Settings } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
@@ -61,6 +62,7 @@ const Home = () => {
   const [guestInitialPrompt, setGuestInitialPrompt] = useState<string | undefined>();
   const [autoOpenCanvas, setAutoOpenCanvas] = useState(false);
   const [loadingSuggestionId, setLoadingSuggestionId] = useState<string | null>(null);
+  const [imageMode, setImageMode] = useState(false);
   const chatSendHandlerRef = useRef<((message?: string) => Promise<void>) | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -209,6 +211,8 @@ const Home = () => {
       setInput("");  // Clear input
       setShowChat(true);
       guestSession.incrementMessageCount();
+      // imageMode will be passed to ChatInterface via initialImageMode prop
+      // It will be reset after ChatInterface handles the initial message
     } else {
       // For authenticated users, create session
       const session = await ensureValidSession();
@@ -228,6 +232,7 @@ const Home = () => {
       if (sessionId) {
         setCurrentSessionId(sessionId);
         setShowChat(true);
+        // imageMode will be passed to ChatInterface via initialImageMode prop
       }
       setIsLoading(false);
     }
@@ -549,13 +554,22 @@ const Home = () => {
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="size-9 rounded-full"
-                                      onClick={() => setInput("Generate an image of ")}
+                                      className={cn(
+                                        "size-9 rounded-full transition-colors",
+                                        imageMode && "bg-primary/10 text-primary hover:bg-primary/20"
+                                      )}
+                                      onClick={() => {
+                                        console.log("[Home] ImagePlus clicked, current imageMode:", imageMode);
+                                        setImageMode(!imageMode);
+                                        console.log("[Home] ImagePlus toggled to:", !imageMode);
+                                      }}
                                     >
                                       <ImagePlus size={18} />
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent>Generate Image</TooltipContent>
+                                  <TooltipContent>
+                                    {imageMode ? "Image mode enabled" : "Enable image mode"}
+                                  </TooltipContent>
                                 </Tooltip>
 
                                 <Tooltip>
@@ -622,6 +636,7 @@ const Home = () => {
                   <ChatInterface
                     sessionId={currentSessionId}
                     initialPrompt={!isAuthenticated ? guestInitialPrompt : input}
+                    initialImageMode={imageMode}
                     isCanvasOpen={isCanvasOpen}
                     onCanvasToggle={handleCanvasToggle}
                     onArtifactChange={handleArtifactChange}

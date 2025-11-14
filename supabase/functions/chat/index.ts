@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { shouldGenerateImage, shouldGenerateArtifact, getArtifactType, getArtifactGuidance } from "./intent-detector-embeddings.ts";
+import { shouldGenerateImage, shouldGenerateArtifact, getArtifactType, getArtifactGuidance, needsClarification } from "./intent-detector-embeddings.ts";
 import { validateArtifactRequest, generateGuidanceFromValidation } from "./artifact-validator.ts";
 import { transformArtifactCode } from "./artifact-transformer.ts";
 import { callGeminiFlashWithRetry, extractTextFromGeminiFlash, type OpenRouterMessage } from "../_shared/openrouter-client.ts";
@@ -29,7 +29,7 @@ serve(async (req) => {
 
   try {
     const requestBody = await req.json();
-    const { messages, sessionId, currentArtifact, isGuest } = requestBody;
+    const { messages, sessionId, currentArtifact, isGuest, forceImageMode } = requestBody;
 
     // Generate unique request ID for observability and error correlation
     const requestId = crypto.randomUUID();
@@ -325,8 +325,23 @@ serve(async (req) => {
 
     // DEBUG: Log intent detection result
     console.log(`[${requestId}] Analyzing prompt for intent:`, lastUserMessage.content.substring(0, 100));
-    const isImageRequest = lastUserMessage && await shouldGenerateImage(lastUserMessage.content);
-    console.log(`[${requestId}] Image intent detected:`, isImageRequest);
+
+    // Check if we need clarification FIRST (unless force mode is enabled)
+    if (!forceImageMode && lastUserMessage) {
+      const clarificationQuestion = await needsClarification(lastUserMessage.content);
+      if (clarificationQuestion) {
+        console.log(`[${requestId}] ❓ Medium confidence - requesting clarification`);
+        // Return clarifying question to user
+        return new Response(
+          `data: ${JSON.stringify({ choices: [{ delta: { content: clarificationQuestion } }] })}\n\ndata: [DONE]\n\n`,
+          { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream", "X-Request-ID": requestId } }
+        );
+      }
+    }
+
+    // Check for force image mode first (explicit user control bypasses intent detection)
+    const isImageRequest = forceImageMode || (lastUserMessage && await shouldGenerateImage(lastUserMessage.content));
+    console.log(`[${requestId}] Image intent detected:`, isImageRequest, forceImageMode ? '(forced by user)' : '(detected)');
 
     if (isImageRequest) {
       console.log("🎯 Intent detected: IMAGE generation");

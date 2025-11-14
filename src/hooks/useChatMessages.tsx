@@ -139,6 +139,7 @@ export function useChatMessages(
     onDelta: (chunk: string, progress: StreamProgress) => void,
     onDone: () => void,
     currentArtifact?: { title: string; type: string; content: string },
+    forceImageMode = false,
     retryCount = 0
   ) => {
     const MAX_RETRIES = 3;
@@ -183,6 +184,7 @@ export function useChatMessages(
             sessionId: isAuthenticated ? sessionId : undefined,
             currentArtifact,
             isGuest: !isAuthenticated,
+            forceImageMode,
           }),
         }
       );
@@ -374,7 +376,7 @@ export function useChatMessages(
         await new Promise(resolve => setTimeout(resolve, delay));
 
         // Recursive retry with incremented count
-        return streamChat(userMessage, onDelta, onDone, currentArtifact, retryCount + 1);
+        return streamChat(userMessage, onDelta, onDone, currentArtifact, forceImageMode, retryCount + 1);
       }
 
       const errorMessage = getAuthErrorMessage(error);
