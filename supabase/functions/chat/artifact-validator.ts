@@ -16,7 +16,7 @@ export interface ValidationResult {
 export function validateArtifactRequest(userMessage: string): ValidationResult {
   const warnings: string[] = [];
   const suggestions: string[] = [];
-  let shouldBlock = false;
+  const shouldBlock = false;
 
   const lowerMessage = userMessage.toLowerCase();
 

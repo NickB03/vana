@@ -23,17 +23,14 @@ interface PathConfig {
 const BackgroundPaths = () => {
   const { themeMode } = useTheme();
   const [isInView, setIsInView] = useState(false);
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const [prefersReducedMotion] = useState(() =>
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
 
   // Lazy render - only animate when in viewport
   useEffect(() => {
     setIsInView(true);
   }, []);
-
-  // Don't render animations if reduced motion is preferred
-  if (prefersReducedMotion) {
-    return null;
-  }
 
   // Generate curved paths across viewport
   const generatePaths = (): PathConfig[] => {
@@ -74,6 +71,11 @@ const BackgroundPaths = () => {
   const gradientColors = themeMode === "dark"
     ? ["#3b82f6", "#8b5cf6", "#ec4899"] // Blue -> Purple -> Pink
     : ["#60a5fa", "#a78bfa", "#f472b6"]; // Lighter variants for light mode
+
+  // Don't render animations if reduced motion is preferred
+  if (prefersReducedMotion) {
+    return null;
+  }
 
   return (
     <div

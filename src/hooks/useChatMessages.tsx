@@ -161,12 +161,12 @@ export function useChatMessages(
           // Authenticated user: save to database
           await saveMessage("user", userMessage);
         } else if (!isAuthenticated) {
-          // Guest user: save to local state only
+          // Guest user or expired session: save to local state only
+          if (sessionId) {
+            console.warn("Session expired, clearing stale sessionId");
+            // Note: Parent component should handle clearing sessionId
+          }
           await saveMessage("user", userMessage);
-        } else if (sessionId && !isAuthenticated) {
-          // Expired session - clear stale state
-          console.warn("Session expired, clearing stale sessionId");
-          // Note: Parent component should handle clearing sessionId
         }
       }
 

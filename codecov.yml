@@ -1,0 +1,51 @@
+# Codecov Configuration
+# https://docs.codecov.com/docs/codecov-yaml
+
+coverage:
+  status:
+    project:
+      default:
+        target: 70%           # Target coverage for entire project
+        threshold: 2%         # Allow 2% drop before failing
+        informational: false  # Fail CI if threshold is crossed
+    patch:
+      default:
+        target: 75%           # New code should have 75% coverage
+        threshold: 5%         # Allow 5% variance
+        informational: false
+
+  precision: 2
+  round: down
+  range: "60...100"
+
+  ignore:
+    - "**/*.test.ts"
+    - "**/*.test.tsx"
+    - "**/__tests__/**"
+    - "**/test/**"
+    - "src/test/**"
+    - "**/*.d.ts"
+    - "src/main.tsx"
+    - "src/vite-env.d.ts"
+    - "scripts/**"
+    - ".claude/**"
+    - "docs/**"
+
+comment:
+  layout: "reach,diff,flags,tree,footer"
+  behavior: default
+  require_changes: false
+  require_base: no
+  require_head: yes
+
+github_checks:
+  annotations: true
+
+fixes:
+  - "/home/runner/work/llm-chat-site/llm-chat-site/::"
+
+flags:
+  frontend:
+    paths:
+      - src/
+    carryforward: false

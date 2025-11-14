@@ -208,7 +208,7 @@ export function ShaderBackground({ className = '' }: ShaderBackgroundProps) {
 
     // Animation loop with mobile-adaptive FPS for optimal performance
     const isMobile = window.innerWidth < 768;
-    let startTime = Date.now();
+    const startTime = Date.now();
     let lastFrameTime = 0;
     const targetFPS = isMobile ? 30 : 60;  // 30fps on mobile, 60fps on desktop
     const frameInterval = 1000 / targetFPS;

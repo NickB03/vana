@@ -99,7 +99,7 @@ serve(async (req) => {
     console.log(`Using ${poolName} pool for request`);
 
     // Get next available key
-    let apiKey = getNextKey(poolName);
+    const apiKey = getNextKey(poolName);
     if (!apiKey) {
       console.error(`All keys in ${poolName} pool are exhausted`);
       return new Response(JSON.stringify({ error: `All ${poolName} API keys exhausted` }), {

@@ -153,7 +153,7 @@ describe("RateLimiter", () => {
       await rateLimiter.checkLimit(userId, limit, window);
 
       // Should be at limit
-      let allowed = await rateLimiter.checkLimit(userId, limit, window);
+      const allowed = await rateLimiter.checkLimit(userId, limit, window);
       expect(allowed).toBe(false);
 
       // t=5100: First 3 requests expire

@@ -51,15 +51,16 @@ serve(async (req) => {
     let data;
 
     switch (metric) {
-      case "overview":
+      case "overview": {
         // Get summary statistics
         const { data: overview } = await supabase.rpc("get_usage_overview", {
           p_days: days
         });
         data = overview;
         break;
+      }
 
-      case "daily":
+      case "daily": {
         // Daily summary from view
         const { data: daily } = await supabase
           .from("ai_usage_daily_summary")
@@ -68,8 +69,9 @@ serve(async (req) => {
           .order("day", { ascending: false });
         data = daily;
         break;
+      }
 
-      case "hourly":
+      case "hourly": {
         // Hourly data for real-time monitoring
         const { data: hourly } = await supabase
           .from("ai_usage_hourly_summary")
@@ -78,8 +80,9 @@ serve(async (req) => {
           .limit(168); // Last 7 days
         data = hourly;
         break;
+      }
 
-      case "costs":
+      case "costs": {
         // Cost breakdown by function
         const { data: costs } = await supabase
           .from("ai_cost_by_function")
@@ -87,8 +90,9 @@ serve(async (req) => {
           .order("total_cost", { ascending: false });
         data = costs;
         break;
+      }
 
-      case "errors":
+      case "errors": {
         // Error analysis
         const { data: errors } = await supabase
           .from("ai_error_analysis")
@@ -97,8 +101,9 @@ serve(async (req) => {
           .limit(100);
         data = errors;
         break;
+      }
 
-      case "performance":
+      case "performance": {
         // Performance trends
         const { data: perf } = await supabase
           .from("ai_performance_trends")
@@ -107,6 +112,7 @@ serve(async (req) => {
           .limit(168);
         data = perf;
         break;
+      }
 
       default:
         return new Response(

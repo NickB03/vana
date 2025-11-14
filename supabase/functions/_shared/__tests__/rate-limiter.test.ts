@@ -333,7 +333,7 @@ Deno.test("RateLimiter should provide API throttle message", () => {
 Deno.test("getRateLimiter should return same instance", () => {
   // Test that singleton pattern would work
   let instance1: any = null;
-  let instance2: any = null;
+  const instance2: any = null;
 
   // Simulate singleton
   const getInstance = () => {

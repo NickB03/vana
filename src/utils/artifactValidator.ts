@@ -189,7 +189,7 @@ export function validateReact(content: string): ValidationResult {
   }
 
   // Check for component naming convention
-  const componentPattern = /(?:function|const)\s+([a-z][a-zA-Z0-9]*)\s*(?:=|[\(])/g;
+  const componentPattern = /(?:function|const)\s+([a-z][a-zA-Z0-9]*)\s*(?:=|[(])/g;
   let match;
   while ((match = componentPattern.exec(content)) !== null) {
     const componentName = match[1];

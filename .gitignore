@@ -96,3 +96,19 @@ scripts/archive/
 .claude/imagelog.md
 .claude/chatlog.md
 .claude/*log.md
+
+# Test coverage and results
+coverage/
+.nyc_output/
+*.lcov
+test-results/
+junit.xml
+test-report.xml
+*.coverage
+.vitest/
+vitest.*.log
+
+# Visual regression testing
+__image_snapshots__/
+__diff_output__/
+screenshots/

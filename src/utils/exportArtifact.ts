@@ -4,7 +4,7 @@ import { toast } from "sonner";
 // Sanitize filename by removing special characters
 export function sanitizeFilename(filename: string): string {
   return filename
-    .replace(/[^a-z0-9_\-\.]/gi, '_')
+    .replace(/[^a-z0-9_\-.]/gi, '_')
     .replace(/_{2,}/g, '_')
     .replace(/^_+|_+$/g, '');
 }
