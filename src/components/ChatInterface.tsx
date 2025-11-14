@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowUp, Copy, Pencil, Trash, ThumbsUp, ThumbsDown, Plus, WandSparkles, ImagePlus, Maximize2 } from "lucide-react";
+import { Copy, Pencil, Trash, ThumbsUp, ThumbsDown, Maximize2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { validateFile, sanitizeFilename } from "@/utils/fileValidation";
@@ -24,10 +24,9 @@ import {
 } from "@/components/prompt-kit/message";
 import {
   PromptInput,
-  PromptInputAction,
-  PromptInputActions,
   PromptInputTextarea,
 } from "@/components/prompt-kit/prompt-input";
+import { PromptInputControls } from "@/components/prompt-kit/prompt-input-controls";
 import { ScrollButton } from "@/components/ui/scroll-button";
 import { Markdown } from "@/components/ui/markdown";
 import { useChatMessages, ChatMessage, type StreamProgress } from "@/hooks/useChatMessages";
@@ -44,6 +43,7 @@ interface ChatInterfaceProps {
   sessionId?: string;
   initialPrompt?: string;
   initialImageMode?: boolean;
+  initialArtifactMode?: boolean;
   isCanvasOpen?: boolean;
   onCanvasToggle?: (isOpen: boolean) => void;
   onArtifactChange?: (hasContent: boolean) => void;
@@ -59,6 +59,7 @@ export function ChatInterface({
   sessionId,
   initialPrompt,
   initialImageMode = false,
+  initialArtifactMode = false,
   isCanvasOpen = false,
   onCanvasToggle,
   onArtifactChange,
@@ -88,6 +89,7 @@ export function ChatInterface({
   const [isEditingArtifact, setIsEditingArtifact] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [imageMode, setImageMode] = useState(initialImageMode);
+  const [artifactMode, setArtifactMode] = useState(initialArtifactMode);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Define handleSend early using useCallback to avoid initialization errors
@@ -102,9 +104,17 @@ export function ChatInterface({
     setIsStreaming(true);
     setStreamingMessage("");
 
-    // Capture imageMode state and reset it after sending
+    // Capture mode states and reset them after sending
     const shouldGenerateImage = imageMode;
+    const shouldGenerateArtifact = artifactMode;
+    console.log("🎯 [ChatInterface.handleSend] Captured modes:", {
+      imageMode,
+      artifactMode,
+      shouldGenerateImage,
+      shouldGenerateArtifact
+    });
     setImageMode(false);
+    setArtifactMode(false);
 
     await streamChat(
       messageToSend,
@@ -124,9 +134,10 @@ export function ChatInterface({
         });
       },
       currentArtifact && isEditingArtifact ? currentArtifact : undefined,
-      shouldGenerateImage
+      shouldGenerateImage,
+      shouldGenerateArtifact
     );
-  }, [input, isLoading, isStreaming, sessionId, setInput, streamChat, currentArtifact, isEditingArtifact, imageMode]);
+  }, [input, isLoading, isStreaming, sessionId, setInput, streamChat, currentArtifact, isEditingArtifact, imageMode, artifactMode]);
 
   // Reset when session changes
   useEffect(() => {
@@ -457,105 +468,25 @@ export function ChatInterface({
                       placeholder="Ask anything"
                       className={combineSpacing("min-h-[44px] text-base leading-[1.3]", CHAT_SPACING.input.textarea)}
                     />
-                    <PromptInputActions className="mt-5 flex w-full items-center justify-between gap-2 px-3 pb-3">
-                      {/* Left side actions */}
-                      <div className="flex items-center gap-2">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-9 rounded-full"
-                              onClick={() => fileInputRef.current?.click()}
-                              disabled={isUploadingFile}
-                            >
-                              {isUploadingFile ? (
-                                <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                              ) : (
-                                <Plus size={18} />
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Upload file</TooltipContent>
-                        </Tooltip>
-
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          className="hidden"
-                          onChange={handleFileUpload}
-                          accept=".pdf,.docx,.txt,.md,.jpg,.jpeg,.png,.webp,.gif,.svg,.csv,.json,.xlsx,.js,.ts,.tsx,.jsx,.py,.html,.css,.mp3,.wav,.m4a,.ogg"
-                        />
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className={cn(
-                                "size-9 rounded-full transition-colors",
-                                imageMode && "bg-primary/10 text-primary hover:bg-primary/20"
-                              )}
-                              onClick={() => {
-                                console.log("ImagePlus clicked, current imageMode:", imageMode);
-                                setImageMode(!imageMode);
-                                console.log("ImagePlus toggled to:", !imageMode);
-                              }}
-                            >
-                              <ImagePlus size={18} />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {imageMode ? "Image mode enabled" : "Enable image mode"}
-                          </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className={cn(
-                                "size-9 rounded-full transition-colors",
-                                isCanvasOpen && "bg-primary/10 text-primary hover:bg-primary/20"
-                              )}
-                              onClick={handleCreateClick}
-                              disabled={!currentArtifact && isCanvasOpen}
-                            >
-                              <WandSparkles size={18} />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {!currentArtifact
-                              ? "Create"
-                              : isCanvasOpen
-                                ? "Close canvas"
-                                : "Open canvas"}
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-
-                      {/* Right side - Send button */}
-                      <PromptInputAction tooltip="Send message">
-                        <Button
-                          type="submit"
-                          size="icon"
-                          disabled={!input.trim() || isLoading || isStreaming}
-                          className="size-9 rounded-full hover:brightness-115 hover:-translate-y-1 transition-all duration-200"
-                          style={{
-                            background: 'linear-gradient(135deg, hsl(var(--accent-primary)), hsl(var(--accent-primary-bright)))',
-                            boxShadow: '0 4px 14px hsl(var(--accent-primary) / 0.4)',
-                          }}
-                          onClick={() => handleSend()}
-                        >
-                          {isLoading || isStreaming ? (
-                            <div className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                          ) : (
-                            <ArrowUp size={18} className="text-white" />
-                          )}
-                        </Button>
-                      </PromptInputAction>
-                    </PromptInputActions>
+                    <PromptInputControls
+                      className="mt-5 px-3 pb-3"
+                      imageMode={imageMode}
+                      onImageModeChange={setImageMode}
+                      artifactMode={artifactMode}
+                      onArtifactModeChange={setArtifactMode}
+                      isCanvasOpen={isCanvasOpen}
+                      currentArtifact={currentArtifact}
+                      onCreateClick={handleCreateClick}
+                      isLoading={isLoading}
+                      isStreaming={isStreaming}
+                      input={input}
+                      onSend={() => handleSend()}
+                      showFileUpload={true}
+                      fileInputRef={fileInputRef}
+                      isUploadingFile={isUploadingFile}
+                      onFileUpload={handleFileUpload}
+                      sendIcon="arrow"
+                    />
                   </div>
                 </PromptInput>
               </div>

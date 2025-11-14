@@ -28,9 +28,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { useTheme } from "@/components/ThemeProvider";
 import { Check, Palette } from "lucide-react";
-import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from "@/components/prompt-kit/prompt-input";
-import { Plus, WandSparkles, Send, ImagePlus } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { PromptInput, PromptInputTextarea } from "@/components/prompt-kit/prompt-input";
+import { PromptInputControls } from "@/components/prompt-kit/prompt-input-controls";
 import GalleryHoverCarousel from "@/components/ui/gallery-hover-carousel";
 import type { SuggestionItem } from "@/data/suggestions";
 
@@ -63,6 +62,7 @@ const Home = () => {
   const [autoOpenCanvas, setAutoOpenCanvas] = useState(false);
   const [loadingSuggestionId, setLoadingSuggestionId] = useState<string | null>(null);
   const [imageMode, setImageMode] = useState(false);
+  const [artifactMode, setArtifactMode] = useState(false);
   const chatSendHandlerRef = useRef<((message?: string) => Promise<void>) | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -547,68 +547,17 @@ const Home = () => {
                               placeholder="Ask me anything..."
                               className="min-h-[44px] pl-4 pt-3 text-base leading-[1.3]"
                             />
-                            <PromptInputActions className="mt-5 flex w-full items-center justify-between gap-2 px-3 pb-3">
-                              <div className="flex items-center gap-2">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className={cn(
-                                        "size-9 rounded-full transition-colors",
-                                        imageMode && "bg-primary/10 text-primary hover:bg-primary/20"
-                                      )}
-                                      onClick={() => {
-                                        console.log("[Home] ImagePlus clicked, current imageMode:", imageMode);
-                                        setImageMode(!imageMode);
-                                        console.log("[Home] ImagePlus toggled to:", !imageMode);
-                                      }}
-                                    >
-                                      <ImagePlus size={18} />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    {imageMode ? "Image mode enabled" : "Enable image mode"}
-                                  </TooltipContent>
-                                </Tooltip>
-
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="size-9 rounded-full"
-                                      onClick={() => setInput("Help me create ")}
-                                    >
-                                      <WandSparkles size={18} />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Create</TooltipContent>
-                                </Tooltip>
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                <PromptInputAction tooltip="Send message">
-                                  <Button
-                                    type="submit"
-                                    size="icon"
-                                    disabled={isLoading || !input.trim()}
-                                    className="size-9 rounded-full hover:brightness-115 hover:-translate-y-1 transition-all duration-200"
-                                    style={{
-                                      background: 'linear-gradient(135deg, hsl(var(--accent-primary)), hsl(var(--accent-primary-bright)))',
-                                      boxShadow: '0 4px 14px hsl(var(--accent-primary) / 0.4)',
-                                    }}
-                                    onClick={handleSubmit}
-                                  >
-                                    {isLoading ? (
-                                      <div className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                    ) : (
-                                      <Send size={18} className="text-white" />
-                                    )}
-                                  </Button>
-                                </PromptInputAction>
-                              </div>
-                            </PromptInputActions>
+                            <PromptInputControls
+                              className="mt-5 px-3 pb-3"
+                              imageMode={imageMode}
+                              onImageModeChange={setImageMode}
+                              artifactMode={artifactMode}
+                              onArtifactModeChange={setArtifactMode}
+                              isLoading={isLoading}
+                              input={input}
+                              onSend={handleSubmit}
+                              sendIcon="send"
+                            />
                           </div>
                         </PromptInput>
                       </div>
@@ -637,6 +586,7 @@ const Home = () => {
                     sessionId={currentSessionId}
                     initialPrompt={!isAuthenticated ? guestInitialPrompt : input}
                     initialImageMode={imageMode}
+                    initialArtifactMode={artifactMode}
                     isCanvasOpen={isCanvasOpen}
                     onCanvasToggle={handleCanvasToggle}
                     onArtifactChange={handleArtifactChange}

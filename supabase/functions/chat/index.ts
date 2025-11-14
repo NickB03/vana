@@ -29,14 +29,22 @@ serve(async (req) => {
 
   try {
     const requestBody = await req.json();
-    const { messages, sessionId, currentArtifact, isGuest, forceImageMode } = requestBody;
+    const { messages, sessionId, currentArtifact, isGuest, forceImageMode, forceArtifactMode } = requestBody;
 
     // Generate unique request ID for observability and error correlation
     const requestId = crypto.randomUUID();
     console.log(`[${requestId}] Processing request for session:`, sessionId);
 
     // Debug logging
-    console.log(`[${requestId}] Request body:`, JSON.stringify({ messages: messages?.length, sessionId, isGuest, hasArtifact: !!currentArtifact }));
+    console.log(`[${requestId}] 🚀 CODE VERSION: 2025-11-13-v2-DEPLOYED 🚀`);
+    console.log(`[${requestId}] Request body:`, JSON.stringify({
+      messages: messages?.length,
+      sessionId,
+      isGuest,
+      hasArtifact: !!currentArtifact,
+      forceImageMode,
+      forceArtifactMode
+    }));
 
     // Input validation
     if (!messages || !Array.isArray(messages)) {
@@ -339,8 +347,23 @@ serve(async (req) => {
       }
     }
 
-    // Check for force image mode first (explicit user control bypasses intent detection)
-    const isImageRequest = forceImageMode || (lastUserMessage && await shouldGenerateImage(lastUserMessage.content));
+    // Check for explicit user control FIRST (force modes bypass intent detection entirely)
+    // Priority: forceArtifactMode > forceImageMode > intent detection
+    // Version: 2025-11-13-v2 (cache bust)
+
+    // If artifact mode is explicitly enabled, skip all other checks
+    if (forceArtifactMode) {
+      console.log(`[${requestId}] 🎯 FORCE ARTIFACT MODE - skipping intent detection`);
+      // Jump to artifact generation (will be handled by the artifact check below)
+    }
+    // If image mode is explicitly enabled and artifact mode is NOT enabled
+    else if (forceImageMode) {
+      console.log(`[${requestId}] 🎯 FORCE IMAGE MODE - skipping intent detection`);
+      // Proceed with image generation
+    }
+
+    // Check for image generation (only if not forcing artifact mode)
+    const isImageRequest = !forceArtifactMode && (forceImageMode || (lastUserMessage && await shouldGenerateImage(lastUserMessage.content)));
     console.log(`[${requestId}] Image intent detected:`, isImageRequest, forceImageMode ? '(forced by user)' : '(detected)');
 
     if (isImageRequest) {
@@ -414,11 +437,12 @@ serve(async (req) => {
     }
 
     // Detect artifact generation requests (non-image artifacts)
-    const isArtifactRequest = lastUserMessage && await shouldGenerateArtifact(lastUserMessage.content);
+    // Check for force artifact mode first (explicit user control bypasses intent detection)
+    const isArtifactRequest = forceArtifactMode || (lastUserMessage && await shouldGenerateArtifact(lastUserMessage.content));
 
     if (isArtifactRequest) {
       const artifactType = await getArtifactType(lastUserMessage.content);
-      console.log(`🎯 Intent detected: ARTIFACT generation (${artifactType})`);
+      console.log(`🎯 Intent detected: ARTIFACT generation (${artifactType})`, forceArtifactMode ? '(forced by user)' : '(detected)');
       console.log("🔀 Routing to: generate-artifact (Pro model)");
 
       // Retry configuration for artifact generation

@@ -140,6 +140,7 @@ export function useChatMessages(
     onDone: () => void,
     currentArtifact?: { title: string; type: string; content: string },
     forceImageMode = false,
+    forceArtifactMode = false,
     retryCount = 0
   ) => {
     const MAX_RETRIES = 3;
@@ -169,23 +170,32 @@ export function useChatMessages(
         }
       }
 
+      const requestBody = {
+        messages: messages
+          .concat([{ role: "user", content: userMessage } as ChatMessage])
+          .map((m) => ({ role: m.role, content: m.content })),
+        sessionId: isAuthenticated ? sessionId : undefined,
+        currentArtifact,
+        isGuest: !isAuthenticated,
+        forceImageMode,
+        forceArtifactMode,
+      };
+
+      console.log("🚀 [useChatMessages.streamChat] Sending request:", {
+        forceImageMode,
+        forceArtifactMode,
+        sessionId: isAuthenticated ? sessionId : 'guest'
+      });
+
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-v2`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             ...(session ? { Authorization: `Bearer ${session.access_token}` } : {})
           },
-          body: JSON.stringify({
-            messages: messages
-              .concat([{ role: "user", content: userMessage } as ChatMessage])
-              .map((m) => ({ role: m.role, content: m.content })),
-            sessionId: isAuthenticated ? sessionId : undefined,
-            currentArtifact,
-            isGuest: !isAuthenticated,
-            forceImageMode,
-          }),
+          body: JSON.stringify(requestBody),
         }
       );
 
@@ -376,7 +386,7 @@ export function useChatMessages(
         await new Promise(resolve => setTimeout(resolve, delay));
 
         // Recursive retry with incremented count
-        return streamChat(userMessage, onDelta, onDone, currentArtifact, forceImageMode, retryCount + 1);
+        return streamChat(userMessage, onDelta, onDone, currentArtifact, forceImageMode, forceArtifactMode, retryCount + 1);
       }
 
       const errorMessage = getAuthErrorMessage(error);
