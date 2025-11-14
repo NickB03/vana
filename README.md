@@ -65,12 +65,19 @@
 - 🔐 **CORS Validation**: Environment-based origin whitelist replaces dangerous wildcard configuration
 - ⚡ **Performance**: 52% smaller chat function bundle (system prompt externalization)
 
+**November 2025 - CI/CD & Quality Infrastructure:**
+- 🚀 **Automated CI/CD Pipeline**: GitHub Actions workflow (lint → test → coverage → build)
+- 📊 **Coverage Tracking**: Codecov integration with automatic PR comments and trend analysis
+- 🛡️ **Branch Protection**: GitHub ruleset requiring PR approval and passing checks
+- ✅ **Testing Expansion**: 293 tests (coverage: 68% → 74.21%), exportArtifact.ts: 23% → 98%
+- 🔒 **Security Testing**: 9 XSS attack scenarios validated, performance benchmarks added
+- 📚 **Comprehensive Docs**: 5 detailed guides (setup, CI/CD, coverage, quickstart)
+
 **October 2025 - Architecture & Testing:**
 - ✅ **ai-elements Integration**: Modern UI primitives for cleaner artifact rendering
 - ✅ **5-Layer Import Validation**: Comprehensive defense against artifact failures
 - ✅ **Auto-Transformation**: Automatically fixes common coding mistakes in generated artifacts
 - ✅ **Chrome DevTools MCP**: Advanced browser automation for testing and verification
-- ✅ **Enhanced Test Coverage**: 238 tests passing with improved infrastructure
 - ✅ **Component Refactoring**: Eliminated prop mutations and improved code organization
 
 ---
@@ -447,12 +454,18 @@ npm run build:dev        # Development build with sourcemaps
 npm run preview          # Preview production build
 
 # Testing
-npm run test             # Run tests
+npm run test             # Run tests (293 passing)
 npm run test:ui          # Run tests with UI
-npm run test:coverage    # Generate coverage report
+npm run test:coverage    # Generate coverage report (74.21%)
 
 # Code Quality
-npm run lint             # Run ESLint
+npm run lint             # Run ESLint (0 errors, 94 warnings)
+
+# CI/CD (runs automatically on PRs)
+# - Lint validation
+# - Full test suite (293 tests)
+# - Coverage upload to Codecov
+# - Production build verification
 ```
 
 ---
@@ -738,6 +751,26 @@ const mimeTypeMap: Record<string, ArtifactType> = {
 
 ### Testing
 
+**Test Infrastructure (Nov 2025):**
+
+The project uses Vitest for frontend testing with comprehensive coverage:
+
+**Current Metrics:**
+```
+Tests:     293 passing, 27 skipped (320 total)
+Runtime:   2.43s
+Coverage:  74.21% statements (exceeds 55% threshold by 19%)
+```
+
+**Coverage Breakdown:**
+| Metric | Current | Threshold | Status |
+|--------|---------|-----------|--------|
+| Statements | 74.21% | 55% | ✅ +19% |
+| Branches | 68.58% | 50% | ✅ +18% |
+| Functions | 65.81% | 55% | ✅ +11% |
+| Lines | 74.29% | 55% | ✅ +19% |
+
+**Test Commands:**
 ```bash
 # Run all tests
 npm run test
@@ -752,7 +785,40 @@ npm run test:ui
 npm run test:coverage
 ```
 
-#### Example Test
+**Test Highlights:**
+
+1. **Artifact System** (`src/components/ArtifactContainer.test.tsx`):
+   - 14 XSS security tests (9 attack scenarios covered)
+   - 5 performance benchmarks for large artifacts
+   - Theme integration and iframe refresh validation
+   - Export menu and version control tests
+
+2. **Export Utilities** (`src/utils/__tests__/exportArtifact.test.ts`):
+   - 98% coverage (up from 23%)
+   - Clipboard fallback mechanisms
+   - Multi-file ZIP export validation
+   - Version history integration
+
+3. **Security Validators** (`src/utils/__tests__/artifactValidator.test.ts`):
+   - Import restriction enforcement
+   - Syntax validation for all artifact types
+   - Component naming convention checks
+
+**CI/CD Integration:**
+
+All tests run automatically on every PR via GitHub Actions:
+- Lint validation (ESLint)
+- Full test suite execution
+- Coverage reporting to Codecov
+- Production build verification
+
+PRs are blocked from merging if:
+- Any tests fail
+- Coverage drops below threshold
+- Lint errors are present
+- Build fails
+
+**Example Test:**
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -768,6 +834,11 @@ describe('artifactParser', () => {
   });
 });
 ```
+
+**Documentation:**
+- `docs/testing-ci.md` - Complete CI/CD guide
+- `docs/testing-coverage.md` - Coverage workflow
+- `docs/quick-setup-checklist.md` - Setup instructions
 
 ---
 ## 🚢 Deployment
