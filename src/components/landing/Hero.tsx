@@ -55,7 +55,7 @@ export const Hero = () => {
                 className="bg-white hover:bg-gray-100 text-black transition-all hover:scale-105 active:scale-95"
                 asChild
               >
-                <Link to="/auth">Get Started Free</Link>
+                <Link to="/">Get Started Free</Link>
               </Button>
               <Button
                 size="lg"

@@ -110,10 +110,14 @@ export async function detectIntent(prompt: string): Promise<IntentResult> {
     });
 
     // Step 3: Determine confidence based on similarity score
+    // Optimized thresholds with clarification system:
+    // High (≥60%) - Execute immediately
+    // Medium (40-60%) - Ask for clarification
+    // Low (<40%) - Default to chat
     let confidence: 'high' | 'medium' | 'low';
-    if (bestMatch.similarity >= 0.80) {
+    if (bestMatch.similarity >= 0.60) {
       confidence = 'high';
-    } else if (bestMatch.similarity >= 0.70) {
+    } else if (bestMatch.similarity >= 0.40) {
       confidence = 'medium';
     } else {
       confidence = 'low';
@@ -158,15 +162,138 @@ function fallbackToChat(reason: string): IntentResult {
 }
 
 /**
+ * Clarifying question templates for ambiguous intents
+ */
+const CLARIFICATION_TEMPLATES: Record<string, Record<string, string>> = {
+  image: {
+    mermaid: "Would you like me to generate a photorealistic image or create a Mermaid diagram?",
+    svg: "Would you like me to generate an image or create an SVG vector graphic?",
+    react: "Would you like me to generate an image or build an interactive web component?",
+    code: "Would you like me to generate an image or write code?"
+  },
+  mermaid: {
+    image: "Would you like me to create a Mermaid diagram or generate a photorealistic image?",
+    react: "Would you like me to create a Mermaid diagram or build an interactive web component?",
+    markdown: "Would you like me to create a Mermaid diagram or write documentation?"
+  },
+  react: {
+    image: "Would you like me to build an interactive web component or generate an image?",
+    mermaid: "Would you like me to build an interactive web component or create a Mermaid diagram?",
+    code: "Would you like me to build a full web component or just write code snippets?",
+    markdown: "Would you like me to build an interactive component or write documentation?"
+  },
+  code: {
+    react: "Would you like me to write code snippets or build a full interactive component?",
+    image: "Would you like me to write code or generate an image?",
+    markdown: "Would you like me to write code or create documentation?"
+  },
+  svg: {
+    image: "Would you like me to create an SVG vector graphic or generate a photorealistic image?",
+    react: "Would you like me to create an SVG or build an interactive web component?"
+  },
+  markdown: {
+    react: "Would you like me to write documentation or build an interactive component?",
+    mermaid: "Would you like me to write documentation or create a Mermaid diagram?",
+    code: "Would you like me to write documentation or just code snippets?"
+  }
+};
+
+/**
+ * Checks if the user's prompt needs intent clarification
+ * Returns clarification question if medium confidence, null if high/low
+ */
+export async function needsClarification(prompt: string): Promise<string | null> {
+  // Check for explicit intent keywords that override semantic similarity
+  // This ensures phrases like "generate an image" work immediately without clarification
+  const explicitPatterns = {
+    image: [
+      /\b(generate|create|make|draw|design|paint|illustrate)\s+(an?\s+)?(image|picture|photo|illustration|drawing|artwork)/i,
+      /\bshow\s+me\s+(an?\s+)?(image|picture|photo)/i
+    ],
+    mermaid: [
+      /\b(create|make|draw|generate)\s+(an?\s+)?(flowchart|sequence\s+diagram|mermaid\s+diagram|process\s+diagram|state\s+diagram)/i,
+      /\bmermaid\s+(diagram|chart)/i
+    ],
+    react: [
+      /\b(build|create|make)\s+(an?\s+)?(web\s+app|website|dashboard|component|interface)/i,
+      /\breact\s+(app|component|page)/i
+    ],
+    code: [
+      /\b(write|show|create|generate)\s+(me\s+)?(code|function|script|algorithm)/i,
+      /\b(python|javascript|typescript|rust|go)\s+(code|function|script)/i
+    ],
+    svg: [
+      /\b(create|make|generate)\s+(an?\s+)?(svg|vector\s+graphic|scalable\s+vector)/i,
+      /\bsvg\s+(graphic|icon|logo)/i
+    ]
+  };
+
+  // Check if prompt explicitly mentions any intent type
+  for (const [intentType, patterns] of Object.entries(explicitPatterns)) {
+    if (patterns.some(pattern => pattern.test(prompt))) {
+      console.log(`🎯 Explicit ${intentType} keywords detected, no clarification needed`);
+      return null;
+    }
+  }
+
+  const intent = await detectIntent(prompt);
+
+  // High confidence - execute immediately
+  if (intent.confidence === 'high') {
+    console.log('🎯 High confidence intent, no clarification needed:', intent.type);
+    return null;
+  }
+
+  // Low confidence - default to chat, no clarification
+  if (intent.confidence === 'low') {
+    console.log('💬 Low confidence, defaulting to chat');
+    return null;
+  }
+
+  // Medium confidence - need clarification
+  console.log('❓ Medium confidence, requesting clarification:', intent);
+
+  // Get top 2 most similar intents to offer choice
+  // For now, we'll use the detected intent and a common alternative
+  const primaryIntent = intent.type;
+  const commonAlternatives: Record<string, string> = {
+    'image': 'mermaid',
+    'mermaid': 'image',
+    'react': 'code',
+    'code': 'react',
+    'svg': 'image',
+    'markdown': 'code'
+  };
+
+  const alternativeIntent = commonAlternatives[primaryIntent] || 'react';
+
+  // Get clarification template
+  const template = CLARIFICATION_TEMPLATES[primaryIntent]?.[alternativeIntent];
+
+  if (template) {
+    return template;
+  }
+
+  // Fallback generic clarification
+  return `I'm not entirely sure what you want. Could you clarify if you want me to generate an ${primaryIntent}?`;
+}
+
+/**
  * Determines if a prompt should trigger image generation API
+ * Only executes with HIGH confidence - medium confidence requires clarification
  */
 export async function shouldGenerateImage(prompt: string): Promise<boolean> {
   try {
     console.log('🔍 [shouldGenerateImage] Analyzing prompt:', prompt.substring(0, 100));
     const intent = await detectIntent(prompt);
-    console.log('🔍 [shouldGenerateImage] Intent result:', { type: intent.type, confidence: intent.confidence });
-    const result = intent.type === 'image' && intent.confidence !== 'low';
-    console.log('🔍 [shouldGenerateImage] Final decision:', result);
+    console.log('🔍 [shouldGenerateImage] Intent result:', {
+      type: intent.type,
+      confidence: intent.confidence,
+      reasoning: intent.reasoning
+    });
+    // Only execute image generation with HIGH confidence
+    const result = intent.type === 'image' && intent.confidence === 'high';
+    console.log(`🔍 [shouldGenerateImage] Final decision: ${result} (type=${intent.type}, confidence=${intent.confidence})`);
     return result;
   } catch (error) {
     console.error('❌ [shouldGenerateImage] Error detecting intent:', error);
@@ -177,11 +304,11 @@ export async function shouldGenerateImage(prompt: string): Promise<boolean> {
 
 /**
  * Determines if a prompt should trigger artifact generation (non-image artifacts)
- * Returns false for chat and image intents (handled separately)
+ * Only executes with HIGH confidence - medium confidence requires clarification
  */
 export async function shouldGenerateArtifact(prompt: string): Promise<boolean> {
   const intent = await detectIntent(prompt);
-  return intent.type !== 'chat' && intent.type !== 'image' && intent.confidence !== 'low';
+  return intent.type !== 'chat' && intent.type !== 'image' && intent.confidence === 'high';
 }
 
 /**
