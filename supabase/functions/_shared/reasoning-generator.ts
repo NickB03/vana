@@ -51,7 +51,7 @@ export interface StructuredReasoning {
 export interface ReasoningOptions {
   /**
    * Model to use for reasoning generation
-   * @default 'google/gemini-2.5-flash-lite-preview-09-2025'
+   * @default 'google/gemini-2.5-flash-lite'
    */
   model?: string;
 
@@ -98,7 +98,7 @@ export async function generateStructuredReasoning(
   options: ReasoningOptions = {}
 ): Promise<StructuredReasoning> {
   const {
-    model = 'google/gemini-2.5-flash-lite-preview-09-2025',
+    model = 'google/gemini-2.5-flash-lite',
     temperature = 0.3,
     maxSteps = 5,
     timeout = 10000,

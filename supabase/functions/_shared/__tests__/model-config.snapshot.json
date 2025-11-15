@@ -1,0 +1,14 @@
+{
+  "description": "Golden snapshot of production model configuration",
+  "version": "2025-11-15",
+  "models": {
+    "GEMINI_FLASH": "google/gemini-2.5-flash-lite",
+    "KIMI_K2": "moonshotai/kimi-k2-thinking",
+    "GEMINI_FLASH_IMAGE": "google/gemini-2.5-flash-image"
+  },
+  "instructions": {
+    "purpose": "Prevent accidental model name changes that could break production",
+    "howToUpdate": "Only update this file when intentionally changing models. Update both this snapshot AND config.ts together.",
+    "testingStrategy": "Tests will fail if config.ts models don't match this snapshot, alerting developers to accidental changes"
+  }
+}

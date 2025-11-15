@@ -98,7 +98,7 @@ export const API_ENDPOINTS = {
  */
 export const MODELS = {
   /** Gemini 2.5 Flash Lite for chat/summaries/titles */
-  GEMINI_FLASH: 'google/gemini-2.5-flash-lite-preview-09-2025',
+  GEMINI_FLASH: 'google/gemini-2.5-flash-lite',
   /** Kimi K2-Thinking for artifact generation */
   KIMI_K2: 'moonshotai/kimi-k2-thinking',
   /** Gemini Flash Image for image generation */

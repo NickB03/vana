@@ -1,0 +1,78 @@
+name: Model Configuration Guard
+
+# Purpose: Prevent accidental model name changes
+# Runs on: Every push, PR, and before deployment
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'supabase/functions/_shared/config.ts'
+      - 'supabase/functions/_shared/__tests__/model-config.snapshot.json'
+      - 'supabase/functions/_shared/__tests__/model-config.test.ts'
+  pull_request:
+    paths:
+      - 'supabase/functions/_shared/config.ts'
+      - 'supabase/functions/_shared/__tests__/model-config.snapshot.json'
+      - 'supabase/functions/_shared/__tests__/model-config.test.ts'
+
+jobs:
+  validate-model-config:
+    name: Validate Model Configuration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Run Model Configuration Tests
+        run: |
+          cd supabase/functions
+          deno test --allow-read --allow-env _shared/__tests__/model-config.test.ts
+        env:
+          # Prevent tests from making actual API calls in CI
+          CI: true
+
+      - name: Check for hardcoded model names
+        run: |
+          echo "🔍 Scanning for hardcoded model names..."
+
+          # Check if any function files have hardcoded model strings
+          # (This is redundant with the test but provides early feedback)
+          if grep -r --include="*.ts" -E "(google|moonshotai)/[a-z0-9\-\.]+" supabase/functions/ | grep -v "config.ts" | grep -v "__tests__" | grep -v "node_modules"; then
+            echo "❌ Found potential hardcoded model names!"
+            echo "💡 Use MODELS.* from config.ts instead"
+            exit 1
+          else
+            echo "✅ No hardcoded model names found"
+          fi
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "✅ Model configuration validation passed"
+          echo ""
+          echo "Verified:"
+          echo "  • Model names match golden snapshot"
+          echo "  • No hardcoded model names"
+          echo "  • Configuration is stable"
+
+      - name: Failure Help
+        if: failure()
+        run: |
+          echo "⚠️  Model configuration tests failed!"
+          echo ""
+          echo "If this change was ACCIDENTAL:"
+          echo "  → Revert changes to config.ts"
+          echo ""
+          echo "If this change was INTENTIONAL:"
+          echo "  → Update model-config.snapshot.json"
+          echo "  → Update version field to today's date"
+          echo "  → Document reason in commit message"
+          echo ""
+          echo "See: supabase/functions/_shared/__tests__/MODEL_CONFIG_TESTS.md"
