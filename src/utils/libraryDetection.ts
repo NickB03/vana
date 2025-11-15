@@ -66,11 +66,9 @@ export const CDN_MAP: Record<string, string[]> = {
   'phosphor': ['<script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>'],
 
   // UI Component Libraries (Headless)
-  'radix-ui': [
-    '<script src="https://cdn.jsdelivr.net/npm/@radix-ui/react-dialog@1.0.5/dist/index.umd.js"></script>',
-    '<script src="https://cdn.jsdelivr.net/npm/@radix-ui/react-dropdown-menu@2.0.6/dist/index.umd.js"></script>',
-    '<script src="https://cdn.jsdelivr.net/npm/@radix-ui/react-popover@1.0.7/dist/index.umd.js"></script>'
-  ],
+  // NOTE: Radix UI is loaded via import map in ArtifactContainer.tsx, not via CDN scripts
+  // The import map allows ES module imports: import * as Dialog from '@radix-ui/react-dialog'
+  'radix-ui': [],
 
   // Form Libraries
   'formkit': ['<script src="https://cdn.jsdelivr.net/npm/@formkit/auto-animate@0.8.1/index.mjs" type="module"></script>'],

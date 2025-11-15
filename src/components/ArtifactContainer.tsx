@@ -704,7 +704,7 @@ ${artifact.content}
         .replace(/^import\s+\{[^}]*\}\s+from\s+['"]lucide-react['"];?\s*$/gm, '')  // Strip named lucide-react imports
         .replace(/^import\s+.*?from\s+['"]recharts['"];?\s*$/gm, '')  // Strip recharts imports
         .replace(/^import\s+.*?from\s+['"]framer-motion['"];?\s*$/gm, '')  // Strip framer-motion imports
-        .replace(/^import\s+.*?from\s+['"]@radix-ui\/[^'"]+['"];?\s*$/gm, '')  // Strip radix-ui imports
+        // DON'T strip Radix UI imports - they're handled by import map
         .replace(/^export\s+default\s+/gm, '')    // Strip export default (component accessible directly)
         .trim();
 
@@ -739,11 +739,28 @@ ${artifact.content}
     window.react = window.React;
     window.reactDOM = window.ReactDOM;
   </script>
+  <!-- Import map for ES modules (Radix UI, etc.) -->
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.3.1",
+        "react-dom": "https://esm.sh/react-dom@18.3.1",
+        "@radix-ui/react-dialog": "https://esm.sh/@radix-ui/react-dialog@1.0.5?deps=react@18.3.1,react-dom@18.3.1",
+        "@radix-ui/react-dropdown-menu": "https://esm.sh/@radix-ui/react-dropdown-menu@2.0.6?deps=react@18.3.1,react-dom@18.3.1",
+        "@radix-ui/react-popover": "https://esm.sh/@radix-ui/react-popover@1.0.7?deps=react@18.3.1,react-dom@18.3.1",
+        "@radix-ui/react-tabs": "https://esm.sh/@radix-ui/react-tabs@1.0.4?deps=react@18.3.1,react-dom@18.3.1",
+        "@radix-ui/react-select": "https://esm.sh/@radix-ui/react-select@2.0.0?deps=react@18.3.1,react-dom@18.3.1",
+        "@radix-ui/react-slider": "https://esm.sh/@radix-ui/react-slider@1.1.2?deps=react@18.3.1,react-dom@18.3.1",
+        "@radix-ui/react-switch": "https://esm.sh/@radix-ui/react-switch@1.0.3?deps=react@18.3.1,react-dom@18.3.1",
+        "@radix-ui/react-tooltip": "https://esm.sh/@radix-ui/react-tooltip@1.0.7?deps=react@18.3.1,react-dom@18.3.1",
+        "lucide-react": "https://esm.sh/lucide-react@0.263.1?deps=react@18.3.1"
+      }
+    }
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/recharts@2.5.0/dist/Recharts.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/framer-motion@11.11.11/dist/size-rollup-motion.js"></script>
-  <!-- Radix UI removed: Not compatible with browser UMD loading (uses CommonJS require) and artifacts cannot use @radix-ui/* imports -->
   ${injectedCDNs}
   ${generateCompleteIframeStyles()}
   <style>
