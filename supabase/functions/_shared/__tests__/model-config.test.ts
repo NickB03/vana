@@ -117,7 +117,7 @@ Deno.test("Model Config - No hardcoded model names in Edge Functions", async () 
 
   const modelPatterns = [
     // Match OpenRouter model IDs: provider/model-name
-    /['"](?:google|moonshotai|anthropic|openai)\/[a-z0-9\-\.]+['"]/gi,
+    /['"](?:google|moonshotai|anthropic|openai)\/[a-z0-9\-.]+['"]/gi,
   ];
 
   const allowedFiles = new Set([

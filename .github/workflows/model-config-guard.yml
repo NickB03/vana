@@ -44,7 +44,8 @@ jobs:
 
           # Check if any function files have hardcoded model strings
           # (This is redundant with the test but provides early feedback)
-          if grep -r --include="*.ts" -E "(google|moonshotai)/[a-z0-9\-\.]+" supabase/functions/ | grep -v "config.ts" | grep -v "__tests__" | grep -v "node_modules"; then
+          # Excludes: config.ts, test files, node_modules, comments (// and JSDoc)
+          if grep -r --include="*.ts" -E "(google|moonshotai)/[a-z0-9\-\.]+" supabase/functions/ | grep -v "config.ts" | grep -v "__tests__" | grep -v "node_modules" | grep -v "^\s*//" | grep -v "^\s*\*" | grep -v "@default"; then
             echo "❌ Found potential hardcoded model names!"
             echo "💡 Use MODELS.* from config.ts instead"
             exit 1

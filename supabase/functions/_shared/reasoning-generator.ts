@@ -15,6 +15,7 @@
  */
 
 import { type OpenRouterMessage } from './openrouter-client.ts';
+import { MODELS } from './config.ts';
 
 /**
  * Reasoning step phases following research → analysis → solution pattern
@@ -98,7 +99,7 @@ export async function generateStructuredReasoning(
   options: ReasoningOptions = {}
 ): Promise<StructuredReasoning> {
   const {
-    model = 'google/gemini-2.5-flash-lite',
+    model = MODELS.GEMINI_FLASH,
     temperature = 0.3,
     maxSteps = 5,
     timeout = 10000,

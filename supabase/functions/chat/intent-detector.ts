@@ -142,7 +142,7 @@ export function getArtifactGuidance(prompt: string): string {
   const guidance: Record<IntentResult['type'], string> = {
     image: `
 ARTIFACT TYPE GUIDANCE:
-This request should use IMAGE GENERATION (google/gemini-2.5-flash-image-preview).
+This request should use IMAGE GENERATION (Gemini Flash Image model).
 - Use for: Photo-realistic images, detailed artwork, complex scenes
 - Type: <artifact type="image" title="...">
 - Do NOT create SVG or React artifacts for this request`,

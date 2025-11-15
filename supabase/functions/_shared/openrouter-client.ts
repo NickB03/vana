@@ -13,6 +13,7 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
+import { MODELS } from './config.ts';
 
 // Separate API keys for different use cases
 const OPENROUTER_K2T_KEY = Deno.env.get("OPENROUTER_K2T_KEY");
@@ -95,7 +96,7 @@ export async function callKimi(
       "X-Title": "AI Chat App - Artifact Generation"
     },
     body: JSON.stringify({
-      model: "moonshotai/kimi-k2-thinking",
+      model: MODELS.KIMI_K2,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
@@ -352,7 +353,7 @@ export async function callGeminiFlash(
       "X-Title": "AI Chat Assistant"
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash-lite-preview-09-2025",
+      model: MODELS.GEMINI_FLASH,
       messages,
       temperature,
       max_tokens,

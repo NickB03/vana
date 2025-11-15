@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
+import { MODELS } from "../_shared/config.ts";
 
 const OPENROUTER_GEMINI_IMAGE_KEY = Deno.env.get("OPENROUTER_GEMINI_IMAGE_KEY");
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
@@ -108,7 +109,7 @@ serve(async (req) => {
     }
 
     // Call OpenRouter Gemini Flash Image API
-    console.log(`🎨 Calling OpenRouter (google/gemini-2.5-flash-image)`);
+    console.log(`🎨 Calling OpenRouter (${MODELS.GEMINI_FLASH_IMAGE})`);
     const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
       method: "POST",
       headers: {
@@ -118,7 +119,7 @@ serve(async (req) => {
         "X-Title": "AI Chat Assistant - Image Generation"
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image",
+        model: MODELS.GEMINI_FLASH_IMAGE,
         messages,
         temperature: 0.7,
         max_tokens: 1024,

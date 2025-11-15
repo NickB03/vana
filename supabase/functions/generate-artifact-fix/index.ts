@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { callKimiWithRetry, extractTextFromKimi, extractTokenUsage, calculateKimiCost, logAIUsage } from "../_shared/openrouter-client.ts";
 import { getCorsHeaders } from "../_shared/cors-config.ts";
+import { MODELS } from "../_shared/config.ts";
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
@@ -174,7 +175,7 @@ Return ONLY the fixed code without any explanations or markdown formatting.`;
       requestId,
       functionName: 'generate-artifact-fix',
       provider: 'openrouter',
-      model: 'moonshotai/kimi-k2-thinking',
+      model: MODELS.KIMI_K2,
       userId: user.id,
       isGuest: false,
       inputTokens: tokenUsage.inputTokens,

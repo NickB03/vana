@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { callKimiWithRetry, extractTextFromKimi, extractTokenUsage, calculateKimiCost, logAIUsage } from "../_shared/openrouter-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
+import { MODELS } from "../_shared/config.ts";
 
 // NOTE: Retry logic moved to openrouter-client.ts
 // callKimiWithRetry() now handles exponential backoff automatically
@@ -390,7 +391,7 @@ serve(async (req) => {
       requestId,
       functionName: 'generate-artifact',
       provider: 'openrouter',
-      model: 'moonshotai/kimi-k2-thinking',
+      model: MODELS.KIMI_K2,
       userId: user?.id,
       isGuest: !user,
       inputTokens: tokenUsage.inputTokens,
