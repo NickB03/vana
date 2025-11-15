@@ -268,7 +268,7 @@ Instead, you MUST:
    - \`import anything from "@/..."\` ← NEVER
    - Any path starting with \`@/\` ← NEVER
 
-   ✅ **ALLOWED** (Available via CDN as ES6 modules):
+   ✅ **ALLOWED** (Available via import map):
    - \`import * as Dialog from '@radix-ui/react-dialog'\` ← YES
    - \`import { Check } from 'lucide-react'\` ← YES
    - Third-party libraries listed below ← YES

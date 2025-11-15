@@ -335,16 +335,44 @@ serve(async (req) => {
     // DEBUG: Log intent detection result
     console.log(`[${requestId}] Analyzing prompt for intent:`, lastUserMessage.content.substring(0, 100));
 
+    // TEMPORARILY DISABLED: Clarification system causing issues
     // Check if we need clarification FIRST (unless force mode is enabled)
-    if (!forceImageMode && !forceArtifactMode && lastUserMessage) {
-      const clarificationQuestion = await needsClarification(lastUserMessage.content);
-      if (clarificationQuestion) {
-        console.log(`[${requestId}] ❓ Medium confidence - requesting clarification`);
-        // Return clarifying question to user
-        return new Response(
-          `data: ${JSON.stringify({ choices: [{ delta: { content: clarificationQuestion } }] })}\n\ndata: [DONE]\n\n`,
-          { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream", "X-Request-ID": requestId } }
+    // if (!forceImageMode && !forceArtifactMode && lastUserMessage) {
+    //   const clarificationQuestion = await needsClarification(lastUserMessage.content);
+    //   if (clarificationQuestion) {
+    //     console.log(`[${requestId}] ❓ Medium confidence - requesting clarification`);
+    //     // Return clarifying question to user
+    //     return new Response(
+    //       `data: ${JSON.stringify({ choices: [{ delta: { content: clarificationQuestion } }] })}\n\ndata: [DONE]\n\n`,
+    //       { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream", "X-Request-ID": requestId } }
+    //     );
+    //   }
+    // }
+
+    // ========================================
+    // CHAIN OF THOUGHT: Generate structured reasoning BEFORE routing
+    // This ensures reasoning appears for ALL request types (chat, image, artifact)
+    // ========================================
+    let structuredReasoning: StructuredReasoning | null = null;
+
+    if (includeReasoning && lastUserMessage) {
+      console.log(`[${requestId}] 🧠 Generating reasoning for: "${lastUserMessage.content.substring(0, 50)}..."`);
+
+      try {
+        structuredReasoning = await generateStructuredReasoning(
+          lastUserMessage.content,
+          messages.filter(m => m.role !== 'system') as OpenRouterMessage[],
+          {
+            maxSteps: 3,  // Limit for faster generation
+            timeout: 8000  // 8s timeout
+          }
         );
+
+        console.log(`[${requestId}] ✅ Reasoning generated: ${structuredReasoning.steps.length} steps`);
+      } catch (reasoningError) {
+        console.error(`[${requestId}] ⚠️ Reasoning generation failed:`, reasoningError);
+        // Use fallback reasoning instead of blocking the response
+        structuredReasoning = createFallbackReasoning(reasoningError.message);
       }
     }
 
@@ -363,9 +391,11 @@ serve(async (req) => {
       // Proceed with image generation
     }
 
+    // TEMPORARILY DISABLED: Intent detection causing false positives
     // Check for image generation (only if not forcing artifact mode)
-    const isImageRequest = !forceArtifactMode && (forceImageMode || (lastUserMessage && await shouldGenerateImage(lastUserMessage.content)));
-    console.log(`[${requestId}] Image intent detected:`, isImageRequest, forceImageMode ? '(forced by user)' : '(detected)');
+    // const isImageRequest = !forceArtifactMode && (forceImageMode || (lastUserMessage && await shouldGenerateImage(lastUserMessage.content)));
+    const isImageRequest = !forceArtifactMode && forceImageMode; // ONLY use explicit force mode
+    console.log(`[${requestId}] Image intent detected:`, isImageRequest, forceImageMode ? '(forced by user)' : '(intent detection disabled)');
 
     if (isImageRequest) {
       console.log("🎯 Intent detected: IMAGE generation");
@@ -422,9 +452,28 @@ serve(async (req) => {
         // Stream storage URL (works for both display and saving)
         const artifactResponse = `I've generated an image for you: ${title}\n\n<artifact type="image" title="${title}">${imageUrl}</artifact>`;
 
+        // Build SSE response with reasoning first, then image
+        let sseResponse = '';
+
+        // Send reasoning as first event (if available)
+        if (structuredReasoning) {
+          const reasoningEvent = {
+            type: 'reasoning',
+            sequence: 0,
+            timestamp: Date.now(),
+            data: structuredReasoning
+          };
+          sseResponse += `data: ${JSON.stringify(reasoningEvent)}\n\n`;
+          console.log(`[${requestId}] 📤 Sent reasoning event with ${structuredReasoning.steps.length} steps`);
+        }
+
+        // Send image artifact
+        sseResponse += `data: ${JSON.stringify({ choices: [{ delta: { content: artifactResponse } }] })}\n\n`;
+        sseResponse += `data: [DONE]\n\n`;
+
         // Stream the response - frontend will save this URL to database
         return new Response(
-          `data: ${JSON.stringify({ choices: [{ delta: { content: artifactResponse } }] })}\n\ndata: [DONE]\n\n`,
+          sseResponse,
           { headers: { ...corsHeaders, ...rateLimitHeaders, "X-Request-ID": requestId, "Content-Type": "text/event-stream" } }
         );
       } catch (imgError) {
@@ -437,13 +486,15 @@ serve(async (req) => {
       }
     }
 
+    // TEMPORARILY DISABLED: Intent detection causing false positives
     // Detect artifact generation requests (non-image artifacts)
     // Check for force artifact mode first (explicit user control bypasses intent detection)
-    const isArtifactRequest = forceArtifactMode || (lastUserMessage && await shouldGenerateArtifact(lastUserMessage.content));
+    // const isArtifactRequest = forceArtifactMode || (lastUserMessage && await shouldGenerateArtifact(lastUserMessage.content));
+    const isArtifactRequest = forceArtifactMode; // ONLY use explicit force mode
 
     if (isArtifactRequest) {
       const artifactType = await getArtifactType(lastUserMessage.content);
-      console.log(`🎯 Intent detected: ARTIFACT generation (${artifactType})`, forceArtifactMode ? '(forced by user)' : '(detected)');
+      console.log(`🎯 Intent detected: ARTIFACT generation (${artifactType})`, forceArtifactMode ? '(forced by user)' : '(intent detection disabled)');
       console.log("🔀 Routing to: generate-artifact (Pro model)");
 
       // Retry configuration for artifact generation
@@ -516,9 +567,28 @@ serve(async (req) => {
             console.log(`[${requestId}] Artifact generation succeeded on attempt ${attempt + 1}`);
           }
 
+          // Build SSE response with reasoning first, then artifact
+          let sseResponse = '';
+
+          // Send reasoning as first event (if available)
+          if (structuredReasoning) {
+            const reasoningEvent = {
+              type: 'reasoning',
+              sequence: 0,
+              timestamp: Date.now(),
+              data: structuredReasoning
+            };
+            sseResponse += `data: ${JSON.stringify(reasoningEvent)}\n\n`;
+            console.log(`[${requestId}] 📤 Sent reasoning event with ${structuredReasoning.steps.length} steps`);
+          }
+
+          // Send artifact content
+          sseResponse += `data: ${JSON.stringify({ choices: [{ delta: { content: artifactCode } }] })}\n\n`;
+          sseResponse += `data: [DONE]\n\n`;
+
           // Stream the artifact response
           return new Response(
-            `data: ${JSON.stringify({ choices: [{ delta: { content: artifactCode } }] })}\n\ndata: [DONE]\n\n`,
+            sseResponse,
             { headers: { ...corsHeaders, ...rateLimitHeaders, "X-Request-ID": requestId, "Content-Type": "text/event-stream" } }
           );
 
@@ -625,31 +695,8 @@ Treat this as an iterative improvement of the existing artifact.`;
     console.log("🎯 Intent detected: REGULAR CHAT");
     console.log("🔀 Using: Gemini 2.5 Flash Lite via OpenRouter (streaming response)");
 
-    // ========================================
-    // CHAIN OF THOUGHT: Generate structured reasoning BEFORE chat stream
-    // ========================================
-    let structuredReasoning: StructuredReasoning | null = null;
-
-    if (includeReasoning && lastUserMessage) {
-      console.log(`[${requestId}] 🧠 Generating reasoning for: "${lastUserMessage.content.substring(0, 50)}..."`);
-
-      try {
-        structuredReasoning = await generateStructuredReasoning(
-          lastUserMessage.content,
-          contextMessages.filter(m => m.role !== 'system') as OpenRouterMessage[],
-          {
-            maxSteps: 3,  // Limit for faster generation
-            timeout: 8000  // 8s timeout
-          }
-        );
-
-        console.log(`[${requestId}] ✅ Reasoning generated: ${structuredReasoning.steps.length} steps`);
-      } catch (reasoningError) {
-        console.error(`[${requestId}] ⚠️ Reasoning generation failed:`, reasoningError);
-        // Use fallback reasoning instead of blocking the response
-        structuredReasoning = createFallbackReasoning(reasoningError.message);
-      }
-    }
+    // NOTE: Reasoning already generated at the top of this function (line 352-377)
+    // This ensures reasoning appears for ALL request types, not just regular chat
 
     // Call OpenRouter with Gemini 2.5 Flash Lite model (fast, reliable for chat)
     // Artifacts are handled by separate generate-artifact function
