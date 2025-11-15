@@ -107,9 +107,8 @@ describe('libraryDetection', () => {
       it('should detect Radix UI usage', () => {
         const code = 'import * as Dialog from "@radix-ui/react-dialog";';
         const result = detectAndInjectLibraries(code);
-        expect(result).toContain('@radix-ui/react-dialog');
-        expect(result).toContain('@radix-ui/react-dropdown-menu');
-        expect(result).toContain('@radix-ui/react-popover');
+        // Radix UI uses ES Module import map (not CDN scripts), so returns empty
+        expect(result).toBe('');
       });
 
       it('should detect Fabric.js usage', () => {
