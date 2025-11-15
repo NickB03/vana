@@ -39,15 +39,19 @@ export const MessageWithArtifacts = memo(({
   return (
     <>
       {/* Render message text without artifact tags */}
-      {/* FIX: Use <div> instead of <MessageContent> (which renders as <p>) */}
-      {/* This prevents invalid HTML nesting of block elements inside <p> tags */}
+      {/* Prose classes applied directly to Markdown component for proper typography */}
       <div
-        className={`prose flex-1 rounded-lg bg-transparent p-0 pl-3 text-foreground border-l-4 transition-all duration-150 ${className}`}
+        className={`flex-1 rounded-lg bg-transparent p-0 pl-3 border-l-4 transition-all duration-150 ${className}`}
         style={{
           borderLeftColor: 'hsl(var(--accent-ai) / 0.4)',
         }}
       >
-        <Markdown id={messageId}>{cleanContent}</Markdown>
+        <Markdown
+          id={messageId}
+          className="prose prose-sm max-w-none dark:prose-invert"
+        >
+          {cleanContent}
+        </Markdown>
       </div>
 
       {/* Render inline images */}

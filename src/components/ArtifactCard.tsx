@@ -58,8 +58,8 @@ export function ArtifactCard({ artifact, onOpen, className }: ArtifactCardProps)
       CARD_STATES.interactive,
       className
     )}>
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-2">
+      <CardHeader className="py-3">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <div className="rounded-md bg-primary/10 p-2 group-hover:bg-primary/20 transition-colors">
               {getArtifactIcon(artifact.type)}

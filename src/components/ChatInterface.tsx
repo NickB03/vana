@@ -550,16 +550,21 @@ export function ChatInterface({
           )}
         </div>
       ) : (
-        // Desktop Layout: Side-by-side resizable panels (unchanged)
+        // Desktop Layout: Side-by-side resizable panels with Gemini-style sizing
         <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
-          <ResizablePanel defaultSize={isCanvasOpen && currentArtifact ? 40 : 100} minSize={25} className="md:min-w-[300px]">
+          <ResizablePanel
+            defaultSize={isCanvasOpen && currentArtifact ? 30 : 100}
+            minSize={20}
+            maxSize={isCanvasOpen && currentArtifact ? 50 : 100}
+            className="md:min-w-[280px]"
+          >
             {renderChatContent()}
           </ResizablePanel>
 
           {isCanvasOpen && currentArtifact && (
             <>
               <ResizableHandle withHandle className="hidden md:flex" />
-              <ResizablePanel defaultSize={60} minSize={40} className="md:min-w-[400px]">
+              <ResizablePanel defaultSize={70} minSize={50} className="md:min-w-[400px]">
                 <Artifact
                   artifact={currentArtifact}
                   onClose={handleCloseCanvas}

@@ -129,15 +129,14 @@ const IndexContent = () => {
     // Reset browser history to home state
     window.history.pushState(null, "", "/");
   };
-  const handleCanvasToggle = () => {
+  const handleCanvasToggle = (forceState?: boolean) => {
     if (hasArtifact) {
-      const newCanvasState = !isCanvasOpen;
+      const newCanvasState = forceState !== undefined ? forceState : !isCanvasOpen;
       setIsCanvasOpen(newCanvasState);
 
-      // Auto-close sidebar when opening canvas to save space
-      if (newCanvasState) {
-        setOpen(false);
-      }
+      // Auto-close sidebar when opening canvas to save space (like Gemini)
+      // Auto-restore sidebar when closing canvas
+      setOpen(!newCanvasState);
     }
   };
   const handleArtifactChange = (hasContent: boolean) => {
