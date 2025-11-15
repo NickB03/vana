@@ -45,6 +45,11 @@ chrome-mcp restart   # Clean restart if issues occur
 9. **Deployment**: Run verification script before marking deployment complete
 10. **Artifact Prompts**: Use structured format (Context → Task → Requirements → Output) for better AI generation
 11. **Shared Utilities**: Use centralized modules in `supabase/functions/_shared/` for common patterns
+12. **Model Configuration**: **CRITICAL** - NEVER hardcode model names! Always use `MODELS.*` from `config.ts`
+   - ❌ BAD: `model: "google/gemini-2.5-flash-lite"`
+   - ✅ GOOD: `import { MODELS } from '../_shared/config.ts'` then `model: MODELS.GEMINI_FLASH`
+   - Golden snapshot tests will FAIL if you hardcode model names
+   - See "Model Configuration System" section below for details
 
 ## 🏗️ Architecture Overview
 
@@ -135,6 +140,7 @@ await browser.screenshot({ filename: "verification.png" });
 | Animate all messages | Animate last message only | Performance (100+ msgs) |
 | Deploy without verification | Run Chrome DevTools checks | Catches runtime errors |
 | Add routes after `*` | Add ABOVE catch-all | Routes never reached |
+| Hardcode model names | Use `MODELS.*` from config.ts | CI/CD will FAIL, breaks production |
 | Use console.log in production | Remove or use dev only | Stripped by Terser |
 | Duplicate error handling | Use `createErrorResponse()` | Consistency & maintenance |
 | Manual CORS headers | Use `corsHeaders` from config | Security & standardization |
@@ -753,6 +759,120 @@ cd supabase/functions/_shared/__tests__
 #### Next Steps
 1. Set `ALLOWED_ORIGINS` environment variable in Supabase Edge Functions settings (optional for personal use)
 2. Apply same patterns to remaining Edge Functions if needed (chat, generate-title already updated)
+
+### Model Configuration System (Nov 15, 2025) ✅ PRODUCTION-READY
+
+**Status:** Centralized configuration with golden snapshot testing to prevent accidental model changes
+
+**Critical Rule:** **NEVER hardcode model names in Edge Functions!** Always use `MODELS.*` constants from `config.ts`.
+
+#### Architecture
+
+**Single Source of Truth:** All AI model names are defined in `supabase/functions/_shared/config.ts`:
+
+```typescript
+export const MODELS = {
+  /** Gemini 2.5 Flash Lite for chat/summaries/titles */
+  GEMINI_FLASH: 'google/gemini-2.5-flash-lite',
+  /** Kimi K2-Thinking for artifact generation */
+  KIMI_K2: 'moonshotai/kimi-k2-thinking',
+  /** Gemini Flash Image for image generation */
+  GEMINI_FLASH_IMAGE: 'google/gemini-2.5-flash-image'
+} as const;
+```
+
+#### Usage in Edge Functions
+
+```typescript
+// ✅ CORRECT - Import and use MODELS constants
+import { MODELS } from '../_shared/config.ts';
+
+const response = await fetch(OPENROUTER_URL, {
+  body: JSON.stringify({
+    model: MODELS.GEMINI_FLASH,  // ✅ Good!
+    messages: [...]
+  })
+});
+
+// ❌ WRONG - Never hardcode model names!
+const response = await fetch(OPENROUTER_URL, {
+  body: JSON.stringify({
+    model: "google/gemini-2.5-flash-lite",  // ❌ BAD! Will fail tests
+    messages: [...]
+  })
+});
+```
+
+#### Golden Snapshot Testing
+
+**Purpose:** Prevents accidental model configuration changes that could break production.
+
+**How it works:**
+1. `model-config.snapshot.json` stores the expected model names
+2. Tests compare `config.ts` against the snapshot on every commit
+3. Tests FAIL if model names don't match (catches accidental changes)
+4. CI/CD blocks merges if model config has drifted
+
+**Test Files:**
+- `supabase/functions/_shared/__tests__/model-config.test.ts` - 4 comprehensive tests
+- `supabase/functions/_shared/__tests__/model-config.snapshot.json` - Golden snapshot
+- `.github/workflows/model-config-guard.yml` - CI/CD workflow
+
+**Test Coverage:**
+- ✅ Validates model names match snapshot
+- ✅ Scans for hardcoded model names in codebase
+- ✅ Verifies snapshot file integrity
+- ✅ Ensures all required model keys exist
+
+#### Updating Model Names (Intentional Changes)
+
+When you **deliberately** need to change a model:
+
+1. **Update config.ts:**
+   ```typescript
+   export const MODELS = {
+     GEMINI_FLASH: 'google/new-model-name',  // Changed
+   }
+   ```
+
+2. **Update snapshot:**
+   ```json
+   {
+     "version": "2025-11-XX",  // ← Update date
+     "models": {
+       "GEMINI_FLASH": "google/new-model-name"  // ← Match config
+     }
+   }
+   ```
+
+3. **Test & Deploy:**
+   ```bash
+   cd supabase/functions && deno task test
+   supabase functions deploy
+   ```
+
+#### Benefits
+
+- **Single Point of Change:** Update one constant, not 6+ files
+- **Type Safety:** TypeScript ensures correct model names
+- **Automated Validation:** CI/CD catches configuration drift
+- **Zero Production Incidents:** Prevents 404 errors from wrong model names
+- **Audit Trail:** Snapshot version field tracks when models last changed
+
+#### Protected Functions
+
+All Edge Functions now use centralized config:
+- ✅ `chat` - MODELS.GEMINI_FLASH
+- ✅ `generate-artifact` - MODELS.KIMI_K2
+- ✅ `generate-artifact-fix` - MODELS.KIMI_K2
+- ✅ `generate-image` - MODELS.GEMINI_FLASH_IMAGE
+- ✅ `generate-title` - MODELS.GEMINI_FLASH
+- ✅ `summarize-conversation` - MODELS.GEMINI_FLASH
+- ✅ `reasoning-generator` - MODELS.GEMINI_FLASH
+
+**Documentation:**
+- `.claude/MODEL_CONFIG_STABILITY_TESTS.md` - Implementation details
+- `supabase/functions/_shared/__tests__/MODEL_CONFIG_TESTS.md` - Developer guide
 
 ### OpenRouter Migration (Nov 13, 2025)
 
