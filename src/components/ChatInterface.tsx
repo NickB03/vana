@@ -332,7 +332,7 @@ export function ChatInterface({
                   const messageContent = (
                     <MessageComponent
                       className={cn(
-                        "chat-message mx-auto flex w-full max-w-3xl flex-col gap-2 px-6",
+                        "chat-message mx-auto flex w-full max-w-3xl flex-col gap-2 px-4 sm:px-6",
                         isAssistant ? "items-start" : "items-end"
                       )}
                     >

@@ -50,13 +50,13 @@ export const BenefitsSection = () => {
           </p>
         </motion.div>
 
-        <div className="space-y-20">
+        <div className="space-y-12 sm:space-y-16 lg:space-y-20">
           {/* Benefit 1: Real-time Generation */}
           <motion.div
-            className="grid lg:grid-cols-2 gap-12 items-center"
+            className="grid lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-center"
             {...fadeInUp}
           >
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <h3 className={cn(TYPOGRAPHY.HEADING.md.full, "font-bold")}>From idea to code in seconds</h3>
               <p className={cn(TYPOGRAPHY.BODY.lg.full, "text-muted-foreground")}>
                 Vana uses Claude AI to generate production-ready code as you type. Watch your ideas materialize with streaming responses that render instantly in an interactive preview canvas.
@@ -87,7 +87,7 @@ export const BenefitsSection = () => {
 
           {/* Benefit 2: Interactive Artifacts */}
           <motion.div
-            className="grid lg:grid-cols-2 gap-12 items-center"
+            className="grid lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-center"
             {...fadeInUp}
           >
             {shouldMountIllustrations ? (
@@ -95,7 +95,7 @@ export const BenefitsSection = () => {
             ) : (
               <div className="aspect-video bg-muted/20 animate-pulse rounded-lg" />
             )}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <h3 className={cn(TYPOGRAPHY.HEADING.md.full, "font-bold")}>More than just chat</h3>
               <p className={cn(TYPOGRAPHY.BODY.lg.full, "text-muted-foreground")}>
                 Every conversation can generate interactive artifacts—fully functional React components, validated HTML pages, Mermaid diagrams, and SVG graphics—all rendered in a sandboxed environment alongside your chat.
@@ -119,10 +119,10 @@ export const BenefitsSection = () => {
 
           {/* Benefit 3: Secure & Private */}
           <motion.div
-            className="grid lg:grid-cols-2 gap-12 items-center"
+            className="grid lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-center"
             {...fadeInUp}
           >
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <h3 className={cn(TYPOGRAPHY.HEADING.md.full, "font-bold")}>Built with security in mind</h3>
               <p className={cn(TYPOGRAPHY.BODY.lg.full, "text-muted-foreground")}>
                 Vana is built on Supabase with authentication, Row-Level Security policies, and sandboxed execution. Your conversations and artifacts remain private and secure.

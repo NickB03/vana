@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 export const CTASection = () => {
   return (
     <section className={combineSpacing("text-white relative w-full", SECTION_SPACING.full)}>
-      <div className="container max-w-4xl mx-auto text-center space-y-6 relative z-10 w-full">
+      <div className="container max-w-4xl mx-auto text-center space-y-4 sm:space-y-6 relative z-10 w-full px-4 sm:px-0">
         <h2 className={cn(TYPOGRAPHY.HEADING.lg.full, "font-bold")}>
           Ready to Build Something Amazing?
         </h2>
@@ -16,7 +16,7 @@ export const CTASection = () => {
           Join thousands of developers using AI to create faster. Start your
           first project in under 30 seconds.
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center pt-2 sm:pt-4">
           <Button
             size="lg"
             className="bg-white hover:bg-gray-100 text-black font-semibold transition-all hover:scale-105 active:scale-95"
@@ -36,11 +36,11 @@ export const CTASection = () => {
             <Link to="/signup">Sign Up with Google</Link>
           </Button>
         </div>
-        <div className="pt-4 flex items-center justify-center gap-6 text-sm text-white/70">
+        <div className="pt-2 sm:pt-4 flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm text-white/70">
           <span>✓ No credit card required</span>
-          <span>•</span>
+          <span className="hidden sm:inline">•</span>
           <span>✓ Free forever plan</span>
-          <span>•</span>
+          <span className="hidden sm:inline">•</span>
           <span>✓ Cancel anytime</span>
         </div>
       </div>

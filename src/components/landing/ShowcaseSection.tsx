@@ -28,7 +28,7 @@ const showcaseItems: ShowcaseItem[] = [
     icon: Sparkles,
     gradient: SHOWCASE_GRADIENTS.research,
     content: (
-      <div className="bg-gradient-to-br from-card via-muted/50 to-card rounded-lg p-6 h-full flex flex-col relative overflow-hidden border border-border/50">
+      <div className="bg-gradient-to-br from-card via-muted/50 to-card rounded-lg p-4 sm:p-6 h-full flex flex-col relative overflow-hidden border border-border/50">
         {/* Decorative gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none"></div>
 
@@ -74,7 +74,7 @@ const showcaseItems: ShowcaseItem[] = [
     icon: Code2,
     gradient: SHOWCASE_GRADIENTS.code,
     content: (
-      <div className="bg-gradient-to-br from-card via-muted/50 to-card rounded-lg p-6 h-full font-mono relative overflow-hidden border border-border/50">
+      <div className="bg-gradient-to-br from-card via-muted/50 to-card rounded-lg p-4 sm:p-6 h-full font-mono relative overflow-hidden border border-border/50">
         {/* Decorative gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none"></div>
 
@@ -128,7 +128,7 @@ const search = debounce(
     icon: BarChart3,
     gradient: SHOWCASE_GRADIENTS.visualization,
     content: (
-      <div className="bg-gradient-to-br from-card via-muted/50 to-card rounded-lg p-6 h-full relative overflow-hidden">
+      <div className="bg-gradient-to-br from-card via-muted/50 to-card rounded-lg p-4 sm:p-6 h-full relative overflow-hidden">
         {/* Decorative gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none"></div>
 
@@ -183,7 +183,7 @@ const search = debounce(
     icon: GitBranch,
     gradient: SHOWCASE_GRADIENTS.diagrams,
     content: (
-      <div className="bg-gradient-to-br from-card via-muted/50 to-card rounded-lg p-6 h-full flex flex-col relative overflow-hidden">
+      <div className="bg-gradient-to-br from-card via-muted/50 to-card rounded-lg p-4 sm:p-6 h-full flex flex-col relative overflow-hidden">
         {/* Decorative gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none"></div>
 
@@ -230,7 +230,7 @@ const search = debounce(
     icon: Image,
     gradient: SHOWCASE_GRADIENTS.image,
     content: (
-      <div className="bg-gradient-to-br from-card via-muted/50 to-card rounded-lg p-6 h-full flex flex-col items-center justify-center relative overflow-hidden">
+      <div className="bg-gradient-to-br from-card via-muted/50 to-card rounded-lg p-4 sm:p-6 h-full flex flex-col items-center justify-center relative overflow-hidden">
         {/* Decorative gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none"></div>
 
@@ -256,7 +256,7 @@ const search = debounce(
     icon: FileText,
     gradient: SHOWCASE_GRADIENTS.documents,
     content: (
-      <div className="bg-gradient-to-br from-card via-muted/50 to-card rounded-lg p-6 h-full relative overflow-hidden">
+      <div className="bg-gradient-to-br from-card via-muted/50 to-card rounded-lg p-4 sm:p-6 h-full relative overflow-hidden">
         {/* Decorative gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none"></div>
 
@@ -446,11 +446,11 @@ export const ShowcaseSection = () => {
         className="container max-w-7xl mx-auto w-full relative z-10"
         {...fadeInUp}
       >
-        <div className="text-center space-y-4 mb-16">
+        <div className="text-center space-y-3 sm:space-y-4 mb-10 sm:mb-12 lg:mb-16">
           <h2 className={cn(TYPOGRAPHY.HEADING.lg.full, "font-bold")}>
             See What's Possible with Vana
           </h2>
-          <p className={cn(TYPOGRAPHY.BODY.lg.full, "text-muted-foreground-accessible max-w-2xl mx-auto")}>
+          <p className={cn(TYPOGRAPHY.BODY.lg.full, "text-muted-foreground-accessible max-w-2xl mx-auto px-4 sm:px-0")}>
             Real examples of AI-powered creation—from research to code, visuals to documentation.
           </p>
         </div>

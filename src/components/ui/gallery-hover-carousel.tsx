@@ -110,13 +110,13 @@ export default function GalleryHoverCarousel({
 
   return (
     <section className={className || "py-32 bg-background"}>
-      <div className="container mx-auto px-6">
+      <div className="container mx-auto px-4 sm:px-6">
         {heading && (
-          <div className="mb-8 flex flex-col justify-between md:mb-14 md:flex-row md:items-end lg:mb-16">
+          <div className="mb-6 sm:mb-8 flex flex-col justify-between md:mb-14 md:flex-row md:items-end lg:mb-16">
             <div className="max-w-2xl">
-              <h3 className="text-lg sm:text-xl lg:text-3xl font-medium text-gray-900 dark:text-white leading-relaxed">
+              <h3 className="text-base sm:text-lg md:text-xl lg:text-3xl font-medium text-gray-900 dark:text-white leading-relaxed">
               {heading}{" "}
-              <span className="text-gray-500 dark:text-gray-400 text-sm sm:text-base lg:text-3xl"> Explore our collection of innovative solutions and cutting-edge technologies designed to transform your business.</span>
+              <span className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm md:text-base lg:text-3xl"> Explore our collection of innovative solutions and cutting-edge technologies designed to transform your business.</span>
             </h3>
             </div>
           </div>
@@ -150,14 +150,14 @@ export default function GalleryHoverCarousel({
             }}
             className="relative w-full max-w-full"
           >
-            <CarouselContent className="-ml-2 md:-ml-4 py-4">
+            <CarouselContent className="-ml-2 md:-ml-4 py-3 sm:py-4">
               {items.map((item) => {
                 const isLoading = loadingItemId === item.id;
                 return (
-                <CarouselItem key={item.id} className="pl-3 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5 2xl:basis-1/6">
+                <CarouselItem key={item.id} className="pl-2 sm:pl-3 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5 2xl:basis-1/6">
                   <div
                     onClick={() => !isLoading && onItemClick?.(item)}
-                    className={`group block relative w-full h-[160px] md:h-[180px] ${isLoading ? 'cursor-wait' : 'cursor-pointer'}`}
+                    className={`group block relative w-full h-[140px] sm:h-[160px] md:h-[180px] ${isLoading ? 'cursor-wait' : 'cursor-pointer'}`}
                   >
                     <Card className={`overflow-hidden rounded-3xl h-full w-full transition-all duration-300 hover:scale-105 ${isLoading ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
                       {/* Image */}

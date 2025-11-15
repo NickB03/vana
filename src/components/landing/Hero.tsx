@@ -24,10 +24,10 @@ export const Hero = () => {
   return (
     <section className={combineSpacing("relative min-h-[100dvh] w-full flex items-center justify-center", SECTION_SPACING.full)}>
       <div className="container max-w-7xl mx-auto relative z-10 w-full">
-        <div className="grid lg:grid-cols-2 gap-12 items-center w-full">
+        <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center w-full">
           {/* Left: Headline + CTAs */}
           <motion.div
-            className="space-y-6 text-center lg:text-left will-change-transform transform-gpu"
+            className="space-y-4 sm:space-y-6 text-center lg:text-left will-change-transform transform-gpu"
             variants={staggerContainer}
             initial="hidden"
             animate="visible"
@@ -53,7 +53,7 @@ export const Hero = () => {
               components, diagrams, and more—all in one seamless interface.
             </motion.p>
             <motion.div
-              className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start"
               variants={staggerItem}
             >
               <Button
@@ -73,7 +73,7 @@ export const Hero = () => {
               </Button>
             </motion.div>
             <motion.div
-              className="flex items-center gap-6 justify-center lg:justify-start text-sm text-gray-400 pt-4"
+              className="flex flex-wrap items-center gap-4 sm:gap-6 justify-center lg:justify-start text-xs sm:text-sm text-gray-400 pt-2 sm:pt-4"
               variants={staggerItem}
             >
               <div className="flex items-center gap-2">
