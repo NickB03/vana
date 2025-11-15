@@ -119,19 +119,36 @@ export function useChatMessages(
 
     // For authenticated users, save to database
     try {
+      // DEBUG: Log what we're about to save
+      const payload = {
+        session_id: sessionId,
+        role,
+        content,
+        reasoning,
+        reasoning_steps: validatedReasoningSteps, // FIX: Use validated reasoning steps
+      };
+      console.log("[DEBUG] Saving message to database:", {
+        ...payload,
+        content_preview: content.substring(0, 100),
+        reasoning_steps_type: typeof validatedReasoningSteps,
+        reasoning_steps_value: validatedReasoningSteps,
+      });
+
       const { data, error } = await supabase
         .from("chat_messages")
-        .insert({
-          session_id: sessionId,
-          role,
-          content,
-          reasoning,
-          reasoning_steps: validatedReasoningSteps, // FIX: Use validated reasoning steps
-        })
+        .insert(payload)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("[DEBUG] Database error details:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+        throw error;
+      }
 
       const typedMessage: ChatMessage = {
         ...data,
