@@ -75,7 +75,7 @@ export function LoginForm() {
 
 
   return (
-    <Card>
+    <Card className="border-white/10 bg-black/30 backdrop-blur-md">
       <CardHeader>
         <CardTitle>Login to your account</CardTitle>
         <CardDescription>

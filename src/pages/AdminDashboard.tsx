@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "motion/react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { DollarSign, Activity, TrendingUp, AlertCircle, RefreshCw, Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { ShaderBackground } from "@/components/ui/shader-background";
+import { fadeInUp, staggerContainer, staggerItem } from "@/utils/animationConstants";
 
 interface OverviewData {
   totalRequests: number;
@@ -128,127 +131,183 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4" />
-          <p>Loading analytics...</p>
+      <>
+        {/* Phase 1 & 5: Background System with loading state */}
+        <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -1 }}>
+          <ShaderBackground className="opacity-30" />
         </div>
-      </div>
+        <div
+          className="fixed inset-0 pointer-events-none"
+          style={{
+            zIndex: -1,
+            background: 'radial-gradient(125% 125% at 50% 10%, #000000 40%, #1e293b 100%)'
+          }}
+        />
+        <motion.div
+          {...fadeInUp}
+          transition={{ duration: 0.3 }}
+          className="flex items-center justify-center min-h-screen"
+        >
+          <div className="text-center">
+            <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4" />
+            <p>Loading analytics...</p>
+          </div>
+        </motion.div>
+      </>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">AI Usage Dashboard</h1>
-          <p className="text-muted-foreground">Monitor Kimi K2 & Gemini API usage and costs</p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant={autoRefresh ? "default" : "outline"}
-            onClick={() => setAutoRefresh(!autoRefresh)}
-            size="sm"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${autoRefresh ? 'animate-spin' : ''}`} />
-            Auto-refresh
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            Export
-          </Button>
-        </div>
+    <>
+      {/* Phase 1: Background System */}
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -1 }}>
+        <ShaderBackground className="opacity-30" />
       </div>
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          zIndex: -1,
+          background: 'radial-gradient(125% 125% at 50% 10%, #000000 40%, #1e293b 100%)'
+        }}
+      />
 
-      {/* Time Range Selector */}
-      <div className="flex gap-2">
-        {[7, 30, 90].map((days) => (
-          <Button
-            key={days}
-            variant={timeRange === days ? "default" : "outline"}
-            size="sm"
-            onClick={() => setTimeRange(days)}
-          >
-            Last {days} days
-          </Button>
-        ))}
-      </div>
+      {/* Phase 4: Container with spacing consistency */}
+      <div className="container mx-auto p-6 space-y-8">
+        {/* Header */}
+        <motion.div
+          {...fadeInUp}
+          transition={{ duration: 0.3 }}
+          className="flex justify-between items-center"
+        >
+          <div>
+            <h1 className="text-3xl font-bold">AI Usage Dashboard</h1>
+            <p className="text-muted-foreground">Monitor Kimi K2 & Gemini API usage and costs</p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant={autoRefresh ? "default" : "outline"}
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              size="sm"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${autoRefresh ? 'animate-spin' : ''}`} />
+              Auto-refresh
+            </Button>
+            <Button variant="outline" size="sm">
+              <Download className="w-4 h-4 mr-2" />
+              Export
+            </Button>
+          </div>
+        </motion.div>
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{overview?.totalRequests.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              {overview?.todayRequests} today
-            </p>
-          </CardContent>
-        </Card>
+        {/* Time Range Selector */}
+        <motion.div
+          {...fadeInUp}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="flex gap-2"
+        >
+          {[7, 30, 90].map((days) => (
+            <Button
+              key={days}
+              variant={timeRange === days ? "default" : "outline"}
+              size="sm"
+              onClick={() => setTimeRange(days)}
+            >
+              Last {days} days
+            </Button>
+          ))}
+        </motion.div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Cost</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${overview?.totalCost.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">
-              ${overview?.todayCost.toFixed(2)} today
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {((overview?.successRate || 0) * 100).toFixed(1)}%
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {overview?.successRate >= 0.95 ? 'Excellent' : 'Needs attention'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Latency</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{overview?.avgLatency}ms</div>
-            <p className="text-xs text-muted-foreground">
-              Response time
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts */}
-      <Tabs defaultValue="costs" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="costs">Cost Breakdown</TabsTrigger>
-          <TabsTrigger value="usage">Usage Trends</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="costs" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Cost by Provider */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Cost by Provider</CardTitle>
-                <CardDescription>Last {timeRange} days</CardDescription>
+        {/* Phase 2 & 3: Overview Cards with glass morphism and stagger animation */}
+        <motion.div
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+        >
+          <motion.div variants={staggerItem}>
+            <Card className="border-white/10 bg-black/30 backdrop-blur-md">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
+                <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
+                <div className="text-2xl font-bold">{overview?.totalRequests.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground">
+                  {overview?.todayRequests} today
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={staggerItem}>
+            <Card className="border-white/10 bg-black/30 backdrop-blur-md">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Cost</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">${overview?.totalCost.toFixed(2)}</div>
+                <p className="text-xs text-muted-foreground">
+                  ${overview?.todayCost.toFixed(2)} today
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={staggerItem}>
+            <Card className="border-white/10 bg-black/30 backdrop-blur-md">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {((overview?.successRate || 0) * 100).toFixed(1)}%
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {overview?.successRate >= 0.95 ? 'Excellent' : 'Needs attention'}
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={staggerItem}>
+            <Card className="border-white/10 bg-black/30 backdrop-blur-md">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Avg Latency</CardTitle>
+                <AlertCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{overview?.avgLatency}ms</div>
+                <p className="text-xs text-muted-foreground">
+                  Response time
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
+
+        {/* Charts */}
+        <motion.div
+          {...fadeInUp}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <Tabs defaultValue="costs" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="costs">Cost Breakdown</TabsTrigger>
+              <TabsTrigger value="usage">Usage Trends</TabsTrigger>
+              <TabsTrigger value="performance">Performance</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="costs" className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Cost by Provider */}
+                <Card className="border-white/10 bg-black/30 backdrop-blur-md">
+                  <CardHeader>
+                    <CardTitle>Cost by Provider</CardTitle>
+                    <CardDescription>Last {timeRange} days</CardDescription>
+                  </CardHeader>
+                  <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
@@ -267,16 +326,16 @@ export default function AdminDashboard() {
                     <Tooltip />
                   </PieChart>
                 </ResponsiveContainer>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
 
-            {/* Cost by Function */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Cost by Function</CardTitle>
-                <CardDescription>Last {timeRange} days</CardDescription>
-              </CardHeader>
-              <CardContent>
+                {/* Cost by Function */}
+                <Card className="border-white/10 bg-black/30 backdrop-blur-md">
+                  <CardHeader>
+                    <CardTitle>Cost by Function</CardTitle>
+                    <CardDescription>Last {timeRange} days</CardDescription>
+                  </CardHeader>
+                  <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={overview?.byFunction || []}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -286,18 +345,18 @@ export default function AdminDashboard() {
                     <Bar dataKey="cost" fill="#8884d8" />
                   </BarChart>
                 </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
 
-        <TabsContent value="usage" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Daily Request Volume</CardTitle>
-              <CardDescription>Last {timeRange} days</CardDescription>
-            </CardHeader>
-            <CardContent>
+            <TabsContent value="usage" className="space-y-4">
+              <Card className="border-white/10 bg-black/30 backdrop-blur-md">
+                <CardHeader>
+                  <CardTitle>Daily Request Volume</CardTitle>
+                  <CardDescription>Last {timeRange} days</CardDescription>
+                </CardHeader>
+                <CardContent>
               <ResponsiveContainer width="100%" height={400}>
                 <LineChart data={Array.isArray(dailyData) ? dailyData.slice(0, 30).reverse() : []}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -309,17 +368,17 @@ export default function AdminDashboard() {
                   <Line type="monotone" dataKey="failed_requests" stroke="#FF8042" name="Failed" />
                 </LineChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-        <TabsContent value="performance" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Average Latency by Function</CardTitle>
-              <CardDescription>Response time performance</CardDescription>
-            </CardHeader>
-            <CardContent>
+            <TabsContent value="performance" className="space-y-4">
+              <Card className="border-white/10 bg-black/30 backdrop-blur-md">
+                <CardHeader>
+                  <CardTitle>Average Latency by Function</CardTitle>
+                  <CardDescription>Response time performance</CardDescription>
+                </CardHeader>
+                <CardContent>
               <div className="space-y-4">
                 {overview?.byFunction?.map((func, index) => (
                   <div key={index} className="flex items-center justify-between">
@@ -338,10 +397,12 @@ export default function AdminDashboard() {
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </motion.div>
+      </div>
+    </>
   );
 }

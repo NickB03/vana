@@ -326,6 +326,20 @@ const Home = () => {
 
   return (
     <>
+      {/* Global shader background - persists throughout all phases */}
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -1 }}>
+        <ShaderBackground />
+      </div>
+
+      {/* Subtle gradient overlay - maintains consistent look across phases */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          zIndex: -1,
+          background: 'radial-gradient(125% 125% at 50% 10%, transparent 40%, rgba(30, 41, 59, 0.2) 100%)',
+        }}
+      />
+
       {/* Backdrop overlay - creates dramatic transition moment */}
       {phase !== "landing" && (
         <motion.div
@@ -346,8 +360,6 @@ const Home = () => {
       {/* Landing page content - renders in normal flow for scrolling */}
       {phase !== "app" && (
         <div className="relative">
-          {/* Shader background - animated WebGL grid NOT affected by blur */}
-          <ShaderBackground />
 
           {/* Content layer - affected by blur and fade */}
           <motion.div
@@ -419,11 +431,6 @@ const Home = () => {
           }
           transition={{ duration: 0 }}
         >
-          {/* Extended shader background for visual continuity */}
-          <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -1 }}>
-            <ShaderBackground className="opacity-30" />
-          </div>
-
           <SidebarProvider defaultOpen={true}>
             <ChatSidebar
               sessions={sessions}
@@ -434,12 +441,7 @@ const Home = () => {
               isLoading={sessionsLoading}
             />
 
-            <SidebarInset
-              className="relative"
-              style={{
-                background: 'radial-gradient(125% 125% at 50% 10%, #000000 40%, #1e293b 100%)',
-              }}
-            >
+            <SidebarInset className="relative bg-transparent">
             <main className="flex h-[100dvh] flex-col overflow-hidden">
               {/* Header */}
               <header className="bg-black/40 backdrop-blur-sm sticky top-0 z-20 flex h-16 w-full shrink-0 items-center justify-between gap-2 px-4">
