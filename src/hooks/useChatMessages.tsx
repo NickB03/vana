@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ensureValidSession, getAuthErrorMessage } from "@/utils/authHelpers";
 import { chatRequestThrottle } from "@/utils/requestThrottle";
-import { StructuredReasoning } from "@/types/reasoning";
+import { StructuredReasoning, parseReasoningSteps } from "@/types/reasoning";
 
 export interface ChatMessage {
   id: string;
@@ -92,6 +92,16 @@ export function useChatMessages(
     reasoning?: string,
     reasoningSteps?: StructuredReasoning
   ) => {
+    // Validate reasoning steps before saving - will return null if invalid
+    // This prevents 400 errors from database constraint violations
+    const validatedReasoningSteps = reasoningSteps
+      ? parseReasoningSteps(reasoningSteps)
+      : null;
+
+    if (validatedReasoningSteps === false || (reasoningSteps && !validatedReasoningSteps)) {
+      console.warn("Invalid reasoning steps, using null instead", reasoningSteps);
+    }
+
     // For guest users (no sessionId), add message to local state only
     if (!sessionId) {
       const guestMessage: ChatMessage = {
@@ -100,7 +110,7 @@ export function useChatMessages(
         role,
         content,
         reasoning: reasoning || null,
-        reasoning_steps: reasoningSteps || null, // NEW: Include reasoning steps
+        reasoning_steps: validatedReasoningSteps, // FIX: Use validated reasoning steps
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, guestMessage]);
@@ -116,7 +126,7 @@ export function useChatMessages(
           role,
           content,
           reasoning,
-          reasoning_steps: reasoningSteps, // NEW: Include reasoning steps
+          reasoning_steps: validatedReasoningSteps, // FIX: Use validated reasoning steps
         })
         .select()
         .single();
@@ -357,7 +367,8 @@ export function useChatMessages(
             // ========================================
             if (parsed.type === 'reasoning') {
               // Check sequence number to prevent out-of-order updates
-              if (parsed.sequence <= lastSequence) {
+              // Use < not <= to allow the first event with sequence 0
+              if (parsed.sequence < lastSequence) {
                 console.warn('[StreamProgress] Ignoring out-of-order reasoning event');
                 continue;
               }
