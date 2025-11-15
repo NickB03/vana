@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { supabase } from "@/integrations/supabase/client";
 import { LoginForm } from "@/components/LoginForm";
 import { useToast } from "@/hooks/use-toast";
-import { ShaderBackground } from "@/components/ui/shader-background";
+import { PageLayout } from "@/components/layout/PageLayout";
 import { fadeInUp } from "@/utils/animationConstants";
 
 export default function Auth() {
@@ -117,40 +117,21 @@ export default function Auth() {
   }, [navigate, toast]);
 
   return (
-    <>
-      {/* Phase 1: Background System */}
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -1 }}>
-        <ShaderBackground className="opacity-30" />
+    <PageLayout className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+      <div className="w-full max-w-sm">
+        {isProcessingOAuth ? (
+          <motion.div
+            {...fadeInUp}
+            transition={{ duration: 0.3 }}
+            className="flex flex-col items-center gap-4"
+          >
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="text-sm text-muted-foreground">Completing sign in...</p>
+          </motion.div>
+        ) : (
+          <LoginForm />
+        )}
       </div>
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          zIndex: -1,
-          background: 'radial-gradient(125% 125% at 50% 10%, #000000 40%, #1e293b 100%)'
-        }}
-      />
-
-      {/* Phase 3 & 5: Page entrance animation with processing state */}
-      <motion.div
-        {...fadeInUp}
-        transition={{ duration: 0.3 }}
-        className="flex min-h-svh w-full items-center justify-center p-6 md:p-10"
-      >
-        <div className="w-full max-w-sm">
-          {isProcessingOAuth ? (
-            <motion.div
-              {...fadeInUp}
-              transition={{ duration: 0.3 }}
-              className="flex flex-col items-center gap-4"
-            >
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <p className="text-sm text-muted-foreground">Completing sign in...</p>
-            </motion.div>
-          ) : (
-            <LoginForm />
-          )}
-        </div>
-      </motion.div>
-    </>
+    </PageLayout>
   );
 }

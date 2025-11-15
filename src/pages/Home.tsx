@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { useScrollTransition } from "@/hooks/useScrollTransition";
 import { useGuestSession } from "@/hooks/useGuestSession";
 import { landingTransition, landingTransitionReduced } from "@/utils/animationConstants";
-import { ShaderBackground } from "@/components/ui/shader-background";
+import { PageLayout } from "@/components/layout/PageLayout";
 import { Hero } from "@/components/landing/Hero";
 import { ShowcaseSection } from "@/components/landing/ShowcaseSection";
 import { BenefitsSection } from "@/components/landing/BenefitsSection";
@@ -325,20 +325,15 @@ const Home = () => {
   const isTransitioning = phase === "transitioning";
 
   return (
-    <>
-      {/* Global shader background - persists throughout all phases */}
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -1 }}>
-        <ShaderBackground />
-      </div>
-
-      {/* Subtle gradient overlay - maintains consistent look across phases */}
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          zIndex: -1,
-          background: 'radial-gradient(125% 125% at 50% 10%, transparent 40%, rgba(30, 41, 59, 0.2) 100%)',
-        }}
-      />
+    <PageLayout
+      shaderOpacityClassName=""
+      gradientStyle={{
+        background:
+          "radial-gradient(125% 125% at 50% 10%, transparent 40%, rgba(30, 41, 59, 0.2) 100%)",
+      }}
+      enableEntranceAnimation={false}
+    >
+      {/* Global shader background and subtle gradient are provided by PageLayout */}
 
       {/* Backdrop overlay - creates dramatic transition moment */}
       {phase !== "landing" && (
@@ -612,7 +607,7 @@ const Home = () => {
         open={showLimitDialog}
         onOpenChange={setShowLimitDialog}
       />
-    </>
+    </PageLayout>
   );
 };
 

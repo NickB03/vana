@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { DollarSign, Activity, TrendingUp, AlertCircle, RefreshCw, Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { ShaderBackground } from "@/components/ui/shader-background";
+import { PageLayout } from "@/components/layout/PageLayout";
 import { fadeInUp, staggerContainer, staggerItem } from "@/utils/animationConstants";
 
 interface OverviewData {
@@ -131,49 +131,18 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <>
-        {/* Phase 1 & 5: Background System with loading state */}
-        <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -1 }}>
-          <ShaderBackground className="opacity-30" />
+      <PageLayout className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4" />
+          <p>Loading analytics...</p>
         </div>
-        <div
-          className="fixed inset-0 pointer-events-none"
-          style={{
-            zIndex: -1,
-            background: 'radial-gradient(125% 125% at 50% 10%, #000000 40%, #1e293b 100%)'
-          }}
-        />
-        <motion.div
-          {...fadeInUp}
-          transition={{ duration: 0.3 }}
-          className="flex items-center justify-center min-h-screen"
-        >
-          <div className="text-center">
-            <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4" />
-            <p>Loading analytics...</p>
-          </div>
-        </motion.div>
-      </>
+      </PageLayout>
     );
   }
 
   return (
-    <>
-      {/* Phase 1: Background System */}
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -1 }}>
-        <ShaderBackground className="opacity-30" />
-      </div>
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          zIndex: -1,
-          background: 'radial-gradient(125% 125% at 50% 10%, #000000 40%, #1e293b 100%)'
-        }}
-      />
-
-      {/* Phase 4: Container with spacing consistency */}
-      <div className="container mx-auto p-6 space-y-8">
-        {/* Header */}
+    <PageLayout className="container mx-auto p-6 space-y-8" enableEntranceAnimation={false}>
+      {/* Header */}
         <motion.div
           {...fadeInUp}
           transition={{ duration: 0.3 }}
@@ -402,7 +371,6 @@ export default function AdminDashboard() {
             </TabsContent>
           </Tabs>
         </motion.div>
-      </div>
-    </>
+      </PageLayout>
   );
 }
