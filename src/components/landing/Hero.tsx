@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
 import { DemoPreview } from "./DemoPreview";
 import { motion } from "motion/react";
 import { staggerContainer, staggerItem } from "@/utils/animationConstants";
@@ -13,6 +12,13 @@ export const Hero = () => {
   const scrollToDemo = () => {
     const showcaseSection = document.getElementById("showcase");
     showcaseSection?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const scrollToApp = () => {
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: "smooth"
+    });
   };
 
   return (
@@ -53,9 +59,9 @@ export const Hero = () => {
               <Button
                 size="lg"
                 className="bg-white hover:bg-gray-100 text-black transition-all hover:scale-105 active:scale-95"
-                asChild
+                onClick={scrollToApp}
               >
-                <Link to="/">Get Started Free</Link>
+                Get Started Free
               </Button>
               <Button
                 size="lg"
