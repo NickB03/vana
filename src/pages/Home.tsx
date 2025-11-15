@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { useScrollTransition } from "@/hooks/useScrollTransition";
 import { useGuestSession } from "@/hooks/useGuestSession";
 import { landingTransition, landingTransitionReduced } from "@/utils/animationConstants";
-import { ShaderBackground } from "@/components/ui/shader-background";
+import { PageLayout } from "@/components/layout/PageLayout";
 import { Hero } from "@/components/landing/Hero";
 import { ShowcaseSection } from "@/components/landing/ShowcaseSection";
 import { BenefitsSection } from "@/components/landing/BenefitsSection";
@@ -325,7 +325,16 @@ const Home = () => {
   const isTransitioning = phase === "transitioning";
 
   return (
-    <>
+    <PageLayout
+      shaderOpacityClassName=""
+      gradientStyle={{
+        background:
+          "radial-gradient(125% 125% at 50% 10%, transparent 40%, rgba(30, 41, 59, 0.2) 100%)",
+      }}
+      enableEntranceAnimation={false}
+    >
+      {/* Global shader background and subtle gradient are provided by PageLayout */}
+
       {/* Backdrop overlay - creates dramatic transition moment */}
       {phase !== "landing" && (
         <motion.div
@@ -346,8 +355,6 @@ const Home = () => {
       {/* Landing page content - renders in normal flow for scrolling */}
       {phase !== "app" && (
         <div className="relative">
-          {/* Shader background - animated WebGL grid NOT affected by blur */}
-          <ShaderBackground />
 
           {/* Content layer - affected by blur and fade */}
           <motion.div
@@ -419,11 +426,6 @@ const Home = () => {
           }
           transition={{ duration: 0 }}
         >
-          {/* Extended shader background for visual continuity */}
-          <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -1 }}>
-            <ShaderBackground className="opacity-30" />
-          </div>
-
           <SidebarProvider defaultOpen={true}>
             <ChatSidebar
               sessions={sessions}
@@ -434,12 +436,7 @@ const Home = () => {
               isLoading={sessionsLoading}
             />
 
-            <SidebarInset
-              className="relative"
-              style={{
-                background: 'radial-gradient(125% 125% at 50% 10%, #000000 40%, #1e293b 100%)',
-              }}
-            >
+            <SidebarInset className="relative bg-transparent">
             <main className="flex h-[100dvh] flex-col overflow-hidden">
               {/* Header */}
               <header className="bg-black/40 backdrop-blur-sm sticky top-0 z-20 flex h-16 w-full shrink-0 items-center justify-between gap-2 px-4">
@@ -610,7 +607,7 @@ const Home = () => {
         open={showLimitDialog}
         onOpenChange={setShowLimitDialog}
       />
-    </>
+    </PageLayout>
   );
 };
 

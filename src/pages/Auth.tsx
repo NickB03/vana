@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "motion/react";
 import { supabase } from "@/integrations/supabase/client";
 import { LoginForm } from "@/components/LoginForm";
 import { useToast } from "@/hooks/use-toast";
+import { PageLayout } from "@/components/layout/PageLayout";
+import { fadeInUp } from "@/utils/animationConstants";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -114,17 +117,21 @@ export default function Auth() {
   }, [navigate, toast]);
 
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+    <PageLayout className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm">
         {isProcessingOAuth ? (
-          <div className="flex flex-col items-center gap-4">
+          <motion.div
+            {...fadeInUp}
+            transition={{ duration: 0.3 }}
+            className="flex flex-col items-center gap-4"
+          >
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             <p className="text-sm text-muted-foreground">Completing sign in...</p>
-          </div>
+          </motion.div>
         ) : (
           <LoginForm />
         )}
       </div>
-    </div>
+    </PageLayout>
   );
 }
