@@ -1,5 +1,4 @@
 import { memo } from "react";
-import { MessageContent } from "@/components/prompt-kit/message";
 import { Markdown } from "@/components/ui/markdown";
 import { InlineImage } from "@/components/InlineImage";
 import { ArtifactCard } from "@/components/ArtifactCard";
@@ -40,14 +39,16 @@ export const MessageWithArtifacts = memo(({
   return (
     <>
       {/* Render message text without artifact tags */}
-      <MessageContent
+      {/* FIX: Use <div> instead of <MessageContent> (which renders as <p>) */}
+      {/* This prevents invalid HTML nesting of block elements inside <p> tags */}
+      <div
         className={`prose flex-1 rounded-lg bg-transparent p-0 pl-3 text-foreground border-l-4 transition-all duration-150 ${className}`}
         style={{
           borderLeftColor: 'hsl(var(--accent-ai) / 0.4)',
         }}
       >
         <Markdown id={messageId}>{cleanContent}</Markdown>
-      </MessageContent>
+      </div>
 
       {/* Render inline images */}
       {imageArtifacts.map(artifact => (
