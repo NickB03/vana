@@ -7,6 +7,7 @@ import { ChatSession } from "@/hooks/useChatSessions";
 import { ViggleLogo } from "@/components/ViggleLogo";
 import { SidebarItem } from "@/components/SidebarItem";
 import { UserProfileButton } from "@/components/UserProfileButton";
+import { useIsMobile } from "@/hooks/use-mobile";
 interface ChatSidebarProps {
   sessions: ChatSession[];
   currentSessionId?: string;
@@ -54,12 +55,20 @@ export function ChatSidebar({
 }: ChatSidebarProps) {
   const [hoveredSessionId, setHoveredSessionId] = useState<string | null>(null);
   const [isLogoHovered, setIsLogoHovered] = useState(false);
-  const { state, toggleSidebar } = useSidebar();
+  const isMobile = useIsMobile();
+  const { state, toggleSidebar, open, setOpen } = useSidebar();
   const collapsed = state === "collapsed";
 
   const groupedSessions = groupChatsByPeriod(sessions);
 
-  return <Sidebar collapsible="icon">
+  return <>
+    <Sidebar
+      collapsible="icon"
+      className={cn(
+        "md:w-64 md:max-w-64",
+        isMobile && "w-[85vw] max-w-[320px]"
+      )}
+    >
       <SidebarHeader className={cn(
         "group flex flex-row items-center py-2",
         collapsed ? "justify-center px-0" : "justify-between px-3 gap-2"
@@ -142,6 +151,7 @@ export function ChatSidebar({
                         className={cn(
                           "flex items-center hover:bg-accent/50 transition-all duration-150 ease-out overflow-hidden border-l-4 border-transparent",
                           collapsed ? "justify-center px-2" : "justify-start px-3 group-hover/item:pr-12",
+                          "min-h-[44px] py-2"
                         )}
                         style={currentSessionId === session.id ? {
                           backgroundColor: 'hsl(var(--accent-primary) / 0.12)',
@@ -176,5 +186,15 @@ export function ChatSidebar({
       <SidebarFooter className="p-2 border-t border-border/50">
         <UserProfileButton collapsed={collapsed} />
       </SidebarFooter>
-    </Sidebar>;
+    </Sidebar>
+
+    {/* Mobile backdrop */}
+    {isMobile && open && (
+      <div
+        className="fixed inset-0 bg-black/50 z-40 md:hidden"
+        onClick={() => setOpen(false)}
+        aria-hidden="true"
+      />
+    )}
+  </>;
 }
