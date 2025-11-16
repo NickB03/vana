@@ -124,22 +124,24 @@ export default function GalleryHoverCarousel({
 
         <div className="w-full max-w-full relative">
           {/* Navigation Buttons */}
-          <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 flex justify-between pointer-events-none z-10 px-1">
+          <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 flex justify-between pointer-events-none z-10 px-1 sm:px-4">
             <Button
               variant="outline"
               size="icon"
               onClick={handlePrev}
-              className="h-12 w-12 rounded-full pointer-events-auto bg-background/30 backdrop-blur-sm hover:bg-background/50 border-white/30 opacity-70 hover:opacity-100 transition-opacity"
+              className="h-12 w-12 sm:h-14 sm:w-14 rounded-full pointer-events-auto bg-background/30 backdrop-blur-sm hover:bg-background/50 border-white/30 opacity-70 hover:opacity-100 transition-opacity touch-none"
+              aria-label="Previous suggestions"
             >
-              <ChevronLeft className="h-6 w-6" />
+              <ChevronLeft className="h-6 w-6 sm:h-7 sm:w-7" />
             </Button>
             <Button
               variant="outline"
               size="icon"
               onClick={handleNext}
-              className="h-12 w-12 rounded-full pointer-events-auto bg-background/30 backdrop-blur-sm hover:bg-background/50 border-white/30 opacity-70 hover:opacity-100 transition-opacity"
+              className="h-12 w-12 sm:h-14 sm:w-14 rounded-full pointer-events-auto bg-background/30 backdrop-blur-sm hover:bg-background/50 border-white/30 opacity-70 hover:opacity-100 transition-opacity touch-none"
+              aria-label="Next suggestions"
             >
-              <ChevronRight className="h-6 w-6" />
+              <ChevronRight className="h-6 w-6 sm:h-7 sm:w-7" />
             </Button>
           </div>
           <Carousel
@@ -147,10 +149,12 @@ export default function GalleryHoverCarousel({
             opts={{
               loop: true,
               align: "start",
+              dragFree: true,
+              containScroll: "trimSnaps",
             }}
-            className="relative w-full max-w-full"
+            className="relative w-full max-w-full touch-pan-x"
           >
-            <CarouselContent className="-ml-2 md:-ml-4 py-3 sm:py-4">
+            <CarouselContent className="-ml-2 md:-ml-4 py-3 sm:py-4 select-none">
               {items.map((item) => {
                 const isLoading = loadingItemId === item.id;
                 return (
