@@ -41,9 +41,9 @@ export const MessageWithArtifacts = memo(({
       {/* Render message text without artifact tags */}
       {/* Prose classes applied directly to Markdown component for proper typography */}
       <div
-        className={`flex-1 rounded-lg bg-transparent p-0 pl-3 border-l-4 transition-all duration-150 ${className}`}
+        className={`flex-1 rounded-lg bg-muted/30 dark:bg-muted/20 p-3 pl-4 border-l-4 shadow-sm transition-all duration-150 ${className}`}
         style={{
-          borderLeftColor: 'hsl(var(--accent-ai) / 0.4)',
+          borderLeftColor: 'hsl(var(--accent-ai) / 0.5)',
         }}
       >
         <Markdown

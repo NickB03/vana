@@ -53,7 +53,7 @@ export const CHAT_SPACING = {
     container: 'px-3 pb-3 md:px-5 md:pb-5',
     textarea: 'pl-4 pt-3',
   },
-  messageList: 'px-5 py-12',
+  messageList: 'px-5 py-8',
 } as const;
 
 /**

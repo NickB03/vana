@@ -94,6 +94,14 @@ export function ChatInterface({
   const [artifactMode, setArtifactMode] = useState(initialArtifactMode);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Memoized artifact open handler to prevent breaking MessageWithArtifacts memo
+  const handleArtifactOpen = useCallback((artifact: ArtifactData) => {
+    setCurrentArtifact(artifact);
+    if (onCanvasToggle) {
+      onCanvasToggle(true);
+    }
+  }, [onCanvasToggle]);
+
   // Define handleSend early using useCallback to avoid initialization errors
   const handleSend = useCallback(async (message?: string) => {
     const messageToSend = message || input;
@@ -298,41 +306,49 @@ export function ChatInterface({
 
   // Render chat content (messages + input) - reusable for both mobile and desktop
   const renderChatContent = () => (
-    <div className="flex h-full flex-col">
-            <ChatContainerRoot className="relative flex flex-1 flex-col min-h-0">
-              <ChatContainerContent className={combineSpacing("flex-1 space-y-0", CHAT_SPACING.messageList)}>
-                {/* Guest mode system message - show after first message */}
-                {isGuest && messages.length > 0 && (
-                  <div className="mx-auto w-full max-w-3xl px-6 py-3">
-                    <SystemMessage
-                      variant="action"
-                      fill
-                      cta={{
-                        label: "Sign In",
-                        onClick: () => navigate("/auth")
-                      }}
-                    >
-                      {guestMessageCount < guestMaxMessages ? (
-                        <>You have <strong>{guestMaxMessages - guestMessageCount}</strong> free message{guestMaxMessages - guestMessageCount !== 1 ? 's' : ''} remaining. Sign in for increased limits on the free tier!</>
-                      ) : (
-                        <>You've reached your free message limit. Sign in to continue chatting with increased limits!</>
-                      )}
-                    </SystemMessage>
-                  </div>
+    <div className="flex flex-1 flex-col min-h-0 p-4 gap-2">
+      {/* Fixed chat card between header and prompt; content inside scrolls */}
+      <div className="relative mx-auto flex flex-1 min-h-0 w-full max-w-3xl rounded-3xl border border-input bg-card shadow-lg">
+        <ChatContainerRoot className="flex flex-1 flex-col min-h-0 overflow-hidden">
+          <ChatContainerContent
+            className={combineSpacing(
+              "space-y-0 w-full",
+              CHAT_SPACING.messageList
+            )}
+          aria-label="Chat conversation"
+        >
+          {/* Guest mode system message - show after first message */}
+          {isGuest && messages.length > 0 && (
+            <div className="mx-auto w-full max-w-3xl px-6 py-3">
+              <SystemMessage
+                variant="action"
+                fill
+                cta={{
+                  label: "Sign In",
+                  onClick: () => navigate("/auth")
+                }}
+              >
+                {guestMessageCount < guestMaxMessages ? (
+                  <>You have <strong>{guestMaxMessages - guestMessageCount}</strong> free message{guestMaxMessages - guestMessageCount !== 1 ? 's' : ''} remaining. Sign in for increased limits on the free tier!</>
+                ) : (
+                  <>You've reached your free message limit. Sign in to continue chatting with increased limits!</>
                 )}
+              </SystemMessage>
+            </div>
+          )}
 
-                {messages.map((message, index) => {
-                  const isAssistant = message.role === "assistant";
-                  const isLastMessage = index === messages.length - 1;
+          {messages.map((message, index) => {
+            const isAssistant = message.role === "assistant";
+            const isLastMessage = index === messages.length - 1;
 
-                  // Only animate new messages (last message when not streaming)
-                  // This prevents performance issues with long chat histories
-                  const shouldAnimate = isLastMessage && !isStreaming;
+            // Only animate new messages (last message when not streaming)
+            // This prevents performance issues with long chat histories
+            const shouldAnimate = isLastMessage && !isStreaming;
 
-                  const messageContent = (
+            const messageContent = (
                     <MessageComponent
                       className={cn(
-                        "chat-message mx-auto flex w-full max-w-3xl flex-col gap-2 px-4 sm:px-6",
+                        "chat-message mx-auto flex w-full max-w-3xl flex-col gap-2 px-2 sm:px-4",
                         isAssistant ? "items-start" : "items-end"
                       )}
                     >
@@ -349,17 +365,12 @@ export function ChatInterface({
                           <MessageWithArtifacts
                             content={message.content}
                             messageId={message.id}
-                            onArtifactOpen={(artifact) => {
-                              setCurrentArtifact(artifact);
-                              if (onCanvasToggle) {
-                                onCanvasToggle(true);
-                              }
-                            }}
+                            onArtifactOpen={handleArtifactOpen}
                           />
 
                           <MessageActions
                             className={cn(
-                              "-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100",
+                              "-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100",
                               isLastMessage && "opacity-100"
                             )}
                           >
@@ -393,7 +404,7 @@ export function ChatInterface({
                           </MessageContent>
                           <MessageActions
                             className={cn(
-                              "flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+                              "flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100"
                             )}
                           >
                             <MessageAction tooltip="Edit" delayDuration={100}>
@@ -436,7 +447,7 @@ export function ChatInterface({
                 })}
 
                 {isStreaming && streamingMessage && (
-                  <MessageComponent className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 items-start">
+                  <MessageComponent className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-2 sm:px-4 items-start">
                     <div className="group flex w-full flex-col gap-0">
                       <ReasoningErrorBoundary fallback={<ThinkingIndicator status="Loading reasoning..." />}>
                         <ReasoningIndicator
@@ -448,73 +459,69 @@ export function ChatInterface({
                       </ReasoningErrorBoundary>
                       <MessageWithArtifacts
                         content={streamingMessage}
-                        onArtifactOpen={(artifact) => {
-                          setCurrentArtifact(artifact);
-                          if (onCanvasToggle) {
-                            onCanvasToggle(true);
-                          }
-                        }}
+                        onArtifactOpen={handleArtifactOpen}
                       />
                     </div>
                   </MessageComponent>
                 )}
 
-                {(isLoading || isStreaming) && !streamingMessage && (
-                  <MessageSkeleton variant="assistant" />
-                )}
-              </ChatContainerContent>
+            {(isLoading || isStreaming) && !streamingMessage && (
+              <MessageSkeleton variant="assistant" />
+            )}
+        </ChatContainerContent>
 
-              <div className="absolute bottom-4 right-4">
-                <ScrollButton className="shadow-sm" />
-              </div>
-            </ChatContainerRoot>
+        <div className="absolute bottom-4 right-4">
+          <ScrollButton className="shadow-sm" />
+        </div>
+      </ChatContainerRoot>
+      </div>
 
-            {/* Prompt Input - stays in left panel */}
-            <div className={combineSpacing("shrink-0 bg-transparent safe-mobile-input", CHAT_SPACING.input.container, SAFE_AREA_SPACING.bottom)}>
-              <div className="mx-auto max-w-3xl">
-                <PromptInput
-                  value={input}
-                  onValueChange={setInput}
-                  isLoading={isLoading || isStreaming}
-                  onSubmit={handleSend}
-                  className="w-full relative rounded-3xl border border-input bg-popover p-0 pt-1 shadow-xs"
-                >
-                  <div className="flex flex-col">
-                    <PromptInputTextarea
-                      placeholder="Ask anything"
-                      className={combineSpacing("min-h-[44px] text-base leading-[1.3]", CHAT_SPACING.input.textarea)}
-                    />
-                    <PromptInputControls
-                      className="mt-5 px-3 pb-3"
-                      imageMode={imageMode}
-                      onImageModeChange={setImageMode}
-                      artifactMode={artifactMode}
-                      onArtifactModeChange={setArtifactMode}
-                      isCanvasOpen={isCanvasOpen}
-                      currentArtifact={currentArtifact}
-                      onCreateClick={handleCreateClick}
-                      isLoading={isLoading}
-                      isStreaming={isStreaming}
-                      input={input}
-                      onSend={() => handleSend()}
-                      showFileUpload={true}
-                      fileInputRef={fileInputRef}
-                      isUploadingFile={isUploadingFile}
-                      onFileUpload={handleFileUpload}
-                      sendIcon="arrow"
-                    />
-                  </div>
-                </PromptInput>
-              </div>
+      {/* Prompt Input - stays in left panel */}
+      <div className={combineSpacing("shrink-0 bg-transparent safe-mobile-input", SAFE_AREA_SPACING.bottom)}>
+        <div className="mx-auto max-w-3xl w-full">
+          <PromptInput
+            value={input}
+            onValueChange={setInput}
+            isLoading={isLoading || isStreaming}
+            onSubmit={handleSend}
+            className="w-full relative rounded-3xl border border-input bg-popover p-0 pt-1 shadow-xs"
+          >
+            <div className="flex flex-col">
+              <PromptInputTextarea
+                placeholder="Ask anything"
+                className={combineSpacing("min-h-[44px] text-base leading-[1.3]", CHAT_SPACING.input.textarea)}
+              />
+              <PromptInputControls
+                className="mt-5 px-3 pb-3"
+                imageMode={imageMode}
+                onImageModeChange={setImageMode}
+                artifactMode={artifactMode}
+                onArtifactModeChange={setArtifactMode}
+                isCanvasOpen={isCanvasOpen}
+                currentArtifact={currentArtifact}
+                onCreateClick={handleCreateClick}
+                isLoading={isLoading}
+                isStreaming={isStreaming}
+                input={input}
+                onSend={() => handleSend()}
+                showFileUpload={true}
+                fileInputRef={fileInputRef}
+                isUploadingFile={isUploadingFile}
+                onFileUpload={handleFileUpload}
+                sendIcon="arrow"
+              />
             </div>
-          </div>
+          </PromptInput>
+        </div>
+      </div>
+    </div>
   );
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex flex-1 flex-col min-h-0">
       {isMobile ? (
         // Mobile Layout: Fullscreen artifact overlay or chat
-        <div className="relative h-full">
+        <div className="relative flex-1 min-h-0">
           {isCanvasOpen && currentArtifact ? (
             // Mobile: Fullscreen artifact
             <div className="fixed inset-0 z-50 bg-background">
@@ -556,7 +563,7 @@ export function ChatInterface({
             defaultSize={isCanvasOpen && currentArtifact ? 30 : 100}
             minSize={20}
             maxSize={isCanvasOpen && currentArtifact ? 50 : 100}
-            className="md:min-w-[280px]"
+            className="md:min-w-[280px] flex flex-col"
           >
             {renderChatContent()}
           </ResizablePanel>
@@ -564,7 +571,7 @@ export function ChatInterface({
           {isCanvasOpen && currentArtifact && (
             <>
               <ResizableHandle withHandle className="hidden md:flex" />
-              <ResizablePanel defaultSize={70} minSize={50} className="md:min-w-[400px]">
+              <ResizablePanel defaultSize={70} minSize={50} className="md:min-w-[400px] flex flex-col">
                 <Artifact
                   artifact={currentArtifact}
                   onClose={handleCloseCanvas}
