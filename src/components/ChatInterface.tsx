@@ -306,9 +306,9 @@ export function ChatInterface({
 
   // Render chat content (messages + input) - reusable for both mobile and desktop
   const renderChatContent = () => (
-    <div className="flex flex-1 flex-col min-h-0 p-4 gap-2">
-      {/* Fixed chat card between header and prompt; content inside scrolls */}
-      <div className="relative mx-auto flex flex-1 min-h-0 w-full max-w-3xl rounded-3xl border border-input bg-card shadow-lg">
+    <div className="flex flex-1 flex-col min-h-0 p-4">
+      {/* Unified chat card with embedded prompt input */}
+      <div className="relative mx-auto flex flex-1 min-h-0 w-full max-w-4xl rounded-3xl bg-black/50 backdrop-blur-sm shadow-lg border border-border/30">
         <ChatContainerRoot className="flex flex-1 flex-col min-h-0 overflow-hidden">
           <ChatContainerContent
             className={combineSpacing(
@@ -319,7 +319,7 @@ export function ChatInterface({
         >
           {/* Guest mode system message - show after first message */}
           {isGuest && messages.length > 0 && (
-            <div className="mx-auto w-full max-w-3xl px-6 py-3">
+            <div className="mx-auto w-full max-w-4xl px-6 py-3">
               <SystemMessage
                 variant="action"
                 fill
@@ -348,7 +348,7 @@ export function ChatInterface({
             const messageContent = (
                     <MessageComponent
                       className={cn(
-                        "chat-message mx-auto flex w-full max-w-3xl flex-col gap-2 px-2 sm:px-4",
+                        "chat-message mx-auto flex w-full max-w-4xl flex-col gap-2 px-2 sm:px-4",
                         isAssistant ? "items-start" : "items-end"
                       )}
                     >
@@ -447,7 +447,7 @@ export function ChatInterface({
                 })}
 
                 {isStreaming && streamingMessage && (
-                  <MessageComponent className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-2 sm:px-4 items-start">
+                  <MessageComponent className="mx-auto flex w-full max-w-4xl flex-col gap-2 px-2 sm:px-4 items-start">
                     <div className="group flex w-full flex-col gap-0">
                       <ReasoningErrorBoundary fallback={<ThinkingIndicator status="Loading reasoning..." />}>
                         <ReasoningIndicator
@@ -473,18 +473,15 @@ export function ChatInterface({
         <div className="absolute bottom-4 right-4">
           <ScrollButton className="shadow-sm" />
         </div>
-      </ChatContainerRoot>
-      </div>
 
-      {/* Prompt Input - stays in left panel */}
-      <div className={combineSpacing("shrink-0 bg-transparent safe-mobile-input", SAFE_AREA_SPACING.bottom)}>
-        <div className="mx-auto max-w-3xl w-full">
+        {/* Prompt Input - embedded within chat card */}
+        <div className={combineSpacing("shrink-0 bg-transparent safe-mobile-input px-4 pb-4", SAFE_AREA_SPACING.bottom)}>
           <PromptInput
             value={input}
             onValueChange={setInput}
             isLoading={isLoading || isStreaming}
             onSubmit={handleSend}
-            className="w-full relative rounded-3xl border border-input bg-popover p-0 pt-1 shadow-xs"
+            className="w-full relative rounded-xl bg-black/50 backdrop-blur-sm p-0 pt-1"
           >
             <div className="flex flex-col">
               <PromptInputTextarea
@@ -513,6 +510,7 @@ export function ChatInterface({
             </div>
           </PromptInput>
         </div>
+      </ChatContainerRoot>
       </div>
     </div>
   );

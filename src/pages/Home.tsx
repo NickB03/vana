@@ -23,11 +23,6 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Settings } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ThemeSwitcher } from "@/components/ui/theme-switcher";
-import { useTheme } from "@/hooks/use-theme";
-import { Check, Palette } from "lucide-react";
 import { PromptInput, PromptInputTextarea } from "@/components/prompt-kit/prompt-input";
 import { PromptInputControls } from "@/components/prompt-kit/prompt-input-controls";
 import GalleryHoverCarousel from "@/components/ui/gallery-hover-carousel";
@@ -45,7 +40,6 @@ import type { SuggestionItem } from "@/data/suggestions";
 const Home = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { themeMode, colorTheme, setThemeMode, setColorTheme } = useTheme();
 
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -171,13 +165,6 @@ const Home = () => {
     setShowChat(true);
   }, []);
 
-  /**
-   * Signs out user and redirects to auth page
-   */
-  const handleLogout = useCallback(async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
-  }, [navigate]);
 
   /**
    * Handles message submission from home input or chat interface
@@ -439,7 +426,7 @@ const Home = () => {
             <SidebarInset className="relative bg-transparent">
             <main className="flex h-[100dvh] flex-col overflow-hidden">
               {/* Header */}
-              <header className="bg-black/40 backdrop-blur-sm sticky top-0 z-20 flex h-16 w-full shrink-0 items-center justify-between gap-2 px-4">
+              <header className="bg-black/50 backdrop-blur-sm border-b border-border/30 sticky top-0 z-20 flex h-16 w-full shrink-0 items-center justify-between gap-2 px-4">
                 {/* Guest limit banner */}
                 {!isAuthenticated && guestSession.messageCount > 0 && (
                   <div className="flex-1 max-w-md">
@@ -450,69 +437,6 @@ const Home = () => {
                   </div>
                 )}
 
-                <div className="ml-auto flex items-center gap-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <Settings className="h-5 w-5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56" align="end">
-                      <DropdownMenuLabel>Settings</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-
-                      <div className="px-2 py-2">
-                        <div className="text-xs font-medium mb-2 text-muted-foreground">Theme Mode</div>
-                        <ThemeSwitcher value={themeMode} onChange={setThemeMode} />
-                      </div>
-
-                      <DropdownMenuSeparator />
-
-                      <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                          <Palette className="mr-2 h-4 w-4" />
-                          <span>Color Theme</span>
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent>
-                          <DropdownMenuItem onClick={() => setColorTheme("default")}>
-                            <Check className={`mr-2 h-4 w-4 ${colorTheme === "default" ? "opacity-100" : "opacity-0"}`} />
-                            <span>Default</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setColorTheme("charcoal")}>
-                            <Check className={`mr-2 h-4 w-4 ${colorTheme === "charcoal" ? "opacity-100" : "opacity-0"}`} />
-                            <span>Charcoal</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setColorTheme("gemini")}>
-                            <Check className={`mr-2 h-4 w-4 ${colorTheme === "gemini" ? "opacity-100" : "opacity-0"}`} />
-                            <span>Sky Blue</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setColorTheme("ocean")}>
-                            <Check className={`mr-2 h-4 w-4 ${colorTheme === "ocean" ? "opacity-100" : "opacity-0"}`} />
-                            <span>Ocean Breeze</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setColorTheme("sunset")}>
-                            <Check className={`mr-2 h-4 w-4 ${colorTheme === "sunset" ? "opacity-100" : "opacity-0"}`} />
-                            <span>Sunset Glow</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setColorTheme("forest")}>
-                            <Check className={`mr-2 h-4 w-4 ${colorTheme === "forest" ? "opacity-100" : "opacity-0"}`} />
-                            <span>Forest Sage</span>
-                          </DropdownMenuItem>
-                        </DropdownMenuSubContent>
-                      </DropdownMenuSub>
-                      <DropdownMenuSeparator />
-                      {isAuthenticated ? (
-                        <DropdownMenuItem onClick={handleLogout}>
-                          <span>Sign Out</span>
-                        </DropdownMenuItem>
-                      ) : (
-                        <DropdownMenuItem onClick={() => navigate("/auth")}>
-                          <span>Sign In</span>
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
               </header>
 
               {/* Main Content */}
@@ -537,11 +461,11 @@ const Home = () => {
                           onValueChange={setInput}
                           isLoading={isLoading}
                           onSubmit={handleSubmit}
-                          className="w-full relative rounded-3xl border border-input bg-popover p-0 pt-1 shadow-xs"
+                          className="w-full relative rounded-xl bg-black/50 backdrop-blur-sm p-0 pt-1"
                         >
                           <div className="flex flex-col">
                             <PromptInputTextarea
-                              placeholder="Ask me anything..."
+                              placeholder="Ask anything"
                               className="min-h-[44px] pl-4 pt-3 text-base leading-[1.3]"
                             />
                             <PromptInputControls

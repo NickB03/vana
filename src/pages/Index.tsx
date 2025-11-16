@@ -3,19 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarInset, useSidebar } from "@/components/ui/sidebar";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatInterface } from "@/components/ChatInterface";
-import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from "@/components/prompt-kit/prompt-input";
+import { PromptInput, PromptInputTextarea } from "@/components/prompt-kit/prompt-input";
+import { PromptInputControls } from "@/components/prompt-kit/prompt-input-controls";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Square, LogOut, Settings, Check, ChevronRight, ChevronLeft, Palette, Plus, WandSparkles, Send, ImagePlus } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 import { validateFile, sanitizeFilename } from "@/utils/fileValidation";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useTheme } from "@/hooks/use-theme";
 import { useChatSessions } from "@/hooks/useChatSessions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { ensureValidSession } from "@/utils/authHelpers";
 import GalleryHoverCarousel from "@/components/ui/gallery-hover-carousel";
 const IndexContent = () => {
@@ -23,12 +20,6 @@ const IndexContent = () => {
   const {
     toast
   } = useToast();
-  const {
-    themeMode,
-    colorTheme,
-    setThemeMode,
-    setColorTheme
-  } = useTheme();
   const {
     sessions,
     isLoading: sessionsLoading,
@@ -45,9 +36,10 @@ const IndexContent = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   const [hasArtifact, setHasArtifact] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [chatSendHandler, setChatSendHandler] = useState<((message?: string) => Promise<void>) | null>(null);
+  const [imageMode, setImageMode] = useState(false);
+  const [artifactMode, setArtifactMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     // Check authentication with session validation
@@ -154,10 +146,6 @@ const IndexContent = () => {
     window.history.pushState({
       showChat: true
     }, "", "/");
-  };
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
   };
   const handleSubmit = async () => {
     if (!input.trim()) return;
@@ -279,76 +267,12 @@ const IndexContent = () => {
   };
   return <>
       <ChatSidebar sessions={sessions} currentSessionId={currentSessionId} onSessionSelect={handleSessionSelect} onNewChat={handleNewChat} onDeleteSession={deleteSession} isLoading={sessionsLoading} />
-      <SidebarInset
-        className="relative"
-        style={{
-          background: 'radial-gradient(125% 125% at 50% 10%, #000000 40%, #1e293b 100%)'
-        }}
-      >
+      <SidebarInset className="relative bg-background">
         <main className="flex h-[100dvh] flex-col overflow-hidden">
-          {/* Header */}
-          <header className="bg-black/40 backdrop-blur-sm sticky top-0 z-20 flex h-16 w-full shrink-0 items-center justify-end gap-2 px-4" style={{
+          {/* Header - Empty for now, keeping structure for future additions */}
+          <header className="bg-black/50 backdrop-blur-sm border-b border-border/30 sticky top-0 z-20 flex h-16 w-full shrink-0 items-center justify-end gap-2 px-4" style={{
           paddingTop: 'var(--safe-area-inset-top)'
         }}>
-            <div className="flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Settings className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end">
-                  <DropdownMenuLabel>Settings</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  
-                  <div className="px-2 py-2">
-                    <div className="text-xs font-medium mb-2 text-muted-foreground">Theme Mode</div>
-                    <ThemeSwitcher value={themeMode} onChange={setThemeMode} />
-                  </div>
-
-                  <DropdownMenuSeparator />
-
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>
-                      <Palette className="mr-2 h-4 w-4" />
-                      <span>Color Theme</span>
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
-                      <DropdownMenuItem onClick={() => setColorTheme("default")}>
-                        <Check className={`mr-2 h-4 w-4 ${colorTheme === "default" ? "opacity-100" : "opacity-0"}`} />
-                        <span>Default</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setColorTheme("charcoal")}>
-                        <Check className={`mr-2 h-4 w-4 ${colorTheme === "charcoal" ? "opacity-100" : "opacity-0"}`} />
-                        <span>Charcoal</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setColorTheme("gemini")}>
-                        <Check className={`mr-2 h-4 w-4 ${colorTheme === "gemini" ? "opacity-100" : "opacity-0"}`} />
-                        <span>Sky Blue</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setColorTheme("ocean")}>
-                        <Check className={`mr-2 h-4 w-4 ${colorTheme === "ocean" ? "opacity-100" : "opacity-0"}`} />
-                        <span>Ocean Breeze</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setColorTheme("sunset")}>
-                        <Check className={`mr-2 h-4 w-4 ${colorTheme === "sunset" ? "opacity-100" : "opacity-0"}`} />
-                        <span>Sunset Glow</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setColorTheme("forest")}>
-                        <Check className={`mr-2 h-4 w-4 ${colorTheme === "forest" ? "opacity-100" : "opacity-0"}`} />
-                        <span>Forest Sage</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-                  <DropdownMenuSeparator />
-                  {isAuthenticated ? <DropdownMenuItem onClick={handleLogout}>
-                      <span>Sign Out</span>
-                    </DropdownMenuItem> : <DropdownMenuItem onClick={() => navigate("/auth")}>
-                      <span>Sign In</span>
-                    </DropdownMenuItem>}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
           </header>
 
           {/* Main Content */}
@@ -377,81 +301,28 @@ const IndexContent = () => {
                     onValueChange={handleValueChange}
                     isLoading={isLoading}
                     onSubmit={handleSubmit}
-                    className="w-full relative rounded-3xl border border-input bg-popover p-0 pt-1 shadow-xs"
+                    className="w-full relative rounded-xl bg-black/50 backdrop-blur-sm p-0 pt-1"
                   >
                     <div className="flex flex-col">
                       <PromptInputTextarea
-                        placeholder="Ask me anything..."
-                        className="min-h-[44px] pl-4 pt-3 text-base leading-[1.3]"
+                        placeholder="Ask anything"
+                        className="min-h-[44px] text-base leading-[1.3] pl-4 pt-3"
                       />
-                      <PromptInputActions className="mt-5 flex w-full items-center justify-between gap-2 px-3 pb-3">
-                        {/* Left side actions */}
-                        <div className="flex items-center gap-2">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="size-9 rounded-full"
-                                onClick={() => fileInputRef.current?.click()}
-                                disabled={isUploadingFile}
-                              >
-                                {isUploadingFile ? (
-                                  <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                ) : (
-                                  <Plus size={18} />
-                                )}
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Upload file</TooltipContent>
-                          </Tooltip>
-
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            className="hidden"
-                            onChange={handleFileUpload}
-                            accept=".pdf,.docx,.txt,.md,.jpg,.jpeg,.png,.webp,.gif,.svg,.csv,.json,.xlsx,.js,.ts,.tsx,.jsx,.py,.html,.css,.mp3,.wav,.m4a,.ogg"
-                          />
-
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="size-9 rounded-full" onClick={() => setInput("Generate an image of ")}>
-                                <ImagePlus size={18} />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Generate Image</TooltipContent>
-                          </Tooltip>
-
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="size-9 rounded-full" onClick={() => setInput("Help me create ")}>
-                                <WandSparkles size={18} />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Create</TooltipContent>
-                          </Tooltip>
-                        </div>
-
-                        {/* Right side actions */}
-                        <div className="flex items-center gap-2">
-                          <PromptInputAction tooltip="Send message">
-                            <Button
-                              type="submit"
-                              size="icon"
-                              disabled={isLoading || !input.trim()}
-                              className="size-9 rounded-full bg-gradient-primary hover:opacity-90"
-                              onClick={handleSubmit}
-                            >
-                              {isLoading ? (
-                                <div className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                              ) : (
-                                <Send size={18} className="text-white" />
-                              )}
-                            </Button>
-                          </PromptInputAction>
-                        </div>
-                      </PromptInputActions>
+                      <PromptInputControls
+                        className="mt-5 px-3 pb-3"
+                        imageMode={imageMode}
+                        onImageModeChange={setImageMode}
+                        artifactMode={artifactMode}
+                        onArtifactModeChange={setArtifactMode}
+                        isLoading={isLoading}
+                        input={input}
+                        onSend={handleSubmit}
+                        showFileUpload={true}
+                        fileInputRef={fileInputRef}
+                        isUploadingFile={isUploadingFile}
+                        onFileUpload={handleFileUpload}
+                        sendIcon="send"
+                      />
                     </div>
                   </PromptInput>
                 </div>

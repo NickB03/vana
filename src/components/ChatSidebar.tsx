@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { CirclePlus, MoreHorizontal, PanelLeft } from "lucide-react";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, useSidebar } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ChatSession } from "@/hooks/useChatSessions";
 import { ViggleLogo } from "@/components/ViggleLogo";
 import { SidebarItem } from "@/components/SidebarItem";
+import { UserProfileButton } from "@/components/UserProfileButton";
 interface ChatSidebarProps {
   sessions: ChatSession[];
   currentSessionId?: string;
@@ -171,5 +172,9 @@ export function ChatSidebar({
           </SidebarGroup>
         ))}
       </SidebarContent>
+
+      <SidebarFooter className="p-2 border-t border-border/50">
+        <UserProfileButton collapsed={collapsed} />
+      </SidebarFooter>
     </Sidebar>;
 }
