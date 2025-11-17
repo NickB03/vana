@@ -239,11 +239,13 @@ const Home = () => {
       description: "Building your artifact",
     });
 
-    // Enable artifact mode for proper generation
-    setArtifactMode(true);
-
-    // Set flag to auto-open canvas when artifact is detected
-    setAutoOpenCanvas(true);
+    // Enable artifact mode ONLY for artifact cards (not image generation)
+    // Image generation cards have IDs starting with 'img-gen-'
+    if (!cardId.startsWith('img-gen-')) {
+      setArtifactMode(true);
+      // Set flag to auto-open canvas when artifact is detected
+      setAutoOpenCanvas(true);
+    }
 
     // Check guest limit
     if (!isAuthenticated && !guestSession.canSendMessage) {
