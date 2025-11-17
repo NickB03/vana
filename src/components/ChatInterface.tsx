@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Copy, Pencil, Trash, ThumbsUp, ThumbsDown, Maximize2, ChevronLeft } from "lucide-react";
+import { Copy, Pencil, Trash, ThumbsUp, ThumbsDown, Maximize2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { validateFile, sanitizeFilename } from "@/utils/fileValidation";
@@ -38,7 +38,6 @@ import { ThinkingIndicator } from "@/components/ThinkingIndicator";
 import { ReasoningIndicator } from "@/components/ReasoningIndicator";
 import { ReasoningErrorBoundary } from "@/components/ReasoningErrorBoundary";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useHapticFeedback } from "@/hooks/useHapticFeedback";
 import { SystemMessage } from "@/components/ui/system-message";
 import { useNavigate } from "react-router-dom";
 
@@ -74,7 +73,6 @@ export function ChatInterface({
   guestMaxMessages = 10
 }: ChatInterfaceProps) {
   const isMobile = useIsMobile();
-  const { trigger: haptic } = useHapticFeedback();
   const navigate = useNavigate();
   const { messages, isLoading, streamChat } = useChatMessages(sessionId);
   const [localInput, setLocalInput] = useState("");
@@ -94,7 +92,6 @@ export function ChatInterface({
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [imageMode, setImageMode] = useState(initialImageMode);
   const [artifactMode, setArtifactMode] = useState(initialArtifactMode);
-  const [tappedMessageId, setTappedMessageId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Memoized artifact open handler to prevent breaking MessageWithArtifacts memo
@@ -112,9 +109,6 @@ export function ChatInterface({
     if (typeof messageToSend !== 'string' || !messageToSend.trim() || isLoading || isStreaming) {
       return;
     }
-
-    // Haptic feedback on message send
-    haptic('medium');
 
     setInput("");
     setIsStreaming(true);
@@ -153,7 +147,7 @@ export function ChatInterface({
       shouldGenerateImage,
       shouldGenerateArtifact
     );
-  }, [input, isLoading, isStreaming, setInput, streamChat, currentArtifact, isEditingArtifact, imageMode, artifactMode, haptic]);
+  }, [input, isLoading, isStreaming, setInput, streamChat, currentArtifact, isEditingArtifact, imageMode, artifactMode]);
 
   // Reset when session changes
   useEffect(() => {
@@ -310,25 +304,6 @@ export function ChatInterface({
     onCanvasToggle?.(false);
   };
 
-  // Message action handlers with haptic feedback
-  const handleCopyMessage = useCallback((content: string) => {
-    haptic('light');
-    navigator.clipboard.writeText(content);
-    toast.success("Copied to clipboard");
-  }, [haptic]);
-
-  const handleEditMessage = useCallback(() => {
-    haptic('light');
-    // Edit functionality to be implemented
-    toast.info("Edit feature coming soon");
-  }, [haptic]);
-
-  const handleDeleteMessage = useCallback(() => {
-    haptic('warning');
-    // Delete functionality to be implemented
-    toast.info("Delete feature coming soon");
-  }, [haptic]);
-
   // Render chat content (messages + input) - reusable for both mobile and desktop
   const renderChatContent = () => (
     <div className="flex flex-1 flex-col min-h-0 p-4">
@@ -395,62 +370,29 @@ export function ChatInterface({
 
                           <MessageActions
                             className={cn(
-                              "flex gap-1 transition-opacity duration-150",
-                              isMobile ? (
-                                isLastMessage ? "opacity-100" : cn(
-                                  "opacity-0",
-                                  tappedMessageId === message.id && "opacity-100"
-                                )
-                              ) : (
-                                cn(
-                                  "-ml-2.5 gap-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100",
-                                  isLastMessage && "opacity-100"
-                                )
-                              )
+                              "-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100",
+                              isLastMessage && "opacity-100"
                             )}
                           >
                             <MessageAction tooltip="Copy" delayDuration={100}>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className={cn("rounded-full", isMobile && "h-9 w-9")}
-                                onClick={() => handleCopyMessage(message.content)}
-                              >
+                              <Button variant="ghost" size="icon" className="rounded-full">
                                 <Copy />
                               </Button>
                             </MessageAction>
                             <MessageAction tooltip="Upvote" delayDuration={100}>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className={cn("rounded-full", isMobile && "h-9 w-9")}
-                                onClick={() => haptic('light')}
-                              >
+                              <Button variant="ghost" size="icon" className="rounded-full">
                                 <ThumbsUp />
                               </Button>
                             </MessageAction>
                             <MessageAction tooltip="Downvote" delayDuration={100}>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className={cn("rounded-full", isMobile && "h-9 w-9")}
-                                onClick={() => haptic('light')}
-                              >
+                              <Button variant="ghost" size="icon" className="rounded-full">
                                 <ThumbsDown />
                               </Button>
                             </MessageAction>
                           </MessageActions>
                         </div>
                       ) : (
-                        <div
-                          className="group flex flex-col items-end gap-1"
-                          onClick={() => {
-                            if (isMobile) {
-                              setTappedMessageId(message.id);
-                              setTimeout(() => setTappedMessageId(null), 3000);
-                            }
-                          }}
-                        >
+                        <div className="group flex flex-col items-end gap-1">
                           <MessageContent
                             className="w-auto max-w-2xl rounded-3xl px-5 py-2.5 text-foreground border transition-all duration-150"
                             style={{
@@ -462,44 +404,21 @@ export function ChatInterface({
                           </MessageContent>
                           <MessageActions
                             className={cn(
-                              "flex transition-opacity duration-150",
-                              isMobile ? (
-                                cn(
-                                  "gap-1 opacity-0",
-                                  tappedMessageId === message.id && "opacity-100"
-                                )
-                              ) : (
-                                "gap-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100"
-                              )
+                              "flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100"
                             )}
                           >
                             <MessageAction tooltip="Edit" delayDuration={100}>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className={cn("rounded-full", isMobile && "h-9 w-9")}
-                                onClick={handleEditMessage}
-                              >
+                              <Button variant="ghost" size="icon" className="rounded-full">
                                 <Pencil />
                               </Button>
                             </MessageAction>
                             <MessageAction tooltip="Delete" delayDuration={100}>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className={cn("rounded-full", isMobile && "h-9 w-9")}
-                                onClick={handleDeleteMessage}
-                              >
+                              <Button variant="ghost" size="icon" className="rounded-full">
                                 <Trash />
                               </Button>
                             </MessageAction>
                             <MessageAction tooltip="Copy" delayDuration={100}>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className={cn("rounded-full", isMobile && "h-9 w-9")}
-                                onClick={() => handleCopyMessage(message.content)}
-                              >
+                              <Button variant="ghost" size="icon" className="rounded-full">
                                 <Copy />
                               </Button>
                             </MessageAction>
@@ -556,15 +475,7 @@ export function ChatInterface({
         </div>
 
         {/* Prompt Input - embedded within chat card */}
-        <div
-          className={combineSpacing("shrink-0 bg-background/95 backdrop-blur-sm border-t border-border/30 safe-mobile-input px-4 pb-4", SAFE_AREA_SPACING.bottom)}
-          style={{
-            position: 'sticky',
-            bottom: 0,
-            zIndex: 30,
-            paddingBottom: 'max(1rem, env(safe-area-inset-bottom))'
-          }}
-        >
+        <div className={combineSpacing("shrink-0 bg-transparent safe-mobile-input px-4 pb-4", SAFE_AREA_SPACING.bottom)}>
           <PromptInput
             value={input}
             onValueChange={setInput}
@@ -575,8 +486,7 @@ export function ChatInterface({
             <div className="flex flex-col">
               <PromptInputTextarea
                 placeholder="Ask anything"
-                autoFocus={!isMobile}
-                className={combineSpacing("min-h-[52px] text-base leading-[1.3] focus:min-h-[120px] transition-[min-height]", CHAT_SPACING.input.textarea)}
+                className={combineSpacing("min-h-[44px] text-base leading-[1.3]", CHAT_SPACING.input.textarea)}
               />
               <PromptInputControls
                 className="mt-5 px-3 pb-3"
@@ -611,44 +521,17 @@ export function ChatInterface({
         // Mobile Layout: Fullscreen artifact overlay or chat
         <div className="relative flex-1 min-h-0">
           {isCanvasOpen && currentArtifact ? (
-            // Mobile: Fullscreen artifact with slide-up animation
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-50 bg-background flex flex-col"
-            >
-              {/* Mobile header */}
-              <div
-                className="flex items-center gap-3 px-4 py-3 border-b border-border/30 bg-background/95 backdrop-blur-sm shrink-0"
-                style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
-              >
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleCloseCanvas}
-                  className="h-10 w-10 rounded-full"
-                  aria-label="Close artifact"
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </Button>
-                <h2 className="text-base font-semibold truncate flex-1">
-                  {currentArtifact.title}
-                </h2>
-              </div>
-
-              <div className="flex-1 min-h-0 overflow-hidden">
-                <Artifact
-                  artifact={currentArtifact}
-                  onClose={handleCloseCanvas}
-                  onEdit={handleEditArtifact}
-                  onContentChange={(newContent) => {
-                    setCurrentArtifact({ ...currentArtifact, content: newContent });
-                  }}
-                />
-              </div>
-            </motion.div>
+            // Mobile: Fullscreen artifact
+            <div className="fixed inset-0 z-50 bg-background">
+              <Artifact
+                artifact={currentArtifact}
+                onClose={handleCloseCanvas}
+                onEdit={handleEditArtifact}
+                onContentChange={(newContent) => {
+                  setCurrentArtifact({ ...currentArtifact, content: newContent });
+                }}
+              />
+            </div>
           ) : (
             // Mobile: Chat with floating artifact button
             <>
@@ -660,10 +543,7 @@ export function ChatInterface({
                       size="icon"
                       className="fixed bottom-20 right-4 z-40 h-14 w-14 rounded-full bg-primary shadow-lg shadow-primary/30 hover:brightness-110 hover:-translate-y-0.5 transition-all"
                       style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
-                      onClick={() => {
-                        haptic('medium');
-                        onCanvasToggle?.(true);
-                      }}
+                      onClick={() => onCanvasToggle?.(true)}
                     >
                       <Maximize2 className="h-6 w-6 text-white" />
                     </Button>

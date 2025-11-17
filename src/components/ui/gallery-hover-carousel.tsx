@@ -8,7 +8,6 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { useHapticFeedback } from "@/hooks/useHapticFeedback";
 
 interface GalleryHoverCarouselItem {
   id: string;
@@ -80,7 +79,6 @@ export default function GalleryHoverCarousel({
   className?: string;
   items?: GalleryHoverCarouselItem[];
 }) {
-  const { trigger: haptic } = useHapticFeedback();
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
@@ -103,12 +101,10 @@ export default function GalleryHoverCarousel({
   }, [carouselApi]);
 
   const handlePrev = () => {
-    haptic('light');
     carouselApi?.scrollPrev();
   };
 
   const handleNext = () => {
-    haptic('light');
     carouselApi?.scrollNext();
   };
 
@@ -128,24 +124,22 @@ export default function GalleryHoverCarousel({
 
         <div className="w-full max-w-full relative">
           {/* Navigation Buttons */}
-          <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 flex justify-between pointer-events-none z-10 px-1 sm:px-4">
+          <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 flex justify-between pointer-events-none z-10 px-1">
             <Button
               variant="outline"
               size="icon"
               onClick={handlePrev}
-              className="h-12 w-12 sm:h-14 sm:w-14 rounded-full pointer-events-auto bg-background/30 backdrop-blur-sm hover:bg-background/50 border-white/30 opacity-70 hover:opacity-100 transition-opacity touch-none"
-              aria-label="Previous suggestions"
+              className="h-12 w-12 rounded-full pointer-events-auto bg-background/30 backdrop-blur-sm hover:bg-background/50 border-white/30 opacity-70 hover:opacity-100 transition-opacity"
             >
-              <ChevronLeft className="h-6 w-6 sm:h-7 sm:w-7" />
+              <ChevronLeft className="h-6 w-6" />
             </Button>
             <Button
               variant="outline"
               size="icon"
               onClick={handleNext}
-              className="h-12 w-12 sm:h-14 sm:w-14 rounded-full pointer-events-auto bg-background/30 backdrop-blur-sm hover:bg-background/50 border-white/30 opacity-70 hover:opacity-100 transition-opacity touch-none"
-              aria-label="Next suggestions"
+              className="h-12 w-12 rounded-full pointer-events-auto bg-background/30 backdrop-blur-sm hover:bg-background/50 border-white/30 opacity-70 hover:opacity-100 transition-opacity"
             >
-              <ChevronRight className="h-6 w-6 sm:h-7 sm:w-7" />
+              <ChevronRight className="h-6 w-6" />
             </Button>
           </div>
           <Carousel
@@ -153,23 +147,16 @@ export default function GalleryHoverCarousel({
             opts={{
               loop: true,
               align: "start",
-              dragFree: true,
-              containScroll: "trimSnaps",
             }}
-            className="relative w-full max-w-full touch-pan-x"
+            className="relative w-full max-w-full"
           >
-            <CarouselContent className="-ml-2 md:-ml-4 py-3 sm:py-4 select-none">
+            <CarouselContent className="-ml-2 md:-ml-4 py-3 sm:py-4">
               {items.map((item) => {
                 const isLoading = loadingItemId === item.id;
                 return (
                 <CarouselItem key={item.id} className="pl-2 sm:pl-3 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5 2xl:basis-1/6">
                   <div
-                    onClick={() => {
-                      if (!isLoading) {
-                        haptic('selection');
-                        onItemClick?.(item);
-                      }
-                    }}
+                    onClick={() => !isLoading && onItemClick?.(item)}
                     className={`group block relative w-full h-[140px] sm:h-[160px] md:h-[180px] ${isLoading ? 'cursor-wait' : 'cursor-pointer'}`}
                   >
                     <Card className={`overflow-hidden rounded-3xl h-full w-full transition-all duration-300 hover:scale-105 ${isLoading ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
@@ -180,10 +167,9 @@ export default function GalleryHoverCarousel({
                           alt={item.title}
                           className={`h-full w-full object-cover object-center transition-all ${isLoading ? 'blur-sm opacity-70' : ''}`}
                           loading="lazy"
-                          decoding="async"
                           width={400}
                           height={300}
-                          style={{ aspectRatio: '4/3', contentVisibility: 'auto' }}
+                          style={{ aspectRatio: '4/3' }}
                         />
                         {/* Loading overlay */}
                         {isLoading && (

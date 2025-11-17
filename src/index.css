@@ -509,21 +509,6 @@ All colors MUST be HSL.
       padding-bottom: max(12px, var(--safe-area-inset-bottom));
     }
   }
-
-  /* Mobile keyboard handling - sticky input with backdrop */
-  @supports (height: 100dvh) {
-    .safe-mobile-input {
-      padding-bottom: max(1rem, env(safe-area-inset-bottom));
-      position: sticky;
-      bottom: 0;
-    }
-  }
-
-  @supports not (height: 100dvh) {
-    .safe-mobile-input {
-      padding-bottom: 1rem;
-    }
-  }
   
   /* Reduce motion for users who prefer it */
   @media (prefers-reduced-motion: reduce) {
