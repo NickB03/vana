@@ -122,12 +122,13 @@ const IndexContent = () => {
     window.history.pushState(null, "", "/");
   };
   const handleCanvasToggle = (forceState?: boolean) => {
-    if (hasArtifact) {
-      const newCanvasState = forceState !== undefined ? forceState : !isCanvasOpen;
-      setIsCanvasOpen(newCanvasState);
+    const newCanvasState = forceState !== undefined ? forceState : !isCanvasOpen;
+    setIsCanvasOpen(newCanvasState);
 
-      // Auto-close sidebar when opening canvas to save space (like Gemini)
-      // Auto-restore sidebar when closing canvas
+    // Auto-close sidebar when opening canvas to save space (like Gemini)
+    // Auto-restore sidebar when closing canvas
+    // Only toggle sidebar if artifact exists
+    if (hasArtifact) {
       setOpen(!newCanvasState);
     }
   };

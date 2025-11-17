@@ -72,6 +72,7 @@ export function ArtifactCard({ artifact, onOpen, className }: ArtifactCardProps)
             </div>
           </div>
           <Button
+            type="button"
             size="sm"
             onClick={onOpen}
             className="gap-1.5 transition-all group-hover:bg-primary group-hover:text-primary-foreground shrink-0"
