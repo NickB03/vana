@@ -57,6 +57,7 @@ const Home = () => {
   const [loadingSuggestionId, setLoadingSuggestionId] = useState<string | null>(null);
   const [imageMode, setImageMode] = useState(false);
   const [artifactMode, setArtifactMode] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const chatSendHandlerRef = useRef<((message?: string) => Promise<void>) | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -143,6 +144,13 @@ const Home = () => {
       setShowLimitDialog(true);
     }
   }, [guestSession.hasReachedLimit, isAuthenticated]);
+
+  // Auto-collapse sidebar when canvas opens
+  useEffect(() => {
+    if (isCanvasOpen) {
+      setSidebarOpen(false);
+    }
+  }, [isCanvasOpen]);
 
   /**
    * Creates a new chat session and resets UI state
@@ -420,7 +428,11 @@ const Home = () => {
           }
           transition={{ duration: 0 }}
         >
-          <SidebarProvider defaultOpen={true}>
+          <SidebarProvider
+            defaultOpen={true}
+            open={sidebarOpen}
+            onOpenChange={setSidebarOpen}
+          >
             <ChatSidebar
               sessions={sessions}
               currentSessionId={currentSessionId}

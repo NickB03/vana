@@ -558,29 +558,38 @@ export function ChatInterface({
         // Desktop Layout: Side-by-side resizable panels with Gemini-style sizing
         <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
           <ResizablePanel
-            defaultSize={isCanvasOpen && currentArtifact ? 30 : 100}
-            minSize={20}
-            maxSize={isCanvasOpen && currentArtifact ? 50 : 100}
+            id="chat-panel"
+            order={1}
+            defaultSize={isCanvasOpen && currentArtifact ? 20 : 100}
+            minSize={15}
+            maxSize={isCanvasOpen && currentArtifact ? 40 : 100}
             className="md:min-w-[280px] flex flex-col"
           >
             {renderChatContent()}
           </ResizablePanel>
 
-          {isCanvasOpen && currentArtifact && (
-            <>
-              <ResizableHandle withHandle className="hidden md:flex" />
-              <ResizablePanel defaultSize={70} minSize={50} className="md:min-w-[400px] flex flex-col">
-                <Artifact
-                  artifact={currentArtifact}
-                  onClose={handleCloseCanvas}
-                  onEdit={handleEditArtifact}
-                  onContentChange={(newContent) => {
-                    setCurrentArtifact({ ...currentArtifact, content: newContent });
-                  }}
-                />
-              </ResizablePanel>
-            </>
-          )}
+          <ResizableHandle
+            withHandle
+            className={`hidden md:flex ${!isCanvasOpen || !currentArtifact ? 'invisible' : ''}`}
+          />
+          <ResizablePanel
+            id="canvas-panel"
+            order={2}
+            defaultSize={80}
+            minSize={60}
+            className={`md:min-w-[400px] flex flex-col ${!isCanvasOpen || !currentArtifact ? 'hidden' : ''}`}
+          >
+            {currentArtifact && (
+              <Artifact
+                artifact={currentArtifact}
+                onClose={handleCloseCanvas}
+                onEdit={handleEditArtifact}
+                onContentChange={(newContent) => {
+                  setCurrentArtifact({ ...currentArtifact, content: newContent });
+                }}
+              />
+            )}
+          </ResizablePanel>
         </ResizablePanelGroup>
       )}
     </div>
