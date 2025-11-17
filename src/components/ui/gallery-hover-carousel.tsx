@@ -8,6 +8,7 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
+import { useHapticFeedback } from "@/hooks/useHapticFeedback";
 
 interface GalleryHoverCarouselItem {
   id: string;
@@ -79,6 +80,7 @@ export default function GalleryHoverCarousel({
   className?: string;
   items?: GalleryHoverCarouselItem[];
 }) {
+  const { trigger: haptic } = useHapticFeedback();
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
@@ -101,10 +103,12 @@ export default function GalleryHoverCarousel({
   }, [carouselApi]);
 
   const handlePrev = () => {
+    haptic('light');
     carouselApi?.scrollPrev();
   };
 
   const handleNext = () => {
+    haptic('light');
     carouselApi?.scrollNext();
   };
 
@@ -160,7 +164,12 @@ export default function GalleryHoverCarousel({
                 return (
                 <CarouselItem key={item.id} className="pl-2 sm:pl-3 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5 2xl:basis-1/6">
                   <div
-                    onClick={() => !isLoading && onItemClick?.(item)}
+                    onClick={() => {
+                      if (!isLoading) {
+                        haptic('selection');
+                        onItemClick?.(item);
+                      }
+                    }}
                     className={`group block relative w-full h-[140px] sm:h-[160px] md:h-[180px] ${isLoading ? 'cursor-wait' : 'cursor-pointer'}`}
                   >
                     <Card className={`overflow-hidden rounded-3xl h-full w-full transition-all duration-300 hover:scale-105 ${isLoading ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
@@ -171,9 +180,10 @@ export default function GalleryHoverCarousel({
                           alt={item.title}
                           className={`h-full w-full object-cover object-center transition-all ${isLoading ? 'blur-sm opacity-70' : ''}`}
                           loading="lazy"
+                          decoding="async"
                           width={400}
                           height={300}
-                          style={{ aspectRatio: '4/3' }}
+                          style={{ aspectRatio: '4/3', contentVisibility: 'auto' }}
                         />
                         {/* Loading overlay */}
                         {isLoading && (

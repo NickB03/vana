@@ -38,6 +38,7 @@ import { ThinkingIndicator } from "@/components/ThinkingIndicator";
 import { ReasoningIndicator } from "@/components/ReasoningIndicator";
 import { ReasoningErrorBoundary } from "@/components/ReasoningErrorBoundary";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useHapticFeedback } from "@/hooks/useHapticFeedback";
 import { SystemMessage } from "@/components/ui/system-message";
 import { useNavigate } from "react-router-dom";
 
@@ -73,6 +74,7 @@ export function ChatInterface({
   guestMaxMessages = 10
 }: ChatInterfaceProps) {
   const isMobile = useIsMobile();
+  const { trigger: haptic } = useHapticFeedback();
   const navigate = useNavigate();
   const { messages, isLoading, streamChat } = useChatMessages(sessionId);
   const [localInput, setLocalInput] = useState("");
@@ -111,6 +113,9 @@ export function ChatInterface({
       return;
     }
 
+    // Haptic feedback on message send
+    haptic('medium');
+
     setInput("");
     setIsStreaming(true);
     setStreamingMessage("");
@@ -148,7 +153,7 @@ export function ChatInterface({
       shouldGenerateImage,
       shouldGenerateArtifact
     );
-  }, [input, isLoading, isStreaming, setInput, streamChat, currentArtifact, isEditingArtifact, imageMode, artifactMode]);
+  }, [input, isLoading, isStreaming, setInput, streamChat, currentArtifact, isEditingArtifact, imageMode, artifactMode, haptic]);
 
   // Reset when session changes
   useEffect(() => {
@@ -305,6 +310,25 @@ export function ChatInterface({
     onCanvasToggle?.(false);
   };
 
+  // Message action handlers with haptic feedback
+  const handleCopyMessage = useCallback((content: string) => {
+    haptic('light');
+    navigator.clipboard.writeText(content);
+    toast.success("Copied to clipboard");
+  }, [haptic]);
+
+  const handleEditMessage = useCallback(() => {
+    haptic('light');
+    // Edit functionality to be implemented
+    toast.info("Edit feature coming soon");
+  }, [haptic]);
+
+  const handleDeleteMessage = useCallback(() => {
+    haptic('warning');
+    // Delete functionality to be implemented
+    toast.info("Delete feature coming soon");
+  }, [haptic]);
+
   // Render chat content (messages + input) - reusable for both mobile and desktop
   const renderChatContent = () => (
     <div className="flex flex-1 flex-col min-h-0 p-4">
@@ -390,6 +414,7 @@ export function ChatInterface({
                                 variant="ghost"
                                 size="icon"
                                 className={cn("rounded-full", isMobile && "h-9 w-9")}
+                                onClick={() => handleCopyMessage(message.content)}
                               >
                                 <Copy />
                               </Button>
@@ -399,6 +424,7 @@ export function ChatInterface({
                                 variant="ghost"
                                 size="icon"
                                 className={cn("rounded-full", isMobile && "h-9 w-9")}
+                                onClick={() => haptic('light')}
                               >
                                 <ThumbsUp />
                               </Button>
@@ -408,6 +434,7 @@ export function ChatInterface({
                                 variant="ghost"
                                 size="icon"
                                 className={cn("rounded-full", isMobile && "h-9 w-9")}
+                                onClick={() => haptic('light')}
                               >
                                 <ThumbsDown />
                               </Button>
@@ -451,6 +478,7 @@ export function ChatInterface({
                                 variant="ghost"
                                 size="icon"
                                 className={cn("rounded-full", isMobile && "h-9 w-9")}
+                                onClick={handleEditMessage}
                               >
                                 <Pencil />
                               </Button>
@@ -460,6 +488,7 @@ export function ChatInterface({
                                 variant="ghost"
                                 size="icon"
                                 className={cn("rounded-full", isMobile && "h-9 w-9")}
+                                onClick={handleDeleteMessage}
                               >
                                 <Trash />
                               </Button>
@@ -469,6 +498,7 @@ export function ChatInterface({
                                 variant="ghost"
                                 size="icon"
                                 className={cn("rounded-full", isMobile && "h-9 w-9")}
+                                onClick={() => handleCopyMessage(message.content)}
                               >
                                 <Copy />
                               </Button>
@@ -630,7 +660,10 @@ export function ChatInterface({
                       size="icon"
                       className="fixed bottom-20 right-4 z-40 h-14 w-14 rounded-full bg-primary shadow-lg shadow-primary/30 hover:brightness-110 hover:-translate-y-0.5 transition-all"
                       style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
-                      onClick={() => onCanvasToggle?.(true)}
+                      onClick={() => {
+                        haptic('medium');
+                        onCanvasToggle?.(true);
+                      }}
                     >
                       <Maximize2 className="h-6 w-6 text-white" />
                     </Button>
