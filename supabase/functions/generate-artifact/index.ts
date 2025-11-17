@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { callKimiWithRetry, extractTextFromKimi, extractTokenUsage, calculateKimiCost, logAIUsage } from "../_shared/openrouter-client.ts";
+import { callSherlockWithRetry, extractTextFromKimi, extractTokenUsage, calculateSherlockCost, logAIUsage } from "../_shared/openrouter-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 import { MODELS } from "../_shared/config.ts";
 
@@ -304,9 +304,9 @@ serve(async (req) => {
       ? `Create a ${artifactType} artifact for: ${prompt}\n\nIMPORTANT: Return the COMPLETE artifact wrapped in XML tags like: <artifact type="application/vnd.ant.react" title="Descriptive Title">YOUR CODE HERE</artifact>\n\nInclude the opening <artifact> tag, the complete code, and the closing </artifact> tag.`
       : `Create an artifact for: ${prompt}\n\nIMPORTANT: Return the COMPLETE artifact wrapped in XML tags like: <artifact type="application/vnd.ant.react" title="Descriptive Title">YOUR CODE HERE</artifact>\n\nInclude the opening <artifact> tag, the complete code, and the closing </artifact> tag.`;
 
-    // Call Kimi K2-Thinking via OpenRouter with retry logic
-    console.log(`[${requestId}] 🚀 Routing to Kimi K2-Thinking (reasoning model for code generation)`);
-    const response = await callKimiWithRetry(
+    // Call Sherlock Think Alpha via OpenRouter with retry logic
+    console.log(`[${requestId}] 🚀 Routing to Sherlock Think Alpha (fast reasoning model for code generation)`);
+    const response = await callSherlockWithRetry(
       ARTIFACT_SYSTEM_PROMPT,
       userPrompt,
       {
@@ -318,7 +318,7 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[${requestId}] Kimi K2-Thinking API error:`, response.status, errorText.substring(0, 200));
+      console.error(`[${requestId}] Sherlock Think Alpha API error:`, response.status, errorText.substring(0, 200));
 
       if (response.status === 429 || response.status === 403) {
         return new Response(
@@ -376,7 +376,7 @@ serve(async (req) => {
 
     // Extract token usage for cost tracking
     const tokenUsage = extractTokenUsage(data);
-    const estimatedCost = calculateKimiCost(tokenUsage.inputTokens, tokenUsage.outputTokens);
+    const estimatedCost = calculateSherlockCost(tokenUsage.inputTokens, tokenUsage.outputTokens);
 
     console.log(`[${requestId}] 💰 Token usage:`, {
       input: tokenUsage.inputTokens,
@@ -391,7 +391,7 @@ serve(async (req) => {
       requestId,
       functionName: 'generate-artifact',
       provider: 'openrouter',
-      model: MODELS.KIMI_K2,
+      model: MODELS.SHERLOCK,
       userId: user?.id,
       isGuest: !user,
       inputTokens: tokenUsage.inputTokens,
