@@ -239,6 +239,9 @@ const Home = () => {
       description: "Building your artifact",
     });
 
+    // Enable artifact mode for proper generation
+    setArtifactMode(true);
+
     // Set flag to auto-open canvas when artifact is detected
     setAutoOpenCanvas(true);
 
