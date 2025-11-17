@@ -283,13 +283,15 @@ const Home = () => {
   }, [isAuthenticated, guestSession, toast, navigate, createSession]);
 
   /**
-   * Toggles artifact canvas visibility
+   * Toggles or sets artifact canvas visibility
+   * @param open - Optional explicit state. If undefined, toggles current state.
    */
-  const handleCanvasToggle = useCallback(() => {
-    if (hasArtifact) {
-      setIsCanvasOpen(!isCanvasOpen);
-    }
-  }, [hasArtifact, isCanvasOpen]);
+  const handleCanvasToggle = useCallback((open?: boolean) => {
+    // No guard needed - "Open" button only appears when artifact exists
+    // If explicit state provided, use it; otherwise toggle
+    const newState = open !== undefined ? open : !isCanvasOpen;
+    setIsCanvasOpen(newState);
+  }, [isCanvasOpen]);
 
   /**
    * Updates artifact state when content changes
