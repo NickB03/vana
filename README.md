@@ -37,9 +37,7 @@
 
 ## 🌟 Overview
 
-**Vana** is an AI-powered development assistant that transforms natural language into production-ready code, interactive React components, diagrams, and more. Powered by Google's Gemini 2.5 AI, Vana provides a seamless chat interface where every conversation can generate interactive artifacts—fully functional components rendered in real-time alongside your chat.
-
-> **Note**: This project uses Claude Code (Anthropic's CLI tool) for development assistance, but the production application is powered by Google Gemini 2.5 via Google AI Studio.
+**Vana** is an AI-powered development assistant that transforms natural language into production-ready code, interactive React components, diagrams, and more. Powered by multiple AI models including Google's Gemini 2.5 and Sherlock Think Alpha via OpenRouter, Vana provides a seamless chat interface where every conversation can generate interactive artifacts—fully functional components rendered in real-time alongside your chat.
 
 ### Why Vana?
 
@@ -52,6 +50,12 @@
 - ✨ **Enterprise-Grade Quality**: Multi-layer validation, auto-error correction, and modern UI primitives
 
 ### Recent Major Improvements
+
+**November 17, 2025 - Sherlock Think Alpha Migration:**
+- 🚀 **Faster Artifact Generation**: Migrated from Kimi K2-Thinking to Sherlock Think Alpha via OpenRouter
+- ⚡ **Improved Reliability**: Eliminated timeout issues with new high-performance model
+- 🔄 **Enhanced UI**: Gemini-style sidebar auto-collapse with manual toggle control
+- 🎯 **Better Navigation**: Fixed artifact card Open button and image generation card behaviors
 
 **November 14, 2025 - Chain of Thought Integration:**
 - 🧠 **Transparent AI Reasoning**: Structured reasoning steps show how the AI thinks through problems
@@ -69,7 +73,7 @@
 
 **November 2025 - Production Security Hardening:**
 - 🔒 **Database Security**: All SECURITY DEFINER functions protected against schema injection
-- 🛡️ **Guest Rate Limiting**: IP-based rate limiting (10 requests/24h) prevents API quota abuse
+- 🛡️ **Guest Rate Limiting**: IP-based rate limiting (20 requests/5h) prevents API quota abuse
 - 🔐 **CORS Validation**: Environment-based origin whitelist replaces dangerous wildcard configuration
 - ⚡ **Performance**: 52% smaller chat function bundle (system prompt externalization)
 
@@ -85,7 +89,6 @@
 - ✅ **ai-elements Integration**: Modern UI primitives for cleaner artifact rendering
 - ✅ **5-Layer Import Validation**: Comprehensive defense against artifact failures
 - ✅ **Auto-Transformation**: Automatically fixes common coding mistakes in generated artifacts
-- ✅ **Chrome DevTools MCP**: Advanced browser automation for testing and verification
 - ✅ **Component Refactoring**: Eliminated prop mutations and improved code organization
 
 ---
@@ -191,7 +194,8 @@ Experience Vana in action: [View Demo](#) *(Add your deployment URL)*
 | Service | Purpose |
 |---------|---------|
 | **Supabase** | PostgreSQL database, authentication, edge functions |
-| **Google AI Studio** | Gemini 2.5 models for chat, image generation, and summarization |
+| **OpenRouter** | AI model routing for chat (Gemini 2.5 Flash Lite) and artifacts (Sherlock Think Alpha) - single API keys |
+| **Google AI Studio** | Image generation ONLY (Gemini 2.5 Flash Image) - uses 10-key rotation pool for high throughput |
 
 ### Key Libraries
 
@@ -232,17 +236,18 @@ graph TB
     end
 
     subgraph "Edge Functions"
-        L[chat - Flash]
-        LA[generate-artifact - Pro]
-        LB[generate-artifact-fix - Pro]
-        M[generate-title]
+        L[chat - Gemini Flash Lite]
+        LA[generate-artifact - Sherlock]
+        LB[generate-artifact-fix - Sherlock]
+        M[generate-title - Gemini Flash Lite]
         N[generate-image - Flash-Image]
-        O[summarize-conversation]
+        O[summarize-conversation - Gemini Flash Lite]
         P[cache-manager]
     end
 
     subgraph "External Services"
-        Q[Google Gemini 2.5<br/>via AI Studio]
+        Q[OpenRouter<br/>Gemini & Sherlock]
+        R[Google AI Studio<br/>Image Generation]
     end
 
     A --> B
@@ -425,7 +430,7 @@ npm install
 Create a `.env` file in the root directory:
 
 ```env
-# Supabase Configuration (vana-dev project)
+# Supabase Configuration
 VITE_SUPABASE_URL=https://vznhbocnuykdmjvujaka.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
 VITE_SUPABASE_PROJECT_ID=vznhbocnuykdmjvujaka
@@ -433,8 +438,6 @@ VITE_SUPABASE_PROJECT_ID=vznhbocnuykdmjvujaka
 # Optional: Analytics
 VITE_ENABLE_ANALYTICS=false
 ```
-
-> **Note**: This project migrated from Lovable Cloud to Google Gemini (Nov 2025). For new deployments, simply follow the setup instructions below.
 
 4. **Set up Supabase**
 
@@ -517,13 +520,15 @@ llm-chat-site/
 │   └── main.tsx            # Entry point
 ├── supabase/
 │   ├── functions/          # Edge Functions
-│   │   ├── chat/           # Main chat streaming (gemini-2.5-flash)
-│   │   ├── generate-artifact/ # Artifact generation (gemini-2.5-pro)
-│   │   ├── generate-artifact-fix/ # Artifact error fixing (gemini-2.5-pro)
-│   │   ├── generate-title/ # Auto-generate session titles
-│   │   ├── generate-image/ # AI image generation (gemini-2.5-flash-image)
-│   │   ├── summarize-conversation/ # Context summarization
-│   │   └── cache-manager/  # Redis cache management
+│   │   ├── chat/           # Main chat streaming (Gemini 2.5 Flash Lite via OpenRouter)
+│   │   ├── generate-artifact/ # Artifact generation (Sherlock Think Alpha via OpenRouter)
+│   │   ├── generate-artifact-fix/ # Artifact error fixing (Sherlock Think Alpha)
+│   │   ├── generate-title/ # Auto-generate session titles (Gemini Flash Lite)
+│   │   ├── generate-image/ # AI image generation with 10-key rotation (Google AI Studio)
+│   │   ├── summarize-conversation/ # Context summarization (Gemini Flash Lite)
+│   │   ├── cache-manager/  # Redis cache management
+│   │   ├── admin-analytics/ # Usage analytics dashboard
+│   │   └── intent-examples/ # Intent detection setup
 │   ├── migrations/         # Database migrations
 │   └── config.toml         # Supabase configuration
 ├── public/                 # Static assets
@@ -890,35 +895,45 @@ supabase functions deploy cache-manager
 5. **Set environment secrets**
 
 ```bash
-# Set 10 API keys for rotation (each from different Google Cloud project)
-# Chat pool (Flash model) - Keys 1-2
-supabase secrets set GOOGLE_KEY_1=your_chat_key_1
-supabase secrets set GOOGLE_KEY_2=your_chat_key_2
+# OpenRouter API Keys (single keys for chat and artifacts - NO rotation)
+supabase secrets set OPENROUTER_GEMINI_FLASH_KEY=sk-or-v1-...  # Chat/summaries/titles
+supabase secrets set OPENROUTER_SHERLOCK_FREE_KEY=sk-or-v1-... # Artifact generation
+supabase secrets set OPENROUTER_K2T_KEY=sk-or-v1-...           # Artifact error fixing (Kimi K2)
 
-# Artifact pool (Pro model) - Keys 3-6
-supabase secrets set GOOGLE_KEY_3=your_artifact_key_1
-supabase secrets set GOOGLE_KEY_4=your_artifact_key_2
-supabase secrets set GOOGLE_KEY_5=your_artifact_key_3
-supabase secrets set GOOGLE_KEY_6=your_artifact_key_4
-
-# Image pool (Flash-Image model) - Keys 7-10
-supabase secrets set GOOGLE_KEY_7=your_image_key_1
-supabase secrets set GOOGLE_KEY_8=your_image_key_2
-supabase secrets set GOOGLE_KEY_9=your_image_key_3
-supabase secrets set GOOGLE_KEY_10=your_image_key_4
+# Google AI Studio Keys (IMAGE GENERATION ONLY - uses 10-key rotation pool)
+# All 10 keys dedicated to images - 150 RPM total (10 keys × 15 RPM each)
+# Each key MUST be from a different Google Cloud project for independent rate limits
+# Note: Only image generation uses key rotation; chat and artifacts use single OpenRouter keys
+supabase secrets set GOOGLE_KEY_1=AIzaSy...   # Image key 1
+supabase secrets set GOOGLE_KEY_2=AIzaSy...   # Image key 2
+supabase secrets set GOOGLE_KEY_3=AIzaSy...   # Image key 3
+supabase secrets set GOOGLE_KEY_4=AIzaSy...   # Image key 4
+supabase secrets set GOOGLE_KEY_5=AIzaSy...   # Image key 5
+supabase secrets set GOOGLE_KEY_6=AIzaSy...   # Image key 6
+supabase secrets set GOOGLE_KEY_7=AIzaSy...   # Image key 7
+supabase secrets set GOOGLE_KEY_8=AIzaSy...   # Image key 8
+supabase secrets set GOOGLE_KEY_9=AIzaSy...   # Image key 9
+supabase secrets set GOOGLE_KEY_10=AIzaSy...  # Image key 10
 
 # Optional: Set production CORS origins (comma-separated)
 supabase secrets set ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 ```
 
-Get your API keys from [Google AI Studio](https://aistudio.google.com/app/apikey)
+**Get API Keys:**
+- **OpenRouter:** [https://openrouter.ai/keys](https://openrouter.ai/keys)
+- **Google AI Studio:** [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
 
-**Important**: Each key must be from a **different Google Cloud project** to get independent rate limits:
-- Chat: 2 keys = 4 RPM total (2 RPM per key)
-- Artifacts: 4 keys = 8 RPM total (2 RPM per key)
-- Images: 4 keys = 60 RPM total (15 RPM per key)
+**Current Architecture:**
+- **Chat/Summaries/Titles**: OpenRouter Gemini 2.5 Flash Lite (single API key, unlimited pay-as-you-go)
+- **Artifact Generation**: OpenRouter Sherlock Think Alpha (single API key, fast reliable code generation)
+- **Artifact Error Fixing**: OpenRouter Kimi K2-Thinking (single API key, deep reasoning for debugging)
+- **Images**: Google AI Studio Gemini Flash-Image (10-key rotation pool, 150 RPM total)
 
-See `KEY_POOL_ARCHITECTURE.md` for complete details on the rotation system.
+**Key Rotation Strategy:**
+- **OpenRouter services**: NO rotation - uses single API keys for simplicity and unlimited capacity
+- **Google AI Studio**: 10-key rotation ONLY for image generation to achieve 150 RPM throughput
+
+This architecture provides better reliability and eliminates timeout issues for artifact generation.
 
 **Security Configuration (Manual Steps):**
 1. Enable "Leaked Password Protection" in Supabase Dashboard → Authentication → Password Security
