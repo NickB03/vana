@@ -40,10 +40,14 @@ export const MessageWithArtifacts = memo(({
     <>
       {/* Render message text without artifact tags */}
       {/* Prose classes applied directly to Markdown component for proper typography */}
+      {/* Option 10: Thin Vertical Line - ultra subtle 1px left border, no background bubble */}
       <div
-        className={`flex-1 rounded-lg bg-muted/30 dark:bg-muted/20 p-3 pl-4 border-l-4 shadow-sm transition-all duration-150 ${className}`}
+        className={`flex-1 transition-all duration-150 ${className}`}
         style={{
-          borderLeftColor: 'hsl(var(--accent-ai) / 0.5)',
+          borderLeft: '1px solid hsl(190 88% 62% / 0.3)',
+          paddingLeft: '0.75rem',
+          paddingTop: '0.5rem',
+          paddingBottom: '0.5rem',
         }}
       >
         <Markdown

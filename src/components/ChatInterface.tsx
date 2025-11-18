@@ -396,8 +396,9 @@ export function ChatInterface({
                           <MessageContent
                             className="w-auto max-w-2xl rounded-3xl px-5 py-2.5 text-foreground border transition-all duration-150"
                             style={{
-                              backgroundColor: 'hsl(var(--accent-user) / 0.08)',
-                              borderColor: 'hsl(var(--accent-user) / 0.15)',
+                              backgroundColor: 'hsl(var(--accent-user) / 0.18)',
+                              borderColor: 'hsl(var(--accent-user) / 0.35)',
+                              boxShadow: '0 1px 2px 0 hsl(var(--accent-user) / 0.08), 0 4px 8px -2px hsl(var(--accent-user) / 0.15), 0 0 0 1px hsl(var(--accent-user) / 0.10)',
                             }}
                           >
                             {message.content}

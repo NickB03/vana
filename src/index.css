@@ -46,11 +46,16 @@ All colors MUST be HSL.
     /* Accent colors - Purposeful highlights for UI elements (not text) */
     --accent-primary: 215 85% 58%;
     --accent-primary-bright: 215 88% 65%;
-    --accent-user: 215 85% 58%;
+    --accent-user: 210 25% 65%;         /* Soft slate blue for user messages */
+    --accent-user-bright: 210 30% 72%; /* Brighter slate for hover */
     --accent-ai: 190 85% 52%;
     --accent-ai-bright: 190 88% 60%;
     --accent-hover: 215 85% 58%;
     --accent-focus: 215 85% 58%;
+
+    /* Sidebar-specific accent colors for navigation */
+    --sidebar-accent-active: 215 15% 92%;  /* Very light blue-gray */
+    --sidebar-border-active: 215 25% 65%;  /* Medium blue-gray */
   }
 
   .dark {
@@ -89,11 +94,16 @@ All colors MUST be HSL.
     /* Accent colors - Brighter for dark mode contrast */
     --accent-primary: 215 88% 68%;
     --accent-primary-bright: 215 90% 75%;
-    --accent-user: 215 88% 68%;
+    --accent-user: 210 28% 68%;         /* Soft slate blue for user messages */
+    --accent-user-bright: 210 32% 75%; /* Brighter slate for hover */
     --accent-ai: 190 88% 62%;
     --accent-ai-bright: 190 90% 70%;
     --accent-hover: 215 88% 68%;
     --accent-focus: 215 88% 68%;
+
+    /* Sidebar-specific accent colors for navigation */
+    --sidebar-accent-active: 215 12% 22%;  /* Dark blue-gray */
+    --sidebar-border-active: 215 30% 50%;  /* Muted blue */
   }
 
   .ocean-light {
@@ -128,6 +138,20 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 210 50% 10%;
     --sidebar-border: 210 20% 82%;
     --sidebar-ring: 210 90% 50%;
+
+    /* Accent colors - Ocean theme light variant */
+    --accent-primary: 210 90% 50%;
+    --accent-primary-bright: 210 92% 58%;
+    --accent-user: 255 75% 65%;         /* Soft indigo/purple for user messages */
+    --accent-user-bright: 255 78% 72%; /* Brighter purple for hover */
+    --accent-ai: 190 85% 52%;
+    --accent-ai-bright: 190 88% 60%;
+    --accent-hover: 210 90% 50%;
+    --accent-focus: 210 90% 50%;
+
+    /* Sidebar-specific accent colors for navigation */
+    --sidebar-accent-active: 210 20% 88%;  /* Light ocean-toned gray */
+    --sidebar-border-active: 210 35% 60%;  /* Medium ocean blue */
   }
 
   .ocean {
@@ -162,6 +186,20 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 210 35% 22%;
     --sidebar-ring: 210 90% 60%;
+
+    /* Accent colors - Ocean theme dark variant */
+    --accent-primary: 210 90% 60%;
+    --accent-primary-bright: 210 92% 68%;
+    --accent-user: 255 68% 68%;         /* Lighter indigo/purple for user messages */
+    --accent-user-bright: 255 70% 75%; /* Even lighter purple for hover */
+    --accent-ai: 190 88% 62%;
+    --accent-ai-bright: 190 90% 70%;
+    --accent-hover: 210 90% 60%;
+    --accent-focus: 210 90% 60%;
+
+    /* Sidebar-specific accent colors for navigation */
+    --sidebar-accent-active: 210 30% 18%;  /* Dark ocean-toned gray */
+    --sidebar-border-active: 210 45% 45%;  /* Muted ocean blue */
   }
 
   .sunset-light {
@@ -196,6 +234,20 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 220 40% 15%;
     --sidebar-border: 30 15% 80%;
     --sidebar-ring: 30 95% 45%;
+
+    /* Accent colors - Sunset theme light variant */
+    --accent-primary: 30 95% 45%;
+    --accent-primary-bright: 30 98% 52%;
+    --accent-user: 255 75% 65%;         /* Soft indigo/purple for user messages */
+    --accent-user-bright: 255 78% 72%; /* Brighter purple for hover */
+    --accent-ai: 190 85% 52%;
+    --accent-ai-bright: 190 88% 60%;
+    --accent-hover: 30 95% 45%;
+    --accent-focus: 30 95% 45%;
+
+    /* Sidebar-specific accent colors for navigation */
+    --sidebar-accent-active: 30 15% 85%;   /* Light sunset-toned gray */
+    --sidebar-border-active: 30 35% 60%;   /* Warm muted orange */
   }
 
   .sunset {
@@ -230,6 +282,20 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 30 15% 95%;
     --sidebar-border: 220 25% 25%;
     --sidebar-ring: 30 95% 55%;
+
+    /* Accent colors - Sunset theme dark variant */
+    --accent-primary: 30 95% 55%;
+    --accent-primary-bright: 30 98% 62%;
+    --accent-user: 255 68% 68%;         /* Lighter indigo/purple for user messages */
+    --accent-user-bright: 255 70% 75%; /* Even lighter purple for hover */
+    --accent-ai: 190 88% 62%;
+    --accent-ai-bright: 190 90% 70%;
+    --accent-hover: 30 95% 55%;
+    --accent-focus: 30 95% 55%;
+
+    /* Sidebar-specific accent colors for navigation */
+    --sidebar-accent-active: 220 25% 20%;  /* Dark blue-gray for sunset dark */
+    --sidebar-border-active: 220 35% 45%;  /* Muted blue */
   }
 
   .forest-light {
@@ -264,6 +330,20 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 25 30% 18%;
     --sidebar-border: 25 12% 78%;
     --sidebar-ring: 25 75% 40%;
+
+    /* Accent colors - Forest theme light variant */
+    --accent-primary: 25 75% 40%;
+    --accent-primary-bright: 25 78% 48%;
+    --accent-user: 255 75% 65%;         /* Soft indigo/purple for user messages */
+    --accent-user-bright: 255 78% 72%; /* Brighter purple for hover */
+    --accent-ai: 190 85% 52%;
+    --accent-ai-bright: 190 88% 60%;
+    --accent-hover: 25 75% 40%;
+    --accent-focus: 25 75% 40%;
+
+    /* Sidebar-specific accent colors for navigation */
+    --sidebar-accent-active: 25 12% 84%;   /* Light forest-toned gray */
+    --sidebar-border-active: 25 35% 55%;   /* Earthy green-gray */
   }
 
   .forest {
@@ -298,6 +378,20 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 25 15% 92%;
     --sidebar-border: 25 20% 28%;
     --sidebar-ring: 25 75% 50%;
+
+    /* Accent colors - Forest theme dark variant */
+    --accent-primary: 25 75% 50%;
+    --accent-primary-bright: 25 78% 58%;
+    --accent-user: 255 68% 68%;         /* Lighter indigo/purple for user messages */
+    --accent-user-bright: 255 70% 75%; /* Even lighter purple for hover */
+    --accent-ai: 190 88% 62%;
+    --accent-ai-bright: 190 90% 70%;
+    --accent-hover: 25 75% 50%;
+    --accent-focus: 25 75% 50%;
+
+    /* Sidebar-specific accent colors for navigation */
+    --sidebar-accent-active: 25 20% 22%;   /* Dark forest-toned gray */
+    --sidebar-border-active: 25 35% 42%;   /* Muted earthy green */
   }
 
   .gemini-light {
@@ -332,6 +426,20 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 220 10% 10%;
     --sidebar-border: 220 8% 80%;
     --sidebar-ring: 215 86% 45%;
+
+    /* Accent colors - Gemini theme light variant */
+    --accent-primary: 215 86% 45%;
+    --accent-primary-bright: 215 88% 52%;
+    --accent-user: 255 75% 65%;         /* Soft indigo/purple for user messages */
+    --accent-user-bright: 255 78% 72%; /* Brighter purple for hover */
+    --accent-ai: 190 85% 52%;
+    --accent-ai-bright: 190 88% 60%;
+    --accent-hover: 215 86% 45%;
+    --accent-focus: 215 86% 45%;
+
+    /* Sidebar-specific accent colors for navigation */
+    --sidebar-accent-active: 220 8% 85%;   /* Light blue-gray */
+    --sidebar-border-active: 220 20% 62%;  /* Medium blue-gray */
   }
 
   .gemini {
@@ -366,6 +474,20 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 220 5% 96%;
     --sidebar-border: 220 4% 26%;
     --sidebar-ring: 215 86% 51%;
+
+    /* Accent colors - Gemini theme dark variant */
+    --accent-primary: 215 86% 51%;
+    --accent-primary-bright: 215 88% 58%;
+    --accent-user: 255 68% 68%;         /* Lighter indigo/purple for user messages */
+    --accent-user-bright: 255 70% 75%; /* Even lighter purple for hover */
+    --accent-ai: 190 88% 62%;
+    --accent-ai-bright: 190 90% 70%;
+    --accent-hover: 215 86% 51%;
+    --accent-focus: 215 86% 51%;
+
+    /* Sidebar-specific accent colors for navigation */
+    --sidebar-accent-active: 220 6% 18%;   /* Dark charcoal-gray */
+    --sidebar-border-active: 220 15% 45%;  /* Muted blue */
   }
 
   .charcoal-light {
@@ -400,6 +522,20 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 0 0% 10%;
     --sidebar-border: 0 0% 75%;
     --sidebar-ring: 0 0% 30%;
+
+    /* Accent colors - Charcoal theme light variant */
+    --accent-primary: 0 0% 30%;
+    --accent-primary-bright: 0 0% 38%;
+    --accent-user: 255 75% 65%;         /* Soft indigo/purple for user messages */
+    --accent-user-bright: 255 78% 72%; /* Brighter purple for hover */
+    --accent-ai: 190 85% 52%;
+    --accent-ai-bright: 190 88% 60%;
+    --accent-hover: 0 0% 30%;
+    --accent-focus: 0 0% 30%;
+
+    /* Sidebar-specific accent colors for navigation */
+    --sidebar-accent-active: 0 0% 80%;     /* Light gray */
+    --sidebar-border-active: 0 0% 55%;    /* Medium gray */
   }
 
   .charcoal {
@@ -434,6 +570,20 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 0 0% 96%;
     --sidebar-border: 0 0% 25%;
     --sidebar-ring: 0 0% 70%;
+
+    /* Accent colors - Charcoal theme dark variant */
+    --accent-primary: 0 0% 70%;
+    --accent-primary-bright: 0 0% 78%;
+    --accent-user: 255 68% 68%;         /* Lighter indigo/purple for user messages */
+    --accent-user-bright: 255 70% 75%; /* Even lighter purple for hover */
+    --accent-ai: 190 88% 62%;
+    --accent-ai-bright: 190 90% 70%;
+    --accent-hover: 0 0% 70%;
+    --accent-focus: 0 0% 70%;
+
+    /* Sidebar-specific accent colors for navigation */
+    --sidebar-accent-active: 0 0% 25%;     /* Dark gray */
+    --sidebar-border-active: 0 0% 50%;    /* Medium gray */
   }
 }
 

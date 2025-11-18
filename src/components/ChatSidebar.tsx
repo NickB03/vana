@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CirclePlus, MoreHorizontal, PanelLeft } from "lucide-react";
+import { CirclePlus, MessageSquare, MoreHorizontal, PanelLeft } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -123,54 +123,66 @@ export function ChatSidebar({
           )}
         </div>
 
-        {groupedSessions.map(([period, periodSessions]) => (
-          <SidebarGroup key={period} className="pt-1 pb-2">
-            {!collapsed && <SidebarGroupLabel className="px-4 pb-1">{period}</SidebarGroupLabel>}
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {periodSessions.map(session => (
-                  <SidebarMenuItem key={session.id}>
-                    <div
-                      className="relative flex items-center w-full group/item"
-                      onMouseEnter={() => setHoveredSessionId(session.id)}
-                      onMouseLeave={() => setHoveredSessionId(null)}
-                    >
-                      <SidebarMenuButton
-                        onClick={() => onSessionSelect(session.id)}
-                        isActive={currentSessionId === session.id}
-                        tooltip={collapsed ? session.title : undefined}
-                        className={cn(
-                          "flex items-center hover:bg-accent/50 transition-all duration-150 ease-out overflow-hidden border-l-4 border-transparent",
-                          collapsed ? "justify-center px-2" : "justify-start px-3 group-hover/item:pr-12",
-                        )}
-                        style={currentSessionId === session.id ? {
-                          backgroundColor: 'hsl(var(--accent-primary) / 0.12)',
-                          borderLeftColor: 'hsl(var(--accent-primary))',
-                        } : undefined}
+        {collapsed ? (
+          <div className="px-2 pb-1 pt-1">
+            <div className="px-2 pb-1 text-xs font-medium text-sidebar-foreground/70 h-8 flex items-center invisible">Today</div>
+            <Button
+              onClick={toggleSidebar}
+              variant="ghost"
+              className="w-full h-10 hover:bg-accent rounded-md p-0 flex items-center justify-center"
+              aria-label="Expand sidebar to view chat history"
+            >
+              <MessageSquare className="h-6 w-6" strokeWidth={1.5} />
+            </Button>
+          </div>
+        ) : (
+          groupedSessions.map(([period, periodSessions]) => (
+            <SidebarGroup key={period} className="pt-1 pb-2">
+              <SidebarGroupLabel className="px-4 pb-1">{period}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {periodSessions.map(session => (
+                    <SidebarMenuItem key={session.id}>
+                      <div
+                        className="relative flex items-center w-full group/item"
+                        onMouseEnter={() => setHoveredSessionId(session.id)}
+                        onMouseLeave={() => setHoveredSessionId(null)}
                       >
-                        {!collapsed && <span className="truncate text-base whitespace-nowrap">{session.title}</span>}
-                      </SidebarMenuButton>
-
-                      {!collapsed && hoveredSessionId === session.id && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 absolute right-2 opacity-0 group-hover/item:opacity-100 transition-opacity"
-                          onClick={e => {
-                            e.stopPropagation();
-                            onDeleteSession(session.id);
-                          }}
+                        <SidebarMenuButton
+                          onClick={() => onSessionSelect(session.id)}
+                          isActive={currentSessionId === session.id}
+                          className={cn(
+                            "flex items-center hover:bg-accent/50 transition-all duration-150 ease-out overflow-hidden",
+                            "justify-start px-3 group-hover/item:pr-12",
+                          )}
+                          style={currentSessionId === session.id ? {
+                            backgroundColor: 'hsl(var(--sidebar-accent-active))',
+                          } : undefined}
                         >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+                          <span className="truncate text-base whitespace-nowrap">{session.title}</span>
+                        </SidebarMenuButton>
+
+                        {hoveredSessionId === session.id && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 absolute right-2 opacity-0 group-hover/item:opacity-100 transition-opacity"
+                            onClick={e => {
+                              e.stopPropagation();
+                              onDeleteSession(session.id);
+                            }}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))
+        )}
       </SidebarContent>
 
       <SidebarFooter className="p-2 border-t border-border/50">
