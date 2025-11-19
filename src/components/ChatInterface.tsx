@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Copy, Pencil, Trash, ThumbsUp, ThumbsDown, Maximize2 } from "lucide-react";
+import { Copy, Pencil, Trash, ThumbsUp, ThumbsDown, Maximize2, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { validateFile, sanitizeFilename } from "@/utils/fileValidation";
@@ -92,6 +92,7 @@ export function ChatInterface({
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [imageMode, setImageMode] = useState(initialImageMode);
   const [artifactMode, setArtifactMode] = useState(initialArtifactMode);
+  const [expandedReasoningMessageId, setExpandedReasoningMessageId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Memoized artifact open handler to prevent breaking MessageWithArtifacts memo
@@ -113,6 +114,7 @@ export function ChatInterface({
     setInput("");
     setIsStreaming(true);
     setStreamingMessage("");
+    setExpandedReasoningMessageId(null);
 
     // Capture mode states and reset them after sending
     const shouldGenerateImage = imageMode;
@@ -308,7 +310,7 @@ export function ChatInterface({
   const renderChatContent = () => (
     <div className="flex flex-1 flex-col min-h-0 p-4">
       {/* Unified chat card with embedded prompt input */}
-      <div className="relative mx-auto flex flex-1 min-h-0 w-full max-w-4xl rounded-3xl bg-black/50 backdrop-blur-sm shadow-lg border border-border/30">
+      <div className="relative mx-auto flex flex-1 min-h-0 w-full max-w-5xl rounded-3xl bg-black/50 backdrop-blur-sm shadow-lg border border-border/30">
         <ChatContainerRoot className="flex flex-1 flex-col min-h-0 overflow-hidden">
           <ChatContainerContent
             className={combineSpacing(
@@ -319,7 +321,7 @@ export function ChatInterface({
         >
           {/* Guest mode system message - show after first message */}
           {isGuest && messages.length > 0 && (
-            <div className="mx-auto w-full max-w-4xl px-6 py-3">
+            <div className="mx-auto w-full max-w-5xl px-6 py-3">
               <SystemMessage
                 variant="action"
                 fill
@@ -344,131 +346,159 @@ export function ChatInterface({
             // Only animate new messages (last message when not streaming)
             // This prevents performance issues with long chat histories
             const shouldAnimate = isLastMessage && !isStreaming;
+            const hasReasoning = Boolean(message.reasoning || message.reasoning_steps);
+            const isReasoningExpanded =
+              hasReasoning && expandedReasoningMessageId === message.id;
+            const stepCount = message.reasoning_steps?.steps?.length;
 
             const messageContent = (
-                    <MessageComponent
-                      className={cn(
-                        "chat-message mx-auto flex w-full max-w-4xl flex-col gap-2 px-2 sm:px-4",
-                        isAssistant ? "items-start" : "items-end"
-                      )}
-                    >
-                      {isAssistant ? (
-                        <div className="group flex w-full flex-col gap-0">
-                          {(message.reasoning || message.reasoning_steps) && (
-                            <ReasoningErrorBoundary>
+              <MessageComponent
+                className={cn(
+                  "chat-message mx-auto flex w-full max-w-5xl flex-col gap-2 px-2 sm:px-4",
+                  isAssistant ? "items-start" : "items-end"
+                )}
+              >
+                {isAssistant ? (
+                  <div className="group flex w-full flex-col gap-0">
+                    {hasReasoning && (
+                      <ReasoningErrorBoundary>
+                        <div className="mb-1 self-start space-y-1">
+                          <Button
+                            variant="outline"
+                            size="xs"
+                            className="inline-flex h-7 w-auto items-center gap-1.5 px-2 text-xs text-muted-foreground"
+                            onClick={() =>
+                              setExpandedReasoningMessageId(
+                                isReasoningExpanded ? null : message.id
+                              )
+                            }
+                          >
+                            <span>{isReasoningExpanded ? "Hide thinking" : "Show thinking"}</span>
+                            {isReasoningExpanded ? (
+                              <ChevronUp className="h-3 w-3" />
+                            ) : (
+                              <ChevronDown className="h-3 w-3" />
+                            )}
+                          </Button>
+                          {isReasoningExpanded && (
+                            <div className="pt-1">
                               <ReasoningIndicator
                                 reasoning={message.reasoning}
                                 reasoningSteps={message.reasoning_steps}
                               />
-                            </ReasoningErrorBoundary>
+                            </div>
                           )}
-                          <MessageWithArtifacts
-                            content={message.content}
-                            messageId={message.id}
-                            onArtifactOpen={handleArtifactOpen}
-                          />
+                        </div>
+                      </ReasoningErrorBoundary>
+                    )}
+                    <MessageWithArtifacts
+                      content={message.content}
+                      messageId={message.id}
+                      onArtifactOpen={handleArtifactOpen}
+                    />
 
-                          <MessageActions
-                            className={cn(
-                              "-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100",
-                              isLastMessage && "opacity-100"
-                            )}
-                          >
-                            <MessageAction tooltip="Copy" delayDuration={100}>
-                              <Button variant="ghost" size="icon" className="rounded-full">
-                                <Copy />
-                              </Button>
-                            </MessageAction>
-                            <MessageAction tooltip="Upvote" delayDuration={100}>
-                              <Button variant="ghost" size="icon" className="rounded-full">
-                                <ThumbsUp />
-                              </Button>
-                            </MessageAction>
-                            <MessageAction tooltip="Downvote" delayDuration={100}>
-                              <Button variant="ghost" size="icon" className="rounded-full">
-                                <ThumbsDown />
-                              </Button>
-                            </MessageAction>
-                          </MessageActions>
-                        </div>
-                      ) : (
-                        <div className="group flex flex-col items-end gap-1">
-                          <MessageContent
-                            className="w-auto max-w-2xl rounded-3xl px-5 py-2.5 text-foreground border transition-all duration-150"
-                            style={{
-                              backgroundColor: 'hsl(var(--accent-user) / 0.18)',
-                              borderColor: 'hsl(var(--accent-user) / 0.35)',
-                              boxShadow: '0 1px 2px 0 hsl(var(--accent-user) / 0.08), 0 4px 8px -2px hsl(var(--accent-user) / 0.15), 0 0 0 1px hsl(var(--accent-user) / 0.10)',
-                            }}
-                          >
-                            {message.content}
-                          </MessageContent>
-                          <MessageActions
-                            className={cn(
-                              "flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100"
-                            )}
-                          >
-                            <MessageAction tooltip="Edit" delayDuration={100}>
-                              <Button variant="ghost" size="icon" className="rounded-full">
-                                <Pencil />
-                              </Button>
-                            </MessageAction>
-                            <MessageAction tooltip="Delete" delayDuration={100}>
-                              <Button variant="ghost" size="icon" className="rounded-full">
-                                <Trash />
-                              </Button>
-                            </MessageAction>
-                            <MessageAction tooltip="Copy" delayDuration={100}>
-                              <Button variant="ghost" size="icon" className="rounded-full">
-                                <Copy />
-                              </Button>
-                            </MessageAction>
-                          </MessageActions>
-                        </div>
+                    <MessageActions
+                      className={cn(
+                        "-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100",
+                        isLastMessage && "opacity-100"
                       )}
-                      </MessageComponent>
-                  );
-
-                  // Wrap with motion animation only for new messages to optimize performance
-                  return shouldAnimate ? (
-                    <motion.div
-                      key={message.id}
-                      className="will-change-transform transform-gpu"
-                      {...scaleIn}
-                      transition={{
-                        duration: ANIMATION_DURATIONS.moderate,
-                        ease: ANIMATION_EASINGS.easeOut
+                    >
+                      <MessageAction tooltip="Copy" delayDuration={100}>
+                        <Button variant="ghost" size="icon" className="rounded-full">
+                          <Copy />
+                        </Button>
+                      </MessageAction>
+                      <MessageAction tooltip="Upvote" delayDuration={100}>
+                        <Button variant="ghost" size="icon" className="rounded-full">
+                          <ThumbsUp />
+                        </Button>
+                      </MessageAction>
+                      <MessageAction tooltip="Downvote" delayDuration={100}>
+                        <Button variant="ghost" size="icon" className="rounded-full">
+                          <ThumbsDown />
+                        </Button>
+                      </MessageAction>
+                    </MessageActions>
+                  </div>
+                ) : (
+                  <div className="group flex flex-col items-end gap-1">
+                    <MessageContent
+                      className="w-auto max-w-2xl rounded-3xl px-5 py-2.5 text-sm sm:text-base text-foreground border transition-all duration-150"
+                      style={{
+                        backgroundColor: 'hsl(var(--accent-user) / 0.18)',
+                        borderColor: 'hsl(var(--accent-user) / 0.35)',
+                        boxShadow:
+                          '0 1px 2px 0 hsl(var(--accent-user) / 0.08), 0 4px 8px -2px hsl(var(--accent-user) / 0.15), 0 0 0 1px hsl(var(--accent-user) / 0.10)',
                       }}
                     >
-                      {messageContent}
-                    </motion.div>
-                  ) : (
-                    <div key={message.id}>{messageContent}</div>
-                  );
-                })}
-
-                {isStreaming && streamingMessage && (
-                  <MessageComponent className="mx-auto flex w-full max-w-4xl flex-col gap-2 px-2 sm:px-4 items-start">
-                    <div className="group flex w-full flex-col gap-0">
-                      <ReasoningErrorBoundary fallback={<ThinkingIndicator status="Loading reasoning..." />}>
-                        <ReasoningIndicator
-                          reasoning={streamProgress.message}
-                          reasoningSteps={streamProgress.reasoningSteps}
-                          isStreaming
-                          percentage={streamProgress.percentage}
-                        />
-                      </ReasoningErrorBoundary>
-                      <MessageWithArtifacts
-                        content={streamingMessage}
-                        onArtifactOpen={handleArtifactOpen}
-                      />
-                    </div>
-                  </MessageComponent>
+                      {message.content}
+                    </MessageContent>
+                    <MessageActions
+                      className={cn(
+                        "flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100"
+                      )}
+                    >
+                      <MessageAction tooltip="Edit" delayDuration={100}>
+                        <Button variant="ghost" size="icon" className="rounded-full">
+                          <Pencil />
+                        </Button>
+                      </MessageAction>
+                      <MessageAction tooltip="Delete" delayDuration={100}>
+                        <Button variant="ghost" size="icon" className="rounded-full">
+                          <Trash />
+                        </Button>
+                      </MessageAction>
+                      <MessageAction tooltip="Copy" delayDuration={100}>
+                        <Button variant="ghost" size="icon" className="rounded-full">
+                          <Copy />
+                        </Button>
+                      </MessageAction>
+                    </MessageActions>
+                  </div>
                 )}
+              </MessageComponent>
+            );
 
-            {(isLoading || isStreaming) && !streamingMessage && (
-              <MessageSkeleton variant="assistant" />
-            )}
+            // Wrap with motion animation only for new messages to optimize performance
+            return shouldAnimate ? (
+              <motion.div
+                key={message.id}
+                className="will-change-transform transform-gpu"
+                {...scaleIn}
+                transition={{
+                  duration: ANIMATION_DURATIONS.moderate,
+                  ease: ANIMATION_EASINGS.easeOut,
+                }}
+              >
+                {messageContent}
+              </motion.div>
+            ) : (
+              <div key={message.id}>{messageContent}</div>
+            );
+          })}
+
+          {isStreaming && (streamingMessage || streamProgress.reasoningSteps) && (
+            <MessageComponent className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-2 sm:px-4 items-start">
+              <div className="group flex w-full flex-col gap-0">
+                <ReasoningErrorBoundary fallback={<ThinkingIndicator status="Loading reasoning..." />}>
+                  <ReasoningIndicator
+                    reasoning={streamProgress.message}
+                    reasoningSteps={streamProgress.reasoningSteps}
+                    isStreaming
+                    percentage={streamProgress.percentage}
+                  />
+                </ReasoningErrorBoundary>
+                <MessageWithArtifacts
+                  content={streamingMessage}
+                  onArtifactOpen={handleArtifactOpen}
+                />
+              </div>
+            </MessageComponent>
+          )}
+
+          {(isLoading || isStreaming) && !streamingMessage && !streamProgress.reasoningSteps && (
+            <MessageSkeleton variant="assistant" />
+          )}
         </ChatContainerContent>
 
         <div className="absolute bottom-4 right-4">

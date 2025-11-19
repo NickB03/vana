@@ -52,7 +52,7 @@ export const MessageWithArtifacts = memo(({
       >
         <Markdown
           id={messageId}
-          className="prose prose-sm max-w-none dark:prose-invert"
+          className="prose max-w-none dark:prose-invert"
         >
           {cleanContent}
         </Markdown>
