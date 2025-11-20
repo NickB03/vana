@@ -20,7 +20,7 @@ const QUERY_PROMPT = "Represent this sentence for searching relevant passages: "
 
 // Configuration for runtime embedding generation via OpenRouter
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/embeddings";
-const OPENROUTER_MODEL = "qwen/qwen3-embedding-0.6b"; // 1024 dimensions
+const OPENROUTER_MODEL = "qwen/qwen3-embedding-8b"; // 1024 dimensions (configurable 32-4096)
 
 /**
  * Generate embedding for user query using OpenRouter
@@ -44,7 +44,7 @@ async function generateQueryEmbedding(prompt: string): Promise<number[]> {
         'X-Title': 'Intent Detection'
       },
       body: JSON.stringify({
-        model: OPENROUTER_MODEL, // qwen/qwen3-embedding-0.6b - 1024 dimensions
+        model: OPENROUTER_MODEL, // qwen/qwen3-embedding-8b - 1024 dimensions (configurable 32-4096)
         input: queryText,
         dimensions: 1024 // Explicitly request 1024 dimensions to match stored embeddings
       })

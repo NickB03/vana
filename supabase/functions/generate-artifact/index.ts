@@ -1,8 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { callSherlockWithRetry, extractTextFromKimi, extractTokenUsage, calculateSherlockCost, logAIUsage } from "../_shared/openrouter-client.ts";
+import { callKimiWithRetryTracking, extractTextFromKimi, extractTokenUsage, calculateKimiCost, logAIUsage } from "../_shared/openrouter-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
-import { MODELS } from "../_shared/config.ts";
+import { MODELS, RATE_LIMITS } from "../_shared/config.ts";
+import { handleKimiError } from "../_shared/api-error-handler.ts";
 
 // NOTE: Retry logic moved to openrouter-client.ts
 // callKimiWithRetry() now handles exponential backoff automatically
@@ -271,7 +272,12 @@ serve(async (req) => {
       );
     }
 
-    // Support both authenticated and guest users
+    // ============================================================================
+    // CRITICAL SECURITY: Authentication Validation BEFORE Rate Limiting
+    // ============================================================================
+    // FIX: Validate auth FIRST to prevent rate-limit bypass with fake tokens
+    // Invalid/missing auth tokens must be treated as guest requests, not skipped
+    // ============================================================================
     let user = null;
     const authHeader = req.headers.get("Authorization");
 
@@ -280,6 +286,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
+    // Validate authentication if header provided
     if (authHeader) {
       supabase = createClient(
         Deno.env.get("SUPABASE_URL") ?? "",
@@ -291,6 +298,157 @@ serve(async (req) => {
       if (authUser) {
         user = authUser;
       }
+      // Note: Invalid tokens fall through as guest (user = null)
+    }
+
+    // Determine guest status based on ACTUAL auth result (not header presence)
+    const isGuest = !user;
+
+    // Create service_role client for rate limiting checks
+    const serviceClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // ============================================================================
+    // CRITICAL SECURITY: Rate Limiting (Defense-in-Depth)
+    // ============================================================================
+    // Parallelize API throttle and guest/user rate limit checks for faster response
+    // This prevents:
+    // 1. API abuse (unlimited expensive Kimi K2 requests)
+    // 2. Service degradation (overwhelming external APIs)
+    // 3. Financial damage (Kimi K2 costs ~$0.02 per 1K tokens)
+    // 4. Rate-limit bypass via fake auth tokens (now fixed!)
+    // ============================================================================
+    const [
+      { data: apiThrottleResult, error: apiThrottleError },
+      rateLimitResult
+    ] = await Promise.all([
+      // Check Kimi API throttle (10 RPM for artifact generation - stricter than chat)
+      serviceClient.rpc("check_api_throttle", {
+        p_api_name: "kimi-k2",
+        p_max_requests: RATE_LIMITS.ARTIFACT.API_THROTTLE.MAX_REQUESTS,
+        p_window_seconds: RATE_LIMITS.ARTIFACT.API_THROTTLE.WINDOW_SECONDS
+      }),
+      // Check appropriate rate limit based on VALIDATED auth status
+      isGuest ? (async () => {
+        // Get client IP address (trusted headers set by Supabase Edge infrastructure)
+        // X-Forwarded-For is sanitized by Supabase proxy to prevent spoofing
+        const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0].trim()
+          || req.headers.get("x-real-ip")
+          || "unknown";
+
+        return await serviceClient.rpc("check_guest_rate_limit", {
+          p_identifier: clientIp,
+          p_max_requests: RATE_LIMITS.ARTIFACT.GUEST.MAX_REQUESTS,
+          p_window_hours: RATE_LIMITS.ARTIFACT.GUEST.WINDOW_HOURS
+        });
+      })() : serviceClient.rpc("check_user_rate_limit", {
+        p_user_id: user!.id,
+        p_max_requests: RATE_LIMITS.ARTIFACT.AUTHENTICATED.MAX_REQUESTS,
+        p_window_hours: RATE_LIMITS.ARTIFACT.AUTHENTICATED.WINDOW_HOURS
+      })
+    ]);
+
+    // Handle API throttle check results
+    if (apiThrottleError) {
+      console.error(`[${requestId}] API throttle check error:`, apiThrottleError);
+      return new Response(
+        JSON.stringify({
+          error: "Service temporarily unavailable",
+          requestId,
+          retryable: true
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
+      );
+    } else if (apiThrottleResult && !apiThrottleResult.allowed) {
+      console.warn(`[${requestId}] 🚨 API throttle exceeded for Kimi K2 artifact generation`);
+      return new Response(
+        JSON.stringify({
+          error: "API rate limit exceeded. Please try again in a moment.",
+          rateLimitExceeded: true,
+          resetAt: apiThrottleResult.reset_at,
+          retryAfter: apiThrottleResult.retry_after
+        }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+            "X-RateLimit-Limit": apiThrottleResult.total.toString(),
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": new Date(apiThrottleResult.reset_at).getTime().toString(),
+            "Retry-After": apiThrottleResult.retry_after.toString(),
+            "X-Request-ID": requestId
+          }
+        }
+      );
+    }
+
+    // Handle rate limit check results (guest or authenticated)
+    const { data: rateLimitData, error: rateLimitError } = rateLimitResult;
+    let rateLimitHeaders = {};
+
+    if (rateLimitError) {
+      const errorType = isGuest ? "Guest" : "User";
+      console.error(`[${requestId}] ${errorType} rate limit check error:`, rateLimitError);
+      return new Response(
+        JSON.stringify({
+          error: "Service temporarily unavailable",
+          requestId,
+          retryable: true
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
+      );
+    } else if (rateLimitData && !rateLimitData.allowed) {
+      if (isGuest) {
+        console.warn(`[${requestId}] 🚨 Guest rate limit exceeded (${RATE_LIMITS.ARTIFACT.GUEST.MAX_REQUESTS} per ${RATE_LIMITS.ARTIFACT.GUEST.WINDOW_HOURS}h)`);
+        return new Response(
+          JSON.stringify({
+            error: "Rate limit exceeded. Please sign in to continue using artifact generation.",
+            rateLimitExceeded: true,
+            resetAt: rateLimitData.reset_at
+          }),
+          {
+            status: 429,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+              "X-RateLimit-Limit": rateLimitData.total.toString(),
+              "X-RateLimit-Remaining": "0",
+              "X-RateLimit-Reset": new Date(rateLimitData.reset_at).getTime().toString(),
+              "X-Request-ID": requestId
+            }
+          }
+        );
+      } else {
+        console.warn(`[${requestId}] 🚨 User rate limit exceeded (${RATE_LIMITS.ARTIFACT.AUTHENTICATED.MAX_REQUESTS} per ${RATE_LIMITS.ARTIFACT.AUTHENTICATED.WINDOW_HOURS}h)`);
+        return new Response(
+          JSON.stringify({
+            error: "Rate limit exceeded. Please try again later.",
+            rateLimitExceeded: true,
+            resetAt: rateLimitData.reset_at
+          }),
+          {
+            status: 429,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+              "X-RateLimit-Limit": rateLimitData.total.toString(),
+              "X-RateLimit-Remaining": "0",
+              "X-RateLimit-Reset": new Date(rateLimitData.reset_at).getTime().toString(),
+              "X-Request-ID": requestId
+            }
+          }
+        );
+      }
+    } else if (rateLimitData) {
+      // Add rate limit headers to successful responses
+      rateLimitHeaders = {
+        "X-RateLimit-Limit": rateLimitData.total.toString(),
+        "X-RateLimit-Remaining": rateLimitData.remaining.toString(),
+        "X-RateLimit-Reset": new Date(rateLimitData.reset_at).getTime().toString()
+      };
     }
 
     const userType = user ? `user ${user.id}` : "guest";
@@ -304,9 +462,9 @@ serve(async (req) => {
       ? `Create a ${artifactType} artifact for: ${prompt}\n\nIMPORTANT: Return the COMPLETE artifact wrapped in XML tags like: <artifact type="application/vnd.ant.react" title="Descriptive Title">YOUR CODE HERE</artifact>\n\nInclude the opening <artifact> tag, the complete code, and the closing </artifact> tag.`
       : `Create an artifact for: ${prompt}\n\nIMPORTANT: Return the COMPLETE artifact wrapped in XML tags like: <artifact type="application/vnd.ant.react" title="Descriptive Title">YOUR CODE HERE</artifact>\n\nInclude the opening <artifact> tag, the complete code, and the closing </artifact> tag.`;
 
-    // Call Sherlock Think Alpha via OpenRouter with retry logic
-    console.log(`[${requestId}] 🚀 Routing to Sherlock Think Alpha (fast reasoning model for code generation)`);
-    const response = await callSherlockWithRetry(
+    // Call Kimi K2-Thinking via OpenRouter with retry logic and tracking
+    console.log(`[${requestId}] 🤖 Routing to Kimi K2-Thinking via OpenRouter`);
+    const { response, retryCount } = await callKimiWithRetryTracking(
       ARTIFACT_SYSTEM_PROMPT,
       userPrompt,
       {
@@ -317,58 +475,7 @@ serve(async (req) => {
     );
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[${requestId}] Sherlock Think Alpha API error:`, response.status, errorText.substring(0, 200));
-
-      if (response.status === 429 || response.status === 403) {
-        return new Response(
-          JSON.stringify({
-            error: "API quota exceeded. Please try again in a moment.",
-            requestId
-          }),
-          {
-            status: 429,
-            headers: {
-              ...corsHeaders,
-              "Content-Type": "application/json",
-              "X-Request-ID": requestId
-            }
-          }
-        );
-      }
-
-      if (response.status === 503) {
-        return new Response(
-          JSON.stringify({
-            error: "AI service is temporarily overloaded. Please try again in a moment.",
-            requestId,
-            retryable: true
-          }),
-          {
-            status: 503,
-            headers: {
-              ...corsHeaders,
-              "Content-Type": "application/json",
-              "X-Request-ID": requestId
-            }
-          }
-        );
-      }
-
-      return new Response(
-        JSON.stringify({
-          error: "Artifact generation failed. Please try again.",
-          requestId
-        }),
-        {
-          status: response.status,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-            "X-Request-ID": requestId
-          }
-        }
-      );
+      return await handleKimiError(response, requestId, corsHeaders);
     }
 
     const data = await response.json();
@@ -376,7 +483,7 @@ serve(async (req) => {
 
     // Extract token usage for cost tracking
     const tokenUsage = extractTokenUsage(data);
-    const estimatedCost = calculateSherlockCost(tokenUsage.inputTokens, tokenUsage.outputTokens);
+    const estimatedCost = calculateKimiCost(tokenUsage.inputTokens, tokenUsage.outputTokens);
 
     console.log(`[${requestId}] 💰 Token usage:`, {
       input: tokenUsage.inputTokens,
@@ -391,7 +498,7 @@ serve(async (req) => {
       requestId,
       functionName: 'generate-artifact',
       provider: 'openrouter',
-      model: MODELS.SHERLOCK,
+      model: MODELS.KIMI_K2,
       userId: user?.id,
       isGuest: !user,
       inputTokens: tokenUsage.inputTokens,
@@ -400,11 +507,11 @@ serve(async (req) => {
       latencyMs,
       statusCode: 200,
       estimatedCost,
-      retryCount: 0,
+      retryCount, // Now uses actual retry count from tracking function
       promptPreview: prompt.substring(0, 200),
       responseLength: artifactCode.length
     }).catch(err => console.error(`[${requestId}] Failed to log usage:`, err));
-    console.log(`[${requestId}] 📊 Usage logged to database`);
+    console.log(`[${requestId}] 📊 Usage logged to database (${retryCount} retries)`);
 
     if (!artifactCode || artifactCode.trim().length === 0) {
       console.error(`[${requestId}] Empty artifact code returned from API`);
@@ -436,6 +543,7 @@ serve(async (req) => {
       {
         headers: {
           ...corsHeaders,
+          ...rateLimitHeaders,
           "Content-Type": "application/json",
           "X-Request-ID": requestId
         },

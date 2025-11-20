@@ -13,7 +13,6 @@ import {
   RATE_LIMITS,
   VALIDATION_LIMITS,
   RETRY_CONFIG,
-  ARTIFACT_CONFIG,
   STORAGE_CONFIG,
   API_ENDPOINTS,
   MODELS,
@@ -92,27 +91,6 @@ Deno.test("RETRY_CONFIG should have valid retry configuration", () => {
   assert(RETRY_CONFIG.BACKOFF_MULTIPLIER > 1, "BACKOFF_MULTIPLIER should be greater than 1");
   assert(RETRY_CONFIG.INITIAL_DELAY_MS > 0, "INITIAL_DELAY_MS should be positive");
   assert(RETRY_CONFIG.MAX_DELAY_MS > RETRY_CONFIG.INITIAL_DELAY_MS, "MAX_DELAY_MS should be greater than INITIAL_DELAY_MS");
-});
-
-Deno.test("RETRY_CONFIG.DELAYS_MS should match MAX_RETRIES", () => {
-  assertEquals(
-    RETRY_CONFIG.DELAYS_MS.length,
-    RETRY_CONFIG.MAX_RETRIES,
-    "DELAYS_MS array should have MAX_RETRIES elements"
-  );
-});
-
-Deno.test("RETRY_CONFIG.DELAYS_MS should be readonly", () => {
-  const delays = RETRY_CONFIG.DELAYS_MS;
-  // TypeScript should enforce readonly, but we can check it's an array
-  assert(Array.isArray(delays), "DELAYS_MS should be an array");
-});
-
-// ==================== ARTIFACT_CONFIG Tests ====================
-
-Deno.test("ARTIFACT_CONFIG should have valid retry settings", () => {
-  assert(ARTIFACT_CONFIG.MAX_RETRIES >= 0);
-  assertEquals(ARTIFACT_CONFIG.RETRY_DELAYS_MS.length, ARTIFACT_CONFIG.MAX_RETRIES);
 });
 
 // ==================== STORAGE_CONFIG Tests ====================
@@ -275,18 +253,16 @@ Deno.test("Config objects should be immutable (const assertion)", () => {
 // ==================== Integration Tests ====================
 
 Deno.test("Config values should be internally consistent", () => {
-  // Retry delays should fit within max retries
-  assert(RETRY_CONFIG.DELAYS_MS.length === RETRY_CONFIG.MAX_RETRIES);
-  assert(ARTIFACT_CONFIG.RETRY_DELAYS_MS.length === ARTIFACT_CONFIG.MAX_RETRIES);
-
-  // Artifact config should align with retry config
-  assertEquals(ARTIFACT_CONFIG.MAX_RETRIES, RETRY_CONFIG.MAX_RETRIES);
-
   // Storage expiry should be reasonable (7 days = 604800 seconds)
   assertEquals(STORAGE_CONFIG.SIGNED_URL_EXPIRY_SECONDS, 604800);
 
   // Cache control should be reasonable (1 year = 31536000 seconds)
   assertEquals(STORAGE_CONFIG.CACHE_CONTROL, "31536000");
+
+  // Retry config should use exponential backoff
+  assert(RETRY_CONFIG.MAX_RETRIES >= 0);
+  assert(RETRY_CONFIG.BACKOFF_MULTIPLIER > 1);
+  assert(RETRY_CONFIG.MAX_DELAY_MS > RETRY_CONFIG.INITIAL_DELAY_MS);
 });
 
 Deno.test("All exported constants should be defined", () => {
@@ -294,7 +270,6 @@ Deno.test("All exported constants should be defined", () => {
     RATE_LIMITS,
     VALIDATION_LIMITS,
     RETRY_CONFIG,
-    ARTIFACT_CONFIG,
     STORAGE_CONFIG,
     API_ENDPOINTS,
     MODELS,

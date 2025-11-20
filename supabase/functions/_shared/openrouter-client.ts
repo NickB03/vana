@@ -13,21 +13,12 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { MODELS } from './config.ts';
+import { MODELS, RETRY_CONFIG } from './config.ts';
 
 // Separate API keys for different use cases
 const OPENROUTER_K2T_KEY = Deno.env.get("OPENROUTER_K2T_KEY");
-const OPENROUTER_SHERLOCK_FREE_KEY = Deno.env.get("OPENROUTER_SHERLOCK_FREE_KEY");
 const OPENROUTER_GEMINI_FLASH_KEY = Deno.env.get("OPENROUTER_GEMINI_FLASH_KEY");
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
-
-// Retry configuration for handling transient API failures
-const RETRY_CONFIG = {
-  maxRetries: 3,
-  initialDelayMs: 1000,
-  maxDelayMs: 10000,
-  backoffMultiplier: 2,
-};
 
 // Validate K2T key (for artifact generation)
 if (!OPENROUTER_K2T_KEY) {
@@ -60,6 +51,11 @@ export interface CallKimiOptions {
   isGuest?: boolean; // For usage tracking
   functionName?: string; // 'generate-artifact' or 'generate-artifact-fix'
   promptPreview?: string; // First 200 chars for debugging
+}
+
+export interface RetryResult {
+  response: Response;
+  retryCount: number;
 }
 
 /**
@@ -143,17 +139,21 @@ export async function callKimiWithRetry(
 
     // Handle rate limiting (429) and service overload (503) with exponential backoff
     if (response.status === 429 || response.status === 503) {
-      if (retryCount < RETRY_CONFIG.maxRetries) {
+      if (retryCount < RETRY_CONFIG.MAX_RETRIES) {
+        // CRITICAL: Drain response body to prevent resource leak
+        // Unconsumed response bodies hold onto network resources and memory
+        await response.text();
+
         const delayMs = Math.min(
-          RETRY_CONFIG.initialDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, retryCount),
-          RETRY_CONFIG.maxDelayMs
+          RETRY_CONFIG.INITIAL_DELAY_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, retryCount),
+          RETRY_CONFIG.MAX_DELAY_MS
         );
 
         const retryAfter = response.headers.get('Retry-After');
         const actualDelayMs = retryAfter ? parseInt(retryAfter) * 1000 : delayMs;
 
         const errorType = response.status === 429 ? "Rate limited" : "Service overloaded";
-        console.log(`[${requestId}] ${errorType} (${response.status}). Retry ${retryCount + 1}/${RETRY_CONFIG.maxRetries} after ${actualDelayMs}ms`);
+        console.log(`[${requestId}] ${errorType} (${response.status}). Retry ${retryCount + 1}/${RETRY_CONFIG.MAX_RETRIES} after ${actualDelayMs}ms`);
 
         await new Promise(resolve => setTimeout(resolve, actualDelayMs));
 
@@ -165,10 +165,10 @@ export async function callKimiWithRetry(
 
     return response;
   } catch (error) {
-    if (retryCount < RETRY_CONFIG.maxRetries) {
+    if (retryCount < RETRY_CONFIG.MAX_RETRIES) {
       const delayMs = Math.min(
-        RETRY_CONFIG.initialDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, retryCount),
-        RETRY_CONFIG.maxDelayMs
+        RETRY_CONFIG.INITIAL_DELAY_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, retryCount),
+        RETRY_CONFIG.MAX_DELAY_MS
       );
       console.log(`[${requestId}] Network error, retrying after ${delayMs}ms:`, error);
 
@@ -179,6 +179,80 @@ export async function callKimiWithRetry(
 
     throw error;
   }
+}
+
+/**
+ * Call Kimi with retry tracking - returns both response and retry count
+ * Use this when you need to log the actual number of retries that occurred
+ *
+ * @param systemPrompt - System instruction
+ * @param userPrompt - User prompt
+ * @param options - Configuration options
+ * @returns Object with response and retryCount
+ */
+export async function callKimiWithRetryTracking(
+  systemPrompt: string,
+  userPrompt: string,
+  options?: CallKimiOptions
+): Promise<RetryResult> {
+  const requestId = options?.requestId || crypto.randomUUID();
+
+  // Internal recursive function that tracks retry count
+  async function attemptWithRetry(retryCount = 0): Promise<RetryResult> {
+    try {
+      const response = await callKimi(systemPrompt, userPrompt, {
+        ...options,
+        requestId
+      });
+
+      if (response.ok) {
+        return { response, retryCount };
+      }
+
+      // Handle rate limiting (429) and service overload (503) with exponential backoff
+      if (response.status === 429 || response.status === 503) {
+        if (retryCount < RETRY_CONFIG.MAX_RETRIES) {
+          // CRITICAL: Drain response body to prevent resource leak
+          await response.text();
+
+          const delayMs = Math.min(
+            RETRY_CONFIG.INITIAL_DELAY_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, retryCount),
+            RETRY_CONFIG.MAX_DELAY_MS
+          );
+
+          const retryAfter = response.headers.get('Retry-After');
+          const actualDelayMs = retryAfter ? parseInt(retryAfter) * 1000 : delayMs;
+
+          const errorType = response.status === 429 ? "Rate limited" : "Service overloaded";
+          console.log(`[${requestId}] ${errorType} (${response.status}). Retry ${retryCount + 1}/${RETRY_CONFIG.MAX_RETRIES} after ${actualDelayMs}ms`);
+
+          await new Promise(resolve => setTimeout(resolve, actualDelayMs));
+
+          return attemptWithRetry(retryCount + 1);
+        } else {
+          console.error(`[${requestId}] Max retries exceeded (status: ${response.status})`);
+        }
+      }
+
+      return { response, retryCount };
+    } catch (error) {
+      if (retryCount < RETRY_CONFIG.MAX_RETRIES) {
+        const delayMs = Math.min(
+          RETRY_CONFIG.INITIAL_DELAY_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, retryCount),
+          RETRY_CONFIG.MAX_DELAY_MS
+        );
+        console.log(`[${requestId}] Network error, retrying after ${delayMs}ms:`, error);
+
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+
+        return attemptWithRetry(retryCount + 1);
+      }
+
+      throw error;
+    }
+  }
+
+  return attemptWithRetry(0);
 }
 
 /**
@@ -242,136 +316,6 @@ export function calculateKimiCost(inputTokens: number, outputTokens: number): nu
   const outputCost = (outputTokens / 1_000_000) * OUTPUT_COST_PER_M;
 
   return inputCost + outputCost;
-}
-
-// ============================================================================
-// Sherlock Think Alpha Functions (Fast reasoning for artifacts)
-// ============================================================================
-
-/**
- * Call Sherlock Think Alpha for fast artifact generation
- * Uses OpenAI-compatible format
- *
- * @param systemPrompt - System instruction for the model
- * @param userPrompt - User's prompt or code to generate
- * @param options - Temperature, max tokens, request ID
- * @returns Response object
- */
-export async function callSherlock(
-  systemPrompt: string,
-  userPrompt: string,
-  options?: CallKimiOptions
-): Promise<Response> {
-  const {
-    temperature = 0.7,
-    max_tokens = 8000,
-    requestId = crypto.randomUUID()
-  } = options || {};
-
-  if (!OPENROUTER_SHERLOCK_FREE_KEY) {
-    throw new Error("OPENROUTER_SHERLOCK_FREE_KEY not configured");
-  }
-
-  console.log(`[${requestId}] 🤖 Routing to Sherlock Think Alpha via OpenRouter`);
-
-  const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${OPENROUTER_SHERLOCK_FREE_KEY}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": Deno.env.get("SITE_URL") || "https://your-domain.com",
-      "X-Title": "AI Chat App - Artifact Generation"
-    },
-    body: JSON.stringify({
-      model: MODELS.SHERLOCK,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ],
-      temperature,
-      max_tokens
-    })
-  });
-
-  return response;
-}
-
-/**
- * Call Sherlock with exponential backoff retry logic
- *
- * @param systemPrompt - System instruction
- * @param userPrompt - User prompt
- * @param options - Configuration options
- * @param retryCount - Current retry attempt (internal)
- * @returns Response object
- */
-export async function callSherlockWithRetry(
-  systemPrompt: string,
-  userPrompt: string,
-  options?: CallKimiOptions,
-  retryCount = 0
-): Promise<Response> {
-  const requestId = options?.requestId || crypto.randomUUID();
-
-  try {
-    const response = await callSherlock(systemPrompt, userPrompt, {
-      ...options,
-      requestId
-    });
-
-    if (response.ok) {
-      return response;
-    }
-
-    // Handle rate limiting (429) and service overload (503) with exponential backoff
-    if (response.status === 429 || response.status === 503) {
-      if (retryCount < RETRY_CONFIG.maxRetries) {
-        const delayMs = Math.min(
-          RETRY_CONFIG.initialDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, retryCount),
-          RETRY_CONFIG.maxDelayMs
-        );
-
-        const retryAfter = response.headers.get('Retry-After');
-        const actualDelayMs = retryAfter ? parseInt(retryAfter) * 1000 : delayMs;
-
-        const errorType = response.status === 429 ? "Rate limited" : "Service overloaded";
-        console.log(`[${requestId}] ${errorType} (${response.status}). Retry ${retryCount + 1}/${RETRY_CONFIG.maxRetries} after ${actualDelayMs}ms`);
-
-        await new Promise(resolve => setTimeout(resolve, actualDelayMs));
-
-        return callSherlockWithRetry(systemPrompt, userPrompt, options, retryCount + 1);
-      } else {
-        console.error(`[${requestId}] Max retries exceeded (status: ${response.status})`);
-      }
-    }
-
-    return response;
-  } catch (error) {
-    if (retryCount < RETRY_CONFIG.maxRetries) {
-      const delayMs = Math.min(
-        RETRY_CONFIG.initialDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, retryCount),
-        RETRY_CONFIG.maxDelayMs
-      );
-      console.log(`[${requestId}] Network error, retrying after ${delayMs}ms:`, error);
-
-      await new Promise(resolve => setTimeout(resolve, delayMs));
-
-      return callSherlockWithRetry(systemPrompt, userPrompt, options, retryCount + 1);
-    }
-
-    throw error;
-  }
-}
-
-/**
- * Calculate cost for Sherlock Think Alpha (Free model - $0 cost)
- *
- * @param inputTokens - Number of input tokens
- * @param outputTokens - Number of output tokens
- * @returns Cost in USD (always 0 for free model)
- */
-export function calculateSherlockCost(inputTokens: number, outputTokens: number): number {
-  return 0; // Free model
 }
 
 /**
@@ -525,17 +469,21 @@ export async function callGeminiFlashWithRetry(
 
     // Handle rate limiting (429) and service overload (503) with exponential backoff
     if (response.status === 429 || response.status === 503) {
-      if (retryCount < RETRY_CONFIG.maxRetries) {
+      if (retryCount < RETRY_CONFIG.MAX_RETRIES) {
+        // CRITICAL: Drain response body to prevent resource leak
+        // Unconsumed response bodies hold onto network resources and memory
+        await response.text();
+
         const delayMs = Math.min(
-          RETRY_CONFIG.initialDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, retryCount),
-          RETRY_CONFIG.maxDelayMs
+          RETRY_CONFIG.INITIAL_DELAY_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, retryCount),
+          RETRY_CONFIG.MAX_DELAY_MS
         );
 
         const retryAfter = response.headers.get('Retry-After');
         const actualDelayMs = retryAfter ? parseInt(retryAfter) * 1000 : delayMs;
 
         const errorType = response.status === 429 ? "Rate limited" : "Service overloaded";
-        console.log(`[${requestId}] ${errorType} (${response.status}). Retry ${retryCount + 1}/${RETRY_CONFIG.maxRetries} after ${actualDelayMs}ms`);
+        console.log(`[${requestId}] ${errorType} (${response.status}). Retry ${retryCount + 1}/${RETRY_CONFIG.MAX_RETRIES} after ${actualDelayMs}ms`);
 
         await new Promise(resolve => setTimeout(resolve, actualDelayMs));
 
@@ -547,10 +495,10 @@ export async function callGeminiFlashWithRetry(
 
     return response;
   } catch (error) {
-    if (retryCount < RETRY_CONFIG.maxRetries) {
+    if (retryCount < RETRY_CONFIG.MAX_RETRIES) {
       const delayMs = Math.min(
-        RETRY_CONFIG.initialDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, retryCount),
-        RETRY_CONFIG.maxDelayMs
+        RETRY_CONFIG.INITIAL_DELAY_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, retryCount),
+        RETRY_CONFIG.MAX_DELAY_MS
       );
       console.log(`[${requestId}] Network error, retrying after ${delayMs}ms:`, error);
 

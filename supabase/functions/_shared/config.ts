@@ -26,6 +26,24 @@ export const RATE_LIMITS = {
   API_THROTTLE: {
     GEMINI_RPM: 15,
     WINDOW_SECONDS: 60
+  },
+  /** Artifact generation rate limits (more restrictive due to expensive Kimi K2 model) */
+  ARTIFACT: {
+    /** API throttle for artifact generation (stricter than chat) */
+    API_THROTTLE: {
+      MAX_REQUESTS: 10,
+      WINDOW_SECONDS: 60
+    },
+    /** Guest user limits for artifacts (very restrictive to encourage sign-up) */
+    GUEST: {
+      MAX_REQUESTS: 5,
+      WINDOW_HOURS: 5
+    },
+    /** Authenticated user limits for artifacts (lower than chat due to cost) */
+    AUTHENTICATED: {
+      MAX_REQUESTS: 50,
+      WINDOW_HOURS: 5
+    }
   }
 } as const;
 
@@ -45,28 +63,17 @@ export const VALIDATION_LIMITS = {
 
 /**
  * Retry configuration for handling transient failures
+ * Uses exponential backoff: delay = INITIAL_DELAY_MS * (BACKOFF_MULTIPLIER ^ retryCount), capped at MAX_DELAY_MS
  */
 export const RETRY_CONFIG = {
   /** Maximum number of retry attempts (total attempts = MAX_RETRIES + 1) */
   MAX_RETRIES: 2,
-  /** Delay between retries in milliseconds [first retry, second retry, ...] */
-  DELAYS_MS: [3000, 6000] as readonly number[],
   /** Exponential backoff multiplier */
   BACKOFF_MULTIPLIER: 2,
   /** Initial delay for exponential backoff (ms) */
   INITIAL_DELAY_MS: 1000,
   /** Maximum delay cap for exponential backoff (ms) */
   MAX_DELAY_MS: 10000
-} as const;
-
-/**
- * Artifact generation configuration
- */
-export const ARTIFACT_CONFIG = {
-  /** Maximum retries for artifact generation */
-  MAX_RETRIES: 2,
-  /** Retry delays in milliseconds */
-  RETRY_DELAYS_MS: [3000, 6000] as readonly number[]
 } as const;
 
 /**
@@ -99,10 +106,8 @@ export const API_ENDPOINTS = {
 export const MODELS = {
   /** Gemini 2.5 Flash Lite for chat/summaries/titles */
   GEMINI_FLASH: 'google/gemini-2.5-flash-lite',
-  /** Kimi K2-Thinking for artifact generation (legacy - timing out) */
+  /** Kimi K2-Thinking for artifact generation */
   KIMI_K2: 'moonshotai/kimi-k2-thinking',
-  /** Sherlock Think Alpha for fast artifact generation */
-  SHERLOCK: 'openrouter/sherlock-think-alpha',
   /** Gemini Flash Image for image generation */
   GEMINI_FLASH_IMAGE: 'google/gemini-2.5-flash-image'
 } as const;
