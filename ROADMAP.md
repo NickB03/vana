@@ -31,7 +31,7 @@ Transform Vana into a best-in-class AI-powered development assistant with enterp
 | **Security Hardening** | ✅ Complete (0 vulnerabilities) | 2025-11-13 |
 | **CI/CD Pipeline** | ✅ Complete (GitHub Actions) | 2025-11-14 |
 | **OpenRouter Migration** | ✅ Complete | 2025-11-13 |
-| **Sherlock Think Alpha Integration** | ✅ Complete | 2025-11-17 |
+| **Kimi K2-Thinking Integration** | ✅ Complete | 2025-11-17 |
 | **Gemini-style Sidebar UI** | ✅ Complete | 2025-11-17 |
 
 ### 🚧 In Progress
@@ -44,8 +44,8 @@ Transform Vana into a best-in-class AI-powered development assistant with enterp
 
 ## 📈 Recent Achievements (November 2025)
 
-### Sherlock Think Alpha Migration (Nov 17, 2025)
-- ✅ **Faster Artifact Generation**: Migrated from Kimi K2-Thinking to Sherlock Think Alpha
+### Kimi K2-Thinking Migration (Nov 17, 2025)
+- ✅ **Faster Artifact Generation**: Migrated to Kimi K2-Thinking for improved performance
 - ✅ **Improved Reliability**: Eliminated timeout issues with new high-performance model
 - ✅ **UI Enhancements**: Gemini-style sidebar auto-collapse, artifact card fixes
 
@@ -57,7 +57,7 @@ Transform Vana into a best-in-class AI-powered development assistant with enterp
 
 ### AI Architecture (Nov 2025)
 - ✅ **OpenRouter Integration**: Gemini 2.5 Flash Lite for chat/summaries/titles
-- ✅ **Sherlock Think Alpha**: Fast, reliable artifact generation
+- ✅ **Kimi K2-Thinking**: Fast, reliable artifact generation
 - ✅ **Image Generation**: Google AI Studio with 10-key rotation (150 RPM)
 
 ---

@@ -179,8 +179,7 @@ describe("useArtifactVersions", () => {
     });
   });
 
-  // TODO: Fix this test - React Query error handling timing issue
-  it.skip("should handle generic fetch errors", async () => {
+  it("should handle generic fetch errors", async () => {
     const mockFrom = vi.fn().mockReturnValue({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
@@ -199,17 +198,21 @@ describe("useArtifactVersions", () => {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => {
-      expect(result.current.error).toBe("Network error");
-    });
+    // Wait for React Query to process error after retries
+    // Generic errors retry up to 2 times, so need longer timeout
+    await waitFor(
+      () => {
+        expect(result.current.error).toBe("Network error");
+      },
+      { timeout: 5000 }
+    );
   });
 
   // ============================================================================
   // MUTATION TESTS
   // ============================================================================
 
-  // TODO: Fix this test - isLoading state timing issue
-  it.skip("should create new version successfully", async () => {
+  it("should create new version successfully", async () => {
     // Mock successful session
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.auth.getSession as any) = vi.fn().mockResolvedValue({
@@ -223,13 +226,31 @@ describe("useArtifactVersions", () => {
       error: null,
     });
 
+    // Mock the query to return empty versions initially
+    const mockFrom = vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          order: vi.fn().mockResolvedValue({
+            data: [],
+            error: null,
+          }),
+        }),
+      }),
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase.from as any) = mockFrom;
+
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
-    });
+    // Wait for React Query to settle before calling mutation
+    await waitFor(
+      () => {
+        expect(result.current.isLoading).toBe(false);
+      },
+      { timeout: 3000 }
+    );
 
     // Call createVersion
     await result.current.createVersion(mockArtifact, mockMessageId);
@@ -247,21 +268,38 @@ describe("useArtifactVersions", () => {
     );
   });
 
-  // TODO: Fix this test - isLoading state timing issue
-  it.skip("should handle authentication errors", async () => {
+  it("should handle authentication errors", async () => {
     // Mock no session
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.auth.getSession as any) = vi.fn().mockResolvedValue({
       data: { session: null },
     });
 
+    // Mock the query to return empty versions
+    const mockFrom = vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          order: vi.fn().mockResolvedValue({
+            data: [],
+            error: null,
+          }),
+        }),
+      }),
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase.from as any) = mockFrom;
+
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
-    });
+    // Wait for React Query to settle before testing mutation
+    await waitFor(
+      () => {
+        expect(result.current.isLoading).toBe(false);
+      },
+      { timeout: 3000 }
+    );
 
     await expect(
       result.current.createVersion(mockArtifact, mockMessageId)

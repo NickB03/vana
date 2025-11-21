@@ -37,7 +37,7 @@
 
 ## 🌟 Overview
 
-**Vana** is an AI-powered development assistant that transforms natural language into production-ready code, interactive React components, diagrams, and more. Powered by multiple AI models including Google's Gemini 2.5 and Sherlock Think Alpha via OpenRouter, Vana provides a seamless chat interface where every conversation can generate interactive artifacts—fully functional components rendered in real-time alongside your chat.
+**Vana** is an AI-powered development assistant that transforms natural language into production-ready code, interactive React components, diagrams, and more. Powered by multiple AI models including Google's Gemini 2.5 Flash Lite and Kimi K2-Thinking via OpenRouter, Vana provides a seamless chat interface where every conversation can generate interactive artifacts—fully functional components rendered in real-time alongside your chat.
 
 ### Why Vana?
 
@@ -51,8 +51,8 @@
 
 ### Recent Major Improvements
 
-**November 17, 2025 - Sherlock Think Alpha Migration:**
-- 🚀 **Faster Artifact Generation**: Migrated from Kimi K2-Thinking to Sherlock Think Alpha via OpenRouter
+**November 17, 2025 - Kimi K2-Thinking Migration:**
+- 🚀 **Faster Artifact Generation**: Migrated to Kimi K2-Thinking with enhanced reasoning
 - ⚡ **Improved Reliability**: Eliminated timeout issues with new high-performance model
 - 🔄 **Enhanced UI**: Gemini-style sidebar auto-collapse with manual toggle control
 - 🎯 **Better Navigation**: Fixed artifact card Open button and image generation card behaviors
@@ -194,7 +194,7 @@ Experience Vana in action: [View Demo](#) *(Add your deployment URL)*
 | Service | Purpose |
 |---------|---------|
 | **Supabase** | PostgreSQL database, authentication, edge functions |
-| **OpenRouter** | AI model routing for chat (Gemini 2.5 Flash Lite) and artifacts (Sherlock Think Alpha) - single API keys |
+| **OpenRouter** | AI model routing for chat (Gemini 2.5 Flash Lite) and artifacts (Kimi K2-Thinking) - single API keys |
 | **Google AI Studio** | Image generation ONLY (Gemini 2.5 Flash Image) - uses 10-key rotation pool for high throughput |
 
 ### Key Libraries
@@ -237,8 +237,8 @@ graph TB
 
     subgraph "Edge Functions"
         L[chat - Gemini Flash Lite]
-        LA[generate-artifact - Sherlock]
-        LB[generate-artifact-fix - Sherlock]
+        LA[generate-artifact - Kimi K2-Thinking]
+        LB[generate-artifact-fix - Kimi K2-Thinking]
         M[generate-title - Gemini Flash Lite]
         N[generate-image - Flash-Image]
         O[summarize-conversation - Gemini Flash Lite]
@@ -246,7 +246,7 @@ graph TB
     end
 
     subgraph "External Services"
-        Q[OpenRouter<br/>Gemini & Sherlock]
+        Q[OpenRouter<br/>Gemini & Kimi K2-Thinking]
         R[Google AI Studio<br/>Image Generation]
     end
 
@@ -521,11 +521,11 @@ llm-chat-site/
 ├── supabase/
 │   ├── functions/          # Edge Functions
 │   │   ├── chat/           # Main chat streaming (Gemini 2.5 Flash Lite via OpenRouter)
-│   │   ├── generate-artifact/ # Artifact generation (Sherlock Think Alpha via OpenRouter)
-│   │   ├── generate-artifact-fix/ # Artifact error fixing (Sherlock Think Alpha)
-│   │   ├── generate-title/ # Auto-generate session titles (Gemini Flash Lite)
-│   │   ├── generate-image/ # AI image generation with 10-key rotation (Google AI Studio)
-│   │   ├── summarize-conversation/ # Context summarization (Gemini Flash Lite)
+│   │   ├── generate-artifact/ # Artifact generation (Kimi K2-Thinking via OpenRouter)
+│   │   ├── generate-artifact-fix/ # Artifact error fixing (Kimi K2-Thinking via OpenRouter)
+│   │   ├── generate-title/ # Auto-generate session titles (Gemini 2.5 Flash Lite via OpenRouter)
+│   │   ├── generate-image/ # AI image generation (Gemini Flash Image via OpenRouter)
+│   │   ├── summarize-conversation/ # Context summarization (Gemini 2.5 Flash Lite via OpenRouter)
 │   │   ├── cache-manager/  # Redis cache management
 │   │   ├── admin-analytics/ # Usage analytics dashboard
 │   │   └── intent-examples/ # Intent detection setup
@@ -552,7 +552,6 @@ llm-chat-site/
 | `vite.config.ts` | Build configuration with PWA support |
 
 ---
-
 
 ## 🎯 Key Features Deep Dive
 
@@ -897,7 +896,7 @@ supabase functions deploy cache-manager
 ```bash
 # OpenRouter API Keys (single keys for chat and artifacts - NO rotation)
 supabase secrets set OPENROUTER_GEMINI_FLASH_KEY=sk-or-v1-...  # Chat/summaries/titles
-supabase secrets set OPENROUTER_SHERLOCK_FREE_KEY=sk-or-v1-... # Artifact generation
+supabase secrets set OPENROUTER_KIMI_K2_KEY=sk-or-v1-... # Artifact generation
 supabase secrets set OPENROUTER_K2T_KEY=sk-or-v1-...           # Artifact error fixing (Kimi K2)
 
 # Google AI Studio Keys (IMAGE GENERATION ONLY - uses 10-key rotation pool)
@@ -925,7 +924,7 @@ supabase secrets set ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdoma
 
 **Current Architecture:**
 - **Chat/Summaries/Titles**: OpenRouter Gemini 2.5 Flash Lite (single API key, unlimited pay-as-you-go)
-- **Artifact Generation**: OpenRouter Sherlock Think Alpha (single API key, fast reliable code generation)
+- **Artifact Generation**: OpenRouter Kimi K2-Thinking (single API key, fast reliable code generation)
 - **Artifact Error Fixing**: OpenRouter Kimi K2-Thinking (single API key, deep reasoning for debugging)
 - **Images**: Google AI Studio Gemini Flash-Image (10-key rotation pool, 150 RPM total)
 
@@ -964,7 +963,7 @@ netlify deploy --prod --dir=dist
    - `VITE_SUPABASE_PUBLISHABLE_KEY`
    - `VITE_SUPABASE_PROJECT_ID`
 
-#### Option 3: Vercel
+#### Option 2: Vercel
 
 1. **Install Vercel CLI**
 
@@ -1097,4 +1096,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Repository**: [github.com/NickB03/llm-chat-site](https://github.com/NickB03/llm-chat-site)
 
 ---
-

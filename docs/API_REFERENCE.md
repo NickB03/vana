@@ -275,7 +275,7 @@ interface ArtifactResponse {
 
 #### AI Model
 
-- **Model**: Sherlock Think Alpha (via OpenRouter)
+- **Model**: Kimi K2-Thinking (via OpenRouter)
 - **Provider**: OpenRouter
 - **Streaming**: No
 - **Max Tokens**: 8,000
@@ -341,7 +341,7 @@ Fix errors in generated artifacts automatically.
 
 #### AI Model
 
-- **Model**: Sherlock Think Alpha (via OpenRouter)
+- **Model**: Kimi K2-Thinking (via OpenRouter)
 - **Provider**: OpenRouter
 - **Max Tokens**: 8,000
 
@@ -663,7 +663,7 @@ if (remaining && parseInt(remaining) < 5) {
 ## Changelog
 
 ### 2025-11-17
-- Migrated artifact generation to Sherlock Think Alpha
+- Migrated artifact generation to Kimi K2-Thinking
 - Added `includeReasoning` parameter to chat endpoint
 - Updated rate limits: 20 requests/5h for guests
 
