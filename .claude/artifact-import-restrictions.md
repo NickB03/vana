@@ -29,22 +29,23 @@ import anything from "@/..."                          // ❌ FAILS
 ## ✅ ALLOWED (Works in Artifacts)
 
 ```tsx
-// RADIX UI - Always available via CDN
-import * as Dialog from '@radix-ui/react-dialog'
-import * as Tabs from '@radix-ui/react-tabs'
-import * as Switch from '@radix-ui/react-switch'
-import * as Slider from '@radix-ui/react-slider'
-import * as Popover from '@radix-ui/react-popover'
-import * as Tooltip from '@radix-ui/react-tooltip'
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+// ⚠️ NOTE: Radix UI imports are NOT supported due to Babel standalone limitations
+// Use Tailwind CSS for all UI components instead
 
-// LUCIDE ICONS - Always available
-import { Check, X, Settings, User, Mail } from 'lucide-react'
+// LUCIDE ICONS - Always available as globals
+const { Check, X, Settings, User, Mail } = LucideReact;
 
-// OTHER CDN LIBRARIES
-import { LineChart, BarChart } from 'recharts'
-import * as d3 from 'd3'
-import * as THREE from 'three'
+// RECHARTS - Always available as globals
+const { LineChart, BarChart, Line, Bar, XAxis, YAxis, Tooltip } = Recharts;
+
+// D3.JS - Always available as global
+const d3 = window.d3;
+
+// THREE.JS - Always available as global
+const THREE = window.THREE;
+
+// FRAMER MOTION - Always available as global
+const { motion, AnimatePresence } = FramerMotion;
 ```
 
 ---
@@ -96,7 +97,7 @@ import * as THREE from 'three'
 />
 ```
 
-### Dialogs
+### Dialogs/Modals
 ```tsx
 // ❌ shadcn/ui (FAILS)
 <Dialog>
@@ -106,25 +107,59 @@ import * as THREE from 'three'
   </DialogContent>
 </Dialog>
 
-// ✅ Radix UI + Tailwind (WORKS)
+// ❌ Radix UI (FAILS - Import maps not supported by Babel standalone)
 import * as Dialog from '@radix-ui/react-dialog'
 
-<Dialog.Root>
-  <Dialog.Trigger className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-    Open
-  </Dialog.Trigger>
-  <Dialog.Portal>
-    <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
-    <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl max-w-md">
-      <Dialog.Title className="text-xl font-semibold mb-4">
-        Title
-      </Dialog.Title>
-      <Dialog.Description className="text-gray-600 dark:text-gray-300">
-        Description here
-      </Dialog.Description>
-    </Dialog.Content>
-  </Dialog.Portal>
-</Dialog.Root>
+// ✅ Tailwind CSS with React state (WORKS)
+export default function DialogExample() {
+  const { useState } = React;
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      <button
+        onClick={() => setIsOpen(true)}
+        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+      >
+        Open Dialog
+      </button>
+
+      {isOpen && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setIsOpen(false)}
+          />
+
+          {/* Dialog */}
+          <div className="relative bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl max-w-md w-full mx-4 z-10">
+            <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+              Dialog Title
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Dialog content goes here
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setIsOpen(false)}
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
 ```
 
 ### Tabs
@@ -137,22 +172,46 @@ import * as Dialog from '@radix-ui/react-dialog'
   <TabsContent value="tab1">Content</TabsContent>
 </Tabs>
 
-// ✅ Radix UI + Tailwind (WORKS)
+// ❌ Radix UI (FAILS - Import maps not supported)
 import * as Tabs from '@radix-ui/react-tabs'
 
-<Tabs.Root defaultValue="tab1">
-  <Tabs.List className="flex border-b border-gray-200">
-    <Tabs.Trigger
-      value="tab1"
-      className="px-4 py-2 border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600"
-    >
-      Tab 1
-    </Tabs.Trigger>
-  </Tabs.List>
-  <Tabs.Content value="tab1" className="p-4">
-    Content
-  </Tabs.Content>
-</Tabs.Root>
+// ✅ Tailwind CSS with React state (WORKS)
+export default function TabsExample() {
+  const { useState } = React;
+  const [activeTab, setActiveTab] = useState('tab1');
+
+  const tabs = [
+    { id: 'tab1', label: 'Tab 1', content: 'Content for Tab 1' },
+    { id: 'tab2', label: 'Tab 2', content: 'Content for Tab 2' },
+    { id: 'tab3', label: 'Tab 3', content: 'Content for Tab 3' },
+  ];
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+      {/* Tab List */}
+      <div className="flex border-b border-gray-200 dark:border-gray-700">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-6 py-3 font-medium transition border-b-2 ${
+              activeTab === tab.id
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div className="p-6">
+        {tabs.find(tab => tab.id === activeTab)?.content}
+      </div>
+    </div>
+  );
+}
 ```
 
 ### Switch/Toggle
@@ -160,16 +219,29 @@ import * as Tabs from '@radix-ui/react-tabs'
 // ❌ shadcn/ui (FAILS)
 <Switch checked={enabled} onCheckedChange={setEnabled} />
 
-// ✅ Radix UI + Tailwind (WORKS)
+// ❌ Radix UI (FAILS - Import maps not supported)
 import * as Switch from '@radix-ui/react-switch'
 
-<Switch.Root
-  checked={enabled}
-  onCheckedChange={setEnabled}
-  className="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full relative data-[state=checked]:bg-blue-600 transition"
->
-  <Switch.Thumb className="block w-5 h-5 bg-white rounded-full shadow-md transform transition data-[state=checked]:translate-x-5 translate-x-0.5" />
-</Switch.Root>
+// ✅ Tailwind CSS with React state (WORKS)
+export default function SwitchExample() {
+  const { useState } = React;
+  const [enabled, setEnabled] = useState(false);
+
+  return (
+    <button
+      onClick={() => setEnabled(!enabled)}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+        enabled ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+      }`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-lg transition ${
+          enabled ? 'translate-x-6' : 'translate-x-1'
+        }`}
+      />
+    </button>
+  );
+}
 ```
 
 ---
@@ -298,9 +370,9 @@ export default function Dashboard() {
 
 ## 🔧 Available CDN Libraries
 
-### UI Primitives
-- **Radix UI**: All primitives (Dialog, Dropdown, Popover, Tooltip, Tabs, Switch, Slider)
-- **Lucide Icons**: Full icon set
+### UI Components
+- **Tailwind CSS**: Always available (use utility classes for all UI components)
+- **Lucide Icons**: Full icon set available as globals (e.g., `const { Home, Settings } = LucideReact;`)
 
 ### Charts & Data Visualization
 - **Recharts**: Line, Bar, Pie, Area charts
@@ -369,11 +441,12 @@ export default function Dashboard() {
 
 ## ⚠️ Common Mistakes to Avoid
 
-1. **Using shadcn/ui components** → Use Radix UI + Tailwind
-2. **Importing from @/lib/utils** → Inline the cn() function or use string concatenation
-3. **Using localStorage/sessionStorage** → Use React state (useState, useReducer)
-4. **Missing default export** → Always include `export default function Component()`
-5. **Forgetting imports** → Import React hooks: `import { useState } from 'react'`
+1. **Using shadcn/ui components** → Use Tailwind CSS utility classes instead
+2. **Using Radix UI imports** → NOT SUPPORTED! Use Tailwind CSS with React state
+3. **Importing from @/lib/utils** → Inline the cn() function or use string concatenation
+4. **Using localStorage/sessionStorage** → Use React state (useState, useReducer)
+5. **Missing default export** → Always include `export default function Component()`
+6. **Importing React hooks** → Use globals: `const { useState } = React;`
 
 ---
 
@@ -390,7 +463,10 @@ See **`.claude/artifacts.md`** for:
 ## 🆘 Troubleshooting
 
 ### Error: "Could not find module in path: '@/components/ui/button'"
-**Fix**: Replace with Radix UI primitive or plain Tailwind button
+**Fix**: Replace with Tailwind CSS button using utility classes
+
+### Error: "Could not find dependency: '@radix-ui/react-select'"
+**Fix**: Radix UI imports are NOT supported. Use Tailwind CSS with React state instead
 
 ### Error: "THREE.CapsuleGeometry is not defined"
 **Fix**: Use CylinderGeometry or SphereGeometry (CapsuleGeometry added in r142, we use r128)
@@ -408,10 +484,10 @@ See **`.claude/artifacts.md`** for:
 Before creating an artifact, verify:
 
 - [ ] No `@/` imports in the code
-- [ ] All imports are from CDN-available libraries
-- [ ] Using Radix UI primitives instead of shadcn/ui
-- [ ] Tailwind classes for all styling
-- [ ] React hooks imported from 'react'
+- [ ] No Radix UI imports (use Tailwind CSS instead)
+- [ ] All libraries accessed via globals (React, Recharts, LucideReact, etc.)
+- [ ] Tailwind classes for all UI components and styling
+- [ ] React hooks from globals: `const { useState } = React;`
 - [ ] Component has default export
 - [ ] No localStorage/sessionStorage usage
 - [ ] Responsive design with Tailwind breakpoints
@@ -420,4 +496,4 @@ Before creating an artifact, verify:
 
 ---
 
-**Remember**: When in doubt, check if the import path starts with `@/`. If it does, it won't work in artifacts. Use Radix UI + Tailwind instead!
+**Remember**: When in doubt, check if the import path starts with `@/` or `@radix-ui/`. If it does, it won't work in artifacts. Use Tailwind CSS utility classes and React state instead!

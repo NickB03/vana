@@ -4,6 +4,7 @@ import { callKimiWithRetryTracking, extractTextFromKimi, extractTokenUsage, calc
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 import { MODELS, RATE_LIMITS } from "../_shared/config.ts";
 import { handleKimiError } from "../_shared/api-error-handler.ts";
+import { validateArtifactCode, autoFixArtifactCode } from "../_shared/artifact-validator.ts";
 
 // NOTE: Retry logic moved to openrouter-client.ts
 // callKimiWithRetry() now handles exponential backoff automatically
@@ -41,6 +42,21 @@ export default function App() {
   // Your code...
 }
 
+### **NEVER use JavaScript Reserved Keywords as Variable Names**
+Strict mode (enabled by default in React) forbids using these as variable names:
+- ❌ const eval = ... - SYNTAX ERROR
+- ❌ let arguments = ... - SYNTAX ERROR
+- ❌ function await() { } - SYNTAX ERROR
+- ❌ var yield = ... - SYNTAX ERROR
+
+✅ CORRECT: Use descriptive alternatives
+- const evaluation = ... // Instead of 'eval'
+- const score = ... // Instead of 'eval'
+- const args = ... // Instead of 'arguments'
+- const value = ... // Instead of 'yield'
+
+**Common in algorithms:** Minimax/game AI often tries to use 'eval' - use 'score' or 'value' instead!
+
 ---
 
 # 📚 Available Libraries (CDN-Loaded Globals)
@@ -60,15 +76,21 @@ const gsap = window.gsap;
 ## Icons
 const { Home, Settings, User, Plus, Trash2, Edit, Check, AlertCircle } = LucideReact;
 
-## UI Primitives (Radix UI) - ONLY IMPORTS ALLOWED
-import * as Dialog from '@radix-ui/react-dialog';
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import * as Popover from '@radix-ui/react-popover';
-import * as Select from '@radix-ui/react-select';
-import * as Slider from '@radix-ui/react-slider';
-import * as Switch from '@radix-ui/react-switch';
-import * as Tabs from '@radix-ui/react-tabs';
-import * as Tooltip from '@radix-ui/react-tooltip';
+## UI Components - USE TAILWIND CSS ONLY
+// ⚠️ CRITICAL: Radix UI imports are NOT supported in artifacts
+// Babel standalone cannot resolve ES module imports via import maps
+// Use Tailwind CSS classes to build all UI components instead
+//
+// Example - Button:
+// <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+//   Click me
+// </button>
+//
+// Example - Card:
+// <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+//   <h3 className="text-lg font-semibold mb-2">Title</h3>
+//   <p className="text-gray-600 dark:text-gray-300">Content</p>
+// </div>
 
 ## Utilities
 const _ = window._;
@@ -479,7 +501,33 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const artifactCode = extractTextFromKimi(data, requestId);
+    let artifactCode = extractTextFromKimi(data, requestId);
+
+    // ============================================================================
+    // POST-GENERATION VALIDATION & AUTO-FIX
+    // ============================================================================
+    // Validate artifact code for common issues (reserved keywords, invalid imports, etc.)
+    const validation = validateArtifactCode(artifactCode, artifactType || 'react');
+
+    if (!validation.valid && validation.canAutoFix) {
+      console.log(`[${requestId}] ⚠️  Validation issues detected, attempting auto-fix...`);
+      const { fixed, changes } = autoFixArtifactCode(artifactCode);
+
+      if (changes.length > 0) {
+        console.log(`[${requestId}] ✅ Auto-fixed ${changes.length} issue(s):`, changes);
+        artifactCode = fixed;
+
+        // Re-validate after fixes
+        const revalidation = validateArtifactCode(artifactCode, artifactType || 'react');
+        if (!revalidation.valid) {
+          console.warn(`[${requestId}] ⚠️  Some issues remain after auto-fix:`, revalidation.issues);
+        } else {
+          console.log(`[${requestId}] ✅ All issues resolved after auto-fix`);
+        }
+      }
+    } else if (!validation.valid) {
+      console.warn(`[${requestId}] ⚠️  Validation issues detected (cannot auto-fix):`, validation.issues);
+    }
 
     // Extract token usage for cost tracking
     const tokenUsage = extractTokenUsage(data);
