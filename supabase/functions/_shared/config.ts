@@ -44,6 +44,24 @@ export const RATE_LIMITS = {
       MAX_REQUESTS: 50,
       WINDOW_HOURS: 5
     }
+  },
+  /** Image generation rate limits (prevent API quota abuse) */
+  IMAGE: {
+    /** API throttle for image generation (aligned with OpenRouter Gemini Flash Image limits) */
+    API_THROTTLE: {
+      MAX_REQUESTS: 15,
+      WINDOW_SECONDS: 60
+    },
+    /** Guest user limits for images (restrictive to prevent abuse) */
+    GUEST: {
+      MAX_REQUESTS: 20,
+      WINDOW_HOURS: 5
+    },
+    /** Authenticated user limits for images (higher for registered users) */
+    AUTHENTICATED: {
+      MAX_REQUESTS: 50,
+      WINDOW_HOURS: 5
+    }
   }
 } as const;
 

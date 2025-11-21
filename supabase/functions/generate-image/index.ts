@@ -1,7 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
-import { MODELS } from "../_shared/config.ts";
+import { MODELS, RATE_LIMITS } from "../_shared/config.ts";
+import { ErrorResponseBuilder } from "../_shared/error-handler.ts";
 
 const OPENROUTER_GEMINI_IMAGE_KEY = Deno.env.get("OPENROUTER_GEMINI_IMAGE_KEY");
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
@@ -14,39 +15,33 @@ serve(async (req) => {
     return handleCorsPreflightRequest(req);
   }
 
+  // SECURITY FIX #3: Generate requestId immediately after CORS check (before validation)
+  // This ensures all error responses include a traceable request ID
+  const requestId = crypto.randomUUID();
+  const errors = ErrorResponseBuilder.withHeaders(corsHeaders, requestId);
+
   try {
     const { prompt, mode, baseImage, sessionId } = await req.json();
 
-    console.log(`🎨 [generate-image] Request received: mode=${mode}, prompt length=${prompt?.length}`);
+    console.log(`🎨 [${requestId}] Request received: mode=${mode}, prompt length=${prompt?.length}`);
 
+    // SECURITY FIX #4: Use ErrorResponseBuilder for consistent error handling
     // Input validation
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
-      console.error("❌ [generate-image] Invalid prompt");
-      return new Response(
-        JSON.stringify({ error: "Prompt is required and must be non-empty" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      console.error(`❌ [${requestId}] Invalid prompt`);
+      return errors.validation("Prompt is required and must be non-empty");
     }
 
     if (prompt.length > 2000) {
-      return new Response(
-        JSON.stringify({ error: "Prompt too long (max 2000 characters)" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return errors.validation("Prompt too long (max 2000 characters)");
     }
 
     if (!mode || !["generate", "edit"].includes(mode)) {
-      return new Response(
-        JSON.stringify({ error: "Mode must be 'generate' or 'edit'" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return errors.validation("Mode must be 'generate' or 'edit'");
     }
 
     if (mode === "edit" && (!baseImage || !baseImage.startsWith("data:image/"))) {
-      return new Response(
-        JSON.stringify({ error: "Edit mode requires valid base64 image" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return errors.validation("Edit mode requires valid base64 image");
     }
 
     // Support both authenticated and guest users (similar to chat function)
@@ -74,17 +69,128 @@ serve(async (req) => {
     }
 
     // Guest users are allowed (user will be null)
+    const isGuest = !user;
 
-    if (!OPENROUTER_GEMINI_IMAGE_KEY) {
-      console.error("❌ OPENROUTER_GEMINI_IMAGE_KEY not configured");
-      return new Response(
-        JSON.stringify({ error: "Image generation service not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    // ============================================================================
+    // CRITICAL SECURITY: Rate Limiting (Defense-in-Depth)
+    // ============================================================================
+    // Prevent unlimited image generation which could:
+    // 1. Drain OpenRouter API quota
+    // 2. Cause financial damage ($$ per image generation)
+    // 3. Degrade service for legitimate users
+    // ============================================================================
+
+    // Create service_role client for rate limiting checks
+    const serviceClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // Parallelize API throttle and guest/user rate limit checks
+    const [
+      { data: apiThrottleResult, error: apiThrottleError },
+      rateLimitResult
+    ] = await Promise.all([
+      // Check OpenRouter Gemini Flash Image API throttle (15 RPM)
+      serviceClient.rpc("check_api_throttle", {
+        p_api_name: "openrouter-gemini-image",
+        p_max_requests: RATE_LIMITS.IMAGE.API_THROTTLE.MAX_REQUESTS,
+        p_window_seconds: RATE_LIMITS.IMAGE.API_THROTTLE.WINDOW_SECONDS
+      }),
+      // Check appropriate rate limit based on auth status
+      isGuest ? (async () => {
+        // Get client IP address (trusted headers set by Supabase Edge infrastructure)
+        const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0].trim()
+          || req.headers.get("x-real-ip")
+          || "unknown";
+
+        return await serviceClient.rpc("check_guest_rate_limit", {
+          p_identifier: clientIp,
+          p_max_requests: RATE_LIMITS.IMAGE.GUEST.MAX_REQUESTS,
+          p_window_hours: RATE_LIMITS.IMAGE.GUEST.WINDOW_HOURS
+        });
+      })() : serviceClient.rpc("check_user_rate_limit", {
+        p_user_id: user!.id,
+        p_max_requests: RATE_LIMITS.IMAGE.AUTHENTICATED.MAX_REQUESTS,
+        p_window_hours: RATE_LIMITS.IMAGE.AUTHENTICATED.WINDOW_HOURS
+      })
+    ]);
+
+    // SECURITY FIX #1: Validate API throttle RPC response structure
+    // Critical: Prevent null pointer errors that could bypass rate limiting
+    if (apiThrottleError) {
+      console.error(`[${requestId}] API throttle check error:`, apiThrottleError);
+      return errors.serviceUnavailable("Service temporarily unavailable", true);
+    }
+
+    // Validate response structure before accessing properties
+    if (!apiThrottleResult || typeof apiThrottleResult !== 'object') {
+      console.error(`[${requestId}] CRITICAL: Invalid API throttle response:`, apiThrottleResult);
+      return errors.serviceUnavailable("Rate limiting check failed", true);
+    }
+
+    if (!('allowed' in apiThrottleResult) || !('reset_at' in apiThrottleResult)) {
+      console.error(`[${requestId}] CRITICAL: Missing required fields in throttle response:`, apiThrottleResult);
+      return errors.serviceUnavailable("Rate limiting check failed", true);
+    }
+
+    // Now safe to check throttle status
+    if (!apiThrottleResult.allowed) {
+      console.warn(`[${requestId}] 🚨 API throttle exceeded for image generation`);
+      return errors.rateLimited(
+        apiThrottleResult.reset_at,
+        0,
+        apiThrottleResult.total || RATE_LIMITS.IMAGE.API_THROTTLE.MAX_REQUESTS,
+        "API rate limit exceeded. Please try again in a moment."
       );
     }
 
+    // SECURITY FIX #2: Validate user/guest rate limit RPC response structure
+    // Critical: Prevent null pointer errors that could bypass rate limiting
+    const { data: rateLimitData, error: rateLimitError } = rateLimitResult;
+
+    if (rateLimitError) {
+      console.error(`[${requestId}] Rate limit check error:`, rateLimitError);
+      return errors.serviceUnavailable("Service temporarily unavailable", true);
+    }
+
+    // Validate response structure before accessing properties
+    if (!rateLimitData || typeof rateLimitData !== 'object') {
+      console.error(`[${requestId}] CRITICAL: Invalid rate limit response:`, rateLimitData);
+      return errors.serviceUnavailable("Rate limiting check failed", true);
+    }
+
+    if (!('allowed' in rateLimitData) || !('reset_at' in rateLimitData)) {
+      console.error(`[${requestId}] CRITICAL: Missing required fields in rate limit response:`, rateLimitData);
+      return errors.serviceUnavailable("Rate limiting check failed", true);
+    }
+
+    // Now safe to check rate limit status
+    if (!rateLimitData.allowed) {
+      const limitType = isGuest ? "guest" : "authenticated user";
+      const limit = isGuest ? RATE_LIMITS.IMAGE.GUEST.MAX_REQUESTS : RATE_LIMITS.IMAGE.AUTHENTICATED.MAX_REQUESTS;
+      const window = isGuest ? RATE_LIMITS.IMAGE.GUEST.WINDOW_HOURS : RATE_LIMITS.IMAGE.AUTHENTICATED.WINDOW_HOURS;
+
+      console.warn(`[${requestId}] 🚨 Rate limit exceeded for ${limitType} (${limit} requests per ${window} hours)`);
+
+      return errors.rateLimited(
+        rateLimitData.reset_at,
+        rateLimitData.remaining || 0,
+        rateLimitData.total || limit,
+        `Rate limit exceeded. ${limitType}s are limited to ${limit} image generations per ${window} hours.`
+      );
+    }
+
+    // Rate limit passed - log success
+    console.log(`[${requestId}] ✅ Rate limit check passed for ${isGuest ? 'guest' : 'user'} (remaining: ${rateLimitData.remaining})`);
+
+    if (!OPENROUTER_GEMINI_IMAGE_KEY) {
+      console.error(`❌ [${requestId}] OPENROUTER_GEMINI_IMAGE_KEY not configured`);
+      return errors.internal("Image generation service not configured");
+    }
+
     const userType = user ? `user ${user.id}` : "guest";
-    console.log(`🎨 Image ${mode} request from ${userType}:`, prompt.substring(0, 100));
+    console.log(`🎨 [${requestId}] Image ${mode} request from ${userType}:`, prompt.substring(0, 100));
 
     // Build OpenRouter message format
     let messages;
@@ -109,7 +215,7 @@ serve(async (req) => {
     }
 
     // Call OpenRouter Gemini Flash Image API
-    console.log(`🎨 Calling OpenRouter (${MODELS.GEMINI_FLASH_IMAGE})`);
+    console.log(`🎨 [${requestId}] Calling OpenRouter (${MODELS.GEMINI_FLASH_IMAGE})`);
     const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
       method: "POST",
       headers: {
@@ -130,41 +236,21 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("❌ OpenRouter error:", response.status, errorText);
-
-      if (response.status === 429 || response.status === 403) {
-        return new Response(
-          JSON.stringify({
-            error: "API quota exceeded. Please try again in a moment.",
-            retryable: true
-          }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      return new Response(
-        JSON.stringify({
-          error: "Image generation failed",
-          details: errorText.substring(0, 200),
-          retryable: true
-        }),
-        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return await errors.apiError(response, "OpenRouter image generation");
     }
 
     const data = await response.json();
-    console.log("✅ OpenRouter response received");
+    console.log(`✅ [${requestId}] OpenRouter response received`);
 
     // CRITICAL DEBUG: Log full API response structure
-    console.log("=== OPENROUTER API RESPONSE DEBUG ===");
-    console.log("Full response:", JSON.stringify(data, null, 2));
-    console.log("Has choices?", !!data.choices);
-    console.log("Choice count:", data.choices?.length);
+    console.log(`=== [${requestId}] OPENROUTER API RESPONSE DEBUG ===`);
+    console.log(`Full response:`, JSON.stringify(data, null, 2));
+    console.log(`Has choices?`, !!data.choices);
+    console.log(`Choice count:`, data.choices?.length);
     if (data.choices?.[0]) {
-      console.log("First choice message:", JSON.stringify(data.choices[0].message, null, 2));
+      console.log(`First choice message:`, JSON.stringify(data.choices[0].message, null, 2));
     }
-    console.log("=== END DEBUG ===");
+    console.log(`=== [${requestId}] END DEBUG ===`);
 
     // Extract image from OpenRouter response
     // OpenRouter format for Gemini Flash Image: data.choices[0].message.images[0].url
@@ -177,7 +263,7 @@ serve(async (req) => {
       const imageUrl = message.images[0].image_url?.url;
       if (imageUrl) {
         imageData = imageUrl;
-        console.log("✅ Found image URL in images array:", imageUrl.substring(0, 100));
+        console.log(`✅ [${requestId}] Found image URL in images array:`, imageUrl.substring(0, 100));
       }
     }
     // Fallback: check content field
@@ -189,17 +275,17 @@ serve(async (req) => {
         // If it starts with http, it's a URL
         if (content.startsWith('http')) {
           imageData = content;
-          console.log("✅ Found image URL in content:", content.substring(0, 100));
+          console.log(`✅ [${requestId}] Found image URL in content:`, content.substring(0, 100));
         }
         // If it starts with data:image, it's already a data URL
         else if (content.startsWith('data:image')) {
           imageData = content;
-          console.log("✅ Found image data URL");
+          console.log(`✅ [${requestId}] Found image data URL`);
         }
         // Otherwise might be base64 without prefix
         else if (content.length > 100 && !content.includes(' ')) {
           imageData = `data:image/png;base64,${content}`;
-          console.log("✅ Found base64 image data (added prefix)");
+          console.log(`✅ [${requestId}] Found base64 image data (added prefix)`);
         }
       }
       // Check if content is an array (multipart response)
@@ -207,7 +293,7 @@ serve(async (req) => {
         for (const part of content) {
           if (part.type === 'image_url' && part.image_url?.url) {
             imageData = part.image_url.url;
-            console.log("✅ Found image URL in multipart content");
+            console.log(`✅ [${requestId}] Found image URL in multipart content`);
             break;
           }
         }
@@ -215,27 +301,25 @@ serve(async (req) => {
     }
 
     if (!imageData) {
-      console.error("❌ No image data found in OpenRouter response");
-      console.error("Full response for debugging:", JSON.stringify(data));
-      return new Response(
+      console.error(`❌ [${requestId}] No image data found in OpenRouter response`);
+      console.error(`[${requestId}] Full response for debugging:`, JSON.stringify(data));
+      return errors.internal(
+        "The AI model failed to generate an image. The response format was unexpected. Please try again.",
         JSON.stringify({
-          error: "The AI model failed to generate an image. The response format was unexpected. Please try again.",
-          debug: {
-            hasResponse: !!data,
-            hasChoices: !!data.choices,
-            choiceCount: data.choices?.length || 0,
-            messageContentType: typeof message?.content
-          }
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          hasResponse: !!data,
+          hasChoices: !!data.choices,
+          choiceCount: data.choices?.length || 0,
+          messageContentType: typeof message?.content
+        })
       );
     }
 
-    console.log(`✅ Image ${mode} successful`);
+    console.log(`✅ [${requestId}] Image ${mode} successful`);
 
     // Upload to Supabase Storage with signed URL
     let imageUrl = imageData; // Default to base64 if upload fails
     let storageWarning: string | undefined;
+    let storageSucceeded = false;
 
     try {
       // Convert base64 to blob
@@ -247,6 +331,8 @@ serve(async (req) => {
       const userFolder = user ? user.id : "guest";
       const fileName = `${userFolder}/${randomToken}_${Date.now()}.png`;
 
+      console.log(`[${requestId}] Uploading image to storage: ${fileName}`);
+
       // Upload to storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('generated-images')
@@ -256,7 +342,7 @@ serve(async (req) => {
         });
 
       if (uploadError) {
-        console.error("Storage upload error:", uploadError);
+        console.error(`[${requestId}] Storage upload error:`, uploadError);
         storageWarning = `Image storage failed (${uploadError.message}). Using temporary base64 - image may not persist long-term.`;
       } else {
         // Get signed URL (7 days expiry) for private bucket access
@@ -265,16 +351,32 @@ serve(async (req) => {
           .createSignedUrl(fileName, 604800); // 7 days = 604800 seconds
 
         if (urlError || !signedUrlData?.signedUrl) {
-          console.error("Failed to create signed URL:", urlError);
+          console.error(`[${requestId}] Failed to create signed URL:`, urlError);
           storageWarning = `Failed to generate secure URL (${urlError?.message || 'No URL returned'}). Using temporary base64 - image may not persist long-term.`;
         } else {
           imageUrl = signedUrlData.signedUrl;
-          console.log(`Image uploaded successfully with signed URL (7 days expiry)`);
+          storageSucceeded = true;
+          console.log(`[${requestId}] Image uploaded successfully with signed URL (7 days expiry)`);
         }
       }
     } catch (storageError) {
-      console.error("Storage upload failed, using base64:", storageError);
+      console.error(`[${requestId}] Storage upload failed, using base64:`, storageError);
       storageWarning = `Storage system error (${storageError instanceof Error ? storageError.message : 'Unknown error'}). Using temporary base64 - image may not persist long-term.`;
+    }
+
+    // SECURITY FIX #6: Return 206 Partial Content when storage fails (degraded mode)
+    // This signals to the client that the request succeeded but with limited functionality
+    const responseStatus = storageSucceeded ? 200 : 206;
+    const responseHeaders: Record<string, string> = {
+      ...corsHeaders,
+      "Content-Type": "application/json",
+      "X-Request-ID": requestId
+    };
+
+    if (!storageSucceeded) {
+      // Add warning header to indicate degraded mode
+      responseHeaders["Warning"] = '199 - "Image generated but storage failed. Using temporary base64."';
+      console.warn(`[${requestId}] ⚠️ Returning 206 Partial Content - storage failed, using degraded mode`);
     }
 
     return new Response(
@@ -283,21 +385,20 @@ serve(async (req) => {
         imageData, // Base64 for immediate display
         imageUrl,  // Storage URL for database persistence (or base64 if storage failed)
         prompt,
-        storageWarning // Include warning when operating in degraded mode
+        storageWarning, // Include warning when operating in degraded mode
+        degradedMode: !storageSucceeded // Explicit flag for client
       }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: responseStatus,
+        headers: responseHeaders
       }
     );
 
   } catch (e) {
-    console.error("Generate image error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+    console.error(`[${requestId}] Generate image error:`, e);
+    return errors.internal(
+      "An error occurred while processing your request",
+      e instanceof Error ? e.message : "Unknown error"
     );
   }
 });
