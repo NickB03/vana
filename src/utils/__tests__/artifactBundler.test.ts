@@ -29,25 +29,42 @@ describe('bundleArtifact', () => {
   // AUTHENTICATION TESTS
   // ============================================
 
-  it('returns requiresAuth error when session is null', async () => {
+  it('sends request as guest when session is null', async () => {
     vi.mocked(supabase.auth.getSession).mockResolvedValue({
       data: { session: null },
       error: null
     });
 
-    // Use unscoped package (scoped packages starting with @ are filtered by regex)
-    const code = `import { motion } from 'framer-motion';
-export default function App() { return <div>Test</div> }`;
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        bundleUrl: 'https://example.com/bundle.html',
+        bundleSize: 1000,
+        bundleTime: 500,
+        dependencies: ['framer-motion'],
+        expiresAt: new Date().toISOString(),
+        requestId: 'req-guest'
+      })
+    });
 
+    const code = `import { motion } from 'framer-motion';`;
     const result = await bundleArtifact(code, 'artifact-id', 'session-id', 'Test Artifact');
 
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toBe('Authentication required');
-      expect(result.details).toBe('Server-side bundling requires authentication');
-      expect(result.requiresAuth).toBeUndefined(); // Not set on initial auth check
-    }
-    expect(global.fetch).not.toHaveBeenCalled();
+    expect(result.success).toBe(true);
+    // Verify fetch was called without Authorization header and with isGuest: true
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://mock.supabase.co/functions/v1/bundle-artifact',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+          // No Authorization header for guests
+        },
+        body: expect.stringContaining('"isGuest":true')
+      })
+    );
   });
 
   it('returns requiresAuth error when session expires (401)', async () => {
@@ -307,7 +324,8 @@ export default function App() {
       dependencies: { 'framer-motion': '^11.0.0' },
       artifactId: 'art-456',
       sessionId: 'sess-789',
-      title: 'Animation Component'
+      title: 'Animation Component',
+      isGuest: false // Has session, so not a guest
     });
   });
 

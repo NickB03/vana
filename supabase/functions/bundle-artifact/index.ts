@@ -188,19 +188,23 @@ serve(async (req) => {
 
     let user = null;
 
-    // Try to authenticate if token provided
+    // Try to authenticate if token provided (but don't fail - treat as guest if invalid)
     const authHeader = req.headers.get("Authorization");
     if (authHeader && !isGuest) {
-      const token = authHeader.replace("Bearer ", "");
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
+      try {
+        const token = authHeader.replace("Bearer ", "");
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
 
-      if (authError) {
-        console.error(`[${requestId}] Authentication failed:`, authError?.message);
-        return errors.unauthorized("Invalid authentication token");
+        if (!authError && authUser) {
+          user = authUser;
+          console.log(`[${requestId}] Authenticated user: ${user.id}`);
+        } else {
+          // Token invalid/expired - treat as guest
+          console.log(`[${requestId}] Auth token invalid/expired, treating as guest:`, authError?.message);
+        }
+      } catch (e) {
+        console.log(`[${requestId}] Auth exception, treating as guest:`, e);
       }
-
-      user = authUser;
-      console.log(`[${requestId}] Authenticated user: ${user.id}`);
     } else {
       console.log(`[${requestId}] Guest request (no authentication)`);
     }
