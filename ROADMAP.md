@@ -1,8 +1,10 @@
 # Vana - Product Roadmap
 
-**Last Updated**: 2025-11-17
+**Last Updated**: 2025-11-21
 **Project**: Vana AI Development Assistant
-**Status**: Active Development
+**Status**: Historical Reference (Timeline Outdated)
+
+> **Note**: This roadmap contains outdated timeline references (Q1-Q3 2025). The features and priorities are still relevant, but the quarterly targets have passed. Use this as a reference for planned features and priorities, not timeline commitments.
 
 ---
 
@@ -397,6 +399,6 @@ See [GitHub Issues](https://github.com/NickB03/llm-chat-site/issues) for full de
 
 ---
 
-**Roadmap Status**: ✅ Active
-**Last Review**: 2025-01-06
-**Next Review**: 2025-02-01
+**Roadmap Status**: 📚 Historical Reference
+**Last Review**: 2025-11-21
+**Note**: Timeline references are outdated - use for feature priorities, not scheduling

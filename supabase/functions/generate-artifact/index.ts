@@ -57,6 +57,65 @@ Strict mode (enabled by default in React) forbids using these as variable names:
 
 **Common in algorithms:** Minimax/game AI often tries to use 'eval' - use 'score' or 'value' instead!
 
+### **CRITICAL: NEVER Mutate Arrays or Objects Directly**
+React strict mode enforces immutability. Direct mutations cause "Attempted to assign to readonly property" errors.
+
+❌ WRONG (causes runtime errors):
+\`\`\`javascript
+board[i] = 'X';           // ❌ Direct assignment - WILL CRASH
+board.push(value);        // ❌ Mutates original array
+board.splice(0, 1);       // ❌ Mutates original array
+board.sort();             // ❌ Mutates original array
+board.reverse();          // ❌ Mutates original array
+\`\`\`
+
+✅ CORRECT (immutable patterns):
+\`\`\`javascript
+// Create new copy, then modify
+const newBoard = [...board];
+newBoard[i] = 'X';
+
+// Use immutable array methods
+const newBoard = [...board, value];     // Instead of push
+const newBoard = board.filter((_, idx) => idx !== 0);  // Instead of splice
+const sorted = [...board].sort();       // Copy first, then sort
+const reversed = [...board].reverse();  // Copy first, then reverse
+\`\`\`
+
+**MINIMAX ALGORITHM EXAMPLE:**
+❌ WRONG:
+\`\`\`javascript
+function minimax(board, depth, isMaximizing) {
+  for (let i = 0; i < board.length; i++) {
+    if (board[i] === null) {
+      board[i] = isMaximizing ? 'X' : 'O';  // ❌ MUTATION - WILL CRASH
+      const score = minimax(board, depth + 1, !isMaximizing);
+      board[i] = null;  // ❌ MUTATION - WILL CRASH
+    }
+  }
+}
+\`\`\`
+
+✅ CORRECT:
+\`\`\`javascript
+function minimax(board, depth, isMaximizing) {
+  for (let i = 0; i < board.length; i++) {
+    if (board[i] === null) {
+      const newBoard = [...board];  // ✅ Create immutable copy
+      newBoard[i] = isMaximizing ? 'X' : 'O';  // ✅ Modify copy only
+      const score = minimax(newBoard, depth + 1, !isMaximizing);
+      // No need to undo - newBoard is discarded after recursion
+    }
+  }
+}
+\`\`\`
+
+**WHY THIS MATTERS:**
+- React strict mode protects against bugs by making props and state immutable
+- Direct mutations bypass React's change detection
+- Code that works in plain JavaScript WILL CRASH in React artifacts
+- Always create new copies with spread operator: \`[...array]\` or \`{...object}\`
+
 ---
 
 # 📚 Available Libraries (CDN-Loaded Globals)
@@ -506,11 +565,26 @@ serve(async (req) => {
     // ============================================================================
     // POST-GENERATION VALIDATION & AUTO-FIX
     // ============================================================================
-    // Validate artifact code for common issues (reserved keywords, invalid imports, etc.)
+    // Validate artifact code for common issues:
+    // - Reserved keywords (eval, arguments, etc.)
+    // - Invalid imports (@/components/ui/*)
+    // - Immutability violations (array mutations)
     const validation = validateArtifactCode(artifactCode, artifactType || 'react');
 
     if (!validation.valid && validation.canAutoFix) {
       console.log(`[${requestId}] ⚠️  Validation issues detected, attempting auto-fix...`);
+
+      // Log specific issue types
+      const issueTypes = {
+        reserved: validation.issues.filter(i => i.message.includes("Reserved keyword")).length,
+        imports: validation.issues.filter(i => i.message.includes("import")).length,
+        immutability: validation.issues.filter(i => i.message.includes("mutate") || i.message.includes("Direct array assignment")).length
+      };
+
+      if (issueTypes.reserved > 0) console.log(`[${requestId}] 🔧 Reserved keyword issues: ${issueTypes.reserved}`);
+      if (issueTypes.imports > 0) console.log(`[${requestId}] 🔧 Import issues: ${issueTypes.imports}`);
+      if (issueTypes.immutability > 0) console.log(`[${requestId}] 🔧 Immutability violations: ${issueTypes.immutability}`);
+
       const { fixed, changes } = autoFixArtifactCode(artifactCode);
 
       if (changes.length > 0) {
@@ -527,6 +601,8 @@ serve(async (req) => {
       }
     } else if (!validation.valid) {
       console.warn(`[${requestId}] ⚠️  Validation issues detected (cannot auto-fix):`, validation.issues);
+    } else {
+      console.log(`[${requestId}] ✅ Artifact code validated successfully (no issues)`);
     }
 
     // Extract token usage for cost tracking

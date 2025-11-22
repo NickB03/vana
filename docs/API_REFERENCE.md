@@ -383,9 +383,9 @@ Generate AI images using Google's Gemini Flash Image model.
 #### AI Model
 
 - **Model**: Gemini 2.5 Flash Image
-- **Provider**: Google AI Studio
-- **Key Rotation**: 10-key rotation pool for images only (150 RPM total)
-  - Note: Chat and artifact generation use single OpenRouter API keys (no rotation)
+- **Provider**: OpenRouter
+- **API Key**: Single `OPENROUTER_GEMINI_IMAGE_KEY` (no rotation)
+  - Note: All AI operations (chat, artifacts, images) use single OpenRouter keys for simplicity
 - **Storage**: Supabase Storage bucket
 
 ---

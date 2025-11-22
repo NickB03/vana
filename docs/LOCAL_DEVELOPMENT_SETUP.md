@@ -206,16 +206,11 @@ VITE_DEV_MODE=true
 If running Edge Functions locally, you need API keys:
 
 ```bash
-# OpenRouter Keys (for chat and artifacts - single keys, no rotation)
+# OpenRouter Keys (all AI operations - single keys, no rotation)
 OPENROUTER_GEMINI_FLASH_KEY=sk-or-v1-...  # Chat, summaries, titles
-OPENROUTER_SHERLOCK_FREE_KEY=sk-or-v1-... # Artifact generation
-OPENROUTER_K2T_KEY=sk-or-v1-...           # Artifact error fixing (Kimi K2)
-
-# Google AI Keys (for IMAGE GENERATION ONLY - uses 10-key rotation pool)
-# Production: 10 keys = 150 RPM total (15 RPM per key)
-# Local dev: 1-2 keys are sufficient
-GOOGLE_KEY_1=AIzaSy...
-GOOGLE_KEY_2=AIzaSy...
+OPENROUTER_KIMI_K2_KEY=sk-or-v1-...       # Artifact generation
+OPENROUTER_K2T_KEY=sk-or-v1-...           # Artifact error fixing
+OPENROUTER_GEMINI_IMAGE_KEY=sk-or-v1-...  # Image generation
 ```
 
 **Getting API Keys**:
