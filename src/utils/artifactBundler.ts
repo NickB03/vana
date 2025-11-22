@@ -71,33 +71,33 @@ export async function bundleArtifact(
       };
     }
 
-    // 3. Get authentication token
+    // 3. Get authentication token (optional - guests can bundle too)
     const { data: { session } } = await supabase.auth.getSession();
-
-    if (!session) {
-      return {
-        success: false,
-        error: "Authentication required",
-        details: "Server-side bundling requires authentication"
-      };
-    }
+    const isGuest = !session;
 
     // 4. Call bundle-artifact Edge Function
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+
+    // Add authorization header if user is authenticated
+    if (session) {
+      headers["Authorization"] = `Bearer ${session.access_token}`;
+    }
+
     const response = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bundle-artifact`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}`
-        },
+        headers,
         body: JSON.stringify({
           code,
           dependencies,
           artifactId,
           sessionId,
-          title
-        } as BundleRequest)
+          title,
+          isGuest
+        } as BundleRequest & { isGuest: boolean })
       }
     );
 
