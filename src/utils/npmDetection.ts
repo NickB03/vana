@@ -13,20 +13,21 @@ export interface NpmImport {
  * @returns true if npm imports are found
  */
 export function detectNpmImports(code: string): boolean {
-  // Match: import X from 'package-name'
-  // Exclude: react, react-dom, relative imports (./), absolute imports (/)
-  const importRegex = /import\s+.*?\s+from\s+['"]([^'"@./][^'"]*)['"]/g;
-  
+  // Match: import X from 'package-name' OR import X from '@scope/package-name'
+  // Supports: scoped packages (@radix-ui/react-dialog), multiline imports, sub-paths
+  // Excludes: react, react-dom, relative imports (./), absolute imports (/)
+  const importRegex = /import\s+[\s\S]*?\s+from\s+['"]((?:@[a-z0-9-]+\/)?[a-z0-9-]+(?:\/[a-z0-9-]+)*)['"]/gi;
+
   let match;
   while ((match = importRegex.exec(code)) !== null) {
     const pkg = match[1];
-    
+
     // Exclude React core packages (already available via CDN in iframe)
     if (pkg !== 'react' && pkg !== 'react-dom') {
       return true;
     }
   }
-  
+
   return false;
 }
 
@@ -37,22 +38,24 @@ export function detectNpmImports(code: string): boolean {
  */
 export function extractNpmDependencies(code: string): Record<string, string> {
   const deps: Record<string, string> = {};
-  const importRegex = /import\s+.*?\s+from\s+['"]([^'"@./][^'"]*)['"]/g;
-  
+  // Match: import X from 'package-name' OR import X from '@scope/package-name'
+  // Supports: scoped packages (@radix-ui/react-dialog), multiline imports, sub-paths
+  const importRegex = /import\s+[\s\S]*?\s+from\s+['"]((?:@[a-z0-9-]+\/)?[a-z0-9-]+(?:\/[a-z0-9-]+)*)['"]/gi;
+
   let match;
   while ((match = importRegex.exec(code)) !== null) {
     const pkg = match[1];
-    
+
     // Skip React core (Sandpack includes these by default)
     if (pkg === 'react' || pkg === 'react-dom') continue;
-    
+
     // Skip if already added
     if (deps[pkg]) continue;
-    
+
     // Map common packages to versions
     deps[pkg] = getPackageVersion(pkg);
   }
-  
+
   return deps;
 }
 

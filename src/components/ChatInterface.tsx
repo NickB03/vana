@@ -131,7 +131,11 @@ export function ChatInterface({
     await streamChat(
       messageToSend,
       (chunk, progress) => {
-        setStreamingMessage((prev) => prev + chunk);
+        // Only append text chunks (ignore empty chunks from reasoning updates)
+        if (chunk) {
+          setStreamingMessage((prev) => prev + chunk);
+        }
+        // Always update progress (includes reasoning steps)
         setStreamProgress(progress);
       },
       () => {
@@ -394,6 +398,7 @@ export function ChatInterface({
                     <MessageWithArtifacts
                       content={message.content}
                       messageId={message.id}
+                      sessionId={message.session_id}
                       onArtifactOpen={handleArtifactOpen}
                     />
 
@@ -490,6 +495,7 @@ export function ChatInterface({
                 </ReasoningErrorBoundary>
                 <MessageWithArtifacts
                   content={streamingMessage}
+                  sessionId={sessionId || ''}
                   onArtifactOpen={handleArtifactOpen}
                 />
               </div>

@@ -225,20 +225,30 @@ Located in `supabase/functions/`:
    - Pre/post-generation validation
    - Auto-transformation of common mistakes
    - Immutability enforcement
+   - **NOW supports Radix UI** via server-side bundling
 
-3. **generate-artifact-fix** - Artifact error fixing (Kimi K2-Thinking)
+3. **bundle-artifact** - **NEW (2025-11)** - Server-side bundling for npm dependencies
+   - Bundles React artifacts with npm packages (Radix UI, framer-motion, etc.)
+   - Uses esbuild WASM (Deno 2.4 compatible) with import maps
+   - Uploads to Supabase Storage with signed URLs (1-hour expiry)
+   - Supports 2+ million npm packages via esm.sh
+   - Rate limiting: 50 requests per 5 hours (authenticated users only)
+   - Auto-cleanup: Temporary directory cleanup after bundling
+   - Security: Session ownership validation, UUID validation, CSP headers, bundle size limits (10MB), dependency version validation, XSS prevention, timeout protection (30s)
+
+4. **generate-artifact-fix** - Artifact error fixing (Kimi K2-Thinking)
    - Deep reasoning for debugging
    - Comprehensive error analysis
    - Automatic code corrections
 
-4. **generate-title** - Session title generation (Gemini Flash Lite)
+5. **generate-title** - Session title generation (Gemini Flash Lite)
    - Auto-generates descriptive titles from first message
 
-5. **generate-image** - AI image generation (Gemini Flash-Image)
+6. **generate-image** - AI image generation (Gemini Flash-Image)
    - 10-key rotation pool (150 RPM total)
    - Round-robin key selection
 
-6. **summarize-conversation** - Context summarization (Gemini Flash Lite)
+7. **summarize-conversation** - Context summarization (Gemini Flash Lite)
    - Intelligent conversation summarization for long chats
 
 **Shared Utilities** (`supabase/functions/_shared/`):
@@ -248,51 +258,79 @@ Located in `supabase/functions/`:
 - `system-prompt-inline.ts` - Externalized system prompts (52% bundle reduction)
 - `reasoning-generator.ts` - Structured reasoning generation
 
-## Critical Artifact Restrictions
+## Artifact Architecture & Rendering
 
-**ALWAYS read** `.claude/artifact-import-restrictions.md` before working with artifacts.
+**NEW (2025-11)**: Artifacts now support **two rendering methods** - client-side (Babel) and server-side (bundling).
 
-### ❌ FORBIDDEN (Will Break Artifacts)
+### 🚀 Server-Side Bundling (NEW)
+
+**What it enables**:
+- ✅ **Full npm ecosystem** - Use Radix UI, framer-motion, any npm package
+- ✅ **Modern UI primitives** - Professional, accessible components
+- ✅ **Automatic detection** - System detects npm imports and bundles automatically
+- ✅ **No code changes** - Works transparently for users
+
+**How it works**:
+1. AI generates artifact with npm imports (e.g., `import * as Dialog from '@radix-ui/react-dialog'`)
+2. Frontend detects npm imports via `detectNpmImports()`
+3. Calls `/bundle-artifact` Edge Function with code and dependencies
+4. Deno bundles code with npm packages from esm.sh
+5. Uploads bundle to Supabase Storage
+6. Returns signed URL for iframe loading
+7. Artifact renders with full npm ecosystem access
+
+**Supported packages**: Any npm package available on esm.sh (2+ million packages)
+
+### ⚡ Client-Side Babel (Legacy/Fallback)
+
+**For simple artifacts** without npm dependencies:
+- ✅ **Instant rendering** - No build time
+- ✅ **Zero cost** - Browser does the work
+- ✅ **UMD globals** - React, Lucide, Recharts, Framer Motion
+
+### ❌ STILL FORBIDDEN
 
 ```tsx
-// LOCAL IMPORTS - NEVER WORKS
+// LOCAL IMPORTS - NEVER WORKS (use npm instead)
 import { Button } from "@/components/ui/button"      // ❌ FAILS
 import { Card } from "@/components/ui/card"          // ❌ FAILS
 import { cn } from "@/lib/utils"                     // ❌ FAILS
-import anything from "@/..."                          // ❌ FAILS
 ```
 
-**Why**: Artifacts run in isolated sandboxes (iframes) with NO access to local project files.
+**Why**: Artifacts run in isolated sandboxes. Use npm packages like `@radix-ui/*` instead.
 
-### ✅ ALLOWED (Works in Artifacts)
+### ✅ RECOMMENDED APPROACH
 
 ```tsx
-// React - Available as global
-const { useState, useEffect, useMemo } = React;
+// ✅ NPM PACKAGES - FULLY SUPPORTED (server-bundled)
+import * as Dialog from '@radix-ui/react-dialog';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { motion } from 'framer-motion';
 
-// Tailwind CSS - Always available (no import needed)
-<div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+export default function App() {
+  const { useState } = React; // React still from global
 
-// Lucide Icons - Available as globals
-const { Check, X, Settings } = LucideReact;
-
-// Recharts - Available as globals
-const { LineChart, Line, XAxis, YAxis, Tooltip } = Recharts;
+  return (
+    <Dialog.Root>
+      <Dialog.Trigger>Open Dialog</Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 bg-black/50" />
+        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded">
+          <Dialog.Title>Professional UI</Dialog.Title>
+          <Dialog.Description>With full Radix UI support!</Dialog.Description>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
 ```
 
-### Component Conversion Pattern
+### 🔄 Hybrid Strategy
 
-```tsx
-// ❌ shadcn/ui (FAILS)
-<Button variant="default" size="lg">Click me</Button>
-
-// ✅ Tailwind (WORKS)
-<button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">
-  Click me
-</button>
-```
-
-**See**: `.claude/artifact-import-restrictions.md` for complete conversion guide.
+The system intelligently chooses the best rendering method:
+- **No npm imports** → Babel Standalone (instant, free)
+- **Has npm imports** → Server bundling (2-5s, small cost)
+- **Bundling fails** → Fallback to Babel with error message
 
 ## Testing Strategy
 
@@ -427,7 +465,7 @@ manualChunks: {
 |----------|---------------|-----|
 | `bun install` | `npm install` | Prevents lock file conflicts |
 | Skip session validation | `await ensureValidSession()` | Prevents auth errors |
-| Import shadcn in artifacts | Use Tailwind CSS + React state | Local imports unavailable |
+| Import shadcn in artifacts | Use npm Radix UI or Tailwind CSS | Local imports unavailable, use npm instead |
 | Animate all messages | Animate last message only | Performance (100+ msgs) |
 | Deploy without verification | Run Chrome DevTools checks | Catches runtime errors |
 | Add routes after `*` | Add ABOVE catch-all | Routes never reached |

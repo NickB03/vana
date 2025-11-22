@@ -135,21 +135,37 @@ const gsap = window.gsap;
 ## Icons
 const { Home, Settings, User, Plus, Trash2, Edit, Check, AlertCircle } = LucideReact;
 
-## UI Components - USE TAILWIND CSS ONLY
-// ⚠️ CRITICAL: Radix UI imports are NOT supported in artifacts
-// Babel standalone cannot resolve ES module imports via import maps
-// Use Tailwind CSS classes to build all UI components instead
+## UI Components - RADIX UI FULLY SUPPORTED! ✅
+// ✅ NEW: Radix UI is NOW SUPPORTED via server-side bundling!
+// You can now use modern UI primitives with proper accessibility
 //
-// Example - Button:
+// ✅ RECOMMENDED: Use Radix UI for complex components
+import * as Dialog from '@radix-ui/react-dialog';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import * as Select from '@radix-ui/react-select';
+import * as Tabs from '@radix-ui/react-tabs';
+import * as Popover from '@radix-ui/react-popover';
+import * as Tooltip from '@radix-ui/react-tooltip';
+import * as Switch from '@radix-ui/react-switch';
+import * as Slider from '@radix-ui/react-slider';
+//
+// Example - Dialog:
+// <Dialog.Root>
+//   <Dialog.Trigger className="px-4 py-2 bg-blue-600 text-white rounded">Open</Dialog.Trigger>
+//   <Dialog.Portal>
+//     <Dialog.Overlay className="fixed inset-0 bg-black/50" />
+//     <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded p-6">
+//       <Dialog.Title>Title</Dialog.Title>
+//       <Dialog.Description>Description</Dialog.Description>
+//       <Dialog.Close>Close</Dialog.Close>
+//     </Dialog.Content>
+//   </Dialog.Portal>
+// </Dialog.Root>
+//
+// 🎨 ALSO AVAILABLE: Tailwind CSS for custom components
 // <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
 //   Click me
 // </button>
-//
-// Example - Card:
-// <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-//   <h3 className="text-lg font-semibold mb-2">Title</h3>
-//   <p className="text-gray-600 dark:text-gray-300">Content</p>
-// </div>
 
 ## Utilities
 const _ = window._;
@@ -305,16 +321,19 @@ useEffect(() => {
 
 # 🎯 Summary: Keys to Success
 
-1. **Never import from @/** - Use Radix UI primitives instead
-2. **Never use localStorage** - Use React state instead
-3. **React from globals** - const { useState } = React;
-4. **Always include sample data** - Never show empty states
-5. **Exceed expectations** - Expand brief prompts into feature-complete demos
-6. **Make it visual** - Modern design with animations and polish
-7. **Be accessible** - Semantic HTML, proper contrast, ARIA labels
-8. **Add power features** - Keyboard shortcuts, tooltips, helpful UX
+1. **✅ USE Radix UI** - Full npm support via server-side bundling! Use modern primitives
+2. **Never import from @/** - Local project imports still forbidden (use npm packages instead)
+3. **Never use localStorage** - Use React state instead
+4. **React from globals** - const { useState } = React;
+5. **Always include sample data** - Never show empty states
+6. **Exceed expectations** - Expand brief prompts into feature-complete demos
+7. **Make it visual** - Modern design with animations and polish
+8. **Be accessible** - Radix UI provides excellent accessibility out of the box
+9. **Add power features** - Keyboard shortcuts, tooltips, helpful UX
 
-**Goal:** Create artifacts that make users say "wow, this is exactly what I needed — and more!"`;
+**Goal:** Create artifacts that make users say "wow, this is exactly what I needed — and more!"
+
+**NEW CAPABILITY:** Artifacts with npm imports (Radix UI, framer-motion, etc.) are automatically server-bundled for full ecosystem access!`;
 
 serve(async (req) => {
   const origin = req.headers.get("Origin");
@@ -550,7 +569,7 @@ serve(async (req) => {
       userPrompt,
       {
         temperature: 0.7, // Balanced creativity and consistency
-        max_tokens: 8000,
+        max_tokens: 16000, // ✅ INCREASED: Doubled from 8000 to handle complex artifacts (Radix UI dialogs, etc.)
         requestId
       }
     );
@@ -560,6 +579,16 @@ serve(async (req) => {
     }
 
     const data = await response.json();
+
+    // Log finish_reason for debugging token limit issues
+    const finishReason = data?.choices?.[0]?.finish_reason;
+    console.log(`[${requestId}] 📊 Generation complete: finish_reason="${finishReason}"`);
+
+    if (finishReason === "length") {
+      console.warn(`[${requestId}] ⚠️  HIT TOKEN LIMIT - Response truncated at ${data?.usage?.completion_tokens || 'unknown'} output tokens`);
+      console.warn(`[${requestId}] ⚠️  Consider: 1) Simplifying prompt, 2) Increasing max_tokens further, 3) Using model with higher limits`);
+    }
+
     let artifactCode = extractTextFromKimi(data, requestId);
 
     // ============================================================================

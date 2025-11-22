@@ -269,13 +269,15 @@ export function extractTextFromKimi(responseData: any, requestId?: string): stri
   // OpenAI-compatible format: choices[0].message.content
   if (responseData?.choices?.[0]?.message?.content) {
     const text = responseData.choices[0].message.content;
-    console.log(`${logPrefix} ✅ Extracted artifact from Kimi, length: ${text.length} characters`);
+    const finishReason = responseData.choices[0].finish_reason;
+    console.log(`${logPrefix} ✅ Extracted artifact from Kimi, length: ${text.length} characters (finish_reason: ${finishReason})`);
     return text;
   }
 
   // Error case - log the structure for debugging
+  const finishReason = responseData?.choices?.[0]?.finish_reason;
   console.error(
-    `${logPrefix} ❌ Failed to extract text from response:`,
+    `${logPrefix} ❌ Failed to extract text from response (finish_reason: ${finishReason}):`,
     JSON.stringify(responseData).substring(0, 200)
   );
   return "";

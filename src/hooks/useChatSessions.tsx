@@ -83,11 +83,16 @@ export function useChatSessions() {
 
   const generateTitle = async (sessionId: string, message: string) => {
     try {
+      console.log("[generateTitle] Calling with message:", typeof message, message?.substring(0, 100));
+
       const { data, error } = await supabase.functions.invoke("generate-title", {
         body: { message },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("[generateTitle] Error from Edge Function:", error);
+        throw error;
+      }
 
       const title = data.title;
 

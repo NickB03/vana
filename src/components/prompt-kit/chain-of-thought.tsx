@@ -35,8 +35,6 @@ export const ChainOfThoughtTrigger = ({
   swapIconOnHover = true,
   ...props
 }: ChainOfThoughtTriggerProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
   // Extract text content for ARIA label
   const getTextContent = (node: React.ReactNode): string => {
     if (typeof node === 'string') return node;
@@ -59,19 +57,10 @@ export const ChainOfThoughtTrigger = ({
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-md px-1",
         className
       )}
-      onClick={() => setIsExpanded(!isExpanded)}
       // Accessibility: ARIA attributes for screen readers
-      aria-expanded={isExpanded}
-      aria-label={`${isExpanded ? 'Collapse' : 'Expand'} reasoning step: ${textContent}`}
+      aria-label={`Expand or collapse reasoning step: ${textContent}`}
       role="button"
       tabIndex={0}
-      // Accessibility: Keyboard navigation
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          setIsExpanded(!isExpanded);
-        }
-      }}
       {...props}
     >
       <div className="flex items-center gap-2">
@@ -111,10 +100,6 @@ export const ChainOfThoughtTrigger = ({
           aria-hidden="true"
         />
       )}
-      {/* Visually hidden status for screen readers */}
-      <span className="sr-only">
-        {isExpanded ? 'Expanded' : 'Collapsed'}
-      </span>
     </CollapsibleTrigger>
   );
 };
@@ -186,6 +171,7 @@ export const ChainOfThoughtStep = ({
     <Collapsible
       className={cn("group", className)}
       data-last={isLast}
+      defaultOpen={false}
       {...props}
     >
       {children}

@@ -14,25 +14,34 @@ serve(async (req) => {
   try {
     const requestBody = await req.json();
     const { message } = requestBody;
-    
+
+    console.log("[generate-title] Request body:", JSON.stringify(requestBody));
+    console.log("[generate-title] Message type:", typeof message, "value:", message);
+
     // Input validation
     if (!message || typeof message !== "string") {
+      console.error("[generate-title] Validation failed: message is", typeof message, message);
       return new Response(
-        JSON.stringify({ error: "Invalid message format" }),
+        JSON.stringify({
+          error: "Invalid message format",
+          details: `Expected string, got ${typeof message}: ${JSON.stringify(message)?.substring(0, 100)}`
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     
     if (message.trim().length === 0) {
+      console.error("[generate-title] Validation failed: message is empty after trim");
       return new Response(
         JSON.stringify({ error: "Message cannot be empty" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    
+
     if (message.length > 10000) {
+      console.error("[generate-title] Validation failed: message too long:", message.length);
       return new Response(
-        JSON.stringify({ error: "Message too long" }),
+        JSON.stringify({ error: "Message too long", details: `Length: ${message.length}` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

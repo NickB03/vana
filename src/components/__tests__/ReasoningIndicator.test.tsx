@@ -297,12 +297,12 @@ describe('ReasoningIndicator', () => {
       expect(trigger.className).toContain('focus-visible:ring-2');
     });
 
-    it('includes sr-only status for screen readers', () => {
+    it('uses aria-expanded for screen reader state', () => {
       render(<ReasoningIndicator reasoningSteps={mockReasoning} />);
 
-      const srOnly = document.querySelector('.sr-only');
-      expect(srOnly).toBeInTheDocument();
-      expect(srOnly).toHaveTextContent(/Collapsed|Expanded/);
+      // Radix UI's Collapsible provides aria-expanded, which is better than sr-only text
+      const trigger = screen.getByRole('button');
+      expect(trigger).toHaveAttribute('aria-expanded');
     });
   });
 

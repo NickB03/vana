@@ -380,7 +380,7 @@ export function useChatMessages(
             const parsed = JSON.parse(jsonStr);
 
             // ========================================
-            // CHAIN OF THOUGHT: Handle reasoning events
+            // CHAIN OF THOUGHT: Handle reasoning events with word-by-word streaming
             // ========================================
             if (parsed.type === 'reasoning') {
               // Check sequence number to prevent out-of-order updates
@@ -391,11 +391,54 @@ export function useChatMessages(
               }
               lastSequence = parsed.sequence;
 
+              // Store the complete reasoning data
               reasoningSteps = parsed.data;
-              const progress = updateProgress();
-              onDelta('', progress); // Trigger UI update with reasoning
 
-              console.log('[StreamProgress] Received reasoning:', reasoningSteps);
+              // Stream the reasoning content step-by-step for smooth display
+              const fullReasoning = parsed.data;
+              const steps = fullReasoning?.steps || [];
+              const STEP_DELAY_MS = 150; // Delay between steps (faster than words)
+              const ITEM_DELAY_MS = 50;  // Delay between items within a step
+
+              // Stream each step progressively
+              for (let stepIndex = 0; stepIndex < steps.length; stepIndex++) {
+                await new Promise(resolve => setTimeout(resolve, STEP_DELAY_MS));
+
+                const currentStep = steps[stepIndex];
+                const items = currentStep.items || [];
+
+                // Stream items within the step
+                for (let itemIndex = 0; itemIndex <= items.length; itemIndex++) {
+                  if (itemIndex > 0) {
+                    await new Promise(resolve => setTimeout(resolve, ITEM_DELAY_MS));
+                  }
+
+                  // Build partial reasoning with steps revealed so far
+                  const partialSteps = steps.slice(0, stepIndex).concat([
+                    {
+                      ...currentStep,
+                      items: items.slice(0, itemIndex)
+                    }
+                  ]);
+
+                  const streamingReasoning = {
+                    ...fullReasoning,
+                    steps: partialSteps,
+                    isStreaming: true
+                  };
+
+                  const progress = updateProgress();
+                  progress.reasoningSteps = streamingReasoning;
+                  onDelta('', progress);
+                }
+              }
+
+              // Final update with complete reasoning
+              const progress = updateProgress();
+              progress.reasoningSteps = fullReasoning;
+              onDelta('', progress);
+
+              console.log('[StreamProgress] Streamed', steps.length, 'reasoning steps');
               continue; // Skip to next event
             }
 

@@ -33,6 +33,13 @@ export interface ArtifactData {
   title: string;
   content: string;
   language?: string;
+  bundleUrl?: string;         // Signed URL for server-bundled artifacts
+  bundleTime?: number;        // Bundling time in milliseconds
+  dependencies?: string[];    // List of npm packages used
+  bundlingFailed?: boolean;   // True if server-side bundling failed
+  bundleError?: string;       // Error message from bundling failure
+  bundleErrorDetails?: string; // Detailed error message
+  bundleStatus?: 'idle' | 'bundling' | 'success' | 'error'; // Current bundling state
 }
 
 interface ArtifactContainerProps {
@@ -690,8 +697,129 @@ ${artifact.content}
       );
     }
 
-    // React without Sandpack (iframe with React UMD)
+    // React without Sandpack - check if server-bundled
     if (artifact.type === "react") {
+      // If bundling failed with npm imports, show error (don't fallback to Babel)
+      if (artifact.bundlingFailed && detectNpmImports(artifact.content)) {
+        return (
+          <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-background">
+            <div className="w-16 h-16 mb-4 rounded-full bg-destructive/10 flex items-center justify-center">
+              <AlertCircle className="w-8 h-8 text-destructive" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2 text-foreground">Bundling Failed</h3>
+            <p className="text-sm text-muted-foreground mb-1 max-w-md">
+              {artifact.bundleError || "This component requires npm packages that couldn't be bundled."}
+            </p>
+            {artifact.bundleErrorDetails && (
+              <p className="text-xs text-muted-foreground mb-4 max-w-md">
+                {artifact.bundleErrorDetails}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  window.location.reload();
+                }}
+              >
+                Refresh Page
+              </Button>
+              {onEdit && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => onEdit?.(`Fix this bundling error: ${artifact.bundleError}`)}
+                >
+                  Ask AI for Help
+                </Button>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      // If artifact has a bundle URL, render via signed URL instead of Babel
+      if (artifact.bundleUrl) {
+        // Validate bundle URL origin for security
+        const ALLOWED_BUNDLE_ORIGINS = [
+          import.meta.env.VITE_SUPABASE_URL
+        ];
+
+        let isValidOrigin = false;
+        try {
+          const url = new URL(artifact.bundleUrl);
+          isValidOrigin = ALLOWED_BUNDLE_ORIGINS.includes(url.origin);
+        } catch {
+          isValidOrigin = false;
+        }
+
+        if (!isValidOrigin) {
+          console.error('[ArtifactContainer] Invalid bundle URL origin:', artifact.bundleUrl);
+          return (
+            <div className="flex items-center justify-center h-full p-8">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Bundle URL failed security validation. Please refresh the page.
+                </AlertDescription>
+              </Alert>
+            </div>
+          );
+        }
+
+        return (
+          <div className="w-full h-full relative flex flex-col">
+            <div className="flex-1 relative">
+              {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-20">
+                  <ArtifactSkeleton type="react" />
+                </div>
+              )}
+              {previewError && !isLoading && (
+                <div className="absolute top-2 left-2 right-2 bg-destructive/10 border border-destructive text-destructive text-xs p-3 rounded z-10 flex flex-col gap-2">
+                  <div className="flex items-start gap-2">
+                    <span className="font-semibold shrink-0">⚠️ Bundle Error:</span>
+                    <span className="flex-1 break-words font-mono">{previewError}</span>
+                  </div>
+                  <div className="flex gap-2 pl-6">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 text-xs"
+                      onClick={() => {
+                        navigator.clipboard.writeText(previewError);
+                        toast.success("Error copied to clipboard");
+                      }}
+                    >
+                      Copy Error
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {artifact.dependencies && artifact.dependencies.length > 0 && (
+                <div className="absolute bottom-2 right-2 bg-primary/10 border border-primary/20 text-xs px-2 py-1 rounded z-10">
+                  Bundled with {artifact.dependencies.join(', ')}
+                </div>
+              )}
+              <iframe
+                src={artifact.bundleUrl}
+                className="w-full h-full border-0 bg-background"
+                title={artifact.title}
+                sandbox="allow-scripts allow-same-origin"
+                onLoad={() => setIsLoading(false)}
+                onError={(e) => {
+                  console.error('Bundle iframe error:', e);
+                  setPreviewError('Failed to load bundled artifact');
+                  setIsLoading(false);
+                }}
+              />
+            </div>
+          </div>
+        );
+      }
+
+      // Otherwise use client-side Babel rendering (existing code)
       // Transform artifact code: strip markdown fences, ES6 imports, and export statements
       // This ensures compatibility with UMD globals loaded via CDN
       const processedCode = artifact.content
@@ -759,8 +887,8 @@ ${artifact.content}
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/recharts@2.5.0/dist/Recharts.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/framer-motion@11.11.11/dist/size-rollup-motion.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/recharts@2.5.0/umd/Recharts.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/framer-motion@11.11.11/dist/framer-motion.js"></script>
   ${injectedCDNs}
   ${generateCompleteIframeStyles()}
   <style>

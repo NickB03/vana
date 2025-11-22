@@ -213,16 +213,19 @@ describe('ChainOfThoughtTrigger', () => {
       expect(ariaLabel).toContain('My reasoning step');
     });
 
-    it('updates aria-label to "Collapse" after click', async () => {
+    it('updates aria-expanded after click', async () => {
       const user = userEvent.setup();
 
       render(<ChainOfThoughtStep><ChainOfThoughtTrigger>Test step</ChainOfThoughtTrigger></ChainOfThoughtStep>);
 
       const trigger = screen.getByRole('button');
-      await user.click(trigger);
 
-      const ariaLabel = trigger.getAttribute('aria-label');
-      expect(ariaLabel).toContain('Collapse');
+      // Initially collapsed
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+      // Click to expand
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
     });
 
     it('has tabIndex={0} for keyboard focus', () => {
@@ -232,16 +235,19 @@ describe('ChainOfThoughtTrigger', () => {
       expect(trigger).toHaveAttribute('tabIndex', '0');
     });
 
-    it('includes sr-only status text', () => {
-      const { container } = render(
+    it('has static descriptive aria-label', () => {
+      render(
         <ChainOfThoughtStep>
-          <ChainOfThoughtTrigger>Trigger</ChainOfThoughtTrigger>
+          <ChainOfThoughtTrigger>Test step</ChainOfThoughtTrigger>
         </ChainOfThoughtStep>
       );
 
-      const srOnly = container.querySelector('.sr-only');
-      expect(srOnly).toBeInTheDocument();
-      expect(srOnly?.textContent).toMatch(/Collapsed|Expanded/);
+      const trigger = screen.getByRole('button');
+      const ariaLabel = trigger.getAttribute('aria-label');
+
+      // Should have descriptive label that includes step text
+      expect(ariaLabel).toContain('Test step');
+      expect(ariaLabel).toContain('Expand or collapse');
     });
 
     it('decorative icons have aria-hidden="true"', () => {
