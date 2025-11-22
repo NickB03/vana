@@ -50,7 +50,8 @@ const BUNDLE_TIMEOUT_MS = 30000; // 30 seconds
 
 // Security validation patterns
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const SEMVER_REGEX = /^(\d+\.)?(\d+\.)?(\*|\d+)$/;
+// Accept semver with optional prefix: ^1.0.0, ~1.0.0, >=1.0.0, 1.0.0, etc.
+const SEMVER_REGEX = /^[\^~>=<]?(\d+\.)?(\d+\.)?(\*|\d+)(-[\w.]+)?(\+[\w.]+)?$/;
 const NPM_TAG_REGEX = /^(latest|next|beta|alpha|canary)$/;
 const SAFE_PACKAGE_NAME = /^[@a-z0-9\-/]+$/i;
 
