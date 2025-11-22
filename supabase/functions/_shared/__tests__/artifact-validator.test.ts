@@ -140,7 +140,7 @@ Deno.test("autoFixArtifactCode - preserves code structure and indentation", () =
   assertEquals(fixed.includes('  const score ='), true);
   // Should preserve function structure
   assertEquals(fixed.includes('function minimax'), true);
-  assertEquals(fixed.includes('return score;'), true || fixed.includes('return eval;'), true);
+  assertEquals(fixed.includes('return score;') || fixed.includes('return eval;'), true);
 });
 
 // ============================================================================

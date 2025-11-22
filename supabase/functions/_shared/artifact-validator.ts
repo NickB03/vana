@@ -300,12 +300,12 @@ export function validateImmutability(code: string): MutationValidation {
  * Attempts to auto-fix common mutation patterns
  */
 function autoFixMutations(code: string): string {
-  let fixed = code;
+  const fixed = code;
   const lines = fixed.split('\n');
   const fixedLines: string[] = [];
 
   for (let i = 0; i < lines.length; i++) {
-    let line = lines[i];
+    const line = lines[i];
     const trimmed = line.trim();
 
     // Skip comments and empty lines
