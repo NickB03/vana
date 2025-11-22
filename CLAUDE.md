@@ -61,7 +61,7 @@ npm run build:staging    # Staging build
 npm run preview          # Preview production build
 ```
 
-### Testing (293 tests, 74.21% coverage)
+### Testing (432 tests, 74.21% coverage)
 ```bash
 npm run test                  # Run all tests
 npm run test -- --watch       # Run tests in watch mode

@@ -81,7 +81,7 @@
 - 🚀 **Automated CI/CD Pipeline**: GitHub Actions workflow (lint → test → coverage → build)
 - 📊 **Coverage Tracking**: Codecov integration with automatic PR comments and trend analysis
 - 🛡️ **Branch Protection**: GitHub ruleset requiring PR approval and passing checks
-- ✅ **Testing Expansion**: 293 tests (coverage: 68% → 74.21%), exportArtifact.ts: 23% → 98%
+- ✅ **Testing Expansion**: 432 tests (coverage: 68% → 74.21%), exportArtifact.ts: 23% → 98%
 - 🔒 **Security Testing**: 9 XSS attack scenarios validated, performance benchmarks added
 - 📚 **Comprehensive Docs**: 5 detailed guides (setup, CI/CD, coverage, quickstart)
 
@@ -465,7 +465,7 @@ npm run build:dev        # Development build with sourcemaps
 npm run preview          # Preview production build
 
 # Testing
-npm run test             # Run tests (293 passing)
+npm run test             # Run tests (432 passing)
 npm run test:ui          # Run tests with UI
 npm run test:coverage    # Generate coverage report (74.21%)
 
@@ -474,7 +474,7 @@ npm run lint             # Run ESLint (0 errors, 94 warnings)
 
 # CI/CD (runs automatically on PRs)
 # - Lint validation
-# - Full test suite (293 tests)
+# - Full test suite (432 tests)
 # - Coverage upload to Codecov
 # - Production build verification
 ```
@@ -769,8 +769,8 @@ The project uses Vitest for frontend testing with comprehensive coverage:
 
 **Current Metrics:**
 ```
-Tests:     293 passing, 27 skipped (320 total)
-Runtime:   2.43s
+Tests:     432 passing (432 total)
+Runtime:   4.83s
 Coverage:  74.21% statements (exceeds 55% threshold by 19%)
 ```
 
