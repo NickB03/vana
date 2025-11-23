@@ -50,7 +50,8 @@ const BUNDLE_TIMEOUT_MS = 30000; // 30 seconds
 
 // Security validation patterns
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const SEMVER_REGEX = /^(\d+\.)?(\d+\.)?(\*|\d+)$/;
+// Accept semver with optional prefix: ^1.0.0, ~1.0.0, >=1.0.0, 1.0.0, etc.
+const SEMVER_REGEX = /^[\^~>=<]?(\d+\.)?(\d+\.)?(\*|\d+)(-[\w.]+)?(\+[\w.]+)?$/;
 const NPM_TAG_REGEX = /^(latest|next|beta|alpha|canary)$/;
 const SAFE_PACKAGE_NAME = /^[@a-z0-9\-/]+$/i;
 
@@ -82,7 +83,9 @@ serve(async (req) => {
       return errors.validation("Invalid JSON", "Request body must be valid JSON");
     }
 
-    const { code, dependencies, artifactId, sessionId, title } = body;
+    const { code, dependencies, artifactId, sessionId, title, isGuest = false } = body;
+
+    console.log(`[${requestId}] Request type: ${isGuest ? 'GUEST' : 'AUTHENTICATED'}`);
 
     // Validate required fields
     if (!code || typeof code !== "string") {
@@ -173,15 +176,7 @@ serve(async (req) => {
 
     console.log(`[${requestId}] Validation complete: ${Object.keys(dependencies).length} dependencies, ${code.length} bytes code`);
 
-    // 2. Authentication - required for bundling
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return errors.unauthorized(
-        "Authentication required",
-        "Bundle artifact requires authentication"
-      );
-    }
-
+    // 2. Authentication - optional (supports both guest and authenticated users)
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -192,73 +187,116 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify authentication token
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    let user = null;
 
-    if (authError || !user) {
-      console.error(`[${requestId}] Authentication failed:`, authError?.message);
-      return errors.unauthorized("Invalid authentication token");
-    }
+    // Try to authenticate if token provided (but don't fail - treat as guest if invalid)
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader && !isGuest) {
+      try {
+        const token = authHeader.replace("Bearer ", "");
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
 
-    console.log(`[${requestId}] Authenticated user: ${user.id}`);
-
-    // PRIORITY 2: Add session ownership validation (SECURITY - authorization bypass prevention)
-    const { data: sessionData, error: sessionError } = await supabase
-      .from("chat_sessions")
-      .select("user_id")
-      .eq("id", sessionId)
-      .single();
-
-    if (sessionError || !sessionData) {
-      console.error(`[${requestId}] Session not found:`, sessionError?.message);
-      return errors.validation("Invalid session", "Session not found");
-    }
-
-    if (sessionData.user_id !== user.id) {
-      console.error(`[${requestId}] Session ownership mismatch: session.user_id=${sessionData.user_id}, auth.user.id=${user.id}`);
-      return errors.forbidden(
-        "Access denied",
-        "You do not have permission to bundle artifacts for this session"
-      );
-    }
-
-    console.log(`[${requestId}] Session ownership validated for session ${sessionId}`);
-
-    // PRIORITY 3: Validate artifact belongs to session (SECURITY - prevent artifact hijacking)
-    const { data: artifactData, error: artifactError } = await supabase
-      .from("chat_messages")
-      .select("id, session_id")
-      .eq("id", artifactId)
-      .single();
-
-    // Artifact doesn't need to exist yet (it may be created after bundling)
-    // But if it does exist, verify it belongs to this session
-    if (artifactData && artifactData.session_id !== sessionId) {
-      console.error(
-        `[${requestId}] Artifact session mismatch: artifact.session_id=${artifactData.session_id}, request.sessionId=${sessionId}`
-      );
-      return errors.forbidden(
-        "Access denied",
-        "Artifact does not belong to this session"
-      );
-    }
-
-    if (artifactData) {
-      console.log(`[${requestId}] Artifact ownership validated for artifact ${artifactId}`);
-    } else {
-      console.log(`[${requestId}] Artifact ${artifactId} does not exist yet (new artifact)`);
-    }
-
-    // 3. Rate limiting - use artifact rate limits (50 req/5h)
-    const { data: rateLimitData, error: rateLimitError } = await supabase.rpc(
-      "check_user_rate_limit",
-      {
-        p_user_id: user.id,
-        p_max_requests: RATE_LIMITS.ARTIFACT.AUTHENTICATED.MAX_REQUESTS,
-        p_window_hours: RATE_LIMITS.ARTIFACT.AUTHENTICATED.WINDOW_HOURS
+        if (!authError && authUser) {
+          user = authUser;
+          console.log(`[${requestId}] Authenticated user: ${user.id}`);
+        } else {
+          // Token invalid/expired - treat as guest
+          console.log(`[${requestId}] Auth token invalid/expired, treating as guest:`, authError?.message);
+        }
+      } catch (e) {
+        console.log(`[${requestId}] Auth exception, treating as guest:`, e);
       }
-    );
+    } else {
+      console.log(`[${requestId}] Guest request (no authentication)`);
+    }
+
+    // Session and artifact ownership validation (skip for guests)
+    if (user) {
+      // PRIORITY 2: Add session ownership validation (SECURITY - authorization bypass prevention)
+      const { data: sessionData, error: sessionError } = await supabase
+        .from("chat_sessions")
+        .select("user_id")
+        .eq("id", sessionId)
+        .single();
+
+      if (sessionError || !sessionData) {
+        console.error(`[${requestId}] Session not found:`, sessionError?.message);
+        return errors.validation("Invalid session", "Session not found");
+      }
+
+      if (sessionData.user_id !== user.id) {
+        console.error(`[${requestId}] Session ownership mismatch: session.user_id=${sessionData.user_id}, auth.user.id=${user.id}`);
+        return errors.forbidden(
+          "Access denied",
+          "You do not have permission to bundle artifacts for this session"
+        );
+      }
+
+      console.log(`[${requestId}] Session ownership validated for session ${sessionId}`);
+
+      // PRIORITY 3: Validate artifact belongs to session (SECURITY - prevent artifact hijacking)
+      const { data: artifactData, error: artifactError } = await supabase
+        .from("chat_messages")
+        .select("id, session_id")
+        .eq("id", artifactId)
+        .single();
+
+      // Artifact doesn't need to exist yet (it may be created after bundling)
+      // But if it does exist, verify it belongs to this session
+      if (artifactData && artifactData.session_id !== sessionId) {
+        console.error(
+          `[${requestId}] Artifact session mismatch: artifact.session_id=${artifactData.session_id}, request.sessionId=${sessionId}`
+        );
+        return errors.forbidden(
+          "Access denied",
+          "Artifact does not belong to this session"
+        );
+      }
+
+      if (artifactData) {
+        console.log(`[${requestId}] Artifact ownership validated for artifact ${artifactId}`);
+      } else {
+        console.log(`[${requestId}] Artifact ${artifactId} does not exist yet (new artifact)`);
+      }
+    } else {
+      console.log(`[${requestId}] Skipping ownership validation for guest user`);
+    }
+
+    // 3. Rate limiting - different limits for authenticated vs guest users
+    let rateLimitData;
+    let rateLimitError;
+
+    if (user) {
+      // Authenticated user rate limit (50 req/5h)
+      const result = await supabase.rpc(
+        "check_user_rate_limit",
+        {
+          p_user_id: user.id,
+          p_max_requests: RATE_LIMITS.ARTIFACT.AUTHENTICATED.MAX_REQUESTS,
+          p_window_hours: RATE_LIMITS.ARTIFACT.AUTHENTICATED.WINDOW_HOURS
+        }
+      );
+      rateLimitData = result.data;
+      rateLimitError = result.error;
+    } else {
+      // Guest rate limit (IP-based, 20 req/5h - same as chat)
+      const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0].trim()
+        || req.headers.get("x-real-ip")
+        || "unknown";
+
+      console.log(`[${requestId}] Guest IP address: ${clientIp}`);
+
+      const result = await supabase.rpc(
+        "check_guest_rate_limit",
+        {
+          p_identifier: clientIp,
+          p_max_requests: 20, // Same as guest chat limit
+          p_window_hours: 5
+        }
+      );
+      rateLimitData = result.data;
+      rateLimitError = result.error;
+    }
 
     if (rateLimitError) {
       console.error(`[${requestId}] Rate limit check failed:`, rateLimitError);
@@ -272,20 +310,24 @@ serve(async (req) => {
     }
 
     if (!rateLimitData.allowed) {
+      const maxRequests = user ? RATE_LIMITS.ARTIFACT.AUTHENTICATED.MAX_REQUESTS : 20;
       console.warn(
-        `[${requestId}] Rate limit exceeded for user ${user.id}:`,
-        `${rateLimitData.request_count}/${RATE_LIMITS.ARTIFACT.AUTHENTICATED.MAX_REQUESTS}`
+        `[${requestId}] Rate limit exceeded for ${user ? `user ${user.id}` : 'guest'}:`,
+        `${rateLimitData.request_count}/${maxRequests}`
       );
 
       return errors.rateLimited(
         rateLimitData.reset_at,
         0,
-        RATE_LIMITS.ARTIFACT.AUTHENTICATED.MAX_REQUESTS,
-        "Bundle rate limit exceeded. Please try again later."
+        maxRequests,
+        user
+          ? "Bundle rate limit exceeded. Please try again later."
+          : "Guest bundle rate limit exceeded. Sign in for higher limits or try again later."
       );
     }
 
-    console.log(`[${requestId}] Rate limit check passed: ${rateLimitData.request_count}/${RATE_LIMITS.ARTIFACT.AUTHENTICATED.MAX_REQUESTS}`);
+    const maxRequests = user ? RATE_LIMITS.ARTIFACT.AUTHENTICATED.MAX_REQUESTS : 20;
+    console.log(`[${requestId}] Rate limit check passed: ${rateLimitData.request_count}/${maxRequests}`);
 
     // 4. Create temporary directory for bundling
     tempDir = await Deno.makeTempDir({ prefix: "artifact-bundle-" });
