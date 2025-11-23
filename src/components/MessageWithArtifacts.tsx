@@ -228,19 +228,12 @@ export const MessageWithArtifacts = memo(({
     <>
       {/* Render message text without artifact tags */}
       {/* Prose classes applied directly to Markdown component for proper typography */}
-      {/* Option 10: Thin Vertical Line - ultra subtle 1px left border, no background bubble */}
       <div
         className={`flex-1 transition-all duration-150 ${className}`}
-        style={{
-          borderLeft: '1px solid hsl(190 88% 62% / 0.3)',
-          paddingLeft: '0.75rem',
-          paddingTop: '0.5rem',
-          paddingBottom: '0.5rem',
-        }}
       >
         <Markdown
           id={messageId}
-          className="prose max-w-none dark:prose-invert"
+          className="prose prose-sm prose-p:mb-3 prose-p:leading-relaxed max-w-none dark:prose-invert text-foreground text-[15px] leading-relaxed"
         >
           {cleanContent}
         </Markdown>
@@ -260,7 +253,7 @@ export const MessageWithArtifacts = memo(({
           key={artifact.id}
           artifact={artifact}
           onOpen={() => onArtifactOpen(artifact)}
-          className="mt-2"
+          className="mt-3"
         />
       ))}
     </>

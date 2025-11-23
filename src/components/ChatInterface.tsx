@@ -318,14 +318,15 @@ export function ChatInterface({
         <ChatContainerRoot className="flex flex-1 flex-col min-h-0 overflow-hidden">
           <ChatContainerContent
             className={combineSpacing(
-              "space-y-0 w-full",
-              CHAT_SPACING.messageList
+              "w-full",
+              CHAT_SPACING.messageList,
+              CHAT_SPACING.message.gap
             )}
           aria-label="Chat conversation"
         >
           {/* Guest mode system message - show after first message */}
           {isGuest && messages.length > 0 && (
-            <div className="mx-auto w-full max-w-5xl px-6 py-3">
+            <div className="mx-auto w-full max-w-3xl px-4 py-3">
               <SystemMessage
                 variant="action"
                 fill
@@ -358,8 +359,8 @@ export function ChatInterface({
             const messageContent = (
               <MessageComponent
                 className={cn(
-                  "chat-message mx-auto flex w-full max-w-5xl flex-col gap-2 px-2 sm:px-4",
-                  isAssistant ? "items-start" : "items-end"
+                  "chat-message mx-auto flex w-full max-w-3xl flex-col items-start",
+                  CHAT_SPACING.message.container
                 )}
               >
                 {isAssistant ? (

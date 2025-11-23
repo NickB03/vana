@@ -42,18 +42,19 @@ export const COMPONENT_SPACING = {
 
 /**
  * Chat-specific spacing (message bubbles, chat containers)
- * Optimized for conversation flow
+ * Optimized for conversation flow - matches Claude's design
  */
 export const CHAT_SPACING = {
   message: {
-    container: 'px-6 py-3',
-    bubble: 'px-5 py-2.5',
+    container: 'px-4 py-4', // Tighter horizontal padding, moderate vertical
+    bubble: 'px-4 py-2.5',  // Consistent with container padding
+    gap: 'gap-4',           // Tight gap between messages (Claude-style)
   },
   input: {
     container: 'px-3 pb-3 md:px-5 md:pb-5',
     textarea: 'pl-4 pt-3',
   },
-  messageList: 'px-5 py-8',
+  messageList: 'px-4 py-6', // Reduced padding for tighter layout
 } as const;
 
 /**
