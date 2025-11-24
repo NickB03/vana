@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Copy, Pencil, Trash, ThumbsUp, ThumbsDown, Maximize2, ChevronDown, ChevronUp } from "lucide-react";
-import { toast } from "sonner";
+import { Copy, Pencil, RotateCw, Maximize2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { validateFile, sanitizeFilename } from "@/utils/fileValidation";
 import { ensureValidSession } from "@/utils/authHelpers";
@@ -35,7 +35,7 @@ import { ArtifactContainer as Artifact, ArtifactData } from "@/components/Artifa
 import { MessageWithArtifacts } from "@/components/MessageWithArtifacts";
 import { parseArtifacts } from "@/utils/artifactParser";
 import { ThinkingIndicator } from "@/components/ThinkingIndicator";
-import { ReasoningIndicator } from "@/components/ReasoningIndicator";
+import { ReasoningDisplay } from "@/components/ReasoningDisplay";
 import { ReasoningErrorBoundary } from "@/components/ReasoningErrorBoundary";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SystemMessage } from "@/components/ui/system-message";
@@ -74,7 +74,7 @@ export function ChatInterface({
 }: ChatInterfaceProps) {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const { messages, isLoading, streamChat } = useChatMessages(sessionId);
+  const { messages, isLoading, streamChat, deleteMessage, updateMessage } = useChatMessages(sessionId);
   const [localInput, setLocalInput] = useState("");
   const input = typeof parentInput === 'string' ? parentInput : localInput;
   const setInput = parentOnInputChange ?? setLocalInput;
@@ -92,8 +92,8 @@ export function ChatInterface({
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [imageMode, setImageMode] = useState(initialImageMode);
   const [artifactMode, setArtifactMode] = useState(initialArtifactMode);
-  const [expandedReasoningMessageId, setExpandedReasoningMessageId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
 
   // Memoized artifact open handler to prevent breaking MessageWithArtifacts memo
   const handleArtifactOpen = useCallback((artifact: ArtifactData) => {
@@ -114,7 +114,6 @@ export function ChatInterface({
     setInput("");
     setIsStreaming(true);
     setStreamingMessage("");
-    setExpandedReasoningMessageId(null);
 
     // Capture mode states and reset them after sending
     const shouldGenerateImage = imageMode;
@@ -218,13 +217,13 @@ export function ChatInterface({
       // Validate file with comprehensive checks
       const validationResult = await validateFile(file);
       if (!validationResult.valid) {
-        toast.error(validationResult.error || "File validation failed");
+        toast({ title: validationResult.error || "File validation failed", variant: "destructive" });
         return;
       }
 
       const session = await ensureValidSession();
       if (!session) {
-        toast.error("Authentication required. Please refresh the page or sign in again.");
+        toast({ title: "Authentication required. Please refresh the page or sign in again.", variant: "destructive" });
         return;
       }
       const { data: { user } } = await supabase.auth.getUser();
@@ -259,8 +258,8 @@ export function ChatInterface({
 
       // Add file reference to input
       setInput(prev => `${prev}\n[${file.name}](${signedUrlData.signedUrl})`);
-      
-      toast.success("File uploaded successfully");
+
+      toast({ title: "File uploaded successfully" });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error("File upload error:", {
@@ -272,13 +271,13 @@ export function ChatInterface({
 
       // Provide user-friendly error message based on the error type
       if (errorMessage.includes('secure URL')) {
-        toast.error(`Upload succeeded but URL generation failed: ${errorMessage}`);
+        toast({ title: `Upload succeeded but URL generation failed: ${errorMessage}`, variant: "destructive" });
       } else if (errorMessage.includes('File too large')) {
-        toast.error('File is too large. Maximum size is 100MB.');
+        toast({ title: 'File is too large. Maximum size is 100MB.', variant: "destructive" });
       } else if (errorMessage.includes('Invalid file type')) {
-        toast.error('Invalid file type. Supported types: images, documents, text files.');
+        toast({ title: 'Invalid file type. Supported types: images, documents, text files.', variant: "destructive" });
       } else {
-        toast.error(`Failed to upload file: ${errorMessage}`);
+        toast({ title: `Failed to upload file: ${errorMessage}`, variant: "destructive" });
       }
     } finally {
       setIsUploadingFile(false);
@@ -310,11 +309,104 @@ export function ChatInterface({
     onCanvasToggle?.(false);
   };
 
+  // Message action handlers
+  const handleCopyMessage = useCallback(async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      toast({ title: "Copied to clipboard" });
+    } catch (error) {
+      console.error("Failed to copy:", error);
+      toast({ title: "Failed to copy", variant: "destructive" });
+    }
+  }, []);
+
+  const handleRetry = useCallback(async (messageId: string) => {
+    if (isLoading || isStreaming) {
+      return;
+    }
+
+    // Find the message to retry and the user message before it
+    const messageIndex = messages.findIndex(m => m.id === messageId);
+    if (messageIndex <= 0) {
+      toast({
+        title: "Cannot retry",
+        description: "No previous message found",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Get the user message that prompted this assistant response
+    const userMessage = messages[messageIndex - 1];
+    if (userMessage.role !== "user") {
+      toast({
+        title: "Cannot retry",
+        description: "Previous message is not a user message",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Delete the assistant message
+      await deleteMessage(messageId);
+
+      // Regenerate the response by resending the user message
+      setIsStreaming(true);
+      setStreamingMessage("");
+
+      await streamChat(
+        userMessage.content,
+        (chunk, progress) => {
+          if (chunk) {
+            setStreamingMessage((prev) => prev + chunk);
+          }
+          setStreamProgress(progress);
+        },
+        () => {
+          setStreamingMessage("");
+          setIsStreaming(false);
+          setStreamProgress({
+            stage: "complete",
+            message: "",
+            artifactDetected: false,
+            percentage: 100
+          });
+        },
+        currentArtifact && isEditingArtifact ? currentArtifact : undefined,
+        false, // forceImageMode
+        false  // forceArtifactMode
+      );
+
+      toast({
+        title: "Regenerating response",
+        description: "Creating a new response to your message"
+      });
+    } catch (error) {
+      console.error("Failed to retry:", error);
+      toast({
+        title: "Failed to retry",
+        description: "Could not regenerate the response",
+        variant: "destructive"
+      });
+    }
+  }, [messages, isLoading, isStreaming, deleteMessage, streamChat, currentArtifact, isEditingArtifact]);
+
+  const handleEditMessage = useCallback((messageId: string, content: string) => {
+    setEditingMessageId(messageId);
+    setInput(content);
+    toast({
+      title: "Editing message",
+      description: "Make your changes and press Enter to update"
+    });
+  }, [setInput]);
+
+
   // Render chat content (messages + input) - reusable for both mobile and desktop
   const renderChatContent = () => (
     <div className="flex flex-1 flex-col min-h-0 p-4">
       {/* Unified chat card with embedded prompt input */}
-      <div className="relative mx-auto flex flex-1 min-h-0 w-full max-w-5xl rounded-3xl bg-black/50 backdrop-blur-sm shadow-lg border border-border/30">
+      <div className="relative mx-auto flex flex-1 min-h-0 w-full max-w-5xl rounded-3xl bg-black/50 backdrop-blur-sm shadow-[inset_-2px_0_4px_rgba(255,255,255,0.05)] border border-border/30">
         <ChatContainerRoot className="flex flex-1 flex-col min-h-0 overflow-hidden">
           <ChatContainerContent
             className={combineSpacing(
@@ -352,9 +444,6 @@ export function ChatInterface({
             // This prevents performance issues with long chat histories
             const shouldAnimate = isLastMessage && !isStreaming;
             const hasReasoning = Boolean(message.reasoning || message.reasoning_steps);
-            const isReasoningExpanded =
-              hasReasoning && expandedReasoningMessageId === message.id;
-            const stepCount = message.reasoning_steps?.steps?.length;
 
             const messageContent = (
               <MessageComponent
@@ -364,35 +453,15 @@ export function ChatInterface({
                 )}
               >
                 {isAssistant ? (
-                  <div className="group flex w-full flex-col gap-0">
+                  <div className="group flex w-full flex-col gap-1">
                     {hasReasoning && (
                       <ReasoningErrorBoundary>
-                        <div className="mb-1 self-start space-y-1">
-                          <Button
-                            variant="outline"
-                            size="xs"
-                            className="inline-flex h-7 w-auto items-center gap-1.5 px-2 text-xs text-muted-foreground"
-                            onClick={() =>
-                              setExpandedReasoningMessageId(
-                                isReasoningExpanded ? null : message.id
-                              )
-                            }
-                          >
-                            <span>{isReasoningExpanded ? "Hide thinking" : "Show thinking"}</span>
-                            {isReasoningExpanded ? (
-                              <ChevronUp className="h-3 w-3" />
-                            ) : (
-                              <ChevronDown className="h-3 w-3" />
-                            )}
-                          </Button>
-                          {isReasoningExpanded && (
-                            <div className="pt-1">
-                              <ReasoningIndicator
-                                reasoning={message.reasoning}
-                                reasoningSteps={message.reasoning_steps}
-                              />
-                            </div>
-                          )}
+                        <div className="mb-0.5 w-full">
+                          <ReasoningDisplay
+                            reasoning={message.reasoning}
+                            reasoningSteps={message.reasoning_steps}
+                            isStreaming={false}
+                          />
                         </div>
                       </ReasoningErrorBoundary>
                     )}
@@ -403,63 +472,87 @@ export function ChatInterface({
                       onArtifactOpen={handleArtifactOpen}
                     />
 
-                    <MessageActions
-                      className={cn(
-                        "-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100",
-                        isLastMessage && "opacity-100"
-                      )}
-                    >
-                      <MessageAction tooltip="Copy" delayDuration={100}>
-                        <Button variant="ghost" size="icon" className="rounded-full">
-                          <Copy />
-                        </Button>
-                      </MessageAction>
-                      <MessageAction tooltip="Upvote" delayDuration={100}>
-                        <Button variant="ghost" size="icon" className="rounded-full">
-                          <ThumbsUp />
-                        </Button>
-                      </MessageAction>
-                      <MessageAction tooltip="Downvote" delayDuration={100}>
-                        <Button variant="ghost" size="icon" className="rounded-full">
-                          <ThumbsDown />
-                        </Button>
-                      </MessageAction>
-                    </MessageActions>
+                    {/* Compact action buttons - positioned at bottom right */}
+                    <div className="flex justify-end">
+                      <MessageActions
+                        className={cn(
+                          "flex gap-1",
+                          "opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100",
+                          isLastMessage && "opacity-100"
+                        )}
+                      >
+                        <MessageAction tooltip="Retry" delayDuration={100}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 rounded-sm hover:bg-muted/50"
+                            onClick={() => handleRetry(message.id)}
+                            disabled={isLoading || isStreaming}
+                            aria-label="Regenerate response"
+                          >
+                            <RotateCw className="h-3 w-3 text-muted-foreground/60" />
+                          </Button>
+                        </MessageAction>
+                        <MessageAction tooltip="Copy" delayDuration={100}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 rounded-sm hover:bg-muted/50"
+                            onClick={() => handleCopyMessage(message.content)}
+                            aria-label="Copy message content"
+                          >
+                            <Copy className="h-3 w-3 text-muted-foreground/60" />
+                          </Button>
+                        </MessageAction>
+                      </MessageActions>
+                    </div>
                   </div>
                 ) : (
-                  <div className="group flex flex-col items-end gap-1">
-                    <MessageContent
-                      className="w-auto max-w-2xl rounded-3xl px-5 py-2.5 text-sm sm:text-base text-foreground border transition-all duration-150"
-                      style={{
-                        backgroundColor: 'hsl(var(--accent-user) / 0.18)',
-                        borderColor: 'hsl(var(--accent-user) / 0.35)',
-                        boxShadow:
-                          '0 1px 2px 0 hsl(var(--accent-user) / 0.08), 0 4px 8px -2px hsl(var(--accent-user) / 0.15), 0 0 0 1px hsl(var(--accent-user) / 0.10)',
-                      }}
-                    >
-                      {message.content}
-                    </MessageContent>
+                  <div className="group flex w-full items-start gap-2">
+                    {/* User message with subtle pill background (Claude-style) */}
+                    {/* Subtle pill container with proper spacing */}
+                    <div className="flex items-center gap-2.5 rounded-2xl bg-muted/60 px-3 py-1.5">
+                      {/* User avatar: 32px circle (Claude-style) */}
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold text-sm">
+                        U
+                      </div>
+
+                      {/* Message content - clean text without extra styling */}
+                      <div className="text-[15px] text-foreground leading-relaxed py-0.5">
+                        {message.content}
+                      </div>
+                    </div>
+
+                    {/* Compact action buttons - positioned to the right of pill */}
                     <MessageActions
                       className={cn(
-                        "flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100"
+                        "flex gap-1 mt-0.5",
+                        "opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100"
                       )}
                     >
-                      <MessageAction tooltip="Edit" delayDuration={100}>
-                        <Button variant="ghost" size="icon" className="rounded-full">
-                          <Pencil />
-                        </Button>
-                      </MessageAction>
-                      <MessageAction tooltip="Delete" delayDuration={100}>
-                        <Button variant="ghost" size="icon" className="rounded-full">
-                          <Trash />
-                        </Button>
-                      </MessageAction>
-                      <MessageAction tooltip="Copy" delayDuration={100}>
-                        <Button variant="ghost" size="icon" className="rounded-full">
-                          <Copy />
-                        </Button>
-                      </MessageAction>
-                    </MessageActions>
+                        <MessageAction tooltip="Edit" delayDuration={100}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 rounded-sm hover:bg-muted/50"
+                            onClick={() => handleEditMessage(message.id, message.content)}
+                            aria-label="Edit message"
+                          >
+                            <Pencil className="h-3 w-3 text-muted-foreground/60" />
+                          </Button>
+                        </MessageAction>
+                        <MessageAction tooltip="Copy" delayDuration={100}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 rounded-sm hover:bg-muted/50"
+                            onClick={() => handleCopyMessage(message.content)}
+                            aria-label="Copy message content"
+                          >
+                            <Copy className="h-3 w-3 text-muted-foreground/60" />
+                          </Button>
+                        </MessageAction>
+                      </MessageActions>
                   </div>
                 )}
               </MessageComponent>
@@ -484,13 +577,18 @@ export function ChatInterface({
           })}
 
           {isStreaming && (streamingMessage || streamProgress.reasoningSteps) && (
-            <MessageComponent className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-2 sm:px-4 items-start">
-              <div className="group flex w-full flex-col gap-0">
+            <MessageComponent
+              className={cn(
+                "mx-auto flex w-full max-w-3xl flex-col items-start",
+                CHAT_SPACING.message.container
+              )}
+            >
+              <div className="flex w-full flex-col gap-1">
                 <ReasoningErrorBoundary fallback={<ThinkingIndicator status="Loading reasoning..." />}>
-                  <ReasoningIndicator
+                  <ReasoningDisplay
                     reasoning={streamProgress.message}
                     reasoningSteps={streamProgress.reasoningSteps}
-                    isStreaming
+                    isStreaming={true}
                     percentage={streamProgress.percentage}
                   />
                 </ReasoningErrorBoundary>
@@ -633,4 +731,3 @@ export function ChatInterface({
     </div>
   );
 }
-

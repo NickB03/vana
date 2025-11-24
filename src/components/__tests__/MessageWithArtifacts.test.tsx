@@ -50,6 +50,12 @@ describe('MessageWithArtifacts bundling state management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
+    // Mock toast methods
+    vi.mocked(toast).info = vi.fn();
+    vi.mocked(toast).success = vi.fn();
+    vi.mocked(toast).error = vi.fn();
+    vi.mocked(toast).warning = vi.fn();
+
     // Default mock implementations
     vi.mocked(bundlerModule.needsBundling).mockReturnValue(false);
     vi.mocked(bundlerModule.bundleArtifact).mockResolvedValue({

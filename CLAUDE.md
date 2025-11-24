@@ -36,6 +36,20 @@ chrome-mcp restart   # Clean restart if issues occur
 - `/chrome-restart` - Gentle restart of Chrome instance
 - `/kill-chromedev` - Nuclear option: kill all processes and restart clean
 
+**Screenshots Workflow** (File-based to avoid MCP serialization bug):
+```bash
+# Helper script generates timestamped filename
+./scripts/take-screenshot.sh "description"
+
+# Or specify exact path for MCP
+take_screenshot({
+  filePath: ".screenshots/YYYYMMDD_HHMMSS_description.png",
+  format: "png"
+})
+```
+
+**Why file-based?** Chrome DevTools MCP has a media type serialization bug (labels PNG as JPEG). Saving to `.screenshots/` directory avoids the error and provides persistent debugging artifacts.
+
 **Browser Verification Pattern** (CRITICAL - run after EVERY change):
 ```typescript
 // Navigate to app
@@ -44,8 +58,11 @@ await browser.navigate({ url: "http://localhost:8080" })
 // Check for errors
 const errors = await browser.getConsoleMessages({ onlyErrors: true })
 
-// Take screenshot for verification
-await browser.screenshot({ filename: "verification.png" })
+// Take screenshot for verification (file-based to avoid MCP bug)
+await browser.screenshot({
+  filePath: ".screenshots/verification.png",
+  format: "png"
+})
 ```
 
 **Guides**: `.claude/CHROME_MCP_COMMANDS.md` for complete MCP documentation

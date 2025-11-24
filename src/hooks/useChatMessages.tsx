@@ -504,10 +504,66 @@ export function useChatMessages(
     }
   };
 
+  const deleteMessage = useCallback(async (messageId: string) => {
+    if (!sessionId) {
+      // For guest users, delete from local state only
+      setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("chat_messages")
+        .delete()
+        .eq("id", messageId);
+
+      if (error) throw error;
+
+      // Optimistically update local state
+      setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+    } catch (error: any) {
+      console.error("Error deleting message:", error);
+      throw error;
+    }
+  }, [sessionId]);
+
+  const updateMessage = useCallback(async (messageId: string, content: string) => {
+    if (!sessionId) {
+      // For guest users, update local state only
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId ? { ...msg, content } : msg
+        )
+      );
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("chat_messages")
+        .update({ content })
+        .eq("id", messageId);
+
+      if (error) throw error;
+
+      // Optimistically update local state
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId ? { ...msg, content } : msg
+        )
+      );
+    } catch (error: any) {
+      console.error("Error updating message:", error);
+      throw error;
+    }
+  }, [sessionId]);
+
   return {
     messages,
     isLoading,
     streamChat,
     saveMessage,
+    deleteMessage,
+    updateMessage,
   };
 }

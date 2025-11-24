@@ -112,3 +112,4 @@ vitest.*.log
 __image_snapshots__/
 __diff_output__/
 screenshots/
+.screenshots/
