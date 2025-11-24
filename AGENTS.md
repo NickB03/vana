@@ -26,9 +26,12 @@ This file provides guidance for AI coding assistants (Codex, Cline, Augment Code
 
 ```bash
 # Prevent duplicate browser instances
-chrome-mcp start     # Start single Chrome instance
-chrome-mcp status    # Check if running
-chrome-mcp restart   # Clean restart if issues occur
+npx chrome-devtools-mcp start     # Start single Chrome instance
+npx chrome-devtools-mcp status    # Check if running
+npx chrome-devtools-mcp restart   # Clean restart if issues occur
+
+# Optional: Add alias to ~/.zshrc or ~/.bashrc for convenience:
+# alias chrome-mcp='npx chrome-devtools-mcp'
 ```
 
 **Browser Verification Pattern** (CRITICAL - run after EVERY change):

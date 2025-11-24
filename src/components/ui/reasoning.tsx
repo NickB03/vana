@@ -92,24 +92,9 @@ function Reasoning({
     }
   }, [isStreaming, showTimer])
 
-  useEffect(() => {
-    // Auto-open when streaming starts
-    if (isStreaming && !wasAutoOpened) {
-      if (!isControlled) setInternalOpen(true)
-      setWasAutoOpened(true)
-    }
-
-    // Auto-close with delay when streaming completes
-    if (!isStreaming && wasAutoOpened) {
-      // Add 2.5 second delay so users can finish reading
-      const closeTimeout = setTimeout(() => {
-        if (!isControlled) setInternalOpen(false)
-        setWasAutoOpened(false)
-      }, 2500) // 2.5 seconds
-
-      return () => clearTimeout(closeTimeout)
-    }
-  }, [isStreaming, wasAutoOpened, isControlled])
+  // REMOVED: Auto-expand/collapse behavior to match Claude's interface
+  // Users must manually click to expand/collapse reasoning
+  // This prevents jarring auto-animations during streaming
 
   return (
     <ReasoningContext.Provider
@@ -149,7 +134,9 @@ function ReasoningTrigger({
       type="button"
       {...props}
     >
-      <span className="flex-1 text-sm text-muted-foreground/80 line-clamp-1">
+      <span
+        className="flex-1 text-sm text-muted-foreground line-clamp-1"
+      >
         {children}
       </span>
       <div className="flex items-center gap-1.5 shrink-0">

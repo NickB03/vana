@@ -2,7 +2,7 @@ import { parseArtifacts } from './artifactParser';
 
 describe('artifactParser', () => {
   describe('stripMarkdownFences', () => {
-    it('should strip markdown fences from React artifact', () => {
+    it('should strip markdown fences from React artifact', async () => {
       const content = `<artifact type="application/vnd.ant.react" title="Test Component">
 \`\`\`jsx
 import * as Select from '@radix-ui/react-select';
@@ -14,7 +14,7 @@ export default function TestComponent() {
 \`\`\`
 </artifact>`;
 
-      const { artifacts } = parseArtifacts(content);
+      const { artifacts } = await parseArtifacts(content);
 
       expect(artifacts).toHaveLength(1);
       expect(artifacts[0].content).not.toContain('```jsx');
@@ -23,7 +23,7 @@ export default function TestComponent() {
       expect(artifacts[0].content).toContain('export default function TestComponent');
     });
 
-    it('should strip markdown fences from HTML artifact', () => {
+    it('should strip markdown fences from HTML artifact', async () => {
       const content = `<artifact type="text/html" title="Test HTML">
 \`\`\`html
 <!DOCTYPE html>
@@ -33,7 +33,7 @@ export default function TestComponent() {
 \`\`\`
 </artifact>`;
 
-      const { artifacts } = parseArtifacts(content);
+      const { artifacts } = await parseArtifacts(content);
 
       expect(artifacts).toHaveLength(1);
       expect(artifacts[0].content).not.toContain('```html');
@@ -41,21 +41,21 @@ export default function TestComponent() {
       expect(artifacts[0].content).toContain('<!DOCTYPE html>');
     });
 
-    it('should handle artifacts without markdown fences', () => {
+    it('should handle artifacts without markdown fences', async () => {
       const content = `<artifact type="application/vnd.ant.react" title="Clean Component">
 export default function CleanComponent() {
   return <div>No fences</div>;
 }
 </artifact>`;
 
-      const { artifacts } = parseArtifacts(content);
+      const { artifacts } = await parseArtifacts(content);
 
       expect(artifacts).toHaveLength(1);
       expect(artifacts[0].content).toContain('export default function CleanComponent');
       expect(artifacts[0].content).not.toContain('```');
     });
 
-    it('should strip multiple fence types', () => {
+    it('should strip multiple fence types', async () => {
       const content = `<artifact type="application/vnd.ant.code" title="TypeScript Code">
 \`\`\`typescript
 function greet(name: string): string {
@@ -64,7 +64,7 @@ function greet(name: string): string {
 \`\`\`
 </artifact>`;
 
-      const { artifacts } = parseArtifacts(content);
+      const { artifacts } = await parseArtifacts(content);
 
       expect(artifacts).toHaveLength(1);
       expect(artifacts[0].content).not.toContain('```typescript');
@@ -72,7 +72,7 @@ function greet(name: string): string {
       expect(artifacts[0].content).toContain('function greet');
     });
 
-    it('should handle real-world Tic-Tac-Toe example', () => {
+    it('should handle real-world Tic-Tac-Toe example', async () => {
       const content = `<artifact type="application/vnd.ant.react" title="Unbeatable Tic-Tac-Toe with AI">
 \`\`\`jsx
 import * as Select from '@radix-ui/react-select';
@@ -94,7 +94,7 @@ export default function TicTacToeAI() {
 \`\`\`
 </artifact>`;
 
-      const { artifacts } = parseArtifacts(content);
+      const { artifacts } = await parseArtifacts(content);
 
       expect(artifacts).toHaveLength(1);
       expect(artifacts[0].type).toBe('react');

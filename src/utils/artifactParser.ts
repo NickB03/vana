@@ -1,11 +1,30 @@
 import { ArtifactData, ArtifactType } from "@/components/Artifact";
 
 // Generate stable artifact ID based on content and type
-function generateStableId(content: string, type: ArtifactType, index: number): string {
-  // Create a simple hash from content (first 50 chars + length + type + index)
-  const contentSample = content.substring(0, 50).replace(/\s/g, '');
-  const hash = `${contentSample}-${content.length}-${type}-${index}`;
-  return `artifact-${hash}`;
+// Returns a clean, URL-safe identifier using crypto hash
+async function generateStableId(content: string, type: ArtifactType, index: number): Promise<string> {
+  // Create deterministic hash from content + type + index
+  const encoder = new TextEncoder();
+  const data = encoder.encode(`${content}${type}${index}`);
+
+  try {
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    // Use first 32 chars of hash for clean, URL-safe ID
+    return `artifact-${hashHex.substring(0, 32)}`;
+  } catch (error) {
+    // Fallback to simple numeric hash if crypto API unavailable
+    let hash = 0;
+    const str = `${content}${type}${index}`;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return `artifact-${Math.abs(hash).toString(36)}-${Date.now().toString(36)}`;
+  }
 }
 
 // Detect invalid local imports in artifact content
@@ -67,11 +86,11 @@ function stripMarkdownFences(content: string): string {
 }
 
 // Parse message content to extract artifacts
-export const parseArtifacts = (content: string): {
+export const parseArtifacts = async (content: string): Promise<{
   artifacts: ArtifactData[];
   cleanContent: string;
   warnings: Array<{ artifactTitle: string; messages: string[] }>;
-} => {
+}> => {
   const artifacts: ArtifactData[] = [];
   const warnings: Array<{ artifactTitle: string; messages: string[] }> = [];
   let cleanContent = content;
@@ -81,6 +100,8 @@ export const parseArtifacts = (content: string): {
 
   let match;
   let artifactIndex = 0;
+  const artifactPromises: Promise<void>[] = [];
+
   while ((match = artifactRegex.exec(content)) !== null) {
     const [fullMatch, attributesStr, artifactContent] = match;
 
@@ -101,13 +122,20 @@ export const parseArtifacts = (content: string): {
     // This causes "Script error" when trying to execute the fences as JavaScript
     const processedContent = stripMarkdownFences(artifactContent.trim());
 
-    artifacts.push({
-      id: generateStableId(processedContent, mappedType, artifactIndex++),
-      type: mappedType,
-      title: title,
-      content: processedContent,
-      language: language || undefined,
-    });
+    const currentIndex = artifactIndex++;
+
+    // Generate stable ID asynchronously
+    artifactPromises.push(
+      generateStableId(processedContent, mappedType, currentIndex).then((id) => {
+        artifacts.push({
+          id,
+          type: mappedType,
+          title: title,
+          content: processedContent,
+          language: language || undefined,
+        });
+      })
+    );
 
     // Check for invalid imports (after fence stripping)
     const importWarnings = detectInvalidImports(processedContent, mappedType);
@@ -122,6 +150,9 @@ export const parseArtifacts = (content: string): {
     // Remove artifact tags completely - artifacts render as cards now
     cleanContent = cleanContent.replace(fullMatch, '');
   }
+
+  // Wait for all artifact IDs to be generated
+  await Promise.all(artifactPromises);
 
   // Only create artifacts from explicit artifact tags
   // Regular code blocks (```) should be rendered inline with syntax highlighting

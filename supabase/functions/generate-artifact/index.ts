@@ -5,13 +5,13 @@ import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-conf
 import { MODELS, RATE_LIMITS } from "../_shared/config.ts";
 import { handleKimiError } from "../_shared/api-error-handler.ts";
 import { validateArtifactCode, autoFixArtifactCode } from "../_shared/artifact-validator.ts";
-import { ARTIFACT_GENERATION_PROMPT } from "./artifact-prompt.ts";
+import { getSystemInstruction } from "../_shared/system-prompt-inline.ts";
 
 // NOTE: Retry logic moved to openrouter-client.ts
 // callKimiWithRetry() now handles exponential backoff automatically
 
-// System prompt now imported from modular artifact-prompt.ts
-const ARTIFACT_SYSTEM_PROMPT = ARTIFACT_GENERATION_PROMPT;
+// Use shared system prompt for artifact generation
+const ARTIFACT_SYSTEM_PROMPT = getSystemInstruction({ currentDate: new Date().toLocaleDateString() });
 
 
 serve(async (req) => {

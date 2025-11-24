@@ -354,9 +354,17 @@ serve(async (req) => {
 
     // SECURITY: Use string concatenation instead of template literals to prevent code injection
     // Template literals would evaluate ${...} expressions in user code, potentially exposing secrets
+    // CRITICAL: Use React from window.React (UMD globals) instead of importing
+    // The HTML template loads React/ReactDOM via UMD scripts before the bundle executes
+    // This prevents "Can't find variable: React" errors and reduces bundle size
     const wrappedCode =
-      'import React from "react";\n' +
-      'import ReactDOM from "react-dom/client";\n' +
+      '// Use React from window globals (loaded via UMD in HTML)\n' +
+      'const React = window.React;\n' +
+      'const ReactDOM = window.ReactDOM;\n' +
+      '\n' +
+      'if (!React || !ReactDOM) {\n' +
+      '  throw new Error("React/ReactDOM not found in global scope. Ensure UMD scripts loaded first.");\n' +
+      '}\n' +
       '\n' +
       codeWithoutExport + '\n' +
       '\n' +
@@ -365,7 +373,7 @@ serve(async (req) => {
       'if (rootElement) {\n' +
       '  const root = ReactDOM.createRoot(rootElement);\n' +
       '  root.render(React.createElement(App));\n' +
-      '  console.log("Component rendered successfully");\n' +
+      '  console.log("Component rendered successfully with UMD React");\n' +
       '} else {\n' +
       '  console.error("Root element not found");\n' +
       '}\n';
@@ -374,24 +382,27 @@ serve(async (req) => {
     await Deno.writeTextFile(componentPath, wrappedCode);
 
     // 6. Create import map for npm dependencies (esm.sh URLs)
-    // Always include React and ReactDOM since we need them for rendering
+    // NOTE: React/ReactDOM are loaded via UMD globals, not bundled
+    // We create a "stub" import map that resolves React imports to a module that returns the global
     const importMap: Record<string, string> = {
-      'react': `https://esm.sh/react@${dependencies.react || '18.2.0'}`,
-      'react-dom': `https://esm.sh/react-dom@${dependencies['react-dom'] || '18.2.0'}`,
-      'react-dom/client': `https://esm.sh/react-dom@${dependencies['react-dom'] || '18.2.0'}/client`,
+      // Map React imports to data URLs that return window globals
+      // This allows user code with "import React from 'react'" to work with UMD globals
+      'react': `data:text/javascript,export default window.React; export const useState = window.React.useState; export const useEffect = window.React.useEffect; export const useRef = window.React.useRef; export const useMemo = window.React.useMemo; export const useCallback = window.React.useCallback; export const useContext = window.React.useContext; export const createContext = window.React.createContext; export const createElement = window.React.createElement; export const Fragment = window.React.Fragment;`,
+      'react-dom': `data:text/javascript,export default window.ReactDOM;`,
+      'react-dom/client': `data:text/javascript,export const createRoot = window.ReactDOM.createRoot; export default window.ReactDOM;`,
     };
 
     for (const [pkg, version] of Object.entries(dependencies)) {
-      // Skip React packages since we already added them
+      // Skip React packages since we handle them via data URLs above
       if (pkg === 'react' || pkg === 'react-dom') {
         continue;
       }
 
-      // Use esm.sh CDN with specific versions
-      importMap[pkg] = `https://esm.sh/${pkg}@${version}`;
+      // Use esm.sh CDN with specific versions, pinning to React 18 for peer dependencies
+      importMap[pkg] = `https://esm.sh/${pkg}@${version}?deps=react@18.3.1,react-dom@18.3.1`;
     }
 
-    console.log(`[${requestId}] Import map created with ${Object.keys(importMap).length} packages (including React runtime)`);
+    console.log(`[${requestId}] Import map created with ${Object.keys(importMap).length} packages (React via UMD globals)`);
 
     // 7. Write import map to file for Deno bundler
     const importMapPath = `${tempDir}/import_map.json`;
@@ -494,16 +505,31 @@ serve(async (req) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self';
-                 script-src 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com;
+                 script-src 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com;
                  style-src 'unsafe-inline' https://cdn.tailwindcss.com;
                  img-src 'self' data: https:;
                  connect-src 'self' https://esm.sh;">
   <title>${sanitizedTitle}</title>
 
+  <!-- React/ReactDOM UMD globals (CRITICAL: Must load before bundle) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <script>
+    // CRITICAL: Expose React as lowercase for library compatibility
+    // Libraries like lucide-react expect window.react (lowercase)
+    window.react = window.React;
+    window.reactDOM = window.ReactDOM;
+
+    // Verify React loaded successfully
+    if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+      console.error('React or ReactDOM failed to load from UMD');
+      document.getElementById('root').innerHTML = '<div class="error-container"><h2>React Load Error</h2><p>React libraries failed to load. Please refresh the page.</p></div>';
+    }
+  </script>
+
   <!-- Tailwind CSS for styling -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Note: React/ReactDOM are bundled from esm.sh and embedded inline -->
 
   <style>
     body {

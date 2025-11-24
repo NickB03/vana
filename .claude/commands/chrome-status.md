@@ -9,7 +9,7 @@ Execute these commands:
 
 1. **Chrome MCP Status**:
 ```bash
-chrome-mcp status
+npx chrome-devtools-mcp status
 ```
 
 2. **MCP Process Count**:

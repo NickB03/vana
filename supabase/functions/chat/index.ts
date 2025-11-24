@@ -1,12 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { shouldGenerateImage, shouldGenerateArtifact, getArtifactType, getArtifactGuidance, needsClarification } from "./intent-detector-embeddings.ts";
+import { shouldGenerateImage, shouldGenerateArtifact, getArtifactType, getArtifactGuidance, needsClarification, shouldPerformWebSearch } from "./intent-detector-embeddings.ts";
 import { validateArtifactRequest, generateGuidanceFromValidation } from "./artifact-validator.ts";
 import { transformArtifactCode } from "./artifact-transformer.ts";
 import { callGeminiFlashWithRetry, extractTextFromGeminiFlash, type OpenRouterMessage } from "../_shared/openrouter-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 import { getSystemInstruction } from "../_shared/system-prompt-inline.ts";
 import { generateStructuredReasoning, createFallbackReasoning, type StructuredReasoning } from "../_shared/reasoning-generator.ts";
+import { searchTavilyWithRetryTracking, formatSearchContext, calculateTavilyCost, logTavilyUsage } from "../_shared/tavily-client.ts";
+import { TAVILY_CONFIG } from "../_shared/config.ts";
 
 // Helper function to extract meaningful title from prompt
 function extractImageTitle(prompt: string): string {
@@ -37,7 +39,7 @@ serve(async (req) => {
     console.log(`[${requestId}] Processing request for session:`, sessionId);
 
     // Debug logging
-    console.log(`[${requestId}] 🚀 CODE VERSION: 2025-11-13-v2-DEPLOYED 🚀`);
+    console.log(`[${requestId}] 🚀 CODE VERSION: 2025-11-23-TAVILY-INTEGRATION 🚀`);
     console.log(`[${requestId}] Request body:`, JSON.stringify({
       messages: messages?.length,
       sessionId,
@@ -376,6 +378,132 @@ serve(async (req) => {
       }
     }
 
+    // ========================================
+    // WEB SEARCH: Check if we need real-time information via Tavily
+    // SKIP if force modes are set (artifact/image generation don't need web search)
+    //
+    // Search Triggers:
+    // 1. Always-Search Mode (TAVILY_CONFIG.ALWAYS_SEARCH_ENABLED)
+    // 2. Intent detection (temporal keywords, explicit search requests)
+    //
+    // Search Exclusions (no search for):
+    // - Artifact generation requests (forceArtifactMode)
+    // - Image generation requests (forceImageMode)
+    // ========================================
+    let searchContext = '';
+    let searchExecuted = false;
+    let searchResultsData = null; // Store for SSE event
+
+    // Guard clause: Skip web search entirely for force modes (artifact/image)
+    // This avoids unnecessary Tavily API calls, timeouts, and costs
+    if (forceArtifactMode) {
+      console.log(`[${requestId}] ⏭️ Skipping web search (forceArtifactMode enabled)`);
+    }
+    else if (forceImageMode) {
+      console.log(`[${requestId}] ⏭️ Skipping web search (forceImageMode enabled)`);
+    }
+
+    // Determine if we should perform a search (only if no force modes)
+    const shouldSearch = !forceArtifactMode && !forceImageMode && lastUserMessage &&
+      (
+        TAVILY_CONFIG.ALWAYS_SEARCH_ENABLED || // Always-search mode enabled
+        shouldPerformWebSearch(lastUserMessage.content) // Intent-based detection
+      );
+
+    if (shouldSearch) {
+      const searchReason = TAVILY_CONFIG.ALWAYS_SEARCH_ENABLED
+        ? 'Always-search mode enabled'
+        : 'Web search intent detected';
+      console.log(`[${requestId}] 🔍 ${searchReason}`);
+
+      try {
+        const searchStartTime = Date.now();
+
+        // Execute Tavily search with retry logic
+        const { response: searchResults, retryCount } = await searchTavilyWithRetryTracking(
+          lastUserMessage.content,
+          {
+            requestId,
+            userId: user?.id,
+            isGuest: isGuest || false,
+            functionName: 'chat',
+            maxResults: TAVILY_CONFIG.DEFAULT_MAX_RESULTS,
+            searchDepth: TAVILY_CONFIG.DEFAULT_SEARCH_DEPTH,
+            includeAnswer: TAVILY_CONFIG.DEFAULT_INCLUDE_ANSWER
+          }
+        );
+
+        const searchLatencyMs = Date.now() - searchStartTime;
+        const estimatedCost = calculateTavilyCost(TAVILY_CONFIG.DEFAULT_SEARCH_DEPTH);
+
+        console.log(`[${requestId}] ✅ Tavily search completed: ${searchResults.results.length} results in ${searchLatencyMs}ms`);
+
+        // Format search results for context injection
+        searchContext = formatSearchContext(searchResults, {
+          includeUrls: true,
+          includeScores: false,
+          maxResults: TAVILY_CONFIG.DEFAULT_MAX_RESULTS
+        });
+
+        // Store formatted results for frontend UI
+        searchResultsData = {
+          query: lastUserMessage.content,
+          sources: searchResults.results.map(result => ({
+            title: result.title,
+            url: result.url,
+            snippet: result.content.substring(0, 200), // Truncate for UI
+            relevanceScore: result.score
+          })),
+          timestamp: Date.now()
+        };
+
+        searchExecuted = true;
+
+        // Fire-and-forget logging to database (don't block response)
+        logTavilyUsage({
+          requestId,
+          functionName: 'chat',
+          userId: user?.id,
+          isGuest: isGuest || false,
+          query: lastUserMessage.content,
+          resultCount: searchResults.results.length,
+          searchDepth: TAVILY_CONFIG.DEFAULT_SEARCH_DEPTH,
+          latencyMs: searchLatencyMs,
+          statusCode: 200,
+          estimatedCost,
+          retryCount
+        }).catch(logError => {
+          console.warn(`[${requestId}] Failed to log Tavily usage:`, logError);
+        });
+
+      } catch (searchError) {
+        console.error(`[${requestId}] ⚠️ Web search failed, continuing without search:`, searchError);
+        // Graceful degradation - continue without search results
+        // Chat will still work, just without real-time web data
+        searchContext = '';
+        searchExecuted = false;
+
+        // Log the search failure for monitoring
+        const errorMessage = searchError instanceof Error ? searchError.message : String(searchError);
+        logTavilyUsage({
+          requestId,
+          functionName: 'chat',
+          userId: user?.id,
+          isGuest: isGuest || false,
+          query: lastUserMessage.content,
+          resultCount: 0,
+          searchDepth: TAVILY_CONFIG.DEFAULT_SEARCH_DEPTH,
+          latencyMs: 0,
+          statusCode: 500,
+          estimatedCost: 0,
+          errorMessage,
+          retryCount: 0
+        }).catch(logError => {
+          console.warn(`[${requestId}] Failed to log Tavily error:`, logError);
+        });
+      }
+    }
+
     // Check for explicit user control FIRST (force modes bypass intent detection entirely)
     // Priority: forceArtifactMode > forceImageMode > intent detection
     // Version: 2025-11-13-v2 (cache bust)
@@ -638,11 +766,30 @@ Treat this as an iterative improvement of the existing artifact.`;
       : '';
 
     // Load system instruction from inline template (works in both local and deployed Edge Functions)
-    const systemInstruction = getSystemInstruction({ fullArtifactContext });
+    const systemInstruction = getSystemInstruction({
+      fullArtifactContext,
+      alwaysSearchEnabled: TAVILY_CONFIG.ALWAYS_SEARCH_ENABLED
+    });
+
+    // Inject web search context if search was executed
+    // Search results are added as a system message to maintain context
+    let searchContextMessage = '';
+    if (searchExecuted && searchContext) {
+      searchContextMessage = `
+
+REAL-TIME WEB SEARCH RESULTS:
+The following information was retrieved from the web to answer the user's query:
+
+${searchContext}
+
+Use this information to provide an accurate, up-to-date response. Cite the sources when relevant.`;
+
+      console.log(`[${requestId}] 📤 Injecting search context (${searchContext.length} chars) into system message`);
+    }
 
     // Prepare messages for OpenRouter (OpenAI-compatible format)
     const openRouterMessages: OpenRouterMessage[] = [
-      { role: "system", content: systemInstruction },
+      { role: "system", content: systemInstruction + searchContextMessage },
       ...contextMessages.filter(m => m.role !== "system").map(m => ({
         role: m.role as "user" | "assistant",
         content: m.content
@@ -740,6 +887,7 @@ Treat this as an iterative improvement of the existing artifact.`;
         let buffer = '';
         let insideArtifact = false;
         let reasoningSent = false;  // Track if reasoning event was sent
+        let searchSent = false;     // Track if search event was sent
 
         return new TransformStream({
           start(controller) {
@@ -758,6 +906,24 @@ Treat this as an iterative improvement of the existing artifact.`;
               reasoningSent = true;
 
               console.log(`[${requestId}] 📤 Sent reasoning event with ${structuredReasoning.steps.length} steps`);
+            }
+
+            // ========================================
+            // WEB SEARCH: Send search results as SECOND SSE event (optional)
+            // Frontend can display these results in a special UI component
+            // ========================================
+            if (searchExecuted && searchResultsData && !searchSent) {
+              const searchEvent = {
+                type: 'web_search',
+                sequence: 1,
+                timestamp: Date.now(),
+                data: searchResultsData
+              };
+
+              controller.enqueue(`data: ${JSON.stringify(searchEvent)}\n\n`);
+              searchSent = true;
+
+              console.log(`[${requestId}] 📤 Sent web search results: ${searchResultsData.sources.length} sources`);
             }
           },
           transform(chunk, controller) {

@@ -195,14 +195,15 @@ export function ChatInterface({
     // Get the last assistant message
     const lastAssistantMsg = [...allMessages].reverse().find(m => m.role === "assistant");
     if (lastAssistantMsg) {
-      const { artifacts } = parseArtifacts(lastAssistantMsg.content);
-      if (artifacts.length > 0) {
-        // Set artifact but don't auto-open canvas
-        // User will click "Open" button on artifact card to open
-        onArtifactChange?.(true);
-      } else {
-        onArtifactChange?.(false);
-      }
+      parseArtifacts(lastAssistantMsg.content).then(({ artifacts }) => {
+        if (artifacts.length > 0) {
+          // Set artifact but don't auto-open canvas
+          // User will click "Open" button on artifact card to open
+          onArtifactChange?.(true);
+        } else {
+          onArtifactChange?.(false);
+        }
+      });
     } else {
       onArtifactChange?.(false);
     }
@@ -404,9 +405,9 @@ export function ChatInterface({
 
   // Render chat content (messages + input) - reusable for both mobile and desktop
   const renderChatContent = () => (
-    <div className="flex flex-1 flex-col min-h-0 p-4">
+    <div className="flex flex-1 flex-col min-h-0 px-4 pt-4 pb-4">
       {/* Unified chat card with embedded prompt input */}
-      <div className="relative mx-auto flex flex-1 min-h-0 w-full max-w-5xl rounded-3xl bg-black/50 backdrop-blur-sm shadow-[inset_-2px_0_4px_rgba(255,255,255,0.05)] border border-border/30">
+      <div className="relative mx-auto flex flex-1 min-h-0 w-full max-w-5xl rounded-3xl bg-black/50 backdrop-blur-sm shadow-[inset_-2px_0_4px_rgba(255,255,255,0.05)] border border-border/50">
         <ChatContainerRoot className="flex flex-1 flex-col min-h-0 overflow-hidden">
           <ChatContainerContent
             className={combineSpacing(
@@ -470,6 +471,7 @@ export function ChatInterface({
                       messageId={message.id}
                       sessionId={message.session_id}
                       onArtifactOpen={handleArtifactOpen}
+                      searchResults={message.search_results}
                     />
 
                     {/* Compact action buttons - positioned at bottom right */}
@@ -576,7 +578,7 @@ export function ChatInterface({
             );
           })}
 
-          {isStreaming && (streamingMessage || streamProgress.reasoningSteps) && (
+          {isStreaming && (
             <MessageComponent
               className={cn(
                 "mx-auto flex w-full max-w-3xl flex-col items-start",
@@ -584,24 +586,29 @@ export function ChatInterface({
               )}
             >
               <div className="flex w-full flex-col gap-1">
+                {/* Always show reasoning during streaming, even if no data yet */}
                 <ReasoningErrorBoundary fallback={<ThinkingIndicator status="Loading reasoning..." />}>
                   <ReasoningDisplay
                     reasoning={streamProgress.message}
                     reasoningSteps={streamProgress.reasoningSteps}
                     isStreaming={true}
-                    percentage={streamProgress.percentage}
                   />
                 </ReasoningErrorBoundary>
-                <MessageWithArtifacts
-                  content={streamingMessage}
-                  sessionId={sessionId || ''}
-                  onArtifactOpen={handleArtifactOpen}
-                />
+                {/* Only show message content if we have streaming text */}
+                {streamingMessage && (
+                  <MessageWithArtifacts
+                    content={streamingMessage}
+                    sessionId={sessionId || ''}
+                    onArtifactOpen={handleArtifactOpen}
+                    searchResults={streamProgress.searchResults}
+                  />
+                )}
               </div>
             </MessageComponent>
           )}
 
-          {(isLoading || isStreaming) && !streamingMessage && !streamProgress.reasoningSteps && (
+          {/* Show skeleton only when loading but not yet streaming */}
+          {isLoading && !isStreaming && (
             <MessageSkeleton variant="assistant" />
           )}
         </ChatContainerContent>

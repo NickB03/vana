@@ -1,6 +1,6 @@
 # Vana - Product Roadmap
 
-**Last Updated**: 2025-11-21
+**Last Updated**: 2025-11-23
 **Project**: Vana AI Development Assistant
 **Status**: Historical Reference (Timeline Outdated)
 
@@ -237,8 +237,87 @@ const handleSuggestionClick = async (suggestion: string) => {
 | 18 | **WebPreview URL Bar** | 📋 Deferred | 2-3 hours | Editable URL bar for web artifacts |
 | 19 | **ArtifactDescription Component** | 📋 Deferred | 1-2 hours | Rich metadata display |
 | 20 | **Artifact Templates Library** | 📋 Planned | 8-12 hours | Pre-built templates for common patterns |
+| 21 | **Inline Generative UI (Tool Calling)** | 📋 Planned | 33-46 hours | Inline widgets within chat messages |
 
-**Total P3 Effort**: 20-32 hours
+**Total P3 Effort**: 53-78 hours
+
+### P3 Feature Details
+
+#### #21: Inline Generative UI (Tool Calling) 📋 PLANNED
+**User Impact**: Rich, contextual widgets embedded in chat (not separate artifacts)
+
+**Vision**: Transform conversational responses into interactive visualizations:
+```
+User: "What's the weather in San Francisco?"
+AI:   ┌─────────────────────────────────┐
+      │ 🌤️ San Francisco               │
+      │ 14.4°C • Partly Cloudy          │
+      └─────────────────────────────────┘
+      Perfect day for a walk!
+```
+
+**Key Differences from Artifacts**:
+- **Artifacts**: Full-screen interactive components (React apps, diagrams)
+- **Inline UI**: Small contextual widgets in message flow (weather, stocks, calculators)
+- **Use Case**: "Show me data" vs "Create something"
+
+**Implementation Architecture**:
+
+1. **Backend - Tool Calling Support** (6-8 hours)
+   - Add function/tool definitions to OpenRouter requests
+   - Tool execution layer for external APIs (OpenWeather, Alpha Vantage)
+   - Streaming support for tool call results
+
+2. **Frontend - Component Registry** (3-4 hours)
+   - Mapping tool names → React components
+   - `InlineToolUI` wrapper component
+   - Status handling (running/complete/error)
+
+3. **Example Widgets** (6-8 hours)
+   - WeatherWidget (temperature, conditions, humidity)
+   - StockWidget (price, change, chart)
+   - CalculatorWidget (expression evaluation)
+   - DateTimeWidget (timezone conversions)
+   - UnitConverterWidget (length, weight, temperature)
+
+4. **Message Rendering Overhaul** (6-8 hours)
+   - Interleaved text + tool UI rendering
+   - Parse tool call markers in message content
+   - Update `MessageWithArtifacts.tsx` for mixed content
+
+5. **Streaming Integration** (4-6 hours)
+   - Handle tool calls during SSE streaming
+   - Show loading states for pending tool results
+   - Update UI when tool execution completes
+
+6. **Testing & Refinement** (4-6 hours)
+   - Tool execution reliability
+   - Streaming edge cases
+   - Mobile responsive design
+   - Rate limiting for tool calls
+
+**Benefits**:
+- ✅ **Best-in-Class UX**: No other AI chat (Claude, ChatGPT, Gemini) has both inline UI + full artifacts
+- ✅ **Differentiation**: Unique feature for competitive advantage
+- ✅ **Extensibility**: Easy to add new tool types (stock ticker, calculator, timer)
+- ✅ **Complements Artifacts**: Inline for quick data, artifacts for complex creations
+
+**Challenges**:
+- ⚠️ Tool execution timing (results may arrive after message completion)
+- ⚠️ Preventing over-use (AI might call tools for everything)
+- ⚠️ Cost management (tool calls = extra API requests)
+- ⚠️ Mobile layout for inline widgets
+
+**Success Criteria**:
+- [ ] 5+ tool types implemented (weather, stock, calculator, datetime, converter)
+- [ ] < 2s average tool execution time
+- [ ] Graceful degradation (text fallback if tool fails)
+- [ ] Mobile-friendly widget layouts
+- [ ] Cost < $0.01 per tool call
+
+**References**:
+- Inspired by assistant-ui ToolUI pattern
+- Research document: `.claude/archive/inline-generative-ui-research.md` (if created)
 
 ---
 

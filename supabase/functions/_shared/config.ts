@@ -62,6 +62,24 @@ export const RATE_LIMITS = {
       MAX_REQUESTS: 50,
       WINDOW_HOURS: 5
     }
+  },
+  /** Tavily web search rate limits (prevent API quota abuse) */
+  TAVILY: {
+    /** API throttle for Tavily searches (aligned with Basic plan limits) */
+    API_THROTTLE: {
+      MAX_REQUESTS: 10,
+      WINDOW_SECONDS: 60
+    },
+    /** Guest user limits for searches (restrictive to prevent abuse) */
+    GUEST: {
+      MAX_REQUESTS: 10,
+      WINDOW_HOURS: 5
+    },
+    /** Authenticated user limits for searches */
+    AUTHENTICATED: {
+      MAX_REQUESTS: 50,
+      WINDOW_HOURS: 5
+    }
   }
 } as const;
 
@@ -186,4 +204,45 @@ export const CONTEXT_CONFIG = {
   RECENT_MESSAGE_COUNT: 5,
   /** Maximum buffer size for stream transformation (bytes) */
   MAX_STREAM_BUFFER_SIZE: 50000
+} as const;
+
+/**
+ * Tavily web search configuration
+ */
+export const TAVILY_CONFIG = {
+  /** Default number of search results to return */
+  DEFAULT_MAX_RESULTS: 5,
+  /** Maximum allowed results (Basic plan limit) */
+  MAX_RESULTS_LIMIT: 10,
+  /** Default search depth */
+  DEFAULT_SEARCH_DEPTH: 'basic' as const,
+  /** Search timeout in milliseconds */
+  SEARCH_TIMEOUT_MS: 10000,
+  /** Enable answer summaries by default */
+  DEFAULT_INCLUDE_ANSWER: false,
+  /** Enable images by default */
+  DEFAULT_INCLUDE_IMAGES: false,
+  /**
+   * Always-Search Mode: Force web search for ALL chat responses (not artifacts/images)
+   *
+   * PROS:
+   * - Guaranteed current information in every response
+   * - Reduces hallucination (grounded in real sources)
+   * - Better citation culture
+   *
+   * CONS:
+   * - Cost: $0.001 per message (1000x increase for typical usage)
+   * - Latency: +2-4s per response
+   * - API limits: Tavily Basic = 1000 requests/month free tier
+   * - Unnecessary for conceptual queries ("What is React?")
+   *
+   * RECOMMENDATION: Keep false in production unless you have:
+   * - Tavily Pro plan (higher limits)
+   * - Use case requiring maximum factual grounding
+   * - Budget for increased API costs
+   *
+   * To enable, set via environment variable:
+   * supabase secrets set TAVILY_ALWAYS_SEARCH=true
+   */
+  ALWAYS_SEARCH_ENABLED: Deno.env.get('TAVILY_ALWAYS_SEARCH') === 'true'
 } as const;

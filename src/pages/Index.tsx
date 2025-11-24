@@ -270,12 +270,6 @@ const IndexContent = () => {
       <ChatSidebar sessions={sessions} currentSessionId={currentSessionId} onSessionSelect={handleSessionSelect} onNewChat={handleNewChat} onDeleteSession={deleteSession} isLoading={sessionsLoading} />
       <SidebarInset className="relative bg-background">
         <main className="flex h-[100dvh] flex-col overflow-hidden">
-          {/* Header - Empty for now, keeping structure for future additions */}
-          <header className="bg-black/50 backdrop-blur-sm border-b border-border/30 sticky top-0 z-20 flex h-16 w-full shrink-0 items-center justify-end gap-2 px-4" style={{
-          paddingTop: 'var(--safe-area-inset-top)'
-        }}>
-          </header>
-
           {/* Main Content */}
           <div className="flex-1 overflow-hidden flex flex-col">
             {!showChat ? (

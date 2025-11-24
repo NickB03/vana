@@ -379,3 +379,66 @@ This request is best suited for a Mermaid diagram.
 
   return guidance[artifactType] || '';
 }
+
+/**
+ * Determines if a prompt should trigger web search via Tavily
+ * Detects queries requesting current information, recent events, or real-time data
+ *
+ * @param prompt - User's message text
+ * @returns true if web search should be performed
+ *
+ * @example
+ * shouldPerformWebSearch("what is the latest news about AI?") // true
+ * shouldPerformWebSearch("explain how React works") // false
+ */
+export function shouldPerformWebSearch(prompt: string): boolean {
+  const normalizedPrompt = prompt.toLowerCase().trim();
+
+  // Explicit search keywords (high confidence triggers)
+  const searchKeywords = [
+    /\b(search|find|look up|lookup)\s+(for|about|information)\b/,
+    /\bgoogle\s+(for|about)\b/,
+    /\bweb\s+search\b/,
+    /\b(can you|could you|please)\s+(search|find|look up)\b/,
+    /\bsearch\s+(the\s+)?(web|internet)\b/
+  ];
+
+  // Temporal indicators (asking for current/recent information)
+  const temporalKeywords = [
+    /\b(latest|recent|current|newest|today|yesterday|this week|this month|2025|2024|2026)\b/,
+    /\b(now|right now|at the moment|currently)\b/,
+    /\b(what'?s (new|happening)|breaking news)\b/,
+    /\bup to date\b/,
+    /\breal[ -]?time\b/
+  ];
+
+  // Information request patterns
+  const informationPatterns = [
+    /\b(what|who|when|where)\s+(is|are|was|were)\b.*\b(now|today|currently|latest)\b/,
+    /\b(tell me|show me|get me)\s+(about|the)?\s*(latest|recent|current|new)\b/,
+    /\bhow\s+much\s+(is|are|does|do)\b.*\b(now|today|currently)\b/,
+    /\bprice\s+of\b/,
+    /\bstock\s+(price|market)\b/,
+    /\bweather\s+(in|for|at)\b/,
+    /\bnews\s+(about|on|regarding)\b/,
+    /\b(top|trending)\s+(news|stories|headlines)\b/
+  ];
+
+  // Check for search keywords
+  if (searchKeywords.some(pattern => pattern.test(normalizedPrompt))) {
+    console.log('🔍 [shouldPerformWebSearch] Explicit search keyword detected');
+    return true;
+  }
+
+  // Check for temporal + information patterns
+  const hasTemporalIndicator = temporalKeywords.some(pattern => pattern.test(normalizedPrompt));
+  const hasInformationPattern = informationPatterns.some(pattern => pattern.test(normalizedPrompt));
+
+  if (hasTemporalIndicator || hasInformationPattern) {
+    console.log('🔍 [shouldPerformWebSearch] Temporal/information pattern detected');
+    return true;
+  }
+
+  // No search indicators found
+  return false;
+}

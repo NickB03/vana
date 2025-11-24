@@ -8,13 +8,13 @@ Perform a clean restart of Chrome DevTools MCP without killing other processes.
 Execute:
 
 ```bash
-chrome-mcp restart
+npx chrome-devtools-mcp restart
 ```
 
 Then verify:
 
 ```bash
-chrome-mcp status
+npx chrome-devtools-mcp status
 ```
 
 Report the outcome to the user including:

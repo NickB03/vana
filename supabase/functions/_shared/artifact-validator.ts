@@ -163,7 +163,11 @@ export function autoFixArtifactCode(code: string): { fixed: string; changes: str
   const mutationCheck = validateImmutability(fixed);
   if (mutationCheck.hasMutations && mutationCheck.autoFixAvailable && mutationCheck.fixedCode) {
     fixed = mutationCheck.fixedCode;
-    changes.push(`Fixed ${mutationCheck.patterns.length} immutability violation(s)`);
+    // Report actual fixes made, not total violations detected
+    const fixedCount = mutationCheck.fixCount || 0;
+    if (fixedCount > 0) {
+      changes.push(`Fixed ${fixedCount} immutability violation(s)`);
+    }
   }
 
   return { fixed, changes };
@@ -177,6 +181,7 @@ export interface MutationValidation {
   patterns: string[];
   autoFixAvailable: boolean;
   fixedCode?: string;
+  fixCount?: number;  // Number of fixes actually applied
 }
 
 /**
@@ -283,26 +288,31 @@ export function validateImmutability(code: string): MutationValidation {
   );
 
   let fixedCode: string | undefined;
+  let fixCount: number | undefined;
 
   if (canAutoFix) {
-    fixedCode = autoFixMutations(code);
+    const result = autoFixMutations(code);
+    fixedCode = result.fixedCode;
+    fixCount = result.fixCount;
   }
 
   return {
     hasMutations,
     patterns,
     autoFixAvailable: canAutoFix,
-    fixedCode
+    fixedCode,
+    fixCount
   };
 }
 
 /**
  * Attempts to auto-fix common mutation patterns
+ * Returns the fixed code and count of fixes made
  */
-function autoFixMutations(code: string): string {
-  const fixed = code;
-  const lines = fixed.split('\n');
+function autoFixMutations(code: string): { fixedCode: string; fixCount: number } {
+  const lines = code.split('\n');
   const fixedLines: string[] = [];
+  let fixCount = 0;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -315,12 +325,16 @@ function autoFixMutations(code: string): string {
     }
 
     // Detect and fix direct array assignment: board[i] = value
-    // Pattern: array[index] = value (not ==, not ===)
-    const directAssignPattern = /^(\s*)(\w+)\[(\w+|\d+)\]\s*=\s*(.+);?\s*$/;
+    // IMPROVED: More flexible pattern that matches assignments anywhere in the line
+    // Matches: "board[i] = value", "  board[i] = value;", "if (x) board[i] = value;"
+    // Note: [^=] ensures we don't match == or === comparisons
+    const directAssignPattern = /(\w+)\[([^\]]+)\]\s*=\s*([^=].*?)(?:;|$)/;
     const match = line.match(directAssignPattern);
 
-    if (match) {
-      const [, indent, arrayName, index, value] = match;
+    if (match && !line.includes('==') && !line.includes('===')) {
+      const [fullMatch, arrayName, index, value] = match;
+      const indent = line.match(/^(\s*)/)?.[1] || '';
+      fixCount++;
 
       // Check if this is inside a loop or function (look back a few lines)
       const contextLines = lines.slice(Math.max(0, i - 5), i);
@@ -359,7 +373,7 @@ function autoFixMutations(code: string): string {
     }
   }
 
-  return fixedLines.join('\n');
+  return { fixedCode: fixedLines.join('\n'), fixCount };
 }
 
 /**

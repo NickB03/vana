@@ -562,9 +562,11 @@ export default function App() { return <div>Test</div> }`;
         />
       );
 
-      // Verify image is rendered in InlineImage component
-      const inlineImage = container.querySelector('[data-testid^="inline-image-"]');
-      expect(inlineImage).toBeInTheDocument();
+      // Verify image is rendered in InlineImage component (wait for async parsing)
+      await waitFor(() => {
+        const inlineImage = container.querySelector('[data-testid^="inline-image-"]');
+        expect(inlineImage).toBeInTheDocument();
+      });
     });
 
     it('does not attempt to bundle image artifacts', async () => {

@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ensureValidSession, getAuthErrorMessage } from "@/utils/authHelpers";
 import { chatRequestThrottle } from "@/utils/requestThrottle";
 import { StructuredReasoning, parseReasoningSteps } from "@/types/reasoning";
+import { WebSearchResults } from "@/types/webSearch";
 
 export interface ChatMessage {
   id: string;
@@ -12,6 +13,7 @@ export interface ChatMessage {
   content: string;
   reasoning?: string | null;
   reasoning_steps?: StructuredReasoning | null; // New: structured reasoning data
+  search_results?: WebSearchResults | null; // New: web search results data
   created_at: string;
 }
 
@@ -28,6 +30,7 @@ export interface StreamProgress {
   artifactDetected: boolean;
   percentage: number;
   reasoningSteps?: StructuredReasoning; // New: structured reasoning for streaming
+  searchResults?: WebSearchResults; // New: web search results for streaming
 }
 
 export interface RateLimitHeaders {
@@ -90,7 +93,8 @@ export function useChatMessages(
     role: "user" | "assistant",
     content: string,
     reasoning?: string,
-    reasoningSteps?: StructuredReasoning
+    reasoningSteps?: StructuredReasoning,
+    searchResults?: WebSearchResults
   ) => {
     // Validate reasoning steps before saving - will return null if invalid
     // This prevents 400 errors from database constraint violations
@@ -111,6 +115,7 @@ export function useChatMessages(
         content,
         reasoning: reasoning || null,
         reasoning_steps: validatedReasoningSteps, // FIX: Use validated reasoning steps
+        search_results: searchResults || null,
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, guestMessage]);
@@ -126,12 +131,14 @@ export function useChatMessages(
         content,
         reasoning,
         reasoning_steps: validatedReasoningSteps, // FIX: Use validated reasoning steps
+        search_results: searchResults || null,
       };
       console.log("[DEBUG] Saving message to database:", {
         ...payload,
         content_preview: content.substring(0, 100),
         reasoning_steps_type: typeof validatedReasoningSteps,
         reasoning_steps_value: validatedReasoningSteps,
+        search_results_type: typeof searchResults,
       });
 
       const { data, error } = await supabase
@@ -311,6 +318,7 @@ export function useChatMessages(
       let artifactDetected = false;
       let artifactClosed = false;
       let reasoningSteps: StructuredReasoning | undefined; // Store reasoning data
+      let searchResults: WebSearchResults | undefined; // Store web search results
       let lastSequence = 0; // Track SSE event sequence
 
       const updateProgress = (): StreamProgress => {
@@ -354,7 +362,8 @@ export function useChatMessages(
           message,
           artifactDetected,
           percentage: Math.min(99, Math.round(percentage)),
-          reasoningSteps // Include reasoning in progress updates
+          reasoningSteps, // Include reasoning in progress updates
+          searchResults, // Include search results in progress updates
         };
       };
 
@@ -380,7 +389,8 @@ export function useChatMessages(
             const parsed = JSON.parse(jsonStr);
 
             // ========================================
-            // CHAIN OF THOUGHT: Handle reasoning events with word-by-word streaming
+            // CHAIN OF THOUGHT: Handle reasoning events
+            // Character-by-character streaming is handled in ReasoningDisplay component
             // ========================================
             if (parsed.type === 'reasoning') {
               // Check sequence number to prevent out-of-order updates
@@ -391,54 +401,35 @@ export function useChatMessages(
               }
               lastSequence = parsed.sequence;
 
-              // Store the complete reasoning data
+              // Store and send the complete reasoning data
+              // The ReasoningDisplay component will handle character-by-character streaming
               reasoningSteps = parsed.data;
 
-              // Stream the reasoning content step-by-step for smooth display
-              const fullReasoning = parsed.data;
-              const steps = fullReasoning?.steps || [];
-              const STEP_DELAY_MS = 150; // Delay between steps (faster than words)
-              const ITEM_DELAY_MS = 50;  // Delay between items within a step
-
-              // Stream each step progressively
-              for (let stepIndex = 0; stepIndex < steps.length; stepIndex++) {
-                await new Promise(resolve => setTimeout(resolve, STEP_DELAY_MS));
-
-                const currentStep = steps[stepIndex];
-                const items = currentStep.items || [];
-
-                // Stream items within the step
-                for (let itemIndex = 0; itemIndex <= items.length; itemIndex++) {
-                  if (itemIndex > 0) {
-                    await new Promise(resolve => setTimeout(resolve, ITEM_DELAY_MS));
-                  }
-
-                  // Build partial reasoning with steps revealed so far
-                  const partialSteps = steps.slice(0, stepIndex).concat([
-                    {
-                      ...currentStep,
-                      items: items.slice(0, itemIndex)
-                    }
-                  ]);
-
-                  const streamingReasoning = {
-                    ...fullReasoning,
-                    steps: partialSteps,
-                    isStreaming: true
-                  };
-
-                  const progress = updateProgress();
-                  progress.reasoningSteps = streamingReasoning;
-                  onDelta('', progress);
-                }
-              }
-
-              // Final update with complete reasoning
               const progress = updateProgress();
-              progress.reasoningSteps = fullReasoning;
+              progress.reasoningSteps = reasoningSteps;
               onDelta('', progress);
 
-              console.log('[StreamProgress] Streamed', steps.length, 'reasoning steps');
+              console.log('[StreamProgress] Received reasoning with', reasoningSteps?.steps?.length || 0, 'steps');
+              continue; // Skip to next event
+            }
+
+            // ========================================
+            // WEB SEARCH: Handle search results from Tavily API
+            // ========================================
+            if (parsed.type === 'web_search') {
+              // Store the complete search results
+              searchResults = parsed.data;
+
+              // Update progress immediately with search results
+              const progress = updateProgress();
+              progress.searchResults = searchResults;
+              onDelta('', progress);
+
+              console.log('[StreamProgress] Received web search results:', {
+                query: searchResults?.query,
+                sourceCount: searchResults?.sources?.length || 0,
+              });
+
               continue; // Skip to next event
             }
 
@@ -463,7 +454,7 @@ export function useChatMessages(
 
       // Save assistant message first, then signal completion
       // This prevents a race condition where streamingMessage is cleared before the saved message appears
-      await saveMessage("assistant", fullResponse, undefined, reasoningSteps);
+      await saveMessage("assistant", fullResponse, undefined, reasoningSteps, searchResults);
 
       // Small delay to ensure React state updates have propagated
       await new Promise(resolve => setTimeout(resolve, 50));

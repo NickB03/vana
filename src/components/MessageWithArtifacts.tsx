@@ -6,12 +6,15 @@ import { parseArtifacts } from "@/utils/artifactParser";
 import { ArtifactData } from "@/components/ArtifactContainer";
 import { bundleArtifact, needsBundling } from "@/utils/artifactBundler";
 import { toast } from "sonner";
+import { WebSearchResults } from "@/components/WebSearchResults";
+import { WebSearchResults as WebSearchResultsType } from "@/types/webSearch";
 
 interface MessageWithArtifactsProps {
   content: string;
   messageId?: string;
   sessionId: string;  // CRITICAL: Used for server-side bundling, not messageId
   onArtifactOpen: (artifact: ArtifactData) => void;
+  searchResults?: WebSearchResultsType | null;
   className?: string;
 }
 
@@ -32,16 +35,25 @@ export const MessageWithArtifacts = memo(({
   messageId,
   sessionId,
   onArtifactOpen,
+  searchResults,
   className = ""
 }: MessageWithArtifactsProps) => {
-  const { artifacts: parsedArtifacts, cleanContent } = parseArtifacts(content);
-  const [artifacts, setArtifacts] = useState<ArtifactData[]>(parsedArtifacts);
+  const [artifacts, setArtifacts] = useState<ArtifactData[]>([]);
+  const [cleanContent, setCleanContent] = useState(content);
   const [bundlingStatus, setBundlingStatus] = useState<Record<string, 'idle' | 'bundling' | 'success' | 'error'>>({});
+
+  // Parse artifacts asynchronously (now uses crypto hash for stable IDs)
+  useEffect(() => {
+    parseArtifacts(content).then(({ artifacts: parsedArtifacts, cleanContent: parsed }) => {
+      setArtifacts(parsedArtifacts);
+      setCleanContent(parsed);
+    });
+  }, [content]);
 
   // Handle server-side bundling for artifacts with npm imports
   useEffect(() => {
     async function handleBundling() {
-      for (const artifact of parsedArtifacts) {
+      for (const artifact of artifacts) {
         // Skip if already bundled or bundling
         if (artifact.bundleUrl || bundlingStatus[artifact.id] !== undefined) {
           continue;
@@ -218,7 +230,7 @@ export const MessageWithArtifacts = memo(({
     }
 
     handleBundling();
-  }, [parsedArtifacts, sessionId]);
+  }, [artifacts, sessionId]);
 
   // Separate image artifacts from interactive artifacts
   const imageArtifacts = artifacts.filter(a => a.type === 'image');
@@ -238,6 +250,15 @@ export const MessageWithArtifacts = memo(({
           {cleanContent}
         </Markdown>
       </div>
+
+      {/* Render web search results (if present) */}
+      {searchResults && (
+        <WebSearchResults
+          searchResults={searchResults}
+          isStreaming={false}
+          className="mt-3"
+        />
+      )}
 
       {/* Render inline images */}
       {imageArtifacts.map(artifact => (
