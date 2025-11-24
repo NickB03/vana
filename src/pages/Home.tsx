@@ -15,17 +15,13 @@ import { GuestLimitDialog } from "@/components/GuestLimitDialog";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatInterface } from "@/components/ChatInterface";
+import { ChatLayout } from "@/components/layout/ChatLayout";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { useChatSessions } from "@/hooks/useChatSessions";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureValidSession } from "@/utils/authHelpers";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { PromptInput, PromptInputTextarea } from "@/components/prompt-kit/prompt-input";
-import { PromptInputControls } from "@/components/prompt-kit/prompt-input-controls";
-import GalleryHoverCarousel from "@/components/ui/gallery-hover-carousel";
 import type { SuggestionItem } from "@/data/suggestions";
 
 /**
@@ -237,9 +233,9 @@ const Home = () => {
    * Handles instant build when clicking suggestion cards
    * Immediately starts building artifact without manual send
    */
-  const handleSuggestionClick = useCallback(async (prompt: string, cardId: string) => {
+  const handleSuggestionClick = useCallback(async (item: SuggestionItem) => {
     // Set loading state for the clicked card
-    setLoadingSuggestionId(cardId);
+    setLoadingSuggestionId(item.id);
 
     // Show immediate feedback
     toast({
@@ -249,7 +245,7 @@ const Home = () => {
 
     // Enable artifact mode ONLY for artifact cards (not image generation)
     // Image generation cards have IDs starting with 'img-gen-'
-    if (!cardId.startsWith('img-gen-')) {
+    if (!item.id.startsWith('img-gen-')) {
       setArtifactMode(true);
       // Set flag to auto-open canvas when artifact is detected
       setAutoOpenCanvas(true);
@@ -261,6 +257,8 @@ const Home = () => {
       setShowLimitDialog(true);
       return;
     }
+
+    const prompt = item.prompt || item.summary;
 
     // For guests: show chat and send via initialPrompt mechanism
     if (!isAuthenticated) {
@@ -459,66 +457,21 @@ const Home = () => {
               {/* Main Content */}
               <div className="flex-1 overflow-hidden flex flex-col">
                 {!showChat ? (
-                  <div className="flex h-full flex-col items-center justify-between overflow-y-auto p-4 sm:p-8 pt-safe pb-safe">
-                    <div></div>
-
-                    <div className="text-center w-full">
-                      <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-                        Hi, I'm Vana.
-                      </h1>
-                      <p className="text-foreground/80 text-sm sm:text-base">
-                        Get started by choosing from an idea below or tell me what you want to do in chat
-                      </p>
-                    </div>
-
-                    <div className="w-full">
-                      <div className="w-full max-w-3xl mx-auto mb-6 px-4">
-                        <PromptInput
-                          value={input}
-                          onValueChange={setInput}
-                          isLoading={isLoading}
-                          onSubmit={handleSubmit}
-                          className="w-full relative rounded-xl bg-black/50 backdrop-blur-sm p-0 pt-1"
-                        >
-                          <div className="flex flex-col">
-                            <PromptInputTextarea
-                              placeholder="Ask anything"
-                              className="min-h-[44px] pl-4 pt-3 text-base leading-[1.3]"
-                            />
-                            <PromptInputControls
-                              className="mt-5 px-3 pb-3"
-                              imageMode={imageMode}
-                              onImageModeChange={setImageMode}
-                              artifactMode={artifactMode}
-                              onArtifactModeChange={setArtifactMode}
-                              isLoading={isLoading}
-                              input={input}
-                              onSend={handleSubmit}
-                              sendIcon="send"
-                            />
-                          </div>
-                        </PromptInput>
-                      </div>
-
-                      <div className="w-full px-4 pb-4">
-                        {loadingSuggestions ? (
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-4">
-                            {[...Array(10)].map((_, i) => (
-                              <div key={i} className="h-48 bg-muted/20 animate-pulse rounded-lg" />
-                            ))}
-                          </div>
-                        ) : (
-                        <GalleryHoverCarousel
-                          heading=""
-                          className="py-0 bg-transparent"
-                          onItemClick={(item) => handleSuggestionClick(item.prompt || item.summary, item.id)}
-                          loadingItemId={loadingSuggestionId}
-                          items={suggestions}
-                        />
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  <ChatLayout
+                    input={input}
+                    onInputChange={setInput}
+                    onSubmit={handleSubmit}
+                    isLoading={isLoading}
+                    suggestions={suggestions}
+                    loadingSuggestions={loadingSuggestions}
+                    loadingItemId={loadingSuggestionId}
+                    onSuggestionClick={handleSuggestionClick}
+                    imageMode={imageMode}
+                    onImageModeChange={setImageMode}
+                    artifactMode={artifactMode}
+                    onArtifactModeChange={setArtifactMode}
+                    sendIcon="send"
+                  />
                 ) : (
                   <ChatInterface
                     sessionId={currentSessionId}
