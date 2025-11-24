@@ -698,14 +698,14 @@ export function ChatInterface({
           )}
         </div>
       ) : (
-        // Desktop Layout: Side-by-side resizable panels with Gemini-style sizing
+        // Desktop Layout: Side-by-side resizable panels with Gemini-style sizing (30/70 split)
         <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
           <ResizablePanel
             id="chat-panel"
             order={1}
-            defaultSize={isCanvasOpen && currentArtifact ? 20 : 100}
-            minSize={15}
-            maxSize={isCanvasOpen && currentArtifact ? 40 : 100}
+            defaultSize={isCanvasOpen && currentArtifact ? 30 : 100}
+            minSize={20}
+            maxSize={isCanvasOpen && currentArtifact ? 50 : 100}
             className="md:min-w-[280px] flex flex-col"
           >
             {renderChatContent()}
@@ -718,8 +718,8 @@ export function ChatInterface({
           <ResizablePanel
             id="canvas-panel"
             order={2}
-            defaultSize={80}
-            minSize={60}
+            defaultSize={70}
+            minSize={50}
             className={`md:min-w-[400px] flex flex-col ${!isCanvasOpen || !currentArtifact ? 'hidden' : ''}`}
           >
             {currentArtifact && (
