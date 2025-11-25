@@ -10,7 +10,7 @@ description: Generate comprehensive analysis and documentation of entire codebas
 !`find . -type f -not -path “./node_modules/*” -not -path “./.git/*” -not -path “./dist/*” -not -path “./build/*” -not -path “./.next/*” -not -path “./coverage/*” -not -path “./*.log” | head -100`
 ### File Count and Size Analysis
 - Total files: !`find . -type f -not -path “./node_modules/*” -not -path “./.git/*” | wc -l`
-- Code files: !`find . -name “*.js” -o -name “*.ts” -o -name “*.jsx” -o -name “*.tsx” -o -name “*.py” -o -name “*.java” -o -name “*.php” -o -name “*.rb” -o -name “*.go” -o -name “*.rs” -o -name “*.cpp” -o -name “*.c” | grep -v node_modules | wc -l`
+- Code files: !`find . \( -name '*.js' -o -name '*.ts' -o -name '*.jsx' -o -name '*.tsx' -o -name '*.py' -o -name '*.java' -o -name '*.php' -o -name '*.rb' -o -name '*.go' -o -name '*.rs' -o -name '*.cpp' -o -name '*.c' \) 2>/dev/null | grep -v node_modules | wc -l`
 - Project size: !`du -sh .`
 ## Configuration Files Analysis
 ### Package Management
@@ -34,35 +34,35 @@ description: Generate comprehensive analysis and documentation of entire codebas
 - Next.js config: @next.config.js
 ### Environment & Docker
 - .env files: !`find . -name “.env*” -type f`
-- Docker files: !`find . -name “Dockerfile*” -o -name “docker-compose*“`
-- Kubernetes files: !`find . -name “*.yaml” -o -name “*.yml” | grep -E “(k8s|kubernetes|deployment|service)“`
+- Docker files: !`find . \( -name 'Dockerfile*' -o -name 'docker-compose*' \) 2>/dev/null || echo "None found"`
+- Kubernetes files: !`find . \( -name '*.yaml' -o -name '*.yml' \) 2>/dev/null | grep -E '(k8s|kubernetes|deployment|service)' || echo "None found"`
 ### CI/CD Configuration
-- GitHub Actions: !`find .github -name “*.yml” -o -name “*.yaml” 2>/dev/null || echo “No GitHub Actions”`
+- GitHub Actions: !`find .github \( -name '*.yml' -o -name '*.yaml' \) 2>/dev/null || echo "No GitHub Actions"`
 - GitLab CI: @.gitlab-ci.yml
 - Travis CI: @.travis.yml
 - Circle CI: @.circleci/config.yml
 ## Source Code Analysis
 ### Main Application Files
-- Main entry points: !`find . -name “main.*” -o -name “index.*” -o -name “app.*” -o -name “server.*” | grep -v node_modules | head -10`
-- Routes/Controllers: !`find . -path “*/routes/*” -o -path “*/controllers/*” -o -path “*/api/*” | grep -v node_modules | head -20`
-- Models/Schemas: !`find . -path “*/models/*” -o -path “*/schemas/*” -o -path “*/entities/*” | grep -v node_modules | head -20`
-- Components: !`find . -path “*/components/*” -o -path “*/views/*” -o -path “*/pages/*” | grep -v node_modules | head -20`
+- Main entry points: !`find . \( -name 'main.*' -o -name 'index.*' -o -name 'app.*' -o -name 'server.*' \) 2>/dev/null | grep -v node_modules | head -10`
+- Routes/Controllers: !`find . \( -path '*/routes/*' -o -path '*/controllers/*' -o -path '*/api/*' \) 2>/dev/null | grep -v node_modules | head -20`
+- Models/Schemas: !`find . \( -path '*/models/*' -o -path '*/schemas/*' -o -path '*/entities/*' \) 2>/dev/null | grep -v node_modules | head -20`
+- Components: !`find . \( -path '*/components/*' -o -path '*/views/*' -o -path '*/pages/*' \) 2>/dev/null | grep -v node_modules | head -20`
 ### Database & Storage
-- Database configs: !`find . -name “*database*” -o -name “*db*” -o -name “*connection*” | grep -v node_modules | head -10`
-- Migration files: !`find . -path “*/migrations/*” -o -path “*/migrate/*” | head -10`
-- Seed files: !`find . -path “*/seeds/*” -o -path “*/seeders/*” | head -10`
+- Database configs: !`find . \( -name '*database*' -o -name '*db*' -o -name '*connection*' \) 2>/dev/null | grep -v node_modules | head -10`
+- Migration files: !`find . \( -path '*/migrations/*' -o -path '*/migrate/*' \) 2>/dev/null | head -10`
+- Seed files: !`find . \( -path '*/seeds/*' -o -path '*/seeders/*' \) 2>/dev/null | head -10`
 ### Testing Files
-- Test files: !`find . -name “*test*” -o -name “*spec*” | grep -v node_modules | head -15`
+- Test files: !`find . \( -name '*test*' -o -name '*spec*' \) 2>/dev/null | grep -v node_modules | head -15`
 - Test config: @jest.config.js
 ### API Documentation
-- API docs: !`find . -name “*api*” -name “*.md” -o -name “swagger*” -o -name “openapi*” | head -10`
+- API docs: !`find . \( \( -name '*api*' -name '*.md' \) -o -name 'swagger*' -o -name 'openapi*' \) 2>/dev/null | head -10`
 ## Key Files Content Analysis
 ### Root Configuration Files
 @README.md
 @LICENSE
 @.gitignore
 ### Main Application Entry Points
-!`find . -name “index.js” -o -name “index.ts” -o -name “main.js” -o -name “main.ts” -o -name “app.js” -o -name “app.ts” -o -name “server.js” -o -name “server.ts” | grep -v node_modules | head -5`
+!`find . \( -name 'index.js' -o -name 'index.ts' -o -name 'main.js' -o -name 'main.ts' -o -name 'app.js' -o -name 'app.ts' -o -name 'server.js' -o -name 'server.ts' \) 2>/dev/null | grep -v node_modules | head -5`
 ## Your Task
 Based on all the discovered information above, create a comprehensive analysis that includes:
 ## 1. Project Overview

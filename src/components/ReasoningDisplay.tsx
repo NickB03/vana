@@ -1,5 +1,6 @@
-import { memo, useState, useEffect, useRef } from "react";
+import { memo, useState, useEffect, useRef, useMemo, useCallback } from "react";
 import DOMPurify from "isomorphic-dompurify";
+import { cn } from "@/lib/utils";
 import {
   Reasoning,
   ReasoningTrigger,
@@ -8,18 +9,40 @@ import {
 import {
   StructuredReasoning,
   parseReasoningSteps,
+  ReasoningStep,
 } from "@/types/reasoning";
+import { Search, Lightbulb, Target, Sparkles } from "lucide-react";
 
 interface ReasoningDisplayProps {
   // Support both old and new formats for backward compatibility
   reasoning?: string | null;
   reasoningSteps?: StructuredReasoning | unknown | null;
   isStreaming?: boolean;
+  /** Callback when reasoning animation completes - signals response can show */
+  onReasoningComplete?: () => void;
 }
 
 /**
+ * Icon mapping for reasoning phases
+ */
+const ICON_MAP = {
+  search: Search,
+  lightbulb: Lightbulb,
+  target: Target,
+  sparkles: Sparkles,
+} as const;
+
+/**
+ * Animation timing constants
+ * Note: Users with prefers-reduced-motion will skip animations via CSS
+ */
+const ANIMATION = {
+  SECTION_DISPLAY_MS: 2500, // How long each section shows before transitioning
+  FADE_DURATION_MS: 400,    // CSS transition duration for fade
+} as const;
+
+/**
  * Sanitize content to prevent XSS attacks
- * Allows basic formatting tags only
  */
 function sanitizeContent(content: string): string {
   return DOMPurify.sanitize(content, {
@@ -30,155 +53,308 @@ function sanitizeContent(content: string): string {
 }
 
 /**
- * Convert structured reasoning steps into a single continuous text stream
- * This matches Claude's approach of showing one flowing thought
+ * Format section titles as ticker text for final display
+ */
+function formatTitlesAsTicker(steps: ReasoningStep[]): string {
+  return steps.map(step => step.title).join(" → ");
+}
+
+/**
+ * Convert structured reasoning steps into continuous text (fallback)
  */
 function formatReasoningAsContinuousText(steps: StructuredReasoning): string {
   const thoughts: string[] = [];
-
-  // Combine all items from all steps into one continuous narrative
   steps.steps.forEach((step) => {
     if (step.items && step.items.length > 0) {
-      // Join items with natural flow (no bullets, no structure)
       thoughts.push(...step.items);
     }
   });
-
-  // Join with periods for natural reading flow
   return thoughts.join(". ");
 }
 
 /**
- * ReasoningDisplay component - Claude-style character-by-character streaming
+ * ReasoningDisplay component - Fade-in/out section cycling animation
  *
- * Key features matching Claude's interface:
- * - Character-by-character text reveal in the pill (not word-by-word)
- * - NO auto-expand (users must click to see full reasoning)
- * - Continuous flowing thought text (not structured steps with bullets)
- * - Clean, readable single-line display during streaming
+ * Key features:
+ * - Each reasoning section fades in from left-to-right (full text, not character by character)
+ * - Sections cycle: fade out current, fade in next
+ * - Shows complete section title in the pill (NOT expandable during streaming)
+ * - Calls onReasoningComplete when all sections have been shown
+ * - Backward compatible with old continuous text format
  */
 export const ReasoningDisplay = memo(function ReasoningDisplay({
   reasoning,
   reasoningSteps,
   isStreaming,
+  onReasoningComplete,
 }: ReasoningDisplayProps) {
-  // Character-by-character streaming state
-  const [visibleChars, setVisibleChars] = useState(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Current section being displayed (0-indexed)
+  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+  // Animation state: 'idle' | 'fade-in' | 'visible' | 'fade-out'
+  const [animationState, setAnimationState] = useState<'idle' | 'fade-in' | 'visible' | 'fade-out'>('idle');
+  // Track if animation has completed
+  const [animationComplete, setAnimationComplete] = useState(false);
+
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wasStreamingRef = useRef(false);
+  const completedCallbackRef = useRef(false);
 
-  // Validate and parse reasoning steps at runtime
-  const validatedSteps = reasoningSteps
-    ? parseReasoningSteps(reasoningSteps)
-    : null;
+  // Validate and parse reasoning steps
+  const validatedSteps = useMemo(() => {
+    return reasoningSteps ? parseReasoningSteps(reasoningSteps) : null;
+  }, [reasoningSteps]);
 
-  // Get full reasoning text as continuous string
-  const fullReasoningText = validatedSteps
-    ? formatReasoningAsContinuousText(validatedSteps)
-    : reasoning || "";
+  const totalSections = validatedSteps?.steps.length ?? 0;
 
-  // Reset visible chars when starting a NEW streaming session
+  // Clear all timeouts
+  const clearTimeouts = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }, []);
+
+  // Reset state when starting a NEW streaming session
   useEffect(() => {
     if (isStreaming && !wasStreamingRef.current) {
-      // Just started streaming - reset to 0
-      setVisibleChars(0);
+      // Just started streaming - reset to initial state
+      setCurrentSectionIndex(0);
+      setAnimationState('idle');
+      setAnimationComplete(false);
+      completedCallbackRef.current = false;
+      clearTimeouts();
     }
-    wasStreamingRef.current = isStreaming;
-  }, [isStreaming]);
+    wasStreamingRef.current = isStreaming ?? false;
+  }, [isStreaming, clearTimeouts]);
 
-  // Character-by-character streaming effect
+  // Main animation loop - cycles through sections
   useEffect(() => {
-    // If not streaming or no content, show everything immediately
-    if (!isStreaming || !fullReasoningText) {
-      setVisibleChars(fullReasoningText.length);
-      // Clear any existing interval
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+    // Clear any existing timeouts when effect re-runs
+    clearTimeouts();
+
+    // Not streaming or no data - show final state immediately
+    if (!isStreaming || !validatedSteps || totalSections === 0) {
+      if (validatedSteps && totalSections > 0) {
+        setCurrentSectionIndex(totalSections - 1);
+        setAnimationState('visible');
+        setAnimationComplete(true);
       }
-      return;
+      return clearTimeouts; // Cleanup on unmount
     }
 
-    // During streaming: if we haven't revealed all chars yet, continue incrementing
-    // This allows the effect to continue when new content arrives without resetting
-    if (visibleChars < fullReasoningText.length) {
-      // Clear any existing interval first to prevent multiple intervals
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+    // Start animation if idle and we have sections
+    if (animationState === 'idle' && totalSections > 0) {
+      setAnimationState('fade-in');
+      return clearTimeouts;
+    }
 
-      // Start character-by-character reveal
-      // Claude uses ~50-70ms per character for smooth reading
-      const CHAR_DELAY_MS = 60;
+    // Handle animation states
+    if (animationState === 'fade-in') {
+      // After fade-in completes, become visible
+      timeoutRef.current = setTimeout(() => {
+        setAnimationState('visible');
+      }, ANIMATION.FADE_DURATION_MS);
+      return clearTimeouts;
+    }
 
-      intervalRef.current = setInterval(() => {
-        setVisibleChars((prev) => {
-          const next = prev + 1;
-
-          // Stop when we've revealed everything
-          if (next >= fullReasoningText.length) {
-            if (intervalRef.current) {
-              clearInterval(intervalRef.current);
-              intervalRef.current = null;
-            }
+    if (animationState === 'visible') {
+      // Stay visible for the display duration, then fade out (or complete)
+      timeoutRef.current = setTimeout(() => {
+        if (currentSectionIndex < totalSections - 1) {
+          // More sections to show - fade out
+          setAnimationState('fade-out');
+        } else {
+          // Last section - animation complete
+          setAnimationComplete(true);
+          if (!completedCallbackRef.current && onReasoningComplete) {
+            completedCallbackRef.current = true;
+            onReasoningComplete();
           }
-
-          return next;
-        });
-      }, CHAR_DELAY_MS);
+        }
+      }, ANIMATION.SECTION_DISPLAY_MS);
+      return clearTimeouts;
     }
 
-    // Cleanup on unmount
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+    if (animationState === 'fade-out') {
+      // After fade-out completes, move to next section and fade in
+      timeoutRef.current = setTimeout(() => {
+        setCurrentSectionIndex(prev => prev + 1);
+        setAnimationState('fade-in');
+      }, ANIMATION.FADE_DURATION_MS);
+      return clearTimeouts;
+    }
+
+    // Default cleanup
+    return clearTimeouts;
+  }, [isStreaming, validatedSteps, totalSections, animationState, currentSectionIndex, onReasoningComplete, clearTimeouts]);
+
+  // When streaming ends, call completion callback if not already called
+  useEffect(() => {
+    if (!isStreaming && !completedCallbackRef.current && validatedSteps && onReasoningComplete) {
+      completedCallbackRef.current = true;
+      onReasoningComplete();
+    }
+  }, [isStreaming, validatedSteps, onReasoningComplete]);
+
+  // Get current section to display
+  const currentSection = validatedSteps?.steps[currentSectionIndex];
+  const IconComponent = currentSection?.icon ? ICON_MAP[currentSection.icon] : null;
+
+  // Determine trigger text for pill display
+  const getTriggerText = (): string => {
+    if (isStreaming && currentSection) {
+      // During streaming: show current section's title
+      return currentSection.title;
+    }
+
+    // After streaming: show summary or full ticker
+    if (validatedSteps) {
+      const summary = validatedSteps.summary;
+      if (summary) {
+        return summary.length > 120 ? `${summary.slice(0, 117)}...` : summary;
       }
-    };
-  }, [isStreaming, fullReasoningText, visibleChars]);
+      const fullTicker = formatTitlesAsTicker(validatedSteps.steps);
+      return fullTicker.length > 120 ? `${fullTicker.slice(0, 117)}...` : fullTicker;
+    }
 
-  // Get currently visible text for the pill (truncated if too long)
-  const visibleText = fullReasoningText.slice(0, visibleChars);
+    // Fallback for non-structured reasoning
+    const text = reasoning || "";
+    return text.length > 120 ? `${text.slice(0, 117)}...` : text || "Show reasoning";
+  };
 
-  // During streaming: show actual reasoning text as it builds up (like Claude)
-  // After streaming: show summary or first line
-  const triggerText = isStreaming
-    ? visibleText.length > 120
-      ? `${visibleText.slice(0, 117)}...`
-      : visibleText || "Thinking..."
-    : validatedSteps?.summary || fullReasoningText.slice(0, 120) || "Show reasoning";
-
-  // During streaming, always show the reasoning pill (even if no data yet)
-  // After streaming completes, only show if we have actual reasoning data
+  // Don't render if no data and not streaming
   if (!isStreaming && !validatedSteps && !reasoning) {
     return null;
   }
 
-  // Render using prompt-kit Reasoning component (Claude-style)
-  return (
-    <div className="mb-2">
-      <Reasoning
-        isStreaming={isStreaming}
-        showTimer={isStreaming}
-        className=""
-      >
-        <ReasoningTrigger>
-          {triggerText}
-          {/* Show blinking cursor during character streaming */}
-          {isStreaming && visibleChars < fullReasoningText.length && (
-            <span
-              className="inline-block w-1 h-3 ml-0.5 bg-muted-foreground/60 animate-pulse"
+  // Show "Thinking..." while waiting for data
+  if (isStreaming && !validatedSteps) {
+    return (
+      <div className="mb-2">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 text-sm text-muted-foreground">
+          <div className="w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
+          <span>Thinking...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Get fallback text for non-structured display
+  const fallbackText = validatedSteps
+    ? formatReasoningAsContinuousText(validatedSteps)
+    : reasoning || "";
+
+  // During streaming: show animated pill (NOT expandable)
+  if (isStreaming && validatedSteps && !animationComplete) {
+    return (
+      <div className="mb-2">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 overflow-hidden">
+          {/* Icon */}
+          {IconComponent && (
+            <IconComponent
+              className="size-4 text-muted-foreground/70 shrink-0"
               aria-hidden="true"
             />
           )}
+
+          {/* Animated section title with fade effect */}
+          <div className="relative overflow-hidden">
+            <span
+              className={cn(
+                "text-sm text-muted-foreground whitespace-nowrap transition-all",
+                // Fade-in: start from left (translateX) and opacity 0
+                animationState === 'fade-in' && "animate-fade-in-left",
+                // Visible: fully shown
+                animationState === 'visible' && "opacity-100",
+                // Fade-out: fade to right
+                animationState === 'fade-out' && "animate-fade-out-right"
+              )}
+              style={{
+                transitionDuration: `${ANIMATION.FADE_DURATION_MS}ms`,
+              }}
+            >
+              {sanitizeContent(currentSection?.title || "Processing...")}
+            </span>
+          </div>
+
+          {/* Progress indicator: dots showing which section we're on */}
+          <div className="flex gap-1 ml-2">
+            {validatedSteps.steps.map((_, idx) => (
+              <div
+                key={idx}
+                className={cn(
+                  "w-1.5 h-1.5 rounded-full transition-colors duration-300",
+                  idx === currentSectionIndex
+                    ? "bg-foreground/60"
+                    : idx < currentSectionIndex
+                    ? "bg-foreground/30"
+                    : "bg-muted-foreground/20"
+                )}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // After streaming or animation complete: show expandable reasoning
+  return (
+    <div className="mb-2">
+      <Reasoning
+        isStreaming={false}
+        showTimer={false}
+        className=""
+      >
+        <ReasoningTrigger>
+          {getTriggerText()}
         </ReasoningTrigger>
         <ReasoningContent
-          markdown={false} // Plain text, no markdown formatting
+          markdown={false}
           className="mt-2"
-          contentClassName="text-sm leading-relaxed whitespace-pre-wrap"
+          contentClassName="text-sm leading-relaxed"
         >
-          {sanitizeContent(fullReasoningText)}
+          {validatedSteps ? (
+            // Structured display with sections, icons, and bullet points
+            <div className="space-y-4">
+              {validatedSteps.steps.map((step, index) => {
+                const StepIcon = step.icon ? ICON_MAP[step.icon] : null;
+                return (
+                  <div key={index} className="space-y-1.5">
+                    {/* Section header with icon and title */}
+                    <div className="flex items-start gap-2">
+                      {StepIcon && (
+                        <StepIcon
+                          className="size-4 mt-0.5 text-muted-foreground/70 shrink-0"
+                          aria-hidden="true"
+                        />
+                      )}
+                      <h4 className="font-medium text-foreground/90 text-sm">
+                        {sanitizeContent(step.title)}
+                      </h4>
+                    </div>
+
+                    {/* Items as bullet points */}
+                    <ul className="space-y-1 pl-6 text-muted-foreground">
+                      {step.items.map((item, itemIndex) => (
+                        <li
+                          key={itemIndex}
+                          className="text-sm list-disc ml-0.5"
+                        >
+                          {sanitizeContent(item)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            // Fallback: continuous text for non-structured reasoning
+            <div className="whitespace-pre-wrap text-muted-foreground">
+              {sanitizeContent(fallbackText)}
+            </div>
+          )}
         </ReasoningContent>
       </Reasoning>
     </div>

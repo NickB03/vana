@@ -106,21 +106,28 @@ export async function generateStructuredReasoning(
   } = options;
 
   // Construct reasoning prompt with strict JSON output instructions
+  // Enhanced for Gemini-style ticker display: short, action-oriented titles
   const reasoningPrompt = `You are an AI assistant that breaks down complex reasoning into clear, structured steps.
 
 **Task:** Analyze the user's request and generate structured reasoning steps following a research → analysis → solution pattern.
+
+**IMPORTANT - Title Format for Ticker Display:**
+Titles appear in a streaming ticker like: "Analyzing request → Planning approach → Generating code"
+- Use present-tense action verbs (e.g., "Analyzing", "Planning", "Generating")
+- Keep titles SHORT (15-40 characters)
+- Make titles scannable and action-oriented
 
 **Output Format (JSON only, no markdown code blocks, no explanation):**
 {
   "steps": [
     {
       "phase": "research|analysis|solution",
-      "title": "Brief step description (10-80 chars)",
+      "title": "Action phrase in present tense (15-40 chars)",
       "icon": "search|lightbulb|target",
       "items": ["Detailed point 1 (20-200 chars)", "Detailed point 2", ...]
     }
   ],
-  "summary": "Overall summary (max 200 chars)"
+  "summary": "Concise outcome summary (max 150 chars)"
 }
 
 **Example:**
@@ -130,27 +137,27 @@ Response:
   "steps": [
     {
       "phase": "research",
-      "title": "Understanding the performance problem",
+      "title": "Analyzing query performance",
       "icon": "search",
       "items": [
-        "Current query execution time is 2-3 seconds",
-        "Database has 10M+ records with complex JOINs",
+        "Query execution time averaging 2-3 seconds",
+        "Database contains 10M+ records with complex JOINs",
         "Missing indexes on frequently queried columns"
       ]
     },
     {
       "phase": "analysis",
-      "title": "Identifying optimization opportunities",
+      "title": "Identifying bottlenecks",
       "icon": "lightbulb",
       "items": [
         "N+1 query pattern detected in ORM usage",
-        "No query result caching in place",
+        "No query result caching configured",
         "Inefficient JOIN order in multi-table queries"
       ]
     },
     {
       "phase": "solution",
-      "title": "Implementing performance improvements",
+      "title": "Implementing optimizations",
       "icon": "target",
       "items": [
         "Add composite index on (category_id, created_at)",
@@ -159,7 +166,7 @@ Response:
       ]
     }
   ],
-  "summary": "Optimize with indexing, caching, and query refactoring for 10x faster queries"
+  "summary": "10x faster queries with indexing, caching, and query refactoring"
 }
 
 **User Request:** ${userMessage}
@@ -169,10 +176,10 @@ ${conversationHistory.slice(-3).map(m => `${m.role}: ${m.content}`).join('\n')}
 
 **Constraints:**
 - Maximum ${maxSteps} steps
-- Each item: 20-200 characters
-- Title: 10-80 characters
+- Title: 15-40 characters, present-tense action verb (e.g., "Analyzing...", "Planning...", "Building...")
+- Each item: 20-200 characters with specific details
+- Summary: max 150 characters, focus on outcome
 - Use appropriate phase and icon for each step
-- Focus on actionable insights
 - Return ONLY the JSON object, no markdown formatting
 
 Generate reasoning steps as JSON:`;
