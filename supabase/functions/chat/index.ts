@@ -37,7 +37,9 @@ import {
   createFallbackReasoning,
   type StructuredReasoning,
 } from "../_shared/reasoning-generator.ts";
-import { TAVILY_CONFIG } from "../_shared/config.ts";
+import { TAVILY_CONFIG, MODELS } from "../_shared/config.ts";
+import { selectContext, extractEntities } from "../_shared/context-selector.ts";
+import { calculateContextBudget } from "../_shared/token-counter.ts";
 import { getArtifactGuidance } from "./intent-detector-embeddings.ts";
 import {
   validateArtifactRequest,
@@ -316,29 +318,52 @@ serve(async (req) => {
     console.log("🎯 Intent detected: REGULAR CHAT");
     console.log("🔀 Using: Gemini 2.5 Flash Lite via OpenRouter (streaming response)");
 
-    // Try to get cached context with summary
-    let contextMessages = messages;
-    try {
-      const cacheResponse = await supabase.functions.invoke("cache-manager", {
-        body: { sessionId, operation: "get" },
-      });
-      
-      if (cacheResponse.data?.cached) {
-        const { messages: cachedMessages, summary } = cacheResponse.data.cached;
-        console.log("Using cached context with summary");
-        
-        // If we have a summary, use it as context instead of all messages
-        if (summary) {
-          contextMessages = [
-            { role: "system", content: `Previous conversation summary: ${summary}` },
-            ...messages.slice(-5) // Include last 5 messages for immediate context
-          ];
-        } else {
-          contextMessages = cachedMessages;
-        }
+    // ========================================
+    // Smart Context Management (Issue #127)
+    // ========================================
+    // Apply token-aware context selection to fit within model limits
+    // while preserving important messages (code, decisions, entities)
+    const tokenBudget = calculateContextBudget(MODELS.GEMINI_FLASH);
+    const trackedEntities = extractEntities(messages.map(m => ({
+      role: m.role,
+      content: m.content,
+    })));
+
+    console.log(`[${requestId}] Context management: budget=${tokenBudget}, entities=${trackedEntities.size}`);
+
+    const contextResult = await selectContext(
+      messages.map(m => ({ role: m.role, content: m.content })),
+      tokenBudget,
+      {
+        trackedEntities,
+        alwaysKeepRecent: 5,
+        summaryBudget: 500,
       }
-    } catch (cacheError) {
-      console.warn("Cache fetch failed, using provided messages:", cacheError);
+    );
+
+    console.log(`[${requestId}] Context strategy: ${contextResult.strategy}, tokens=${contextResult.totalTokens}, kept=${contextResult.selectedMessages.length}/${messages.length}`);
+
+    // Use selected messages as context
+    let contextMessages = contextResult.selectedMessages;
+
+    // If we need to summarize, try to get cached summary or trigger summarization
+    if (contextResult.summarizedMessages.length > 0) {
+      try {
+        const cacheResponse = await supabase.functions.invoke("cache-manager", {
+          body: { sessionId, operation: "get" },
+        });
+
+        if (cacheResponse.data?.cached?.summary) {
+          // Prepend cached summary to context
+          contextMessages = [
+            { role: "system", content: `Previous conversation summary: ${cacheResponse.data.cached.summary}` },
+            ...contextResult.selectedMessages,
+          ];
+          console.log(`[${requestId}] Using cached summary for ${contextResult.summarizedMessages.length} summarized messages`);
+        }
+      } catch (cacheError) {
+        console.warn(`[${requestId}] Cache fetch failed:`, cacheError);
+      }
     }
 
     // Add artifact type guidance based on intent detection
