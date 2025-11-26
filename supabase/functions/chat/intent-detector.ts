@@ -23,6 +23,26 @@ interface Pattern {
 export function detectIntent(prompt: string): IntentResult {
   const lowerPrompt = prompt.toLowerCase();
 
+  // HIGH CONFIDENCE PATTERNS - These should trigger immediate routing (score >= 25)
+  const HIGH_CONFIDENCE_PATTERNS: Pattern[] = [
+    // Explicit creation verbs + artifact type
+    { intent: 'react', pattern: /^(create|build|make|generate)\s+(a|an|me)?\s*(react|interactive|web)\s*(app|component|application|interface|dashboard)/i, score: 30 },
+    { intent: 'mermaid', pattern: /^(draw|create|generate|make)\s+(a|an|me)?\s*(mermaid|flowchart|sequence|class|state)\s*(diagram|chart)/i, score: 30 },
+    { intent: 'svg', pattern: /^(generate|create|make|draw)\s+(a|an|me)?\s*(svg|vector|icon|logo)/i, score: 30 },
+    { intent: 'image', pattern: /^(generate|create|draw|paint|make)\s+(a|an|me)?\s*(image|picture|photo|artwork|illustration)\s+(of|showing|depicting)/i, score: 30 },
+  ];
+
+  // NEGATIVE PATTERNS - These should prevent false positives (checked FIRST)
+  const NEGATIVE_PATTERNS: RegExp[] = [
+    // Questions about concepts (not creation requests)
+    /^(what|how|why|when|where|who)\s+/i,
+    /^(explain|tell me about|describe|define)\s+/i,
+    /^(can you|could you|would you)\s+(explain|tell|describe|help me understand)/i,
+    // Clarification requests
+    /\?$/,  // Ends with question mark
+    /^(is it|are there|does it|do they)\s+/i,
+  ];
+
   const patterns: Pattern[] = [
     // --- Specific, High-Value Intents (should win most of the time) ---
     { intent: 'mermaid', pattern: /\b(flowchart|flow chart|sequence diagram|class diagram|state diagram|gantt chart|er diagram|entity relationship diagram|decision tree)\b/i, score: 25 },
@@ -50,6 +70,17 @@ export function detectIntent(prompt: string): IntentResult {
     { intent: 'react', pattern: /\b(chart|graph|visualization)\b.*\b(interactive|dynamic)\b/i, score: 15 }, // React wins if interactive
   ];
 
+  // Check negative patterns FIRST - if match, return chat intent immediately
+  for (const negPattern of NEGATIVE_PATTERNS) {
+    if (negPattern.test(prompt)) {
+      return {
+        type: 'chat',
+        confidence: 'high',
+        reasoning: `Question/clarification pattern detected: ${negPattern.source}`,
+      };
+    }
+  }
+
   const scores: Record<IntentResult['type'], number> = {
     image: 0,
     svg: 0,
@@ -62,6 +93,18 @@ export function detectIntent(prompt: string): IntentResult {
 
   const reasoning: Partial<Record<IntentResult['type'], string[]>> = {};
 
+  // Check high confidence patterns first
+  for (const { intent, pattern, score } of HIGH_CONFIDENCE_PATTERNS) {
+    if (pattern.test(lowerPrompt)) {
+      scores[intent] += score;
+      if (!reasoning[intent]) {
+        reasoning[intent] = [];
+      }
+      reasoning[intent]?.push(`HIGH: '${pattern.source}' matched (+${score})`);
+    }
+  }
+
+  // Then check regular patterns
   for (const { intent, pattern, score } of patterns) {
     if (pattern.test(lowerPrompt)) {
       scores[intent] += score;
@@ -84,18 +127,31 @@ export function detectIntent(prompt: string): IntentResult {
     }
   }
 
-  // If the score is too low, it's likely just a chat message
-  const MIN_CONFIDENCE_SCORE = 10;
+  // Calibrated confidence thresholds:
+  // High confidence (score >= 25): auto-route to artifact/image
+  // Medium confidence (score 15-24): still route but log for analysis
+  // Low confidence (score < 15): default to chat
+  const MIN_CONFIDENCE_SCORE = 15;
   if (maxScore < MIN_CONFIDENCE_SCORE) {
     return {
       type: 'chat',
       confidence: 'high',
-      reasoning: 'No specific artifact creation intent detected with enough confidence.',
+      reasoning: `No specific artifact creation intent detected (max score: ${maxScore})`,
     };
   }
 
-  const confidence = maxScore >= 20 ? 'high' : 'medium';
-  const finalReasoning = `Detected '${topIntent}' with score ${maxScore}. Reasons: [${(reasoning[topIntent] || []).join(', ')}]`;
+  // Set confidence based on calibrated thresholds
+  let confidence: 'high' | 'medium' | 'low';
+  if (maxScore >= 25) {
+    confidence = 'high';
+  } else if (maxScore >= 15) {
+    confidence = 'medium';
+    console.log(`⚠️  Medium confidence detection (score: ${maxScore}) - routing anyway but logging for analysis`);
+  } else {
+    confidence = 'low';
+  }
+
+  const finalReasoning = `Detected '${topIntent}' with score ${maxScore} (confidence: ${confidence}). Reasons: [${(reasoning[topIntent] || []).join(', ')}]`;
 
   return {
     type: topIntent,

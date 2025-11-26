@@ -243,8 +243,10 @@ const handleSuggestionClick = async (suggestion: string) => {
 
 ### P3 Feature Details
 
-#### #21: Inline Generative UI (Tool Calling) 📋 PLANNED
+#### #21: MCP UI Integration - Inline Generative UI 📋 PLANNED
 **User Impact**: Rich, contextual widgets embedded in chat (not separate artifacts)
+
+**Feasibility**: ✅ Confirmed (2025-11-26) - Implementation plan at `.claude/plans/mcp-ui-integration.md`
 
 **Vision**: Transform conversational responses into interactive visualizations:
 ```
@@ -261,40 +263,38 @@ AI:   ┌───────────────────────�
 - **Inline UI**: Small contextual widgets in message flow (weather, stocks, calculators)
 - **Use Case**: "Show me data" vs "Create something"
 
-**Implementation Architecture**:
+**Implementation Approach: MCP UI**
 
-1. **Backend - Tool Calling Support** (6-8 hours)
-   - Add function/tool definitions to OpenRouter requests
-   - Tool execution layer for external APIs (OpenWeather, Alpha Vantage)
-   - Streaming support for tool call results
+We will use [MCP UI](https://github.com/MCP-UI-Org/mcp-ui) - a community-driven SDK that enables rich, interactive web components via the Model Context Protocol.
 
-2. **Frontend - Component Registry** (3-4 hours)
-   - Mapping tool names → React components
-   - `InlineToolUI` wrapper component
-   - Status handling (running/complete/error)
+**Why MCP UI?**
+- ✅ **Standardized Protocol**: Community-maintained SDKs (TypeScript, Python, Ruby)
+- ✅ **Iframe Isolation**: Secure rendering in sandboxed iframes (matches our artifact pattern)
+- ✅ **Action System**: Built-in support for tool calls, prompts, notifications, links
+- ✅ **Future-Proof**: Path to Remote DOM rendering with host component library
 
-3. **Example Widgets** (6-8 hours)
-   - WeatherWidget (temperature, conditions, humidity)
-   - StockWidget (price, change, chart)
-   - CalculatorWidget (expression evaluation)
-   - DateTimeWidget (timezone conversions)
-   - UnitConverterWidget (length, weight, temperature)
+**MCP UI Resource Types**:
+| Type | Use Case |
+|------|----------|
+| `text/html` | Simple HTML widgets (MVP) |
+| `text/uri-list` | Embedded external URLs |
+| `application/vnd.mcp-ui.remote-dom+javascript` | Host-styled components (future) |
 
-4. **Message Rendering Overhaul** (6-8 hours)
-   - Interleaved text + tool UI rendering
-   - Parse tool call markers in message content
-   - Update `MessageWithArtifacts.tsx` for mixed content
+**Implementation Phases**:
 
-5. **Streaming Integration** (4-6 hours)
-   - Handle tool calls during SSE streaming
-   - Show loading states for pending tool results
-   - Update UI when tool execution completes
+**Phase 1: MVP (1-2 weeks)** - 13-19 hours
+1. Type definitions (`src/types/mcpUI.ts`) - Zod schemas, SSE event parsing
+2. MCPUIRenderer component - Render HTML widgets in sandboxed iframes
+3. Server integration - Add `mcp_ui` event to streaming, demo tools
+4. Testing - Type validation, component tests, browser verification
 
-6. **Testing & Refinement** (4-6 hours)
-   - Tool execution reliability
-   - Streaming edge cases
-   - Mobile responsive design
-   - Rate limiting for tool calls
+**Phase 2: Production (2-4 weeks)** - 14-20 hours
+5. Full MCP Protocol - Connect to external MCP servers
+6. Real widgets - Weather (OpenWeather), Stock (Alpha Vantage), Calculator
+
+**Phase 3: Future** - 14-20 hours
+7. Remote DOM support - Host component library rendering
+8. Artifact migration - Unify artifacts and MCP UI rendering
 
 **Benefits**:
 - ✅ **Best-in-Class UX**: No other AI chat (Claude, ChatGPT, Gemini) has both inline UI + full artifacts

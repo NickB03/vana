@@ -280,7 +280,7 @@ export async function needsClarification(prompt: string): Promise<string | null>
 
 /**
  * Determines if a prompt should trigger image generation API
- * Only executes with HIGH confidence - medium confidence requires clarification
+ * Only executes with HIGH confidence (score >= 25)
  */
 export async function shouldGenerateImage(prompt: string): Promise<boolean> {
   try {
@@ -291,8 +291,17 @@ export async function shouldGenerateImage(prompt: string): Promise<boolean> {
       confidence: intent.confidence,
       reasoning: intent.reasoning
     });
-    // Only execute image generation with HIGH confidence
-    const result = intent.type === 'image' && intent.confidence === 'high';
+
+    // Execute image generation with HIGH or MEDIUM confidence
+    // High confidence (score >= 25): auto-route
+    // Medium confidence (score 15-24): still route but log for analysis
+    const isHighOrMedium = intent.confidence === 'high' || intent.confidence === 'medium';
+    const result = intent.type === 'image' && isHighOrMedium;
+
+    if (result && intent.confidence === 'medium') {
+      console.log(`⚠️  MEDIUM confidence image detection - routing anyway but logging for analysis`);
+    }
+
     console.log(`🔍 [shouldGenerateImage] Final decision: ${result} (type=${intent.type}, confidence=${intent.confidence})`);
     return result;
   } catch (error) {
@@ -304,11 +313,36 @@ export async function shouldGenerateImage(prompt: string): Promise<boolean> {
 
 /**
  * Determines if a prompt should trigger artifact generation (non-image artifacts)
- * Only executes with HIGH confidence - medium confidence requires clarification
+ * Only executes with HIGH confidence (score >= 25)
+ * Medium confidence (15-24) still routes but logs for analysis
  */
 export async function shouldGenerateArtifact(prompt: string): Promise<boolean> {
-  const intent = await detectIntent(prompt);
-  return intent.type !== 'chat' && intent.type !== 'image' && intent.confidence === 'high';
+  try {
+    console.log('🔍 [shouldGenerateArtifact] Analyzing prompt:', prompt.substring(0, 100));
+    const intent = await detectIntent(prompt);
+    console.log('🔍 [shouldGenerateArtifact] Intent result:', {
+      type: intent.type,
+      confidence: intent.confidence,
+      reasoning: intent.reasoning
+    });
+
+    // Execute artifact generation with HIGH or MEDIUM confidence
+    // High confidence (score >= 25): auto-route
+    // Medium confidence (score 15-24): still route but log for analysis
+    const isHighOrMedium = intent.confidence === 'high' || intent.confidence === 'medium';
+    const result = intent.type !== 'chat' && intent.type !== 'image' && isHighOrMedium;
+
+    if (result && intent.confidence === 'medium') {
+      console.log(`⚠️  MEDIUM confidence artifact detection (${intent.type}) - routing anyway but logging for analysis`);
+    }
+
+    console.log(`🔍 [shouldGenerateArtifact] Final decision: ${result} (type=${intent.type}, confidence=${intent.confidence})`);
+    return result;
+  } catch (error) {
+    console.error('❌ [shouldGenerateArtifact] Error detecting intent:', error);
+    // Fallback to false on error (don't generate artifact)
+    return false;
+  }
 }
 
 /**

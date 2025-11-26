@@ -48,21 +48,45 @@ export async function detectUserIntent(options: IntentOptions): Promise<IntentRe
     };
   }
 
-  // TEMPORARILY DISABLED: Intent detection causing false positives
-  // Only use explicit force modes for now
-  const isImageRequest = false; // forceImageMode only
-  const isArtifactRequest = false; // forceArtifactMode only
+  // INTENT DETECTION RE-ENABLED with calibrated thresholds
+  // Phase 1: Regex-based detection with improved accuracy
+  console.log('🔍 Starting intent detection for:', lastUserMessage.substring(0, 100));
+
+  // Check for image generation request
+  const isImageRequest = await shouldGenerateImage(lastUserMessage);
+  if (isImageRequest) {
+    console.log('🎯 INTENT: Image generation detected (high confidence)');
+    return {
+      type: 'image',
+      shouldSearch: false, // Images don't need web search
+      reasoning: 'High confidence image generation request detected'
+    };
+  }
+
+  // Check for artifact generation request
+  const isArtifactRequest = await shouldGenerateArtifact(lastUserMessage);
+  if (isArtifactRequest) {
+    const artifactType = await getArtifactType(lastUserMessage);
+    console.log(`🎯 INTENT: Artifact generation detected (type: ${artifactType})`);
+    return {
+      type: 'artifact',
+      artifactType,
+      shouldSearch: false, // Artifacts don't need web search
+      reasoning: `High confidence ${artifactType} artifact request detected`
+    };
+  }
 
   // Determine if we should perform web search
   // Web search is skipped for artifact/image generation
   const shouldSearch = TAVILY_CONFIG.ALWAYS_SEARCH_ENABLED ||
     shouldPerformWebSearch(lastUserMessage);
 
+  console.log('🎯 INTENT: Regular chat (no artifact/image intent detected)');
   // Default to regular chat
   return {
     type: 'chat',
     shouldSearch,
-    reasoning: 'Regular chat interaction'
+    reasoning: 'Regular chat interaction - no high confidence artifact/image intent detected'
   };
 }
 
