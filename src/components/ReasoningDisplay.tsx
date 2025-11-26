@@ -12,6 +12,8 @@ import {
   ReasoningStep,
 } from "@/types/reasoning";
 import { Search, Lightbulb, Target, Sparkles } from "lucide-react";
+import { ANIMATION_DURATIONS, TAILWIND_DURATIONS } from "@/utils/animationConstants";
+import { GAP_SPACING } from "@/utils/spacingConstants";
 
 interface ReasoningDisplayProps {
   // Support both old and new formats for backward compatibility
@@ -34,11 +36,14 @@ const ICON_MAP = {
 
 /**
  * Animation timing constants
+ * Uses design system values where possible for consistency
  * Note: Users with prefers-reduced-motion will skip animations via CSS
  */
 const ANIMATION = {
-  SECTION_DISPLAY_MS: 2500, // How long each section shows before transitioning
-  FADE_DURATION_MS: 400,    // CSS transition duration for fade
+  SECTION_DISPLAY_MS: 2500,                           // How long each section shows before transitioning
+  FADE_DURATION_MS: ANIMATION_DURATIONS.moderate * 1000, // 300ms - aligned with design system
+  WORD_FADE_DURATION_MS: ANIMATION_DURATIONS.slow * 1000, // 500ms - aligned with design system
+  WORD_DELAY_MS: 50,                                  // Optimized from 80ms for snappier feel
 } as const;
 
 /**
@@ -230,11 +235,24 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   // Show "Thinking..." while waiting for data
   if (isStreaming && !validatedSteps) {
     return (
-      <div className="mb-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 text-sm text-muted-foreground">
-          <div className="w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
-          <span>Thinking...</span>
-        </div>
+      <div
+        className={cn(
+          "inline-flex items-center rounded-full bg-muted/50 overflow-hidden text-muted-foreground",
+          // Responsive padding: tighter on mobile, comfortable on desktop
+          "px-2.5 py-1.5 sm:px-3 sm:py-2",
+          // Touch-friendly minimum height (44px for accessibility)
+          "min-h-[44px]",
+          // Responsive text size
+          "text-xs sm:text-sm",
+          // Use design system gap
+          GAP_SPACING.xs
+        )}
+        role="status"
+        aria-live="polite"
+        aria-label="Thinking..."
+      >
+        <div className="w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin shrink-0" />
+        <span>Thinking...</span>
       </div>
     );
   }
@@ -244,55 +262,108 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
     ? formatReasoningAsContinuousText(validatedSteps)
     : reasoning || "";
 
+  // Split text into words for word-by-word fade animation
+  const renderFadeWords = (text: string) => {
+    const words = text.split(/(\s+)/); // Split by whitespace but keep the spaces
+
+    return words.map((word, idx) => {
+      const isWhitespace = /^\s+$/.test(word);
+
+      return (
+        <span
+          key={`${word}-${idx}`}
+          className={cn(
+            "fade-word",
+            isWhitespace && "fade-word-space"
+          )}
+          style={{
+            animationDelay: `${idx * ANIMATION.WORD_DELAY_MS}ms`,
+            animationDuration: `${ANIMATION.WORD_FADE_DURATION_MS}ms`,
+          }}
+        >
+          {word}
+        </span>
+      );
+    });
+  };
+
   // During streaming: show animated pill (NOT expandable)
   if (isStreaming && validatedSteps && !animationComplete) {
+    const sectionTitle = currentSection?.title || "Processing...";
+    const totalSections = validatedSteps.steps.length;
+
     return (
-      <div className="mb-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 overflow-hidden">
-          {/* Icon */}
-          {IconComponent && (
-            <IconComponent
-              className="size-4 text-muted-foreground/70 shrink-0"
+      <div
+        className={cn(
+          "inline-flex items-center rounded-full bg-muted/50 overflow-hidden",
+          // Responsive padding: tighter on mobile, comfortable on desktop
+          "px-2.5 py-1.5 sm:px-3 sm:py-2",
+          // Touch-friendly minimum height (44px for accessibility)
+          "min-h-[44px]",
+          // Max width to prevent overflow on narrow screens
+          "max-w-[calc(100vw-3rem)]",
+          // Use design system gap
+          GAP_SPACING.xs
+        )}
+        role="status"
+        aria-live="polite"
+        aria-label={`Thinking: ${sectionTitle}`}
+      >
+        {/* Icon */}
+        {IconComponent && (
+          <IconComponent
+            className="size-4 text-muted-foreground/70 shrink-0"
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Animated section title with word-by-word fade effect */}
+        <div className="relative overflow-hidden max-w-[200px] sm:max-w-[300px]">
+          <div
+            className={cn(
+              "text-xs sm:text-sm text-muted-foreground whitespace-nowrap transition-all",
+              TAILWIND_DURATIONS.moderate,
+              // Fade-in: show words with staggered animation
+              animationState === 'fade-in' && "opacity-100",
+              // Visible: fully shown
+              animationState === 'visible' && "opacity-100",
+              // Fade-out: fade entire container to right
+              animationState === 'fade-out' && "animate-fade-out-right"
+            )}
+          >
+            {animationState === 'fade-in' ? (
+              // Word-by-word fade during fade-in
+              renderFadeWords(sanitizeContent(sectionTitle))
+            ) : (
+              // Static text during visible and fade-out states
+              <span>{sanitizeContent(sectionTitle)}</span>
+            )}
+          </div>
+        </div>
+
+        {/* Progress indicator: dots showing which section we're on */}
+        <div
+          className="flex gap-1 ml-2"
+          role="group"
+          aria-label={`Step ${currentSectionIndex + 1} of ${totalSections}`}
+        >
+          {validatedSteps.steps.map((step, idx) => (
+            <div
+              key={idx}
+              className={cn(
+                "w-1.5 h-1.5 rounded-full",
+                TAILWIND_DURATIONS.moderate,
+                "transition-colors",
+                idx === currentSectionIndex
+                  ? "bg-foreground/60"
+                  : idx < currentSectionIndex
+                  ? "bg-foreground/30"
+                  : "bg-muted-foreground/20"
+              )}
+              role="presentation"
               aria-hidden="true"
             />
-          )}
-
-          {/* Animated section title with fade effect */}
-          <div className="relative overflow-hidden">
-            <span
-              className={cn(
-                "text-sm text-muted-foreground whitespace-nowrap transition-all",
-                // Fade-in: start from left (translateX) and opacity 0
-                animationState === 'fade-in' && "animate-fade-in-left",
-                // Visible: fully shown
-                animationState === 'visible' && "opacity-100",
-                // Fade-out: fade to right
-                animationState === 'fade-out' && "animate-fade-out-right"
-              )}
-              style={{
-                transitionDuration: `${ANIMATION.FADE_DURATION_MS}ms`,
-              }}
-            >
-              {sanitizeContent(currentSection?.title || "Processing...")}
-            </span>
-          </div>
-
-          {/* Progress indicator: dots showing which section we're on */}
-          <div className="flex gap-1 ml-2">
-            {validatedSteps.steps.map((_, idx) => (
-              <div
-                key={idx}
-                className={cn(
-                  "w-1.5 h-1.5 rounded-full transition-colors duration-300",
-                  idx === currentSectionIndex
-                    ? "bg-foreground/60"
-                    : idx < currentSectionIndex
-                    ? "bg-foreground/30"
-                    : "bg-muted-foreground/20"
-                )}
-              />
-            ))}
-          </div>
+          ))}
         </div>
       </div>
     );
@@ -300,63 +371,61 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
 
   // After streaming or animation complete: show expandable reasoning
   return (
-    <div className="mb-2">
-      <Reasoning
-        isStreaming={false}
-        showTimer={false}
-        className=""
+    <Reasoning
+      isStreaming={false}
+      showTimer={false}
+      className=""
+    >
+      <ReasoningTrigger>
+        {getTriggerText()}
+      </ReasoningTrigger>
+      <ReasoningContent
+        markdown={false}
+        className="mt-2"
+        contentClassName="text-sm leading-relaxed"
       >
-        <ReasoningTrigger>
-          {getTriggerText()}
-        </ReasoningTrigger>
-        <ReasoningContent
-          markdown={false}
-          className="mt-2"
-          contentClassName="text-sm leading-relaxed"
-        >
-          {validatedSteps ? (
-            // Structured display with sections, icons, and bullet points
-            <div className="space-y-4">
-              {validatedSteps.steps.map((step, index) => {
-                const StepIcon = step.icon ? ICON_MAP[step.icon] : null;
-                return (
-                  <div key={index} className="space-y-1.5">
-                    {/* Section header with icon and title */}
-                    <div className="flex items-start gap-2">
-                      {StepIcon && (
-                        <StepIcon
-                          className="size-4 mt-0.5 text-muted-foreground/70 shrink-0"
-                          aria-hidden="true"
-                        />
-                      )}
-                      <h4 className="font-medium text-foreground/90 text-sm">
-                        {sanitizeContent(step.title)}
-                      </h4>
-                    </div>
-
-                    {/* Items as bullet points */}
-                    <ul className="space-y-1 pl-6 text-muted-foreground">
-                      {step.items.map((item, itemIndex) => (
-                        <li
-                          key={itemIndex}
-                          className="text-sm list-disc ml-0.5"
-                        >
-                          {sanitizeContent(item)}
-                        </li>
-                      ))}
-                    </ul>
+        {validatedSteps ? (
+          // Structured display with sections, icons, and bullet points
+          <div className="space-y-4">
+            {validatedSteps.steps.map((step, index) => {
+              const StepIcon = step.icon ? ICON_MAP[step.icon] : null;
+              return (
+                <div key={index} className="space-y-1.5">
+                  {/* Section header with icon and title */}
+                  <div className="flex items-start gap-2">
+                    {StepIcon && (
+                      <StepIcon
+                        className="size-4 mt-0.5 text-muted-foreground/70 shrink-0"
+                        aria-hidden="true"
+                      />
+                    )}
+                    <h4 className="font-medium text-foreground/90 text-sm">
+                      {sanitizeContent(step.title)}
+                    </h4>
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            // Fallback: continuous text for non-structured reasoning
-            <div className="whitespace-pre-wrap text-muted-foreground">
-              {sanitizeContent(fallbackText)}
-            </div>
-          )}
-        </ReasoningContent>
-      </Reasoning>
-    </div>
+
+                  {/* Items as bullet points */}
+                  <ul className="space-y-1 pl-6 text-muted-foreground">
+                    {step.items.map((item, itemIndex) => (
+                      <li
+                        key={itemIndex}
+                        className="text-sm list-disc ml-0.5"
+                      >
+                        {sanitizeContent(item)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          // Fallback: continuous text for non-structured reasoning
+          <div className="whitespace-pre-wrap text-muted-foreground">
+            {sanitizeContent(fallbackText)}
+          </div>
+        )}
+      </ReasoningContent>
+    </Reasoning>
   );
 });

@@ -409,6 +409,27 @@ export function ChatInterface({
   // Render chat content (messages + input) - reusable for both mobile and desktop
   const renderChatContent = () => (
     <div className="flex flex-1 flex-col min-h-0 px-4 pt-4 pb-4">
+      {/* Guest mode banner - positioned above chat card */}
+      {isGuest && messages.length > 0 && (
+        <div className="mx-auto w-full max-w-5xl mb-3">
+          <SystemMessage
+            variant="action"
+            fill
+            cta={{
+              label: "Sign In",
+              onClick: () => navigate("/auth")
+            }}
+            className="text-xs py-1.5 pr-1.5 pl-2.5"
+          >
+            {guestMessageCount < guestMaxMessages ? (
+              <><strong>{guestMaxMessages - guestMessageCount}</strong> free message{guestMaxMessages - guestMessageCount !== 1 ? 's' : ''} left. Sign in for more!</>
+            ) : (
+              <>Free limit reached. Sign in to continue!</>
+            )}
+          </SystemMessage>
+        </div>
+      )}
+
       {/* Unified chat card with embedded prompt input */}
       <div className="relative mx-auto flex flex-1 min-h-0 w-full max-w-5xl rounded-3xl bg-black/50 backdrop-blur-sm shadow-[inset_-2px_0_4px_rgba(255,255,255,0.05)] border border-border/50">
         <ChatContainerRoot className="flex flex-1 flex-col min-h-0 overflow-hidden">
@@ -419,26 +440,8 @@ export function ChatInterface({
               CHAT_SPACING.message.gap
             )}
           aria-label="Chat conversation"
+          data-testid="message-list"
         >
-          {/* Guest mode system message - show after first message */}
-          {isGuest && messages.length > 0 && (
-            <div className="mx-auto w-full max-w-3xl px-4 py-3">
-              <SystemMessage
-                variant="action"
-                fill
-                cta={{
-                  label: "Sign In",
-                  onClick: () => navigate("/auth")
-                }}
-              >
-                {guestMessageCount < guestMaxMessages ? (
-                  <>You have <strong>{guestMaxMessages - guestMessageCount}</strong> free message{guestMaxMessages - guestMessageCount !== 1 ? 's' : ''} remaining. Sign in for increased limits on the free tier!</>
-                ) : (
-                  <>You've reached your free message limit. Sign in to continue chatting with increased limits!</>
-                )}
-              </SystemMessage>
-            </div>
-          )}
 
           {messages.map((message, index) => {
             const isAssistant = message.role === "assistant";
@@ -455,18 +458,17 @@ export function ChatInterface({
                   "chat-message mx-auto flex w-full max-w-3xl flex-col items-start",
                   CHAT_SPACING.message.container
                 )}
+                data-testid="chat-message"
               >
                 {isAssistant ? (
-                  <div className="group flex w-full flex-col gap-1">
+                  <div className="group flex w-full flex-col gap-2">
                     {hasReasoning && (
                       <ReasoningErrorBoundary>
-                        <div className="mb-0.5 w-full">
-                          <ReasoningDisplay
-                            reasoning={message.reasoning}
-                            reasoningSteps={message.reasoning_steps}
-                            isStreaming={false}
-                          />
-                        </div>
+                        <ReasoningDisplay
+                          reasoning={message.reasoning}
+                          reasoningSteps={message.reasoning_steps}
+                          isStreaming={false}
+                        />
                       </ReasoningErrorBoundary>
                     )}
                     <MessageWithArtifacts
@@ -588,7 +590,7 @@ export function ChatInterface({
                 CHAT_SPACING.message.container
               )}
             >
-              <div className="flex w-full flex-col gap-1">
+              <div className="flex w-full flex-col gap-2">
                 {/* Always show reasoning during streaming, even if no data yet */}
                 <ReasoningErrorBoundary fallback={<ThinkingIndicator status="Loading reasoning..." />}>
                   <ReasoningDisplay

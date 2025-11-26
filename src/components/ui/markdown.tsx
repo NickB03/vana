@@ -61,6 +61,18 @@ const INITIAL_COMPONENTS: Partial<Components> = {
   pre: function PreComponent({ children }) {
     return <>{children}</>
   },
+  img: function ImageComponent({ src, alt, ...props }) {
+    return (
+      <img
+        src={src}
+        alt={alt || ""}
+        loading="lazy"
+        decoding="async"
+        className="rounded-lg max-w-full h-auto"
+        {...props}
+      />
+    )
+  },
 }
 
 const MemoizedMarkdownBlock = memo(

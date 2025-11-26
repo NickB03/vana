@@ -10,15 +10,34 @@
 import { HTTP_STATUS } from "./config.ts";
 
 /**
+ * Standardized error codes for consistent error handling across all Edge Functions
+ */
+export enum ErrorCode {
+  // 400-level errors (client errors)
+  INVALID_INPUT = "INVALID_INPUT",
+  UNAUTHORIZED = "UNAUTHORIZED",
+  FORBIDDEN = "FORBIDDEN",
+  RATE_LIMITED = "RATE_LIMITED",
+
+  // 500-level errors (server errors)
+  AI_ERROR = "AI_ERROR",
+  STORAGE_ERROR = "STORAGE_ERROR",
+  INTERNAL_ERROR = "INTERNAL_ERROR",
+  SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE"
+}
+
+/**
  * Error response data structure
  */
 export interface ErrorResponse {
   error: string;
+  code: ErrorCode;
   requestId: string;
   details?: string;
   retryable?: boolean;
   rateLimitExceeded?: boolean;
   resetAt?: string;
+  timestamp: string;
 }
 
 /**
@@ -114,8 +133,10 @@ export class ErrorResponseBuilder {
     return this.jsonResponse(
       {
         error: message,
+        code: ErrorCode.INVALID_INPUT,
         requestId: this.requestId,
-        details
+        details,
+        timestamp: new Date().toISOString()
       },
       HTTP_STATUS.BAD_REQUEST
     );
@@ -128,8 +149,10 @@ export class ErrorResponseBuilder {
     return this.jsonResponse(
       {
         error: message,
+        code: ErrorCode.UNAUTHORIZED,
         requestId: this.requestId,
-        details
+        details,
+        timestamp: new Date().toISOString()
       },
       HTTP_STATUS.UNAUTHORIZED
     );
@@ -142,8 +165,10 @@ export class ErrorResponseBuilder {
     return this.jsonResponse(
       {
         error: message,
+        code: ErrorCode.FORBIDDEN,
         requestId: this.requestId,
-        details
+        details,
+        timestamp: new Date().toISOString()
       },
       HTTP_STATUS.FORBIDDEN
     );
@@ -161,9 +186,11 @@ export class ErrorResponseBuilder {
     return new Response(
       JSON.stringify({
         error: message,
+        code: ErrorCode.RATE_LIMITED,
         rateLimitExceeded: true,
         resetAt,
-        requestId: this.requestId
+        requestId: this.requestId,
+        timestamp: new Date().toISOString()
       }),
       {
         status: HTTP_STATUS.TOO_MANY_REQUESTS,
@@ -187,8 +214,10 @@ export class ErrorResponseBuilder {
     return this.jsonResponse(
       {
         error: message,
+        code: ErrorCode.INTERNAL_ERROR,
         requestId: this.requestId,
-        details
+        details,
+        timestamp: new Date().toISOString()
       },
       HTTP_STATUS.INTERNAL_SERVER_ERROR
     );
@@ -215,8 +244,10 @@ export class ErrorResponseBuilder {
     return new Response(
       JSON.stringify({
         error: message,
+        code: ErrorCode.SERVICE_UNAVAILABLE,
         requestId: this.requestId,
-        retryable
+        retryable,
+        timestamp: new Date().toISOString()
       }),
       {
         status: HTTP_STATUS.SERVICE_UNAVAILABLE,
@@ -243,9 +274,11 @@ export class ErrorResponseBuilder {
       return this.jsonResponse(
         {
           error: "API quota exceeded. Please try again in a moment.",
+          code: ErrorCode.RATE_LIMITED,
           requestId: this.requestId,
           retryable: true,
-          details: errorText.substring(0, 200)
+          details: errorText.substring(0, 200),
+          timestamp: new Date().toISOString()
         },
         HTTP_STATUS.TOO_MANY_REQUESTS,
         retryAfter ? { "Retry-After": retryAfter } : undefined
@@ -264,9 +297,11 @@ export class ErrorResponseBuilder {
     return this.jsonResponse(
       {
         error: response.status >= 500 ? "AI service error" : "Request failed",
+        code: ErrorCode.AI_ERROR,
         requestId: this.requestId,
         details: errorText.substring(0, 200),
-        retryable: response.status >= 500
+        retryable: response.status >= 500,
+        timestamp: new Date().toISOString()
       },
       response.status
     );

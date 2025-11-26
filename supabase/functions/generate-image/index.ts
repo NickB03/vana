@@ -1,8 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
-import { MODELS, RATE_LIMITS } from "../_shared/config.ts";
+import { MODELS, RATE_LIMITS, STORAGE_CONFIG } from "../_shared/config.ts";
 import { ErrorResponseBuilder } from "../_shared/error-handler.ts";
+import { uploadWithRetry } from "../_shared/storage-retry.ts";
 
 const OPENROUTER_GEMINI_IMAGE_KEY = Deno.env.get("OPENROUTER_GEMINI_IMAGE_KEY");
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
@@ -316,7 +317,7 @@ serve(async (req) => {
 
     console.log(`✅ [${requestId}] Image ${mode} successful`);
 
-    // Upload to Supabase Storage with signed URL
+    // Upload to Supabase Storage with retry logic and signed URL
     let imageUrl = imageData; // Default to base64 if upload fails
     let storageWarning: string | undefined;
     let storageSucceeded = false;
@@ -333,34 +334,26 @@ serve(async (req) => {
 
       console.log(`[${requestId}] Uploading image to storage: ${fileName}`);
 
-      // Upload to storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('generated-images')
-        .upload(fileName, blob, {
-          contentType: 'image/png',
-          cacheControl: '31536000' // 1 year cache
-        });
+      // Upload to storage with automatic retry logic
+      const uploadResult = await uploadWithRetry(
+        supabase,
+        STORAGE_CONFIG.BUCKET_NAME,
+        fileName,
+        blob,
+        {
+          contentType: STORAGE_CONFIG.DEFAULT_CONTENT_TYPE,
+          cacheControl: STORAGE_CONFIG.CACHE_CONTROL
+        },
+        STORAGE_CONFIG.SIGNED_URL_EXPIRY_SECONDS,
+        requestId
+      );
 
-      if (uploadError) {
-        console.error(`[${requestId}] Storage upload error:`, uploadError);
-        storageWarning = `Image storage failed (${uploadError.message}). Using temporary base64 - image may not persist long-term.`;
-      } else {
-        // Get signed URL (7 days expiry) for private bucket access
-        const { data: signedUrlData, error: urlError } = await supabase.storage
-          .from('generated-images')
-          .createSignedUrl(fileName, 604800); // 7 days = 604800 seconds
+      imageUrl = uploadResult.url;
+      storageSucceeded = true;
+      console.log(`[${requestId}] Image uploaded successfully with signed URL (${STORAGE_CONFIG.SIGNED_URL_EXPIRY_SECONDS / 86400} days expiry)`);
 
-        if (urlError || !signedUrlData?.signedUrl) {
-          console.error(`[${requestId}] Failed to create signed URL:`, urlError);
-          storageWarning = `Failed to generate secure URL (${urlError?.message || 'No URL returned'}). Using temporary base64 - image may not persist long-term.`;
-        } else {
-          imageUrl = signedUrlData.signedUrl;
-          storageSucceeded = true;
-          console.log(`[${requestId}] Image uploaded successfully with signed URL (7 days expiry)`);
-        }
-      }
     } catch (storageError) {
-      console.error(`[${requestId}] Storage upload failed, using base64:`, storageError);
+      console.error(`[${requestId}] Storage upload failed after retries, using base64:`, storageError);
       storageWarning = `Storage system error (${storageError instanceof Error ? storageError.message : 'Unknown error'}). Using temporary base64 - image may not persist long-term.`;
     }
 

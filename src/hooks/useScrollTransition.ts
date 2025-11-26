@@ -35,16 +35,20 @@ const easeOutCubic = (t: number): number => {
  * @returns Transition state and progress
  */
 export const useScrollTransition = (enabled: boolean = true): ScrollTransitionReturn => {
+  // Check for ?skipLanding=true query param (for E2E tests)
+  const shouldSkipLanding = typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('skipLanding') === 'true';
+
   const [state, setState] = useState({
-    phase: "landing" as TransitionPhase,
-    progress: 0,
+    phase: (shouldSkipLanding ? "app" : "landing") as TransitionPhase,
+    progress: shouldSkipLanding ? 1 : 0,
     scrollY: 0,
   });
   const [triggerPoint, setTriggerPoint] = useState(0);
   const triggerElementRef = useRef<HTMLElement | null>(null);
   const lastScrollTime = useRef(0);
   const rafId = useRef<number>();
-  const hasTransitionedToApp = useRef(false); // One-way lock: once in app, stay in app
+  const hasTransitionedToApp = useRef(shouldSkipLanding); // One-way lock: once in app, stay in app
   const animationStartTime = useRef<number | null>(null); // Timestamp when animation started
   const animationRafId = useRef<number>(); // Separate RAF for animation loop
 

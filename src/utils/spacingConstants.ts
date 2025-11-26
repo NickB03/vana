@@ -46,7 +46,7 @@ export const COMPONENT_SPACING = {
  */
 export const CHAT_SPACING = {
   message: {
-    container: 'px-4 py-4', // Tighter horizontal padding, moderate vertical
+    container: 'px-4 py-2', // Reduced vertical padding for tighter message spacing
     bubble: 'px-4 py-2.5',  // Consistent with container padding
     gap: 'gap-4',           // Tight gap between messages (Claude-style)
   },

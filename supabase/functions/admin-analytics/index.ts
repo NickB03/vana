@@ -1,21 +1,23 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { getCorsHeaders } from "../_shared/cors-config.ts";
+import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
+import { ErrorResponseBuilder } from "../_shared/error-handler.ts";
 
 serve(async (req) => {
-  const corsHeaders = getCorsHeaders(req);
+  const origin = req.headers.get("Origin");
+  const corsHeaders = getCorsHeaders(origin);
 
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return handleCorsPreflightRequest(req);
   }
+
+  const requestId = crypto.randomUUID();
+  const errors = ErrorResponseBuilder.withHeaders(corsHeaders, requestId);
 
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
+      return errors.unauthorized("No authorization header");
     }
 
     const supabase = createClient(
@@ -27,10 +29,7 @@ serve(async (req) => {
     // Verify user is admin
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
+      return errors.unauthorized("Invalid or expired authentication token");
     }
 
     // Check if user is admin (adjust this check based on your admin setup)
@@ -38,10 +37,10 @@ serve(async (req) => {
                     user.user_metadata?.role === 'admin';
 
     if (!isAdmin) {
-      return new Response(JSON.stringify({ error: "Admin access required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
+      return errors.forbidden(
+        "Admin access required",
+        "You do not have permission to access analytics data"
+      );
     }
 
     const url = new URL(req.url);
@@ -115,21 +114,21 @@ serve(async (req) => {
       }
 
       default:
-        return new Response(
-          JSON.stringify({ error: "Invalid metric" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        return errors.validation(
+          "Invalid metric",
+          `Supported metrics: overview, daily, hourly, costs, errors, performance`
         );
     }
 
     return new Response(JSON.stringify({ data }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
+      headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId }
     });
 
   } catch (error) {
-    console.error("Admin analytics error:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    console.error(`[${requestId}] Admin analytics error:`, error);
+    return errors.internal(
+      "An error occurred while fetching analytics data",
+      error instanceof Error ? error.message : "Unknown error"
     );
   }
 });

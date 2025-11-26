@@ -1,703 +1,320 @@
+/**
+ * Chat Function - Main Orchestrator
+ * Coordinates middleware and handlers for chat streaming
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { shouldGenerateImage, shouldGenerateArtifact, getArtifactType, getArtifactGuidance, needsClarification, shouldPerformWebSearch } from "./intent-detector-embeddings.ts";
-import { validateArtifactRequest, generateGuidanceFromValidation } from "./artifact-validator.ts";
-import { transformArtifactCode } from "./artifact-transformer.ts";
-import { callGeminiFlashWithRetry, extractTextFromGeminiFlash, type OpenRouterMessage } from "../_shared/openrouter-client.ts";
-import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
-import { getSystemInstruction } from "../_shared/system-prompt-inline.ts";
-import { generateStructuredReasoning, createFallbackReasoning, type StructuredReasoning } from "../_shared/reasoning-generator.ts";
-import { searchTavilyWithRetryTracking, formatSearchContext, calculateTavilyCost, logTavilyUsage } from "../_shared/tavily-client.ts";
-import { TAVILY_CONFIG } from "../_shared/config.ts";
 
-// Helper function to extract meaningful title from prompt
-function extractImageTitle(prompt: string): string {
-  // Remove "generate image of" type phrases
-  const cleaned = prompt
-    .replace(/^(generate|create|make|draw|design|show me|paint|illustrate)\s+(an?\s+)?(image|picture|photo|illustration|drawing|artwork)\s+(of\s+)?/i, '')
-    .trim();
-  
-  // Capitalize first letter and limit length
-  const title = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
-  return title.length > 50 ? title.substring(0, 47) + '...' : title;
-}
+// Middleware
+import { validateInput } from "./middleware/validation.ts";
+import { authenticateUser, verifySessionOwnership } from "./middleware/auth.ts";
+import {
+  checkApiThrottle,
+  checkGuestRateLimit,
+  checkUserRateLimit,
+} from "./middleware/rateLimit.ts";
+
+// Handlers
+import { detectUserIntent } from "./handlers/intent.ts";
+import { performWebSearch } from "./handlers/search.ts";
+import { generateImage } from "./handlers/image.ts";
+import { generateArtifact } from "./handlers/artifact.ts";
+import { createStreamingResponse } from "./handlers/streaming.ts";
+
+// Shared utilities
+import {
+  callGeminiFlashWithRetry,
+  type OpenRouterMessage,
+} from "../_shared/openrouter-client.ts";
+import {
+  getCorsHeaders,
+  handleCorsPreflightRequest,
+} from "../_shared/cors-config.ts";
+import { getSystemInstruction } from "../_shared/system-prompt-inline.ts";
+import {
+  generateStructuredReasoning,
+  createFallbackReasoning,
+  type StructuredReasoning,
+} from "../_shared/reasoning-generator.ts";
+import { TAVILY_CONFIG } from "../_shared/config.ts";
+import { getArtifactGuidance } from "./intent-detector-embeddings.ts";
+import {
+  validateArtifactRequest,
+  generateGuidanceFromValidation,
+} from "./artifact-validator.ts";
 
 serve(async (req) => {
   const origin = req.headers.get("Origin");
   const corsHeaders = getCorsHeaders(origin);
 
+  // Handle preflight requests
   if (req.method === "OPTIONS") {
     return handleCorsPreflightRequest(req);
   }
 
+  // Generate unique request ID for observability
+  const requestId = crypto.randomUUID();
+
   try {
-    const requestBody = await req.json();
-    const { messages, sessionId, currentArtifact, isGuest, forceImageMode, forceArtifactMode, includeReasoning = false } = requestBody;
+    console.log(`[${requestId}] 🚀 CODE VERSION: 2025-11-25-MODULAR-REFACTOR 🚀`);
 
-    // Generate unique request ID for observability and error correlation
-    const requestId = crypto.randomUUID();
-    console.log(`[${requestId}] Processing request for session:`, sessionId);
+    // ========================================
+    // STEP 1: Input Validation
+    // ========================================
+    const validationResult = await validateInput(req, requestId);
+    if (!validationResult.ok) {
+      return new Response(JSON.stringify(validationResult.error), {
+        status: 400,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          "X-Request-ID": requestId,
+        },
+      });
+    }
 
-    // Debug logging
-    console.log(`[${requestId}] 🚀 CODE VERSION: 2025-11-23-TAVILY-INTEGRATION 🚀`);
-    console.log(`[${requestId}] Request body:`, JSON.stringify({
-      messages: messages?.length,
+    const {
+      messages,
+      sessionId,
+      currentArtifact,
+      isGuest,
+      forceImageMode,
+      forceArtifactMode,
+      includeReasoning,
+    } = validationResult.data!;
+
+    console.log(`[${requestId}] Processing request:`, {
+      messages: messages.length,
       sessionId,
       isGuest,
       hasArtifact: !!currentArtifact,
       forceImageMode,
-      forceArtifactMode
-    }));
+      forceArtifactMode,
+    });
 
-    // Input validation
-    if (!messages || !Array.isArray(messages)) {
-      console.error(`[${requestId}] Invalid messages format`);
-      return new Response(
-        JSON.stringify({ error: "Invalid messages format", requestId }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
-      );
-    }
-
-    if (messages.length > 100) {
-      console.error(`[${requestId}] Too many messages in conversation:`, messages.length);
-      return new Response(
-        JSON.stringify({ error: "Too many messages in conversation", requestId }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
-      );
-    }
-
-    // Validate each message
-    for (const msg of messages) {
-      if (!msg.role || !msg.content) {
-        console.error(`[${requestId}] Invalid message format:`, msg);
-        return new Response(
-          JSON.stringify({ error: "Invalid message format", requestId }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
-        );
-      }
-
-      if (!["user", "assistant", "system"].includes(msg.role)) {
-        console.error(`[${requestId}] Invalid message role:`, msg.role);
-        return new Response(
-          JSON.stringify({ error: "Invalid message role", requestId }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
-        );
-      }
-
-      if (typeof msg.content !== "string" || msg.content.length > 50000) {
-        console.error(`[${requestId}] Message content too long:`, typeof msg.content, msg.content?.length);
-        return new Response(
-          JSON.stringify({ error: "Message content too long", requestId }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
-        );
-      }
-
-      if (msg.content.trim().length === 0) {
-        console.error(`[${requestId}] Empty message content`);
-        return new Response(
-          JSON.stringify({ error: "Message content cannot be empty", requestId }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
-        );
-      }
-    }
-    
-    let user = null;
-
-    // Create supabase client for ALL users (guest and authenticated)
-    // Guests get basic anon key access, auth users get enhanced client
-    let supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-    );
-
-    // Create service_role client for rate limiting checks
+    // ========================================
+    // STEP 2: Rate Limiting
+    // ========================================
     const serviceClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Parallelize API throttle and guest rate limit checks for faster response
-    const [
-      { data: apiThrottleResult, error: apiThrottleError },
-      guestRateLimitResult
-    ] = await Promise.all([
-      // Check Gemini API throttle (15 RPM) - applies to all requests
-      serviceClient.rpc("check_api_throttle", {
-        p_api_name: "gemini",
-        p_max_requests: 15,
-        p_window_seconds: 60
-      }),
-      // Check guest rate limit if applicable
-      isGuest ? (async () => {
-        // Get client IP address (trusted headers set by Supabase Edge infrastructure)
-        // X-Forwarded-For is sanitized by Supabase proxy to prevent spoofing
-        const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0].trim()
-          || req.headers.get("x-real-ip")
-          || "unknown";
+    // Check API throttle (applies to all requests)
+    const apiThrottleResult = await checkApiThrottle(serviceClient, requestId);
+    if (!apiThrottleResult.ok) {
+      return new Response(JSON.stringify(apiThrottleResult.error), {
+        status: apiThrottleResult.status || 503,
+        headers: {
+          ...corsHeaders,
+          ...apiThrottleResult.headers,
+          "Content-Type": "application/json",
+          "X-Request-ID": requestId,
+        },
+      });
+    }
 
-        return await serviceClient.rpc("check_guest_rate_limit", {
-          p_identifier: clientIp,
-          p_max_requests: 20,
-          p_window_hours: 5
-        });
-      })() : Promise.resolve({ data: null, error: null })
-    ]);
-
-    // Handle API throttle check results
-    if (apiThrottleError) {
-      console.error(`[${requestId}] API throttle check error:`, apiThrottleError);
-      return new Response(
-        JSON.stringify({
-          error: "Service temporarily unavailable",
-          requestId,
-          retryable: true
-        }),
-        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
+    // Check rate limits based on user type
+    let rateLimitHeaders: Record<string, string> = {};
+    if (isGuest) {
+      const guestRateLimit = await checkGuestRateLimit(
+        req,
+        serviceClient,
+        requestId
       );
-    } else if (apiThrottleResult && !apiThrottleResult.allowed) {
-      return new Response(
-        JSON.stringify({
-          error: "API rate limit exceeded. Please try again in a moment.",
-          rateLimitExceeded: true,
-          resetAt: apiThrottleResult.reset_at,
-          retryAfter: apiThrottleResult.retry_after
-        }),
-        {
-          status: 429,
+      if (!guestRateLimit.ok) {
+        return new Response(JSON.stringify(guestRateLimit.error), {
+          status: guestRateLimit.status || 503,
+          headers: {
+            ...corsHeaders,
+            ...guestRateLimit.headers,
+            "Content-Type": "application/json",
+            "X-Request-ID": requestId,
+          },
+        });
+      }
+      rateLimitHeaders = guestRateLimit.headers;
+    }
+
+    // ========================================
+    // STEP 3: Authentication
+    // ========================================
+    const authResult = await authenticateUser(req, isGuest, requestId);
+    if (!authResult.ok) {
+      return new Response(JSON.stringify(authResult.error), {
+        status: 401,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          "X-Request-ID": requestId,
+        },
+      });
+    }
+
+    const supabase = authResult.supabase;
+    const user = authResult.user;
+
+    // For authenticated users, check user-specific rate limits and verify session ownership
+    if (!isGuest && user) {
+      const userRateLimit = await checkUserRateLimit(
+        user.id,
+        serviceClient,
+        requestId
+      );
+      if (!userRateLimit.ok) {
+        return new Response(JSON.stringify(userRateLimit.error), {
+          status: userRateLimit.status || 503,
+          headers: {
+            ...corsHeaders,
+            ...userRateLimit.headers,
+            "Content-Type": "application/json",
+            "X-Request-ID": requestId,
+          },
+        });
+      }
+      rateLimitHeaders = userRateLimit.headers;
+
+      // Verify session ownership
+      const sessionVerification = await verifySessionOwnership(
+        supabase,
+        sessionId,
+        user.id,
+        requestId
+      );
+      if (!sessionVerification.ok) {
+        return new Response(JSON.stringify(sessionVerification.error), {
+          status: 403,
           headers: {
             ...corsHeaders,
             "Content-Type": "application/json",
-            "X-RateLimit-Limit": apiThrottleResult.total.toString(),
-            "X-RateLimit-Remaining": "0",
-            "X-RateLimit-Reset": new Date(apiThrottleResult.reset_at).getTime().toString(),
-            "Retry-After": apiThrottleResult.retry_after.toString()
-          }
-        }
-      );
-    }
-
-    // Handle guest rate limit check results
-    let rateLimitHeaders = {};
-    if (isGuest && guestRateLimitResult) {
-      const { data: rateLimitResult, error: rateLimitError } = guestRateLimitResult;
-
-      if (rateLimitError) {
-        console.error(`[${requestId}] Guest rate limit check error:`, rateLimitError);
-        return new Response(
-          JSON.stringify({
-            error: "Service temporarily unavailable",
-            requestId,
-            retryable: true
-          }),
-          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
-        );
-      } else if (rateLimitResult && !rateLimitResult.allowed) {
-        return new Response(
-          JSON.stringify({
-            error: "Rate limit exceeded. Please sign in to continue using the chat.",
-            rateLimitExceeded: true,
-            resetAt: rateLimitResult.reset_at
-          }),
-          {
-            status: 429,
-            headers: {
-              ...corsHeaders,
-              "Content-Type": "application/json",
-              "X-RateLimit-Limit": rateLimitResult.total.toString(),
-              "X-RateLimit-Remaining": "0",
-              "X-RateLimit-Reset": new Date(rateLimitResult.reset_at).getTime().toString()
-            }
-          }
-        );
-      } else if (rateLimitResult) {
-        // Add rate limit headers to successful responses
-        rateLimitHeaders = {
-          "X-RateLimit-Limit": rateLimitResult.total.toString(),
-          "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
-          "X-RateLimit-Reset": new Date(rateLimitResult.reset_at).getTime().toString()
-        };
+            "X-Request-ID": requestId,
+          },
+        });
       }
     }
 
-    // Authenticated users - verify auth and recreate client with auth header
-    if (!isGuest) {
-      const authHeader = req.headers.get("Authorization");
-      if (!authHeader) {
-        console.error(`[${requestId}] No authorization header for authenticated user`);
-        return new Response(JSON.stringify({
-          error: "No authorization header",
-          requestId,
-          debug: { isGuest, type: typeof isGuest, notIsGuest: !isGuest }
-        }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId },
-        });
-      }
+    console.log(`[${requestId}] Starting chat stream for session:`, sessionId);
 
-      // Recreate client with auth header for authenticated access
-      supabase = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-        { global: { headers: { Authorization: authHeader } } }
-      );
-
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) {
-        console.error(`[${requestId}] Invalid auth token`);
-        return new Response(JSON.stringify({ error: "Unauthorized", requestId }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId },
-        });
-      }
-      user = authUser;
-
-      // Authenticated user rate limiting (100 requests per 5 hours)
-      const { data: userRateLimitResult, error: userRateLimitError } = await serviceClient
-        .rpc("check_user_rate_limit", {
-          p_user_id: user.id,
-          p_max_requests: 100,
-          p_window_hours: 5
-        });
-
-      if (userRateLimitError) {
-        console.error(`[${requestId}] User rate limit check error:`, userRateLimitError);
-        return new Response(
-          JSON.stringify({
-            error: "Service temporarily unavailable",
-            requestId,
-            retryable: true
-          }),
-          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
-        );
-      } else if (userRateLimitResult && !userRateLimitResult.allowed) {
-        return new Response(
-          JSON.stringify({
-            error: "Rate limit exceeded. Please try again later.",
-            rateLimitExceeded: true,
-            resetAt: userRateLimitResult.reset_at
-          }),
-          {
-            status: 429,
-            headers: {
-              ...corsHeaders,
-              "Content-Type": "application/json",
-              "X-RateLimit-Limit": userRateLimitResult.total.toString(),
-              "X-RateLimit-Remaining": "0",
-              "X-RateLimit-Reset": new Date(userRateLimitResult.reset_at).getTime().toString()
-            }
-          }
-        );
-      } else if (userRateLimitResult) {
-        // Add rate limit headers to successful responses
-        rateLimitHeaders = {
-          "X-RateLimit-Limit": userRateLimitResult.total.toString(),
-          "X-RateLimit-Remaining": userRateLimitResult.remaining.toString(),
-          "X-RateLimit-Reset": new Date(userRateLimitResult.reset_at).getTime().toString()
-        };
-      }
-
-      // Verify session ownership if sessionId is provided
-      if (sessionId) {
-        const { data: session, error: sessionError } = await supabase
-          .from('chat_sessions')
-          .select('user_id')
-          .eq('id', sessionId)
-          .single();
-
-        if (sessionError || !session || session.user_id !== user.id) {
-          console.error(`[${requestId}] Unauthorized session access:`, { sessionId, userId: user.id, sessionError });
-          return new Response(
-            JSON.stringify({ error: 'Unauthorized access to session', requestId }),
-            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Request-ID': requestId } }
-          );
-        }
-      }
-    }
-    // Guest users already have supabase client initialized above
-
-    console.log("Starting chat stream for session:", sessionId);
-
-    // ============================================================================
-    // 🎯 ARCHITECTURE DECISION: Intelligent Model Routing
-    // ============================================================================
-    // Split requests by intent to use the optimal AI model for each task:
-    // - Regular chat: Flash model (fast, cheap, ~2s response)
-    // - Code artifacts: Pro model (high quality, ~5s response)
-    // - Images: Flash-Image model (specialized capability, ~10s)
-    //
-    // This gives us:
-    // ✅ Independent rate limits per feature (separate API key pools)
-    // ✅ Cost optimization (don't use Pro for simple chat)
-    // ✅ Better user experience (faster response for common queries)
-    // ============================================================================
-
-    // Analyze user prompt to determine which specialized model to use
     const lastUserMessage = messages[messages.length - 1];
-
-    // DEBUG: Log intent detection result
-    console.log(`[${requestId}] Analyzing prompt for intent:`, lastUserMessage.content.substring(0, 100));
-
-    // TEMPORARILY DISABLED: Clarification system causing issues
-    // Check if we need clarification FIRST (unless force mode is enabled)
-    // if (!forceImageMode && !forceArtifactMode && lastUserMessage) {
-    //   const clarificationQuestion = await needsClarification(lastUserMessage.content);
-    //   if (clarificationQuestion) {
-    //     console.log(`[${requestId}] ❓ Medium confidence - requesting clarification`);
-    //     // Return clarifying question to user
-    //     return new Response(
-    //       `data: ${JSON.stringify({ choices: [{ delta: { content: clarificationQuestion } }] })}\n\ndata: [DONE]\n\n`,
-    //       { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream", "X-Request-ID": requestId } }
-    //     );
-    //   }
-    // }
+    const lastUserContent = lastUserMessage?.content || "";
 
     // ========================================
-    // CHAIN OF THOUGHT: Generate structured reasoning BEFORE routing
-    // This ensures reasoning appears for ALL request types (chat, image, artifact)
+    // STEP 4: Intent Detection
+    // ========================================
+    const intent = await detectUserIntent({
+      forceArtifactMode,
+      forceImageMode,
+      lastUserMessage: lastUserContent,
+    });
+
+    console.log(`[${requestId}] Intent:`, intent.type, "-", intent.reasoning);
+
+    // ========================================
+    // STEP 5: Generate Reasoning (if requested)
     // ========================================
     let structuredReasoning: StructuredReasoning | null = null;
 
     if (includeReasoning && lastUserMessage) {
-      console.log(`[${requestId}] 🧠 Generating reasoning for: "${lastUserMessage.content.substring(0, 50)}..."`);
+      console.log(
+        `[${requestId}] 🧠 Generating reasoning for: "${lastUserContent.substring(
+          0,
+          50
+        )}..."`
+      );
 
       try {
         structuredReasoning = await generateStructuredReasoning(
-          lastUserMessage.content,
-          messages.filter(m => m.role !== 'system') as OpenRouterMessage[],
+          lastUserContent,
+          messages.filter((m) => m.role !== "system") as OpenRouterMessage[],
           {
-            maxSteps: 3,  // Limit for faster generation
-            timeout: 8000  // 8s timeout
+            maxSteps: 3, // Limit for faster generation
+            timeout: 8000, // 8s timeout
           }
         );
 
-        console.log(`[${requestId}] ✅ Reasoning generated: ${structuredReasoning.steps.length} steps`);
+        console.log(
+          `[${requestId}] ✅ Reasoning generated: ${structuredReasoning.steps.length} steps`
+        );
       } catch (reasoningError) {
-        console.error(`[${requestId}] ⚠️ Reasoning generation failed:`, reasoningError);
+        console.error(
+          `[${requestId}] ⚠️ Reasoning generation failed:`,
+          reasoningError
+        );
         // Use fallback reasoning instead of blocking the response
         structuredReasoning = createFallbackReasoning(reasoningError.message);
       }
     }
 
     // ========================================
-    // WEB SEARCH: Check if we need real-time information via Tavily
-    // SKIP if force modes are set (artifact/image generation don't need web search)
-    //
-    // Search Triggers:
-    // 1. Always-Search Mode (TAVILY_CONFIG.ALWAYS_SEARCH_ENABLED)
-    // 2. Intent detection (temporal keywords, explicit search requests)
-    //
-    // Search Exclusions (no search for):
-    // - Artifact generation requests (forceArtifactMode)
-    // - Image generation requests (forceImageMode)
+    // STEP 6: Web Search (if needed)
     // ========================================
-    let searchContext = '';
-    let searchExecuted = false;
-    let searchResultsData = null; // Store for SSE event
-
-    // Guard clause: Skip web search entirely for force modes (artifact/image)
-    // This avoids unnecessary Tavily API calls, timeouts, and costs
-    if (forceArtifactMode) {
-      console.log(`[${requestId}] ⏭️ Skipping web search (forceArtifactMode enabled)`);
-    }
-    else if (forceImageMode) {
-      console.log(`[${requestId}] ⏭️ Skipping web search (forceImageMode enabled)`);
-    }
-
-    // Determine if we should perform a search (only if no force modes)
-    const shouldSearch = !forceArtifactMode && !forceImageMode && lastUserMessage &&
-      (
-        TAVILY_CONFIG.ALWAYS_SEARCH_ENABLED || // Always-search mode enabled
-        shouldPerformWebSearch(lastUserMessage.content) // Intent-based detection
-      );
-
-    if (shouldSearch) {
-      const searchReason = TAVILY_CONFIG.ALWAYS_SEARCH_ENABLED
-        ? 'Always-search mode enabled'
-        : 'Web search intent detected';
-      console.log(`[${requestId}] 🔍 ${searchReason}`);
-
-      try {
-        const searchStartTime = Date.now();
-
-        // Execute Tavily search with retry logic
-        const { response: searchResults, retryCount } = await searchTavilyWithRetryTracking(
-          lastUserMessage.content,
-          {
-            requestId,
-            userId: user?.id,
-            isGuest: isGuest || false,
-            functionName: 'chat',
-            maxResults: TAVILY_CONFIG.DEFAULT_MAX_RESULTS,
-            searchDepth: TAVILY_CONFIG.DEFAULT_SEARCH_DEPTH,
-            includeAnswer: TAVILY_CONFIG.DEFAULT_INCLUDE_ANSWER
-          }
-        );
-
-        const searchLatencyMs = Date.now() - searchStartTime;
-        const estimatedCost = calculateTavilyCost(TAVILY_CONFIG.DEFAULT_SEARCH_DEPTH);
-
-        console.log(`[${requestId}] ✅ Tavily search completed: ${searchResults.results.length} results in ${searchLatencyMs}ms`);
-
-        // Format search results for context injection
-        searchContext = formatSearchContext(searchResults, {
-          includeUrls: true,
-          includeScores: false,
-          maxResults: TAVILY_CONFIG.DEFAULT_MAX_RESULTS
-        });
-
-        // Store formatted results for frontend UI
-        searchResultsData = {
-          query: lastUserMessage.content,
-          sources: searchResults.results.map(result => ({
-            title: result.title,
-            url: result.url,
-            snippet: result.content.substring(0, 200), // Truncate for UI
-            relevanceScore: result.score
-          })),
-          timestamp: Date.now()
+    const searchResult = intent.shouldSearch
+      ? await performWebSearch(
+          lastUserContent,
+          user?.id || null,
+          isGuest,
+          requestId
+        )
+      : {
+          searchContext: "",
+          searchResultsData: null,
+          searchExecuted: false,
         };
 
-        searchExecuted = true;
+    // ========================================
+    // STEP 7: Route by Intent
+    // ========================================
+    const authHeader = req.headers.get("Authorization");
 
-        // Fire-and-forget logging to database (don't block response)
-        logTavilyUsage({
-          requestId,
-          functionName: 'chat',
-          userId: user?.id,
-          isGuest: isGuest || false,
-          query: lastUserMessage.content,
-          resultCount: searchResults.results.length,
-          searchDepth: TAVILY_CONFIG.DEFAULT_SEARCH_DEPTH,
-          latencyMs: searchLatencyMs,
-          statusCode: 200,
-          estimatedCost,
-          retryCount
-        }).catch(logError => {
-          console.warn(`[${requestId}] Failed to log Tavily usage:`, logError);
-        });
+    // Route to image generation
+    if (intent.type === "image") {
+      const imageResult = await generateImage(
+        supabase,
+        lastUserContent,
+        sessionId,
+        authHeader,
+        structuredReasoning,
+        requestId
+      );
 
-      } catch (searchError) {
-        console.error(`[${requestId}] ⚠️ Web search failed, continuing without search:`, searchError);
-        // Graceful degradation - continue without search results
-        // Chat will still work, just without real-time web data
-        searchContext = '';
-        searchExecuted = false;
-
-        // Log the search failure for monitoring
-        const errorMessage = searchError instanceof Error ? searchError.message : String(searchError);
-        logTavilyUsage({
-          requestId,
-          functionName: 'chat',
-          userId: user?.id,
-          isGuest: isGuest || false,
-          query: lastUserMessage.content,
-          resultCount: 0,
-          searchDepth: TAVILY_CONFIG.DEFAULT_SEARCH_DEPTH,
-          latencyMs: 0,
-          statusCode: 500,
-          estimatedCost: 0,
-          errorMessage,
-          retryCount: 0
-        }).catch(logError => {
-          console.warn(`[${requestId}] Failed to log Tavily error:`, logError);
-        });
-      }
+      return new Response(imageResult.sseResponse, {
+        headers: {
+          ...corsHeaders,
+          ...rateLimitHeaders,
+          "X-Request-ID": requestId,
+          "Content-Type": "text/event-stream",
+        },
+      });
     }
 
-    // Check for explicit user control FIRST (force modes bypass intent detection entirely)
-    // Priority: forceArtifactMode > forceImageMode > intent detection
-    // Version: 2025-11-13-v2 (cache bust)
+    // Route to artifact generation
+    if (intent.type === "artifact") {
+      const artifactResult = await generateArtifact(
+        supabase,
+        lastUserContent,
+        intent.artifactType,
+        sessionId,
+        authHeader,
+        structuredReasoning,
+        requestId
+      );
 
-    // If artifact mode is explicitly enabled, skip all other checks
-    if (forceArtifactMode) {
-      console.log(`[${requestId}] 🎯 FORCE ARTIFACT MODE - skipping intent detection`);
-      // Jump to artifact generation (will be handled by the artifact check below)
-    }
-    // If image mode is explicitly enabled and artifact mode is NOT enabled
-    else if (forceImageMode) {
-      console.log(`[${requestId}] 🎯 FORCE IMAGE MODE - skipping intent detection`);
-      // Proceed with image generation
-    }
-
-    // TEMPORARILY DISABLED: Intent detection causing false positives
-    // Check for image generation (only if not forcing artifact mode)
-    // const isImageRequest = !forceArtifactMode && (forceImageMode || (lastUserMessage && await shouldGenerateImage(lastUserMessage.content)));
-    const isImageRequest = !forceArtifactMode && forceImageMode; // ONLY use explicit force mode
-    console.log(`[${requestId}] Image intent detected:`, isImageRequest, forceImageMode ? '(forced by user)' : '(intent detection disabled)');
-
-    if (isImageRequest) {
-      console.log("🎯 Intent detected: IMAGE generation");
-      console.log("🔀 Routing to: generate-image (Flash-Image model)");
-
-      try {
-        // Get auth header to pass to generate-image function
-        const authHeader = req.headers.get("Authorization");
-
-        // Call generate-image edge function with auth header
-        const imageResponse = await supabase.functions.invoke('generate-image', {
-          body: {
-            prompt: lastUserMessage.content,
-            mode: 'generate',
-            sessionId
-          },
-          headers: authHeader ? { Authorization: authHeader } : {}
-        });
-
-        // Enhanced error logging for debugging
-        console.log(`[${requestId}] Image response structure:`, {
-          hasError: !!imageResponse.error,
-          error: imageResponse.error,
-          status: imageResponse.status,
-          hasData: !!imageResponse.data,
-          dataKeys: imageResponse.data ? Object.keys(imageResponse.data) : []
-        });
-
-        if (imageResponse.error) {
-          // Log the full error for debugging
-          console.error(`[${requestId}] ❌ Image generation error details:`, {
-            error: imageResponse.error,
-            errorMessage: imageResponse.error?.message,
-            status: imageResponse.status,
-            dataError: imageResponse.data?.error,
-            dataDetails: imageResponse.data?.details,
-            fullData: JSON.stringify(imageResponse.data).substring(0, 500)
-          });
-
-          // Check if the error data contains useful information
-          const errorDetails = imageResponse.data?.details || imageResponse.data?.error || imageResponse.error?.message || "Unknown error";
-
-          const errorMessage = `I encountered an issue generating the image. ${errorDetails}. Please try again. (Request ID: ${requestId})`;
-          return new Response(
-            `data: ${JSON.stringify({ choices: [{ delta: { content: errorMessage } }] })}\n\ndata: [DONE]\n\n`,
-            { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream", "X-Request-ID": requestId } }
-          );
-        }
-
-        // Use storage URL for both display and database
-        const { imageUrl, prompt } = imageResponse.data;
-        const title = extractImageTitle(prompt);
-
-        // Stream storage URL (works for both display and saving)
-        const artifactResponse = `I've generated an image for you: ${title}\n\n<artifact type="image" title="${title}">${imageUrl}</artifact>`;
-
-        // Build SSE response with reasoning first, then image
-        let sseResponse = '';
-
-        // Send reasoning as first event (if available)
-        if (structuredReasoning) {
-          const reasoningEvent = {
-            type: 'reasoning',
-            sequence: 0,
-            timestamp: Date.now(),
-            data: structuredReasoning
-          };
-          sseResponse += `data: ${JSON.stringify(reasoningEvent)}\n\n`;
-          console.log(`[${requestId}] 📤 Sent reasoning event with ${structuredReasoning.steps.length} steps`);
-        }
-
-        // Send image artifact
-        sseResponse += `data: ${JSON.stringify({ choices: [{ delta: { content: artifactResponse } }] })}\n\n`;
-        sseResponse += `data: [DONE]\n\n`;
-
-        // Stream the response - frontend will save this URL to database
-        return new Response(
-          sseResponse,
-          { headers: { ...corsHeaders, ...rateLimitHeaders, "X-Request-ID": requestId, "Content-Type": "text/event-stream" } }
-        );
-      } catch (imgError) {
-        console.error(`[${requestId}] Image generation failed:`, imgError);
-        const errorMessage = `I encountered an issue generating the image. Please try again. (Request ID: ${requestId})`;
-        return new Response(
-          `data: ${JSON.stringify({ choices: [{ delta: { content: errorMessage } }] })}\n\ndata: [DONE]\n\n`,
-          { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream", "X-Request-ID": requestId } }
-        );
-      }
+      return new Response(artifactResult.sseResponse, {
+        headers: {
+          ...corsHeaders,
+          ...rateLimitHeaders,
+          "X-Request-ID": requestId,
+          "Content-Type": "text/event-stream",
+        },
+      });
     }
 
-    // TEMPORARILY DISABLED: Intent detection causing false positives
-    // Detect artifact generation requests (non-image artifacts)
-    // Check for force artifact mode first (explicit user control bypasses intent detection)
-    // const isArtifactRequest = forceArtifactMode || (lastUserMessage && await shouldGenerateArtifact(lastUserMessage.content));
-    const isArtifactRequest = forceArtifactMode; // ONLY use explicit force mode
-
-    if (isArtifactRequest) {
-      const artifactType = await getArtifactType(lastUserMessage.content);
-      console.log(`🎯 Intent detected: ARTIFACT generation (${artifactType})`, forceArtifactMode ? '(forced by user)' : '(intent detection disabled)');
-      console.log("🔀 Routing to: generate-artifact (Pro model)");
-
-      try {
-        // Get auth header to pass to generate-artifact function
-        const authHeader = req.headers.get("Authorization");
-
-        // Call generate-artifact edge function with auth header
-        // Note: Retry logic handled by API client layer (openrouter-client.ts)
-        const artifactResponse = await supabase.functions.invoke('generate-artifact', {
-          body: {
-            prompt: lastUserMessage.content,
-            artifactType,
-            sessionId
-          },
-          headers: authHeader ? { Authorization: authHeader } : {}
-        });
-
-        // Check for errors
-        if (artifactResponse.error) {
-          const errorData = artifactResponse.data;
-
-          // Enhanced logging for debugging
-          console.error(`[${requestId}] Artifact generation error:`, {
-            error: artifactResponse.error,
-            errorMessage: artifactResponse.error?.message,
-            errorData: errorData,
-            fullResponse: JSON.stringify(artifactResponse)
-          });
-
-          // Return error to user
-          const errorMessage = errorData?.error || `I encountered an issue generating the artifact. Please try again. (Request ID: ${requestId})`;
-          console.error(`[${requestId}] Returning error to user: ${errorMessage}`);
-          return new Response(
-            `data: ${JSON.stringify({ choices: [{ delta: { content: errorMessage } }] })}\n\ndata: [DONE]\n\n`,
-            { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream", "X-Request-ID": requestId } }
-          );
-        }
-
-        // Success! Get artifact code from response
-        const { artifactCode } = artifactResponse.data;
-
-        // Build SSE response with reasoning first, then artifact
-        let sseResponse = '';
-
-        // Send reasoning as first event (if available)
-        if (structuredReasoning) {
-          const reasoningEvent = {
-            type: 'reasoning',
-            sequence: 0,
-            timestamp: Date.now(),
-            data: structuredReasoning
-          };
-          sseResponse += `data: ${JSON.stringify(reasoningEvent)}\n\n`;
-          console.log(`[${requestId}] 📤 Sent reasoning event with ${structuredReasoning.steps.length} steps`);
-        }
-
-        // Send artifact content
-        sseResponse += `data: ${JSON.stringify({ choices: [{ delta: { content: artifactCode } }] })}\n\n`;
-        sseResponse += `data: [DONE]\n\n`;
-
-        // Stream the artifact response
-        return new Response(
-          sseResponse,
-          { headers: { ...corsHeaders, ...rateLimitHeaders, "X-Request-ID": requestId, "Content-Type": "text/event-stream" } }
-        );
-
-      } catch (artifactError) {
-        console.error(`[${requestId}] Artifact generation exception:`, artifactError);
-        const errorMessage = `I encountered an issue generating the artifact. The AI service may be temporarily unavailable. Please try again in a moment. (Request ID: ${requestId})`;
-        return new Response(
-          `data: ${JSON.stringify({ choices: [{ delta: { content: errorMessage } }] })}\n\ndata: [DONE]\n\n`,
-          { headers: { ...corsHeaders, ...rateLimitHeaders, "Content-Type": "text/event-stream", "X-Request-ID": requestId } }
-        );
-      }
-    }
+    // ========================================
+    // STEP 8: Regular Chat Streaming (default case)
+    // ========================================
+    console.log("🎯 Intent detected: REGULAR CHAT");
+    console.log("🔀 Using: Gemini 2.5 Flash Lite via OpenRouter (streaming response)");
 
     // Try to get cached context with summary
     let contextMessages = messages;
@@ -772,37 +389,30 @@ Treat this as an iterative improvement of the existing artifact.`;
     });
 
     // Inject web search context if search was executed
-    // Search results are added as a system message to maintain context
-    let searchContextMessage = '';
-    if (searchExecuted && searchContext) {
+    let searchContextMessage = "";
+    if (searchResult.searchExecuted && searchResult.searchContext) {
       searchContextMessage = `
 
 REAL-TIME WEB SEARCH RESULTS:
 The following information was retrieved from the web to answer the user's query:
 
-${searchContext}
+${searchResult.searchContext}
 
 Use this information to provide an accurate, up-to-date response. Cite the sources when relevant.`;
 
-      console.log(`[${requestId}] 📤 Injecting search context (${searchContext.length} chars) into system message`);
+      console.log(
+        `[${requestId}] 📤 Injecting search context (${searchResult.searchContext.length} chars) into system message`
+      );
     }
 
     // Prepare messages for OpenRouter (OpenAI-compatible format)
     const openRouterMessages: OpenRouterMessage[] = [
       { role: "system", content: systemInstruction + searchContextMessage },
-      ...contextMessages.filter(m => m.role !== "system").map(m => ({
+      ...contextMessages.filter((m) => m.role !== "system").map((m) => ({
         role: m.role as "user" | "assistant",
-        content: m.content
-      }))
+        content: m.content,
+      })),
     ];
-
-    // 🎯 Intent detected: REGULAR CHAT (no artifacts or images)
-    // 🔀 Using: Gemini 2.5 Flash Lite via OpenRouter (fast, reliable streaming)
-    console.log("🎯 Intent detected: REGULAR CHAT");
-    console.log("🔀 Using: Gemini 2.5 Flash Lite via OpenRouter (streaming response)");
-
-    // NOTE: Reasoning already generated at the top of this function (line 352-377)
-    // This ensures reasoning appears for ALL request types, not just regular chat
 
     // Call OpenRouter with Gemini 2.5 Flash Lite model (fast, reliable for chat)
     // Artifacts are handled by separate generate-artifact function
@@ -879,128 +489,15 @@ Use this information to provide an accurate, up-to-date response. Cite the sourc
       })();
     }
 
-    // Transform streaming response to fix artifact imports + inject reasoning
-    // Uses closure-scoped state per stream instance (truly isolated)
-    const transformedStream = response.body!.pipeThrough(new TextDecoderStream()).pipeThrough(
-      (() => {
-        // Closure-scoped state variables - unique per stream instance
-        let buffer = '';
-        let insideArtifact = false;
-        let reasoningSent = false;  // Track if reasoning event was sent
-        let searchSent = false;     // Track if search event was sent
-
-        return new TransformStream({
-          start(controller) {
-            // ========================================
-            // CHAIN OF THOUGHT: Send reasoning as FIRST SSE event
-            // ========================================
-            if (structuredReasoning && !reasoningSent) {
-              const reasoningEvent = {
-                type: 'reasoning',
-                sequence: 0,
-                timestamp: Date.now(),
-                data: structuredReasoning
-              };
-
-              controller.enqueue(`data: ${JSON.stringify(reasoningEvent)}\n\n`);
-              reasoningSent = true;
-
-              console.log(`[${requestId}] 📤 Sent reasoning event with ${structuredReasoning.steps.length} steps`);
-            }
-
-            // ========================================
-            // WEB SEARCH: Send search results as SECOND SSE event (optional)
-            // Frontend can display these results in a special UI component
-            // ========================================
-            if (searchExecuted && searchResultsData && !searchSent) {
-              const searchEvent = {
-                type: 'web_search',
-                sequence: 1,
-                timestamp: Date.now(),
-                data: searchResultsData
-              };
-
-              controller.enqueue(`data: ${JSON.stringify(searchEvent)}\n\n`);
-              searchSent = true;
-
-              console.log(`[${requestId}] 📤 Sent web search results: ${searchResultsData.sources.length} sources`);
-            }
-          },
-          transform(chunk, controller) {
-            buffer += chunk;
-
-            // Check if we're entering an artifact
-            if (!insideArtifact && buffer.includes('<artifact')) {
-              const artifactStartMatch = buffer.match(/<artifact[^>]*>/);
-              if (artifactStartMatch) {
-                insideArtifact = true;
-              }
-            }
-
-            // Check if we have complete artifact(s) and process ALL of them
-            if (insideArtifact && buffer.includes('</artifact>')) {
-              // Loop to handle multiple artifacts in a single response
-              while (true) {
-                const fullArtifactMatch = buffer.match(/(<artifact[^>]*>)([\s\S]*?)(<\/artifact>)/);
-                if (!fullArtifactMatch) break; // No more complete artifacts
-
-                const [fullMatch, openTag, content, closeTag] = fullArtifactMatch;
-
-                try {
-                  const result = transformArtifactCode(content);
-
-                  if (result.hadIssues) {
-                    console.log("🔧 Auto-fixed artifact imports:", result.changes);
-                    // Replace the artifact content with transformed version
-                    buffer = buffer.replace(fullMatch, openTag + result.transformedContent + closeTag);
-                  }
-                } catch (error) {
-                  console.error("❌ Transform failed, sending original artifact:", error);
-                  // Continue with original artifact - better than breaking the stream
-                  break;
-                }
-
-                // Check if there are more artifacts to process
-                if (!buffer.includes('</artifact>')) {
-                  insideArtifact = false;
-                  break;
-                }
-              }
-              insideArtifact = false;
-            }
-
-            // Send everything before the current artifact (or everything if no artifact)
-            if (!insideArtifact) {
-              // No active artifact - send the buffer
-              controller.enqueue(buffer);
-              buffer = '';
-            } else if (buffer.length > 50000) {
-              // Safety: if buffer gets too large, send it anyway to avoid memory issues
-              console.warn("⚠️ Buffer overflow - sending untransformed artifact");
-              controller.enqueue(buffer);
-              buffer = '';
-              insideArtifact = false;
-            }
-            // Otherwise, keep buffering until artifact is complete
-          },
-          flush(controller) {
-            // Send any remaining buffered content
-            if (buffer) {
-              controller.enqueue(buffer);
-            }
-          }
-        });
-      })()
-    ).pipeThrough(new TextEncoderStream());
-
-    return new Response(transformedStream, {
-      headers: {
-        ...corsHeaders,
-        ...rateLimitHeaders,
-        "X-Request-ID": requestId,
-        "Content-Type": "text/event-stream"
-      },
-    });
+    // Transform and stream the response with reasoning and search results
+    return createStreamingResponse(
+      response.body!,
+      structuredReasoning,
+      searchResult,
+      corsHeaders,
+      rateLimitHeaders,
+      requestId
+    );
   } catch (e) {
     // Generate request ID if not already created (error happened before request ID generation)
     const errorRequestId = typeof requestId !== 'undefined' ? requestId : crypto.randomUUID();

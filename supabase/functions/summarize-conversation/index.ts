@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { callGeminiFlashWithRetry, extractTextFromGeminiFlash, type OpenRouterMessage } from "../_shared/openrouter-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
+import { ErrorResponseBuilder } from "../_shared/error-handler.ts";
 
 const SUMMARIZATION_THRESHOLD = 10; // Summarize every 10 messages
 
@@ -13,24 +14,21 @@ serve(async (req) => {
     return handleCorsPreflightRequest(req);
   }
 
+  const requestId = crypto.randomUUID();
+  const errors = ErrorResponseBuilder.withHeaders(corsHeaders, requestId);
+
   try {
     const requestBody = await req.json();
     const { sessionId } = requestBody;
     
     // Input validation
     if (!sessionId || typeof sessionId !== "string") {
-      return new Response(
-        JSON.stringify({ error: "Invalid session ID" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return errors.validation("Invalid session ID", "sessionId is required and must be a string");
     }
-    
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "No authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errors.unauthorized("No authorization header");
     }
 
     const supabase = createClient(
@@ -41,10 +39,7 @@ serve(async (req) => {
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errors.unauthorized("Invalid or expired authentication token");
     }
 
     // Verify session ownership
@@ -55,9 +50,9 @@ serve(async (req) => {
       .single();
 
     if (ownershipError || !sessionOwnership || sessionOwnership.user_id !== user.id) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized: You do not own this session' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      return errors.forbidden(
+        "Access denied",
+        "You do not have permission to summarize this session"
       );
     }
 
@@ -183,13 +178,10 @@ serve(async (req) => {
     );
 
   } catch (e) {
-    console.error("Summarization error:", e);
-    return new Response(
-      JSON.stringify({ error: "An error occurred while summarizing the conversation" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+    console.error(`[${requestId}] Summarization error:`, e);
+    return errors.internal(
+      "An error occurred while summarizing the conversation",
+      e instanceof Error ? e.message : "Unknown error"
     );
   }
 });

@@ -125,7 +125,7 @@ function ReasoningTrigger({
   return (
     <button
       className={cn(
-        "flex w-full cursor-pointer items-center justify-between gap-2 rounded-2xl border border-border/40 bg-transparent px-3 py-1.5 text-left transition-all hover:border-border/60 hover:bg-muted/10",
+        "flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-border/40 bg-transparent px-3 py-1.5 text-left transition-all hover:border-border/60 hover:bg-muted/10",
         className
       )}
       onClick={() => onOpenChange(!isOpen)}

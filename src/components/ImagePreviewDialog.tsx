@@ -34,11 +34,12 @@ export function ImagePreviewDialog({
           onClick={() => onOpenChange(false)}
         >
           {/* Centered image */}
-          <img 
-            src={imageData} 
+          <img
+            src={imageData}
             alt={title}
             className="max-w-[90vw] max-h-[90vh] w-auto h-auto object-contain"
             loading="eager"
+            decoding="async"
             onClick={(e) => e.stopPropagation()}
           />
           

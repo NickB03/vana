@@ -77,6 +77,20 @@ const Markdown = memo(function Markdown({ children, className }: MarkdownProps) 
             const { node, children, ...rest } = props
             return <ol className="my-2 ml-4 list-decimal space-y-1" {...rest}>{children}</ol>
           },
+          // Optimized image rendering
+          img(props: ElementProps & { src?: string; alt?: string }) {
+            const { node, src, alt, ...rest } = props
+            return (
+              <img
+                src={src}
+                alt={alt || ""}
+                loading="lazy"
+                decoding="async"
+                className="rounded-lg max-w-full h-auto my-4"
+                {...rest}
+              />
+            )
+          },
         } as Components}
       >
         {children}

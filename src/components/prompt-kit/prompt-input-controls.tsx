@@ -215,6 +215,7 @@ export function PromptInputControls({
             boxShadow: '0 4px 14px hsl(var(--accent-primary) / 0.4)',
           }}
           onClick={onSend}
+          data-testid="send-button"
         >
           {isButtonLoading ? (
             <div className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

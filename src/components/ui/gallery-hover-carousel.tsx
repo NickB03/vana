@@ -167,6 +167,7 @@ export default function GalleryHoverCarousel({
                           alt={item.title}
                           className={`h-full w-full object-cover object-center transition-all ${isLoading ? 'blur-sm opacity-70' : ''}`}
                           loading="lazy"
+                          decoding="async"
                           width={400}
                           height={300}
                           style={{ aspectRatio: '4/3' }}

@@ -5,13 +5,13 @@ import { AlertCircle, AlertTriangle, Info } from "lucide-react"
 import React from "react"
 
 const systemMessageVariants = cva(
-  "flex flex-row items-center gap-3 rounded-[12px] border py-2 pr-2 pl-3",
+  "flex flex-row items-center gap-3 rounded-lg border-2 py-2.5 pr-2.5 pl-3.5",
   {
     variants: {
       variant: {
-        action: "text-zinc-700 dark:text-zinc-300",
-        error: "text-red-700 dark:text-red-800",
-        warning: "text-amber-700 dark:text-amber-700",
+        action: "text-blue-700 dark:text-blue-300",
+        error: "text-red-700 dark:text-red-400",
+        warning: "text-amber-700 dark:text-amber-400",
       },
       fill: {
         true: "bg-background",
@@ -22,32 +22,32 @@ const systemMessageVariants = cva(
       {
         variant: "action",
         fill: true,
-        class: "bg-zinc-100 dark:bg-zinc-900 border-transparent",
+        class: "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/50",
       },
       {
         variant: "error",
         fill: true,
-        class: "bg-red-100 dark:bg-red-900/20 border-transparent",
+        class: "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50",
       },
       {
         variant: "warning",
         fill: true,
-        class: "bg-amber-100 dark:bg-amber-900/20 border-transparent",
+        class: "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50",
       },
       {
         variant: "action",
         fill: false,
-        class: "border-zinc-200 dark:border-zinc-800",
+        class: "border-blue-300 dark:border-blue-700",
       },
       {
         variant: "error",
         fill: false,
-        class: "border-red-600 dark:border-red-900",
+        class: "border-red-300 dark:border-red-700",
       },
       {
         variant: "warning",
         fill: false,
-        class: "border-amber-600 dark:border-amber-900",
+        class: "border-amber-300 dark:border-amber-700",
       },
     ],
     defaultVariants: {
@@ -122,7 +122,15 @@ export function SystemMessage({
       </div>
 
       {cta && (
-        <Button variant="default" size="sm" onClick={cta.onClick}>
+        <Button
+          variant={variant === "action" ? "default" : "destructive"}
+          size="sm"
+          onClick={cta.onClick}
+          className={cn(
+            "shrink-0",
+            variant === "action" && "bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700"
+          )}
+        >
           {cta.label}
         </Button>
       )}

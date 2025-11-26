@@ -51,8 +51,8 @@ export function InlineImage({ artifact }: InlineImageProps) {
           src={artifact.content}
           alt={artifact.title}
           className="w-full h-auto bg-muted block"
-          loading="eager"
-          decoding="sync"
+          loading="lazy"
+          decoding="async"
           onError={(e) => {
             console.error('Image failed to load:', artifact.content);
             e.currentTarget.style.display = 'none';

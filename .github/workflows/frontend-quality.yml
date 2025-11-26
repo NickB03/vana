@@ -27,27 +27,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Test with coverage
-        run: npm run test:coverage
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/lcov.info
-          flags: frontend
-          name: frontend-coverage
-          fail_ci_if_error: false
-          verbose: true
+      - name: Test
+        run: npm run test
+        env:
+          # Skip coverage in CI to avoid OOM - coverage can be run locally
+          NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Build
         run: npm run build
-
-      - name: Upload coverage artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-coverage
-          path: coverage
-          if-no-files-found: ignore
-          retention-days: 7

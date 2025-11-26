@@ -44,15 +44,104 @@ Deno.test("RATE_LIMITS.AUTHENTICATED should have valid positive values", () => {
 
 Deno.test("RATE_LIMITS.AUTHENTICATED should be higher than GUEST limits", () => {
   assert(
-    RATE_LIMITS.AUTHENTICATED.MAX_REQUESTS > RATE_LIMITS.GUEST.MAX_REQUESTS,
-    "Authenticated users should have higher limits than guests"
+    RATE_LIMITS.AUTHENTICATED.MAX_REQUESTS >= RATE_LIMITS.GUEST.MAX_REQUESTS,
+    "Authenticated users should have equal or higher limits than guests"
   );
 });
 
 Deno.test("RATE_LIMITS.API_THROTTLE should have valid RPM configuration", () => {
   assert(RATE_LIMITS.API_THROTTLE.GEMINI_RPM > 0, "GEMINI_RPM should be positive");
-  assertEquals(RATE_LIMITS.API_THROTTLE.WINDOW_SECONDS, 60, "Window should be 60 seconds for RPM");
+  assert(RATE_LIMITS.API_THROTTLE.WINDOW_SECONDS > 0, "WINDOW_SECONDS should be positive");
   assertEquals(typeof RATE_LIMITS.API_THROTTLE.GEMINI_RPM, "number");
+  assertEquals(typeof RATE_LIMITS.API_THROTTLE.WINDOW_SECONDS, "number");
+});
+
+Deno.test("RATE_LIMITS.ARTIFACT should have all required configurations", () => {
+  // API throttle
+  assert(RATE_LIMITS.ARTIFACT.API_THROTTLE.MAX_REQUESTS > 0);
+  assert(RATE_LIMITS.ARTIFACT.API_THROTTLE.WINDOW_SECONDS > 0);
+
+  // Guest limits
+  assert(RATE_LIMITS.ARTIFACT.GUEST.MAX_REQUESTS > 0);
+  assert(RATE_LIMITS.ARTIFACT.GUEST.WINDOW_HOURS > 0);
+
+  // Authenticated limits
+  assert(RATE_LIMITS.ARTIFACT.AUTHENTICATED.MAX_REQUESTS > 0);
+  assert(RATE_LIMITS.ARTIFACT.AUTHENTICATED.WINDOW_HOURS > 0);
+
+  // Authenticated should have higher limits than guest
+  assert(
+    RATE_LIMITS.ARTIFACT.AUTHENTICATED.MAX_REQUESTS >= RATE_LIMITS.ARTIFACT.GUEST.MAX_REQUESTS,
+    "Artifact auth limits should be >= guest limits"
+  );
+});
+
+Deno.test("RATE_LIMITS.IMAGE should have all required configurations", () => {
+  // API throttle
+  assert(RATE_LIMITS.IMAGE.API_THROTTLE.MAX_REQUESTS > 0);
+  assert(RATE_LIMITS.IMAGE.API_THROTTLE.WINDOW_SECONDS > 0);
+
+  // Guest limits
+  assert(RATE_LIMITS.IMAGE.GUEST.MAX_REQUESTS > 0);
+  assert(RATE_LIMITS.IMAGE.GUEST.WINDOW_HOURS > 0);
+
+  // Authenticated limits
+  assert(RATE_LIMITS.IMAGE.AUTHENTICATED.MAX_REQUESTS > 0);
+  assert(RATE_LIMITS.IMAGE.AUTHENTICATED.WINDOW_HOURS > 0);
+
+  // Authenticated should have higher limits than guest
+  assert(
+    RATE_LIMITS.IMAGE.AUTHENTICATED.MAX_REQUESTS >= RATE_LIMITS.IMAGE.GUEST.MAX_REQUESTS,
+    "Image auth limits should be >= guest limits"
+  );
+});
+
+Deno.test("RATE_LIMITS.TAVILY should have all required configurations", () => {
+  // API throttle
+  assert(RATE_LIMITS.TAVILY.API_THROTTLE.MAX_REQUESTS > 0);
+  assert(RATE_LIMITS.TAVILY.API_THROTTLE.WINDOW_SECONDS > 0);
+
+  // Guest limits
+  assert(RATE_LIMITS.TAVILY.GUEST.MAX_REQUESTS > 0);
+  assert(RATE_LIMITS.TAVILY.GUEST.WINDOW_HOURS > 0);
+
+  // Authenticated limits
+  assert(RATE_LIMITS.TAVILY.AUTHENTICATED.MAX_REQUESTS > 0);
+  assert(RATE_LIMITS.TAVILY.AUTHENTICATED.WINDOW_HOURS > 0);
+
+  // Authenticated should have higher limits than guest
+  assert(
+    RATE_LIMITS.TAVILY.AUTHENTICATED.MAX_REQUESTS >= RATE_LIMITS.TAVILY.GUEST.MAX_REQUESTS,
+    "Tavily auth limits should be >= guest limits"
+  );
+});
+
+Deno.test("RATE_LIMITS should enforce minimum value of 1 for all limits", () => {
+  // All rate limits must be at least 1 to prevent division by zero and invalid configs
+  assert(RATE_LIMITS.GUEST.MAX_REQUESTS >= 1);
+  assert(RATE_LIMITS.GUEST.WINDOW_HOURS >= 1);
+  assert(RATE_LIMITS.AUTHENTICATED.MAX_REQUESTS >= 1);
+  assert(RATE_LIMITS.AUTHENTICATED.WINDOW_HOURS >= 1);
+  assert(RATE_LIMITS.API_THROTTLE.GEMINI_RPM >= 1);
+  assert(RATE_LIMITS.API_THROTTLE.WINDOW_SECONDS >= 1);
+  assert(RATE_LIMITS.ARTIFACT.API_THROTTLE.MAX_REQUESTS >= 1);
+  assert(RATE_LIMITS.ARTIFACT.API_THROTTLE.WINDOW_SECONDS >= 1);
+  assert(RATE_LIMITS.ARTIFACT.GUEST.MAX_REQUESTS >= 1);
+  assert(RATE_LIMITS.ARTIFACT.GUEST.WINDOW_HOURS >= 1);
+  assert(RATE_LIMITS.ARTIFACT.AUTHENTICATED.MAX_REQUESTS >= 1);
+  assert(RATE_LIMITS.ARTIFACT.AUTHENTICATED.WINDOW_HOURS >= 1);
+  assert(RATE_LIMITS.IMAGE.API_THROTTLE.MAX_REQUESTS >= 1);
+  assert(RATE_LIMITS.IMAGE.API_THROTTLE.WINDOW_SECONDS >= 1);
+  assert(RATE_LIMITS.IMAGE.GUEST.MAX_REQUESTS >= 1);
+  assert(RATE_LIMITS.IMAGE.GUEST.WINDOW_HOURS >= 1);
+  assert(RATE_LIMITS.IMAGE.AUTHENTICATED.MAX_REQUESTS >= 1);
+  assert(RATE_LIMITS.IMAGE.AUTHENTICATED.WINDOW_HOURS >= 1);
+  assert(RATE_LIMITS.TAVILY.API_THROTTLE.MAX_REQUESTS >= 1);
+  assert(RATE_LIMITS.TAVILY.API_THROTTLE.WINDOW_SECONDS >= 1);
+  assert(RATE_LIMITS.TAVILY.GUEST.MAX_REQUESTS >= 1);
+  assert(RATE_LIMITS.TAVILY.GUEST.WINDOW_HOURS >= 1);
+  assert(RATE_LIMITS.TAVILY.AUTHENTICATED.MAX_REQUESTS >= 1);
+  assert(RATE_LIMITS.TAVILY.AUTHENTICATED.WINDOW_HOURS >= 1);
 });
 
 // ==================== VALIDATION_LIMITS Tests ====================

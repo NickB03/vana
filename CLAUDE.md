@@ -1,3 +1,5 @@
+<!-- CLAUDE.md v2.2 | Last updated: 2025-11-25 14:30 -->
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
@@ -8,837 +10,344 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Tech Stack**: React 18.3 + TypeScript 5.8 + Vite 5.4 + Tailwind CSS + shadcn/ui + Supabase + TanStack Query + Vitest
 
+## ⚡ Quick Reference
+
+| Task | Command/Pattern |
+|------|-----------------|
+| Start dev server | `npm run dev` (port 8080) |
+| Run all tests | `npm run test` |
+| Run specific test | `npm run test -- path/to/file.test.ts` |
+| Check coverage | `npm run test:coverage` (55% threshold) |
+| Deploy staging | `./scripts/deploy-simple.sh staging` |
+| Deploy production | `./scripts/deploy-simple.sh prod` |
+| Model names | Always use `MODELS.*` from `_shared/config.ts` |
+| Artifact imports | NO `@/` imports — use npm packages or Tailwind |
+| Chrome MCP | `chrome-mcp start` / `/chrome-status` |
+
 ## 🎯 MUST Rules (Non-Negotiable)
 
-1. **Package Manager**: Use `npm` only. Never use Bun/Yarn/pnpm (creates lock file conflicts)
+1. **Package Manager**: Use `npm` only — never Bun/Yarn/pnpm (lock file conflicts)
 2. **Browser Verification**: Test with Chrome DevTools MCP after EVERY change
 3. **Model Configuration**: **CRITICAL** - NEVER hardcode model names! Always use `MODELS.*` from `supabase/functions/_shared/config.ts`
-   - ❌ BAD: `model: "google/gemini-2.5-flash-lite"`
-   - ✅ GOOD: `import { MODELS } from '../_shared/config.ts'` then `model: MODELS.GEMINI_FLASH`
-   - Golden snapshot tests will FAIL if you hardcode model names
-4. **Artifact Imports**: **CRITICAL** - Cannot use `@/components/ui/*` in artifacts (see "Critical Artifact Restrictions" section)
-5. **Security DEFINER Functions**: Always include `SET search_path = public, pg_temp` to prevent schema injection
-6. **CORS Configuration**: Never use wildcard `*` origins in production (use `supabase/functions/_shared/cors-config.ts`)
-7. **Animation Performance**: Only animate new messages, not entire chat history
-8. **Route Order**: Add new routes ABOVE the `*` catch-all in App.tsx
+   - ❌ `model: "google/gemini-2.5-flash-lite"` → CI/CD FAILS
+   - ✅ `import { MODELS } from '../_shared/config.ts'` then `model: MODELS.GEMINI_FLASH`
+4. **Artifact Imports**: **CRITICAL** - Cannot use `@/components/ui/*` in artifacts (sandbox isolation)
+5. **Security DEFINER**: Always include `SET search_path = public, pg_temp` (prevents schema injection)
+6. **CORS**: Never use wildcard `*` origins in production
+7. **Animation**: Only animate new messages, not entire chat history
+8. **Routes**: Add new routes ABOVE the `*` catch-all in App.tsx
+
+## ⚠️ Anti-Patterns
+
+| ❌ DON'T | ✅ DO INSTEAD | WHY |
+|----------|---------------|-----|
+| `bun install` | `npm install` | Lock file conflicts |
+| Skip session validation | `await ensureValidSession()` | Auth errors |
+| Import shadcn in artifacts | Use npm Radix UI or Tailwind | Sandbox isolation |
+| Animate all messages | Animate last message only | Performance |
+| Deploy without verification | Run Chrome DevTools checks | Runtime errors |
+| Add routes after `*` | Add ABOVE catch-all | Routes unreachable |
+| Hardcode model names | Use `MODELS.*` | CI/CD fails |
+| Manual CORS headers | Use `corsHeaders` from cors-config.ts | Security |
 
 ## Chrome DevTools MCP Setup
 
 ```bash
-# Prevent duplicate browser instances
-chrome-mcp start     # Start single Chrome instance
-chrome-mcp status    # Check if running
-chrome-mcp restart   # Clean restart if issues occur
+chrome-mcp start|status|restart  # Manage Chrome instance
 ```
 
-**Slash commands** (in Claude Code):
-- `/chrome-status` - Check Chrome MCP status and resources
-- `/chrome-restart` - Gentle restart of Chrome instance
-- `/kill-chromedev` - Nuclear option: kill all processes and restart clean
+**Slash commands**: `/chrome-status`, `/chrome-restart`, `/kill-chromedev`
 
-**Screenshots Workflow** (File-based to avoid MCP serialization bug):
+**Screenshots** (file-based to avoid MCP serialization bug):
 ```bash
-# Helper script generates timestamped filename
 ./scripts/take-screenshot.sh "description"
-
-# Or specify exact path for MCP
-take_screenshot({
-  filePath: ".screenshots/YYYYMMDD_HHMMSS_description.png",
-  format: "png"
-})
+# Or: take_screenshot({ filePath: ".screenshots/name.png", format: "png" })
 ```
 
-**Why file-based?** Chrome DevTools MCP has a media type serialization bug (labels PNG as JPEG). Saving to `.screenshots/` directory avoids the error and provides persistent debugging artifacts.
-
-**Browser Verification Pattern** (CRITICAL - run after EVERY change):
+**Browser Verification Pattern** (run after EVERY change):
 ```typescript
-// Navigate to app
 await browser.navigate({ url: "http://localhost:8080" })
-
-// Check for errors
 const errors = await browser.getConsoleMessages({ onlyErrors: true })
-
-// Take screenshot for verification (file-based to avoid MCP bug)
-await browser.screenshot({
-  filePath: ".screenshots/verification.png",
-  format: "png"
-})
+await browser.screenshot({ filePath: ".screenshots/verification.png", format: "png" })
 ```
 
-**Guides**: `.claude/CHROME_MCP_COMMANDS.md` for complete MCP documentation
+**Guide**: `.claude/CHROME_MCP_COMMANDS.md`
 
-## Development Commands
+## Commands
 
-### Core Development
+### Development
 ```bash
-npm run dev              # Start dev server on port 8080
+npm run dev              # Dev server (port 8080)
 npm run build            # Production build
-npm run build:dev        # Development build with sourcemaps
-npm run build:staging    # Staging build
+npm run build:dev        # Dev build with sourcemaps
 npm run preview          # Preview production build
 ```
 
 ### Testing (432 tests, 74.21% coverage)
 ```bash
 npm run test                  # Run all tests
-npm run test -- --watch       # Run tests in watch mode
-npm run test:ui               # Run tests with Vitest UI
-npm run test:coverage         # Generate coverage report (enforces 55% threshold)
-
-# Run specific test file
-npm run test -- src/utils/__tests__/artifactValidator.test.ts
-
-# Run tests matching pattern
-npm run test -- --grep "artifact"
+npm run test -- --watch       # Watch mode
+npm run test:coverage         # Coverage report (55% threshold)
+npm run test -- path/to/test  # Specific file
 ```
 
-### Code Quality
+### Deployment
 ```bash
-npm run lint             # Run ESLint (0 errors, 94 warnings allowed)
+./scripts/deploy-simple.sh staging|prod  # prod requires confirmation
+supabase functions deploy <name> --project-ref <ref>  # Individual function
 ```
 
-### Deployment (Edge Functions)
-```bash
-# Deploy to staging
-./scripts/deploy-simple.sh staging
-
-# Deploy to production (requires confirmation + creates backup)
-./scripts/deploy-simple.sh prod
-
-# Deploy individual function
-supabase functions deploy chat --project-ref <ref>
-```
-
-## Architecture Overview
+## Architecture
 
 ### Multi-Model AI System
 
-The application uses **multiple AI models** optimized for different tasks:
+| Function | Model | Provider | Notes |
+|----------|-------|----------|-------|
+| Chat/Summaries/Titles | Gemini 2.5 Flash Lite | OpenRouter | Single key, unlimited |
+| Artifact Generation | Kimi K2-Thinking | OpenRouter | Single key |
+| Artifact Error Fixing | Kimi K2-Thinking | OpenRouter | Deep reasoning |
+| Image Generation | Gemini Flash-Image | Google AI Studio | 10-key rotation, 150 RPM |
 
-1. **Chat/Summaries/Titles**: Gemini 2.5 Flash Lite via OpenRouter (single API key, unlimited)
-2. **Artifact Generation**: Kimi K2-Thinking via OpenRouter (single API key, optimized for code)
-3. **Artifact Error Fixing**: Kimi K2-Thinking via OpenRouter (deep reasoning for debugging)
-4. **Image Generation**: Gemini Flash-Image via Google AI Studio (10-key rotation pool, 150 RPM)
+### Edge Function Decision Tree
 
-**Key Insight**: Only image generation uses key rotation (10 keys for high throughput). Chat and artifacts use single OpenRouter keys for simplicity and unlimited capacity.
+| Scenario | Function | Model |
+|----------|----------|-------|
+| User sends chat message | `chat/` | Gemini Flash Lite |
+| User requests artifact | `generate-artifact/` | Kimi K2-Thinking |
+| Artifact has errors | `generate-artifact-fix/` | Kimi K2-Thinking |
+| First message in session | `generate-title/` | Gemini Flash Lite |
+| User requests image | `generate-image/` | Gemini Flash-Image |
+| Conversation exceeds context | `summarize-conversation/` | Gemini Flash Lite |
+| Artifact needs npm packages | `bundle-artifact/` | N/A (bundler) |
+| Health/uptime monitoring | `health/` | N/A (status check) |
 
-### Artifact System Architecture
+### Artifact System
 
-Artifacts are interactive components rendered in isolated sandboxes (iframes) alongside chat messages. They support:
+> **📌 Canonical Reference**: This section is the single source of truth for artifact restrictions. See also: `.claude/artifact-import-restrictions.md`
 
-- **React components** with Tailwind CSS (NO local imports allowed - see `.claude/artifact-import-restrictions.md`)
-- **HTML pages** with live preview
-- **Mermaid diagrams** (flowcharts, sequence diagrams, etc.)
-- **SVG graphics**
-- **Code snippets** with syntax highlighting
-- **Markdown documents**
-- **AI-generated images**
+**Rendering Methods**:
+- **Babel Standalone** (instant) — No npm imports, uses UMD globals
+- **Server Bundling** (2-5s) — Has npm imports, uses `bundle-artifact/` Edge Function
 
-**CRITICAL**: Artifacts run in isolated sandboxes with NO access to local project files. Only CDN-loaded libraries are available. See "Artifact Import Restrictions" section below.
+**Supported types**: `code` | `html` | `react` | `svg` | `mermaid` | `markdown` | `image`
 
-### 5-Layer Artifact Validation System
+```tsx
+// ❌ FORBIDDEN - Local imports never work
+import { Button } from "@/components/ui/button"
 
-The codebase implements a comprehensive defense-in-depth validation system to prevent artifact failures:
+// ✅ CORRECT - NPM packages (server-bundled)
+import * as Dialog from '@radix-ui/react-dialog';
+```
 
-1. **System Prompt Prevention**: AI receives prominent warnings during generation
-2. **Template Examples**: All templates use only Radix UI + Tailwind (no local imports)
-3. **Pre-Generation Validation**: `supabase/functions/_shared/artifact-validator.ts` - Scans requests for problematic patterns
-4. **Post-Generation Transformation**: Automatically fixes common import mistakes and immutability violations
-5. **Runtime Validation**: Blocks artifacts with critical errors before rendering
+### 5-Layer Artifact Validation
 
-**File Location**: `supabase/functions/_shared/artifact-validator.ts`
-
-**Key Functions**:
-- `validateArtifactCode()` - Main validation function
-- `autoFixArtifactCode()` - Auto-fixes reserved keywords, React imports, immutability violations
-- `validateImmutability()` - Detects and fixes array/object mutation patterns
-- `detectReservedKeywords()` - Catches strict mode violations (`eval`, `arguments`, etc.)
+1. **System Prompt Prevention** — AI receives warnings during generation
+2. **Template Examples** — All templates use Radix UI + Tailwind
+3. **Pre-Generation Validation** — `artifact-validator.ts` scans for patterns
+4. **Post-Generation Transformation** — Auto-fixes imports & immutability
+5. **Runtime Validation** — Blocks artifacts with critical errors
 
 ### Immutability Enforcement
 
-React strict mode enforces immutability. The validator detects and auto-fixes these patterns:
-
-❌ **WRONG** (causes runtime errors):
 ```javascript
-board[i] = 'X';           // Direct assignment - WILL CRASH
-board.push(value);        // Mutates original array
-board.splice(0, 1);       // Mutates original array
-board.sort();             // Mutates original array
+// ❌ WRONG - Causes runtime errors
+board[i] = 'X';           // Direct assignment
+board.push(value);        // Mutates array
+
+// ✅ CORRECT - Immutable patterns
+const newBoard = [...board]; newBoard[i] = 'X';
+const newBoard = [...board, value];
 ```
 
-✅ **CORRECT** (immutable patterns):
-```javascript
-const newBoard = [...board];
-newBoard[i] = 'X';
+**Auto-fix**: Validator transforms direct assignments into immutable patterns.
 
-const newBoard = [...board, value];     // Instead of push
-const sorted = [...board].sort();       // Copy first, then sort
-```
+### Database Schema
 
-**Auto-fix**: The validator automatically transforms direct array assignments into immutable patterns.
+**Key Tables**: `chat_sessions`, `chat_messages`, `guest_rate_limits`, `ai_usage_tracking`
 
-### Database Schema (Supabase PostgreSQL)
-
-**Core Tables**:
 ```sql
--- User sessions with AI-generated titles
-chat_sessions {
-  id: uuid (PK)
-  user_id: uuid (FK to auth.users)
-  title: text (AI-generated)
-  first_message: text
-  conversation_summary: text (for long conversations)
-  created_at: timestamptz
-  updated_at: timestamptz
-}
-
--- Chat messages with reasoning support
-chat_messages {
-  id: uuid (PK)
-  session_id: uuid (FK to chat_sessions)
-  role: text ('user' | 'assistant')
-  content: text
-  reasoning: text (structured JSON - chain of thought)
-  token_count: integer
-  created_at: timestamptz
-}
-
--- Guest rate limiting (IP-based, 20 requests/5h)
-guest_rate_limits {
-  id: uuid (PK)
-  identifier: text (IP address)
-  request_count: integer
-  window_start: timestamptz
-  last_request_at: timestamptz
-}
-
--- AI usage tracking for analytics
-ai_usage_tracking {
-  id: uuid (PK)
-  user_id: uuid
-  model: text
-  input_tokens: integer
-  output_tokens: integer
-  total_cost: numeric
-  endpoint: text
-  created_at: timestamptz
-}
+chat_sessions(id, user_id, title, first_message, conversation_summary, created_at, updated_at)
+chat_messages(id, session_id, role, content, reasoning, token_count, created_at)
+guest_rate_limits(id, identifier, request_count, window_start, last_request_at)
 ```
 
-**Security**: All tables have Row-Level Security (RLS) policies. All SECURITY DEFINER functions use `SET search_path = public, pg_temp` to prevent privilege escalation.
+**Security**: All tables have RLS policies. SECURITY DEFINER functions use `SET search_path = public, pg_temp`.
 
-### Edge Functions (Deno on Supabase)
+Full schema: `supabase/migrations/`
 
-Located in `supabase/functions/`:
+### Edge Functions (`supabase/functions/`)
 
-1. **chat** - Main chat streaming (Gemini 2.5 Flash Lite via OpenRouter)
-   - Handles SSE streaming
-   - Intent detection for artifacts/images
-   - Reasoning generation (chain of thought)
-   - Rate limiting for guests
+| Function | Purpose |
+|----------|---------|
+| `chat/` | Main chat streaming with handlers/ and middleware/ |
+| `generate-artifact/` | Artifact generation with validation |
+| `bundle-artifact/` | Server-side npm bundling (Radix UI, framer-motion) |
+| `generate-artifact-fix/` | Error fixing with deep reasoning |
+| `generate-title/` | Session title generation |
+| `generate-image/` | AI image generation (10-key rotation) |
+| `summarize-conversation/` | Context summarization |
+| `health/` | System health monitoring |
 
-2. **generate-artifact** - Artifact generation (Kimi K2-Thinking via OpenRouter)
-   - Optimized for fast, reliable code generation
-   - Pre/post-generation validation
-   - Auto-transformation of common mistakes
-   - Immutability enforcement
-   - **NOW supports Radix UI** via server-side bundling
+**Shared Utilities** (`_shared/`): `openrouter-client.ts`, `artifact-validator.ts`, `cors-config.ts`, `logger.ts`, `storage-retry.ts`, `system-prompt-inline.ts`
 
-3. **bundle-artifact** - **NEW (2025-11)** - Server-side bundling for npm dependencies
-   - Bundles React artifacts with npm packages (Radix UI, framer-motion, etc.)
-   - Uses esbuild WASM (Deno 2.4 compatible) with import maps
-   - Uploads to Supabase Storage with signed URLs (1-hour expiry)
-   - Supports 2+ million npm packages via esm.sh
-   - Rate limiting: 50 requests per 5 hours (authenticated users only)
-   - Auto-cleanup: Temporary directory cleanup after bundling
-   - Security: Session ownership validation, UUID validation, CSP headers, bundle size limits (10MB), dependency version validation, XSS prevention, timeout protection (30s)
+## Model Configuration System
 
-4. **generate-artifact-fix** - Artifact error fixing (Kimi K2-Thinking)
-   - Deep reasoning for debugging
-   - Comprehensive error analysis
-   - Automatic code corrections
-
-5. **generate-title** - Session title generation (Gemini Flash Lite)
-   - Auto-generates descriptive titles from first message
-
-6. **generate-image** - AI image generation (Gemini Flash-Image)
-   - 10-key rotation pool (150 RPM total)
-   - Round-robin key selection
-
-7. **summarize-conversation** - Context summarization (Gemini Flash Lite)
-   - Intelligent conversation summarization for long chats
-
-**Shared Utilities** (`supabase/functions/_shared/`):
-- `openrouter-client.ts` - OpenRouter API client with retry logic
-- `artifact-validator.ts` - Validation and auto-fix utilities
-- `cors-config.ts` - Environment-based CORS validation
-- `system-prompt-inline.ts` - Externalized system prompts (52% bundle reduction)
-- `reasoning-generator.ts` - Structured reasoning generation
-
-## Artifact Architecture & Rendering
-
-**NEW (2025-11)**: Artifacts now support **two rendering methods** - client-side (Babel) and server-side (bundling).
-
-### 🚀 Server-Side Bundling (NEW)
-
-**What it enables**:
-- ✅ **Full npm ecosystem** - Use Radix UI, framer-motion, any npm package
-- ✅ **Modern UI primitives** - Professional, accessible components
-- ✅ **Automatic detection** - System detects npm imports and bundles automatically
-- ✅ **No code changes** - Works transparently for users
-
-**How it works**:
-1. AI generates artifact with npm imports (e.g., `import * as Dialog from '@radix-ui/react-dialog'`)
-2. Frontend detects npm imports via `detectNpmImports()`
-3. Calls `/bundle-artifact` Edge Function with code and dependencies
-4. Deno bundles code with npm packages from esm.sh
-5. Uploads bundle to Supabase Storage
-6. Returns signed URL for iframe loading
-7. Artifact renders with full npm ecosystem access
-
-**Supported packages**: Any npm package available on esm.sh (2+ million packages)
-
-### ⚡ Client-Side Babel (Legacy/Fallback)
-
-**For simple artifacts** without npm dependencies:
-- ✅ **Instant rendering** - No build time
-- ✅ **Zero cost** - Browser does the work
-- ✅ **UMD globals** - React, Lucide, Recharts, Framer Motion
-
-### ❌ STILL FORBIDDEN
-
-```tsx
-// LOCAL IMPORTS - NEVER WORKS (use npm instead)
-import { Button } from "@/components/ui/button"      // ❌ FAILS
-import { Card } from "@/components/ui/card"          // ❌ FAILS
-import { cn } from "@/lib/utils"                     // ❌ FAILS
-```
-
-**Why**: Artifacts run in isolated sandboxes. Use npm packages like `@radix-ui/*` instead.
-
-### ✅ RECOMMENDED APPROACH
-
-```tsx
-// ✅ NPM PACKAGES - FULLY SUPPORTED (server-bundled)
-import * as Dialog from '@radix-ui/react-dialog';
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { motion } from 'framer-motion';
-
-export default function App() {
-  const { useState } = React; // React still from global
-
-  return (
-    <Dialog.Root>
-      <Dialog.Trigger>Open Dialog</Dialog.Trigger>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded">
-          <Dialog.Title>Professional UI</Dialog.Title>
-          <Dialog.Description>With full Radix UI support!</Dialog.Description>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
-  );
-}
-```
-
-### 🔄 Hybrid Strategy
-
-The system intelligently chooses the best rendering method:
-- **No npm imports** → Babel Standalone (instant, free)
-- **Has npm imports** → Server bundling (2-5s, small cost)
-- **Bundling fails** → Fallback to Babel with error message
-
-## Testing Strategy
-
-### Test Infrastructure
-- **Framework**: Vitest 4.0 with React Testing Library
-- **Coverage**: 74.21% (exceeds 55% threshold by 19%)
-- **Total Tests**: 293 passing, 27 skipped
-- **CI/CD**: GitHub Actions with automatic coverage reporting to Codecov
-
-### Coverage Breakdown
-| Metric | Current | Threshold | Status |
-|--------|---------|-----------|--------|
-| Statements | 74.21% | 55% | ✅ +19% |
-| Branches | 68.58% | 50% | ✅ +18% |
-| Functions | 65.81% | 55% | ✅ +11% |
-| Lines | 74.29% | 55% | ✅ +19% |
-
-### Key Test Suites
-
-1. **Artifact System** (`src/components/ArtifactContainer.test.tsx`):
-   - 14 XSS security tests
-   - 5 performance benchmarks
-   - Export menu validation
-   - Version control tests
-
-2. **Export Utilities** (`src/utils/__tests__/exportArtifact.test.ts`):
-   - 98% coverage
-   - Clipboard fallback mechanisms
-   - Multi-file ZIP export validation
-
-3. **Security Validators** (`src/utils/__tests__/artifactValidator.test.ts`):
-   - Import restriction enforcement
-   - Syntax validation for all artifact types
-   - Immutability violation detection
-
-### Running Tests
-
-```bash
-# Run all tests
-npm run test
-
-# Run specific test file
-npm run test -- src/utils/__tests__/artifactValidator.test.ts
-
-# Generate coverage report
-npm run test:coverage
-
-# Run tests in watch mode
-npm run test -- --watch
-```
-
-**CI/CD**: All tests run automatically on PRs. PRs are blocked if tests fail or coverage drops below threshold.
-
-## State Management
-
-### TanStack Query (React Query)
-Primary data fetching and caching layer:
-
-```typescript
-// Example: Chat sessions hook
-export function useChatSessions() {
-  return useQuery({
-    queryKey: ["chatSessions"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("chat_sessions")
-        .select("*")
-        .order("updated_at", { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-  });
-}
-```
-
-**Key Hooks** (located in `src/hooks/`):
-- `useChatMessages.tsx` - Message CRUD, streaming, artifact parsing
-- `useChatSessions.tsx` - Session management, title generation
-- `useArtifactVersions.ts` - Version control for artifacts
-- `useAuthUserRateLimit.ts` - Rate limit checking
-
-### React Context
-Used sparingly for global state:
-- `MultiArtifactContext.tsx` - Multi-artifact selection state
-
-## Security Features
-
-### Database Hardening
-- All SECURITY DEFINER functions use `SET search_path = public, pg_temp` to prevent schema injection
-- Row-Level Security (RLS) policies on all tables
-- JWT-based authentication with automatic refresh
-
-### API Protection
-- **Guest rate limiting**: 20 requests per 5-hour window (IP-based)
-- **CORS validation**: Environment-based origin whitelist (no wildcard `*` in production)
-- **Input validation**: All Edge Functions validate message format, length, and content
-
-### XSS Prevention
-- DOMPurify sanitization on all user-generated content
-- Triple-layer security: Server validation + Zod schemas + DOMPurify
-- 14 XSS attack scenarios tested and validated
-
-## Build Optimization
-
-### Code Splitting (vite.config.ts)
-```typescript
-manualChunks: {
-  "vendor-react": ["react", "react-dom", "react-router-dom"],
-  "vendor-ui": ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu"],
-  "vendor-markdown": ["react-markdown", "remark-gfm"],
-  "vendor-query": ["@tanstack/react-query"],
-  "vendor-supabase": ["@supabase/supabase-js"],
-}
-```
-
-### Performance Features
-- **Brotli + Gzip compression** for all assets
-- **PWA support** with service worker (fast updates optimized)
-- **Terser minification** with console removal in production
-- **Unique asset hashing** for cache busting
-- **52% bundle reduction** via system prompt externalization
-
-### Cache Strategy
-- **Supabase API**: NetworkFirst, 30-second cache
-- **Images**: NetworkFirst, 5-minute cache
-- **Service Worker**: Immediate activation (`clientsClaim`, `skipWaiting`)
-
-## ⚠️ Anti-Patterns (Never Do This)
-
-| ❌ DON'T | ✅ DO INSTEAD | WHY |
-|----------|---------------|-----|
-| `bun install` | `npm install` | Prevents lock file conflicts |
-| Skip session validation | `await ensureValidSession()` | Prevents auth errors |
-| Import shadcn in artifacts | Use npm Radix UI or Tailwind CSS | Local imports unavailable, use npm instead |
-| Animate all messages | Animate last message only | Performance (100+ msgs) |
-| Deploy without verification | Run Chrome DevTools checks | Catches runtime errors |
-| Add routes after `*` | Add ABOVE catch-all | Routes never reached |
-| Hardcode model names | Use `MODELS.*` from config.ts | CI/CD will FAIL, breaks production |
-| Use console.log in production | Remove or use dev only | Stripped by Terser |
-| Duplicate error handling | Use `createErrorResponse()` | Consistency & maintenance |
-| Manual CORS headers | Use `corsHeaders` from cors-config.ts | Security & standardization |
-
-## Model Configuration System (Production-Ready)
-
-**Critical Rule:** **NEVER hardcode model names in Edge Functions!** Always use `MODELS.*` constants from `supabase/functions/_shared/config.ts`.
-
-### Single Source of Truth
-
-All AI model names are defined in `supabase/functions/_shared/config.ts`:
+**Critical**: Never hardcode model names — use `MODELS.*` from `supabase/functions/_shared/config.ts`
 
 ```typescript
 export const MODELS = {
-  /** Gemini 2.5 Flash Lite for chat/summaries/titles */
   GEMINI_FLASH: 'google/gemini-2.5-flash-lite',
-  /** Kimi K2-Thinking for artifact generation */
   KIMI_K2: 'moonshotai/kimi-k2-thinking',
-  /** Gemini Flash Image for image generation */
   GEMINI_FLASH_IMAGE: 'google/gemini-2.5-flash-image'
 } as const;
 ```
 
-### Usage in Edge Functions
+**Golden Snapshot Testing**: `model-config.snapshot.json` prevents accidental changes. CI/CD blocks merges if config drifts.
 
+**To update models intentionally**:
+1. Update `config.ts`
+2. Update `model-config.snapshot.json` (version date + model name)
+3. Run `cd supabase/functions && deno task test`
+
+## State Management
+
+**TanStack Query** (primary):
 ```typescript
-// ✅ CORRECT - Import and use MODELS constants
-import { MODELS } from '../_shared/config.ts';
-
-const response = await fetch(OPENROUTER_URL, {
-  body: JSON.stringify({
-    model: MODELS.GEMINI_FLASH,  // ✅ Good!
-    messages: [...]
-  })
-});
-
-// ❌ WRONG - Never hardcode model names!
-const response = await fetch(OPENROUTER_URL, {
-  body: JSON.stringify({
-    model: "google/gemini-2.5-flash-lite",  // ❌ BAD! Will fail tests
-    messages: [...]
-  })
-});
+export function useChatSessions() {
+  return useQuery({
+    queryKey: ["chatSessions"],
+    queryFn: () => supabase.from("chat_sessions").select("*").order("updated_at", { ascending: false })
+  });
+}
 ```
 
-### Golden Snapshot Testing
+**Key Hooks** (`src/hooks/`): `useChatMessages.tsx`, `useChatSessions.tsx`, `useArtifactVersions.ts`, `useAuthUserRateLimit.ts`
 
-**Purpose:** Prevents accidental model configuration changes that could break production.
+**React Context**: `MultiArtifactContext.tsx` (multi-artifact selection)
 
-**How it works:**
-1. `model-config.snapshot.json` stores the expected model names
-2. Tests compare `config.ts` against the snapshot on every commit
-3. Tests FAIL if model names don't match (catches accidental changes)
-4. CI/CD blocks merges if model config has drifted
+## Security
 
-**Test Files:**
-- `supabase/functions/_shared/__tests__/model-config.test.ts` - 4 comprehensive tests
-- `supabase/functions/_shared/__tests__/model-config.snapshot.json` - Golden snapshot
+- **Database**: RLS policies, SECURITY DEFINER with `search_path`, JWT auth
+- **API**: Guest rate limiting (20/5h), CORS whitelist, input validation
+- **XSS**: DOMPurify + Zod schemas + server validation (14 attack scenarios tested)
 
-### Updating Model Names (Intentional Changes)
+## Build Optimization
 
-When you **deliberately** need to change a model:
+**Code Splitting** (`vite.config.ts`): vendor-react, vendor-ui, vendor-markdown, vendor-query, vendor-supabase
 
-1. **Update config.ts:**
-   ```typescript
-   export const MODELS = {
-     GEMINI_FLASH: 'google/new-model-name',  // Changed
-   }
-   ```
+**Features**: Brotli + Gzip, PWA service worker, Terser minification, 52% bundle reduction via externalized prompts
 
-2. **Update snapshot:**
-   ```json
-   {
-     "version": "2025-11-XX",  // ← Update date
-     "models": {
-       "GEMINI_FLASH": "google/new-model-name"  // ← Match config
-     }
-   }
-   ```
+**Cache**: Supabase API (NetworkFirst, 30s), Images (NetworkFirst, 5min), Service Worker (immediate activation)
 
-3. **Test & Deploy:**
-   ```bash
-   cd supabase/functions && deno task test
-   supabase functions deploy
-   ```
+## Common Patterns
 
-### Benefits
-
-- **Single Point of Change:** Update one constant, not 6+ files
-- **Type Safety:** TypeScript ensures correct model names
-- **Automated Validation:** CI/CD catches configuration drift
-- **Zero Production Incidents:** Prevents 404 errors from wrong model names
-
-## Common Development Patterns
-
-### Session Validation Pattern
-
-Always validate session before authenticated operations:
-
+### Session Validation
 ```typescript
-import { ensureValidSession } from "@/utils/authHelpers";
-
 const session = await ensureValidSession();
-if (!session) {
-  toast({ title: "Authentication required", variant: "destructive" });
-  navigate("/auth");
-  return;
-}
-// Proceed with authenticated operation
-const { data, error } = await supabase
-  .from("chat_sessions")
-  .insert({ user_id: session.user.id, ...});
+if (!session) { navigate("/auth"); return; }
 ```
 
 ### Creating Artifacts (AI Response Format)
-
-Artifacts are embedded in AI responses using XML-like tags:
-
 ```xml
-<artifact type="application/vnd.ant.react" title="Dashboard Component">
-export default function Dashboard() {
-  const { useState } = React;
-  const [count, setCount] = useState(0);
-
-  return (
-    <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
-      <h2 className="text-2xl font-bold mb-4">Dashboard</h2>
-      <button
-        onClick={() => setCount(count + 1)}
-        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-      >
-        Count: {count}
-      </button>
-    </div>
-  );
-}
+<artifact type="application/vnd.ant.react" title="Component Name">
+export default function App() { ... }
 </artifact>
 ```
 
-**Supported types**: `code` | `html` | `react` | `svg` | `mermaid` | `markdown` | `image`
+### Adding New Artifact Type
+1. Update `ArtifactType` in `src/components/Artifact.tsx`
+2. Add renderer logic in `Artifact` component
+3. Update parser in `src/utils/artifactParser.ts`
 
-### Adding a New Artifact Type
+### Adding New Edge Function
+1. Create `supabase/functions/your-function/index.ts`
+2. Use `getCorsHeaders()` and `handleCorsPreflightRequest()` from `_shared/cors-config.ts`
+3. Deploy: `supabase functions deploy your-function --project-ref <ref>`
 
-1. **Update type definition** in `src/components/Artifact.tsx`:
-```typescript
-export type ArtifactType = "code" | "html" | "react" | "svg" | "mermaid" | "markdown" | "image" | "your-new-type";
+## Git Conventions
+
+### Commit Format
 ```
-
-2. **Add renderer logic** in `Artifact` component:
-```typescript
-if (artifact.type === "your-new-type") {
-  return <YourCustomRenderer content={artifact.content} />;
-}
+<type>: <description>
 ```
+**Types**: `feat` (new feature), `fix` (bug fix), `docs` (documentation), `refactor` (restructure), `test` (tests), `chore` (maintenance)
 
-3. **Update parser** in `src/utils/artifactParser.ts`:
-```typescript
-const mimeTypeMap: Record<string, ArtifactType> = {
-  // ... existing types
-  'application/vnd.your-type': 'your-new-type',
-};
-```
-
-### Adding a New Edge Function
-
-1. **Create function directory**: `supabase/functions/your-function/`
-2. **Create index.ts** with CORS headers:
-```typescript
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
-
-serve(async (req) => {
-  const origin = req.headers.get("Origin");
-  const corsHeaders = getCorsHeaders(origin);
-
-  if (req.method === "OPTIONS") {
-    return handleCorsPreflightRequest(req);
-  }
-
-  // Your logic here
-});
-```
-
-3. **Deploy**: `supabase functions deploy your-function --project-ref <ref>`
-
-### Handling Streaming Responses
-
-```typescript
-// Example from useChatMessages.tsx
-const streamChat = async (message: string) => {
-  const response = await fetch(`${supabaseUrl}/functions/v1/chat`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${session?.access_token}`,
-    },
-    body: JSON.stringify({ messages, sessionId }),
-  });
-
-  const reader = response.body?.getReader();
-  const decoder = new TextDecoder();
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    const chunk = decoder.decode(value);
-    const lines = chunk.split("\n");
-
-    for (const line of lines) {
-      if (line.startsWith("data: ")) {
-        const data = JSON.parse(line.slice(6));
-        // Handle delta, reasoning, or completion
-      }
-    }
-  }
-};
-```
+### PR Checklist
+- [ ] Tests pass (`npm run test`)
+- [ ] Coverage maintained (`npm run test:coverage`)
+- [ ] No TypeScript errors (`npm run build`)
+- [ ] Chrome DevTools verification completed
+- [ ] No hardcoded model names
 
 ## Environment Variables
 
-### Frontend (.env)
-```env
-VITE_SUPABASE_URL=https://vznhbocnuykdmjvujaka.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=<anon_key>
-VITE_SUPABASE_PROJECT_ID=vznhbocnuykdmjvujaka
-VITE_ENABLE_ANALYTICS=false
-```
+**Frontend** (`.env`): `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID`, `VITE_ENABLE_ANALYTICS`
 
-### Edge Functions (Supabase Secrets)
-```bash
-# OpenRouter (chat, artifacts, summaries, titles)
-supabase secrets set OPENROUTER_GEMINI_FLASH_KEY=sk-or-v1-...
-supabase secrets set OPENROUTER_KIMI_K2_KEY=sk-or-v1-...
-supabase secrets set OPENROUTER_K2T_KEY=sk-or-v1-...
+**Edge Functions** (Supabase Secrets):
+- `OPENROUTER_GEMINI_FLASH_KEY`, `OPENROUTER_KIMI_K2_KEY`, `OPENROUTER_K2T_KEY`
+- `GOOGLE_KEY_1` through `GOOGLE_KEY_10` (image generation)
+- `ALLOWED_ORIGINS` (CORS)
 
-# Google AI Studio (image generation - 10-key rotation)
-supabase secrets set GOOGLE_KEY_1=AIzaSy...
-supabase secrets set GOOGLE_KEY_2=AIzaSy...
-# ... GOOGLE_KEY_3 through GOOGLE_KEY_10
-
-# CORS configuration (production)
-supabase secrets set ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
-```
-
-## File Structure Reference
+## File Structure
 
 ```
 src/
 ├── components/
-│   ├── ui/                    # shadcn/ui components (69 files)
-│   ├── prompt-kit/            # Custom chat UI primitives
+│   ├── ui/                    # 69 shadcn components
+│   ├── prompt-kit/            # Chat UI primitives
 │   ├── Artifact.tsx           # Main artifact renderer
-│   ├── ArtifactCard.tsx       # Artifact preview cards
-│   ├── ChatInterface.tsx      # Main chat UI with resizable panels
-│   └── ChatSidebar.tsx        # Session list sidebar
-├── hooks/
-│   ├── useChatMessages.tsx    # Chat message CRUD + streaming
-│   ├── useChatSessions.tsx    # Session management
-│   ├── useArtifactVersions.ts # Version control
-│   └── useAuthUserRateLimit.ts # Rate limiting
-├── utils/
-│   ├── artifactParser.ts      # Parse artifacts from AI responses
-│   ├── artifactValidator.ts   # Client-side validation
-│   ├── exportArtifact.ts      # Multi-format export system
-│   └── __tests__/             # Utility test suites
-├── pages/
-│   ├── Index.tsx              # Main chat page
-│   ├── Auth.tsx               # Login page
-│   └── Landing.tsx            # Marketing landing page
-└── integrations/
-    └── supabase/              # Supabase client + types
+│   └── ChatInterface.tsx      # Main chat UI
+├── hooks/                     # Data fetching hooks
+├── utils/                     # Utilities + __tests__/
+├── pages/                     # Route components (Index, Auth, Landing)
+└── integrations/supabase/     # Supabase client + types
 
 supabase/
 ├── functions/
-│   ├── chat/                  # Main chat (Gemini Flash Lite)
-│   ├── generate-artifact/     # Artifact generation (Kimi K2)
-│   ├── generate-artifact-fix/ # Error fixing (Kimi K2)
-│   ├── generate-title/        # Title generation (Gemini)
-│   ├── generate-image/        # Image generation (Flash-Image)
-│   ├── summarize-conversation/ # Summarization (Gemini)
-│   └── _shared/               # Shared utilities
-│       ├── openrouter-client.ts
-│       ├── artifact-validator.ts
-│       ├── cors-config.ts
-│       └── system-prompt-inline.ts
+│   ├── chat/                  # handlers/, middleware/, index.ts
+│   ├── generate-artifact/     # Artifact generation
+│   ├── bundle-artifact/       # npm bundling
+│   ├── _shared/               # Shared utilities
+│   └── ...                    # Other functions
 └── migrations/                # Database migrations
 ```
 
-## Key Architectural Decisions
-
-### Why Kimi K2-Thinking for Artifacts?
-- **Faster**: Eliminated timeout issues (previous model was too slow)
-- **More reliable**: Enhanced reasoning capabilities for complex code generation
-- **Better error fixing**: Deep reasoning for debugging and auto-correction
-
-### Why 10-Key Rotation for Images?
-- **High throughput**: 150 RPM total (10 keys × 15 RPM each)
-- **Independent rate limits**: Each key must be from different Google Cloud project
-- **Dedicated to images**: Chat and artifacts use single OpenRouter keys for simplicity
-
-### Why No Radix UI in Artifacts?
-- **Babel standalone limitations**: Import maps not supported
-- **Sandbox isolation**: Artifacts run in iframes with no access to local modules
-- **Solution**: Use Tailwind CSS utility classes with React state instead
-
-### Why Externalized System Prompts?
-- **52% bundle reduction**: Moved large prompts from inline strings to separate file
-- **Better maintainability**: Single source of truth for prompts
-- **Shared across functions**: Reduces duplication
-
 ## Troubleshooting
 
-### Artifact shows blank/white screen
-1. Check browser console for import errors
-2. Verify no `@/` imports in artifact code
-3. Ensure all libraries accessed via globals (React, Recharts, LucideReact)
-4. Check for strict mode violations (reserved keywords, array mutations)
-
-### Tests failing with "Cannot find module"
-1. Ensure TypeScript paths are configured: `tsconfig.json` has `@/*` alias
-2. Check Vitest config resolves aliases correctly
-3. Run `npm install` to ensure all dependencies are installed
-
-### Edge Function deployment timeout
-1. Check function size (should be <10MB)
-2. Verify all imports use valid Deno URLs
-3. Use `--no-verify-jwt` flag for testing without authentication
-4. Check Supabase project status and quotas
-
-### Rate limiting errors for guests
-1. Current limit: 20 requests per 5-hour window
-2. Check `guest_rate_limits` table for IP record
-3. Wait for window to reset or authenticate to bypass
+| Issue | Check |
+|-------|-------|
+| Artifact blank screen | Console errors → `@/` imports → global access → strict mode violations |
+| "Cannot find module" | tsconfig.json paths → Vitest aliases → `npm install` |
+| Edge Function timeout | Function size (<10MB) → Deno URLs → `--no-verify-jwt` → quotas |
+| Rate limiting errors | 20 req/5h limit → `guest_rate_limits` table → authenticate to bypass |
 
 ## Performance Targets
 
-### Frontend (Web Vitals)
-- **First Contentful Paint (FCP)**: < 1.5s
-- **Largest Contentful Paint (LCP)**: < 2.5s
-- **Time to Interactive (TTI)**: < 3.5s
-- **Cumulative Layout Shift (CLS)**: < 0.1
+| Metric | Target |
+|--------|--------|
+| FCP | < 1.5s |
+| LCP | < 2.5s |
+| TTI | < 3.5s |
+| CLS | < 0.1 |
+| Coverage | 55% min (current: 74.21%) |
+| Test execution | < 3s |
+| CI/CD runtime | < 5min |
 
-### Testing
-- **Coverage threshold**: 55% minimum (current: 74.21%)
-- **Test execution**: < 3 seconds for full suite
-- **CI/CD runtime**: < 5 minutes for complete pipeline
+## Glossary
+
+| Term | Definition |
+|------|------------|
+| **Artifact** | Interactive component rendered in isolated iframe sandbox |
+| **Edge Function** | Serverless Deno function on Supabase |
+| **Golden Snapshot** | Test pattern comparing config against known-good baseline |
+| **RLS** | Row-Level Security — PostgreSQL per-user data access |
+| **SSE** | Server-Sent Events — streaming protocol for chat |
+| **OpenRouter** | API aggregator for multiple AI models |
 
 ## Additional Resources
 
 - **Artifact Import Guide**: `.claude/artifact-import-restrictions.md`
-- **README**: `README.md` (comprehensive project documentation)
+- **Chrome MCP Guide**: `.claude/CHROME_MCP_COMMANDS.md`
+- **README**: `README.md`
 - **Supabase Docs**: https://supabase.com/docs
 - **OpenRouter Docs**: https://openrouter.ai/docs
-- **Vitest Docs**: https://vitest.dev/guide/

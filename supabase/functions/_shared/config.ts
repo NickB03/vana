@@ -9,76 +9,147 @@
  */
 
 /**
+ * Safely parse an integer from environment variable with validation
+ *
+ * @param key - Environment variable name
+ * @param defaultValue - Default value if env var is not set or invalid
+ * @param min - Optional minimum allowed value (defaults to 0)
+ * @returns Parsed integer or default value
+ *
+ * @example
+ * ```ts
+ * const maxRequests = getEnvInt('RATE_LIMIT_GUEST_MAX', 20); // Returns 20 if not set
+ * const windowHours = getEnvInt('RATE_LIMIT_GUEST_WINDOW', 5, 1); // Min value of 1
+ * ```
+ */
+function getEnvInt(key: string, defaultValue: number, min: number = 0): number {
+  const value = Deno.env.get(key);
+  if (!value) {
+    return defaultValue;
+  }
+
+  const parsed = parseInt(value, 10);
+
+  // Validate parsed value is a valid number and meets minimum requirement
+  if (isNaN(parsed) || parsed < min) {
+    console.warn(
+      `[config] Invalid value for ${key}="${value}". Using default: ${defaultValue}`
+    );
+    return defaultValue;
+  }
+
+  return parsed;
+}
+
+/**
  * Rate limiting configurations for different user types and APIs
+ *
+ * All values can be overridden via environment variables for dynamic adjustment
+ * without redeployment (useful for DDoS mitigation and abuse scenarios).
+ *
+ * Environment Variables:
+ * - RATE_LIMIT_GUEST_MAX: Guest max requests (default: 20)
+ * - RATE_LIMIT_GUEST_WINDOW: Guest window hours (default: 5)
+ * - RATE_LIMIT_AUTH_MAX: Authenticated max requests (default: 100)
+ * - RATE_LIMIT_AUTH_WINDOW: Authenticated window hours (default: 5)
+ * - RATE_LIMIT_API_THROTTLE_RPM: API throttle RPM (default: 15)
+ * - RATE_LIMIT_API_THROTTLE_WINDOW: API throttle window seconds (default: 60)
+ * - RATE_LIMIT_ARTIFACT_API_MAX: Artifact API max requests (default: 10)
+ * - RATE_LIMIT_ARTIFACT_API_WINDOW: Artifact API window seconds (default: 60)
+ * - RATE_LIMIT_ARTIFACT_GUEST_MAX: Artifact guest max requests (default: 5)
+ * - RATE_LIMIT_ARTIFACT_GUEST_WINDOW: Artifact guest window hours (default: 5)
+ * - RATE_LIMIT_ARTIFACT_AUTH_MAX: Artifact auth max requests (default: 50)
+ * - RATE_LIMIT_ARTIFACT_AUTH_WINDOW: Artifact auth window hours (default: 5)
+ * - RATE_LIMIT_IMAGE_API_MAX: Image API max requests (default: 15)
+ * - RATE_LIMIT_IMAGE_API_WINDOW: Image API window seconds (default: 60)
+ * - RATE_LIMIT_IMAGE_GUEST_MAX: Image guest max requests (default: 20)
+ * - RATE_LIMIT_IMAGE_GUEST_WINDOW: Image guest window hours (default: 5)
+ * - RATE_LIMIT_IMAGE_AUTH_MAX: Image auth max requests (default: 50)
+ * - RATE_LIMIT_IMAGE_AUTH_WINDOW: Image auth window hours (default: 5)
+ * - RATE_LIMIT_TAVILY_API_MAX: Tavily API max requests (default: 10)
+ * - RATE_LIMIT_TAVILY_API_WINDOW: Tavily API window seconds (default: 60)
+ * - RATE_LIMIT_TAVILY_GUEST_MAX: Tavily guest max requests (default: 10)
+ * - RATE_LIMIT_TAVILY_GUEST_WINDOW: Tavily guest window hours (default: 5)
+ * - RATE_LIMIT_TAVILY_AUTH_MAX: Tavily auth max requests (default: 50)
+ * - RATE_LIMIT_TAVILY_AUTH_WINDOW: Tavily auth window hours (default: 5)
+ *
+ * @example
+ * ```bash
+ * # Temporarily tighten guest limits during DDoS
+ * supabase secrets set RATE_LIMIT_GUEST_MAX=5
+ * supabase secrets set RATE_LIMIT_GUEST_WINDOW=1
+ *
+ * # No redeployment needed - changes take effect immediately
+ * ```
  */
 export const RATE_LIMITS = {
   /** Guest user limits (IP-based) */
   GUEST: {
-    MAX_REQUESTS: 20,
-    WINDOW_HOURS: 5
+    MAX_REQUESTS: getEnvInt('RATE_LIMIT_GUEST_MAX', 20, 1),
+    WINDOW_HOURS: getEnvInt('RATE_LIMIT_GUEST_WINDOW', 5, 1)
   },
   /** Authenticated user limits */
   AUTHENTICATED: {
-    MAX_REQUESTS: 100,
-    WINDOW_HOURS: 5
+    MAX_REQUESTS: getEnvInt('RATE_LIMIT_AUTH_MAX', 100, 1),
+    WINDOW_HOURS: getEnvInt('RATE_LIMIT_AUTH_WINDOW', 5, 1)
   },
   /** API-level throttling to prevent overwhelming external services */
   API_THROTTLE: {
-    GEMINI_RPM: 15,
-    WINDOW_SECONDS: 60
+    GEMINI_RPM: getEnvInt('RATE_LIMIT_API_THROTTLE_RPM', 15, 1),
+    WINDOW_SECONDS: getEnvInt('RATE_LIMIT_API_THROTTLE_WINDOW', 60, 1)
   },
   /** Artifact generation rate limits (more restrictive due to expensive Kimi K2 model) */
   ARTIFACT: {
     /** API throttle for artifact generation (stricter than chat) */
     API_THROTTLE: {
-      MAX_REQUESTS: 10,
-      WINDOW_SECONDS: 60
+      MAX_REQUESTS: getEnvInt('RATE_LIMIT_ARTIFACT_API_MAX', 10, 1),
+      WINDOW_SECONDS: getEnvInt('RATE_LIMIT_ARTIFACT_API_WINDOW', 60, 1)
     },
     /** Guest user limits for artifacts (very restrictive to encourage sign-up) */
     GUEST: {
-      MAX_REQUESTS: 5,
-      WINDOW_HOURS: 5
+      MAX_REQUESTS: getEnvInt('RATE_LIMIT_ARTIFACT_GUEST_MAX', 5, 1),
+      WINDOW_HOURS: getEnvInt('RATE_LIMIT_ARTIFACT_GUEST_WINDOW', 5, 1)
     },
     /** Authenticated user limits for artifacts (lower than chat due to cost) */
     AUTHENTICATED: {
-      MAX_REQUESTS: 50,
-      WINDOW_HOURS: 5
+      MAX_REQUESTS: getEnvInt('RATE_LIMIT_ARTIFACT_AUTH_MAX', 50, 1),
+      WINDOW_HOURS: getEnvInt('RATE_LIMIT_ARTIFACT_AUTH_WINDOW', 5, 1)
     }
   },
   /** Image generation rate limits (prevent API quota abuse) */
   IMAGE: {
     /** API throttle for image generation (aligned with OpenRouter Gemini Flash Image limits) */
     API_THROTTLE: {
-      MAX_REQUESTS: 15,
-      WINDOW_SECONDS: 60
+      MAX_REQUESTS: getEnvInt('RATE_LIMIT_IMAGE_API_MAX', 15, 1),
+      WINDOW_SECONDS: getEnvInt('RATE_LIMIT_IMAGE_API_WINDOW', 60, 1)
     },
     /** Guest user limits for images (restrictive to prevent abuse) */
     GUEST: {
-      MAX_REQUESTS: 20,
-      WINDOW_HOURS: 5
+      MAX_REQUESTS: getEnvInt('RATE_LIMIT_IMAGE_GUEST_MAX', 20, 1),
+      WINDOW_HOURS: getEnvInt('RATE_LIMIT_IMAGE_GUEST_WINDOW', 5, 1)
     },
     /** Authenticated user limits for images (higher for registered users) */
     AUTHENTICATED: {
-      MAX_REQUESTS: 50,
-      WINDOW_HOURS: 5
+      MAX_REQUESTS: getEnvInt('RATE_LIMIT_IMAGE_AUTH_MAX', 50, 1),
+      WINDOW_HOURS: getEnvInt('RATE_LIMIT_IMAGE_AUTH_WINDOW', 5, 1)
     }
   },
   /** Tavily web search rate limits (prevent API quota abuse) */
   TAVILY: {
     /** API throttle for Tavily searches (aligned with Basic plan limits) */
     API_THROTTLE: {
-      MAX_REQUESTS: 10,
-      WINDOW_SECONDS: 60
+      MAX_REQUESTS: getEnvInt('RATE_LIMIT_TAVILY_API_MAX', 10, 1),
+      WINDOW_SECONDS: getEnvInt('RATE_LIMIT_TAVILY_API_WINDOW', 60, 1)
     },
     /** Guest user limits for searches (restrictive to prevent abuse) */
     GUEST: {
-      MAX_REQUESTS: 10,
-      WINDOW_HOURS: 5
+      MAX_REQUESTS: getEnvInt('RATE_LIMIT_TAVILY_GUEST_MAX', 10, 1),
+      WINDOW_HOURS: getEnvInt('RATE_LIMIT_TAVILY_GUEST_WINDOW', 5, 1)
     },
     /** Authenticated user limits for searches */
     AUTHENTICATED: {
-      MAX_REQUESTS: 50,
-      WINDOW_HOURS: 5
+      MAX_REQUESTS: getEnvInt('RATE_LIMIT_TAVILY_AUTH_MAX', 50, 1),
+      WINDOW_HOURS: getEnvInt('RATE_LIMIT_TAVILY_AUTH_WINDOW', 5, 1)
     }
   }
 } as const;

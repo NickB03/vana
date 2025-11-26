@@ -145,6 +145,7 @@ function PromptInputTextarea({
       )}
       rows={1}
       disabled={disabled}
+      data-testid="chat-input"
       {...props}
     />
   )

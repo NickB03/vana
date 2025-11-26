@@ -108,6 +108,11 @@ test-report.xml
 .vitest/
 vitest.*.log
 
+# Playwright E2E testing
+playwright-report/
+playwright/.cache/
+.playwright/
+
 # Visual regression testing
 __image_snapshots__/
 __diff_output__/

@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { callGeminiFlashWithRetry, extractTextFromGeminiFlash, type OpenRouterMessage } from "../_shared/openrouter-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
+import { createLogger } from "../_shared/logger.ts";
+import { ErrorResponseBuilder } from "../_shared/error-handler.ts";
 
 serve(async (req) => {
   const origin = req.headers.get("Origin");
@@ -11,47 +13,55 @@ serve(async (req) => {
     return handleCorsPreflightRequest(req);
   }
 
+  const requestId = crypto.randomUUID();
+  const errors = ErrorResponseBuilder.withHeaders(corsHeaders, requestId);
+  const startTime = Date.now();
+  const logger = createLogger({ requestId, functionName: 'generate-title' });
+
   try {
+    logger.request(req.method, '/generate-title');
+
     const requestBody = await req.json();
     const { message } = requestBody;
 
-    console.log("[generate-title] Request body:", JSON.stringify(requestBody));
-    console.log("[generate-title] Message type:", typeof message, "value:", message);
+    logger.debug('request_received', {
+      messageType: typeof message,
+      messageLength: message?.length,
+      hasMessage: !!message
+    });
 
     // Input validation
     if (!message || typeof message !== "string") {
-      console.error("[generate-title] Validation failed: message is", typeof message, message);
-      return new Response(
-        JSON.stringify({
-          error: "Invalid message format",
-          details: `Expected string, got ${typeof message}: ${JSON.stringify(message)?.substring(0, 100)}`
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    
-    if (message.trim().length === 0) {
-      console.error("[generate-title] Validation failed: message is empty after trim");
-      return new Response(
-        JSON.stringify({ error: "Message cannot be empty" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      logger.validationError('message', 'invalid_type', {
+        expectedType: 'string',
+        receivedType: typeof message
+      });
+      return errors.validation(
+        "Invalid message format",
+        `Expected string, got ${typeof message}: ${JSON.stringify(message)?.substring(0, 100)}`
       );
     }
 
+    if (message.trim().length === 0) {
+      logger.validationError('message', 'empty_content');
+      return errors.validation("Message cannot be empty");
+    }
+
     if (message.length > 10000) {
-      console.error("[generate-title] Validation failed: message too long:", message.length);
-      return new Response(
-        JSON.stringify({ error: "Message too long", details: `Length: ${message.length}` }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      logger.validationError('message', 'content_too_long', {
+        length: message.length,
+        maxLength: 10000
+      });
+      return errors.validation(
+        "Message too long",
+        `Length: ${message.length}, max: 10000`
       );
     }
-    
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "No authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      logger.warn('authentication_failed', { reason: 'missing_auth_header' });
+      return errors.unauthorized("No authorization header");
     }
 
     const supabase = createClient(
@@ -62,13 +72,15 @@ serve(async (req) => {
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      logger.warn('authentication_failed', { reason: 'invalid_token' });
+      return errors.unauthorized("Invalid or expired authentication token");
     }
 
-    console.log("Generating title for message:", message.substring(0, 50));
+    // Create child logger with user context
+    const userLogger = logger.child({ userId: user.id });
+    userLogger.info('title_generation_started', {
+      messagePreview: message.substring(0, 50)
+    });
 
     const messages: OpenRouterMessage[] = [
       {
@@ -81,47 +93,57 @@ serve(async (req) => {
       }
     ];
 
-    const response = await callGeminiFlashWithRetry(messages, {
+    const apiStartTime = Date.now();
+    userLogger.aiCall('openrouter', 'gemini-flash', {
+      messageCount: messages.length,
       temperature: 0.7,
-      max_tokens: 50
+      maxTokens: 50
     });
 
+    const response = await callGeminiFlashWithRetry(messages, {
+      temperature: 0.7,
+      max_tokens: 50,
+      requestId
+    });
+
+    const apiDuration = Date.now() - apiStartTime;
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("OpenRouter error:", response.status, errorText);
-
-      if (response.status === 429 || response.status === 403) {
-        return new Response(
-          JSON.stringify({ error: "API rate limit exceeded" }),
-          {
-            status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-
-      return new Response(JSON.stringify({ error: "AI service error" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      userLogger.externalApi('openrouter', '/chat/completions', response.status, apiDuration, {
+        success: false
       });
+      return await errors.apiError(response, "OpenRouter title generation");
     }
 
     const data = await response.json();
     const title = extractTextFromGeminiFlash(data).trim() || "New Chat";
 
-    console.log("Generated title:", title);
+    userLogger.info('title_generated', {
+      title,
+      titleLength: title.length,
+      apiDurationMs: apiDuration
+    });
+
+    const totalDuration = Date.now() - startTime;
+    userLogger.response(200, totalDuration, {
+      titleLength: title.length
+    });
 
     return new Response(JSON.stringify({ title }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId },
     });
   } catch (e) {
-    console.error("Generate title error:", e);
-    return new Response(
-      JSON.stringify({ error: "An error occurred while generating the title" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+    logger.error('title_generation_failed', e as Error, {
+      hasMessage: !!requestBody?.message,
+      errorName: e?.name
+    });
+
+    const totalDuration = Date.now() - startTime;
+    logger.response(500, totalDuration);
+
+    return errors.internal(
+      "An error occurred while generating the title",
+      e instanceof Error ? e.message : "Unknown error"
     );
   }
 });

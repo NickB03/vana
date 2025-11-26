@@ -8,6 +8,7 @@ import { bundleArtifact, needsBundling } from "@/utils/artifactBundler";
 import { toast } from "sonner";
 import { WebSearchResults } from "@/components/WebSearchResults";
 import { WebSearchResults as WebSearchResultsType } from "@/types/webSearch";
+import { MessageErrorBoundary } from "@/components/MessageErrorBoundary";
 
 interface MessageWithArtifactsProps {
   content: string;
@@ -237,7 +238,7 @@ export const MessageWithArtifacts = memo(({
   const otherArtifacts = artifacts.filter(a => a.type !== 'image');
 
   return (
-    <>
+    <MessageErrorBoundary messageContent={content}>
       {/* Render message text without artifact tags */}
       {/* Prose classes applied directly to Markdown component for proper typography */}
       <div
@@ -277,7 +278,7 @@ export const MessageWithArtifacts = memo(({
           className="mt-3"
         />
       ))}
-    </>
+    </MessageErrorBoundary>
   );
 });
 

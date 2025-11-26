@@ -71,6 +71,7 @@ export const WebSearchSource = memo(function WebSearchSource({
               className="size-5 rounded"
               onError={() => setImageError(true)}
               loading="lazy"
+              decoding="async"
             />
           ) : (
             <div className="size-5 rounded bg-muted flex items-center justify-center">

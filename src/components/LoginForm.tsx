@@ -90,6 +90,7 @@ export function LoginForm() {
               id="email"
               type="email"
               placeholder="m@example.com"
+              data-testid="email-input"
               {...form.register("email")}
             />
             {form.formState.errors.email && (
@@ -103,13 +104,14 @@ export function LoginForm() {
             <Input
               id="password"
               type="password"
+              data-testid="password-input"
               {...form.register("password")}
             />
             {form.formState.errors.password && (
               <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
             )}
           </div>
-          <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
+          <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading} data-testid="login-button">
             {isLoading ? "Loading..." : "Login"}
           </Button>
 

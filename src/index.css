@@ -660,6 +660,58 @@ All colors MUST be HSL.
     }
   }
   
+  /* Reasoning fade animations - word-by-word reveal */
+  @keyframes fadeInWord {
+    from {
+      opacity: 0;
+      filter: blur(2px);
+    }
+    to {
+      opacity: 1;
+      filter: blur(0px);
+    }
+  }
+
+  @keyframes fadeInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes fadeOutRight {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(8px);
+    }
+  }
+
+  .animate-fade-in-left {
+    animation: fadeInLeft 400ms ease-out forwards;
+  }
+
+  .animate-fade-out-right {
+    animation: fadeOutRight 400ms ease-out forwards;
+  }
+
+  .fade-word {
+    display: inline-block;
+    opacity: 0;
+    animation: fadeInWord 600ms ease-out forwards;
+  }
+
+  .fade-word-space {
+    white-space: pre;
+  }
+
   /* Reduce motion for users who prefer it */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {

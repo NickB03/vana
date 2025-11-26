@@ -93,6 +93,7 @@ export function ChatSidebar({
                 className="flex items-center justify-center size-10 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
                 onClick={toggleSidebar}
                 aria-label="Collapse sidebar"
+                data-testid="sidebar-toggle"
               >
                 <PanelLeft className="h-[20px] w-[20px]" strokeWidth={1.5} />
               </button>
@@ -108,6 +109,7 @@ export function ChatSidebar({
               onClick={onNewChat}
               variant="ghost"
               className="w-full h-10 hover:bg-accent rounded-md p-0 flex items-center justify-center transition-all hover:scale-105 active:scale-95 group"
+              data-testid="new-chat-button"
             >
               <CirclePlus className="h-6 w-6 group-hover:text-primary transition-colors" strokeWidth={2} />
             </Button>
@@ -116,6 +118,7 @@ export function ChatSidebar({
               onClick={onNewChat}
               variant="ghost"
               className="w-full justify-start hover:bg-accent h-10 px-3 py-2 transition-all hover:scale-105 active:scale-95 group"
+              data-testid="new-chat-button"
             >
               <CirclePlus className="h-6 w-6 mr-2 shrink-0 group-hover:text-primary transition-colors" strokeWidth={2} />
               <span className="text-base whitespace-nowrap">New chat</span>
@@ -142,7 +145,7 @@ export function ChatSidebar({
               <SidebarGroupContent>
                 <SidebarMenu>
                   {periodSessions.map(session => (
-                    <SidebarMenuItem key={session.id}>
+                    <SidebarMenuItem key={session.id} data-testid="session-item">
                       <div
                         className="relative flex items-center w-full group/item"
                         onMouseEnter={() => setHoveredSessionId(session.id)}
@@ -171,6 +174,7 @@ export function ChatSidebar({
                               e.stopPropagation();
                               onDeleteSession(session.id);
                             }}
+                            data-testid="delete-session"
                           >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
