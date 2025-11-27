@@ -1,4 +1,4 @@
-<!-- CLAUDE.md v2.2 | Last updated: 2025-11-25 14:30 -->
+<!-- CLAUDE.md v2.3 | Last updated: 2025-11-27 -->
 
 # CLAUDE.md
 
@@ -83,7 +83,7 @@ npm run build:dev        # Dev build with sourcemaps
 npm run preview          # Preview production build
 ```
 
-### Testing (432 tests, 74.21% coverage)
+### Testing (683 tests, 74% coverage)
 ```bash
 npm run test                  # Run all tests
 npm run test -- --watch       # Watch mode
@@ -120,6 +120,21 @@ supabase functions deploy <name> --project-ref <ref>  # Individual function
 | Conversation exceeds context | `summarize-conversation/` | Gemini Flash Lite |
 | Artifact needs npm packages | `bundle-artifact/` | N/A (bundler) |
 | Health/uptime monitoring | `health/` | N/A (status check) |
+
+### Smart Context Management
+
+Token-aware context windowing system that optimizes conversation history for AI models:
+
+**Components** (`_shared/`):
+- `context-selector.ts` — Main orchestrator for context selection
+- `context-ranker.ts` — Scores messages by importance/recency
+- `token-counter.ts` — Accurate token counting for context budgets
+
+**Features**:
+- Dynamic context window sizing based on model limits
+- Message importance ranking (recent > artifact-related > conversational)
+- Graceful degradation when context exceeds budget
+- Guest session support for artifact bundling
 
 ### Artifact System
 
@@ -163,12 +178,14 @@ const newBoard = [...board, value];
 
 ### Database Schema
 
-**Key Tables**: `chat_sessions`, `chat_messages`, `guest_rate_limits`, `ai_usage_tracking`
+**Key Tables**: `chat_sessions`, `chat_messages`, `guest_rate_limits`, `ai_usage_tracking`, `message_feedback`, `response_quality_logs`
 
 ```sql
 chat_sessions(id, user_id, title, first_message, conversation_summary, created_at, updated_at)
-chat_messages(id, session_id, role, content, reasoning, token_count, created_at)
+chat_messages(id, session_id, role, content, reasoning, search_results, token_count, created_at)
 guest_rate_limits(id, identifier, request_count, window_start, last_request_at)
+message_feedback(id, message_id, session_id, feedback_type, created_at)
+response_quality_logs(id, session_id, quality_score, latency_ms, model, created_at)
 ```
 
 **Security**: All tables have RLS policies. SECURITY DEFINER functions use `SET search_path = public, pg_temp`.
@@ -187,8 +204,19 @@ Full schema: `supabase/migrations/`
 | `generate-image/` | AI image generation (10-key rotation) |
 | `summarize-conversation/` | Context summarization |
 | `health/` | System health monitoring |
+| `admin-analytics/` | Admin analytics dashboard data |
+| `cache-manager/` | Cache management utilities |
+| `intent-examples/` | Intent detection examples |
 
-**Shared Utilities** (`_shared/`): `openrouter-client.ts`, `artifact-validator.ts`, `cors-config.ts`, `logger.ts`, `storage-retry.ts`, `system-prompt-inline.ts`
+**Shared Utilities** (`_shared/`):
+- **Core**: `config.ts`, `cors-config.ts`, `logger.ts`, `validators.ts`
+- **AI/Models**: `openrouter-client.ts`, `model-router.ts`, `complexity-analyzer.ts`, `reasoning-generator.ts`
+- **Context Management**: `context-selector.ts`, `context-ranker.ts`, `token-counter.ts`
+- **State/Quality**: `state-machine.ts`, `conversation-state.ts`, `response-quality.ts`
+- **Artifacts**: `artifact-validator.ts`, `artifact-rules/`
+- **Utilities**: `storage-retry.ts`, `rate-limiter.ts`, `api-error-handler.ts`, `error-handler.ts`
+- **Prompts**: `system-prompt-inline.ts`, `system-prompt.txt`
+- **Integrations**: `tavily-client.ts` (web search)
 
 ## Model Configuration System
 
@@ -329,7 +357,7 @@ supabase/
 | LCP | < 2.5s |
 | TTI | < 3.5s |
 | CLS | < 0.1 |
-| Coverage | 55% min (current: 74.21%) |
+| Coverage | 55% min (current: 74%) |
 | Test execution | < 3s |
 | CI/CD runtime | < 5min |
 

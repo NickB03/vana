@@ -51,6 +51,14 @@
 
 ### Recent Major Improvements
 
+**November 27, 2025 - Smart Context Management & Bug Fixes:**
+- 🧠 **Smart Context Management**: Token-aware context windowing for optimized AI responses
+- 🔧 **Guest Artifact Bundling**: Fixed guest users unable to use npm-bundled artifacts
+- 🛡️ **CSP Security**: Updated Content Security Policy for Tailwind CDN compatibility
+- 📊 **Response Quality Tracking**: New `response_quality_logs` and `message_feedback` tables
+- 🔄 **State Machine Architecture**: Conversation state tracking in `_shared/state-machine.ts`
+- ⚡ **683 Tests**: Expanded test coverage from 432 to 683 tests
+
 **November 17, 2025 - Kimi K2-Thinking Migration:**
 - 🚀 **Faster Artifact Generation**: Migrated to Kimi K2-Thinking with enhanced reasoning
 - ⚡ **Improved Reliability**: Eliminated timeout issues with new high-performance model
@@ -81,7 +89,7 @@
 - 🚀 **Automated CI/CD Pipeline**: GitHub Actions workflow (lint → test → coverage → build)
 - 📊 **Coverage Tracking**: Codecov integration with automatic PR comments and trend analysis
 - 🛡️ **Branch Protection**: GitHub ruleset requiring PR approval and passing checks
-- ✅ **Testing Expansion**: 432 tests (coverage: 68% → 74.21%), exportArtifact.ts: 23% → 98%
+- ✅ **Testing Expansion**: 683 tests (coverage: 68% → 74%), exportArtifact.ts: 23% → 98%
 - 🔒 **Security Testing**: 9 XSS attack scenarios validated, performance benchmarks added
 - 📚 **Comprehensive Docs**: 5 detailed guides (setup, CI/CD, coverage, quickstart)
 
@@ -147,7 +155,7 @@
   - Prevents privilege escalation through schema injection attacks
 
 - **API Protection**:
-  - Guest rate limiting: 10 requests per 24-hour window (IP-based)
+  - Guest rate limiting: 20 requests per 5-hour window (IP-based)
   - CORS origin validation with environment-based whitelist
   - No wildcard `*` origins in production
 
