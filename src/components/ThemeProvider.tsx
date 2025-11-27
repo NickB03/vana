@@ -30,6 +30,30 @@ const initialState: ThemeProviderState = {
 
 export const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
+/**
+ * Safe localStorage getter that handles Safari private mode and quota errors
+ */
+function safeGetItem(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    // Safari private mode, localStorage disabled, or quota exceeded
+    return null;
+  }
+}
+
+/**
+ * Safe localStorage setter that handles Safari private mode and quota errors
+ */
+function safeSetItem(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Safari private mode, localStorage disabled, or quota exceeded
+    console.warn(`Failed to save ${key} to localStorage`);
+  }
+}
+
 export function ThemeProvider({
   children,
   defaultThemeMode = "system",
@@ -38,10 +62,10 @@ export function ThemeProvider({
   ...props
 }: ThemeProviderProps) {
   const [themeMode, setThemeModeState] = useState<ThemeMode>(
-    () => (localStorage.getItem(`${storageKey}-mode`) as ThemeMode) || defaultThemeMode
+    () => (safeGetItem(`${storageKey}-mode`) as ThemeMode) || defaultThemeMode
   );
   const [colorTheme, setColorThemeState] = useState<ColorTheme>(
-    () => (localStorage.getItem(`${storageKey}-color`) as ColorTheme) || defaultColorTheme
+    () => (safeGetItem(`${storageKey}-color`) as ColorTheme) || defaultColorTheme
   );
 
   useEffect(() => {
@@ -75,12 +99,12 @@ export function ThemeProvider({
   }, [themeMode, colorTheme]);
 
   const setThemeMode = (mode: ThemeMode) => {
-    localStorage.setItem(`${storageKey}-mode`, mode);
+    safeSetItem(`${storageKey}-mode`, mode);
     setThemeModeState(mode);
   };
 
   const setColorTheme = (color: ColorTheme) => {
-    localStorage.setItem(`${storageKey}-color`, color);
+    safeSetItem(`${storageKey}-color`, color);
     setColorThemeState(color);
   };
 

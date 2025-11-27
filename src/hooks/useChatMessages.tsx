@@ -42,18 +42,22 @@ export interface RateLimitHeaders {
 
 export interface UseChatMessagesOptions {
   onRateLimitUpdate?: (headers: RateLimitHeaders) => void;
+  isGuest?: boolean; // Explicit guest mode flag - when true, messages are saved to local state only
 }
 
 export function useChatMessages(
   sessionId: string | undefined,
   options?: UseChatMessagesOptions
 ) {
+  const isGuest = options?.isGuest ?? false;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const fetchMessages = useCallback(async () => {
-    if (!sessionId) return;
+    // Skip database fetch for guests or when no sessionId
+    // Guests use local state only (messages are in-memory for their session)
+    if (isGuest || !sessionId) return;
 
     try {
       const { data, error } = await supabase
@@ -78,7 +82,7 @@ export function useChatMessages(
         variant: "destructive",
       });
     }
-  }, [sessionId, toast]);
+  }, [sessionId, isGuest, toast]);
 
   useEffect(() => {
     if (sessionId) {
@@ -106,11 +110,12 @@ export function useChatMessages(
       console.warn("Invalid reasoning steps, using null instead", reasoningSteps);
     }
 
-    // For guest users (no sessionId), add message to local state only
-    if (!sessionId) {
+    // For guest users (explicit isGuest flag OR no sessionId), add message to local state only
+    // This prevents 401 errors when guest sessions have a UUID for artifact bundling
+    if (isGuest || !sessionId) {
       const guestMessage: ChatMessage = {
         id: crypto.randomUUID(),
-        session_id: "guest",
+        session_id: sessionId || "guest", // Use provided sessionId for artifact bundling, or "guest" fallback
         role,
         content,
         reasoning: reasoning || null,
@@ -201,11 +206,7 @@ export function useChatMessages(
           // Authenticated user: save to database
           await saveMessage("user", userMessage);
         } else if (!isAuthenticated) {
-          // Guest user or expired session: save to local state only
-          if (sessionId) {
-            console.warn("Session expired, clearing stale sessionId");
-            // Note: Parent component should handle clearing sessionId
-          }
+          // Guest user: save to local state only (sessionId may exist for artifact bundling)
           await saveMessage("user", userMessage);
         }
       }

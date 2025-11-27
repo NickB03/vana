@@ -14,6 +14,7 @@ export interface GuestSession {
 
 interface GuestSessionReturn {
   isGuest: boolean;
+  sessionId: string | null; // UUID for guest session (used for artifact bundling)
   messageCount: number;
   maxMessages: number;
   canSendMessage: boolean;
@@ -160,6 +161,7 @@ export const useGuestSession = (isAuthenticated: boolean): GuestSessionReturn =>
     setGuestSession(null);
   }, []);
 
+  const sessionId = guestSession?.id || null;
   const messageCount = guestSession?.messageCount || 0;
   const hasReachedLimit = messageCount >= MAX_GUEST_MESSAGES;
   const canSendMessage = isAuthenticated || !hasReachedLimit;
@@ -168,6 +170,7 @@ export const useGuestSession = (isAuthenticated: boolean): GuestSessionReturn =>
 
   return {
     isGuest: !isAuthenticated,
+    sessionId,
     messageCount,
     maxMessages: MAX_GUEST_MESSAGES,
     canSendMessage,

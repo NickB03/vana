@@ -34,9 +34,14 @@ export function getCurrentVersionInfo(): VersionInfo {
  * Call this on app initialization
  */
 export function storeVersionInfo(): void {
-  const versionInfo = getCurrentVersionInfo();
-  sessionStorage.setItem('app-version-info', JSON.stringify(versionInfo));
-  console.log('📦 Version info stored:', versionInfo);
+  try {
+    const versionInfo = getCurrentVersionInfo();
+    sessionStorage.setItem('app-version-info', JSON.stringify(versionInfo));
+    console.log('📦 Version info stored:', versionInfo);
+  } catch (error) {
+    // Safari private mode or storage disabled - gracefully skip
+    console.warn('Could not store version info:', error);
+  }
 }
 
 /**

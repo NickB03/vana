@@ -474,7 +474,7 @@ const Home = () => {
                   />
                 ) : (
                   <ChatInterface
-                    sessionId={currentSessionId}
+                    sessionId={currentSessionId ?? guestSession.sessionId ?? undefined}
                     initialPrompt={!isAuthenticated ? guestInitialPrompt : input}
                     initialImageMode={imageMode}
                     initialArtifactMode={artifactMode}

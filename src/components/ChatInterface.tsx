@@ -74,7 +74,7 @@ export function ChatInterface({
 }: ChatInterfaceProps) {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const { messages, isLoading, streamChat, deleteMessage, updateMessage } = useChatMessages(sessionId);
+  const { messages, isLoading, streamChat, deleteMessage, updateMessage } = useChatMessages(sessionId, { isGuest });
   const [localInput, setLocalInput] = useState("");
   const input = typeof parentInput === 'string' ? parentInput : localInput;
   const setInput = parentOnInputChange ?? setLocalInput;
@@ -732,8 +732,8 @@ export function ChatInterface({
           <ResizablePanel
             id="canvas-panel"
             order={2}
-            defaultSize={70}
-            minSize={50}
+            defaultSize={isCanvasOpen && currentArtifact ? 70 : 0}
+            minSize={isCanvasOpen && currentArtifact ? 50 : 0}
             className={`md:min-w-[400px] flex flex-col ${!isCanvasOpen || !currentArtifact ? 'hidden' : ''}`}
           >
             {currentArtifact && (

@@ -562,6 +562,7 @@ ${artifact.content}
       .replace(/^import\s+\{[^}]*\}\s+from\s+['"]lucide-react['"];?\s*$/gm, '')
       .replace(/^import\s+.*?from\s+['"]recharts['"];?\s*$/gm, '')
       .replace(/^import\s+.*?from\s+['"]framer-motion['"];?\s*$/gm, '')
+      .replace(/^const\s*\{[^}]*(?:useState|useEffect|useReducer|useRef|useMemo|useCallback|useContext|useLayoutEffect)[^}]*\}\s*=\s*React;?\s*$/gm, '')
       .replace(/^export\s+default\s+/gm, '')
       .trim();
 

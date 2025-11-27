@@ -13,7 +13,7 @@
 
 import type { Message } from './token-counter.ts';
 import { countMessageTokens, countTotalTokens } from './token-counter.ts';
-import { rankMessagesByImportance } from './context-ranker.ts';
+import { rankMessageImportance } from './context-ranker.ts';
 
 /**
  * Configuration options for context selection.
@@ -131,15 +131,29 @@ export async function selectContext(
   const remainingBudget = tokenBudget - recentTokens - opts.summaryBudget;
 
   // Rank older messages by importance
-  const rankedOlder = rankMessagesByImportance(olderMessages, {
-    trackedEntities: opts.trackedEntities,
-  });
+  // Add temporary id for tracking since Message type doesn't have id
+  const messagesWithIds = olderMessages.map((msg, idx) => ({
+    id: `msg-${idx}`,
+    content: msg.content,
+    role: msg.role,
+    _original: msg,
+  }));
+
+  const rankedOlder = rankMessageImportance(messagesWithIds, opts.trackedEntities);
+
+  // Sort by importance (descending) for greedy selection
+  rankedOlder.sort((a, b) => b.importance - a.importance);
 
   // Select highest-importance older messages until budget exhausted
   const selectedOlder: Message[] = [];
   let usedTokens = 0;
 
-  for (const { message, index } of rankedOlder) {
+  for (const ranked of rankedOlder) {
+    // Find original message by id
+    const msgWithId = messagesWithIds.find(m => m.id === ranked.id);
+    if (!msgWithId) continue;
+
+    const message = msgWithId._original;
     const messageTokens = countMessageTokens(message);
     if (usedTokens + messageTokens <= remainingBudget) {
       selectedOlder.push(message);
