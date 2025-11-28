@@ -10,6 +10,7 @@
 import { analyzeComplexity } from './complexity-analyzer.ts';
 import { selectModel, getCostSavings } from './model-router.ts';
 import { createLogger } from './logger.ts';
+import { MODELS } from './config.ts';
 
 const logger = createLogger('chat');
 
@@ -266,7 +267,7 @@ async function exampleABTesting(
 
   const selection = useAdaptive
     ? selectModel(complexity, 'chat')
-    : { model: 'google/gemini-2.5-flash-lite', reason: 'Control group', estimatedCost: 0 };
+    : { model: MODELS.GEMINI_FLASH, reason: 'Control group', estimatedCost: 0 };
 
   logger.info('A/B test assignment', {
     userId,
@@ -297,7 +298,7 @@ async function exampleErrorHandling(userMessage: string) {
 
     // Fallback to default model
     return {
-      model: 'google/gemini-2.5-flash-lite',
+      model: MODELS.GEMINI_FLASH,
       reason: 'Fallback due to analysis error',
       estimatedCost: 0.0001,
     };
