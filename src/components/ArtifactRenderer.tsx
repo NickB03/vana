@@ -313,7 +313,7 @@ const BundledArtifactFrame = memo(({
         // and inject Babel Standalone for runtime transpilation.
 
         // Check if bundle has JSX (component tags like <Component or <div)
-        const hasJsx = /<(?:[A-Z][a-zA-Z]*|[a-z]+)[\s>\/]/.test(htmlContent) &&
+        const hasJsx = /<(?:[A-Z][a-zA-Z]*|[a-z]+)[\s>/]/.test(htmlContent) &&
                        htmlContent.includes('<script type="module">');
 
         if (hasJsx) {
