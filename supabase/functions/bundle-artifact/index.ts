@@ -51,6 +51,8 @@ const BUNDLE_TIMEOUT_MS = 30000; // 30 seconds
 
 // Security validation patterns
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+// Hash-based artifact IDs from frontend: "artifact-" followed by 32 hex characters
+const ARTIFACT_HASH_REGEX = /^artifact-[0-9a-f]{32}$/i;
 // Accept semver with optional prefix: ^1.0.0, ~1.0.0, >=1.0.0, 1.0.0, etc.
 const SEMVER_REGEX = /^[\^~>=<]?(\d+\.)?(\d+\.)?(\*|\d+)(-[\w.]+)?(\+[\w.]+)?$/;
 const NPM_TAG_REGEX = /^(latest|next|beta|alpha|canary)$/;
@@ -73,7 +75,6 @@ serve(async (req) => {
   }
 
   const startTime = Date.now();
-  let tempDir: string | null = null;
 
   try {
     // 1. Parse and validate request body
@@ -157,10 +158,11 @@ serve(async (req) => {
       );
     }
 
-    if (!UUID_REGEX.test(artifactId)) {
+    // Accept both UUID format (for database records) and hash format (from frontend parser)
+    if (!UUID_REGEX.test(artifactId) && !ARTIFACT_HASH_REGEX.test(artifactId)) {
       return errors.validation(
         "Invalid artifactId format",
-        "artifactId must be a valid UUID"
+        "artifactId must be a valid UUID or artifact hash (artifact-[32 hex chars])"
       );
     }
 
@@ -330,173 +332,143 @@ serve(async (req) => {
     const maxRequests = user ? RATE_LIMITS.ARTIFACT.AUTHENTICATED.MAX_REQUESTS : 20;
     console.log(`[${requestId}] Rate limit check passed: ${rateLimitData.request_count}/${maxRequests}`);
 
-    // 4. Create temporary directory for bundling
-    tempDir = await Deno.makeTempDir({ prefix: "artifact-bundle-" });
-    console.log(`[${requestId}] Created temp directory: ${tempDir}`);
-
-    // PRIORITY 7: Validate temp directory is within OS temp folder (SECURITY - command injection prevention)
-    const osTempDir = Deno.env.get("TMPDIR") || Deno.env.get("TEMP") || "/tmp";
-    if (!tempDir.startsWith(osTempDir)) {
-      console.error(`[${requestId}] Temp directory outside OS temp folder: ${tempDir} not in ${osTempDir}`);
-      return errors.internal("Failed to create temporary directory");
-    }
-
-    const componentPath = `${tempDir}/component.tsx`;
-    const outputPath = `${tempDir}/output.js`;
-
-    // 5. Wrap component code with rendering logic
-    // The user's code exports a component, but we need to actually render it
-    // Strategy: Remove 'export default', add React/ReactDOM imports, add render call
-
-    const codeWithoutExport = code
-      .replace(/export\s+default\s+function/, 'function App')
-      .replace(/export\s+default\s+/, 'const App = ')
-      .replace(/export\s+{[^}]+as\s+default\s*}/, ''); // Remove export { Foo as default }
-
-    // SECURITY: Use string concatenation instead of template literals to prevent code injection
-    // Template literals would evaluate ${...} expressions in user code, potentially exposing secrets
-    // CRITICAL: Use React from window.React (UMD globals) instead of importing
-    // The HTML template loads React/ReactDOM via UMD scripts before the bundle executes
-    // This prevents "Can't find variable: React" errors and reduces bundle size
-    const wrappedCode =
-      '// Use React from window globals (loaded via UMD in HTML)\n' +
-      'const React = window.React;\n' +
-      'const ReactDOM = window.ReactDOM;\n' +
-      '\n' +
-      'if (!React || !ReactDOM) {\n' +
-      '  throw new Error("React/ReactDOM not found in global scope. Ensure UMD scripts loaded first.");\n' +
-      '}\n' +
-      '\n' +
-      codeWithoutExport + '\n' +
-      '\n' +
-      '// Auto-render the component to #root\n' +
-      'const rootElement = document.getElementById("root");\n' +
-      'if (rootElement) {\n' +
-      '  const root = ReactDOM.createRoot(rootElement);\n' +
-      '  root.render(React.createElement(App));\n' +
-      '  console.log("Component rendered successfully with UMD React");\n' +
-      '} else {\n' +
-      '  console.error("Root element not found");\n' +
-      '}\n';
-
-    // Write wrapped component code to file
-    await Deno.writeTextFile(componentPath, wrappedCode);
-
-    // 6. Create import map for npm dependencies (esm.sh URLs)
-    // NOTE: React/ReactDOM are loaded via UMD globals, not bundled
-    // We create a "stub" import map that resolves React imports to a module that returns the global
-    const importMap: Record<string, string> = {
-      // Map React imports to data URLs that return window globals
-      // This allows user code with "import React from 'react'" to work with UMD globals
-      'react': `data:text/javascript,export default window.React; export const useState = window.React.useState; export const useEffect = window.React.useEffect; export const useRef = window.React.useRef; export const useMemo = window.React.useMemo; export const useCallback = window.React.useCallback; export const useContext = window.React.useContext; export const createContext = window.React.createContext; export const createElement = window.React.createElement; export const Fragment = window.React.Fragment;`,
-      'react-dom': `data:text/javascript,export default window.ReactDOM;`,
-      'react-dom/client': `data:text/javascript,export const createRoot = window.ReactDOM.createRoot; export default window.ReactDOM;`,
-    };
-
-    for (const [pkg, version] of Object.entries(dependencies)) {
-      // Skip React packages since we handle them via data URLs above
-      if (pkg === 'react' || pkg === 'react-dom') {
-        continue;
-      }
-
-      // Use esm.sh CDN with specific versions, pinning to React 18 for peer dependencies
-      importMap[pkg] = `https://esm.sh/${pkg}@${version}?deps=react@18.3.1,react-dom@18.3.1`;
-    }
-
-    console.log(`[${requestId}] Import map created with ${Object.keys(importMap).length} packages (React via UMD globals)`);
-
-    // 7. Write import map to file for Deno bundler
-    const importMapPath = `${tempDir}/import_map.json`;
-    const importMapContent = {
-      imports: importMap
-    };
-
-    await Deno.writeTextFile(
-      importMapPath,
-      JSON.stringify(importMapContent, null, 2)
-    );
-
-    console.log(`[${requestId}] Import map written to ${importMapPath}`);
-
-    // 8. Run Deno native bundler (restored in Deno 2.4)
-    // https://docs.deno.com/runtime/reference/bundling/
+    // 4. Transform code for runtime ESM imports (no subprocess spawning)
+    // Supabase Edge Runtime doesn't allow Deno.Command, so we use runtime CDN imports
     const bundleStartTime = Date.now();
 
-    let bundledCode: string;
-    try {
-      console.log(`[${requestId}] Starting Deno bundle process...`);
+    console.log(`[${requestId}] Transforming code for runtime ESM imports...`);
 
-      // Use Deno.Command to run deno bundle with timeout
-      const bundleCommand = new Deno.Command("deno", {
-        args: [
-          "bundle",
-          "--quiet",  // Suppress diagnostic output
-          "--import-map", importMapPath,
-          componentPath,
-          outputPath
-        ],
-        cwd: tempDir,
-        stdout: "piped",
-        stderr: "piped"
-      });
+    // Transform the code to work with runtime ESM imports from CDN
+    // Strategy:
+    // 1. Replace npm package imports with esm.sh CDN URLs
+    // 2. Keep React imports pointing to window globals
+    // 3. Wrap in module that renders the component
 
-      // Spawn process and set up timeout
-      const bundleProcess = bundleCommand.spawn();
+    let transformedCode = code;
 
-      // Create timeout promise
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          bundleProcess.kill("SIGTERM");
-          reject(new Error(`Bundle timeout after ${BUNDLE_TIMEOUT_MS}ms`));
-        }, BUNDLE_TIMEOUT_MS);
-      });
+    // FIX: Transform malformed GLM syntax "const * as X from 'pkg'" to proper "import * as X from 'pkg'"
+    // GLM sometimes generates this invalid hybrid syntax that Babel/bundlers can't parse
+    transformedCode = transformedCode.replace(
+      /^const\s*\*\s*as\s+(\w+)\s+from\s+(['"][^'"]+['"])\s*;?\s*$/gm,
+      'import * as $1 from $2;'
+    );
 
-      // Race between bundle completion and timeout
-      const bundleOutput = await Promise.race([
-        bundleProcess.output(),
-        timeoutPromise
-      ]);
+    // FIX: Strip duplicate React hook destructuring (already available via UMD globals)
+    transformedCode = transformedCode.replace(
+      /^const\s*\{[^}]*(?:useState|useEffect|useReducer|useRef|useMemo|useCallback|useContext|useLayoutEffect)[^}]*\}\s*=\s*React;?\s*$/gm,
+      ''
+    );
 
-      if (!bundleOutput.success) {
-        const errorText = new TextDecoder().decode(bundleOutput.stderr);
-        throw new Error(`Deno bundle failed: ${errorText}`);
-      }
+    // FIX: Strip duplicate Framer Motion destructuring (already imported via esm.sh)
+    transformedCode = transformedCode.replace(
+      /^const\s*\{\s*motion\s*,?\s*AnimatePresence\s*,?\s*\}\s*=\s*(?:Motion|FramerMotion|window\.Motion);?\s*$/gm,
+      ''
+    );
 
-      // Read bundled output
-      bundledCode = await Deno.readTextFile(outputPath);
+    // FIX: Fix unquoted package names in imports (e.g., "from React;" -> "from 'react';")
+    // GLM sometimes generates imports without quotes around the package name
+    transformedCode = transformedCode.replace(
+      /from\s+React\s*;/g,
+      "from 'react';"
+    );
+    transformedCode = transformedCode.replace(
+      /from\s+ReactDOM\s*;/g,
+      "from 'react-dom';"
+    );
 
-      const bundleTime = Date.now() - bundleStartTime;
-      console.log(`[${requestId}] Deno bundle completed in ${bundleTime}ms, output size: ${bundledCode.length} bytes`);
+    console.log(`[${requestId}] Applied malformed syntax fixes to code`);
 
-    } catch (buildError) {
-      const errorMessage = buildError instanceof Error ? buildError.message : String(buildError);
-      console.error(`[${requestId}] Deno bundle failed:`, errorMessage);
+    // Replace import statements for npm packages with esm.sh URLs
+    // This handles: import X from 'package', import { X } from 'package', import * as X from 'package'
+    for (const [pkg, version] of Object.entries(dependencies)) {
+      if (pkg === 'react' || pkg === 'react-dom') continue;
 
-      return errors.internal(
-        "Failed to bundle artifact",
-        `Bundle process failed: ${errorMessage.substring(0, 500)}`
+      const esmUrl = `https://esm.sh/${pkg}@${version}?deps=react@18.3.1,react-dom@18.3.1`;
+
+      // Replace various import patterns
+      // import X from 'package'
+      transformedCode = transformedCode.replace(
+        new RegExp(`from\\s+['"]${pkg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]`, 'g'),
+        `from '${esmUrl}'`
+      );
+      // import 'package' (side effects)
+      transformedCode = transformedCode.replace(
+        new RegExp(`import\\s+['"]${pkg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]`, 'g'),
+        `import '${esmUrl}'`
       );
     }
+
+    // Replace React imports with window global references
+    // We'll use a shim approach in the HTML
+    transformedCode = transformedCode
+      .replace(/from\s+['"]react['"]/g, `from 'react-shim'`)
+      .replace(/from\s+['"]react-dom\/client['"]/g, `from 'react-dom-shim'`)
+      .replace(/from\s+['"]react-dom['"]/g, `from 'react-dom-shim'`);
+
+    // Transform export default to App assignment
+    const codeWithoutExport = transformedCode
+      .replace(/export\s+default\s+function\s+(\w+)/, 'function App')
+      .replace(/export\s+default\s+function/, 'function App')
+      .replace(/export\s+default\s+/, 'const App = ')
+      .replace(/export\s+{[^}]+as\s+default\s*}/, '');
 
     const bundleTime = Date.now() - bundleStartTime;
+    console.log(`[${requestId}] Code transformation completed in ${bundleTime}ms`);
 
     // PRIORITY 5: Add bundle size validation (SECURITY - prevent DoS via large bundles)
-    if (bundledCode.length > MAX_BUNDLE_SIZE) {
-      console.error(`[${requestId}] Bundle too large: ${bundledCode.length} bytes (max ${MAX_BUNDLE_SIZE})`);
+    if (codeWithoutExport.length > MAX_BUNDLE_SIZE) {
+      console.error(`[${requestId}] Code too large: ${codeWithoutExport.length} bytes (max ${MAX_BUNDLE_SIZE})`);
       return errors.validation(
-        "Bundle too large",
-        `Generated bundle (${Math.ceil(bundledCode.length / 1024 / 1024)}MB) exceeds maximum size of ${MAX_BUNDLE_SIZE / 1024 / 1024}MB`
+        "Code too large",
+        `Code (${Math.ceil(codeWithoutExport.length / 1024 / 1024)}MB) exceeds maximum size of ${MAX_BUNDLE_SIZE / 1024 / 1024}MB`
       );
     }
 
-    console.log(`[${requestId}] Bundle size validated: ${bundledCode.length} bytes`);
+    console.log(`[${requestId}] Code size validated: ${codeWithoutExport.length} bytes`);
 
-    // 9. Generate standalone HTML with embedded bundle
+    // 5. Generate standalone HTML with runtime ESM imports
     const sanitizedTitle = title
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
+
+    // Build import map for browser
+    const browserImportMap: Record<string, string> = {
+      'react-shim': 'data:text/javascript,const React = window.React; export default React; export const { useState, useEffect, useRef, useMemo, useCallback, useContext, createContext, createElement, Fragment, memo, forwardRef, useReducer, useLayoutEffect, useImperativeHandle, useDebugValue, useDeferredValue, useTransition, useId, useSyncExternalStore, lazy, Suspense, startTransition, Children, cloneElement, isValidElement, createRef, Component, PureComponent, StrictMode } = React;',
+      'react-dom-shim': 'data:text/javascript,const ReactDOM = window.ReactDOM; export default ReactDOM; export const { createRoot, hydrateRoot, createPortal, flushSync, findDOMNode, unmountComponentAtNode, render, hydrate } = ReactDOM;',
+    };
+
+    // Add npm dependencies to import map
+    for (const [pkg, version] of Object.entries(dependencies)) {
+      if (pkg === 'react' || pkg === 'react-dom') continue;
+      browserImportMap[pkg] = `https://esm.sh/${pkg}@${version}?deps=react@18.3.1,react-dom@18.3.1`;
+    }
+
+    const importMapJson = JSON.stringify({ imports: browserImportMap }, null, 2);
+
+    // NOTE: We previously escaped backticks and dollar signs here, but that was a bug!
+    // The escaping was intended for embedding in a JS template literal at build time,
+    // but since we write the HTML to a file and the browser parses it directly,
+    // those escape sequences (\` and \$) become literal characters causing syntax errors.
+    // The only escaping needed is for </script> tags to prevent premature script termination.
+    const escapedCode = codeWithoutExport
+      .replace(/<\/script>/gi, '<\\/script>'); // Only escape closing script tags
+
+    // CRITICAL FIX: ESM `import` declarations must be at module top level, NOT inside try/catch blocks.
+    // Split code into imports (top-level) and body (can be wrapped in try/catch).
+    // This regex captures all import statements at the start of lines.
+    const importStatements: string[] = [];
+    const bodyCode = escapedCode.replace(
+      /^import\s+(?:[\w*{}\s,]+\s+from\s+)?['"][^'"]+['"];?\s*$/gm,
+      (match) => {
+        importStatements.push(match);
+        return ''; // Remove from body
+      }
+    ).trim();
+
+    const importsBlock = importStatements.join('\n');
+    console.log(`[${requestId}] Extracted ${importStatements.length} import statements for top-level placement`);
 
     // PRIORITY 4: Add CSP headers (SECURITY - XSS prevention)
     const htmlTemplate = `<!DOCTYPE html>
@@ -506,27 +478,69 @@ serve(async (req) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self';
-                 script-src 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com;
+                 script-src 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://esm.sh blob: data:;
                  style-src 'unsafe-inline' https://cdn.tailwindcss.com;
                  img-src 'self' data: https:;
-                 connect-src 'self' https://esm.sh;">
+                 connect-src 'self' https://esm.sh https://*.esm.sh;">
   <title>${sanitizedTitle}</title>
 
-  <!-- React/ReactDOM UMD globals (CRITICAL: Must load before bundle) -->
+  <!-- React/ReactDOM UMD globals (CRITICAL: Must load before component) -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
-  <script>
-    // CRITICAL: Expose React as lowercase for library compatibility
-    // Libraries like lucide-react expect window.react (lowercase)
-    window.react = window.React;
-    window.reactDOM = window.ReactDOM;
+  <!-- Common libraries that GLM expects as globals -->
+  <script crossorigin src="https://unpkg.com/framer-motion@11/dist/framer-motion.js"></script>
+  <script crossorigin src="https://unpkg.com/canvas-confetti@1.9.3/dist/confetti.browser.js"></script>
 
-    // Verify React loaded successfully
+  <script>
+    // CRITICAL: Verify React loaded successfully
     if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
       console.error('React or ReactDOM failed to load from UMD');
-      document.getElementById('root').innerHTML = '<div class="error-container"><h2>React Load Error</h2><p>React libraries failed to load. Please refresh the page.</p></div>';
+      document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('root').innerHTML = '<div class="error-container"><h2>React Load Error</h2><p>React libraries failed to load. Please refresh the page.</p></div>';
+      });
+    } else {
+      console.log('React ' + React.version + ' loaded successfully');
+
+      // Expose React hooks as globals for GLM-generated code that uses destructuring
+      // GLM often generates: const { useState, useEffect } = React;
+      // After the fix strips this, the hooks need to be available globally
+      window.useState = React.useState;
+      window.useEffect = React.useEffect;
+      window.useCallback = React.useCallback;
+      window.useMemo = React.useMemo;
+      window.useRef = React.useRef;
+      window.useContext = React.useContext;
+      window.useReducer = React.useReducer;
+      window.useLayoutEffect = React.useLayoutEffect;
+      window.createContext = React.createContext;
+      window.createElement = React.createElement;
+      window.Fragment = React.Fragment;
+      window.memo = React.memo;
+      window.forwardRef = React.forwardRef;
     }
+
+    // Framer Motion UMD exports to window.Motion automatically
+    // The Motion global provides: motion, AnimatePresence, useAnimation, etc.
+    // GLM uses: const { motion, AnimatePresence } = Motion;
+    if (typeof Motion !== 'undefined' && Motion.motion) {
+      console.log('Framer Motion loaded successfully');
+      // Also expose common motion utilities directly as globals for convenience
+      window.motion = Motion.motion;
+      window.AnimatePresence = Motion.AnimatePresence;
+    }
+
+    // Expose canvas-confetti (GLM uses: const { create } = canvasConfetti)
+    if (typeof confetti !== 'undefined') {
+      window.canvasConfetti = { create: confetti.create || confetti, reset: confetti.reset };
+      // Also expose confetti directly for simple usage
+      window.confetti = confetti;
+    }
+  </script>
+
+  <!-- Import map for ESM dependencies -->
+  <script type="importmap">
+${importMapJson}
   </script>
 
   <!-- Tailwind CSS for styling -->
@@ -553,41 +567,56 @@ serve(async (req) => {
       border-left: 4px solid #f00;
       margin: 1rem;
     }
+
+    .loading-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-size: 1.2rem;
+      color: #666;
+    }
   </style>
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root"><div class="loading-container">Loading component...</div></div>
 
   <script type="module">
-    try {
-      // Bundled component code
-      ${bundledCode}
+    // CRITICAL: ESM imports MUST be at module top level (not in try/catch blocks)
+    // JavaScript spec requires static imports to be hoisted and evaluated before any code runs
+    ${importsBlock}
 
-      // Error handling
+    // Runtime component execution (can be in try/catch)
+    try {
+      // Component code (without import statements - they're above)
+      ${bodyCode}
+
+      // Render the component
+      const rootElement = document.getElementById('root');
+      if (rootElement && typeof App !== 'undefined') {
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(React.createElement(App));
+        console.log('Component rendered successfully');
+      } else if (!rootElement) {
+        console.error('Root element not found');
+      } else {
+        console.error('App component not defined');
+        rootElement.innerHTML = '<div class="error-container"><h2>Component Error</h2><p>App component was not exported correctly.</p></div>';
+      }
+
+      // Global error handling
       window.addEventListener('error', (event) => {
         console.error('Runtime error:', event.error);
         const root = document.getElementById('root');
-        if (root && !root.innerHTML) {
-          root.innerHTML = \`
-            <div class="error-container">
-              <h2>Component Error</h2>
-              <p>\${event.error?.message || 'Unknown error occurred'}</p>
-              <pre>\${event.error?.stack || ''}</pre>
-            </div>
-          \`;
+        if (root && root.querySelector('.loading-container')) {
+          root.innerHTML = '<div class="error-container"><h2>Component Error</h2><p>' + (event.error?.message || 'Unknown error occurred') + '</p></div>';
         }
       });
 
-      console.log('Artifact bundle loaded successfully');
+      console.log('Artifact loaded successfully');
     } catch (error) {
-      console.error('Failed to load artifact bundle:', error);
-      document.getElementById('root').innerHTML = \`
-        <div class="error-container">
-          <h2>Bundle Error</h2>
-          <p>\${error.message}</p>
-          <pre>\${error.stack}</pre>
-        </div>
-      \`;
+      console.error('Failed to load artifact:', error);
+      document.getElementById('root').innerHTML = '<div class="error-container"><h2>Load Error</h2><p>' + error.message + '</p></div>';
     }
   </script>
 </body>
@@ -666,16 +695,5 @@ serve(async (req) => {
       error instanceof Error ? error.message : String(error)
     );
 
-  } finally {
-    // 13. Clean up temporary directory (guaranteed execution)
-    if (tempDir) {
-      try {
-        await Deno.remove(tempDir, { recursive: true });
-        console.log(`[${requestId}] Cleaned up temp directory: ${tempDir}`);
-      } catch (cleanupError) {
-        // Log but don't fail the request if cleanup fails
-        console.warn(`[${requestId}] Failed to clean up temp directory ${tempDir}:`, cleanupError instanceof Error ? cleanupError.message : String(cleanupError));
-      }
-    }
   }
 });

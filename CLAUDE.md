@@ -1,4 +1,4 @@
-<!-- CLAUDE.md v2.3 | Last updated: 2025-11-27 -->
+<!-- CLAUDE.md v2.4 | Last updated: 2025-11-27 | React instance fix documented -->
 
 # CLAUDE.md
 
@@ -138,10 +138,10 @@ Token-aware context windowing system that optimizes conversation history for AI 
 
 ### Artifact System
 
-> **📌 Canonical Reference**: This section is the single source of truth for artifact restrictions. See also: `.claude/artifact-import-restrictions.md`
+> **📌 Canonical Reference**: This section is the single source of truth for artifact restrictions.
 
 **Rendering Methods**:
-- **Babel Standalone** (instant) — No npm imports, uses UMD globals
+- **Babel Standalone** (instant) — No npm imports, uses UMD globals (window.React)
 - **Server Bundling** (2-5s) — Has npm imports, uses `bundle-artifact/` Edge Function
 
 **Supported types**: `code` | `html` | `react` | `svg` | `mermaid` | `markdown` | `image`
@@ -150,9 +150,18 @@ Token-aware context windowing system that optimizes conversation history for AI 
 // ❌ FORBIDDEN - Local imports never work
 import { Button } from "@/components/ui/button"
 
-// ✅ CORRECT - NPM packages (server-bundled)
+// ✅ CORRECT - NPM packages (server-bundled via esm.sh)
 import * as Dialog from '@radix-ui/react-dialog';
 ```
+
+**React Instance Unification** (Fixed 2025-11-27):
+Server-bundled artifacts use a single React instance via import map shims:
+- esm.sh packages use `?external=react,react-dom` (don't bundle React internally)
+- Import map redirects `react`/`react-dom` → `data:` URL shims → `window.React`
+- JSX runtime shim provides `jsx`/`jsxs`/`Fragment` exports
+- Parent CSP (`index.html`) includes `data:` in `script-src` for shim modules
+
+Key file: `src/components/ArtifactRenderer.tsx` (lines 204-294) — `BundledArtifactFrame` component
 
 ### 5-Layer Artifact Validation
 
@@ -345,6 +354,7 @@ supabase/
 | Issue | Check |
 |-------|-------|
 | Artifact blank screen | Console errors → `@/` imports → global access → strict mode violations |
+| "useRef" null error | Dual React instances → check esm.sh uses `?external=react,react-dom` → verify import map shims |
 | "Cannot find module" | tsconfig.json paths → Vitest aliases → `npm install` |
 | Edge Function timeout | Function size (<10MB) → Deno URLs → `--no-verify-jwt` → quotas |
 | Rate limiting errors | 20 req/5h limit → `guest_rate_limits` table → authenticate to bypass |

@@ -28,6 +28,20 @@ export function detectNpmImports(code: string): boolean {
     }
   }
 
+  // Also detect malformed imports from GLM (e.g., "const * as Select from '@radix-ui/...'")
+  // These are invalid JS but indicate the artifact needs Radix UI server bundling
+  const malformedImportRegex = /const\s*\*\s*as\s+\w+\s+from\s+['"]((?:@[a-z0-9-]+\/)?[a-z0-9-]+)['"]/gi;
+  if (malformedImportRegex.test(code)) {
+    return true;
+  }
+
+  // Detect Radix UI usage patterns even without proper imports (e.g., Select.Root, Dialog.Content)
+  // This catches cases where GLM uses Radix UI but with broken import syntax
+  const radixUsagePattern = /\b(Select|Dialog|DropdownMenu|Popover|Tabs|Slider|Switch|Tooltip)\.(Root|Trigger|Content|Portal|Viewport|Item|Value|Icon|ItemText|Close|Overlay|Title|Description)\b/;
+  if (radixUsagePattern.test(code)) {
+    return true;
+  }
+
   return false;
 }
 
@@ -54,6 +68,37 @@ export function extractNpmDependencies(code: string): Record<string, string> {
 
     // Map common packages to versions
     deps[pkg] = getPackageVersion(pkg);
+  }
+
+  // Also extract from malformed imports (e.g., "const * as Select from '@radix-ui/...'")
+  const malformedImportRegex = /const\s*\*\s*as\s+\w+\s+from\s+['"]((?:@[a-z0-9-]+\/)?[a-z0-9-]+)['"]/gi;
+  let malformedMatch;
+  while ((malformedMatch = malformedImportRegex.exec(code)) !== null) {
+    const pkg = malformedMatch[1];
+    if (pkg === 'react' || pkg === 'react-dom') continue;
+    if (!deps[pkg]) {
+      deps[pkg] = getPackageVersion(pkg);
+    }
+  }
+
+  // Detect Radix UI usage patterns and add corresponding packages
+  const radixComponentMap: Record<string, string> = {
+    'Select': '@radix-ui/react-select',
+    'Dialog': '@radix-ui/react-dialog',
+    'DropdownMenu': '@radix-ui/react-dropdown-menu',
+    'Popover': '@radix-ui/react-popover',
+    'Tabs': '@radix-ui/react-tabs',
+    'Slider': '@radix-ui/react-slider',
+    'Switch': '@radix-ui/react-switch',
+    'Tooltip': '@radix-ui/react-tooltip',
+  };
+
+  for (const [component, pkg] of Object.entries(radixComponentMap)) {
+    // Check for usage patterns like Select.Root, Dialog.Content, etc.
+    const usagePattern = new RegExp(`\\b${component}\\.(Root|Trigger|Content|Portal|Viewport|Item|Value|Icon|ItemText|Close|Overlay|Title|Description)\\b`);
+    if (usagePattern.test(code) && !deps[pkg]) {
+      deps[pkg] = getPackageVersion(pkg);
+    }
   }
 
   return deps;

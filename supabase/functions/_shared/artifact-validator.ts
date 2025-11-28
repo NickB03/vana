@@ -308,8 +308,45 @@ export function validateImmutability(code: string): MutationValidation {
 /**
  * Attempts to auto-fix common mutation patterns
  * Returns the fixed code and count of fixes made
+ *
+ * STRATEGY: For complex code with multiple mutations of the same array
+ * (like minimax algorithms), we DISABLE auto-fixing entirely because
+ * creating `const newArray` declarations can cause "Identifier already declared"
+ * errors when the same array is mutated in different branches of the code.
+ *
+ * Instead, we rely on:
+ * 1. The AI prompt instructing the model to write immutable code
+ * 2. Post-generation error fixing with generate-artifact-fix endpoint
  */
 function autoFixMutations(code: string): { fixedCode: string; fixCount: number } {
+  // Count how many times each array is directly mutated
+  const mutationCounts = new Map<string, number>();
+  const directAssignPattern = /(\w+)\[([^\]]+)\]\s*=\s*([^=].*?)(?:;|$)/g;
+
+  let match;
+  while ((match = directAssignPattern.exec(code)) !== null) {
+    const arrayName = match[1];
+    // Skip if it looks like a comparison or already a copy
+    if (code.substring(match.index, match.index + match[0].length + 2).includes('==')) {
+      continue;
+    }
+    if (arrayName.startsWith('new') || arrayName.startsWith('copy')) {
+      continue;
+    }
+    mutationCounts.set(arrayName, (mutationCounts.get(arrayName) || 0) + 1);
+  }
+
+  // If any array is mutated more than once, skip auto-fixing entirely
+  // This prevents duplicate declaration errors in complex code
+  const hasMultipleMutations = Array.from(mutationCounts.values()).some(count => count > 1);
+
+  if (hasMultipleMutations) {
+    // Don't auto-fix - return original code
+    // The artifact-fix endpoint will handle this with proper understanding of context
+    return { fixedCode: code, fixCount: 0 };
+  }
+
+  // For simple cases (single mutation per array), apply the fix
   const lines = code.split('\n');
   const fixedLines: string[] = [];
   let fixCount = 0;
@@ -324,50 +361,25 @@ function autoFixMutations(code: string): { fixedCode: string; fixCount: number }
       continue;
     }
 
-    // Detect and fix direct array assignment: board[i] = value
-    // IMPROVED: More flexible pattern that matches assignments anywhere in the line
-    // Matches: "board[i] = value", "  board[i] = value;", "if (x) board[i] = value;"
-    // Note: [^=] ensures we don't match == or === comparisons
-    const directAssignPattern = /(\w+)\[([^\]]+)\]\s*=\s*([^=].*?)(?:;|$)/;
-    const match = line.match(directAssignPattern);
+    // Detect direct array assignment: board[i] = value
+    const singleAssignPattern = /(\w+)\[([^\]]+)\]\s*=\s*([^=].*?)(?:;|$)/;
+    const lineMatch = line.match(singleAssignPattern);
 
-    if (match && !line.includes('==') && !line.includes('===')) {
-      const [fullMatch, arrayName, index, value] = match;
+    if (lineMatch && !line.includes('==') && !line.includes('===') && !line.includes('!==')) {
+      const [fullMatch, arrayName, index, value] = lineMatch;
       const indent = line.match(/^(\s*)/)?.[1] || '';
-      fixCount++;
+      const newArrayName = `new${arrayName.charAt(0).toUpperCase() + arrayName.slice(1)}`;
 
-      // Check if this is inside a loop or function (look back a few lines)
-      const contextLines = lines.slice(Math.max(0, i - 5), i);
-      const inLoop = contextLines.some(l => /\b(for|while)\b/.test(l));
-
-      // Look ahead to see if the array is being reassigned to itself
-      // If so, we need to create a new copy first
-      const lookAhead = lines.slice(i + 1, Math.min(lines.length, i + 3));
-      const needsReturn = lookAhead.some(l => /return\s+\w+/.test(l) || /return\s*;/.test(l));
-
-      // Generate fix based on context
-      if (inLoop || needsReturn) {
-        // If we haven't created a copy yet in this scope, add it before the line
-        const copyExists = contextLines.some(l =>
-          l.includes(`const new${arrayName.charAt(0).toUpperCase() + arrayName.slice(1)}`) ||
-          l.includes(`const ${arrayName} = [`)
-        );
-
-        if (!copyExists) {
-          // Add copy creation before the assignment
-          fixedLines.push(`${indent}// Create immutable copy to avoid "readonly property" error`);
-          fixedLines.push(`${indent}const new${arrayName.charAt(0).toUpperCase() + arrayName.slice(1)} = [...${arrayName}];`);
-          fixedLines.push(`${indent}new${arrayName.charAt(0).toUpperCase() + arrayName.slice(1)}[${index}] = ${value};`);
-        } else {
-          // Copy already exists, just use the new array name
-          fixedLines.push(line.replace(arrayName, `new${arrayName.charAt(0).toUpperCase() + arrayName.slice(1)}`));
-        }
-      } else {
-        // Simple case: create copy inline
-        fixedLines.push(`${indent}// Create immutable copy to avoid "readonly property" error`);
-        fixedLines.push(`${indent}const new${arrayName.charAt(0).toUpperCase() + arrayName.slice(1)} = [...${arrayName}];`);
-        fixedLines.push(`${indent}new${arrayName.charAt(0).toUpperCase() + arrayName.slice(1)}[${index}] = ${value};`);
+      // Check if this array name starts with "new" - it's already a copy
+      if (arrayName.startsWith('new') || arrayName.startsWith('copy')) {
+        fixedLines.push(line);
+        continue;
       }
+
+      fixCount++;
+      fixedLines.push(`${indent}// Create immutable copy to avoid "readonly property" error`);
+      fixedLines.push(`${indent}const ${newArrayName} = [...${arrayName}];`);
+      fixedLines.push(`${indent}${newArrayName}[${index}] = ${value};`);
     } else {
       fixedLines.push(line);
     }

@@ -16,7 +16,7 @@ import { MODELS } from './config.ts';
  * Token budget configuration for a specific model
  */
 export interface TokenBudget {
-  /** The model identifier (e.g., 'google/gemini-2.5-flash-lite') */
+  /** The model identifier (e.g., MODELS.GEMINI_FLASH from config.ts) */
   model: string;
   /** Maximum context window size in tokens */
   maxContextTokens: number;

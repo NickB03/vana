@@ -213,7 +213,9 @@ export const API_ENDPOINTS = {
 export const MODELS = {
   /** Gemini 2.5 Flash Lite for chat/summaries/titles */
   GEMINI_FLASH: 'google/gemini-2.5-flash-lite',
-  /** Kimi K2-Thinking for artifact generation */
+  /** GLM-4.6 for artifact generation and fixing (replaces Kimi K2) - via Z.ai API */
+  GLM_4_6: 'zhipu/glm-4.6',
+  /** @deprecated Use GLM_4_6 instead - kept for backward compatibility */
   KIMI_K2: 'moonshotai/kimi-k2-thinking',
   /** Gemini Flash Image for image generation */
   GEMINI_FLASH_IMAGE: 'google/gemini-2.5-flash-image'

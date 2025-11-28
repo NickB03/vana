@@ -54,7 +54,8 @@
 **November 27, 2025 - Smart Context Management & Bug Fixes:**
 - 🧠 **Smart Context Management**: Token-aware context windowing for optimized AI responses
 - 🔧 **Guest Artifact Bundling**: Fixed guest users unable to use npm-bundled artifacts
-- 🛡️ **CSP Security**: Updated Content Security Policy for Tailwind CDN compatibility
+- ⚛️ **React Instance Unification**: Fixed "useRef null" errors in Radix UI artifacts via import map shims
+- 🛡️ **CSP Security**: Updated Content Security Policy for Tailwind CDN and data: URL shims
 - 📊 **Response Quality Tracking**: New `response_quality_logs` and `message_feedback` tables
 - 🔄 **State Machine Architecture**: Conversation state tracking in `_shared/state-machine.ts`
 - ⚡ **683 Tests**: Expanded test coverage from 432 to 683 tests
