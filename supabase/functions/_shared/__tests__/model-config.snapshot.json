@@ -3,7 +3,7 @@
   "version": "2025-11-27",
   "models": {
     "GEMINI_FLASH": "google/gemini-2.5-flash-lite",
-    "GLM_4_6": "glm-4.6",
+    "GLM_4_6": "zhipu/glm-4.6",
     "KIMI_K2": "moonshotai/kimi-k2-thinking",
     "GEMINI_FLASH_IMAGE": "google/gemini-2.5-flash-image"
   },

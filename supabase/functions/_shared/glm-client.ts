@@ -85,7 +85,8 @@ export async function callGLM(
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      model: MODELS.GLM_4_6,
+      // Extract model name from "provider/model-name" format
+      model: MODELS.GLM_4_6.split('/').pop(),
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
