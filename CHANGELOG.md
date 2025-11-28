@@ -9,20 +9,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+*No unreleased changes*
+
+---
+
+## [1.9.0] - 2025-11-28
+
 ### Added
-- Shared validation patterns module for Edge Functions
-- Rate limiting on image generation endpoint
-- Reserved keyword validator for artifact generation
-- Comprehensive CHANGELOG.md for version tracking
+- **GLM-4.6 Reasoning Display**: Real-time reasoning streaming via parallel requests
+- **Fast Parallel Architecture**: `/generate-reasoning` (Gemini, 2-4s) runs alongside `/generate-artifact` (GLM, 30-60s)
+- **GLM Reasoning Parser**: New `glm-reasoning-parser.ts` converts raw GLM reasoning to structured format
+- **GLM Client**: New `glm-client.ts` with streaming support and Z.ai API integration
 
 ### Changed
-- Test count increased from 293 to 432 passing tests
-- Updated documentation to reflect current test metrics
-- Archived 97 obsolete documentation files to `.claude/archive/`
+- **Model Migration**: Artifact generation moved from Kimi K2 to GLM-4.6 via Z.ai API
+- **Test count**: 683 tests total (671 passing, 2 intermittent worker failures)
 
 ### Fixed
-- All skipped React Query tests in `useArtifactVersions`
-- Retry logic cleanup for better reliability
+- **CORS Fix**: Fixed 500 error in generate-reasoning preflight handler
+- **Duplicate Key Fix**: Resolved React warning for duplicate message keys during streaming
+- **Hardcoded Model Names**: Replaced all hardcoded model strings with `MODELS.*` constants
+
+---
+
+## [1.8.0] - 2025-11-27
+
+### Added
+- **Smart Context Management**: Token-aware context windowing system for optimized AI responses
+- **Guest Artifact Bundling**: Fixed guest users unable to use npm-bundled artifacts
+- **Response Quality Tracking**: New `response_quality_logs` and `message_feedback` tables
+- **State Machine Architecture**: Conversation state tracking in `_shared/state-machine.ts`
+
+### Changed
+- **React Instance Unification**: Fixed "useRef null" errors in Radix UI artifacts via import map shims
+- **CSP Security**: Updated Content Security Policy for Tailwind CDN and data: URL shims
+- **Test Expansion**: 683 tests (up from 432)
+
+### Fixed
+- **React Hook Errors**: Resolved dual React instance issues in server-bundled artifacts
+- **Import Map Shims**: esm.sh packages now use `?external=react,react-dom`
 
 ---
 
@@ -180,5 +205,5 @@ This project follows [Semantic Versioning](https://semver.org/):
 ---
 
 **Maintained by**: Vana Development Team
-**Last Updated**: 2025-11-21
+**Last Updated**: 2025-11-28
 **Status**: Active Development

@@ -1,8 +1,9 @@
 # Chain of Thought Reasoning - Technical Documentation
 
-**Created**: 2025-11-21  
-**Feature Version**: 2.0  
-**Status**: Production Ready with 100% Test Coverage
+**Created**: 2025-11-21
+**Updated**: 2025-11-28
+**Feature Version**: 3.0
+**Status**: Production Ready with GLM-4.6 Parallel Streaming
 
 ---
 
@@ -39,9 +40,11 @@ Chain of Thought (CoT) reasoning is a transparent AI reasoning system that shows
 
 - ✅ **Frontend Components**: React components with full TypeScript support
 - ✅ **Backend Integration**: Edge Functions with streaming support
+- ✅ **GLM-4.6 Integration**: Parallel streaming with reasoning parser (Nov 2025)
+- ✅ **Fast Reasoning**: `/generate-reasoning` endpoint (2-4s via Gemini Flash)
 - ✅ **Data Validation**: Zod schemas with runtime validation
 - ✅ **Security**: XSS protection and input sanitization
-- ✅ **Testing**: 21/21 tests passing (100% coverage)
+- ✅ **Testing**: 683 tests total across the project
 - ✅ **Accessibility**: Screen reader support and keyboard navigation
 
 ---
@@ -52,13 +55,15 @@ Chain of Thought (CoT) reasoning is a transparent AI reasoning system that shows
 
 ```mermaid
 graph TB
-    subgraph "AI Model (Kimi K2-Thinking)"
-        A[Chain of Thought Generation]
+    subgraph "AI Models"
+        A1[GLM-4.6 via Z.ai]
+        A2[Gemini Flash Lite]
         B[Structured Reasoning Output]
     end
 
     subgraph "Edge Functions"
-        C[generate-artifact]
+        C1[generate-artifact - GLM-4.6]
+        C2[generate-reasoning - Gemini Fast]
         D[Streaming SSE Events]
         E[reasoning Events]
     end
@@ -75,9 +80,12 @@ graph TB
         K[Database Storage]
     end
 
-    A --> B
-    B --> C
-    C --> D
+    A1 --> B
+    A2 --> B
+    B --> C1
+    B --> C2
+    C1 --> D
+    C2 --> D
     D --> E
     E --> I
     I --> J
@@ -86,7 +94,8 @@ graph TB
     G --> H
     F --> K
 
-    style A fill:#8B7BF7
+    style A1 fill:#8B7BF7
+    style A2 fill:#FFD700
     style F fill:#61dafb
     style I fill:#3ecf8e
 ```
@@ -253,26 +262,29 @@ sequenceDiagram
     participant U as User
     participant C as ChatInterface
     participant H as useChatMessages Hook
-    participant E as Edge Function
-    participant AI as Kimi K2-Thinking
+    participant ER as generate-reasoning
+    participant EA as generate-artifact
+    participant GF as Gemini Flash
+    participant GLM as GLM-4.6
 
     U->>C: Send Request
     C->>H: streamChat()
-    H->>E: POST /generate-artifact
-    E->>AI: Stream Request
 
-    loop Reasoning Generation
-        AI-->>E: reasoning event
-        E-->>H: SSE: reasoning data
-        H->>H: Update progress
-        H-->>C: Reasoning progress
-        C-->>U: Show reasoning steps
+    par Parallel Reasoning
+        H->>ER: POST /generate-reasoning
+        ER->>GF: Fast reasoning (2-4s)
+        GF-->>ER: Reasoning response
+        ER-->>H: SSE: reasoning data
+        H-->>C: Show reasoning immediately
+        C-->>U: Display reasoning steps
+    and Artifact Generation
+        H->>EA: POST /generate-artifact
+        EA->>GLM: Generate artifact (30-60s)
+        GLM-->>EA: Artifact + GLM reasoning
+        EA-->>H: SSE: artifact data
+        H-->>C: Complete response
+        C-->>U: Display artifact
     end
-
-    AI-->>E: artifact event
-    E-->>H: SSE: artifact data
-    H-->>C: Complete response
-    C--->U: Display artifact
 ```
 
 ### Event Structure
@@ -707,6 +719,8 @@ export function parseReasoningSteps(data: unknown): StructuredReasoning | null {
 
 ### Related Documentation
 
+- [API Reference](./API_REFERENCE.md) - Includes `/generate-reasoning` endpoint
+- [GLM Reasoning Integration](../supabase/functions/_shared/GLM_REASONING_INTEGRATION.md) - Parser guide
 - [Artifact System Documentation](./ARTIFACT_SYSTEM.md)
 - [Component Library](./COMPONENT_LIBRARY.md)
 - [Accessibility Guidelines](./ACCESSIBILITY.md)
@@ -717,6 +731,9 @@ export function parseReasoningSteps(data: unknown): StructuredReasoning | null {
 - **Component Source**: `src/components/ReasoningIndicator.tsx`
 - **Type Definitions**: `src/types/reasoning.ts`
 - **Hook Integration**: `src/hooks/useChatMessages.tsx`
+- **GLM Client**: `supabase/functions/_shared/glm-client.ts`
+- **GLM Reasoning Parser**: `supabase/functions/_shared/glm-reasoning-parser.ts`
+- **Generate Reasoning**: `supabase/functions/generate-reasoning/index.ts`
 - **Tests**: `src/components/__tests__/ReasoningIndicator.test.tsx`
 
 ### External Resources
@@ -728,6 +745,6 @@ export function parseReasoningSteps(data: unknown): StructuredReasoning | null {
 
 ---
 
-**Last Updated**: 2025-11-21  
-**Next Review**: 2025-12-21  
+**Last Updated**: 2025-11-28
+**Next Review**: 2025-12-28
 **Maintainer**: Documentation Team

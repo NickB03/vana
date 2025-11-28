@@ -37,7 +37,7 @@
 
 ## 🌟 Overview
 
-**Vana** is an AI-powered development assistant that transforms natural language into production-ready code, interactive React components, diagrams, and more. Powered by multiple AI models including Google's Gemini 2.5 Flash Lite and Kimi K2-Thinking via OpenRouter, Vana provides a seamless chat interface where every conversation can generate interactive artifacts—fully functional components rendered in real-time alongside your chat.
+**Vana** is an AI-powered development assistant that transforms natural language into production-ready code, interactive React components, diagrams, and more. Powered by multiple AI models including Google's Gemini 2.5 Flash Lite (via OpenRouter) and GLM-4.6 (via Z.ai), Vana provides a seamless chat interface where every conversation can generate interactive artifacts—fully functional components rendered in real-time alongside your chat.
 
 ### Why Vana?
 
@@ -67,8 +67,8 @@
 - 🔄 **State Machine Architecture**: Conversation state tracking in `_shared/state-machine.ts`
 - ⚡ **683 Tests**: Expanded test coverage from 432 to 683 tests
 
-**November 17, 2025 - Kimi K2-Thinking Migration:**
-- 🚀 **Faster Artifact Generation**: Migrated to Kimi K2-Thinking with enhanced reasoning
+**November 17, 2025 - Kimi K2-Thinking Migration (Now Deprecated):**
+- 🚀 **Faster Artifact Generation**: Migrated to Kimi K2-Thinking with enhanced reasoning *(since migrated to GLM-4.6)*
 - ⚡ **Improved Reliability**: Eliminated timeout issues with new high-performance model
 - 🔄 **Enhanced UI**: Gemini-style sidebar auto-collapse with manual toggle control
 - 🎯 **Better Navigation**: Fixed artifact card Open button and image generation card behaviors
@@ -914,15 +914,15 @@ supabase functions deploy cache-manager
 5. **Set environment secrets**
 
 ```bash
-# OpenRouter API Keys (single keys for chat and artifacts - NO rotation)
-supabase secrets set OPENROUTER_GEMINI_FLASH_KEY=sk-or-v1-...  # Chat/summaries/titles
-supabase secrets set OPENROUTER_KIMI_K2_KEY=sk-or-v1-... # Artifact generation
-supabase secrets set OPENROUTER_K2T_KEY=sk-or-v1-...           # Artifact error fixing (Kimi K2)
+# OpenRouter API Key (for chat, titles, summaries, fast reasoning)
+supabase secrets set OPENROUTER_GEMINI_FLASH_KEY=sk-or-v1-...  # Gemini 2.5 Flash Lite
+
+# Z.ai API Key (for artifact generation with GLM-4.6)
+supabase secrets set GLM_API_KEY=...  # GLM-4.6 via Z.ai
 
 # Google AI Studio Keys (IMAGE GENERATION ONLY - uses 10-key rotation pool)
 # All 10 keys dedicated to images - 150 RPM total (10 keys × 15 RPM each)
 # Each key MUST be from a different Google Cloud project for independent rate limits
-# Note: Only image generation uses key rotation; chat and artifacts use single OpenRouter keys
 supabase secrets set GOOGLE_KEY_1=AIzaSy...   # Image key 1
 supabase secrets set GOOGLE_KEY_2=AIzaSy...   # Image key 2
 supabase secrets set GOOGLE_KEY_3=AIzaSy...   # Image key 3
@@ -940,16 +940,18 @@ supabase secrets set ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdoma
 
 **Get API Keys:**
 - **OpenRouter:** [https://openrouter.ai/keys](https://openrouter.ai/keys)
+- **Z.ai (GLM):** [https://open.bigmodel.cn](https://open.bigmodel.cn)
 - **Google AI Studio:** [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
 
 **Current Architecture:**
-- **Chat/Summaries/Titles**: OpenRouter Gemini 2.5 Flash Lite (single API key, unlimited pay-as-you-go)
-- **Artifact Generation**: OpenRouter Kimi K2-Thinking (single API key, fast reliable code generation)
-- **Artifact Error Fixing**: OpenRouter Kimi K2-Thinking (single API key, deep reasoning for debugging)
+- **Chat/Summaries/Titles/Fast Reasoning**: OpenRouter Gemini 2.5 Flash Lite (single API key)
+- **Artifact Generation**: GLM-4.6 via Z.ai API (single API key, thinking mode enabled)
+- **Artifact Error Fixing**: GLM-4.6 via Z.ai API (deep reasoning for debugging)
 - **Images**: Google AI Studio Gemini Flash-Image (10-key rotation pool, 150 RPM total)
 
 **Key Rotation Strategy:**
-- **OpenRouter services**: NO rotation - uses single API keys for simplicity and unlimited capacity
+- **OpenRouter services**: NO rotation - single API key for simplicity
+- **Z.ai (GLM-4.6)**: NO rotation - single API key for artifact generation
 - **Google AI Studio**: 10-key rotation ONLY for image generation to achieve 150 RPM throughput
 
 This architecture provides better reliability and eliminates timeout issues for artifact generation.

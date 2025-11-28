@@ -1,6 +1,6 @@
 # API Reference - Vana Edge Functions
 
-**Last Updated**: 2025-11-17
+**Last Updated**: 2025-11-28
 **Base URL**: `https://vznhbocnuykdmjvujaka.supabase.co/functions/v1`
 
 ---
@@ -13,6 +13,7 @@
 - [Endpoints](#endpoints)
   - [Chat](#post-chat)
   - [Generate Artifact](#post-generate-artifact)
+  - [Generate Reasoning](#post-generate-reasoning)
   - [Generate Artifact Fix](#post-generate-artifact-fix)
   - [Generate Image](#post-generate-image)
   - [Generate Title](#post-generate-title)
@@ -275,10 +276,11 @@ interface ArtifactResponse {
 
 #### AI Model
 
-- **Model**: Kimi K2-Thinking (via OpenRouter)
-- **Provider**: OpenRouter
-- **Streaming**: No
+- **Model**: GLM-4.6 (via Z.ai API)
+- **Provider**: Z.ai (zhipu.ai)
+- **Streaming**: Yes (with reasoning)
 - **Max Tokens**: 8,000
+- **Thinking Mode**: Enabled (provides reasoning content)
 
 #### Supported Artifact Types
 
@@ -290,6 +292,68 @@ interface ArtifactResponse {
 | `code` | Code snippets | Functions, utilities |
 | `mermaid` | Mermaid diagrams | Flowcharts, architecture diagrams |
 | `markdown` | Markdown documents | Documentation, notes |
+
+---
+
+### POST /generate-reasoning
+
+Generate fast reasoning content in parallel with artifact generation. This endpoint provides quick reasoning (2-4s) while the main artifact is being generated (30-60s).
+
+#### Request
+
+**Endpoint**: `POST /generate-reasoning`
+
+**Body**:
+```json
+{
+  "prompt": "Create a Todo list component with add/delete functionality",
+  "context": "User wants an interactive React component"
+}
+```
+
+**Parameters**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `prompt` | `string` | Yes | User's request for reasoning |
+| `context` | `string` | No | Additional context for better reasoning |
+
+#### Response
+
+```json
+{
+  "reasoning": {
+    "steps": [
+      {
+        "phase": "research",
+        "title": "Analyzing the user's request",
+        "icon": "search",
+        "items": [
+          "User wants a Todo list component",
+          "Requirements: add and delete functionality"
+        ]
+      },
+      {
+        "phase": "analysis",
+        "title": "Planning the implementation",
+        "icon": "lightbulb",
+        "items": [
+          "Using React useState for state management",
+          "Creating reusable component structure"
+        ]
+      }
+    ],
+    "summary": "Building a Todo list with React hooks"
+  }
+}
+```
+
+#### AI Model
+
+- **Model**: Gemini 2.5 Flash Lite (via OpenRouter)
+- **Provider**: OpenRouter
+- **Latency**: 2-4 seconds (runs in parallel with artifact generation)
+- **Purpose**: Provides immediate reasoning feedback while GLM-4.6 generates the artifact
 
 ---
 
@@ -341,9 +405,10 @@ Fix errors in generated artifacts automatically.
 
 #### AI Model
 
-- **Model**: Kimi K2-Thinking (via OpenRouter)
-- **Provider**: OpenRouter
+- **Model**: GLM-4.6 (via Z.ai API)
+- **Provider**: Z.ai (zhipu.ai)
 - **Max Tokens**: 8,000
+- **Thinking Mode**: Enabled for deep reasoning during debugging
 
 ---
 
@@ -662,19 +727,30 @@ if (remaining && parseInt(remaining) < 5) {
 
 ## Changelog
 
+### 2025-11-28
+- Migrated artifact generation from Kimi K2 to GLM-4.6 (Z.ai API)
+- Added `/generate-reasoning` endpoint for fast parallel reasoning
+- GLM reasoning parser for structured reasoning output
+- Fixed CORS issues in generate-reasoning preflight handler
+
+### 2025-11-27
+- Added smart context management with token-aware windowing
+- Fixed guest artifact bundling issues
+- React instance unification via import map shims
+
 ### 2025-11-17
-- Migrated artifact generation to Kimi K2-Thinking
+- Migrated artifact generation to Kimi K2-Thinking (now deprecated)
 - Added `includeReasoning` parameter to chat endpoint
 - Updated rate limits: 20 requests/5h for guests
-
-### 2025-11-13
-- Migrated to OpenRouter for chat and artifacts
-- Added CORS security improvements
-- Implemented XSS sanitization
 
 ### 2025-11-14
 - Added Chain of Thought reasoning support
 - Enhanced error responses with more context
+
+### 2025-11-13
+- Migrated to OpenRouter for chat
+- Added CORS security improvements
+- Implemented XSS sanitization
 
 ---
 

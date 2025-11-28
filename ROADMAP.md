@@ -1,10 +1,12 @@
 # Vana - Product Roadmap
 
-**Last Updated**: 2025-11-23
+**Last Updated**: 2025-11-28
 **Project**: Vana AI Development Assistant
 **Status**: Historical Reference (Timeline Outdated)
 
 > **Note**: This roadmap contains outdated timeline references (Q1-Q3 2025). The features and priorities are still relevant, but the quarterly targets have passed. Use this as a reference for planned features and priorities, not timeline commitments.
+
+> **Recent Update (Nov 28, 2025)**: GLM-4.6 migration complete. Kimi K2 references below are historical - all artifact generation now uses GLM-4.6 via Z.ai API.
 
 ---
 
@@ -14,7 +16,7 @@ Transform Vana into a best-in-class AI-powered development assistant with enterp
 
 ---
 
-## 📊 Current Status (as of 2025-11-17)
+## 📊 Current Status (as of 2025-11-28)
 
 ### ✅ Completed Features
 
@@ -27,39 +29,47 @@ Transform Vana into a best-in-class AI-powered development assistant with enterp
 | **5-Layer Import Validation** | ✅ Complete | 2024-11 |
 | **Auto-Transformation** | ✅ Complete | 2024-11 |
 | **Component Refactoring** | ✅ Complete | 2024-11 |
-| **Test Infrastructure** | ✅ 293 tests (74.21% coverage) | 2024-11 |
+| **Test Infrastructure** | ✅ 683 tests (74% coverage) | 2025-11 |
 | **Chain of Thought Reasoning** | ✅ Complete | 2025-11-14 |
 | **Artifact Export System** | ✅ Complete | 2025-11-14 |
 | **Security Hardening** | ✅ Complete (0 vulnerabilities) | 2025-11-13 |
 | **CI/CD Pipeline** | ✅ Complete (GitHub Actions) | 2025-11-14 |
 | **OpenRouter Migration** | ✅ Complete | 2025-11-13 |
-| **Kimi K2-Thinking Integration** | ✅ Complete | 2025-11-17 |
+| **Kimi K2-Thinking Integration** | ⏸️ Deprecated | 2025-11-17 |
+| **GLM-4.6 Migration** | ✅ Complete | 2025-11-28 |
+| **Parallel Reasoning Display** | ✅ Complete | 2025-11-28 |
 | **Gemini-style Sidebar UI** | ✅ Complete | 2025-11-17 |
+| **Smart Context Management** | ✅ Complete | 2025-11-27 |
+| **React Instance Unification** | ✅ Complete | 2025-11-27 |
 
 ### 🚧 In Progress
 
-| Feature | Status | Target | GitHub Issue |
-|---------|--------|--------|--------------|
-| **Documentation Overhaul** | ✅ Complete | 2025-11-17 | - |
+*No major features currently in progress*
 
 ---
 
 ## 📈 Recent Achievements (November 2025)
 
-### Kimi K2-Thinking Migration (Nov 17, 2025)
-- ✅ **Faster Artifact Generation**: Migrated to Kimi K2-Thinking for improved performance
-- ✅ **Improved Reliability**: Eliminated timeout issues with new high-performance model
-- ✅ **UI Enhancements**: Gemini-style sidebar auto-collapse, artifact card fixes
+### GLM-4.6 Migration (Nov 28, 2025)
+- ✅ **Model Upgrade**: Migrated from Kimi K2 to GLM-4.6 via Z.ai API
+- ✅ **Parallel Reasoning**: Real-time reasoning display via parallel streaming requests
+- ✅ **GLM Reasoning Parser**: Intelligent conversion of GLM reasoning to structured format
+- ✅ **CORS Fix**: Resolved 500 errors in generate-reasoning preflight handler
+
+### Smart Context Management (Nov 27, 2025)
+- ✅ **Token-aware Windowing**: Optimized conversation history for AI models
+- ✅ **React Instance Unification**: Fixed dual React issues via import map shims
+- ✅ **Guest Bundling**: Fixed guest users unable to use npm-bundled artifacts
 
 ### Security & Quality (Nov 13-14, 2025)
 - ✅ **Security Hardening**: 0 vulnerabilities (from 2 HIGH issues)
-- ✅ **Test Coverage**: 74.21% (exceeds 55% threshold by 19%)
+- ✅ **Test Coverage**: 74% (683 tests, exceeds 55% threshold by 19%)
 - ✅ **CI/CD Integration**: GitHub Actions with Codecov
 - ✅ **Branch Protection**: PR approval + passing checks required
 
-### AI Architecture (Nov 2025)
-- ✅ **OpenRouter Integration**: Gemini 2.5 Flash Lite for chat/summaries/titles
-- ✅ **Kimi K2-Thinking**: Fast, reliable artifact generation
+### AI Architecture (Current State)
+- ✅ **OpenRouter Integration**: Gemini 2.5 Flash Lite for chat/summaries/titles/fast reasoning
+- ✅ **GLM-4.6 (Z.ai)**: Artifact generation with thinking mode enabled
 - ✅ **Image Generation**: Google AI Studio with 10-key rotation (150 RPM)
 
 ---
@@ -479,5 +489,5 @@ See [GitHub Issues](https://github.com/NickB03/llm-chat-site/issues) for full de
 ---
 
 **Roadmap Status**: 📚 Historical Reference
-**Last Review**: 2025-11-21
+**Last Review**: 2025-11-28
 **Note**: Timeline references are outdated - use for feature priorities, not scheduling
