@@ -44,6 +44,7 @@ export interface CallGLMOptions {
   functionName?: string;
   promptPreview?: string;
   enableThinking?: boolean;
+  stream?: boolean; // Enable SSE streaming
 }
 
 export interface RetryResult {
@@ -69,14 +70,15 @@ export async function callGLM(
     temperature = 1.0, // GLM recommends 1.0 for general evaluations
     max_tokens = 8000,
     requestId = crypto.randomUUID(),
-    enableThinking = true // Enable reasoning by default for artifact generation
+    enableThinking = true, // Enable reasoning by default for artifact generation
+    stream = false // Streaming disabled by default for backward compatibility
   } = options || {};
 
   if (!GLM_API_KEY) {
     throw new Error("GLM_API_KEY not configured");
   }
 
-  console.log(`[${requestId}] 🤖 Routing to GLM-4.6 via Z.ai API (thinking: ${enableThinking})`);
+  console.log(`[${requestId}] 🤖 Routing to GLM-4.6 via Z.ai API (thinking: ${enableThinking}, stream: ${stream})`);
 
   const response = await fetch(`${GLM_BASE_URL}/chat/completions`, {
     method: "POST",
@@ -93,6 +95,7 @@ export async function callGLM(
       ],
       temperature,
       max_tokens,
+      stream, // Enable SSE streaming when requested
       // GLM-specific: thinking mode for reasoning
       thinking: enableThinking ? { type: "enabled" } : { type: "disabled" }
     })
@@ -280,6 +283,62 @@ export function extractTextFromGLM(responseData: any, requestId?: string): strin
 }
 
 /**
+ * Extract both text content and reasoning from GLM response
+ * Returns both the artifact content and the thinking/reasoning process
+ *
+ * This is the proper long-term solution for GLM reasoning extraction.
+ * Use this when you need to store or display the reasoning process separately.
+ *
+ * @param responseData - JSON response from GLM API
+ * @param requestId - Optional request ID for logging
+ * @returns Object with text content and reasoning content (null if not present)
+ *
+ * @example
+ * ```typescript
+ * const { text, reasoning } = extractTextAndReasoningFromGLM(responseData, requestId);
+ * // text: The artifact code/content
+ * // reasoning: The thinking process (if thinking mode was enabled)
+ * ```
+ */
+export function extractTextAndReasoningFromGLM(
+  responseData: any,
+  requestId?: string
+): { text: string; reasoning: string | null } {
+  const logPrefix = requestId ? `[${requestId}]` : "";
+
+  // OpenAI-compatible format: choices[0].message.content and reasoning_content
+  if (responseData?.choices?.[0]?.message?.content) {
+    const text = responseData.choices[0].message.content;
+    const reasoning = responseData.choices[0].message.reasoning_content || null;
+    const finishReason = responseData.choices[0].finish_reason;
+
+    // Log extraction details
+    if (reasoning) {
+      console.log(
+        `${logPrefix} 🧠 GLM reasoning extracted: ${reasoning.length} chars | ` +
+        `Content: ${text.length} chars (finish_reason: ${finishReason})`
+      );
+    } else {
+      console.log(
+        `${logPrefix} ✅ Extracted artifact from GLM-4.6: ${text.length} chars | ` +
+        `No reasoning content (finish_reason: ${finishReason})`
+      );
+    }
+
+    return { text, reasoning };
+  }
+
+  // Error case - log the structure for debugging
+  const finishReason = responseData?.choices?.[0]?.finish_reason;
+  console.error(
+    `${logPrefix} ❌ Failed to extract text/reasoning from GLM response (finish_reason: ${finishReason}):`,
+    JSON.stringify(responseData).substring(0, 200)
+  );
+
+  return { text: "", reasoning: null };
+}
+
+/**
  * Extract token usage from GLM response for cost tracking
  *
  * @param responseData - JSON response from GLM API
@@ -375,6 +434,106 @@ export async function logGLMUsage(logData: {
     }
   } catch (error) {
     console.error(`[${logData.requestId}] Exception logging GLM usage:`, error);
+  }
+}
+
+/**
+ * Callback type for streaming GLM responses
+ */
+export interface GLMStreamCallbacks {
+  onReasoningChunk?: (chunk: string) => void;
+  onContentChunk?: (chunk: string) => void;
+  onComplete?: (fullReasoning: string, fullContent: string) => void;
+  onError?: (error: Error) => void;
+}
+
+/**
+ * Process a streaming GLM response (SSE format)
+ *
+ * GLM streams reasoning_content FIRST (the thinking process),
+ * then content (the actual response/artifact).
+ *
+ * @param response - Streaming Response from GLM API
+ * @param callbacks - Callbacks for handling streaming chunks
+ * @param requestId - Request ID for logging
+ * @returns Promise that resolves when stream completes
+ */
+export async function processGLMStream(
+  response: Response,
+  callbacks: GLMStreamCallbacks,
+  requestId?: string
+): Promise<{ reasoning: string; content: string }> {
+  const logPrefix = requestId ? `[${requestId}]` : "";
+
+  if (!response.body) {
+    throw new Error("No response body for streaming");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let fullReasoning = "";
+  let fullContent = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // Process complete lines from buffer
+      let newlineIndex: number;
+      while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+        const line = buffer.slice(0, newlineIndex).trim();
+        buffer = buffer.slice(newlineIndex + 1);
+
+        // Skip empty lines and comments
+        if (!line || line.startsWith(":")) continue;
+
+        // Parse SSE data line
+        if (line.startsWith("data: ")) {
+          const jsonStr = line.slice(6);
+
+          // Check for stream end marker
+          if (jsonStr === "[DONE]") {
+            console.log(`${logPrefix} 🏁 GLM stream complete`);
+            break;
+          }
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const delta = parsed?.choices?.[0]?.delta;
+
+            if (delta) {
+              // GLM streams reasoning_content first, then content
+              if (delta.reasoning_content) {
+                fullReasoning += delta.reasoning_content;
+                callbacks.onReasoningChunk?.(delta.reasoning_content);
+              }
+
+              if (delta.content) {
+                fullContent += delta.content;
+                callbacks.onContentChunk?.(delta.content);
+              }
+            }
+          } catch (parseError) {
+            // Non-JSON line, skip
+            console.warn(`${logPrefix} Failed to parse SSE chunk:`, parseError);
+          }
+        }
+      }
+    }
+
+    console.log(`${logPrefix} ✅ Stream processed: reasoning=${fullReasoning.length} chars, content=${fullContent.length} chars`);
+    callbacks.onComplete?.(fullReasoning, fullContent);
+
+    return { reasoning: fullReasoning, content: fullContent };
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error(`${logPrefix} ❌ Stream error:`, err);
+    callbacks.onError?.(err);
+    throw err;
   }
 }
 

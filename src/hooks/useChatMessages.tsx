@@ -252,9 +252,41 @@ export function useChatMessages(
         artifactPatterns.some(pattern => pattern.test(userMessage));
 
       if (isArtifactRequest) {
-        console.log("🎨 [useChatMessages] Direct artifact routing - calling /generate-artifact");
+        console.log("🎨 [useChatMessages] Direct artifact routing - calling /generate-artifact + /generate-reasoning in parallel");
 
-        const artifactResponse = await fetch(
+        // Send initial progress immediately
+        onDelta("", {
+          stage: "analyzing",
+          message: "Analyzing your request...",
+          artifactDetected: true,
+          percentage: 5,
+        });
+
+        // Call both endpoints in parallel:
+        // 1. /generate-reasoning - Fast (2-4s) - Provides immediate reasoning
+        // 2. /generate-artifact - Slow (30-60s) - Generates the actual artifact
+        const reasoningPromise = fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-reasoning`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(session ? { Authorization: `Bearer ${session.access_token}` } : {})
+            },
+            body: JSON.stringify({ prompt: userMessage }),
+          }
+        ).then(async (res) => {
+          if (!res.ok) {
+            console.warn("⚠️ Reasoning generation failed, continuing without it");
+            return null;
+          }
+          return res.json();
+        }).catch((err) => {
+          console.warn("⚠️ Reasoning fetch error:", err);
+          return null;
+        });
+
+        const artifactPromise = fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-artifact`,
           {
             method: "POST",
@@ -269,6 +301,51 @@ export function useChatMessages(
             }),
           }
         );
+
+        // Wait for reasoning first (fast ~2-4s) - show it immediately
+        const reasoningData = await reasoningPromise;
+
+        if (reasoningData?.success && reasoningData.reasoning?.steps) {
+          console.log(`🧠 [useChatMessages] Reasoning ready with ${reasoningData.reasoning.steps.length} steps - streaming now`);
+
+          // Stream reasoning steps progressively while artifact generates
+          const steps = reasoningData.reasoning.steps;
+          for (let i = 0; i < steps.length; i++) {
+            const step = steps[i];
+            const progressPercentage = 10 + Math.round((i / steps.length) * 40); // 10-50%
+
+            // Create partial reasoning with steps up to current index
+            const partialReasoning = {
+              steps: steps.slice(0, i + 1),
+              summary: i === steps.length - 1 ? reasoningData.reasoning.summary : undefined,
+            };
+
+            onDelta("", {
+              stage: i === 0 ? "analyzing" : i < steps.length - 1 ? "planning" : "generating",
+              message: step.title || `Step ${i + 1}`,
+              artifactDetected: true,
+              percentage: progressPercentage,
+              reasoningSteps: partialReasoning,
+            });
+
+            // Brief pause between steps for animation effect
+            if (i < steps.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 600));
+            }
+          }
+        }
+
+        // Update progress while waiting for artifact
+        onDelta("", {
+          stage: "generating",
+          message: "Generating artifact code...",
+          artifactDetected: true,
+          percentage: 55,
+          reasoningSteps: reasoningData?.reasoning || undefined,
+        });
+
+        // Now wait for artifact generation to complete
+        const artifactResponse = await artifactPromise;
 
         // Handle rate limit exceeded (429)
         if (artifactResponse.status === 429) {
@@ -310,25 +387,26 @@ export function useChatMessages(
 
         console.log("✅ [useChatMessages] Artifact generated successfully, length:", artifactData.artifactCode.length);
 
-        // Simulate streaming progress for consistent UX
         const artifactCode = artifactData.artifactCode;
 
-        // Send progress updates
-        onDelta(artifactCode, {
-          stage: "finalizing",
-          message: "Artifact generated successfully!",
-          artifactDetected: true,
-          percentage: 100,
-        });
+        // Use the pre-generated reasoning (from fast model) for display
+        // Fall back to GLM reasoning if pre-generation failed
+        const finalReasoning = reasoningData?.reasoning || artifactData.reasoningSteps;
 
-        // Save the assistant response
-        await saveMessage("assistant", artifactCode);
+        // CRITICAL: Clear streaming state BEFORE saving to prevent duplicate keys
+        // The saved message will render with the artifact code, so we don't need
+        // the streaming message anymore. Clearing it first prevents both from
+        // rendering simultaneously with the same content/key.
+        setIsLoading(false);
+        onDone(); // This clears streamingMessage and isStreaming
 
-        // Small delay to ensure React state updates
+        // Small delay to ensure streaming state is cleared before saving
         await new Promise(resolve => setTimeout(resolve, 50));
 
-        setIsLoading(false);
-        onDone();
+        // Save the assistant response with reasoning data
+        // Store raw GLM reasoning for potential debugging, but use structured for display
+        await saveMessage("assistant", artifactCode, artifactData.reasoning || undefined, finalReasoning || undefined);
+
         return;
       }
 

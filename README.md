@@ -51,6 +51,13 @@
 
 ### Recent Major Improvements
 
+**November 28, 2025 - GLM-4.6 Reasoning Display:**
+- 🧠 **Real-time Reasoning Streaming**: GLM-4.6 reasoning displays immediately via parallel requests
+- ⚡ **Fast Parallel Architecture**: `/generate-reasoning` (Gemini, 2-4s) runs alongside `/generate-artifact` (GLM, 30-60s)
+- 🔧 **CORS Fix**: Fixed 500 error in generate-reasoning preflight handler
+- 🐛 **Duplicate Key Fix**: Resolved React warning for duplicate message keys during streaming
+- 📦 **New GLM Client**: Added `glm-client.ts` with streaming support and `glm-reasoning-parser.ts`
+
 **November 27, 2025 - Smart Context Management & Bug Fixes:**
 - 🧠 **Smart Context Management**: Token-aware context windowing for optimized AI responses
 - 🔧 **Guest Artifact Bundling**: Fixed guest users unable to use npm-bundled artifacts
@@ -203,7 +210,8 @@ Experience Vana in action: [View Demo](#) *(Add your deployment URL)*
 | Service | Purpose |
 |---------|---------|
 | **Supabase** | PostgreSQL database, authentication, edge functions |
-| **OpenRouter** | AI model routing for chat (Gemini 2.5 Flash Lite) and artifacts (Kimi K2-Thinking) - single API keys |
+| **OpenRouter** | Chat, titles, summaries, fast reasoning (Gemini 2.5 Flash Lite) - single API key |
+| **Z.ai** | Artifact generation & fixing (GLM-4.6 with thinking mode) - single API key |
 | **Google AI Studio** | Image generation ONLY (Gemini 2.5 Flash Image) - uses 10-key rotation pool for high throughput |
 
 ### Key Libraries
@@ -246,8 +254,9 @@ graph TB
 
     subgraph "Edge Functions"
         L[chat - Gemini Flash Lite]
-        LA[generate-artifact - Kimi K2-Thinking]
-        LB[generate-artifact-fix - Kimi K2-Thinking]
+        LA[generate-artifact - GLM-4.6]
+        LB[generate-artifact-fix - GLM-4.6]
+        LC[generate-reasoning - Gemini Flash]
         M[generate-title - Gemini Flash Lite]
         N[generate-image - Flash-Image]
         O[summarize-conversation - Gemini Flash Lite]
@@ -255,7 +264,8 @@ graph TB
     end
 
     subgraph "External Services"
-        Q[OpenRouter<br/>Gemini & Kimi K2-Thinking]
+        Q[OpenRouter<br/>Gemini Flash Lite]
+        QA[Z.ai API<br/>GLM-4.6]
         R[Google AI Studio<br/>Image Generation]
     end
 
@@ -530,8 +540,9 @@ llm-chat-site/
 ├── supabase/
 │   ├── functions/          # Edge Functions
 │   │   ├── chat/           # Main chat streaming (Gemini 2.5 Flash Lite via OpenRouter)
-│   │   ├── generate-artifact/ # Artifact generation (Kimi K2-Thinking via OpenRouter)
-│   │   ├── generate-artifact-fix/ # Artifact error fixing (Kimi K2-Thinking via OpenRouter)
+│   │   ├── generate-artifact/ # Artifact generation (GLM-4.6 via Z.ai)
+│   │   ├── generate-reasoning/ # Fast parallel reasoning (Gemini Flash, 2-4s)
+│   │   ├── generate-artifact-fix/ # Artifact error fixing (GLM-4.6 via Z.ai)
 │   │   ├── generate-title/ # Auto-generate session titles (Gemini 2.5 Flash Lite via OpenRouter)
 │   │   ├── generate-image/ # AI image generation (Gemini Flash Image via OpenRouter)
 │   │   ├── summarize-conversation/ # Context summarization (Gemini 2.5 Flash Lite via OpenRouter)

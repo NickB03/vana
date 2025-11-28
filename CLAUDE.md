@@ -1,4 +1,4 @@
-<!-- CLAUDE.md v2.4 | Last updated: 2025-11-27 | React instance fix documented -->
+<!-- CLAUDE.md v2.5 | Last updated: 2025-11-28 | GLM-4.6 reasoning streaming documented -->
 
 # CLAUDE.md
 
@@ -104,8 +104,9 @@ supabase functions deploy <name> --project-ref <ref>  # Individual function
 | Function | Model | Provider | Notes |
 |----------|-------|----------|-------|
 | Chat/Summaries/Titles | Gemini 2.5 Flash Lite | OpenRouter | Single key, unlimited |
-| Artifact Generation | Kimi K2-Thinking | OpenRouter | Single key |
-| Artifact Error Fixing | Kimi K2-Thinking | OpenRouter | Deep reasoning |
+| Artifact Generation | GLM-4.6 | Z.ai API | Thinking mode enabled, streams reasoning |
+| Artifact Error Fixing | GLM-4.6 | Z.ai API | Deep reasoning for debugging |
+| Fast Reasoning (parallel) | Gemini 2.5 Flash Lite | OpenRouter | 2-4s, shows while artifact generates |
 | Image Generation | Gemini Flash-Image | Google AI Studio | 10-key rotation, 150 RPM |
 
 ### Edge Function Decision Tree
@@ -113,8 +114,9 @@ supabase functions deploy <name> --project-ref <ref>  # Individual function
 | Scenario | Function | Model |
 |----------|----------|-------|
 | User sends chat message | `chat/` | Gemini Flash Lite |
-| User requests artifact | `generate-artifact/` | Kimi K2-Thinking |
-| Artifact has errors | `generate-artifact-fix/` | Kimi K2-Thinking |
+| User requests artifact | `generate-artifact/` | GLM-4.6 (Z.ai) |
+| Fast reasoning (parallel) | `generate-reasoning/` | Gemini Flash Lite |
+| Artifact has errors | `generate-artifact-fix/` | GLM-4.6 (Z.ai) |
 | First message in session | `generate-title/` | Gemini Flash Lite |
 | User requests image | `generate-image/` | Gemini Flash-Image |
 | Conversation exceeds context | `summarize-conversation/` | Gemini Flash Lite |
@@ -206,9 +208,10 @@ Full schema: `supabase/migrations/`
 | Function | Purpose |
 |----------|---------|
 | `chat/` | Main chat streaming with handlers/ and middleware/ |
-| `generate-artifact/` | Artifact generation with validation |
+| `generate-artifact/` | Artifact generation with GLM-4.6 + validation |
+| `generate-reasoning/` | Fast parallel reasoning (Gemini Flash, 2-4s) |
 | `bundle-artifact/` | Server-side npm bundling (Radix UI, framer-motion) |
-| `generate-artifact-fix/` | Error fixing with deep reasoning |
+| `generate-artifact-fix/` | Error fixing with GLM-4.6 deep reasoning |
 | `generate-title/` | Session title generation |
 | `generate-image/` | AI image generation (10-key rotation) |
 | `summarize-conversation/` | Context summarization |
@@ -219,7 +222,7 @@ Full schema: `supabase/migrations/`
 
 **Shared Utilities** (`_shared/`):
 - **Core**: `config.ts`, `cors-config.ts`, `logger.ts`, `validators.ts`
-- **AI/Models**: `openrouter-client.ts`, `model-router.ts`, `complexity-analyzer.ts`, `reasoning-generator.ts`
+- **AI/Models**: `openrouter-client.ts`, `glm-client.ts`, `model-router.ts`, `complexity-analyzer.ts`, `reasoning-generator.ts`, `glm-reasoning-parser.ts`
 - **Context Management**: `context-selector.ts`, `context-ranker.ts`, `token-counter.ts`
 - **State/Quality**: `state-machine.ts`, `conversation-state.ts`, `response-quality.ts`
 - **Artifacts**: `artifact-validator.ts`, `artifact-rules/`
@@ -234,7 +237,8 @@ Full schema: `supabase/migrations/`
 ```typescript
 export const MODELS = {
   GEMINI_FLASH: 'google/gemini-2.5-flash-lite',
-  KIMI_K2: 'moonshotai/kimi-k2-thinking',
+  GLM_4_6: 'zhipu/glm-4.6',  // Artifact generation via Z.ai API
+  KIMI_K2: 'moonshotai/kimi-k2-thinking',  // @deprecated - use GLM_4_6
   GEMINI_FLASH_IMAGE: 'google/gemini-2.5-flash-image'
 } as const;
 ```
@@ -321,7 +325,8 @@ export default function App() { ... }
 **Frontend** (`.env`): `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID`, `VITE_ENABLE_ANALYTICS`
 
 **Edge Functions** (Supabase Secrets):
-- `OPENROUTER_GEMINI_FLASH_KEY`, `OPENROUTER_KIMI_K2_KEY`, `OPENROUTER_K2T_KEY`
+- `OPENROUTER_GEMINI_FLASH_KEY` (chat, titles, summaries, fast reasoning)
+- `GLM_API_KEY` (artifact generation via Z.ai)
 - `GOOGLE_KEY_1` through `GOOGLE_KEY_10` (image generation)
 - `ALLOWED_ORIGINS` (CORS)
 

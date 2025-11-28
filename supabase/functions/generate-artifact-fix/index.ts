@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { callGLMWithRetryTracking, extractTextFromGLM, extractGLMTokenUsage, calculateGLMCost, logGLMUsage, handleGLMError } from "../_shared/glm-client.ts";
+import { callGLMWithRetryTracking, extractTextAndReasoningFromGLM, extractGLMTokenUsage, calculateGLMCost, logGLMUsage, handleGLMError } from "../_shared/glm-client.ts";
+import { parseGLMReasoningToStructured } from "../_shared/glm-reasoning-parser.ts";
 import { getCorsHeaders } from "../_shared/cors-config.ts";
 import { MODELS, RATE_LIMITS } from "../_shared/config.ts";
 import { getRelevantPatterns, getTypeSpecificGuidance } from "../_shared/artifact-rules/error-patterns.ts";
@@ -244,14 +245,17 @@ Return ONLY the fixed code without any explanations or markdown formatting.`;
     }
 
     const data = await response.json();
-    let fixedCode = extractTextFromGLM(data, requestId);
+    const { text: extractedCode, reasoning: glmReasoning } = extractTextAndReasoningFromGLM(data, requestId);
 
-    if (!fixedCode) {
+    if (!extractedCode) {
       throw new Error("No fixed code returned from AI");
     }
 
+    // Parse reasoning into structured format
+    const reasoningSteps = glmReasoning ? parseGLMReasoningToStructured(glmReasoning) : [];
+
     // Clean up any markdown code blocks that might have been added
-    fixedCode = fixedCode.replace(/^```[\w]*\n/, '').replace(/\n```$/, '').trim();
+    const fixedCode = extractedCode.replace(/^```[\w]*\n/, '').replace(/\n```$/, '').trim();
 
     // Extract token usage for cost tracking
     const tokenUsage = extractGLMTokenUsage(data);
@@ -286,7 +290,11 @@ Return ONLY the fixed code without any explanations or markdown formatting.`;
     }).catch(err => console.error(`[${requestId}] Failed to log usage:`, err));
     console.log(`[${requestId}] 📊 Usage logged to database`);
 
-    return new Response(JSON.stringify({ fixedCode }), {
+    return new Response(JSON.stringify({
+      fixedCode,
+      reasoning: glmReasoning,
+      reasoningSteps: reasoningSteps
+    }), {
       headers: {
         ...corsHeaders,
         ...rateLimitHeaders,

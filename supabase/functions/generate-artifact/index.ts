@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { callGLMWithRetryTracking, extractTextFromGLM, extractGLMTokenUsage, calculateGLMCost, logGLMUsage, handleGLMError } from "../_shared/glm-client.ts";
+import { callGLMWithRetryTracking, extractTextFromGLM, extractTextAndReasoningFromGLM, extractGLMTokenUsage, calculateGLMCost, logGLMUsage, handleGLMError } from "../_shared/glm-client.ts";
+import { parseGLMReasoningToStructured } from "../_shared/glm-reasoning-parser.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 import { MODELS, RATE_LIMITS } from "../_shared/config.ts";
 import { validateArtifactCode, autoFixArtifactCode } from "../_shared/artifact-validator.ts";
@@ -309,7 +310,11 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
       console.warn(`[${requestId}] ⚠️  Consider: 1) Simplifying prompt, 2) Increasing max_tokens further, 3) Using model with higher limits`);
     }
 
-    let artifactCode = extractTextFromGLM(data, requestId);
+    const { text: rawArtifactCode, reasoning: glmReasoning } = extractTextAndReasoningFromGLM(data, requestId);
+    let artifactCode = rawArtifactCode;
+
+    // Convert GLM reasoning to structured format for UI
+    const reasoningSteps = glmReasoning ? parseGLMReasoningToStructured(glmReasoning) : null;
 
     // ============================================================================
     // POST-GENERATION CLEANUP: Strip HTML Document Structure from React Artifacts
@@ -437,6 +442,8 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
       JSON.stringify({
         success: true,
         artifactCode,
+        reasoning: glmReasoning,           // Raw GLM reasoning text
+        reasoningSteps,                     // Structured format for UI
         prompt,
         requestId
       }),
