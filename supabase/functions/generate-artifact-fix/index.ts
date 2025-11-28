@@ -1,9 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { callKimiWithRetryTracking, extractTextFromKimi, extractTokenUsage, calculateKimiCost, logAIUsage } from "../_shared/openrouter-client.ts";
+import { callGLMWithRetryTracking, extractTextFromGLM, extractGLMTokenUsage, calculateGLMCost, logGLMUsage, handleGLMError } from "../_shared/glm-client.ts";
 import { getCorsHeaders } from "../_shared/cors-config.ts";
 import { MODELS, RATE_LIMITS } from "../_shared/config.ts";
-import { handleKimiError } from "../_shared/api-error-handler.ts";
 import { getRelevantPatterns, getTypeSpecificGuidance } from "../_shared/artifact-rules/error-patterns.ts";
 
 serve(async (req) => {
@@ -227,24 +226,25 @@ ${content}
 
 Return ONLY the fixed code without any explanations or markdown formatting.`;
 
-    // Call Kimi K2-Thinking via OpenRouter with retry logic and tracking
-    console.log(`[${requestId}] 🚀 Routing to Kimi K2-Thinking for artifact fix (reasoning model)`);
-    const { response, retryCount } = await callKimiWithRetryTracking(
+    // Call GLM-4.6 via Z.ai API with retry logic and tracking
+    console.log(`[${requestId}] 🚀 Routing to GLM-4.6 for artifact fix (reasoning model)`);
+    const { response, retryCount } = await callGLMWithRetryTracking(
       systemPrompt,
       userPrompt,
       {
-        temperature: 0.3, // Lower temperature for more deterministic fixes
+        temperature: 0.6, // Lower temperature for more deterministic fixes (GLM scale)
         max_tokens: 8000,
-        requestId
+        requestId,
+        enableThinking: true // Enable reasoning for better debugging
       }
     );
 
     if (!response.ok) {
-      return await handleKimiError(response, requestId, corsHeaders);
+      return await handleGLMError(response, requestId, corsHeaders);
     }
 
     const data = await response.json();
-    let fixedCode = extractTextFromKimi(data, requestId);
+    let fixedCode = extractTextFromGLM(data, requestId);
 
     if (!fixedCode) {
       throw new Error("No fixed code returned from AI");
@@ -254,8 +254,8 @@ Return ONLY the fixed code without any explanations or markdown formatting.`;
     fixedCode = fixedCode.replace(/^```[\w]*\n/, '').replace(/\n```$/, '').trim();
 
     // Extract token usage for cost tracking
-    const tokenUsage = extractTokenUsage(data);
-    const estimatedCost = calculateKimiCost(tokenUsage.inputTokens, tokenUsage.outputTokens);
+    const tokenUsage = extractGLMTokenUsage(data);
+    const estimatedCost = calculateGLMCost(tokenUsage.inputTokens, tokenUsage.outputTokens);
 
     console.log(`[${requestId}] Generated fix, original length: ${content.length}, fixed length: ${fixedCode.length}`);
     console.log(`[${requestId}] 💰 Token usage:`, {
@@ -267,11 +267,11 @@ Return ONLY the fixed code without any explanations or markdown formatting.`;
 
     // Log usage to database for admin dashboard (fire-and-forget, non-blocking)
     const latencyMs = Date.now() - startTime;
-    logAIUsage({
+    logGLMUsage({
       requestId,
       functionName: 'generate-artifact-fix',
-      provider: 'openrouter',
-      model: MODELS.KIMI_K2,
+      provider: 'z.ai',
+      model: MODELS.GLM_4_6,
       userId: user.id,
       isGuest: false,
       inputTokens: tokenUsage.inputTokens,
@@ -280,7 +280,7 @@ Return ONLY the fixed code without any explanations or markdown formatting.`;
       latencyMs,
       statusCode: 200,
       estimatedCost,
-      retryCount, // Now uses actual retry count from tracking function
+      retryCount,
       promptPreview: errorMessage.substring(0, 200),
       responseLength: fixedCode.length
     }).catch(err => console.error(`[${requestId}] Failed to log usage:`, err));

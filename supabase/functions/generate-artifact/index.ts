@@ -1,14 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { callKimiWithRetryTracking, extractTextFromKimi, extractTokenUsage, calculateKimiCost, logAIUsage } from "../_shared/openrouter-client.ts";
+import { callGLMWithRetryTracking, extractTextFromGLM, extractGLMTokenUsage, calculateGLMCost, logGLMUsage, handleGLMError } from "../_shared/glm-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 import { MODELS, RATE_LIMITS } from "../_shared/config.ts";
-import { handleKimiError } from "../_shared/api-error-handler.ts";
 import { validateArtifactCode, autoFixArtifactCode } from "../_shared/artifact-validator.ts";
 import { getSystemInstruction } from "../_shared/system-prompt-inline.ts";
 
-// NOTE: Retry logic moved to openrouter-client.ts
-// callKimiWithRetry() now handles exponential backoff automatically
+// NOTE: Retry logic handled in glm-client.ts
+// callGLMWithRetryTracking() handles exponential backoff automatically
 
 // Use shared system prompt for artifact generation
 const ARTIFACT_SYSTEM_PROMPT = getSystemInstruction({ currentDate: new Date().toLocaleDateString() });
@@ -236,25 +235,67 @@ serve(async (req) => {
     // Track timing for latency calculation
     const startTime = Date.now();
 
-    // Construct user prompt for Kimi K2-Thinking
-    const userPrompt = artifactType
-      ? `Create a ${artifactType} artifact for: ${prompt}\n\nIMPORTANT: Return the COMPLETE artifact wrapped in XML tags like: <artifact type="application/vnd.ant.react" title="Descriptive Title">YOUR CODE HERE</artifact>\n\nInclude the opening <artifact> tag, the complete code, and the closing </artifact> tag.`
-      : `Create an artifact for: ${prompt}\n\nIMPORTANT: Return the COMPLETE artifact wrapped in XML tags like: <artifact type="application/vnd.ant.react" title="Descriptive Title">YOUR CODE HERE</artifact>\n\nInclude the opening <artifact> tag, the complete code, and the closing </artifact> tag.`;
+    // Construct user prompt for GLM-4.6
+    // CRITICAL: Must be explicit about format - GLM tends to generate full HTML documents
+    // when we need pure JSX/React component code for Babel transpilation
+    const userPrompt = artifactType === 'react'
+      ? `Create a React component for: ${prompt}
 
-    // Call Kimi K2-Thinking via OpenRouter with retry logic and tracking
-    console.log(`[${requestId}] 🤖 Routing to Kimi K2-Thinking via OpenRouter`);
-    const { response, retryCount } = await callKimiWithRetryTracking(
+CRITICAL FORMAT REQUIREMENTS:
+1. Return ONLY pure JSX/React code - NO HTML document structure
+2. Do NOT include <!DOCTYPE>, <html>, <head>, <body>, or <script> tags
+3. Do NOT wrap the code in HTML - just the React component code
+4. Start with imports or the component function directly
+5. End with "export default ComponentName;" - nothing after that
+
+CORRECT FORMAT EXAMPLE:
+<artifact type="application/vnd.ant.react" title="My Component">
+const { useState, useEffect } = React;
+
+function App() {
+  const [count, setCount] = useState(0);
+  return (
+    <div className="p-4">
+      <h1>Count: {count}</h1>
+      <button onClick={() => setCount(c => c + 1)}>Increment</button>
+    </div>
+  );
+}
+
+export default App;
+</artifact>
+
+WRONG FORMAT (DO NOT DO THIS):
+<artifact type="application/vnd.ant.react" title="My Component">
+function App() { ... }
+<!DOCTYPE html>
+<html>...</html>
+</artifact>
+
+Now create the React component wrapped in artifact tags:`
+      : `Create an artifact for: ${prompt}
+
+IMPORTANT: Return the COMPLETE artifact wrapped in XML tags like: <artifact type="application/vnd.ant.react" title="Descriptive Title">YOUR CODE HERE</artifact>
+
+For React artifacts: Return ONLY pure JSX/React component code. Do NOT include <!DOCTYPE>, <html>, <head>, <body> tags. The code will be transpiled by Babel, not rendered as a full HTML page.
+
+Include the opening <artifact> tag, the complete code, and the closing </artifact> tag.`;
+
+    // Call GLM-4.6 via Z.ai API with retry logic and tracking
+    console.log(`[${requestId}] 🤖 Routing to GLM-4.6 via Z.ai API`);
+    const { response, retryCount } = await callGLMWithRetryTracking(
       ARTIFACT_SYSTEM_PROMPT,
       userPrompt,
       {
-        temperature: 0.7, // Balanced creativity and consistency
+        temperature: 1.0, // GLM recommends 1.0 for general evaluations
         max_tokens: 16000, // ✅ INCREASED: Doubled from 8000 to handle complex artifacts (Radix UI dialogs, etc.)
-        requestId
+        requestId,
+        enableThinking: true // Enable reasoning for better artifact generation
       }
     );
 
     if (!response.ok) {
-      return await handleKimiError(response, requestId, corsHeaders);
+      return await handleGLMError(response, requestId, corsHeaders);
     }
 
     const data = await response.json();
@@ -268,7 +309,34 @@ serve(async (req) => {
       console.warn(`[${requestId}] ⚠️  Consider: 1) Simplifying prompt, 2) Increasing max_tokens further, 3) Using model with higher limits`);
     }
 
-    let artifactCode = extractTextFromKimi(data, requestId);
+    let artifactCode = extractTextFromGLM(data, requestId);
+
+    // ============================================================================
+    // POST-GENERATION CLEANUP: Strip HTML Document Structure from React Artifacts
+    // ============================================================================
+    // GLM-4.6 sometimes appends full HTML documents after the React code
+    // This causes Babel transpilation to fail with "Unexpected token '<'"
+    // We need to strip everything after the React component ends
+    if (artifactType === 'react' || artifactCode.includes('application/vnd.ant.react')) {
+      // Check if there's HTML document structure after React code
+      const htmlDocPattern = /<!DOCTYPE\s+html[\s\S]*$/i;
+      if (htmlDocPattern.test(artifactCode)) {
+        console.log(`[${requestId}] ⚠️  Detected HTML document structure in React artifact - stripping...`);
+
+        // Remove everything from <!DOCTYPE onwards
+        artifactCode = artifactCode.replace(htmlDocPattern, '').trim();
+
+        // Also clean up any trailing </artifact> that might have been duplicated
+        artifactCode = artifactCode.replace(/<\/artifact>\s*$/i, '').trim();
+
+        // Re-add the closing tag if the artifact tag is present
+        if (artifactCode.includes('<artifact') && !artifactCode.includes('</artifact>')) {
+          artifactCode = artifactCode + '\n</artifact>';
+        }
+
+        console.log(`[${requestId}] ✅ Stripped HTML document structure, cleaned length: ${artifactCode.length}`);
+      }
+    }
 
     // ============================================================================
     // POST-GENERATION VALIDATION & AUTO-FIX
@@ -314,8 +382,8 @@ serve(async (req) => {
     }
 
     // Extract token usage for cost tracking
-    const tokenUsage = extractTokenUsage(data);
-    const estimatedCost = calculateKimiCost(tokenUsage.inputTokens, tokenUsage.outputTokens);
+    const tokenUsage = extractGLMTokenUsage(data);
+    const estimatedCost = calculateGLMCost(tokenUsage.inputTokens, tokenUsage.outputTokens);
 
     console.log(`[${requestId}] 💰 Token usage:`, {
       input: tokenUsage.inputTokens,
@@ -326,11 +394,11 @@ serve(async (req) => {
 
     // Log usage to database for admin dashboard (fire-and-forget, non-blocking)
     const latencyMs = Date.now() - startTime;
-    logAIUsage({
+    logGLMUsage({
       requestId,
       functionName: 'generate-artifact',
-      provider: 'openrouter',
-      model: MODELS.KIMI_K2,
+      provider: 'z.ai',
+      model: MODELS.GLM_4_6,
       userId: user?.id,
       isGuest: !user,
       inputTokens: tokenUsage.inputTokens,
@@ -339,7 +407,7 @@ serve(async (req) => {
       latencyMs,
       statusCode: 200,
       estimatedCost,
-      retryCount, // Now uses actual retry count from tracking function
+      retryCount,
       promptPreview: prompt.substring(0, 200),
       responseLength: artifactCode.length
     }).catch(err => console.error(`[${requestId}] Failed to log usage:`, err));

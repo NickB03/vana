@@ -20,6 +20,466 @@ const SandpackArtifactRenderer = lazy(() =>
   }))
 );
 
+/**
+ * BundledArtifactFrame - Renders server-bundled artifacts via blob URL
+ *
+ * Supabase storage sets X-Frame-Options headers that block direct iframe embedding.
+ * This component fetches the bundle content and creates a blob URL, which bypasses
+ * those restrictions while maintaining security (content is validated by origin check).
+ *
+ * ## React Instance Unification (Fixed 2025-11-27)
+ *
+ * Problem: esm.sh packages with `?deps=react@18` bundled their own React copy internally.
+ * When Radix UI components called hooks like useRef(), they called it on their bundled
+ * React instance, but the component tree was rendered with window.React (UMD).
+ * This caused "Cannot read properties of null (reading 'useRef')" errors.
+ *
+ * Solution:
+ * 1. Replace `?deps=` with `?external=react,react-dom` on esm.sh URLs
+ * 2. Add import map shims that redirect `react`/`react-dom` to window.React
+ * 3. Add JSX runtime shim with jsx/jsxs/Fragment exports
+ * 4. Ensure parent CSP (index.html) allows `data:` URLs for shim modules
+ *
+ * See lines 204-294 for implementation details.
+ */
+interface BundledArtifactFrameProps {
+  bundleUrl: string;
+  title: string;
+  dependencies?: string[];
+  isLoading: boolean;
+  previewError: string | null;
+  onLoadingChange: (loading: boolean) => void;
+  onPreviewErrorChange: (error: string | null) => void;
+}
+
+const BundledArtifactFrame = memo(({
+  bundleUrl,
+  title,
+  dependencies,
+  isLoading,
+  previewError,
+  onLoadingChange,
+  onPreviewErrorChange,
+}: BundledArtifactFrameProps) => {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    let objectUrl: string | null = null;
+
+    const fetchBundle = async () => {
+      try {
+        console.log('[BundledArtifactFrame] Fetching bundle from:', bundleUrl);
+        onLoadingChange(true);
+        setFetchError(null);
+
+        const response = await fetch(bundleUrl);
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch bundle: ${response.status} ${response.statusText}`);
+        }
+
+        let htmlContent = await response.text();
+
+        // FIX: Apply client-side syntax fixes for bundles created before server-side fixes were deployed
+        // GLM sometimes generates "const * as X from 'pkg'" which is invalid JavaScript
+        // Transform to proper "import * as X from 'pkg'" syntax
+
+        // Debug: Check if problematic pattern exists in the HTML
+        const constStarMatches = htmlContent.match(/const\s*\*\s*as/g);
+        if (constStarMatches) {
+          console.log('[BundledArtifactFrame] Found "const * as" patterns:', constStarMatches.length);
+          // Debug: show the exact matches in context
+          const contextMatches = htmlContent.match(/.{0,30}const\s*\*\s*as.{0,50}/g);
+          if (contextMatches) {
+            console.log('[BundledArtifactFrame] Context of matches:', contextMatches);
+          }
+        }
+
+        // Fix: Transform "const * as X from 'pkg'" to "import * as X from 'pkg'"
+        // Note: The pattern may be escaped differently in the HTML template string
+        const beforeReplace = htmlContent;
+        htmlContent = htmlContent.replace(
+          /const\s*\*\s*as\s+(\w+)\s+from\s+(['"][^'"]+['"])\s*;?/g,
+          'import * as $1 from $2;'
+        );
+
+        if (beforeReplace !== htmlContent) {
+          console.log('[BundledArtifactFrame] Successfully transformed const * as patterns');
+        } else if (constStarMatches) {
+          console.log('[BundledArtifactFrame] WARNING: Found patterns but replacement did not match');
+        }
+
+        // Also fix unquoted package names: "from React;" -> "from 'react';"
+        htmlContent = htmlContent.replace(/from\s+React\s*;/g, "from 'react';");
+        htmlContent = htmlContent.replace(/from\s+ReactDOM\s*;/g, "from 'react-dom';");
+
+        // CLIENT-SIDE FIX: Inject missing libraries and globals into bundles created before server fix
+        // Framer Motion UMD uses window.React which is set by the UMD React script.
+        // Since we're using ?external=react,react-dom for esm.sh packages, they'll also use
+        // window.React via import map shims, so everything shares the same React instance.
+        const needsFramerMotion = !htmlContent.includes('framer-motion') &&
+          (htmlContent.includes('motion.') || htmlContent.includes('Motion') || htmlContent.includes('AnimatePresence'));
+        if (needsFramerMotion) {
+          console.log('[BundledArtifactFrame] Injecting Framer Motion UMD library');
+          // Use Framer Motion v10 which has better UMD compatibility with React 18
+          // v11 has stricter requirements that cause "useRef" errors
+          const framerScript = `
+  <!-- Injected: Framer Motion v10 for animations (better UMD compatibility) -->
+  <script crossorigin src="https://unpkg.com/framer-motion@10.18.0/dist/framer-motion.js"></script>
+  <script>
+    // Wait for script to fully load and check for Motion global
+    (function checkMotion() {
+      if (typeof Motion !== 'undefined' && Motion.motion) {
+        console.log('Framer Motion injected successfully');
+        window.motion = Motion.motion;
+        window.AnimatePresence = Motion.AnimatePresence;
+        // Expose utilities
+        if (Motion.useAnimation) window.useAnimation = Motion.useAnimation;
+        if (Motion.useMotionValue) window.useMotionValue = Motion.useMotionValue;
+        if (Motion.useTransform) window.useTransform = Motion.useTransform;
+      } else {
+        console.warn('Framer Motion not yet available, waiting...');
+        setTimeout(checkMotion, 50);
+      }
+    })();
+  </script>`;
+          // IMPORTANT: Framer Motion UMD needs BOTH React AND ReactDOM loaded first
+          // Try to inject after ReactDOM script (which comes after React)
+          const reactDomScriptMatch = htmlContent.match(/(<script[^>]*react-dom[^>]*\.js[^>]*><\/script>)/i);
+          if (reactDomScriptMatch) {
+            htmlContent = htmlContent.replace(reactDomScriptMatch[1], reactDomScriptMatch[1] + framerScript);
+          } else {
+            // Fallback: inject before </head>
+            htmlContent = htmlContent.replace('</head>', framerScript + '\n</head>');
+          }
+        }
+
+        // Check if canvas-confetti script is missing
+        if (!htmlContent.includes('canvas-confetti') && htmlContent.includes('canvasConfetti')) {
+          console.log('[BundledArtifactFrame] Injecting canvas-confetti library');
+          const confettiScript = `
+  <!-- Injected: Canvas Confetti for celebrations -->
+  <script crossorigin src="https://unpkg.com/canvas-confetti@1.9.3/dist/confetti.browser.js"></script>
+  <script>
+    if (typeof confetti !== 'undefined') {
+      window.canvasConfetti = { create: confetti.create || confetti, reset: confetti.reset };
+      window.confetti = confetti;
+    }
+  </script>`;
+          htmlContent = htmlContent.replace('</head>', confettiScript + '\n</head>');
+        }
+
+        // Check if React hooks are NOT exposed as globals
+        // Old bundles strip "const { useState } = React" but don't expose hooks globally
+        if (!htmlContent.includes('window.useState = React.useState') && htmlContent.includes('useState(')) {
+          console.log('[BundledArtifactFrame] Injecting React hook globals');
+          const hooksScript = `
+  <script>
+    // Injected: React hooks as globals
+    if (typeof React !== 'undefined') {
+      window.useState = React.useState;
+      window.useEffect = React.useEffect;
+      window.useCallback = React.useCallback;
+      window.useMemo = React.useMemo;
+      window.useRef = React.useRef;
+      window.useContext = React.useContext;
+      window.useReducer = React.useReducer;
+      window.useLayoutEffect = React.useLayoutEffect;
+    }
+  </script>`;
+          // Inject after React script
+          htmlContent = htmlContent.replace(
+            /(<script[^>]*react\.production\.min\.js[^>]*><\/script>)/,
+            '$1' + hooksScript
+          );
+        }
+
+        // CRITICAL FIX: Server-side escaping bug produces invalid JS
+        // The bundle-artifact function escapes backticks and dollar signs for template literal embedding,
+        // but those escapes persist in the final HTML, causing "Invalid or unexpected token" errors.
+        // We need to unescape them for the browser to parse correctly.
+        if (htmlContent.includes('\\`') || htmlContent.includes('\\$')) {
+          console.log('[BundledArtifactFrame] Unescaping template literal characters');
+          // Only unescape within the module script to avoid breaking other parts of the HTML
+          htmlContent = htmlContent.replace(
+            /(<script type="module">)([\s\S]*?)(<\/script>)/,
+            (match, open, content, close) => {
+              // Unescape: \` -> ` and \$ -> $ and \\\\ -> \\
+              const unescaped = content
+                .replace(/\\`/g, '`')
+                .replace(/\\\$/g, '$')
+                .replace(/\\\\\\\\/g, '\\\\'); // Double-escaped backslashes
+              return open + unescaped + close;
+            }
+          );
+        }
+
+        // CRITICAL FIX: Dual React instance problem
+        // The bundle loads React via UMD (unpkg), but esm.sh packages with ?deps= still
+        // bundle their own internal React copy. This causes "Cannot read properties of null
+        // (reading 'useRef')" errors because Radix UI hooks call useRef on their bundled
+        // React, not window.React.
+        //
+        // SOLUTION: Change ?deps= to ?external=react,react-dom which tells esm.sh to NOT
+        // bundle React internally, but instead import it from the import map. The import map
+        // shims redirect react/react-dom to window.React/window.ReactDOM (from UMD).
+        if (htmlContent.includes('esm.sh')) {
+          console.log('[BundledArtifactFrame] Fixing dual React instance - using external React');
+
+          // Step 1: Replace ?deps= with ?external= on ALL esm.sh URLs
+          // This tells esm.sh to not bundle React, but import it externally
+          htmlContent = htmlContent.replace(
+            /(https:\/\/esm\.sh\/[^'"?\s]+)\?deps=react@[\d.]+,react-dom@[\d.]+/g,
+            '$1?external=react,react-dom'
+          );
+
+          // Also handle URLs that might already have ?external but with wrong deps
+          // And add ?external to any esm.sh URLs that have neither
+          htmlContent = htmlContent.replace(
+            /(https:\/\/esm\.sh\/@[^'"?\s]+)(['"\s>])/g,
+            (match, url, ending) => {
+              // If URL already has query params, skip
+              if (url.includes('?')) return match;
+              // Add external parameter for React packages
+              return `${url}?external=react,react-dom${ending}`;
+            }
+          );
+
+          // Step 2: Update CSP to allow data: URLs for import map shims
+          // The import map uses data:text/javascript shims to redirect react/react-dom to window globals
+          // Match CSP meta tag specifically and add data: after blob:
+          const cspMetaMatch = htmlContent.match(/<meta[^>]*Content-Security-Policy[^>]*content="([^"]*)"/i);
+          if (cspMetaMatch) {
+            const cspContent = cspMetaMatch[1];
+            console.log('[BundledArtifactFrame] Found CSP:', cspContent.substring(0, 200));
+
+            if (cspContent.includes('blob:') && !cspContent.includes('data:')) {
+              console.log('[BundledArtifactFrame] CSP needs data: - adding it');
+              const newCspContent = cspContent.replace(/(script-src[^;]*blob:)/i, '$1 data:');
+              htmlContent = htmlContent.replace(cspContent, newCspContent);
+              console.log('[BundledArtifactFrame] Updated CSP script-src with data:');
+            } else {
+              console.log('[BundledArtifactFrame] CSP already has data: or no blob:');
+            }
+          } else {
+            console.log('[BundledArtifactFrame] No CSP meta tag found');
+          }
+
+          // Step 3: Update import map to include 'react' and 'react-dom' entries
+          // The esm.sh packages with ?external=react,react-dom will import 'react' (bare specifier)
+          // We need to redirect these to shims that export window.React/window.ReactDOM
+          const importMapMatch = htmlContent.match(/<script type="importmap">([\s\S]*?)<\/script>/);
+          if (importMapMatch) {
+            try {
+              const importMap = JSON.parse(importMapMatch[1]);
+              importMap.imports = importMap.imports || {};
+
+              // Use the existing shim URLs if present, or create new ones
+              // The shims export window.React/window.ReactDOM which were loaded via UMD
+              const reactShim = importMap.imports['react-shim'] ||
+                "data:text/javascript,const R=window.React;export default R;export const{useState,useEffect,useRef,useMemo,useCallback,useContext,createContext,createElement,Fragment,memo,forwardRef,useReducer,useLayoutEffect,useImperativeHandle,useDebugValue,useDeferredValue,useTransition,useId,useSyncExternalStore,lazy,Suspense,startTransition,Children,cloneElement,isValidElement,createRef,Component,PureComponent,StrictMode}=R;";
+              const reactDomShim = importMap.imports['react-dom-shim'] ||
+                "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync,findDOMNode,unmountComponentAtNode,render,hydrate}=D;";
+              // JSX Runtime shim - esm.sh packages use the modern JSX transform which imports jsx/jsxs from react/jsx-runtime
+              // React 18+ exposes these on the main React object or we can construct them from createElement
+              // Note: Fragment must be React.Fragment (a symbol), not the React object itself
+              const jsxRuntimeShim = "data:text/javascript,const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};";
+
+              // Add bare specifier entries that point to the shims
+              importMap.imports['react'] = reactShim;
+              importMap.imports['react-dom'] = reactDomShim;
+              importMap.imports['react-dom/client'] = reactDomShim;
+              importMap.imports['react/jsx-runtime'] = jsxRuntimeShim;
+              importMap.imports['react/jsx-dev-runtime'] = jsxRuntimeShim;
+
+              htmlContent = htmlContent.replace(
+                /<script type="importmap">[\s\S]*?<\/script>/,
+                `<script type="importmap">\n${JSON.stringify(importMap, null, 2)}\n</script>`
+              );
+
+              console.log('[BundledArtifactFrame] Updated import map with react/react-dom shims');
+            } catch (e) {
+              console.warn('[BundledArtifactFrame] Failed to update import map:', e);
+            }
+          }
+
+          console.log('[BundledArtifactFrame] Converted esm.sh URLs to use external React');
+        }
+
+        // CRITICAL FIX: The bundle contains raw JSX which browsers can't parse natively.
+        // We need to convert the <script type="module"> to <script type="text/babel">
+        // and inject Babel Standalone for runtime transpilation.
+
+        // Check if bundle has JSX (component tags like <Component or <div)
+        const hasJsx = /<(?:[A-Z][a-zA-Z]*|[a-z]+)[\s>\/]/.test(htmlContent) &&
+                       htmlContent.includes('<script type="module">');
+
+        if (hasJsx) {
+          console.log('[BundledArtifactFrame] Detected JSX in bundle - adding Babel transpilation');
+
+          // Inject Babel Standalone if not present
+          if (!htmlContent.includes('babel')) {
+            const babelScript = `<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>\n`;
+            htmlContent = htmlContent.replace('</head>', babelScript + '</head>');
+          }
+
+          // Convert module script to babel script
+          // First, extract the module content
+          const moduleMatch = htmlContent.match(/<script type="module">([\s\S]*?)<\/script>/);
+          if (moduleMatch) {
+            let moduleContent = moduleMatch[1];
+
+            // Extract imports from the module content (they need special handling for Babel)
+            const importStatements: string[] = [];
+            moduleContent = moduleContent.replace(
+              /^import\s+(?:[\w*{}\s,]+\s+from\s+)?['"][^'"]+['"];?\s*$/gm,
+              (match) => {
+                importStatements.push(match);
+                return ''; // Remove from main content
+              }
+            );
+
+            // For Babel, we need to use dynamic imports since static imports don't work in text/babel
+            // Convert: import * as Select from 'url' -> const Select = await import('url')
+            const dynamicImports = importStatements.map(imp => {
+              // Handle: import * as Name from 'url'
+              const namespaceMatch = imp.match(/import\s*\*\s*as\s+(\w+)\s+from\s+['"]([^'"]+)['"]/);
+              if (namespaceMatch) {
+                return `const ${namespaceMatch[1]} = await import('${namespaceMatch[2]}');`;
+              }
+              // Handle: import { a, b } from 'url'
+              const namedMatch = imp.match(/import\s*\{([^}]+)\}\s*from\s+['"]([^'"]+)['"]/);
+              if (namedMatch) {
+                const names = namedMatch[1].split(',').map(n => n.trim());
+                return `const { ${names.join(', ')} } = await import('${namedMatch[2]}');`;
+              }
+              // Handle: import Name from 'url'
+              const defaultMatch = imp.match(/import\s+(\w+)\s+from\s+['"]([^'"]+)['"]/);
+              if (defaultMatch) {
+                return `const { default: ${defaultMatch[1]} } = await import('${defaultMatch[2]}');`;
+              }
+              return '// Could not convert: ' + imp;
+            }).join('\n');
+
+            // Wrap in async IIFE for dynamic imports
+            // NOTE: UMD React/ReactDOM are already loaded and set window.React/window.ReactDOM
+            // The import map shims redirect 'react' and 'react-dom' to window globals
+            // esm.sh packages with ?external=react,react-dom will use the import map
+            const wrappedContent = `
+(async () => {
+  // Verify UMD React is available (loaded by <script> tags before this runs)
+  if (!window.React || !window.ReactDOM) {
+    throw new Error('React not loaded - UMD scripts may have failed');
+  }
+  console.log('[Artifact] Using UMD React ' + window.React.version);
+
+  // Expose React hooks globally for component code that uses them directly
+  const { useState, useEffect, useCallback, useMemo, useRef, useContext, useReducer, useLayoutEffect, createContext, createElement, Fragment, memo, forwardRef } = window.React;
+
+  // Load user dependencies (esm.sh packages with ?external=react,react-dom will use import map shims)
+  ${dynamicImports}
+
+  // Run component code
+  ${moduleContent}
+})();`;
+
+            // Replace the module script with a babel script
+            htmlContent = htmlContent.replace(
+              /<script type="module">[\s\S]*?<\/script>/,
+              `<script type="text/babel" data-presets="react">${wrappedContent}</script>`
+            );
+
+            console.log('[BundledArtifactFrame] Converted to Babel script with dynamic imports');
+          }
+        }
+
+        // Create blob URL from the fetched HTML content
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        objectUrl = URL.createObjectURL(blob);
+
+        if (isMounted) {
+          console.log('[BundledArtifactFrame] Created blob URL successfully');
+          setBlobUrl(objectUrl);
+        }
+      } catch (error) {
+        console.error('[BundledArtifactFrame] Failed to fetch bundle:', error);
+        if (isMounted) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to load bundle';
+          setFetchError(errorMessage);
+          onPreviewErrorChange(errorMessage);
+          onLoadingChange(false);
+        }
+      }
+    };
+
+    fetchBundle();
+
+    // Cleanup: revoke blob URL when component unmounts or bundleUrl changes
+    return () => {
+      isMounted = false;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [bundleUrl, onLoadingChange, onPreviewErrorChange]);
+
+  return (
+    <div className="w-full h-full relative flex flex-col">
+      <div className="flex-1 relative">
+        {(isLoading || !blobUrl) && !fetchError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-20">
+            <ArtifactSkeleton type="react" />
+          </div>
+        )}
+        {(previewError || fetchError) && !isLoading && (
+          <div className="absolute top-2 left-2 right-2 bg-destructive/10 border border-destructive text-destructive text-xs p-3 rounded z-10 flex flex-col gap-2">
+            <div className="flex items-start gap-2">
+              <span className="font-semibold shrink-0">⚠️ Bundle Error:</span>
+              <span className="flex-1 break-words font-mono">{previewError || fetchError}</span>
+            </div>
+            <div className="flex gap-2 pl-6">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 text-xs"
+                onClick={() => {
+                  navigator.clipboard.writeText(previewError || fetchError || '');
+                  toast.success("Error copied to clipboard");
+                }}
+              >
+                Copy Error
+              </Button>
+            </div>
+          </div>
+        )}
+        {dependencies && dependencies.length > 0 && (
+          <div className="absolute bottom-2 right-2 bg-primary/10 border border-primary/20 text-xs px-2 py-1 rounded z-10">
+            Bundled with {dependencies.join(', ')}
+          </div>
+        )}
+        {blobUrl && (
+          <iframe
+            src={blobUrl}
+            className="w-full h-full border-0 bg-background"
+            title={title}
+            sandbox="allow-scripts allow-same-origin"
+            onLoad={() => onLoadingChange(false)}
+            onError={(e) => {
+              console.error('[BundledArtifactFrame] iframe error:', e);
+              onPreviewErrorChange('Failed to render bundled artifact');
+              onLoadingChange(false);
+            }}
+          />
+        )}
+      </div>
+    </div>
+  );
+});
+
+BundledArtifactFrame.displayName = 'BundledArtifactFrame';
+
 interface ArtifactRendererProps {
   artifact: ArtifactData;
   isLoading: boolean;
@@ -410,28 +870,75 @@ ${artifact.content}
     );
   }
 
-  // React with Sandpack
-  if (artifact.type === "react" && needsSandpack) {
-    return (
-      <div className="w-full h-full relative">
-        <Suspense fallback={<ArtifactSkeleton type="react" />}>
-          <SandpackArtifactRenderer
-            code={artifact.content}
-            title={artifact.title}
-            showEditor={false}
-            onError={(error) => {
-              onPreviewErrorChange(error);
-              onLoadingChange(false);
-            }}
-            onReady={() => onLoadingChange(false)}
-          />
-        </Suspense>
-      </div>
-    );
-  }
-
-  // React without Sandpack - check if server-bundled
+  // React - check rendering method priority:
+  // 1. Server bundle (bundleUrl exists) - most reliable for npm packages
+  // 2. Sandpack (needsSandpack && no bundleUrl) - fallback for npm packages
+  // 3. Client-side Babel - for simple React without npm imports
   if (artifact.type === "react") {
+    // PRIORITY 1: If artifact has a bundle URL from server-side bundling, use that
+    // Server bundles are pre-processed and handle GLM syntax quirks (unquoted imports, etc.)
+    // NOTE: We fetch the bundle content and create a blob URL to bypass X-Frame-Options headers
+    // that Supabase storage sets, which would otherwise block iframe embedding
+    if (artifact.bundleUrl) {
+      const ALLOWED_BUNDLE_ORIGINS = [
+        import.meta.env.VITE_SUPABASE_URL
+      ];
+
+      let isValidOrigin = false;
+      try {
+        const url = new URL(artifact.bundleUrl);
+        isValidOrigin = ALLOWED_BUNDLE_ORIGINS.includes(url.origin);
+      } catch {
+        isValidOrigin = false;
+      }
+
+      if (!isValidOrigin) {
+        console.error('[ArtifactRenderer] Invalid bundle URL origin:', artifact.bundleUrl);
+        return (
+          <div className="flex items-center justify-center h-full p-8">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Bundle URL failed security validation. Please refresh the page.
+              </AlertDescription>
+            </Alert>
+          </div>
+        );
+      }
+
+      // Use BundledArtifactFrame component for fetching and rendering via blob URL
+      return (
+        <BundledArtifactFrame
+          bundleUrl={artifact.bundleUrl}
+          title={artifact.title}
+          dependencies={artifact.dependencies}
+          isLoading={isLoading}
+          previewError={previewError}
+          onLoadingChange={onLoadingChange}
+          onPreviewErrorChange={onPreviewErrorChange}
+        />
+      );
+    }
+
+    // PRIORITY 2: Sandpack for npm imports when no server bundle available
+    if (needsSandpack) {
+      return (
+        <div className="w-full h-full relative">
+          <Suspense fallback={<ArtifactSkeleton type="react" />}>
+            <SandpackArtifactRenderer
+              code={artifact.content}
+              title={artifact.title}
+              showEditor={false}
+              onError={(error) => {
+                onPreviewErrorChange(error);
+                onLoadingChange(false);
+              }}
+              onReady={() => onLoadingChange(false)}
+            />
+          </Suspense>
+        </div>
+      );
+    }
     // If bundling failed with npm imports, show error
     if (artifact.bundlingFailed && detectNpmImports(artifact.content)) {
       return (
@@ -472,89 +979,13 @@ ${artifact.content}
       );
     }
 
-    // If artifact has a bundle URL, render via signed URL
-    if (artifact.bundleUrl) {
-      const ALLOWED_BUNDLE_ORIGINS = [
-        import.meta.env.VITE_SUPABASE_URL
-      ];
-
-      let isValidOrigin = false;
-      try {
-        const url = new URL(artifact.bundleUrl);
-        isValidOrigin = ALLOWED_BUNDLE_ORIGINS.includes(url.origin);
-      } catch {
-        isValidOrigin = false;
-      }
-
-      if (!isValidOrigin) {
-        console.error('[ArtifactRenderer] Invalid bundle URL origin:', artifact.bundleUrl);
-        return (
-          <div className="flex items-center justify-center h-full p-8">
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Bundle URL failed security validation. Please refresh the page.
-              </AlertDescription>
-            </Alert>
-          </div>
-        );
-      }
-
-      return (
-        <div className="w-full h-full relative flex flex-col">
-          <div className="flex-1 relative">
-            {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-20">
-                <ArtifactSkeleton type="react" />
-              </div>
-            )}
-            {previewError && !isLoading && (
-              <div className="absolute top-2 left-2 right-2 bg-destructive/10 border border-destructive text-destructive text-xs p-3 rounded z-10 flex flex-col gap-2">
-                <div className="flex items-start gap-2">
-                  <span className="font-semibold shrink-0">⚠️ Bundle Error:</span>
-                  <span className="flex-1 break-words font-mono">{previewError}</span>
-                </div>
-                <div className="flex gap-2 pl-6">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-6 text-xs"
-                    onClick={() => {
-                      navigator.clipboard.writeText(previewError);
-                      toast.success("Error copied to clipboard");
-                    }}
-                  >
-                    Copy Error
-                  </Button>
-                </div>
-              </div>
-            )}
-            {artifact.dependencies && artifact.dependencies.length > 0 && (
-              <div className="absolute bottom-2 right-2 bg-primary/10 border border-primary/20 text-xs px-2 py-1 rounded z-10">
-                Bundled with {artifact.dependencies.join(', ')}
-              </div>
-            )}
-            <iframe
-              src={artifact.bundleUrl}
-              className="w-full h-full border-0 bg-background"
-              title={artifact.title}
-              sandbox="allow-scripts allow-same-origin"
-              onLoad={() => onLoadingChange(false)}
-              onError={(e) => {
-                console.error('Bundle iframe error:', e);
-                onPreviewErrorChange('Failed to load bundled artifact');
-                onLoadingChange(false);
-              }}
-            />
-          </div>
-        </div>
-      );
-    }
-
-    // Otherwise use client-side Babel rendering
+    // PRIORITY 3: Client-side Babel rendering for simple React (no npm imports)
     const processedCode = artifact.content
       .replace(/^```[\w]*\n?/gm, '')
       .replace(/^```\n?$/gm, '')
+      // FIX: Fix unquoted package names in imports (GLM bug: "from React;" -> "from 'react';")
+      .replace(/from\s+React\s*;/g, "from 'react';")
+      .replace(/from\s+ReactDOM\s*;/g, "from 'react-dom';")
       .replace(/^import\s+.*?from\s+['"]react['"];?\s*$/gm, '')
       .replace(/^import\s+.*?from\s+['"]react-dom['"];?\s*$/gm, '')
       .replace(/^import\s+React.*$/gm, '')
@@ -563,6 +994,19 @@ ${artifact.content}
       .replace(/^import\s+.*?from\s+['"]recharts['"];?\s*$/gm, '')
       .replace(/^import\s+.*?from\s+['"]framer-motion['"];?\s*$/gm, '')
       .replace(/^const\s*\{[^}]*(?:useState|useEffect|useReducer|useRef|useMemo|useCallback|useContext|useLayoutEffect)[^}]*\}\s*=\s*React;?\s*$/gm, '')
+      // Strip Framer Motion destructuring (iframe template already declares these)
+      .replace(/^const\s*\{\s*motion\s*,\s*AnimatePresence\s*\}\s*=\s*Motion;?\s*$/gm, '')
+      .replace(/^const\s*\{[^}]*(?:motion|AnimatePresence)[^}]*\}\s*=\s*(?:Motion|FramerMotion|window\.Motion);?\s*$/gm, '')
+      // Strip Recharts destructuring (iframe template already declares these)
+      .replace(/^const\s*\{[^}]*(?:BarChart|LineChart|PieChart|AreaChart|ResponsiveContainer)[^}]*\}\s*=\s*(?:Recharts|window\.Recharts);?\s*$/gm, '')
+      // Strip Lucide icons destructuring (iframe template already declares these)
+      .replace(/^const\s*\{[^}]*\}\s*=\s*(?:LucideIcons|window\.LucideReact|LucideReact);?\s*$/gm, '')
+      // Strip malformed "const * as X from 'package'" syntax (GLM bug - generates invalid JS)
+      .replace(/^const\s*\*\s*as\s+\w+\s+from\s+['"][^'"]+['"];?\s*$/gm, '')
+      // Strip Radix UI destructuring - the iframe template now provides RadixUISelect via dynamic import
+      .replace(/^const\s*\{[^}]*\}\s*=\s*RadixUISelect;?\s*$/gm, '')
+      // NOTE: Keep Radix UI imports - they resolve via import map in the iframe template
+      // Stripping them causes "X is not defined" errors since the variable is never declared
       .replace(/^export\s+default\s+/gm, '')
       .trim();
 
@@ -658,6 +1102,11 @@ ${artifact.content}
         window[exportName] = FramerMotion[exportName];
       }
     });
+
+    // Radix UI Select components (imported dynamically from ESM CDN)
+    // These are provided for artifacts that use "const { Select, ... } = RadixUISelect" pattern
+    const RadixUISelect = await import('@radix-ui/react-select');
+    const { Root: Select, Trigger: SelectTrigger, Value: SelectValue, Content: SelectContent, Item: SelectItem, Portal: SelectPortal, Viewport: SelectViewport, Group: SelectGroup, Label: SelectLabel, Separator: SelectSeparator, Icon: SelectIcon, ItemText: SelectItemText, ItemIndicator: SelectItemIndicator, ScrollUpButton: SelectScrollUpButton, ScrollDownButton: SelectScrollDownButton } = RadixUISelect;
 
     ${processedCode}
 

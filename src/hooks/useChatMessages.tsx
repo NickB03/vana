@@ -229,6 +229,109 @@ export function useChatMessages(
         sessionId: isAuthenticated ? sessionId : 'guest'
       });
 
+      // ============================================================================
+      // DIRECT ARTIFACT ROUTING (Bypass /chat timeout issue)
+      // ============================================================================
+      // When forceArtifactMode is true OR the prompt looks like an artifact request,
+      // call /generate-artifact directly instead of going through /chat.
+      // This avoids the Supabase Edge Function timeout issue where /chat times out
+      // (50s) waiting for /generate-artifact (100s+ with Kimi K2).
+      // ============================================================================
+
+      // Client-side artifact detection patterns
+      const artifactPatterns = [
+        /^Build a React artifact/i,           // Carousel prompts
+        /^Create a (.*) (app|game|component|dashboard|tracker|calculator)/i,
+        /^Make a (.*) (app|game|component|dashboard|tracker|calculator)/i,
+        /^Build a (.*) (app|game|component|dashboard|tracker|calculator)/i,
+        /^Generate a React/i,
+        /\b(todo|counter|timer|quiz|trivia|snake|frogger|tic-tac-toe|memory)\b.*\b(app|game|component)\b/i,
+      ];
+
+      const isArtifactRequest = forceArtifactMode ||
+        artifactPatterns.some(pattern => pattern.test(userMessage));
+
+      if (isArtifactRequest) {
+        console.log("🎨 [useChatMessages] Direct artifact routing - calling /generate-artifact");
+
+        const artifactResponse = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-artifact`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(session ? { Authorization: `Bearer ${session.access_token}` } : {})
+            },
+            body: JSON.stringify({
+              prompt: userMessage,
+              artifactType: "react", // Default to React artifacts
+              sessionId: isAuthenticated ? sessionId : undefined,
+            }),
+          }
+        );
+
+        // Handle rate limit exceeded (429)
+        if (artifactResponse.status === 429) {
+          const errorData = await artifactResponse.json();
+          const resetTime = errorData.resetAt
+            ? new Date(errorData.resetAt).toLocaleTimeString()
+            : "soon";
+
+          toast({
+            title: "Rate Limit Exceeded",
+            description: `${errorData.error || "Too many requests."} Rate limit resets at ${resetTime}.`,
+            variant: "destructive",
+            duration: 10000,
+          });
+
+          setIsLoading(false);
+          onDone();
+          return;
+        }
+
+        if (!artifactResponse.ok) {
+          const errorData = await artifactResponse.json();
+          console.error("Artifact generation error:", errorData);
+
+          // Handle retryable errors (503)
+          if (artifactResponse.status === 503 && errorData.retryable) {
+            throw new Error("SERVICE_UNAVAILABLE");
+          }
+
+          const errorMsg = errorData.error || "Failed to generate artifact";
+          throw new Error(errorMsg);
+        }
+
+        const artifactData = await artifactResponse.json();
+
+        if (!artifactData.success || !artifactData.artifactCode) {
+          throw new Error("No artifact code returned");
+        }
+
+        console.log("✅ [useChatMessages] Artifact generated successfully, length:", artifactData.artifactCode.length);
+
+        // Simulate streaming progress for consistent UX
+        const artifactCode = artifactData.artifactCode;
+
+        // Send progress updates
+        onDelta(artifactCode, {
+          stage: "finalizing",
+          message: "Artifact generated successfully!",
+          artifactDetected: true,
+          percentage: 100,
+        });
+
+        // Save the assistant response
+        await saveMessage("assistant", artifactCode);
+
+        // Small delay to ensure React state updates
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        setIsLoading(false);
+        onDone();
+        return;
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`,
         {

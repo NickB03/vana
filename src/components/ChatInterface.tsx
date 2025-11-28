@@ -340,7 +340,8 @@ export function ChatInterface({
       return;
     }
 
-    // Get the user message that prompted this assistant response
+    // Get the failed assistant message and the user message before it
+    const failedMessage = messages[messageIndex];
     const userMessage = messages[messageIndex - 1];
     if (userMessage.role !== "user") {
       toast({
@@ -350,6 +351,20 @@ export function ChatInterface({
       });
       return;
     }
+
+    // Detect if this was an artifact request (for direct routing)
+    // Check if failed response had artifact content OR user prompt matches artifact patterns
+    const artifactPatterns = [
+      /^Build a React artifact/i,
+      /^Create a (.*) (app|game|component|dashboard|tracker|calculator)/i,
+      /^Make a (.*) (app|game|component|dashboard|tracker|calculator)/i,
+      /^Build a (.*) (app|game|component|dashboard|tracker|calculator)/i,
+      /^Generate a React/i,
+      /\b(todo|counter|timer|quiz|trivia|snake|frogger|tic-tac-toe|memory)\b.*\b(app|game|component)\b/i,
+    ];
+    const wasArtifactRequest =
+      failedMessage.content.includes('<artifact') ||
+      artifactPatterns.some(pattern => pattern.test(userMessage.content));
 
     try {
       // Delete the assistant message
@@ -379,7 +394,7 @@ export function ChatInterface({
         },
         currentArtifact && isEditingArtifact ? currentArtifact : undefined,
         false, // forceImageMode
-        false  // forceArtifactMode
+        wasArtifactRequest  // forceArtifactMode - route to /generate-artifact if this was an artifact request
       );
 
       toast({
