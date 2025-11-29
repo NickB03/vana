@@ -332,11 +332,13 @@ const BundledArtifactFrame = memo(({
             let moduleContent = moduleMatch[1];
 
             // Extract imports from the module content (they need special handling for Babel)
+            // NOTE: Server template indents imports with spaces, so we use ^\s* to match leading whitespace
             const importStatements: string[] = [];
             moduleContent = moduleContent.replace(
-              /^import\s+(?:[\w*{}\s,]+\s+from\s+)?['"][^'"]+['"];?\s*$/gm,
+              /^\s*import\s+(?:[\w*{}\s,]+\s+from\s+)?['"][^'"]+['"];?\s*$/gm,
               (match) => {
-                importStatements.push(match);
+                // Trim the captured match since it may have leading/trailing whitespace
+                importStatements.push(match.trim());
                 return ''; // Remove from main content
               }
             );

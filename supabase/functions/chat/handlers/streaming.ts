@@ -9,8 +9,8 @@ import type { SearchResult } from "./search.ts";
 
 /**
  * Creates a transform stream that:
- * 1. Injects reasoning as first SSE event
- * 2. Injects web search results as second SSE event (if available)
+ * 1. Injects reasoning progressively as multiple SSE events (one per step)
+ * 2. Injects web search results as SSE event (if available)
  * 3. Transforms artifact code to fix invalid imports
  */
 export function createStreamTransformer(
@@ -21,27 +21,30 @@ export function createStreamTransformer(
   // Closure-scoped state variables - unique per stream instance
   let buffer = "";
   let insideArtifact = false;
-  let reasoningSent = false; // Track if reasoning event was sent
+  let reasoningStepsSent = 0; // Track how many reasoning steps have been sent
   let searchSent = false; // Track if search event was sent
 
   return new TransformStream({
     start(controller) {
       // ========================================
       // CHAIN OF THOUGHT: Send reasoning as FIRST SSE event
+      // All steps sent at once - frontend handles progressive animation
+      // This avoids blocking the stream with delays in start()
       // ========================================
-      if (structuredReasoning && !reasoningSent) {
+      if (structuredReasoning && structuredReasoning.steps.length > 0) {
         const reasoningEvent = {
           type: "reasoning",
           sequence: 0,
           timestamp: Date.now(),
           data: structuredReasoning,
+          stepCount: structuredReasoning.steps.length,
         };
 
         controller.enqueue(`data: ${JSON.stringify(reasoningEvent)}\n\n`);
-        reasoningSent = true;
+        reasoningStepsSent = structuredReasoning.steps.length;
 
         console.log(
-          `[${requestId}] =ä Sent reasoning event with ${structuredReasoning.steps.length} steps`
+          `[${requestId}] =ï¿½ Sent reasoning event with ${structuredReasoning.steps.length} steps (frontend will animate)`
         );
       }
 
@@ -61,7 +64,7 @@ export function createStreamTransformer(
         searchSent = true;
 
         console.log(
-          `[${requestId}] =ä Sent web search results: ${searchResult.searchResultsData.sources.length} sources`
+          `[${requestId}] =ï¿½ Sent web search results: ${searchResult.searchResultsData.sources.length} sources`
         );
       }
     },
@@ -123,7 +126,7 @@ export function createStreamTransformer(
         buffer = "";
       } else if (buffer.length > 50000) {
         // Safety: if buffer gets too large, send it anyway to avoid memory issues
-        console.warn("  Buffer overflow - sending untransformed artifact");
+        console.warn("ï¿½ Buffer overflow - sending untransformed artifact");
         controller.enqueue(buffer);
         buffer = "";
         insideArtifact = false;

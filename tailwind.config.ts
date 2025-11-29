@@ -129,6 +129,14 @@ export default {
             transform: "translateX(12px)",
           },
         },
+        "shimmer": {
+          from: {
+            backgroundPosition: "200% 0",
+          },
+          to: {
+            backgroundPosition: "-200% 0",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -136,6 +144,7 @@ export default {
         "fade-in": "fade-in 0.3s ease-out",
         "fade-in-left": "fade-in-left 0.4s ease-out forwards",
         "fade-out-right": "fade-out-right 0.4s ease-out forwards",
+        "shimmer": "shimmer 4s infinite linear",
       },
       typography: {
         DEFAULT: {

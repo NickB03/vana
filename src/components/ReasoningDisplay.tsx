@@ -2,18 +2,13 @@ import { memo, useState, useEffect, useRef, useMemo, useCallback } from "react";
 import DOMPurify from "isomorphic-dompurify";
 import { cn } from "@/lib/utils";
 import {
-  Reasoning,
-  ReasoningTrigger,
-  ReasoningContent,
-} from "@/components/ui/reasoning";
-import {
   StructuredReasoning,
   parseReasoningSteps,
   ReasoningStep,
 } from "@/types/reasoning";
-import { Search, Lightbulb, Target, Sparkles } from "lucide-react";
+import { Search, Lightbulb, Target, Sparkles, ChevronDown } from "lucide-react";
 import { ANIMATION_DURATIONS, TAILWIND_DURATIONS } from "@/utils/animationConstants";
-import { GAP_SPACING } from "@/utils/spacingConstants";
+import { TextShimmer } from "@/components/prompt-kit/text-shimmer";
 
 interface ReasoningDisplayProps {
   // Support both old and new formats for backward compatibility
@@ -36,14 +31,11 @@ const ICON_MAP = {
 
 /**
  * Animation timing constants
- * Uses design system values where possible for consistency
- * Note: Users with prefers-reduced-motion will skip animations via CSS
  */
 const ANIMATION = {
   SECTION_DISPLAY_MS: 2500,                           // How long each section shows before transitioning
-  FADE_DURATION_MS: ANIMATION_DURATIONS.moderate * 1000, // 300ms - aligned with design system
-  WORD_FADE_DURATION_MS: ANIMATION_DURATIONS.slow * 1000, // 500ms - aligned with design system
-  WORD_DELAY_MS: 50,                                  // Optimized from 80ms for snappier feel
+  FADE_DURATION_MS: ANIMATION_DURATIONS.moderate * 1000, // 300ms
+  CROSSFADE_DURATION_MS: 200,                         // Quick crossfade between sections
 } as const;
 
 /**
@@ -65,27 +57,14 @@ function formatTitlesAsTicker(steps: ReasoningStep[]): string {
 }
 
 /**
- * Convert structured reasoning steps into continuous text (fallback)
- */
-function formatReasoningAsContinuousText(steps: StructuredReasoning): string {
-  const thoughts: string[] = [];
-  steps.steps.forEach((step) => {
-    if (step.items && step.items.length > 0) {
-      thoughts.push(...step.items);
-    }
-  });
-  return thoughts.join(". ");
-}
-
-/**
- * ReasoningDisplay component - Fade-in/out section cycling animation
+ * ReasoningDisplay component - Unified transparent pill with streaming "window" effect
  *
  * Key features:
- * - Each reasoning section fades in from left-to-right (full text, not character by character)
- * - Sections cycle: fade out current, fade in next
- * - Shows complete section title in the pill (NOT expandable during streaming)
- * - Calls onReasoningComplete when all sections have been shown
- * - Backward compatible with old continuous text format
+ * - Single unified transparent pill styling throughout (no jarring transitions)
+ * - Acts as a "window" into reasoning: sections fade in/out within the pill
+ * - Always expandable: click to see full reasoning chain
+ * - Smooth crossfade animations between reasoning steps
+ * - "Thinking..." state while waiting for data
  */
 export const ReasoningDisplay = memo(function ReasoningDisplay({
   reasoning,
@@ -93,14 +72,17 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   isStreaming,
   onReasoningComplete,
 }: ReasoningDisplayProps) {
+  // Expand/collapse state
+  const [isExpanded, setIsExpanded] = useState(false);
   // Current section being displayed (0-indexed)
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
-  // Animation state: 'idle' | 'fade-in' | 'visible' | 'fade-out'
-  const [animationState, setAnimationState] = useState<'idle' | 'fade-in' | 'visible' | 'fade-out'>('idle');
-  // Track if animation has completed
-  const [animationComplete, setAnimationComplete] = useState(false);
+  // Animation state for crossfade
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  // Track displayed section for crossfade (slightly behind currentSectionIndex)
+  const [displayedSectionIndex, setDisplayedSectionIndex] = useState(0);
 
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Track all active timeouts for proper cleanup
+  const timeoutRefs = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
   const wasStreamingRef = useRef(false);
   const completedCallbackRef = useRef(false);
 
@@ -109,14 +91,40 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
     return reasoningSteps ? parseReasoningSteps(reasoningSteps) : null;
   }, [reasoningSteps]);
 
+  // Pre-sanitize all content to avoid redundant DOMPurify calls on each render
+  const sanitizedSteps = useMemo(() => {
+    if (!validatedSteps) return null;
+    return {
+      ...validatedSteps,
+      steps: validatedSteps.steps.map(step => ({
+        ...step,
+        title: sanitizeContent(step.title),
+        items: step.items.map(item => sanitizeContent(item)),
+      })),
+    };
+  }, [validatedSteps]);
+
+  // Memoize sanitized fallback reasoning
+  const sanitizedReasoning = useMemo(() => {
+    return reasoning ? sanitizeContent(reasoning) : null;
+  }, [reasoning]);
+
   const totalSections = validatedSteps?.steps.length ?? 0;
 
-  // Clear all timeouts
+  // Clear all timeouts - iterates through Set and clears each
   const clearTimeouts = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
+    timeoutRefs.current.forEach(id => clearTimeout(id));
+    timeoutRefs.current.clear();
+  }, []);
+
+  // Helper to create tracked timeouts
+  const createTrackedTimeout = useCallback((callback: () => void, delay: number) => {
+    const id = setTimeout(() => {
+      timeoutRefs.current.delete(id);
+      callback();
+    }, delay);
+    timeoutRefs.current.add(id);
+    return id;
   }, []);
 
   // Reset state when starting a NEW streaming session
@@ -124,107 +132,103 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
     if (isStreaming && !wasStreamingRef.current) {
       // Just started streaming - reset to initial state
       setCurrentSectionIndex(0);
-      setAnimationState('idle');
-      setAnimationComplete(false);
+      setDisplayedSectionIndex(0);
+      setIsTransitioning(false);
+      setIsExpanded(false);
       completedCallbackRef.current = false;
       clearTimeouts();
     }
     wasStreamingRef.current = isStreaming ?? false;
   }, [isStreaming, clearTimeouts]);
 
-  // Main animation loop - cycles through sections
+  // Main animation loop - cycles through sections with crossfade
+  // Frontend-driven animation: backend sends all steps at once, we animate progressively
   useEffect(() => {
-    // Clear any existing timeouts when effect re-runs
     clearTimeouts();
 
-    // Not streaming or no data - show final state immediately
-    if (!isStreaming || !validatedSteps || totalSections === 0) {
+    // Not streaming - show final state immediately
+    if (!isStreaming) {
       if (validatedSteps && totalSections > 0) {
         setCurrentSectionIndex(totalSections - 1);
-        setAnimationState('visible');
-        setAnimationComplete(true);
+        setDisplayedSectionIndex(totalSections - 1);
       }
-      return clearTimeouts; // Cleanup on unmount
-    }
-
-    // Start animation if idle and we have sections
-    if (animationState === 'idle' && totalSections > 0) {
-      setAnimationState('fade-in');
+      // Call completion callback
+      if (!completedCallbackRef.current && validatedSteps && onReasoningComplete) {
+        completedCallbackRef.current = true;
+        onReasoningComplete();
+      }
       return clearTimeouts;
     }
 
-    // Handle animation states
-    if (animationState === 'fade-in') {
-      // After fade-in completes, become visible
-      timeoutRef.current = setTimeout(() => {
-        setAnimationState('visible');
-      }, ANIMATION.FADE_DURATION_MS);
+    // No data yet - nothing to animate
+    if (!validatedSteps || totalSections === 0) {
       return clearTimeouts;
     }
 
-    if (animationState === 'visible') {
-      // Stay visible for the display duration, then fade out (or complete)
-      timeoutRef.current = setTimeout(() => {
-        if (currentSectionIndex < totalSections - 1) {
-          // More sections to show - fade out
-          setAnimationState('fade-out');
-        } else {
-          // Last section - animation complete
-          setAnimationComplete(true);
-          if (!completedCallbackRef.current && onReasoningComplete) {
-            completedCallbackRef.current = true;
-            onReasoningComplete();
-          }
+    // FRONTEND-DRIVEN PROGRESSIVE ANIMATION:
+    // Backend sends all reasoning steps at once (to avoid blocking the stream).
+    // We animate through them progressively on the frontend for smooth UX.
+    // Each step displays for SECTION_DISPLAY_MS before transitioning to next.
+
+    // If we haven't reached the last step yet, schedule transition to next
+    if (currentSectionIndex < totalSections - 1 && !isTransitioning) {
+      createTrackedTimeout(() => {
+        // Start crossfade transition
+        setIsTransitioning(true);
+
+        // After crossfade animation, advance to next step
+        createTrackedTimeout(() => {
+          setCurrentSectionIndex(prev => Math.min(prev + 1, totalSections - 1));
+          setDisplayedSectionIndex(prev => Math.min(prev + 1, totalSections - 1));
+          setIsTransitioning(false);
+        }, ANIMATION.CROSSFADE_DURATION_MS);
+      }, ANIMATION.SECTION_DISPLAY_MS);
+    }
+
+    // Call completion callback when we reach the last step during streaming
+    if (currentSectionIndex === totalSections - 1 && !completedCallbackRef.current) {
+      // Delay completion to allow last step to display briefly
+      createTrackedTimeout(() => {
+        if (!completedCallbackRef.current && onReasoningComplete) {
+          completedCallbackRef.current = true;
+          onReasoningComplete();
         }
       }, ANIMATION.SECTION_DISPLAY_MS);
-      return clearTimeouts;
     }
 
-    if (animationState === 'fade-out') {
-      // After fade-out completes, move to next section and fade in
-      timeoutRef.current = setTimeout(() => {
-        setCurrentSectionIndex(prev => prev + 1);
-        setAnimationState('fade-in');
-      }, ANIMATION.FADE_DURATION_MS);
-      return clearTimeouts;
-    }
-
-    // Default cleanup
     return clearTimeouts;
-  }, [isStreaming, validatedSteps, totalSections, animationState, currentSectionIndex, onReasoningComplete, clearTimeouts]);
-
-  // When streaming ends, call completion callback if not already called
-  useEffect(() => {
-    if (!isStreaming && !completedCallbackRef.current && validatedSteps && onReasoningComplete) {
-      completedCallbackRef.current = true;
-      onReasoningComplete();
-    }
-  }, [isStreaming, validatedSteps, onReasoningComplete]);
+  }, [isStreaming, validatedSteps, totalSections, currentSectionIndex, isTransitioning, onReasoningComplete, clearTimeouts, createTrackedTimeout]);
 
   // Get current section to display
-  const currentSection = validatedSteps?.steps[currentSectionIndex];
+  const currentSection = validatedSteps?.steps[displayedSectionIndex];
   const IconComponent = currentSection?.icon ? ICON_MAP[currentSection.icon] : null;
 
-  // Determine trigger text for pill display
-  const getTriggerText = (): string => {
-    if (isStreaming && currentSection) {
-      // During streaming: show current section's title
-      return currentSection.title;
+  // Get display text for the pill
+  const getPillText = (): string => {
+    if (isStreaming) {
+      if (!validatedSteps) {
+        return "Thinking...";
+      }
+      return currentSection?.title || "Processing...";
     }
 
-    // After streaming: show summary or full ticker
+    // After streaming: show summary or final section title
     if (validatedSteps) {
       const summary = validatedSteps.summary;
       if (summary) {
-        return summary.length > 120 ? `${summary.slice(0, 117)}...` : summary;
+        return summary.length > 80 ? `${summary.slice(0, 77)}...` : summary;
+      }
+      // Show last section title or ticker if multiple sections
+      if (totalSections === 1) {
+        return validatedSteps.steps[0].title;
       }
       const fullTicker = formatTitlesAsTicker(validatedSteps.steps);
-      return fullTicker.length > 120 ? `${fullTicker.slice(0, 117)}...` : fullTicker;
+      return fullTicker.length > 80 ? `${fullTicker.slice(0, 77)}...` : fullTicker;
     }
 
     // Fallback for non-structured reasoning
     const text = reasoning || "";
-    return text.length > 120 ? `${text.slice(0, 117)}...` : text || "Show reasoning";
+    return text.length > 80 ? `${text.slice(0, 77)}...` : text || "Show reasoning";
   };
 
   // Don't render if no data and not streaming
@@ -232,200 +236,202 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
     return null;
   }
 
-  // Show "Thinking..." while waiting for data
-  if (isStreaming && !validatedSteps) {
-    return (
-      <div
-        className={cn(
-          "inline-flex items-center rounded-full bg-muted/50 overflow-hidden text-muted-foreground",
-          // Responsive padding: tighter on mobile, comfortable on desktop
-          "px-2.5 py-1.5 sm:px-3 sm:py-2",
-          // Touch-friendly minimum height (44px for accessibility)
-          "min-h-[44px]",
-          // Responsive text size
-          "text-xs sm:text-sm",
-          // Use design system gap
-          GAP_SPACING.xs
-        )}
-        role="status"
-        aria-live="polite"
-        aria-label="Thinking..."
+  // Unified transparent pill - same styling throughout
+  const pillBaseClasses = cn(
+    "flex w-full cursor-pointer items-center justify-between gap-2",
+    "rounded-md border border-border/40 bg-transparent",
+    "px-3 py-1.5 text-left",
+    "transition-all",
+    "hover:border-border/60 hover:bg-muted/10"
+  );
+
+  const hasContent = validatedSteps && totalSections > 0;
+  const showSpinner = isStreaming && !validatedSteps;
+  // Show shimmer effect when on the last section while still streaming
+  // This indicates "working on artifact" state
+  const isOnLastSection = hasContent && displayedSectionIndex === totalSections - 1;
+  const showShimmer = isStreaming && isOnLastSection;
+
+  return (
+    <div className="w-full">
+      {/* Pill trigger - always the same transparent style */}
+      <button
+        className={pillBaseClasses}
+        onClick={() => hasContent && setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
+        aria-label={isExpanded ? "Hide reasoning" : "Show reasoning"}
+        type="button"
+        disabled={!hasContent}
       >
-        <div className="w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin shrink-0" />
-        <span>Thinking...</span>
-      </div>
-    );
-  }
-
-  // Get fallback text for non-structured display
-  const fallbackText = validatedSteps
-    ? formatReasoningAsContinuousText(validatedSteps)
-    : reasoning || "";
-
-  // Split text into words for word-by-word fade animation
-  const renderFadeWords = (text: string) => {
-    const words = text.split(/(\s+)/); // Split by whitespace but keep the spaces
-
-    return words.map((word, idx) => {
-      const isWhitespace = /^\s+$/.test(word);
-
-      return (
-        <span
-          key={`${word}-${idx}`}
-          className={cn(
-            "fade-word",
-            isWhitespace && "fade-word-space"
-          )}
-          style={{
-            animationDelay: `${idx * ANIMATION.WORD_DELAY_MS}ms`,
-            animationDuration: `${ANIMATION.WORD_FADE_DURATION_MS}ms`,
-          }}
-        >
-          {word}
-        </span>
-      );
-    });
-  };
-
-  // During streaming: show animated pill (NOT expandable)
-  if (isStreaming && validatedSteps && !animationComplete) {
-    const sectionTitle = currentSection?.title || "Processing...";
-    const totalSections = validatedSteps.steps.length;
-
-    return (
-      <div
-        className={cn(
-          "inline-flex items-center rounded-full bg-muted/50 overflow-hidden",
-          // Responsive padding: tighter on mobile, comfortable on desktop
-          "px-2.5 py-1.5 sm:px-3 sm:py-2",
-          // Touch-friendly minimum height (44px for accessibility)
-          "min-h-[44px]",
-          // Max width to prevent overflow on narrow screens
-          "max-w-[calc(100vw-3rem)]",
-          // Use design system gap
-          GAP_SPACING.xs
-        )}
-        role="status"
-        aria-live="polite"
-        aria-label={`Thinking: ${sectionTitle}`}
-      >
-        {/* Icon */}
-        {IconComponent && (
-          <IconComponent
-            className="size-4 text-muted-foreground/70 shrink-0"
-            aria-hidden="true"
-          />
-        )}
-
-        {/* Animated section title with word-by-word fade effect */}
-        <div className="relative overflow-hidden max-w-[200px] sm:max-w-[300px]">
-          <div
-            className={cn(
-              "text-xs sm:text-sm text-muted-foreground whitespace-nowrap transition-all",
-              TAILWIND_DURATIONS.moderate,
-              // Fade-in: show words with staggered animation
-              animationState === 'fade-in' && "opacity-100",
-              // Visible: fully shown
-              animationState === 'visible' && "opacity-100",
-              // Fade-out: fade entire container to right
-              animationState === 'fade-out' && "animate-fade-out-right"
-            )}
-          >
-            {animationState === 'fade-in' ? (
-              // Word-by-word fade during fade-in
-              renderFadeWords(sanitizeContent(sectionTitle))
-            ) : (
-              // Static text during visible and fade-out states
-              <span>{sanitizeContent(sectionTitle)}</span>
-            )}
-          </div>
-        </div>
-
-        {/* Progress indicator: dots showing which section we're on */}
-        <div
-          className="flex gap-1 ml-2"
-          role="group"
-          aria-label={`Step ${currentSectionIndex + 1} of ${totalSections}`}
-        >
-          {validatedSteps.steps.map((step, idx) => (
+        {/* Left side: Icon + Text */}
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {/* Spinner while loading, icon when we have content */}
+          {showSpinner ? (
             <div
-              key={idx}
-              className={cn(
-                "w-1.5 h-1.5 rounded-full",
-                TAILWIND_DURATIONS.moderate,
-                "transition-colors",
-                idx === currentSectionIndex
-                  ? "bg-foreground/60"
-                  : idx < currentSectionIndex
-                  ? "bg-foreground/30"
-                  : "bg-muted-foreground/20"
-              )}
-              role="presentation"
+              className="w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin shrink-0"
               aria-hidden="true"
             />
-          ))}
+          ) : IconComponent ? (
+            <IconComponent
+              className={cn(
+                "size-4 shrink-0 text-muted-foreground/70",
+                "transition-opacity",
+                TAILWIND_DURATIONS.fast,
+                isTransitioning && "opacity-50"
+              )}
+              aria-hidden="true"
+            />
+          ) : null}
+
+          {/* Text with crossfade animation - shimmer on last phase */}
+          {showShimmer ? (
+            <TextShimmer
+              className={cn(
+                "flex-1 text-sm line-clamp-1",
+                "transition-opacity",
+                TAILWIND_DURATIONS.fast,
+                isTransitioning && "opacity-50"
+              )}
+              duration={2}
+              spread={25}
+            >
+              {getPillText()}
+            </TextShimmer>
+          ) : (
+            <span
+              className={cn(
+                "flex-1 text-sm text-muted-foreground line-clamp-1",
+                "transition-opacity",
+                TAILWIND_DURATIONS.fast,
+                isTransitioning && "opacity-50"
+              )}
+            >
+              {getPillText()}
+            </span>
+          )}
         </div>
-      </div>
-    );
-  }
 
-  // After streaming or animation complete: show expandable reasoning
-  return (
-    <Reasoning
-      isStreaming={false}
-      showTimer={false}
-      className=""
-    >
-      <ReasoningTrigger>
-        {getTriggerText()}
-      </ReasoningTrigger>
-      <ReasoningContent
-        markdown={false}
-        className="mt-2"
-        contentClassName="text-sm leading-relaxed"
+        {/* Right side: Progress dots (streaming) or Chevron (expandable) */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Progress dots during streaming - decorative visual indicator */}
+          {isStreaming && hasContent && (
+            <div
+              className="flex gap-1 mr-1"
+              aria-hidden="true"
+              title={`Step ${displayedSectionIndex + 1} of ${totalSections}`}
+            >
+              {validatedSteps.steps.map((_, idx) => (
+                <div
+                  key={idx}
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full transition-colors",
+                    TAILWIND_DURATIONS.moderate,
+                    idx === displayedSectionIndex
+                      ? "bg-foreground/60"
+                      : idx < displayedSectionIndex
+                      ? "bg-foreground/30"
+                      : "bg-muted-foreground/20"
+                  )}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Chevron for expand/collapse */}
+          {hasContent && (
+            <ChevronDown
+              className={cn(
+                "size-3.5 text-muted-foreground/60 transition-transform",
+                TAILWIND_DURATIONS.moderate,
+                isExpanded && "rotate-180"
+              )}
+              aria-hidden="true"
+            />
+          )}
+        </div>
+      </button>
+
+      {/* Expanded content - full reasoning chain */}
+      <div
+        className={cn(
+          "overflow-hidden transition-[max-height,opacity]",
+          TAILWIND_DURATIONS.moderate,
+          "ease-in-out",
+          isExpanded ? "opacity-100 max-h-[500px]" : "opacity-0 max-h-0"
+        )}
       >
-        {validatedSteps ? (
-          // Structured display with sections, icons, and bullet points
-          <div className="space-y-4">
-            {validatedSteps.steps.map((step, index) => {
-              const StepIcon = step.icon ? ICON_MAP[step.icon] : null;
-              return (
-                <div key={index} className="space-y-1.5">
-                  {/* Section header with icon and title */}
-                  <div className="flex items-start gap-2">
-                    {StepIcon && (
-                      <StepIcon
-                        className="size-4 mt-0.5 text-muted-foreground/70 shrink-0"
-                        aria-hidden="true"
-                      />
-                    )}
-                    <h4 className="font-medium text-foreground/90 text-sm">
-                      {sanitizeContent(step.title)}
-                    </h4>
-                  </div>
+        {hasContent && sanitizedSteps && (
+          <div className="pt-2 pl-6 border-l-2 border-border/40 ml-0.5 mt-2">
+            <div className="space-y-4">
+              {sanitizedSteps.steps.map((step, index) => {
+                const StepIcon = step.icon ? ICON_MAP[step.icon] : null;
+                const isCurrentStep = index === displayedSectionIndex;
+                const isPastStep = index < displayedSectionIndex;
 
-                  {/* Items as bullet points */}
-                  <ul className="space-y-1 pl-6 text-muted-foreground">
-                    {step.items.map((item, itemIndex) => (
-                      <li
-                        key={itemIndex}
-                        className="text-sm list-disc ml-0.5"
+                return (
+                  <div
+                    key={index}
+                    className={cn(
+                      "space-y-1.5 transition-opacity",
+                      TAILWIND_DURATIONS.moderate,
+                      // During streaming: highlight current, dim future
+                      isStreaming && !isCurrentStep && !isPastStep && "opacity-40"
+                    )}
+                  >
+                    {/* Section header with icon and title */}
+                    <div className="flex items-start gap-2">
+                      {StepIcon && (
+                        <StepIcon
+                          className={cn(
+                            "size-4 mt-0.5 shrink-0 transition-colors",
+                            TAILWIND_DURATIONS.moderate,
+                            isCurrentStep
+                              ? "text-foreground/70"
+                              : "text-muted-foreground/50"
+                          )}
+                          aria-hidden="true"
+                        />
+                      )}
+                      <h4
+                        className={cn(
+                          "font-medium text-sm transition-colors",
+                          TAILWIND_DURATIONS.moderate,
+                          isCurrentStep
+                            ? "text-foreground/90"
+                            : "text-muted-foreground/70"
+                        )}
                       >
-                        {sanitizeContent(item)}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          // Fallback: continuous text for non-structured reasoning
-          <div className="whitespace-pre-wrap text-muted-foreground">
-            {sanitizeContent(fallbackText)}
+                        {step.title}
+                      </h4>
+                    </div>
+
+                    {/* Items as bullet points */}
+                    <ul className="space-y-1 pl-6 text-muted-foreground">
+                      {step.items.map((item, itemIndex) => (
+                        <li
+                          key={itemIndex}
+                          className="text-sm list-disc ml-0.5"
+                        >
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
-      </ReasoningContent>
-    </Reasoning>
+
+        {/* Fallback for non-structured reasoning */}
+        {!validatedSteps && sanitizedReasoning && (
+          <div className="pt-2 pl-6 border-l-2 border-border/40 ml-0.5 mt-2">
+            <div className="whitespace-pre-wrap text-sm text-muted-foreground">
+              {sanitizedReasoning}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 });

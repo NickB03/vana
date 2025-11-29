@@ -76,27 +76,46 @@ export interface ReasoningOptions {
 }
 
 /**
- * Generate structured reasoning steps using AI
+ * Callback function for progressive reasoning step streaming
+ */
+export type ReasoningStepCallback = (step: ReasoningStep, stepIndex: number, isComplete: boolean) => void;
+
+/**
+ * Generate structured reasoning steps using AI with progressive streaming support
  *
  * @param userMessage - The user's current message to analyze
  * @param conversationHistory - Previous conversation messages for context
  * @param options - Configuration options for reasoning generation
+ * @param onStepGenerated - Optional callback invoked for each generated step (enables progressive streaming)
  * @returns Structured reasoning with steps and summary
  * @throws Error if reasoning generation fails or produces invalid output
  *
  * @example
  * ```typescript
+ * // Non-streaming (original behavior)
  * const reasoning = await generateStructuredReasoning(
  *   "How can I optimize my database queries?",
  *   previousMessages,
  *   { maxSteps: 3 }
+ * );
+ *
+ * // Progressive streaming (new)
+ * const reasoning = await generateStructuredReasoning(
+ *   "How can I optimize my database queries?",
+ *   previousMessages,
+ *   { maxSteps: 3 },
+ *   (step, index, isComplete) => {
+ *     console.log(`Step ${index + 1}:`, step.title);
+ *     if (isComplete) console.log("Reasoning complete!");
+ *   }
  * );
  * ```
  */
 export async function generateStructuredReasoning(
   userMessage: string,
   conversationHistory: OpenRouterMessage[],
-  options: ReasoningOptions = {}
+  options: ReasoningOptions = {},
+  onStepGenerated?: ReasoningStepCallback
 ): Promise<StructuredReasoning> {
   const {
     model = MODELS.GEMINI_FLASH,
@@ -236,6 +255,20 @@ Generate reasoning steps as JSON:`;
     validateReasoningSteps(reasoning);
 
     console.log(`[Reasoning] Generated ${reasoning.steps.length} steps for: "${userMessage.substring(0, 50)}..."`);
+
+    // If callback provided, invoke it progressively for each step
+    if (onStepGenerated && reasoning.steps.length > 0) {
+      for (let i = 0; i < reasoning.steps.length; i++) {
+        const isLastStep = i === reasoning.steps.length - 1;
+        onStepGenerated(reasoning.steps[i], i, isLastStep);
+
+        // Add small delay between steps to enable progressive UI updates
+        // This simulates streaming behavior even though we have all data
+        if (!isLastStep) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+    }
 
     return reasoning;
   } catch (error) {
