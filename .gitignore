@@ -32,6 +32,7 @@ dist-ssr
 
 # Supabase temp files
 supabase/.temp/
+supabase/.branches/
 
 # Archive directories for temporary documentation and development artifacts
 /archive/
