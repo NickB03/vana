@@ -1,8 +1,10 @@
+// deno-lint-ignore-file no-explicit-any
 import { assertEquals, assertExists } from "https://deno.land/std@0.220.0/assert/mod.ts";
 import {
   validateArtifactCode,
   autoFixArtifactCode,
   validateImmutability,
+  fixOrphanedMethodChains,
   type MutationValidation,
 } from "../artifact-validator.ts";
 
@@ -487,4 +489,162 @@ function complex() {
   const result = validateImmutability(code);
   assertEquals(result.hasMutations, true);
   assertEquals(result.autoFixAvailable, true);
+});
+
+// ============================================================================
+// Orphaned Method Chain Fix Tests
+// ============================================================================
+
+Deno.test("fixOrphanedMethodChains - fixes basic orphaned filter chain", () => {
+  const brokenCode = `const newTotals = [...totals];
+newTotals[cat] = transactions;
+  .filter(t => t.category === cat)
+  .reduce((sum, t) => sum + t.amount, 0);`;
+
+  const { fixed, changes } = fixOrphanedMethodChains(brokenCode);
+
+  assertEquals(changes.length, 1);
+  assertEquals(changes[0].includes('transactions.filter'), true);
+  assertEquals(fixed.includes('transactions;'), false); // Semicolon removed
+  assertEquals(fixed.includes('transactions\n'), true); // Proper continuation
+});
+
+Deno.test("fixOrphanedMethodChains - fixes orphaned map chain", () => {
+  const brokenCode = `const result = items;
+  .map(x => x * 2)
+  .filter(x => x > 0);`;
+
+  const { fixed, changes } = fixOrphanedMethodChains(brokenCode);
+
+  assertEquals(changes.length, 1);
+  assertEquals(changes[0].includes('items.map'), true);
+  assertEquals(fixed.includes('items;'), false);
+});
+
+Deno.test("fixOrphanedMethodChains - fixes orphaned reduce chain", () => {
+  const brokenCode = `const sum = numbers;
+  .reduce((acc, n) => acc + n, 0);`;
+
+  const { fixed, changes } = fixOrphanedMethodChains(brokenCode);
+
+  assertEquals(changes.length, 1);
+  assertEquals(fixed.includes('numbers\n  .reduce'), true);
+});
+
+Deno.test("fixOrphanedMethodChains - fixes orphaned then chain (Promise)", () => {
+  const brokenCode = `const data = fetchData();
+  .then(response => response.json());`;
+
+  const { fixed, changes } = fixOrphanedMethodChains(brokenCode);
+
+  // Note: This won't match because fetchData() ends with () not a bare identifier
+  // This is by design - function calls are usually valid statements
+  assertEquals(changes.length, 0); // No fix applied - function call is valid
+});
+
+Deno.test("fixOrphanedMethodChains - does NOT fix valid separate statements", () => {
+  const validCode = `const x = someValue;
+obj.method(); // This is a separate statement`;
+
+  const { fixed, changes } = fixOrphanedMethodChains(validCode);
+
+  assertEquals(changes.length, 0);
+  assertEquals(fixed, validCode);
+});
+
+Deno.test("fixOrphanedMethodChains - does NOT fix when indentation is same level", () => {
+  const validCode = `const x = items;
+.filter(x => x > 0); // Same indentation - separate statement`;
+
+  const { fixed, changes } = fixOrphanedMethodChains(validCode);
+
+  assertEquals(changes.length, 0);
+  assertEquals(fixed, validCode);
+});
+
+Deno.test("fixOrphanedMethodChains - does NOT fix when continuation is less indented", () => {
+  const validCode = `  const x = items;
+.filter(x => x > 0); // Less indented - definitely separate`;
+
+  const { fixed, changes } = fixOrphanedMethodChains(validCode);
+
+  assertEquals(changes.length, 0);
+  assertEquals(fixed, validCode);
+});
+
+Deno.test("fixOrphanedMethodChains - handles string methods", () => {
+  const brokenCode = `const name = userName;
+  .toLowerCase()
+  .trim();`;
+
+  const { fixed, changes } = fixOrphanedMethodChains(brokenCode);
+
+  assertEquals(changes.length, 1);
+  assertEquals(changes[0].includes('userName.toLowerCase'), true);
+});
+
+Deno.test("fixOrphanedMethodChains - handles complex assignment", () => {
+  const brokenCode = `results[category] = allItems;
+    .filter(item => item.active)
+    .map(item => item.name);`;
+
+  const { fixed, changes } = fixOrphanedMethodChains(brokenCode);
+
+  assertEquals(changes.length, 1);
+  assertEquals(fixed.includes('allItems\n    .filter'), true);
+});
+
+Deno.test("fixOrphanedMethodChains - handles multiple orphaned chains", () => {
+  const brokenCode = `const a = items;
+  .filter(x => x > 0);
+const b = values;
+  .map(v => v * 2);`;
+
+  const { fixed, changes } = fixOrphanedMethodChains(brokenCode);
+
+  assertEquals(changes.length, 2);
+  assertEquals(fixed.includes('items;'), false);
+  assertEquals(fixed.includes('values;'), false);
+});
+
+Deno.test("fixOrphanedMethodChains - preserves valid code", () => {
+  const validCode = `const result = items
+  .filter(x => x > 0)
+  .map(x => x * 2);
+
+const other = getValue();
+console.log(other);`;
+
+  const { fixed, changes } = fixOrphanedMethodChains(validCode);
+
+  assertEquals(changes.length, 0);
+  assertEquals(fixed, validCode);
+});
+
+Deno.test("fixOrphanedMethodChains - handles empty code", () => {
+  const { fixed, changes } = fixOrphanedMethodChains('');
+
+  assertEquals(fixed, '');
+  assertEquals(changes.length, 0);
+});
+
+Deno.test("fixOrphanedMethodChains - only fixes recognized chainable methods", () => {
+  // customMethod is not in the whitelist
+  const code = `const x = items;
+  .customMethod();`;
+
+  const { fixed, changes } = fixOrphanedMethodChains(code);
+
+  assertEquals(changes.length, 0); // Not fixed - unknown method
+  assertEquals(fixed, code);
+});
+
+Deno.test("fixOrphanedMethodChains - handles Object methods", () => {
+  const brokenCode = `const entries = data;
+  .entries();`;
+
+  const { fixed, changes } = fixOrphanedMethodChains(brokenCode);
+
+  assertEquals(changes.length, 1);
+  assertEquals(changes[0].includes('data.entries'), true);
 });

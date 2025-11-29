@@ -63,7 +63,9 @@ export function SignupForm() {
         description: "Please check your email and click the confirmation link to verify your account. Once confirmed, you can log in with your credentials.",
       });
       navigate("/auth");
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Signup error:", errorMessage);
       toast({
         title: "Signup Error",
         description: "Unable to create account. Please try a different email or contact support.",

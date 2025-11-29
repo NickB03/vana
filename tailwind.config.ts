@@ -17,6 +17,12 @@ export default {
         /** Tablet breakpoint: 900px (fills gap between md:768px and lg:1024px) */
         tablet: '900px',
       },
+      backgroundSize: {
+        'auto': 'auto',
+        'cover': 'cover',
+        'contain': 'contain',
+        '200%': '200% auto',  // For shimmer effect
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

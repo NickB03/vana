@@ -118,12 +118,21 @@ describe('Content Security Policy', () => {
     expect(cspContent).toContain("form-action 'self'");
   });
 
-  it('should prevent clickjacking with frame-ancestors', () => {
-    expect(cspContent).toContain("frame-ancestors 'none'");
+  // Note: frame-ancestors directive only works via HTTP header, not meta tag
+  // The actual clickjacking protection is provided via server-side X-Frame-Options header
+  // See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/frame-ancestors
+  it('should not include frame-ancestors in meta tag (HTTP header only)', () => {
+    // frame-ancestors is intentionally NOT in the meta tag CSP
+    // as browsers ignore it in meta tags - it must be set via HTTP header
+    expect(cspContent).not.toContain('frame-ancestors');
   });
 
-  it('should upgrade insecure requests in production', () => {
-    expect(cspContent).toContain('upgrade-insecure-requests');
+  // Note: upgrade-insecure-requests breaks localhost in Safari
+  // This directive is only appropriate for production HTTP headers, not development
+  it('should not include upgrade-insecure-requests in meta tag (breaks Safari localhost)', () => {
+    // upgrade-insecure-requests is intentionally omitted to support local development
+    // Production can add this via server-side HTTP header
+    expect(cspContent).not.toContain('upgrade-insecure-requests');
   });
 
   it('should not contain wildcard (*) origins in production', () => {

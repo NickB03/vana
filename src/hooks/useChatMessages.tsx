@@ -186,7 +186,8 @@ export function useChatMessages(
     currentArtifact?: { title: string; type: string; content: string },
     forceImageMode = false,
     forceArtifactMode = false,
-    retryCount = 0
+    retryCount = 0,
+    abortSignal?: AbortSignal
   ) => {
     const MAX_RETRIES = 3;
     const RETRY_DELAYS = [2000, 5000, 10000]; // Exponential backoff: 2s, 5s, 10s
@@ -274,6 +275,7 @@ export function useChatMessages(
               ...(session ? { Authorization: `Bearer ${session.access_token}` } : {})
             },
             body: JSON.stringify({ prompt: userMessage }),
+            signal: abortSignal,
           }
         ).then(async (res) => {
           if (!res.ok) {
@@ -299,6 +301,7 @@ export function useChatMessages(
               artifactType: "react", // Default to React artifacts
               sessionId: isAuthenticated ? sessionId : undefined,
             }),
+            signal: abortSignal,
           }
         );
 
@@ -419,6 +422,7 @@ export function useChatMessages(
             ...(session ? { Authorization: `Bearer ${session.access_token}` } : {})
           },
           body: JSON.stringify(requestBody),
+          signal: abortSignal,
         }
       );
 
@@ -643,6 +647,13 @@ export function useChatMessages(
 
       onDone();
     } catch (error: any) {
+      // Handle stream cancellation gracefully (don't show error toast)
+      if (error.name === 'AbortError') {
+        console.log("Stream cancelled by user");
+        onDone();
+        return;
+      }
+
       console.error("Stream error:", error);
 
       // Handle retryable errors with exponential backoff
@@ -660,7 +671,7 @@ export function useChatMessages(
         await new Promise(resolve => setTimeout(resolve, delay));
 
         // Recursive retry with incremented count
-        return streamChat(userMessage, onDelta, onDone, currentArtifact, forceImageMode, forceArtifactMode, retryCount + 1);
+        return streamChat(userMessage, onDelta, onDone, currentArtifact, forceImageMode, forceArtifactMode, retryCount + 1, abortSignal);
       }
 
       const errorMessage = getAuthErrorMessage(error);

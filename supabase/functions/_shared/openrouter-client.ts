@@ -1,9 +1,12 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * OpenRouter API Client
  *
- * Supports two AI providers via OpenRouter:
- * 1. Kimi K2-Thinking - For artifact generation and fixing (high quality code)
- * 2. Gemini 2.5 Flash Lite - For chat, summaries, and titles (fast, reliable)
+ * Supports Gemini 2.5 Flash Lite via OpenRouter for:
+ * - Chat conversations
+ * - Summaries
+ * - Title generation
+ * - Fast parallel reasoning
  *
  * Key Features:
  * - OpenAI-compatible API format
@@ -15,19 +18,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { MODELS, RETRY_CONFIG } from './config.ts';
 
-// Separate API keys for different use cases
-const OPENROUTER_K2T_KEY = Deno.env.get("OPENROUTER_K2T_KEY");
+// API key for Gemini Flash Lite
 const OPENROUTER_GEMINI_FLASH_KEY = Deno.env.get("OPENROUTER_GEMINI_FLASH_KEY");
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
-
-// Validate K2T key (for artifact generation)
-if (!OPENROUTER_K2T_KEY) {
-  console.warn(
-    "⚠️  OPENROUTER_K2T_KEY not configured - artifact generation will fail.\n" +
-    "Get your key from: https://openrouter.ai/keys\n" +
-    "Set it with: supabase secrets set OPENROUTER_K2T_KEY=sk-or-v1-..."
-  );
-}
 
 // Validate Gemini Flash key (for chat/summaries/titles)
 if (!OPENROUTER_GEMINI_FLASH_KEY) {
@@ -41,246 +34,6 @@ if (!OPENROUTER_GEMINI_FLASH_KEY) {
 export interface OpenRouterMessage {
   role: "system" | "user" | "assistant";
   content: string;
-}
-
-export interface CallKimiOptions {
-  temperature?: number;
-  max_tokens?: number;
-  requestId?: string;
-  userId?: string; // For usage tracking
-  isGuest?: boolean; // For usage tracking
-  functionName?: string; // 'generate-artifact' or 'generate-artifact-fix'
-  promptPreview?: string; // First 200 chars for debugging
-}
-
-export interface RetryResult {
-  response: Response;
-  retryCount: number;
-}
-
-/**
- * Call Kimi K2-Thinking for artifact generation or fixing
- * Uses OpenAI-compatible format (no conversion needed)
- *
- * @param systemPrompt - System instruction for the model
- * @param userPrompt - User's prompt or code to fix
- * @param options - Temperature, max tokens, request ID
- * @returns Response object
- */
-export async function callKimi(
-  systemPrompt: string,
-  userPrompt: string,
-  options?: CallKimiOptions
-): Promise<Response> {
-  const {
-    temperature = 0.7,
-    max_tokens = 8000,
-    requestId = crypto.randomUUID()
-  } = options || {};
-
-  if (!OPENROUTER_K2T_KEY) {
-    throw new Error("OPENROUTER_K2T_KEY not configured");
-  }
-
-  console.log(`[${requestId}] 🤖 Routing to Kimi K2-Thinking via OpenRouter`);
-
-  const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${OPENROUTER_K2T_KEY}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": Deno.env.get("SITE_URL") || "https://your-domain.com",
-      "X-Title": "AI Chat App - Artifact Generation"
-    },
-    body: JSON.stringify({
-      model: MODELS.KIMI_K2,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ],
-      temperature,
-      max_tokens,
-      // OpenRouter-specific optimizations
-      transforms: ["middle-out"], // Compression for faster responses
-      route: "fallback" // Auto-fallback if Kimi unavailable
-    })
-  });
-
-  return response;
-}
-
-/**
- * Call Kimi with exponential backoff retry logic
- * Handles transient failures gracefully
- *
- * @param systemPrompt - System instruction
- * @param userPrompt - User prompt
- * @param options - Configuration options
- * @param retryCount - Current retry attempt (internal)
- * @returns Response object
- */
-export async function callKimiWithRetry(
-  systemPrompt: string,
-  userPrompt: string,
-  options?: CallKimiOptions,
-  retryCount = 0
-): Promise<Response> {
-  const requestId = options?.requestId || crypto.randomUUID();
-
-  try {
-    const response = await callKimi(systemPrompt, userPrompt, {
-      ...options,
-      requestId
-    });
-
-    if (response.ok) {
-      return response;
-    }
-
-    // Handle rate limiting (429) and service overload (503) with exponential backoff
-    if (response.status === 429 || response.status === 503) {
-      if (retryCount < RETRY_CONFIG.MAX_RETRIES) {
-        // CRITICAL: Drain response body to prevent resource leak
-        // Unconsumed response bodies hold onto network resources and memory
-        await response.text();
-
-        const delayMs = Math.min(
-          RETRY_CONFIG.INITIAL_DELAY_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, retryCount),
-          RETRY_CONFIG.MAX_DELAY_MS
-        );
-
-        const retryAfter = response.headers.get('Retry-After');
-        const actualDelayMs = retryAfter ? parseInt(retryAfter) * 1000 : delayMs;
-
-        const errorType = response.status === 429 ? "Rate limited" : "Service overloaded";
-        console.log(`[${requestId}] ${errorType} (${response.status}). Retry ${retryCount + 1}/${RETRY_CONFIG.MAX_RETRIES} after ${actualDelayMs}ms`);
-
-        await new Promise(resolve => setTimeout(resolve, actualDelayMs));
-
-        return callKimiWithRetry(systemPrompt, userPrompt, options, retryCount + 1);
-      } else {
-        console.error(`[${requestId}] Max retries exceeded (status: ${response.status})`);
-      }
-    }
-
-    return response;
-  } catch (error) {
-    if (retryCount < RETRY_CONFIG.MAX_RETRIES) {
-      const delayMs = Math.min(
-        RETRY_CONFIG.INITIAL_DELAY_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, retryCount),
-        RETRY_CONFIG.MAX_DELAY_MS
-      );
-      console.log(`[${requestId}] Network error, retrying after ${delayMs}ms:`, error);
-
-      await new Promise(resolve => setTimeout(resolve, delayMs));
-
-      return callKimiWithRetry(systemPrompt, userPrompt, options, retryCount + 1);
-    }
-
-    throw error;
-  }
-}
-
-/**
- * Call Kimi with retry tracking - returns both response and retry count
- * Use this when you need to log the actual number of retries that occurred
- *
- * @param systemPrompt - System instruction
- * @param userPrompt - User prompt
- * @param options - Configuration options
- * @returns Object with response and retryCount
- */
-export async function callKimiWithRetryTracking(
-  systemPrompt: string,
-  userPrompt: string,
-  options?: CallKimiOptions
-): Promise<RetryResult> {
-  const requestId = options?.requestId || crypto.randomUUID();
-
-  // Internal recursive function that tracks retry count
-  async function attemptWithRetry(retryCount = 0): Promise<RetryResult> {
-    try {
-      const response = await callKimi(systemPrompt, userPrompt, {
-        ...options,
-        requestId
-      });
-
-      if (response.ok) {
-        return { response, retryCount };
-      }
-
-      // Handle rate limiting (429) and service overload (503) with exponential backoff
-      if (response.status === 429 || response.status === 503) {
-        if (retryCount < RETRY_CONFIG.MAX_RETRIES) {
-          // CRITICAL: Drain response body to prevent resource leak
-          await response.text();
-
-          const delayMs = Math.min(
-            RETRY_CONFIG.INITIAL_DELAY_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, retryCount),
-            RETRY_CONFIG.MAX_DELAY_MS
-          );
-
-          const retryAfter = response.headers.get('Retry-After');
-          const actualDelayMs = retryAfter ? parseInt(retryAfter) * 1000 : delayMs;
-
-          const errorType = response.status === 429 ? "Rate limited" : "Service overloaded";
-          console.log(`[${requestId}] ${errorType} (${response.status}). Retry ${retryCount + 1}/${RETRY_CONFIG.MAX_RETRIES} after ${actualDelayMs}ms`);
-
-          await new Promise(resolve => setTimeout(resolve, actualDelayMs));
-
-          return attemptWithRetry(retryCount + 1);
-        } else {
-          console.error(`[${requestId}] Max retries exceeded (status: ${response.status})`);
-        }
-      }
-
-      return { response, retryCount };
-    } catch (error) {
-      if (retryCount < RETRY_CONFIG.MAX_RETRIES) {
-        const delayMs = Math.min(
-          RETRY_CONFIG.INITIAL_DELAY_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, retryCount),
-          RETRY_CONFIG.MAX_DELAY_MS
-        );
-        console.log(`[${requestId}] Network error, retrying after ${delayMs}ms:`, error);
-
-        await new Promise(resolve => setTimeout(resolve, delayMs));
-
-        return attemptWithRetry(retryCount + 1);
-      }
-
-      throw error;
-    }
-  }
-
-  return attemptWithRetry(0);
-}
-
-/**
- * Extract text from OpenRouter response (OpenAI-compatible format)
- * Handles both successful and error responses
- *
- * @param responseData - JSON response from OpenRouter
- * @param requestId - Optional request ID for logging
- * @returns Extracted text content
- */
-export function extractTextFromKimi(responseData: any, requestId?: string): string {
-  const logPrefix = requestId ? `[${requestId}]` : "";
-
-  // OpenAI-compatible format: choices[0].message.content
-  if (responseData?.choices?.[0]?.message?.content) {
-    const text = responseData.choices[0].message.content;
-    const finishReason = responseData.choices[0].finish_reason;
-    console.log(`${logPrefix} ✅ Extracted artifact from Kimi, length: ${text.length} characters (finish_reason: ${finishReason})`);
-    return text;
-  }
-
-  // Error case - log the structure for debugging
-  const finishReason = responseData?.choices?.[0]?.finish_reason;
-  console.error(
-    `${logPrefix} ❌ Failed to extract text from response (finish_reason: ${finishReason}):`,
-    JSON.stringify(responseData).substring(0, 200)
-  );
-  return "";
 }
 
 /**
@@ -300,24 +53,6 @@ export function extractTokenUsage(responseData: any): {
     outputTokens: usage.completion_tokens || 0,
     totalTokens: usage.total_tokens || 0
   };
-}
-
-/**
- * Calculate cost for a Kimi K2-Thinking API call
- * Pricing: $0.15 per 1M input tokens, $2.50 per 1M output tokens
- *
- * @param inputTokens - Number of input tokens
- * @param outputTokens - Number of output tokens
- * @returns Cost in USD
- */
-export function calculateKimiCost(inputTokens: number, outputTokens: number): number {
-  const INPUT_COST_PER_M = 0.15;
-  const OUTPUT_COST_PER_M = 2.50;
-
-  const inputCost = (inputTokens / 1_000_000) * INPUT_COST_PER_M;
-  const outputCost = (outputTokens / 1_000_000) * OUTPUT_COST_PER_M;
-
-  return inputCost + outputCost;
 }
 
 /**

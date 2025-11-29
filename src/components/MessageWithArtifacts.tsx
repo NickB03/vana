@@ -231,6 +231,7 @@ export const MessageWithArtifacts = memo(({
     }
 
     handleBundling();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [artifacts, sessionId]);
 
   // Separate image artifacts from interactive artifacts

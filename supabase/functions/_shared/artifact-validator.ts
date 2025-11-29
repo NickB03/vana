@@ -389,6 +389,75 @@ function autoFixMutations(code: string): { fixedCode: string; fixCount: number }
 }
 
 /**
+ * Common array/string/promise methods that are typically chained.
+ * Used to identify orphaned method chains caused by GLM generation bugs.
+ */
+const CHAINABLE_METHODS = [
+  // Array methods
+  'filter', 'map', 'reduce', 'forEach', 'find', 'findIndex',
+  'some', 'every', 'includes', 'indexOf', 'slice', 'concat',
+  'join', 'sort', 'reverse', 'flat', 'flatMap',
+  // String methods
+  'toString', 'toLowerCase', 'toUpperCase', 'trim', 'trimStart', 'trimEnd',
+  'split', 'replace', 'replaceAll', 'match', 'search', 'substring', 'substr',
+  'charAt', 'charCodeAt', 'padStart', 'padEnd', 'repeat', 'normalize',
+  // Promise methods
+  'then', 'catch', 'finally',
+  // Object methods
+  'keys', 'values', 'entries'
+];
+
+/**
+ * Fixes orphaned method chains caused by GLM generation bugs.
+ *
+ * GLM sometimes generates broken code where a statement ends prematurely
+ * and the method chain continuation is orphaned on the next line:
+ *
+ * BROKEN:
+ *   newTotals[cat] = transactions;
+ *     .filter(t => t.category === cat)
+ *
+ * FIXED:
+ *   newTotals[cat] = transactions
+ *     .filter(t => t.category === cat)
+ *
+ * @param code - The source code to fix
+ * @param requestId - Optional request ID for logging
+ * @returns Fixed code and list of changes made
+ */
+export function fixOrphanedMethodChains(
+  code: string,
+  requestId?: string
+): { fixed: string; changes: string[] } {
+  const changes: string[] = [];
+  const methodPattern = CHAINABLE_METHODS.join('|');
+
+  // Match: line ending with "= identifier;" where next line starts with indented .method(
+  // This is specific enough to avoid false positives while catching the GLM bug
+  const fixed = code.replace(
+    new RegExp(
+      `^(\\s*)(.+?=\\s*)(\\w+)\\s*;\\s*$\\n(\\s+)\\.(${methodPattern})\\s*\\(`,
+      'gm'
+    ),
+    (match, indent1, assignment, identifier, indent2, method) => {
+      // Only fix if the continuation line is more indented (indicates intended continuation)
+      if (indent2.length > indent1.length) {
+        const change = `Fixed orphaned method chain: ${identifier}.${method}(...)`;
+        changes.push(change);
+        if (requestId) {
+          console.log(`[${requestId}] ${change}`);
+        }
+        // Remove semicolon and preserve the continuation
+        return `${indent1}${assignment}${identifier}\n${indent2}.${method}(`;
+      }
+      return match; // Same or less indentation - likely separate statement
+    }
+  );
+
+  return { fixed, changes };
+}
+
+/**
  * Main validation function - checks artifact code for common issues
  */
 export function validateArtifactCode(code: string, artifactType: string = 'react'): ValidationResult {

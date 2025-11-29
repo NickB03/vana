@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { vi } from 'vitest';
+import { vi, afterEach } from 'vitest';
 
 // Mock console methods to reduce noise in tests
 global.console = {
@@ -14,3 +14,32 @@ global.ResizeObserver = class ResizeObserver {
   unobserve = vi.fn();
   disconnect = vi.fn();
 };
+
+// Mock localStorage for Supabase Auth
+// This prevents "storage.getItem is not a function" errors during async cleanup
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: vi.fn((key: string) => store[key] || null),
+    setItem: vi.fn((key: string, value: string) => { store[key] = value; }),
+    removeItem: vi.fn((key: string) => { delete store[key]; }),
+    clear: vi.fn(() => { store = {}; }),
+    get length() { return Object.keys(store).length; },
+    key: vi.fn((index: number) => Object.keys(store)[index] || null),
+  };
+})();
+
+Object.defineProperty(global, 'localStorage', {
+  value: localStorageMock,
+  writable: true,
+});
+
+// Clear localStorage between tests
+afterEach(() => {
+  localStorageMock.clear();
+});
+
+// Note: The "Timeout waiting for worker to respond" error during close is a known
+// Vitest 4.x issue with the pool runner. It doesn't affect test results - all tests
+// pass successfully. The error occurs during worker cleanup, not during test execution.
+// See: https://github.com/vitest-dev/vitest/issues/3077

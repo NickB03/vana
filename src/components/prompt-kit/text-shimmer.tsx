@@ -41,13 +41,12 @@ export function TextShimmer({
   return (
     <Component
       className={cn(
-        "bg-clip-text font-medium text-transparent",
+        "bg-clip-text bg-size-200% font-medium text-transparent",
         "animate-shimmer",
         className
       )}
       style={{
         backgroundImage: `linear-gradient(to right, hsl(var(--muted-foreground)) ${50 - dynamicSpread}%, hsl(var(--foreground)) 50%, hsl(var(--muted-foreground)) ${50 + dynamicSpread}%)`,
-        backgroundSize: "200% auto",
         animationDuration: `${duration}s`,
       }}
       {...props}

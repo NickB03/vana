@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -334,11 +335,13 @@ describe('MessageErrorBoundary', () => {
 
     beforeEach(() => {
       // Mock development mode
+      // @ts-expect-error - import.meta.env is readonly
       (import.meta.env as any).DEV = true;
     });
 
     afterEach(() => {
       // Restore original environment
+      // @ts-expect-error - import.meta.env is readonly
       (import.meta.env as any).DEV = originalEnv;
     });
 
@@ -384,11 +387,13 @@ describe('MessageErrorBoundary', () => {
 
     beforeEach(() => {
       // Mock production mode
+      // @ts-expect-error - import.meta.env is readonly
       (import.meta.env as any).DEV = false;
     });
 
     afterEach(() => {
       // Restore original environment
+      // @ts-expect-error - import.meta.env is readonly
       (import.meta.env as any).DEV = originalEnv;
     });
 

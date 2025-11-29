@@ -8,16 +8,22 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     testTimeout: 5000, // Increased from default 1000ms for async operations
-    // Use forks pool for better memory isolation during coverage generation
-    // Each worker gets its own process, preventing OOM from accumulated coverage data
-    pool: 'forks',
+    teardownTimeout: 10000, // Allow 10s for cleanup
+    // Use threads pool for cleaner shutdown (forks has hardcoded 1000ms close timeout bug)
+    // CI uses forks for memory isolation during coverage generation
+    pool: process.env.CI ? 'forks' : 'threads',
     poolOptions: {
+      threads: {
+        // Use fewer threads locally for cleaner shutdown
+        maxThreads: 4,
+        minThreads: 1,
+        isolate: true
+      },
       forks: {
         // In CI: reduce concurrency from 4 to 2 with aggressive GC (NODE_OPTIONS flags)
         // This prevents OOM during istanbul coverage instrumentation of 28 test files
         // Each fork + instrumentation consumes ~1.5-2GB; 2 forks = 3-4GB + OS overhead
-        maxForks: process.env.CI ? 2 : 4,
-        // Isolate each test file for better memory management
+        maxForks: 2,
         isolate: true
       }
     }

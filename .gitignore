@@ -118,3 +118,4 @@ __image_snapshots__/
 __diff_output__/
 screenshots/
 .screenshots/
+supabase/.env.local

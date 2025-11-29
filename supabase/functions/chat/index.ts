@@ -18,6 +18,7 @@ import {
 // Handlers
 import { detectUserIntent } from "./handlers/intent.ts";
 import { performWebSearch } from "./handlers/search.ts";
+import { extractUrlContent } from "./handlers/url-extract.ts";
 import { generateImage } from "./handlers/image.ts";
 import { generateArtifact } from "./handlers/artifact.ts";
 import { createStreamingResponse } from "./handlers/streaming.ts";
@@ -27,6 +28,7 @@ import {
   callGeminiFlashWithRetry,
   type OpenRouterMessage,
 } from "../_shared/openrouter-client.ts";
+import { routeChatRequest } from "../_shared/glm-chat-router.ts";
 import {
   getCorsHeaders,
   handleCorsPreflightRequest,
@@ -265,6 +267,24 @@ serve(async (req) => {
         };
 
     // ========================================
+    // STEP 6b: URL Content Extraction (if URLs detected)
+    // ========================================
+    // Extract content from any URLs the user shared in their message
+    // This runs in parallel with normal processing since it's independent
+    const urlExtractResult = await extractUrlContent(
+      lastUserContent,
+      user?.id || null,
+      isGuest,
+      requestId
+    );
+
+    if (urlExtractResult.extractionExecuted) {
+      console.log(
+        `[${requestId}] 📄 Extracted content from ${urlExtractResult.extractedUrlsData?.successCount || 0} URL(s)`
+      );
+    }
+
+    // ========================================
     // STEP 7: Route by Intent
     // ========================================
     const authHeader = req.headers.get("Authorization");
@@ -316,7 +336,7 @@ serve(async (req) => {
     // STEP 8: Regular Chat Streaming (default case)
     // ========================================
     console.log("🎯 Intent detected: REGULAR CHAT");
-    console.log("🔀 Using: Gemini 2.5 Flash Lite via OpenRouter (streaming response)");
+    console.log("🔀 Using: GLM router (GLM-4.6 primary, OpenRouter fallback)");
 
     // ========================================
     // Smart Context Management (Issue #127)
@@ -430,27 +450,58 @@ Use this information to provide an accurate, up-to-date response. Cite the sourc
       );
     }
 
+    // Inject URL extracted content if URLs were processed
+    let urlExtractContextMessage = "";
+    if (urlExtractResult.extractionExecuted && urlExtractResult.extractedContext) {
+      urlExtractContextMessage = `
+
+URL CONTENT (extracted from links the user shared):
+The user shared the following URL(s) in their message. Here is the extracted content:
+
+${urlExtractResult.extractedContext}
+
+Use this extracted content to understand the context and provide a helpful response about the linked page(s).`;
+
+      console.log(
+        `[${requestId}] 📤 Injecting URL extract context (${urlExtractResult.extractedContext.length} chars) into system message`
+      );
+    }
+
     // Prepare messages for OpenRouter (OpenAI-compatible format)
     const openRouterMessages: OpenRouterMessage[] = [
-      { role: "system", content: systemInstruction + searchContextMessage },
+      { role: "system", content: systemInstruction + searchContextMessage + urlExtractContextMessage },
       ...contextMessages.filter((m) => m.role !== "system").map((m) => ({
         role: m.role as "user" | "assistant",
         content: m.content,
       })),
     ];
 
-    // Call OpenRouter with Gemini 2.5 Flash Lite model (fast, reliable for chat)
-    // Artifacts are handled by separate generate-artifact function
-    const response = await callGeminiFlashWithRetry(openRouterMessages, {
+    // Route chat through GLM (primary) with OpenRouter fallback
+    // The router handles:
+    // - GLM as primary provider for best reasoning
+    // - Automatic fallback to OpenRouter on GLM failures
+    // - Circuit breaker to prevent cascading failures
+    console.log(`[${requestId}] 🎯 Routing chat request via GLM router`);
+
+    const routerResult = await routeChatRequest(openRouterMessages, {
+      requestId,
       temperature: 0.7,
       max_tokens: 8000,
-      requestId,
-      stream: true
+      stream: true,
+      preferredProvider: 'auto' // GLM first, fallback to OpenRouter
     });
+
+    const response = routerResult.response;
+
+    console.log(
+      `[${requestId}] 📍 Chat routed to: ${routerResult.provider}` +
+      (routerResult.fallbackUsed ? ' (fallback)' : '') +
+      (routerResult.circuitBreakerOpen ? ' [circuit open]' : '')
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[${requestId}] 🔴 OpenRouter error:`, response.status, errorText);
+      console.error(`[${requestId}] 🔴 ${routerResult.provider} error:`, response.status, errorText);
       console.error(`[${requestId}] 🔴 Response headers:`, JSON.stringify(Object.fromEntries(response.headers)));
 
       if (response.status === 429 || response.status === 403) {
@@ -458,6 +509,7 @@ Use this information to provide an accurate, up-to-date response. Cite the sourc
           JSON.stringify({
             error: "API rate limit exceeded. Please try again later.",
             requestId,
+            provider: routerResult.provider,
             details: errorText
           }),
           {
@@ -473,6 +525,7 @@ Use this information to provide an accurate, up-to-date response. Cite the sourc
           JSON.stringify({
             error: "AI service temporarily unavailable",
             requestId,
+            provider: routerResult.provider,
             status: response.status,
             details: errorText,
             retryable: true
@@ -487,6 +540,7 @@ Use this information to provide an accurate, up-to-date response. Cite the sourc
       return new Response(JSON.stringify({
         error: "AI service error",
         requestId,
+        provider: routerResult.provider,
         status: response.status,
         details: errorText
       }), {

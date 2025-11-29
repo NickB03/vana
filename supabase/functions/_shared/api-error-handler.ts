@@ -146,13 +146,13 @@ export async function handleApiError(
 }
 
 /**
- * Quick helper for common OpenRouter/Kimi error handling pattern
+ * Quick helper for common OpenRouter API error handling pattern
  *
  * @example
  * ```ts
- * const { response, retryCount } = await callKimiWithRetryTracking(...);
+ * const response = await callGeminiFlashWithRetry(...);
  * if (!response.ok) {
- *   return handleKimiError(response, requestId, corsHeaders);
+ *   return handleAPIError(response, requestId, corsHeaders);
  * }
  * ```
  */

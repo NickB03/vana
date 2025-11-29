@@ -4,6 +4,7 @@ import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-conf
 import { ErrorResponseBuilder } from "../_shared/error-handler.ts";
 import { RATE_LIMITS } from "../_shared/config.ts";
 import { uploadWithRetry } from "../_shared/storage-retry.ts";
+import { fixOrphanedMethodChains } from "../_shared/artifact-validator.ts";
 
 /**
  * Bundle Artifact Edge Function
@@ -375,6 +376,14 @@ serve(async (req) => {
       /from\s+ReactDOM\s*;/g,
       "from 'react-dom';"
     );
+
+    // FIX: Repair orphaned method chains (GLM bug: statement ends but chain continues on next line)
+    // Uses shared utility from artifact-validator.ts for consistency and testability
+    const chainFixResult = fixOrphanedMethodChains(transformedCode, requestId);
+    transformedCode = chainFixResult.fixed;
+    if (chainFixResult.changes.length > 0) {
+      console.log(`[${requestId}] Applied ${chainFixResult.changes.length} orphaned chain fix(es)`);
+    }
 
     console.log(`[${requestId}] Applied malformed syntax fixes to code`);
 

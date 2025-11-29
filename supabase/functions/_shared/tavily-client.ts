@@ -1,11 +1,12 @@
 /**
- * Tavily Search API Client
+ * Tavily API Client
  *
- * Provides real-time web search capabilities for AI responses via Tavily API.
+ * Provides real-time web search AND content extraction capabilities via Tavily API.
  * Enables grounded, factual responses with up-to-date information from the web.
  *
  * Key Features:
- * - Real-time web search with AI-optimized results
+ * - Real-time web search with AI-optimized results (Search API)
+ * - URL content extraction for reading full webpage content (Extract API)
  * - Context formatting for LLM injection
  * - Automatic retry with exponential backoff
  * - Request tracking and logging
@@ -136,6 +137,82 @@ export interface SearchTavilyOptions {
  */
 export interface TavilyRetryResult {
   response: TavilySearchResponse;
+  retryCount: number;
+}
+
+// ============================================================================
+// EXTRACT API - Types and Interfaces
+// ============================================================================
+
+/**
+ * Tavily Extract request parameters
+ */
+export interface TavilyExtractRequest {
+  /** Array of URLs to extract content from (max 20 per request) */
+  urls: string[];
+  /** Include images from the extracted content (default: false) */
+  include_images?: boolean;
+  /** Extract depth: 'basic' extracts main content, 'advanced' extracts more context */
+  extract_depth?: 'basic' | 'advanced';
+}
+
+/**
+ * Individual extraction result from Tavily
+ */
+export interface TavilyExtractResult {
+  /** The URL that was extracted */
+  url: string;
+  /** Extracted raw content from the page (markdown/text format) */
+  raw_content: string;
+  /** Images found on the page (if include_images: true) */
+  images?: string[];
+}
+
+/**
+ * Failed extraction result
+ */
+export interface TavilyExtractFailedResult {
+  /** The URL that failed to extract */
+  url: string;
+  /** Error message explaining the failure */
+  error: string;
+}
+
+/**
+ * Complete Tavily Extract API response
+ */
+export interface TavilyExtractResponse {
+  /** Successfully extracted results */
+  results: TavilyExtractResult[];
+  /** URLs that failed to extract */
+  failed_results?: TavilyExtractFailedResult[];
+  /** Response time in seconds */
+  response_time?: number;
+}
+
+/**
+ * Options for extractUrls function
+ */
+export interface ExtractUrlsOptions {
+  /** Request ID for tracing */
+  requestId?: string;
+  /** User ID for usage tracking */
+  userId?: string;
+  /** Whether user is a guest (for analytics) */
+  isGuest?: boolean;
+  /** Function name for logging */
+  functionName?: string;
+  /** Include images in extraction */
+  includeImages?: boolean;
+  /** Extract depth: 'basic' or 'advanced' */
+  extractDepth?: 'basic' | 'advanced';
+}
+
+/**
+ * Retry result for Extract API
+ */
+export interface TavilyExtractRetryResult {
+  response: TavilyExtractResponse;
   retryCount: number;
 }
 
@@ -547,4 +624,294 @@ export async function logTavilyUsage(logData: {
     console.error(`[${logData.requestId}] Exception logging Tavily usage:`, error);
     // Swallow error - logging is best-effort
   }
+}
+
+// ============================================================================
+// EXTRACT API - Implementation
+// ============================================================================
+
+/**
+ * Extract content from URLs using Tavily Extract API
+ *
+ * Use this to fetch and read the full content of web pages when users share URLs
+ * or when you need to read linked resources. Complements the Search API which
+ * finds pages - Extract actually reads them.
+ *
+ * @param urls - Array of URLs to extract content from (max 20)
+ * @param options - Configuration options
+ * @returns Extracted content from each URL
+ *
+ * @example
+ * ```ts
+ * const results = await extractUrls(
+ *   ["https://example.com/article"],
+ *   { requestId, extractDepth: 'basic' }
+ * );
+ * ```
+ */
+export async function extractUrls(
+  urls: string[],
+  options?: ExtractUrlsOptions
+): Promise<TavilyExtractResponse> {
+  const {
+    requestId = crypto.randomUUID(),
+    extractDepth = 'basic',
+    includeImages = false
+  } = options || {};
+
+  if (!TAVILY_API_KEY) {
+    throw new Error("TAVILY_API_KEY not configured");
+  }
+
+  if (!urls || urls.length === 0) {
+    throw new Error("URLs array cannot be empty");
+  }
+
+  // Tavily Extract API limit: max 20 URLs per request
+  if (urls.length > 20) {
+    throw new Error(`Maximum 20 URLs per request (received: ${urls.length})`);
+  }
+
+  // Validate URLs format
+  const invalidUrls = urls.filter(url => {
+    try {
+      new URL(url);
+      return false;
+    } catch {
+      return true;
+    }
+  });
+
+  if (invalidUrls.length > 0) {
+    throw new Error(`Invalid URL(s): ${invalidUrls.join(', ')}`);
+  }
+
+  console.log(`[${requestId}] 📄 Tavily extract: ${urls.length} URL(s) (depth: ${extractDepth})`);
+
+  const requestBody: TavilyExtractRequest = {
+    urls,
+    extract_depth: extractDepth,
+    include_images: includeImages
+  };
+
+  // Add timeout using AbortSignal
+  const abortController = new AbortController();
+  const timeoutId = setTimeout(() => abortController.abort(), TAVILY_CONFIG.SEARCH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${TAVILY_BASE_URL}/extract`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${TAVILY_API_KEY}`
+      },
+      body: JSON.stringify(requestBody),
+      signal: abortController.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(
+        `[${requestId}] ❌ Tavily Extract API error (${response.status}):`,
+        errorText.substring(0, 200)
+      );
+      throw new TavilyAPIError(
+        `Tavily Extract API error: ${response.status}`,
+        response.status,
+        errorText
+      );
+    }
+
+    const data: TavilyExtractResponse = await response.json();
+
+    const successCount = data.results?.length || 0;
+    const failedCount = data.failed_results?.length || 0;
+
+    console.log(
+      `[${requestId}] ✅ Tavily extracted ${successCount} URL(s)` +
+      (failedCount > 0 ? `, ${failedCount} failed` : "")
+    );
+
+    return data;
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    // Handle AbortError from timeout
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error(
+        `[${requestId}] ❌ Tavily extract timed out after ${TAVILY_CONFIG.SEARCH_TIMEOUT_MS}ms`
+      );
+      throw new TavilyAPIError(
+        `Extract request timed out after ${TAVILY_CONFIG.SEARCH_TIMEOUT_MS}ms`,
+        408, // Request Timeout
+        'timeout'
+      );
+    }
+
+    throw error;
+  }
+}
+
+/**
+ * Extract URLs with exponential backoff retry logic
+ *
+ * @param urls - Array of URLs to extract content from
+ * @param options - Configuration options
+ * @param retryCount - Current retry attempt (internal)
+ * @returns Extracted content from each URL
+ */
+export async function extractUrlsWithRetry(
+  urls: string[],
+  options?: ExtractUrlsOptions,
+  retryCount = 0
+): Promise<TavilyExtractResponse> {
+  const requestId = options?.requestId || crypto.randomUUID();
+
+  try {
+    return await extractUrls(urls, { ...options, requestId });
+  } catch (error) {
+    let isRetryable = false;
+    let statusCode = 0;
+    let errorMessage = '';
+
+    if (error instanceof TavilyAPIError) {
+      statusCode = error.statusCode;
+      errorMessage = error.message;
+      isRetryable =
+        statusCode === 429 || // Rate limited
+        statusCode === 503 || // Service unavailable
+        statusCode === 408;   // Request timeout
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+      isRetryable =
+        errorMessage.includes("network") ||
+        errorMessage.includes("ECONNRESET") ||
+        errorMessage.includes("ETIMEDOUT") ||
+        errorMessage.includes("ECONNREFUSED");
+    } else {
+      errorMessage = String(error);
+    }
+
+    if (isRetryable && retryCount < RETRY_CONFIG.MAX_RETRIES) {
+      const delayMs = Math.min(
+        RETRY_CONFIG.INITIAL_DELAY_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, retryCount),
+        RETRY_CONFIG.MAX_DELAY_MS
+      );
+
+      console.log(
+        `[${requestId}] Tavily extract error (status: ${statusCode || 'network'}), retrying after ${delayMs}ms ` +
+        `(${retryCount + 1}/${RETRY_CONFIG.MAX_RETRIES}): ${errorMessage.substring(0, 100)}`
+      );
+
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+
+      return extractUrlsWithRetry(urls, options, retryCount + 1);
+    }
+
+    console.error(`[${requestId}] ❌ Tavily extract failed:`, errorMessage);
+    throw error;
+  }
+}
+
+/**
+ * Format Tavily extract results for LLM context injection
+ * Converts extracted content into a structured format for AI consumption
+ *
+ * @param extractResults - Tavily extract response
+ * @param options - Formatting options
+ * @returns Formatted context string for LLM
+ *
+ * @example
+ * ```ts
+ * const results = await extractUrls(["https://example.com"]);
+ * const context = formatExtractContext(results);
+ * // Use context in system prompt or user message
+ * ```
+ */
+export function formatExtractContext(
+  extractResults: TavilyExtractResponse,
+  options?: {
+    /** Maximum content length per URL (default: 5000 chars) */
+    maxContentLength?: number;
+    /** Include URLs in output (default: true) */
+    includeUrls?: boolean;
+  }
+): string {
+  const {
+    maxContentLength = 5000,
+    includeUrls = true
+  } = options || {};
+
+  if (!extractResults.results || extractResults.results.length === 0) {
+    if (extractResults.failed_results && extractResults.failed_results.length > 0) {
+      return `Failed to extract content from URLs:\n${
+        extractResults.failed_results.map(f => `- ${f.url}: ${f.error}`).join('\n')
+      }`;
+    }
+    return "No content was extracted from the provided URLs.";
+  }
+
+  let context = `Extracted Web Content\n${'='.repeat(50)}\n\n`;
+
+  extractResults.results.forEach((result, index) => {
+    context += `[${index + 1}] `;
+
+    if (includeUrls) {
+      context += `${result.url}\n`;
+      context += `${'-'.repeat(40)}\n`;
+    }
+
+    // Truncate content if too long
+    let content = result.raw_content;
+    if (content.length > maxContentLength) {
+      content = content.substring(0, maxContentLength) + '\n... [content truncated]';
+    }
+
+    context += `${content}\n\n`;
+  });
+
+  // Report any failures
+  if (extractResults.failed_results && extractResults.failed_results.length > 0) {
+    context += `\n⚠️ Failed to extract:\n`;
+    extractResults.failed_results.forEach(failed => {
+      context += `- ${failed.url}: ${failed.error}\n`;
+    });
+  }
+
+  // Add metadata
+  context += `\n---\n`;
+  context += `Successfully extracted: ${extractResults.results.length} URL(s)\n`;
+
+  if (extractResults.response_time) {
+    context += `Extract time: ${extractResults.response_time.toFixed(2)}s\n`;
+  }
+
+  return context;
+}
+
+/**
+ * Calculate cost for a Tavily Extract API call
+ * Pricing: 1 credit per 5 URLs (basic plan)
+ *
+ * @param urlCount - Number of URLs extracted
+ * @param extractDepth - Extract depth used ('basic' or 'advanced')
+ * @returns Estimated cost in USD
+ */
+export function calculateExtractCost(
+  urlCount: number,
+  extractDepth: 'basic' | 'advanced' = 'basic'
+): number {
+  // Basic plan: 1 credit per 5 URLs = ~$0.001 per 5 URLs
+  const CREDIT_COST = 0.001;
+  const URLS_PER_CREDIT = 5;
+  const ADVANCED_MULTIPLIER = 2;
+
+  const credits = Math.ceil(urlCount / URLS_PER_CREDIT);
+  const baseCost = credits * CREDIT_COST;
+
+  return extractDepth === 'advanced'
+    ? baseCost * ADVANCED_MULTIPLIER
+    : baseCost;
 }

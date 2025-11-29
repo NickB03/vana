@@ -9,10 +9,10 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
--- Enable RLS on the bucket
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- Note: RLS is already enabled on storage.objects by Supabase
 
 -- Policy: Allow authenticated users to upload to their session paths
+DROP POLICY IF EXISTS "Users can upload artifact bundles to their sessions" ON storage.objects;
 CREATE POLICY "Users can upload artifact bundles to their sessions"
 ON storage.objects
 FOR INSERT
@@ -27,6 +27,7 @@ WITH CHECK (
 );
 
 -- Policy: Allow service role full access (for Edge Functions)
+DROP POLICY IF EXISTS "Service role can manage artifact bundles" ON storage.objects;
 CREATE POLICY "Service role can manage artifact bundles"
 ON storage.objects
 FOR ALL
@@ -34,6 +35,7 @@ TO service_role
 USING (bucket_id = 'artifact-bundles');
 
 -- Policy: Allow users to read their own bundles via signed URLs
+DROP POLICY IF EXISTS "Users can read their artifact bundles" ON storage.objects;
 CREATE POLICY "Users can read their artifact bundles"
 ON storage.objects
 FOR SELECT
@@ -49,6 +51,7 @@ USING (
 
 -- Policy: Allow public read access for guest bundles via signed URLs
 -- (Guest bundles are managed by Edge Function with service_role)
+DROP POLICY IF EXISTS "Public read access for artifact bundles" ON storage.objects;
 CREATE POLICY "Public read access for artifact bundles"
 ON storage.objects
 FOR SELECT

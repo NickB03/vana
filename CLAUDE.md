@@ -1,4 +1,4 @@
-<!-- CLAUDE.md v2.5 | Last updated: 2025-11-28 | GLM-4.6 reasoning streaming documented -->
+<!-- CLAUDE.md v2.6 | Last updated: 2025-11-29 | Added GLM-4.6 API reference section -->
 
 # CLAUDE.md
 
@@ -230,6 +230,34 @@ Full schema: `supabase/migrations/`
 - **Prompts**: `system-prompt-inline.ts`, `system-prompt.txt`
 - **Integrations**: `tavily-client.ts` (web search)
 
+## GLM-4.6 API Reference
+
+GLM-4.6 powers artifact generation via Z.ai. Key implementation details:
+
+**API Endpoint**: `https://api.z.ai/api/coding/paas/v4/chat/completions` (Coding Plan only)
+
+**Critical Streaming Behavior**: GLM streams `reasoning_content` FIRST, then `content`:
+```
+1. [reasoning_content chunks] → thinking process (displayed in UI)
+2. [content chunks] → actual artifact code
+3. [DONE]
+```
+
+**Request Parameters**:
+```json
+{
+  "model": "glm-4.6",
+  "thinking": { "type": "enabled" },  // Required for reasoning
+  "stream": true,
+  "temperature": 1.0,  // GLM-recommended default
+  "max_tokens": 8000
+}
+```
+
+**Error Handling**: 429 = rate limited (check Retry-After header), 503 = retry with backoff
+
+**Full Documentation**: `.claude/docs/GLM-4.6-CAPABILITIES.md`
+
 ## Model Configuration System
 
 **Critical**: Never hardcode model names — use `MODELS.*` from `supabase/functions/_shared/config.ts`
@@ -389,8 +417,10 @@ supabase/
 
 ## Additional Resources
 
+- **GLM-4.6 Capabilities**: `.claude/docs/GLM-4.6-CAPABILITIES.md`
 - **Artifact Import Guide**: `.claude/artifact-import-restrictions.md`
 - **Chrome MCP Guide**: `.claude/CHROME_MCP_COMMANDS.md`
 - **README**: `README.md`
 - **Supabase Docs**: https://supabase.com/docs
 - **OpenRouter Docs**: https://openrouter.ai/docs
+- **Z.ai Docs**: https://docs.z.ai

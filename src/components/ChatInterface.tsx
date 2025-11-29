@@ -30,6 +30,7 @@ import { PromptInputControls } from "@/components/prompt-kit/prompt-input-contro
 import { ScrollButton } from "@/components/ui/scroll-button";
 import { Markdown } from "@/components/ui/markdown";
 import { useChatMessages, ChatMessage, type StreamProgress } from "@/hooks/useChatMessages";
+import { useStreamCancellation } from "@/hooks/useStreamCancellation";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ArtifactContainer as Artifact, ArtifactData } from "@/components/ArtifactContainer";
 import { MessageWithArtifacts } from "@/components/MessageWithArtifacts";
@@ -75,6 +76,7 @@ export function ChatInterface({
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { messages, isLoading, streamChat, deleteMessage, updateMessage } = useChatMessages(sessionId, { isGuest });
+  const { cancelStream, startStream, completeStream } = useStreamCancellation();
   const [localInput, setLocalInput] = useState("");
   const input = typeof parentInput === 'string' ? parentInput : localInput;
   const setInput = parentOnInputChange ?? setLocalInput;
@@ -130,6 +132,9 @@ export function ChatInterface({
     setImageMode(false);
     setArtifactMode(false);
 
+    // Start stream with cancellation support
+    const abortController = startStream();
+
     await streamChat(
       messageToSend,
       (chunk, progress) => {
@@ -150,12 +155,15 @@ export function ChatInterface({
           artifactDetected: false,
           percentage: 100
         });
+        completeStream();
       },
       currentArtifact && isEditingArtifact ? currentArtifact : undefined,
       shouldGenerateImage,
-      shouldGenerateArtifact
+      shouldGenerateArtifact,
+      0, // retryCount
+      abortController.signal
     );
-  }, [input, isLoading, isStreaming, setInput, streamChat, currentArtifact, isEditingArtifact, imageMode, artifactMode]);
+  }, [input, isLoading, isStreaming, setInput, streamChat, currentArtifact, isEditingArtifact, imageMode, artifactMode, startStream, completeStream]);
 
   // Reset when session changes
   useEffect(() => {
@@ -374,6 +382,9 @@ export function ChatInterface({
       setIsStreaming(true);
       setStreamingMessage("");
 
+      // Start stream with cancellation support
+      const abortController = startStream();
+
       await streamChat(
         userMessage.content,
         (chunk, progress) => {
@@ -391,10 +402,13 @@ export function ChatInterface({
             artifactDetected: false,
             percentage: 100
           });
+          completeStream();
         },
         currentArtifact && isEditingArtifact ? currentArtifact : undefined,
         false, // forceImageMode
-        wasArtifactRequest  // forceArtifactMode - route to /generate-artifact if this was an artifact request
+        wasArtifactRequest,  // forceArtifactMode - route to /generate-artifact if this was an artifact request
+        0, // retryCount
+        abortController.signal
       );
 
       toast({
@@ -409,7 +423,7 @@ export function ChatInterface({
         variant: "destructive"
       });
     }
-  }, [messages, isLoading, isStreaming, deleteMessage, streamChat, currentArtifact, isEditingArtifact]);
+  }, [messages, isLoading, isStreaming, deleteMessage, streamChat, currentArtifact, isEditingArtifact, startStream, completeStream]);
 
   const handleEditMessage = useCallback((messageId: string, content: string) => {
     setEditingMessageId(messageId);
@@ -613,6 +627,7 @@ export function ChatInterface({
                     reasoningSteps={streamProgress.reasoningSteps}
                     isStreaming={true}
                     onReasoningComplete={() => setReasoningComplete(true)}
+                    onStop={cancelStream}
                   />
                 </ReasoningErrorBoundary>
                 {/* Show skeleton while reasoning animates, then reveal response */}
@@ -673,6 +688,7 @@ export function ChatInterface({
                 isStreaming={isStreaming}
                 input={input}
                 onSend={() => handleSend()}
+                onStop={cancelStream}
                 showFileUpload={true}
                 fileInputRef={fileInputRef}
                 isUploadingFile={isUploadingFile}

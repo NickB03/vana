@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * Example Integration: Adaptive Model Selection in Chat Edge Function
  *

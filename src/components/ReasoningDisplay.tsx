@@ -9,6 +9,7 @@ import {
 import { Search, Lightbulb, Target, Sparkles, ChevronDown } from "lucide-react";
 import { ANIMATION_DURATIONS, TAILWIND_DURATIONS } from "@/utils/animationConstants";
 import { TextShimmer } from "@/components/prompt-kit/text-shimmer";
+import { ThinkingBar } from "@/components/prompt-kit/thinking-bar";
 
 interface ReasoningDisplayProps {
   // Support both old and new formats for backward compatibility
@@ -17,6 +18,8 @@ interface ReasoningDisplayProps {
   isStreaming?: boolean;
   /** Callback when reasoning animation completes - signals response can show */
   onReasoningComplete?: () => void;
+  /** Callback when user clicks stop button during streaming */
+  onStop?: () => void;
 }
 
 /**
@@ -71,6 +74,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   reasoningSteps,
   isStreaming,
   onReasoningComplete,
+  onStop,
 }: ReasoningDisplayProps) {
   // Expand/collapse state
   const [isExpanded, setIsExpanded] = useState(false);
@@ -246,7 +250,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   );
 
   const hasContent = validatedSteps && totalSections > 0;
-  const showSpinner = isStreaming && !validatedSteps;
+  const showThinkingBar = isStreaming && !validatedSteps;
   // Show shimmer effect when on the last section while still streaming
   // This indicates "working on artifact" state
   const isOnLastSection = hasContent && displayedSectionIndex === totalSections - 1;
@@ -254,24 +258,27 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
 
   return (
     <div className="w-full">
-      {/* Pill trigger - always the same transparent style */}
-      <button
-        className={pillBaseClasses}
-        onClick={() => hasContent && setIsExpanded(!isExpanded)}
-        aria-expanded={isExpanded}
-        aria-label={isExpanded ? "Hide reasoning" : "Show reasoning"}
-        type="button"
-        disabled={!hasContent}
-      >
-        {/* Left side: Icon + Text */}
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          {/* Spinner while loading, icon when we have content */}
-          {showSpinner ? (
-            <div
-              className="w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin shrink-0"
-              aria-hidden="true"
-            />
-          ) : IconComponent ? (
+      {/* Show ThinkingBar while waiting for reasoning data */}
+      {showThinkingBar ? (
+        <ThinkingBar
+          text="Thinking..."
+          stopLabel={onStop ? "Stop" : undefined}
+          onStop={onStop}
+        />
+      ) : (
+        /* Pill trigger - always the same transparent style */
+        <button
+          className={pillBaseClasses}
+          onClick={() => hasContent && setIsExpanded(!isExpanded)}
+          aria-expanded={isExpanded}
+          aria-label={isExpanded ? "Hide reasoning" : "Show reasoning"}
+          type="button"
+          disabled={!hasContent}
+        >
+          {/* Left side: Icon + Text */}
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            {/* Icon when we have content */}
+            {IconComponent ? (
             <IconComponent
               className={cn(
                 "size-4 shrink-0 text-muted-foreground/70",
@@ -350,6 +357,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
           )}
         </div>
       </button>
+      )}
 
       {/* Expanded content - full reasoning chain */}
       <div

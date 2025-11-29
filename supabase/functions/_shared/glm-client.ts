@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * GLM-4.6 API Client
  *

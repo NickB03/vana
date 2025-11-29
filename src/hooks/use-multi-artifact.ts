@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { MultiArtifactContext } from "@/contexts/MultiArtifactContext";
+import { MultiArtifactContext } from "@/contexts/MultiArtifactContextDef";
 
 /**
  * Hook to access multi-artifact context

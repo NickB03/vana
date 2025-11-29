@@ -1,7 +1,5 @@
-import { createContext, useContext, useEffect, useState } from "react";
-
-type ThemeMode = "light" | "dark" | "system";
-type ColorTheme = "default" | "ocean" | "sunset" | "forest" | "gemini" | "charcoal";
+import { useContext, useEffect, useState } from "react";
+import { ThemeProviderContext, ThemeMode, ColorTheme } from "@/components/ThemeContext";
 
 type ThemeProviderProps = {
   children: React.ReactNode;
@@ -9,26 +7,6 @@ type ThemeProviderProps = {
   defaultColorTheme?: ColorTheme;
   storageKey?: string;
 };
-
-type ThemeProviderState = {
-  theme: string; // For backwards compatibility
-  themeMode: ThemeMode;
-  colorTheme: ColorTheme;
-  setTheme: (theme: string) => void;
-  setThemeMode: (mode: ThemeMode) => void;
-  setColorTheme: (color: ColorTheme) => void;
-};
-
-const initialState: ThemeProviderState = {
-  theme: "system",
-  themeMode: "system",
-  colorTheme: "default",
-  setTheme: () => null,
-  setThemeMode: () => null,
-  setColorTheme: () => null,
-};
-
-export const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
 /**
  * Safe localStorage getter that handles Safari private mode and quota errors

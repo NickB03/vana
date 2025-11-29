@@ -21,12 +21,13 @@ ON CONFLICT (id) DO NOTHING;
 -- ROW-LEVEL SECURITY (RLS) POLICIES
 -- ============================================================================
 
--- Enable RLS on storage.objects table (should already be enabled, but ensure it)
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- Note: RLS is already enabled on storage.objects by Supabase
+-- We only create policies here
 
 -- ----------------------------------------------------------------------------
 -- Policy 1: SELECT - Users can view bundles for their own sessions
 -- ----------------------------------------------------------------------------
+DROP POLICY IF EXISTS "Users can view their own artifact bundles" ON storage.objects;
 CREATE POLICY "Users can view their own artifact bundles"
 ON storage.objects
 FOR SELECT
@@ -43,6 +44,7 @@ USING (
 -- ----------------------------------------------------------------------------
 -- Policy 2: INSERT - Users can upload bundles for their own sessions
 -- ----------------------------------------------------------------------------
+DROP POLICY IF EXISTS "Users can upload artifact bundles for their sessions" ON storage.objects;
 CREATE POLICY "Users can upload artifact bundles for their sessions"
 ON storage.objects
 FOR INSERT
@@ -60,6 +62,7 @@ WITH CHECK (
 -- Policy 3: UPDATE - Users can update bundles for their own sessions
 -- ----------------------------------------------------------------------------
 -- This enables re-bundling by allowing overwrites of existing bundles
+DROP POLICY IF EXISTS "Users can update their own artifact bundles" ON storage.objects;
 CREATE POLICY "Users can update their own artifact bundles"
 ON storage.objects
 FOR UPDATE
@@ -84,6 +87,7 @@ WITH CHECK (
 -- ----------------------------------------------------------------------------
 -- Policy 4: DELETE - Users can delete bundles for their own sessions
 -- ----------------------------------------------------------------------------
+DROP POLICY IF EXISTS "Users can delete their own artifact bundles" ON storage.objects;
 CREATE POLICY "Users can delete their own artifact bundles"
 ON storage.objects
 FOR DELETE

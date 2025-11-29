@@ -33,7 +33,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, WandSparkles, ImagePlus, ArrowUp, Send } from "lucide-react";
+import { Plus, WandSparkles, ImagePlus, ArrowUp, Send, StopCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PromptInputAction } from "@/components/prompt-kit/prompt-input";
 import React from "react";
@@ -57,6 +57,7 @@ export interface PromptInputControlsProps {
   isStreaming?: boolean;
   input?: string;
   onSend?: () => void;
+  onStop?: () => void; // Stream cancellation callback
 
   // File upload control (optional - only shown when provided)
   showFileUpload?: boolean;
@@ -85,6 +86,7 @@ export function PromptInputControls({
   isStreaming = false,
   input = "",
   onSend,
+  onStop,
   showFileUpload = false,
   fileInputRef,
   isUploadingFile = false,
@@ -203,27 +205,43 @@ export function PromptInputControls({
         )}
       </div>
 
-      {/* Right side - Send button */}
-      <PromptInputAction tooltip="Send message">
-        <Button
-          type="submit"
-          size="icon"
-          disabled={!input.trim() || isButtonLoading}
-          className="size-9 rounded-full hover:brightness-115 hover:-translate-y-1 transition-all duration-200"
-          style={{
-            background: 'linear-gradient(135deg, hsl(var(--accent-primary)), hsl(var(--accent-primary-bright)))',
-            boxShadow: '0 4px 14px hsl(var(--accent-primary) / 0.4)',
-          }}
-          onClick={onSend}
-          data-testid="send-button"
-        >
-          {isButtonLoading ? (
-            <div className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-          ) : (
-            <SendIcon size={18} className="text-white" />
-          )}
-        </Button>
-      </PromptInputAction>
+      {/* Right side - Send/Stop button */}
+      {isStreaming && onStop ? (
+        // Stop button during streaming
+        <PromptInputAction tooltip="Stop generating">
+          <Button
+            type="button"
+            size="icon"
+            className="size-9 rounded-full bg-destructive hover:bg-destructive/90 transition-all duration-200"
+            onClick={onStop}
+            data-testid="stop-button"
+          >
+            <StopCircle size={18} className="text-white" />
+          </Button>
+        </PromptInputAction>
+      ) : (
+        // Send button when not streaming
+        <PromptInputAction tooltip="Send message">
+          <Button
+            type="submit"
+            size="icon"
+            disabled={!input.trim() || isButtonLoading}
+            className="size-9 rounded-full hover:brightness-115 hover:-translate-y-1 transition-all duration-200"
+            style={{
+              background: 'linear-gradient(135deg, hsl(var(--accent-primary)), hsl(var(--accent-primary-bright)))',
+              boxShadow: '0 4px 14px hsl(var(--accent-primary) / 0.4)',
+            }}
+            onClick={onSend}
+            data-testid="send-button"
+          >
+            {isLoading ? (
+              <div className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            ) : (
+              <SendIcon size={18} className="text-white" />
+            )}
+          </Button>
+        </PromptInputAction>
+      )}
     </div>
   );
 }
