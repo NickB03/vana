@@ -15,7 +15,7 @@ interface State {
 }
 
 /**
- * Error Boundary for ReasoningIndicator component
+ * Error Boundary for ReasoningDisplay component
  * Prevents entire chat interface from crashing if reasoning display fails
  */
 export class ReasoningErrorBoundary extends Component<Props, State> {
@@ -44,9 +44,9 @@ export class ReasoningErrorBoundary extends Component<Props, State> {
     // logToSentry({
     //   error,
     //   errorInfo,
-    //   context: 'ChainOfThought rendering',
+    //   context: 'ReasoningDisplay rendering',
     //   tags: {
-    //     component: 'ReasoningIndicator',
+    //     component: 'ReasoningDisplay',
     //     severity: 'error',
     //   },
     // });

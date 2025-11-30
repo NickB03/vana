@@ -136,11 +136,21 @@ export default {
           },
         },
         "shimmer": {
-          from: {
+          "0%": {
             backgroundPosition: "200% 0",
           },
-          to: {
+          "100%": {
             backgroundPosition: "-200% 0",
+          },
+        },
+        "shimmer-pulse": {
+          "0%, 100%": {
+            backgroundPosition: "200% 0",
+            opacity: "0.8",
+          },
+          "50%": {
+            backgroundPosition: "0% 0",
+            opacity: "1",
           },
         },
       },
@@ -151,6 +161,7 @@ export default {
         "fade-in-left": "fade-in-left 0.4s ease-out forwards",
         "fade-out-right": "fade-out-right 0.4s ease-out forwards",
         "shimmer": "shimmer 4s infinite linear",
+        "shimmer-pulse": "shimmer-pulse 3s infinite ease-in-out",
       },
       typography: {
         DEFAULT: {

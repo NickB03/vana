@@ -497,6 +497,9 @@ serve(async (req) => {
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
+  <!-- PropTypes library (CRITICAL: Required by Recharts and other UMD libs) -->
+  <script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+
   <!-- Common libraries that GLM expects as globals -->
   <script crossorigin src="https://unpkg.com/framer-motion@11/dist/framer-motion.js"></script>
   <script crossorigin src="https://unpkg.com/canvas-confetti@1.9.3/dist/confetti.browser.js"></script>

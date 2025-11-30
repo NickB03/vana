@@ -484,22 +484,40 @@ describe('parseReasoningSteps', () => {
 
 describe('validateReasoningSteps', () => {
   describe('Structure Validation', () => {
-    it('validates array structure', () => {
-      const nonArray = 'not an array';
+    it('rejects non-object input', () => {
+      const nonObject = 'not an object';
 
       expect(() => {
-        validateReasoningSteps(nonArray as any);
+        validateReasoningSteps(nonObject as any);
+      }).toThrow('must be an object');
+    });
+
+    it('rejects object without steps property', () => {
+      const noSteps = { summary: 'some summary' };
+
+      expect(() => {
+        validateReasoningSteps(noSteps as any);
+      }).toThrow('must have steps array');
+    });
+
+    it('rejects non-array steps property', () => {
+      const nonArraySteps = { steps: 'not an array' };
+
+      expect(() => {
+        validateReasoningSteps(nonArraySteps as any);
       }).toThrow('must be an array');
     });
 
     it('validates individual step structure', () => {
-      const steps = [
-        {
-          phase: 'research',
-          title: 'Valid step title',
-          items: ['Item 1'],
-        },
-      ];
+      const steps = {
+        steps: [
+          {
+            phase: 'research',
+            title: 'Valid step title',
+            items: ['Item 1'],
+          },
+        ],
+      };
 
       // Should not throw
       validateReasoningSteps(steps);
@@ -508,13 +526,15 @@ describe('validateReasoningSteps', () => {
 
   describe('XSS Prevention', () => {
     it('blocks <script> tags in title', () => {
-      const xssTitle = [
-        {
-          phase: 'research',
-          title: '<script>alert("XSS")</script>',
-          items: ['Safe item'],
-        },
-      ];
+      const xssTitle = {
+        steps: [
+          {
+            phase: 'research',
+            title: '<script>alert("XSS")</script>',
+            items: ['Safe item'],
+          },
+        ],
+      };
 
       expect(() => {
         validateReasoningSteps(xssTitle);
@@ -522,13 +542,15 @@ describe('validateReasoningSteps', () => {
     });
 
     it('blocks <iframe> tags in title', () => {
-      const iframeTitle = [
-        {
-          phase: 'research',
-          title: 'Title with <iframe src="evil.com">',
-          items: ['Safe item'],
-        },
-      ];
+      const iframeTitle = {
+        steps: [
+          {
+            phase: 'research',
+            title: 'Title with <iframe src="evil.com">',
+            items: ['Safe item'],
+          },
+        ],
+      };
 
       expect(() => {
         validateReasoningSteps(iframeTitle);
@@ -536,13 +558,15 @@ describe('validateReasoningSteps', () => {
     });
 
     it('blocks javascript: protocol', () => {
-      const jsProtocol = [
-        {
-          phase: 'research',
-          title: 'javascript:alert("XSS")',
-          items: ['Safe item'],
-        },
-      ];
+      const jsProtocol = {
+        steps: [
+          {
+            phase: 'research',
+            title: 'javascript:alert("XSS")',
+            items: ['Safe item'],
+          },
+        ],
+      };
 
       expect(() => {
         validateReasoningSteps(jsProtocol);
@@ -550,13 +574,15 @@ describe('validateReasoningSteps', () => {
     });
 
     it('blocks onerror handlers in items', () => {
-      const onerrorItem = [
-        {
-          phase: 'research',
-          title: 'Safe title here for testing',
-          items: ['<img src=x onerror="malicious()">'],
-        },
-      ];
+      const onerrorItem = {
+        steps: [
+          {
+            phase: 'research',
+            title: 'Safe title here for testing',
+            items: ['<img src=x onerror="malicious()">'],
+          },
+        ],
+      };
 
       expect(() => {
         validateReasoningSteps(onerrorItem);
@@ -564,13 +590,15 @@ describe('validateReasoningSteps', () => {
     });
 
     it('blocks onload handlers', () => {
-      const onloadItem = [
-        {
-          phase: 'research',
-          title: 'Safe title for onload test',
-          items: ['<body onload="alert(1)">'],
-        },
-      ];
+      const onloadItem = {
+        steps: [
+          {
+            phase: 'research',
+            title: 'Safe title for onload test',
+            items: ['<body onload="alert(1)">'],
+          },
+        ],
+      };
 
       expect(() => {
         validateReasoningSteps(onloadItem);
@@ -578,13 +606,15 @@ describe('validateReasoningSteps', () => {
     });
 
     it('blocks onclick handlers', () => {
-      const onclickItem = [
-        {
-          phase: 'research',
-          title: 'Safe title for onclick test',
-          items: ['<div onclick="malicious()">'],
-        },
-      ];
+      const onclickItem = {
+        steps: [
+          {
+            phase: 'research',
+            title: 'Safe title for onclick test',
+            items: ['<div onclick="malicious()">'],
+          },
+        ],
+      };
 
       expect(() => {
         validateReasoningSteps(onclickItem);
@@ -592,26 +622,30 @@ describe('validateReasoningSteps', () => {
     });
 
     it('allows safe content', () => {
-      const safeSteps = [
-        {
-          phase: 'research',
-          title: 'Safe title with normal text',
-          items: ['Safe item with normal content'],
-        },
-      ];
+      const safeSteps = {
+        steps: [
+          {
+            phase: 'research',
+            title: 'Safe title with normal text',
+            items: ['Safe item with normal content'],
+          },
+        ],
+      };
 
       // Should not throw
       validateReasoningSteps(safeSteps);
     });
 
     it('allows HTML entities', () => {
-      const htmlEntities = [
-        {
-          phase: 'research',
-          title: 'Title with &lt;safe&gt; entities',
-          items: ['Item with &amp; &quot; entities'],
-        },
-      ];
+      const htmlEntities = {
+        steps: [
+          {
+            phase: 'research',
+            title: 'Title with &lt;safe&gt; entities',
+            items: ['Item with &amp; &quot; entities'],
+          },
+        ],
+      };
 
       // Should not throw
       validateReasoningSteps(htmlEntities);
@@ -620,13 +654,15 @@ describe('validateReasoningSteps', () => {
 
   describe('Length Validation', () => {
     it('enforces maximum title length', () => {
-      const longTitle = [
-        {
-          phase: 'research',
-          title: 'A'.repeat(501),
-          items: ['Item 1'],
-        },
-      ];
+      const longTitle = {
+        steps: [
+          {
+            phase: 'research',
+            title: 'A'.repeat(501),
+            items: ['Item 1'],
+          },
+        ],
+      };
 
       expect(() => {
         validateReasoningSteps(longTitle);
@@ -634,13 +670,15 @@ describe('validateReasoningSteps', () => {
     });
 
     it('enforces maximum item length', () => {
-      const longItem = [
-        {
-          phase: 'research',
-          title: 'Step with very long item',
-          items: ['A'.repeat(2001)],
-        },
-      ];
+      const longItem = {
+        steps: [
+          {
+            phase: 'research',
+            title: 'Step with very long item',
+            items: ['A'.repeat(2001)],
+          },
+        ],
+      };
 
       expect(() => {
         validateReasoningSteps(longItem);
@@ -648,26 +686,30 @@ describe('validateReasoningSteps', () => {
     });
 
     it('accepts title at exact max length', () => {
-      const maxLengthTitle = [
-        {
-          phase: 'research',
-          title: 'A'.repeat(500),
-          items: ['Item 1'],
-        },
-      ];
+      const maxLengthTitle = {
+        steps: [
+          {
+            phase: 'research',
+            title: 'A'.repeat(500),
+            items: ['Item 1'],
+          },
+        ],
+      };
 
       // Should not throw
       validateReasoningSteps(maxLengthTitle);
     });
 
     it('accepts item at exact max length', () => {
-      const maxLengthItem = [
-        {
-          phase: 'research',
-          title: 'Step with max length item',
-          items: ['A'.repeat(2000)],
-        },
-      ];
+      const maxLengthItem = {
+        steps: [
+          {
+            phase: 'research',
+            title: 'Step with max length item',
+            items: ['A'.repeat(2000)],
+          },
+        ],
+      };
 
       // Should not throw
       validateReasoningSteps(maxLengthItem);
@@ -676,13 +718,15 @@ describe('validateReasoningSteps', () => {
 
   describe('Type Validation', () => {
     it('validates step phase enum', () => {
-      const invalidPhase = [
-        {
-          phase: 'invalid_phase',
-          title: 'Step with invalid phase',
-          items: ['Item 1'],
-        },
-      ];
+      const invalidPhase = {
+        steps: [
+          {
+            phase: 'invalid_phase',
+            title: 'Step with invalid phase',
+            items: ['Item 1'],
+          },
+        ],
+      };
 
       expect(() => {
         validateReasoningSteps(invalidPhase);
@@ -690,14 +734,16 @@ describe('validateReasoningSteps', () => {
     });
 
     it('validates icon enum', () => {
-      const invalidIcon = [
-        {
-          phase: 'research',
-          title: 'Step with invalid icon',
-          icon: 'invalid_icon',
-          items: ['Item 1'],
-        },
-      ];
+      const invalidIcon = {
+        steps: [
+          {
+            phase: 'research',
+            title: 'Step with invalid icon',
+            icon: 'invalid_icon',
+            items: ['Item 1'],
+          },
+        ],
+      };
 
       expect(() => {
         validateReasoningSteps(invalidIcon);
@@ -705,13 +751,15 @@ describe('validateReasoningSteps', () => {
     });
 
     it('validates items array type', () => {
-      const nonStringItem = [
-        {
-          phase: 'research',
-          title: 'Step with non-string item',
-          items: [123, 'Valid item'],
-        },
-      ];
+      const nonStringItem = {
+        steps: [
+          {
+            phase: 'research',
+            title: 'Step with non-string item',
+            items: [123, 'Valid item'],
+          },
+        ],
+      };
 
       expect(() => {
         validateReasoningSteps(nonStringItem as any);
@@ -721,13 +769,15 @@ describe('validateReasoningSteps', () => {
 
   describe('Edge Cases', () => {
     it('handles empty strings in items', () => {
-      const emptyItem = [
-        {
-          phase: 'research',
-          title: 'Step with empty item',
-          items: [''],
-        },
-      ];
+      const emptyItem = {
+        steps: [
+          {
+            phase: 'research',
+            title: 'Step with empty item',
+            items: [''],
+          },
+        ],
+      };
 
       // Empty strings violate the Zod schema which requires min length 1
       expect(() => {
@@ -736,13 +786,15 @@ describe('validateReasoningSteps', () => {
     });
 
     it('handles null in items array', () => {
-      const nullItem = [
-        {
-          phase: 'research',
-          title: 'Step with null item',
-          items: [null as any],
-        },
-      ];
+      const nullItem = {
+        steps: [
+          {
+            phase: 'research',
+            title: 'Step with null item',
+            items: [null as any],
+          },
+        ],
+      };
 
       expect(() => {
         validateReasoningSteps(nullItem);
@@ -750,13 +802,15 @@ describe('validateReasoningSteps', () => {
     });
 
     it('handles mixed valid and invalid items', () => {
-      const mixedItems = [
-        {
-          phase: 'research',
-          title: 'Step with mixed items',
-          items: ['Valid item', '<script>alert(1)</script>'],
-        },
-      ];
+      const mixedItems = {
+        steps: [
+          {
+            phase: 'research',
+            title: 'Step with mixed items',
+            items: ['Valid item', '<script>alert(1)</script>'],
+          },
+        ],
+      };
 
       expect(() => {
         validateReasoningSteps(mixedItems);
@@ -764,23 +818,25 @@ describe('validateReasoningSteps', () => {
     });
 
     it('validates all steps in array', () => {
-      const multipleSteps = [
-        {
-          phase: 'research',
-          title: 'First valid step',
-          items: ['Item 1'],
-        },
-        {
-          phase: 'analysis',
-          title: 'Second valid step',
-          items: ['Item 2'],
-        },
-        {
-          phase: 'invalid_phase', // Invalid
-          title: 'Third invalid step',
-          items: ['Item 3'],
-        },
-      ];
+      const multipleSteps = {
+        steps: [
+          {
+            phase: 'research',
+            title: 'First valid step',
+            items: ['Item 1'],
+          },
+          {
+            phase: 'analysis',
+            title: 'Second valid step',
+            items: ['Item 2'],
+          },
+          {
+            phase: 'invalid_phase', // Invalid
+            title: 'Third invalid step',
+            items: ['Item 3'],
+          },
+        ],
+      };
 
       expect(() => {
         validateReasoningSteps(multipleSteps as any);

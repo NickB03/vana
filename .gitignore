@@ -120,3 +120,4 @@ __diff_output__/
 screenshots/
 .screenshots/
 supabase/.env.local
+supabase/functions/deno.lock

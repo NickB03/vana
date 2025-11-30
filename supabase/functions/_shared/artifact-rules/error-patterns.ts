@@ -39,7 +39,8 @@ export const ERROR_PATTERNS: Record<string, ErrorPattern> = {
   },
 
   'import-error': {
-    triggers: ['cannot find module', 'import', 'module not found', 'unexpected token import'],
+    // More specific triggers to reduce false positives (avoid matching just "import")
+    triggers: ['cannot find module', 'module not found', 'failed to resolve import', 'unexpected token import', 'unable to resolve module'],
     patterns: [
       'Remove @/ imports - not available in sandbox',
       'Check if library available via CDN (React, Recharts, Lucide, etc.)',
@@ -94,18 +95,41 @@ export const ERROR_PATTERNS: Record<string, ErrorPattern> = {
 };
 
 /**
- * Categorizes error message and returns relevant patterns
+ * Categorizes error message and returns relevant patterns using confidence scoring.
+ * Longer trigger matches = more specific = higher confidence.
  */
 export function getRelevantPatterns(errorMessage: string): string[] {
   const lowerError = errorMessage.toLowerCase();
+  const matches: Array<{ category: string; score: number; patterns: string[]; matchedTriggers: string[] }> = [];
 
-  for (const [_category, { triggers, patterns }] of Object.entries(ERROR_PATTERNS)) {
-    if (triggers.some(trigger => lowerError.includes(trigger))) {
-      return patterns;
+  for (const [category, { triggers, patterns }] of Object.entries(ERROR_PATTERNS)) {
+    // Calculate match score based on trigger specificity
+    let score = 0;
+    const matchedTriggers: string[] = [];
+
+    for (const trigger of triggers) {
+      if (lowerError.includes(trigger)) {
+        // Longer triggers = more specific = higher score
+        score += trigger.length;
+        matchedTriggers.push(trigger);
+      }
+    }
+
+    if (score > 0) {
+      matches.push({ category, score, patterns, matchedTriggers });
     }
   }
 
+  // Return patterns from highest-scoring category
+  if (matches.length > 0) {
+    matches.sort((a, b) => b.score - a.score);
+    const topMatch = matches[0];
+    console.log(`[Error Pattern] Using "${topMatch.category}" patterns (score: ${topMatch.score}, triggers: ${topMatch.matchedTriggers.join(', ')})`);
+    return topMatch.patterns;
+  }
+
   // Generic patterns if no specific match
+  console.log('[Error Pattern] No specific match, using generic patterns');
   return [
     'Check syntax: balanced braces, parentheses, quotes',
     'Verify variable names and scope',

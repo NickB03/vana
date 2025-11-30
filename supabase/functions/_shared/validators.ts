@@ -11,6 +11,9 @@
 import { VALIDATION_LIMITS, MESSAGE_ROLES } from "./config.ts";
 import { ValidationError } from "./error-handler.ts";
 
+// Re-export ValidationError for convenience
+export { ValidationError };
+
 /**
  * Sanitize user input to prevent XSS attacks
  *
@@ -166,8 +169,8 @@ export class MessageValidator implements Validator<any> {
  * Composite validator for complete message array validation
  */
 export class MessagesValidator implements Validator<any> {
-  private arrayValidator = new MessageArrayValidator();
-  private messageValidator = new MessageValidator();
+  private arrayValidator: MessageArrayValidator = new MessageArrayValidator();
+  private messageValidator: MessageValidator = new MessageValidator();
 
   validate(messages: any): asserts messages is Message[] {
     // First validate the array structure
@@ -258,7 +261,7 @@ export class ImageRequestValidator implements Validator<any> {
  * Validates chat request structure
  */
 export class ChatRequestValidator implements Validator<any> {
-  private messagesValidator = new MessagesValidator();
+  private messagesValidator: MessagesValidator = new MessagesValidator();
 
   validate(data: any): asserts data is ChatRequest {
     if (!data || typeof data !== "object") {
@@ -368,7 +371,7 @@ export class RequestValidator {
    * Validate and return typed data (convenience method)
    */
   static validateChat(data: any): ChatRequest {
-    const validator = RequestValidator.forChat();
+    const validator: ChatRequestValidator = RequestValidator.forChat();
     validator.validate(data);
     return data;
   }
@@ -377,7 +380,7 @@ export class RequestValidator {
    * Validate and return typed image request (convenience method)
    */
   static validateImage(data: any): ImageRequest {
-    const validator = RequestValidator.forImage();
+    const validator: ImageRequestValidator = RequestValidator.forImage();
     validator.validate(data);
     return data;
   }

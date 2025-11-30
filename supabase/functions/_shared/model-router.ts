@@ -175,6 +175,6 @@ export function getCostSavings(
  * @returns true if model is valid, false otherwise
  */
 export function isValidModel(model: string): boolean {
-  const validModels = Object.values(MODELS);
+  const validModels: readonly string[] = Object.values(MODELS);
   return validModels.includes(model);
 }

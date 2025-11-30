@@ -67,6 +67,25 @@ const PROBLEMATIC_PATTERNS = [
     pattern: /import\s+React\s+from\s+['"]react['"]/gi,
     message: 'React imports not needed. Use: const { useState, useEffect } = React;',
     severity: 'warning' as const
+  },
+  {
+    // GLM generates invalid "const * as X from 'pkg'" syntax - must be caught and fixed
+    // Uses \s* at start to handle indentation, optional semicolon and trailing whitespace
+    pattern: /^\s*const\s*\*\s*as\s+\w+\s+from\s+['"][^'"]+['"]\s*;?\s*$/gm,
+    message: 'Invalid import syntax: "const * as" should be "import * as"',
+    severity: 'error' as const
+  },
+  {
+    // GLM generates unquoted package names like "from React;" instead of "from 'react';"
+    pattern: /from\s+React\s*;/g,
+    message: 'Unquoted package name in import statement',
+    severity: 'error' as const
+  },
+  {
+    // Also catch unquoted ReactDOM
+    pattern: /from\s+ReactDOM\s*;/g,
+    message: 'Unquoted package name in import statement',
+    severity: 'error' as const
   }
 ];
 
@@ -157,6 +176,27 @@ export function autoFixArtifactCode(code: string): { fixed: string; changes: str
   if (reactImportPattern.test(code)) {
     fixed = fixed.replace(reactImportPattern, '');
     changes.push("Removed unnecessary React import (React is global)");
+  }
+
+  // Fix: Transform malformed GLM syntax "const * as X from 'pkg'" to "import * as X from 'pkg'"
+  // This catches the issue at source instead of downstream in bundle-artifact or ArtifactRenderer
+  // Pattern aligned with detection pattern in PROBLEMATIC_PATTERNS for consistency
+  const malformedImportPattern = /^(\s*)const\s*\*\s*as\s+(\w+)\s+from\s+(['"][^'"]+['"])\s*;?\s*$/gm;
+  if (malformedImportPattern.test(fixed)) {
+    // Reset regex after test() which advances lastIndex
+    malformedImportPattern.lastIndex = 0;
+    fixed = fixed.replace(malformedImportPattern, '$1import * as $2 from $3;');
+    changes.push("Transformed malformed 'const * as' syntax to proper import statement");
+  }
+
+  // Fix: Unquoted package names in imports (GLM bug: "from React;" → "from 'react';")
+  if (/from\s+React\s*;/.test(fixed)) {
+    fixed = fixed.replace(/from\s+React\s*;/g, "from 'react';");
+    changes.push("Added quotes to unquoted React package name");
+  }
+  if (/from\s+ReactDOM\s*;/.test(fixed)) {
+    fixed = fixed.replace(/from\s+ReactDOM\s*;/g, "from 'react-dom';");
+    changes.push("Added quotes to unquoted ReactDOM package name");
   }
 
   // Fix: Auto-fix immutability violations (direct array assignments)
@@ -260,6 +300,15 @@ function detectMutationPatterns(code: string): ValidationIssue[] {
       pattern.lastIndex = 0;
 
       if (pattern.test(cleanedLine)) {
+        // Special case: Allow mutations on variables that are clearly copies
+        // e.g., newBoard[i] = 'X' is fine if newBoard was created from [...board]
+        // This is a heuristic based on naming convention (new*, copy*, updated*)
+        const isCopyMutation = /\b(new|copy|updated|cloned)\w*\[/.test(cleanedLine);
+        if (isCopyMutation && message.includes('Direct array assignment')) {
+          // Skip - this is likely an intentional immutable pattern
+          continue;
+        }
+
         issues.push({
           severity: 'error',
           message,
@@ -486,7 +535,9 @@ export function validateArtifactCode(code: string, artifactType: string = 'react
     issue.message.includes("'arguments'") ||
     issue.message.includes("React imports") ||
     issue.message.includes("Direct array assignment") ||
-    issue.message.includes("mutates the original array")
+    issue.message.includes("mutates the original array") ||
+    issue.message.includes("const * as") ||
+    issue.message.includes("Unquoted package name")
   );
 
   return {

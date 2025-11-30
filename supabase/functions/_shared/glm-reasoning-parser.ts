@@ -129,7 +129,6 @@ function extractSections(text: string): ReasoningSection[] {
   const sections: ReasoningSection[] = [];
 
   let currentSection: Partial<ReasoningSection> | null = null;
-  let lineIndex = 0;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -197,8 +196,6 @@ function extractSections(text: string): ReasoningSection[] {
         lineStart: i,
       };
     }
-
-    lineIndex++;
   }
 
   // Add final section
@@ -382,8 +379,9 @@ function generateTitle(section: ReasoningSection, phase: ReasoningPhase): string
 
 /**
  * Generate a concise summary from all sections
+ * Returns undefined if no sections are provided (optional field)
  */
-function generateSummary(sections: ReasoningSection[]): string {
+function generateSummary(sections: ReasoningSection[]): string | undefined {
   if (sections.length === 0) {
     return undefined;
   }

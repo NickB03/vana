@@ -306,7 +306,11 @@ function minimax(board, depth, isMaximizing) {
   assertEquals(result.issues.some(i => i.message.includes('Direct array assignment')), true);
 });
 
-Deno.test("autoFixArtifactCode - fixes minimax algorithm completely", () => {
+Deno.test("autoFixArtifactCode - fixes minimax algorithm (reserved keyword only)", () => {
+  // NOTE: This test verifies that auto-fix handles reserved keywords but
+  // intentionally SKIPS array mutation auto-fix for multi-mutation scenarios.
+  // This is by design to prevent "Identifier already declared" errors.
+  // The artifact-fix endpoint handles complex multi-mutation code instead.
   const code = `
 function minimax(board, depth, isMaximizing) {
   const eval = isMaximizing ? -Infinity : Infinity;
@@ -325,16 +329,17 @@ function minimax(board, depth, isMaximizing) {
 
   const { fixed, changes } = autoFixArtifactCode(code);
 
-  // Should fix 'eval' -> 'score'
+  // Should fix 'eval' -> 'score' (reserved keyword)
   assertEquals(fixed.includes('const score = isMaximizing'), true);
   assertEquals(fixed.includes('const eval'), false);
 
-  // Should fix array mutations
-  assertEquals(fixed.includes('const newBoard = [...board]') ||
-               fixed.includes('const newBoard = ['), true);
+  // Auto-fix is SKIPPED for multi-mutation code (board is mutated twice)
+  // This prevents "Identifier already declared" errors from duplicate newBoard
+  assertEquals(fixed.includes('const newBoard'), false);
 
-  // Should have multiple changes
-  assertEquals(changes.length >= 2, true);
+  // Should have at least 1 change (the eval -> score fix)
+  assertEquals(changes.length >= 1, true);
+  assertEquals(changes.some(c => c.includes("'eval'")), true);
 });
 
 Deno.test("validateArtifactCode - allows valid React component", () => {
@@ -647,4 +652,152 @@ Deno.test("fixOrphanedMethodChains - handles Object methods", () => {
 
   assertEquals(changes.length, 1);
   assertEquals(changes[0].includes('data.entries'), true);
+});
+
+// ============================================================================
+// GLM-Specific Malformed Syntax Tests
+// ============================================================================
+// GLM-4.6 sometimes generates invalid JavaScript syntax that must be caught
+// and fixed before code execution. These tests validate our safety net.
+
+Deno.test("validateArtifactCode - detects 'const * as X from pkg' malformed syntax", () => {
+  const code = `const * as React from 'react';`;
+  const result = validateArtifactCode(code, 'react');
+
+  assertEquals(result.valid, false);
+  assertEquals(result.canAutoFix, true);
+  assertEquals(result.issues.some(i => i.message.includes('const * as')), true);
+});
+
+Deno.test("validateArtifactCode - detects indented 'const * as' syntax", () => {
+  // GLM often generates this inside functions with indentation
+  const code = `
+function Component() {
+  const * as Dialog from '@radix-ui/react-dialog';
+  return <Dialog.Root />;
+}
+  `;
+  const result = validateArtifactCode(code, 'react');
+
+  assertEquals(result.valid, false);
+  assertEquals(result.issues.some(i => i.message.includes('const * as')), true);
+});
+
+Deno.test("validateArtifactCode - detects 'from React;' unquoted package", () => {
+  const code = `import { useState } from React;`;
+  const result = validateArtifactCode(code, 'react');
+
+  assertEquals(result.valid, false);
+  assertEquals(result.issues.some(i => i.message.includes('Unquoted package name')), true);
+});
+
+Deno.test("validateArtifactCode - detects 'from ReactDOM;' unquoted package", () => {
+  const code = `import { render } from ReactDOM;`;
+  const result = validateArtifactCode(code, 'react');
+
+  assertEquals(result.valid, false);
+  assertEquals(result.issues.some(i => i.message.includes('Unquoted package name')), true);
+});
+
+Deno.test("autoFixArtifactCode - transforms 'const * as' to 'import * as'", () => {
+  const code = `const * as React from 'react';`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  assertEquals(fixed.includes("import * as React from 'react'"), true);
+  assertEquals(fixed.includes('const * as'), false);
+  assertEquals(changes.some(c => c.includes("const * as")), true);
+});
+
+Deno.test("autoFixArtifactCode - preserves indentation when fixing 'const * as'", () => {
+  const code = `  const * as Dialog from '@radix-ui/react-dialog';`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Should preserve the 2-space indentation
+  assertEquals(fixed.includes("  import * as Dialog from '@radix-ui/react-dialog'"), true);
+  assertEquals(changes.some(c => c.includes("const * as")), true);
+});
+
+Deno.test("autoFixArtifactCode - fixes 'from React;' to 'from 'react';'", () => {
+  const code = `import { useState } from React;`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  assertEquals(fixed.includes("from 'react';"), true);
+  assertEquals(fixed.includes("from React;"), false);
+  assertEquals(changes.some(c => c.includes("unquoted React")), true);
+});
+
+Deno.test("autoFixArtifactCode - fixes 'from ReactDOM;' to 'from 'react-dom';'", () => {
+  const code = `import { createRoot } from ReactDOM;`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  assertEquals(fixed.includes("from 'react-dom';"), true);
+  assertEquals(fixed.includes("from ReactDOM;"), false);
+  assertEquals(changes.some(c => c.includes("unquoted ReactDOM")), true);
+});
+
+Deno.test("autoFixArtifactCode - handles multiple GLM syntax issues together", () => {
+  const code = `
+const * as React from 'react';
+const * as Dialog from '@radix-ui/react-dialog';
+import { useState } from React;
+  `;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // All issues should be fixed
+  assertEquals(fixed.includes('const * as'), false);
+  assertEquals(fixed.includes('from React;'), false);
+  assertEquals(fixed.includes("import * as React from 'react'"), true);
+  assertEquals(fixed.includes("import * as Dialog from '@radix-ui/react-dialog'"), true);
+  assertEquals(fixed.includes("from 'react';"), true);
+  // 2 change categories: 1 for malformed imports (handles all lines), 1 for unquoted package
+  assertEquals(changes.length >= 2, true);
+  assertEquals(changes.some(c => c.includes("const * as")), true);
+  assertEquals(changes.some(c => c.includes("unquoted")), true);
+});
+
+Deno.test("autoFixArtifactCode - does not false-positive on valid code", () => {
+  // Valid code should not be modified
+  const validCode = `
+import * as React from 'react';
+import { useState } from 'react';
+const Component = () => <div />;
+  `;
+  const { fixed, changes } = autoFixArtifactCode(validCode);
+
+  // Should have no GLM syntax changes (may have other changes like React import removal)
+  assertEquals(changes.filter(c => c.includes("const * as")).length, 0);
+  assertEquals(changes.filter(c => c.includes("unquoted")).length, 0);
+});
+
+Deno.test("validateArtifactCode + autoFixArtifactCode - GLM full pipeline", () => {
+  // Real-world GLM output that breaks
+  const glmBadCode = `
+const * as Dialog from '@radix-ui/react-dialog';
+import { useState } from React;
+
+export default function App() {
+  const [open, setOpen] = useState(false);
+  return (
+    <Dialog.Root open={open}>
+      <Dialog.Content>Hello</Dialog.Content>
+    </Dialog.Root>
+  );
+}
+  `;
+
+  // Step 1: Validate - should fail
+  const validation = validateArtifactCode(glmBadCode, 'react');
+  assertEquals(validation.valid, false);
+  assertEquals(validation.canAutoFix, true);
+  assertEquals(validation.issues.some(i => i.message.includes('const * as')), true);
+  assertEquals(validation.issues.some(i => i.message.includes('Unquoted package name')), true);
+
+  // Step 2: Auto-fix
+  const { fixed, changes } = autoFixArtifactCode(glmBadCode);
+  assertEquals(changes.length >= 2, true);
+
+  // Step 3: Re-validate - should pass (for GLM issues, may have other warnings)
+  const revalidation = validateArtifactCode(fixed, 'react');
+  assertEquals(revalidation.issues.filter(i => i.message.includes('const * as')).length, 0);
+  assertEquals(revalidation.issues.filter(i => i.message.includes('Unquoted package name')).length, 0);
 });

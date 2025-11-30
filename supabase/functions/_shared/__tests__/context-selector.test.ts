@@ -10,7 +10,7 @@ import {
   type ContextSelectionResult,
 } from '../context-selector.ts';
 
-const createMessage = (role: string, content: string) => ({
+const createMessage = (role: "user" | "assistant" | "system", content: string) => ({
   role,
   content,
 });

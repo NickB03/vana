@@ -313,8 +313,8 @@ Deno.test("RateLimiter should prioritize API throttle over user limits", () => {
 // ==================== Message Customization Tests ====================
 
 Deno.test("RateLimiter should provide different messages for guest vs authenticated", () => {
-  const guestMessage = "Rate limit exceeded. Please sign in to continue using the chat.";
-  const authMessage = "Rate limit exceeded. Please try again later.";
+  const guestMessage: string = "Rate limit exceeded. Please sign in to continue using the chat.";
+  const authMessage: string = "Rate limit exceeded. Please try again later.";
 
   assert(guestMessage.includes("sign in"));
   assert(authMessage.includes("try again"));

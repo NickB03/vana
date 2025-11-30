@@ -194,7 +194,7 @@ describe('ReasoningDisplay', () => {
   });
 
   describe('backward compatibility', () => {
-    it('renders plain text reasoning when no structured steps', () => {
+    it('renders plain text reasoning directly (no expand needed)', () => {
       render(
         <ReasoningDisplay
           reasoning="This is plain text reasoning"
@@ -203,11 +203,8 @@ describe('ReasoningDisplay', () => {
         />
       );
 
-      const triggerButton = screen.getByRole('button', { name: /show reasoning|hide reasoning/i });
-      triggerButton.click();
-
-      // Text appears in both trigger (truncated preview) and content (full text)
-      // Use getAllByText since it's shown in multiple places
+      // Plain text reasoning displays directly without needing to expand
+      // (no button role since there's nothing to expand/collapse)
       const textElements = screen.getAllByText('This is plain text reasoning');
       expect(textElements.length).toBeGreaterThanOrEqual(1);
     });
@@ -238,72 +235,7 @@ describe('ReasoningDisplay', () => {
     });
   });
 
-  describe('onReasoningComplete callback', () => {
-    it('calls onReasoningComplete when streaming stops', () => {
-      const onReasoningComplete = vi.fn();
-
-      const { rerender } = render(
-        <ReasoningDisplay
-          reasoning={null}
-          reasoningSteps={mockReasoningSteps}
-          isStreaming={true}
-          onReasoningComplete={onReasoningComplete}
-        />
-      );
-
-      // Advance through animation
-      act(() => {
-        vi.advanceTimersByTime(10000); // Enough time for all animations
-      });
-
-      // Stop streaming
-      rerender(
-        <ReasoningDisplay
-          reasoning={null}
-          reasoningSteps={mockReasoningSteps}
-          isStreaming={false}
-          onReasoningComplete={onReasoningComplete}
-        />
-      );
-
-      // Callback should have been called
-      expect(onReasoningComplete).toHaveBeenCalled();
-    });
-
-    it('calls onReasoningComplete after animation reaches last section', () => {
-      const onReasoningComplete = vi.fn();
-
-      const { rerender } = render(
-        <ReasoningDisplay
-          reasoning={null}
-          reasoningSteps={mockReasoningSteps}
-          isStreaming={true}
-          onReasoningComplete={onReasoningComplete}
-        />
-      );
-
-      // Animation timing: SECTION_DISPLAY_MS (2500) + FADE_DURATION_MS (400) per section
-      // For 3 sections: need to go through fade-in, visible, fade-out cycles
-      act(() => {
-        // First section: fade-in (400ms) + visible (2500ms) + fade-out (400ms) = 3300ms
-        // Second section: fade-in (400ms) + visible (2500ms) + fade-out (400ms) = 3300ms
-        // Third section: fade-in (400ms) + visible (2500ms) + animation complete
-        vi.advanceTimersByTime(12000); // Give plenty of time for all animations
-      });
-
-      // Callback fires when reaching last section and visible duration completes
-      // OR when streaming stops - let's stop streaming to trigger the fallback
-      rerender(
-        <ReasoningDisplay
-          reasoning={null}
-          reasoningSteps={mockReasoningSteps}
-          isStreaming={false}
-          onReasoningComplete={onReasoningComplete}
-        />
-      );
-
-      // The callback should be called when streaming stops
-      expect(onReasoningComplete).toHaveBeenCalled();
-    });
-  });
+  // Note: onReasoningComplete callback removed in UX optimization (2025-11-29)
+  // Content now shows immediately without waiting for reasoning animation to complete
+  // This provides better perceived performance and honest UX
 });

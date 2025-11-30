@@ -390,7 +390,32 @@ supabase/
 | "useRef" null error | Dual React instances → check esm.sh uses `?external=react,react-dom` → verify import map shims |
 | "Cannot find module" | tsconfig.json paths → Vitest aliases → `npm install` |
 | Edge Function timeout | Function size (<10MB) → Deno URLs → `--no-verify-jwt` → quotas |
-| Rate limiting errors | 20 req/5h limit → `guest_rate_limits` table → authenticate to bypass |
+| Rate limiting errors | See "Local Dev Rate Limiting" below |
+
+### Local Dev Rate Limiting
+
+**Important**: When modifying `supabase/.env.local`, the Docker-based edge runtime does NOT automatically reload environment variables.
+
+**Symptoms**: Rate limit exceeded errors despite having high limits in `.env.local` (e.g., `RATE_LIMIT_ARTIFACT_GUEST_MAX=500`)
+
+**Fix**: Restart the edge runtime to pick up new env vars:
+```bash
+supabase stop && supabase start
+# OR restart just the edge runtime:
+docker restart supabase_edge_runtime_vznhbocnuykdmjvujaka
+```
+
+**Verify env vars are loaded**:
+```bash
+docker inspect supabase_edge_runtime_vznhbocnuykdmjvujaka | grep -E "RATE_LIMIT"
+```
+
+**Reset rate limit counters** (if needed):
+```bash
+docker exec -i supabase_db_vznhbocnuykdmjvujaka psql -U postgres -c "DELETE FROM guest_rate_limits; DELETE FROM api_throttle_state;"
+```
+
+**Note**: Chat and artifact endpoints share the same `guest_rate_limits` table but use different max values. If env vars aren't loaded, artifact requests fail after just 5 combined requests (production default) instead of 500 (local dev).
 
 ## Performance Targets
 

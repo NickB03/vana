@@ -6,18 +6,16 @@ import {
   parseReasoningSteps,
   ReasoningStep,
 } from "@/types/reasoning";
-import { Search, Lightbulb, Target, Sparkles, ChevronDown } from "lucide-react";
+import { Search, Lightbulb, Target, Sparkles, ChevronDown, StopCircle } from "lucide-react";
 import { ANIMATION_DURATIONS, TAILWIND_DURATIONS } from "@/utils/animationConstants";
 import { TextShimmer } from "@/components/prompt-kit/text-shimmer";
-import { ThinkingBar } from "@/components/prompt-kit/thinking-bar";
+import { useReasoningTimer } from "@/hooks/useReasoningTimer";
 
 interface ReasoningDisplayProps {
   // Support both old and new formats for backward compatibility
   reasoning?: string | null;
   reasoningSteps?: StructuredReasoning | unknown | null;
   isStreaming?: boolean;
-  /** Callback when reasoning animation completes - signals response can show */
-  onReasoningComplete?: () => void;
   /** Callback when user clicks stop button during streaming */
   onStop?: () => void;
 }
@@ -34,11 +32,14 @@ const ICON_MAP = {
 
 /**
  * Animation timing constants
+ * OPTIMIZED: Since backend sends all reasoning at once (not true streaming),
+ * we show the final state immediately instead of fake progressive animation.
+ * This provides honest, fast UX without artificial delays.
  */
 const ANIMATION = {
-  SECTION_DISPLAY_MS: 2500,                           // How long each section shows before transitioning
+  SECTION_DISPLAY_MS: 800,                            // Reduced from 2500ms - faster step transitions
   FADE_DURATION_MS: ANIMATION_DURATIONS.moderate * 1000, // 300ms
-  CROSSFADE_DURATION_MS: 200,                         // Quick crossfade between sections
+  CROSSFADE_DURATION_MS: 150,                         // Reduced from 200ms - snappier transitions
 } as const;
 
 /**
@@ -73,7 +74,6 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   reasoning,
   reasoningSteps,
   isStreaming,
-  onReasoningComplete,
   onStop,
 }: ReasoningDisplayProps) {
   // Expand/collapse state
@@ -88,7 +88,9 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   // Track all active timeouts for proper cleanup
   const timeoutRefs = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
   const wasStreamingRef = useRef(false);
-  const completedCallbackRef = useRef(false);
+
+  // Timer for reasoning duration (Claude-style)
+  const elapsedTime = useReasoningTimer(isStreaming ?? false);
 
   // Validate and parse reasoning steps
   const validatedSteps = useMemo(() => {
@@ -139,69 +141,68 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
       setDisplayedSectionIndex(0);
       setIsTransitioning(false);
       setIsExpanded(false);
-      completedCallbackRef.current = false;
       clearTimeouts();
     }
     wasStreamingRef.current = isStreaming ?? false;
   }, [isStreaming, clearTimeouts]);
 
-  // Main animation loop - cycles through sections with crossfade
-  // Frontend-driven animation: backend sends all steps at once, we animate progressively
+  // Track if we already have an animation scheduled to prevent race conditions
+  const animationScheduledRef = useRef(false);
+
+  // Handle streaming end - show final state
   useEffect(() => {
-    clearTimeouts();
+    if (!isStreaming && validatedSteps && totalSections > 0) {
+      // Streaming ended - jump to final state immediately
+      clearTimeouts();
+      animationScheduledRef.current = false;
+      setCurrentSectionIndex(totalSections - 1);
+      setDisplayedSectionIndex(totalSections - 1);
+      setIsTransitioning(false);
+    }
+  }, [isStreaming, validatedSteps, totalSections, clearTimeouts]);
 
-    // Not streaming - show final state immediately
-    if (!isStreaming) {
-      if (validatedSteps && totalSections > 0) {
-        setCurrentSectionIndex(totalSections - 1);
-        setDisplayedSectionIndex(totalSections - 1);
-      }
-      // Call completion callback
-      if (!completedCallbackRef.current && validatedSteps && onReasoningComplete) {
-        completedCallbackRef.current = true;
-        onReasoningComplete();
-      }
-      return clearTimeouts;
+  // Main animation loop - cycles through sections with crossfade
+  // IMPORTANT: This effect only schedules ONE timeout at a time and tracks it
+  // to prevent race conditions from prop updates during streaming
+  useEffect(() => {
+    // Skip if not streaming or no data
+    if (!isStreaming || !validatedSteps || totalSections === 0) {
+      return;
     }
 
-    // No data yet - nothing to animate
-    if (!validatedSteps || totalSections === 0) {
-      return clearTimeouts;
+    // Skip if we're in a transition or already have an animation scheduled
+    if (isTransitioning || animationScheduledRef.current) {
+      return;
     }
 
-    // FRONTEND-DRIVEN PROGRESSIVE ANIMATION:
-    // Backend sends all reasoning steps at once (to avoid blocking the stream).
-    // We animate through them progressively on the frontend for smooth UX.
-    // Each step displays for SECTION_DISPLAY_MS before transitioning to next.
+    // Skip if we've reached the last step
+    if (currentSectionIndex >= totalSections - 1) {
+      return;
+    }
 
-    // If we haven't reached the last step yet, schedule transition to next
-    if (currentSectionIndex < totalSections - 1 && !isTransitioning) {
+    // Schedule the next step transition
+    animationScheduledRef.current = true;
+
+    const timeoutId = createTrackedTimeout(() => {
+      // Start crossfade transition
+      setIsTransitioning(true);
+
       createTrackedTimeout(() => {
-        // Start crossfade transition
-        setIsTransitioning(true);
+        setCurrentSectionIndex(prev => Math.min(prev + 1, totalSections - 1));
+        setDisplayedSectionIndex(prev => Math.min(prev + 1, totalSections - 1));
+        setIsTransitioning(false);
+        animationScheduledRef.current = false; // Allow next animation to be scheduled
+      }, ANIMATION.CROSSFADE_DURATION_MS);
+    }, ANIMATION.SECTION_DISPLAY_MS);
 
-        // After crossfade animation, advance to next step
-        createTrackedTimeout(() => {
-          setCurrentSectionIndex(prev => Math.min(prev + 1, totalSections - 1));
-          setDisplayedSectionIndex(prev => Math.min(prev + 1, totalSections - 1));
-          setIsTransitioning(false);
-        }, ANIMATION.CROSSFADE_DURATION_MS);
-      }, ANIMATION.SECTION_DISPLAY_MS);
-    }
-
-    // Call completion callback when we reach the last step during streaming
-    if (currentSectionIndex === totalSections - 1 && !completedCallbackRef.current) {
-      // Delay completion to allow last step to display briefly
-      createTrackedTimeout(() => {
-        if (!completedCallbackRef.current && onReasoningComplete) {
-          completedCallbackRef.current = true;
-          onReasoningComplete();
-        }
-      }, ANIMATION.SECTION_DISPLAY_MS);
-    }
-
-    return clearTimeouts;
-  }, [isStreaming, validatedSteps, totalSections, currentSectionIndex, isTransitioning, onReasoningComplete, clearTimeouts, createTrackedTimeout]);
+    // Cleanup on unmount - always clear timeout to prevent memory leaks
+    // and state updates on unmounted components
+    return () => {
+      clearTimeout(timeoutId);
+      timeoutRefs.current.delete(timeoutId);
+      animationScheduledRef.current = false;
+    };
+  }, [isStreaming, validatedSteps, totalSections, currentSectionIndex, isTransitioning, createTrackedTimeout]);
 
   // Get current section to display
   const currentSection = validatedSteps?.steps[displayedSectionIndex];
@@ -250,38 +251,44 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   );
 
   const hasContent = validatedSteps && totalSections > 0;
+  // Show thinking bar (spinner) only on initial "Thinking..." state
   const showThinkingBar = isStreaming && !validatedSteps;
-  // Show shimmer effect when on the last section while still streaming
-  // This indicates "working on artifact" state
-  const isOnLastSection = hasContent && displayedSectionIndex === totalSections - 1;
-  const showShimmer = isStreaming && isOnLastSection;
+  // Show shimmer during ALL streaming states (both "Thinking..." and phase transitions)
+  const showShimmer = isStreaming;
 
   return (
     <div className="w-full">
-      {/* Show ThinkingBar while waiting for reasoning data */}
-      {showThinkingBar ? (
-        <ThinkingBar
-          text="Thinking..."
-          stopLabel={onStop ? "Stop" : undefined}
-          onStop={onStop}
-        />
-      ) : (
-        /* Pill trigger - always the same transparent style */
-        <button
-          className={pillBaseClasses}
-          onClick={() => hasContent && setIsExpanded(!isExpanded)}
-          aria-expanded={isExpanded}
-          aria-label={isExpanded ? "Hide reasoning" : "Show reasoning"}
-          type="button"
-          disabled={!hasContent}
-        >
-          {/* Left side: Icon + Text */}
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            {/* Icon when we have content */}
-            {IconComponent ? (
+      {/* Unified pill - same container throughout, smooth state transitions */}
+      <div
+        className={cn(
+          pillBaseClasses,
+          hasContent && "cursor-pointer"
+        )}
+        onClick={() => hasContent && setIsExpanded(!isExpanded)}
+        role={hasContent ? "button" : undefined}
+        tabIndex={hasContent ? 0 : undefined}
+        onKeyDown={hasContent ? (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        } : undefined}
+        aria-expanded={hasContent ? isExpanded : undefined}
+        aria-label={hasContent ? (isExpanded ? "Hide reasoning" : "Show reasoning") : undefined}
+      >
+        {/* Left side: Icon/Spinner + Text */}
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {/* Show spinner while waiting for data, icon when we have content */}
+          {showThinkingBar ? (
+            // Orange pulsing spinner (Claude-style) while thinking
+            <div
+              className="w-4 h-4 border-2 border-orange-400/30 border-t-orange-500 rounded-full animate-spin shrink-0"
+              aria-hidden="true"
+            />
+          ) : IconComponent ? (
             <IconComponent
               className={cn(
-                "size-4 shrink-0 text-muted-foreground/70",
+                "size-4 shrink-0 text-orange-500",
                 "transition-opacity",
                 TAILWIND_DURATIONS.fast,
                 isTransitioning && "opacity-50"
@@ -290,7 +297,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
             />
           ) : null}
 
-          {/* Text with crossfade animation - shimmer on last phase */}
+          {/* Text with smooth transitions - shimmer during ALL streaming states */}
           {showShimmer ? (
             <TextShimmer
               className={cn(
@@ -299,18 +306,19 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
                 TAILWIND_DURATIONS.fast,
                 isTransitioning && "opacity-50"
               )}
-              duration={2}
-              spread={25}
+              pulse
+              duration={3}
+              spread={30}
             >
               {getPillText()}
             </TextShimmer>
           ) : (
             <span
               className={cn(
-                "flex-1 text-sm text-muted-foreground line-clamp-1",
-                "transition-opacity",
-                TAILWIND_DURATIONS.fast,
-                isTransitioning && "opacity-50"
+                "flex-1 text-sm line-clamp-1",
+                "text-muted-foreground",
+                "transition-all",
+                TAILWIND_DURATIONS.moderate
               )}
             >
               {getPillText()}
@@ -318,29 +326,62 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
           )}
         </div>
 
-        {/* Right side: Progress dots (streaming) or Chevron (expandable) */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        {/* Right side: Timer, Stop button (thinking), Progress dots (streaming), or Chevron (expandable) */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Timer display (Claude-style) - shows during active reasoning with orange accent */}
+          {elapsedTime && isStreaming && hasContent && (
+            <span className="text-xs text-orange-500 font-mono tabular-nums">
+              {elapsedTime}
+            </span>
+          )}
+
+          {/* Stop button while waiting for reasoning data */}
+          {showThinkingBar && onStop && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onStop();
+              }}
+              className={cn(
+                "flex items-center gap-1.5 px-2 py-1",
+                "text-xs text-muted-foreground",
+                "rounded-md border border-border/40",
+                "transition-colors",
+                "hover:bg-muted/20 hover:text-foreground"
+              )}
+              aria-label="Stop thinking"
+              type="button"
+            >
+              <StopCircle className="size-3" aria-hidden="true" />
+              <span>Stop</span>
+            </button>
+          )}
+
           {/* Progress dots during streaming - decorative visual indicator */}
-          {isStreaming && hasContent && (
+          {!showThinkingBar && isStreaming && hasContent && (
             <div
               className="flex gap-1 mr-1"
               aria-hidden="true"
               title={`Step ${displayedSectionIndex + 1} of ${totalSections}`}
             >
-              {validatedSteps.steps.map((_, idx) => (
-                <div
-                  key={idx}
-                  className={cn(
-                    "w-1.5 h-1.5 rounded-full transition-colors",
-                    TAILWIND_DURATIONS.moderate,
-                    idx === displayedSectionIndex
-                      ? "bg-foreground/60"
-                      : idx < displayedSectionIndex
-                      ? "bg-foreground/30"
-                      : "bg-muted-foreground/20"
-                  )}
-                />
-              ))}
+              {validatedSteps.steps.map((_, idx) => {
+                // Progress dot styling based on position relative to current step
+                const getDotColor = () => {
+                  if (idx === displayedSectionIndex) return "bg-foreground/60";
+                  if (idx < displayedSectionIndex) return "bg-foreground/30";
+                  return "bg-muted-foreground/20";
+                };
+                return (
+                  <div
+                    key={idx}
+                    className={cn(
+                      "w-1.5 h-1.5 rounded-full transition-colors",
+                      TAILWIND_DURATIONS.moderate,
+                      getDotColor()
+                    )}
+                  />
+                );
+              })}
             </div>
           )}
 
@@ -356,8 +397,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
             />
           )}
         </div>
-      </button>
-      )}
+      </div>
 
       {/* Expanded content - full reasoning chain */}
       <div

@@ -103,9 +103,9 @@ serve(async (req) => {
       { data: apiThrottleResult, error: apiThrottleError },
       rateLimitResult
     ] = await Promise.all([
-      // Check Kimi API throttle (10 RPM for artifact generation - stricter than chat)
+      // Check GLM-4.6 API throttle (10 RPM for artifact generation - stricter than chat)
       serviceClient.rpc("check_api_throttle", {
-        p_api_name: "kimi-k2",
+        p_api_name: "glm-4.6",
         p_max_requests: RATE_LIMITS.ARTIFACT.API_THROTTLE.MAX_REQUESTS,
         p_window_seconds: RATE_LIMITS.ARTIFACT.API_THROTTLE.WINDOW_SECONDS
       }),
@@ -141,7 +141,7 @@ serve(async (req) => {
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
       );
     } else if (apiThrottleResult && !apiThrottleResult.allowed) {
-      console.warn(`[${requestId}] 🚨 API throttle exceeded for Kimi K2 artifact generation`);
+      console.warn(`[${requestId}] 🚨 API throttle exceeded for GLM-4.6 artifact generation`);
       return new Response(
         JSON.stringify({
           error: "API rate limit exceeded. Please try again in a moment.",
@@ -445,7 +445,13 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
         reasoning: glmReasoning,           // Raw GLM reasoning text
         reasoningSteps,                     // Structured format for UI
         prompt,
-        requestId
+        requestId,
+        // Include validation metadata for downstream components
+        validation: {
+          autoFixed: !validation.valid && validation.canAutoFix,
+          issueCount: validation.issues.length,
+          issueSummary: validation.issues.map(i => i.message)
+        }
       }),
       {
         headers: {

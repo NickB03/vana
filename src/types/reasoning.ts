@@ -59,20 +59,38 @@ export function parseReasoningSteps(data: unknown): StructuredReasoning | null {
 }
 
 /**
- * Validate reasoning steps on the server side
- * Throws error if validation fails (for API endpoints)
+ * Validate structured reasoning on the client side
+ * Throws error if validation fails (for strict validation)
+ *
+ * Note: This validates the full StructuredReasoning object (with steps array and optional summary),
+ * matching the backend's validateReasoningSteps signature in reasoning-generator.ts
  */
-export function validateReasoningSteps(steps: unknown): asserts steps is ReasoningStep[] {
+export function validateReasoningSteps(reasoning: unknown): asserts reasoning is StructuredReasoning {
+  if (!reasoning || typeof reasoning !== 'object') {
+    throw new Error('Invalid reasoning: must be an object');
+  }
+
+  if (!('steps' in reasoning)) {
+    throw new Error('Invalid reasoning: must have steps array');
+  }
+
+  const { steps } = reasoning as { steps: unknown };
+
   if (!Array.isArray(steps)) {
     throw new Error('Reasoning steps must be an array');
   }
 
-  for (const step of steps) {
-    // Reject HTML/JavaScript injection attempts
-    const dangerousPatterns = [
-      /<script|<iframe|javascript:|onerror=|onload=|onclick=/i,
-    ];
+  // XSS prevention: detect dangerous patterns (expanded list)
+  const dangerousPatterns = [
+    /<script|<iframe|javascript:|onerror=|onload=|onclick=/i,
+    /<svg[^>]*onload/i,
+    /<img[^>]*onerror/i,
+    /onfocus=|onmouseover=|onmouseout=/i,
+    /<embed|<object/i,
+    /data:text\/html/i,
+  ];
 
+  for (const step of steps) {
     if (typeof step.title === 'string' && dangerousPatterns.some(pattern => pattern.test(step.title))) {
       throw new Error('Invalid reasoning step content detected (potential XSS)');
     }
@@ -99,9 +117,9 @@ export function validateReasoningSteps(steps: unknown): asserts steps is Reasoni
     }
   }
 
-  // Validate with Zod schema
-  const result = z.array(ReasoningStepSchema).safeParse(steps);
+  // Validate with Zod schema for full StructuredReasoning
+  const result = StructuredReasoningSchema.safeParse(reasoning);
   if (!result.success) {
-    throw new Error(`Reasoning steps validation failed: ${result.error.message}`);
+    throw new Error(`Reasoning validation failed: ${result.error.message}`);
   }
 }

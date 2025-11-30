@@ -106,8 +106,10 @@ export function useChatMessages(
       ? parseReasoningSteps(reasoningSteps)
       : null;
 
-    if (validatedReasoningSteps === false || (reasoningSteps && !validatedReasoningSteps)) {
-      console.warn("Invalid reasoning steps, using null instead", reasoningSteps);
+    // parseReasoningSteps returns StructuredReasoning | null, never false
+    // Log warning if validation failed (reasoningSteps provided but validation returned null)
+    if (reasoningSteps && !validatedReasoningSteps) {
+      console.warn("[saveMessage] Invalid reasoning steps, using null instead:", reasoningSteps);
     }
 
     // For guest users (explicit isGuest flag OR no sessionId), add message to local state only
@@ -312,6 +314,7 @@ export function useChatMessages(
           console.log(`🧠 [useChatMessages] Reasoning ready with ${reasoningData.reasoning.steps.length} steps - streaming now`);
 
           // Stream reasoning steps progressively while artifact generates
+          // OPTIMIZED: Faster transition (300ms) for smoother perceived performance
           const steps = reasoningData.reasoning.steps;
           for (let i = 0; i < steps.length; i++) {
             const step = steps[i];
@@ -331,9 +334,9 @@ export function useChatMessages(
               reasoningSteps: partialReasoning,
             });
 
-            // Brief pause between steps for animation effect
+            // Brief pause between steps for animation effect (reduced from 600ms)
             if (i < steps.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 600));
+              await new Promise(resolve => setTimeout(resolve, 300));
             }
           }
         }
@@ -579,10 +582,11 @@ export function useChatMessages(
             // Character-by-character streaming is handled in ReasoningDisplay component
             // ========================================
             if (parsed.type === 'reasoning') {
-              // Check sequence number to prevent out-of-order updates
-              // Use < not <= to allow the first event with sequence 0
-              if (parsed.sequence < lastSequence) {
-                console.warn('[StreamProgress] Ignoring out-of-order reasoning event');
+              // Check sequence number to prevent out-of-order AND duplicate updates
+              // Use <= to skip duplicates (same sequence processed twice)
+              // but only after we've received at least one event (reasoningSteps exists)
+              if (reasoningSteps && parsed.sequence <= lastSequence) {
+                console.warn('[StreamProgress] Ignoring out-of-order or duplicate reasoning event');
                 continue;
               }
               lastSequence = parsed.sequence;
@@ -631,9 +635,15 @@ export function useChatMessages(
               const progress = updateProgress();
               onDelta(content, progress);
             }
-          } catch {
-            textBuffer = line + "\n" + textBuffer;
-            break;
+          } catch (parseError) {
+            // Only recover from JSON parse errors - other errors should propagate
+            if (parseError instanceof SyntaxError) {
+              // Incomplete JSON chunk - prepend back to buffer for next iteration
+              textBuffer = line + "\n" + textBuffer;
+              break;
+            }
+            // Re-throw unexpected errors to avoid silent failures
+            throw parseError;
           }
         }
       }

@@ -37,13 +37,13 @@ Deno.test("ValidationError from validator should convert to 400 response", async
 
   try {
     RequestValidator.validateChat({ messages: [] });
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      const response = errors.validation(error.message, error.details);
+  } catch (e) {
+    if (e instanceof ValidationError) {
+      const response = errors.validation(e.message, e.details);
       const body = await getResponseBody(response);
 
       assertEquals(response.status, HTTP_STATUS.BAD_REQUEST);
-      assertEquals(body.error, error.message);
+      assertEquals(body.error, e.message);
       assertEquals(body.requestId, "test-123");
     }
   }
@@ -60,9 +60,9 @@ Deno.test("Multiple validation errors should be caught and formatted", async () 
   for (const invalidRequest of invalidRequests) {
     try {
       RequestValidator.validateChat(invalidRequest);
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        const response = errors.validation(error.message, error.details);
+    } catch (e) {
+      if (e instanceof ValidationError) {
+        const response = errors.validation(e.message, e.details);
         assertEquals(response.status, HTTP_STATUS.BAD_REQUEST);
       }
     }
@@ -74,9 +74,9 @@ Deno.test("Validator error details should be included in response", async () => 
 
   try {
     RequestValidator.validateChat({ messages: [] });
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      const response = errors.validation(error.message, error.details);
+  } catch (e) {
+    if (e instanceof ValidationError) {
+      const response = errors.validation(e.message, e.details);
       const body = await getResponseBody(response);
 
       assertExists(body.details);
@@ -146,9 +146,9 @@ Deno.test("Invalid chat request should fail validation with clear error", async 
   try {
     RequestValidator.validateChat(invalidRequest);
     assert(false, "Should have thrown ValidationError");
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      const response = errors.validation(error.message, error.details);
+  } catch (e) {
+    if (e instanceof ValidationError) {
+      const response = errors.validation(e.message, e.details);
       const body = await getResponseBody(response);
 
       assert(body.error.includes("Empty"));
@@ -177,9 +177,9 @@ Deno.test("Invalid image request should fail validation with clear error", async
   try {
     RequestValidator.validateImage(invalidRequest);
     assert(false, "Should have thrown ValidationError");
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      const response = errors.validation(error.message, error.details);
+  } catch (e) {
+    if (e instanceof ValidationError) {
+      const response = errors.validation(e.message, e.details);
       const body = await getResponseBody(response);
 
       assert(body.error.includes("Empty"));
@@ -293,13 +293,13 @@ Deno.test("Validation error should support streaming format", async () => {
 
   try {
     RequestValidator.validateChat({ messages: [] });
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      const response = errors.toStreamResponse(error.message);
+  } catch (e) {
+    if (e instanceof ValidationError) {
+      const response = errors.toStreamResponse(e.message);
       const text = await response.text();
 
       assert(text.includes("data:"));
-      assert(text.includes(error.message));
+      assert(text.includes(e.message));
       assert(text.includes("[DONE]"));
       assertEquals(response.headers.get("Content-Type"), "text/event-stream");
     }
@@ -355,9 +355,9 @@ Deno.test("Chat request with invalid artifact should fail validation", async () 
   try {
     RequestValidator.validateChat(request);
     assert(false, "Should have thrown ValidationError");
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      const response = errors.validation(error.message, error.details);
+  } catch (e) {
+    if (e instanceof ValidationError) {
+      const response = errors.validation(e.message, e.details);
       assertEquals(response.status, HTTP_STATUS.BAD_REQUEST);
     }
   }
@@ -385,9 +385,9 @@ Deno.test("Request over max message length should fail validation", async () => 
   try {
     RequestValidator.validateChat(request);
     assert(false, "Should have thrown ValidationError");
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      const response = errors.validation(error.message, error.details);
+  } catch (e) {
+    if (e instanceof ValidationError) {
+      const response = errors.validation(e.message, e.details);
       const body = await getResponseBody(response);
 
       assert(body.error.includes("too long"));
@@ -494,10 +494,10 @@ Deno.test("Failed validation should prevent rate limit check", async () => {
 
     // Rate limit check would happen here
     rateLimitChecked = true;
-  } catch (error) {
-    if (error instanceof ValidationError) {
+  } catch (e) {
+    if (e instanceof ValidationError) {
       // Return error without checking rate limit
-      const response = errors.validation(error.message, error.details);
+      const response = errors.validation(e.message, e.details);
       assertEquals(response.status, HTTP_STATUS.BAD_REQUEST);
     }
   }

@@ -82,8 +82,6 @@ export function ChatInterface({
   const setInput = parentOnInputChange ?? setLocalInput;
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
-  // Track when reasoning animation completes - response waits until true
-  const [reasoningComplete, setReasoningComplete] = useState(false);
   const [streamProgress, setStreamProgress] = useState<StreamProgress>({
     stage: "analyzing",
     message: "Analyzing request...",
@@ -118,7 +116,6 @@ export function ChatInterface({
     setInput("");
     setIsStreaming(true);
     setStreamingMessage("");
-    setReasoningComplete(false); // Reset reasoning state for new message
 
     // Capture mode states and reset them after sending
     const shouldGenerateImage = imageMode;
@@ -626,27 +623,18 @@ export function ChatInterface({
                     reasoning={streamProgress.message}
                     reasoningSteps={streamProgress.reasoningSteps}
                     isStreaming={true}
-                    onReasoningComplete={() => setReasoningComplete(true)}
                     onStop={cancelStream}
                   />
                 </ReasoningErrorBoundary>
-                {/* Show skeleton while reasoning animates, then reveal response */}
-                {!reasoningComplete && streamProgress.reasoningSteps ? (
-                  // Show skeleton while reasoning animation plays
-                  <div className="space-y-2 pt-2">
-                    <div className="animate-pulse bg-muted rounded h-4 w-full" />
-                    <div className="animate-pulse bg-muted rounded h-4 w-5/6" />
-                    <div className="animate-pulse bg-muted rounded h-4 w-4/5" />
-                  </div>
-                ) : streamingMessage ? (
-                  // Show actual response after reasoning completes
+                {/* Show content immediately - reasoning is supplementary context, not blocking */}
+                {streamingMessage && (
                   <MessageWithArtifacts
                     content={streamingMessage}
                     sessionId={sessionId || ''}
                     onArtifactOpen={handleArtifactOpen}
                     searchResults={streamProgress.searchResults}
                   />
-                ) : null}
+                )}
               </div>
             </MessageComponent>
           )}

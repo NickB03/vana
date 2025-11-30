@@ -10,7 +10,7 @@
  * - Boundary value testing
  */
 
-import { assertEquals, assertThrows, assert } from "@std/assert";
+import { assertEquals, assertThrows, assert, assertExists } from "@std/assert";
 import {
   MessageArrayValidator,
   MessageValidator,
@@ -36,7 +36,7 @@ import {
 // ==================== MessageArrayValidator Tests ====================
 
 Deno.test("MessageArrayValidator should reject null messages", () => {
-  const validator = new MessageArrayValidator();
+  const validator: MessageArrayValidator = new MessageArrayValidator();
 
   assertThrows(
     () => validator.validate(null),
@@ -46,7 +46,7 @@ Deno.test("MessageArrayValidator should reject null messages", () => {
 });
 
 Deno.test("MessageArrayValidator should reject undefined messages", () => {
-  const validator = new MessageArrayValidator();
+  const validator: MessageArrayValidator = new MessageArrayValidator();
 
   assertThrows(
     () => validator.validate(undefined),
@@ -56,7 +56,7 @@ Deno.test("MessageArrayValidator should reject undefined messages", () => {
 });
 
 Deno.test("MessageArrayValidator should reject non-array messages", () => {
-  const validator = new MessageArrayValidator();
+  const validator: MessageArrayValidator = new MessageArrayValidator();
 
   assertThrows(
     () => validator.validate({ not: "an array" }),
@@ -66,7 +66,7 @@ Deno.test("MessageArrayValidator should reject non-array messages", () => {
 });
 
 Deno.test("MessageArrayValidator should reject empty array", () => {
-  const validator = new MessageArrayValidator();
+  const validator: MessageArrayValidator = new MessageArrayValidator();
 
   assertThrows(
     () => validator.validate([]),
@@ -76,7 +76,7 @@ Deno.test("MessageArrayValidator should reject empty array", () => {
 });
 
 Deno.test("MessageArrayValidator should reject arrays exceeding MAX_MESSAGES", () => {
-  const validator = new MessageArrayValidator();
+  const validator: MessageArrayValidator = new MessageArrayValidator();
   const tooManyMessages = Array(VALIDATION_LIMITS.MAX_MESSAGES_PER_CONVERSATION + 1).fill({
     role: "user",
     content: "test"
@@ -90,7 +90,7 @@ Deno.test("MessageArrayValidator should reject arrays exceeding MAX_MESSAGES", (
 });
 
 Deno.test("MessageArrayValidator should accept valid message array", () => {
-  const validator = new MessageArrayValidator();
+  const validator: MessageArrayValidator = new MessageArrayValidator();
   const validMessages = [{ role: "user", content: "Hello" }];
 
   // Should not throw
@@ -98,7 +98,7 @@ Deno.test("MessageArrayValidator should accept valid message array", () => {
 });
 
 Deno.test("MessageArrayValidator should accept array at max boundary", () => {
-  const validator = new MessageArrayValidator();
+  const validator: MessageArrayValidator = new MessageArrayValidator();
   const maxMessages = Array(VALIDATION_LIMITS.MAX_MESSAGES_PER_CONVERSATION).fill({
     role: "user",
     content: "test"
@@ -111,7 +111,7 @@ Deno.test("MessageArrayValidator should accept array at max boundary", () => {
 // ==================== MessageValidator Tests ====================
 
 Deno.test("MessageValidator should reject non-object message", () => {
-  const validator = new MessageValidator();
+  const validator: MessageValidator = new MessageValidator();
 
   assertThrows(
     () => validator.validate("not an object"),
@@ -121,7 +121,7 @@ Deno.test("MessageValidator should reject non-object message", () => {
 });
 
 Deno.test("MessageValidator should reject null message", () => {
-  const validator = new MessageValidator();
+  const validator: MessageValidator = new MessageValidator();
 
   assertThrows(
     () => validator.validate(null),
@@ -131,7 +131,7 @@ Deno.test("MessageValidator should reject null message", () => {
 });
 
 Deno.test("MessageValidator should reject message without role", () => {
-  const validator = new MessageValidator();
+  const validator: MessageValidator = new MessageValidator();
 
   assertThrows(
     () => validator.validate({ content: "Hello" }),
@@ -141,7 +141,7 @@ Deno.test("MessageValidator should reject message without role", () => {
 });
 
 Deno.test("MessageValidator should reject message with non-string role", () => {
-  const validator = new MessageValidator();
+  const validator: MessageValidator = new MessageValidator();
 
   assertThrows(
     () => validator.validate({ role: 123, content: "Hello" }),
@@ -151,7 +151,7 @@ Deno.test("MessageValidator should reject message with non-string role", () => {
 });
 
 Deno.test("MessageValidator should reject unknown role", () => {
-  const validator = new MessageValidator();
+  const validator: MessageValidator = new MessageValidator();
 
   assertThrows(
     () => validator.validate({ role: "unknown", content: "Hello" }),
@@ -161,7 +161,7 @@ Deno.test("MessageValidator should reject unknown role", () => {
 });
 
 Deno.test("MessageValidator should include index in error message", () => {
-  const validator = new MessageValidator();
+  const validator: MessageValidator = new MessageValidator();
 
   assertThrows(
     () => validator.validate({ role: "unknown", content: "Hello" }, 5),
@@ -171,7 +171,7 @@ Deno.test("MessageValidator should include index in error message", () => {
 });
 
 Deno.test("MessageValidator should reject message without content", () => {
-  const validator = new MessageValidator();
+  const validator: MessageValidator = new MessageValidator();
 
   assertThrows(
     () => validator.validate({ role: "user" }),
@@ -181,7 +181,7 @@ Deno.test("MessageValidator should reject message without content", () => {
 });
 
 Deno.test("MessageValidator should reject message with non-string content", () => {
-  const validator = new MessageValidator();
+  const validator: MessageValidator = new MessageValidator();
 
   assertThrows(
     () => validator.validate({ role: "user", content: 123 }),
@@ -191,7 +191,7 @@ Deno.test("MessageValidator should reject message with non-string content", () =
 });
 
 Deno.test("MessageValidator should reject empty content", () => {
-  const validator = new MessageValidator();
+  const validator: MessageValidator = new MessageValidator();
 
   assertThrows(
     () => validator.validate({ role: "user", content: "" }),
@@ -201,7 +201,7 @@ Deno.test("MessageValidator should reject empty content", () => {
 });
 
 Deno.test("MessageValidator should reject whitespace-only content", () => {
-  const validator = new MessageValidator();
+  const validator: MessageValidator = new MessageValidator();
 
   assertThrows(
     () => validator.validate({ role: "user", content: "   \n\t  " }),
@@ -211,7 +211,7 @@ Deno.test("MessageValidator should reject whitespace-only content", () => {
 });
 
 Deno.test("MessageValidator should reject content exceeding MAX_LENGTH", () => {
-  const validator = new MessageValidator();
+  const validator: MessageValidator = new MessageValidator();
   const tooLongContent = generateString(VALIDATION_LIMITS.MAX_MESSAGE_CONTENT_LENGTH + 1);
 
   assertThrows(
@@ -222,7 +222,7 @@ Deno.test("MessageValidator should reject content exceeding MAX_LENGTH", () => {
 });
 
 Deno.test("MessageValidator should accept valid user message", () => {
-  const validator = new MessageValidator();
+  const validator: MessageValidator = new MessageValidator();
   const message = createValidMessage({ role: "user" });
 
   // Should not throw
@@ -230,7 +230,7 @@ Deno.test("MessageValidator should accept valid user message", () => {
 });
 
 Deno.test("MessageValidator should accept valid assistant message", () => {
-  const validator = new MessageValidator();
+  const validator: MessageValidator = new MessageValidator();
   const message = createValidMessage({ role: "assistant" });
 
   // Should not throw
@@ -238,7 +238,7 @@ Deno.test("MessageValidator should accept valid assistant message", () => {
 });
 
 Deno.test("MessageValidator should accept valid system message", () => {
-  const validator = new MessageValidator();
+  const validator: MessageValidator = new MessageValidator();
   const message = createValidMessage({ role: "system" });
 
   // Should not throw
@@ -246,7 +246,7 @@ Deno.test("MessageValidator should accept valid system message", () => {
 });
 
 Deno.test("MessageValidator should accept content at max boundary", () => {
-  const validator = new MessageValidator();
+  const validator: MessageValidator = new MessageValidator();
   const maxContent = generateString(VALIDATION_LIMITS.MAX_MESSAGE_CONTENT_LENGTH);
 
   // Should not throw
@@ -254,7 +254,7 @@ Deno.test("MessageValidator should accept content at max boundary", () => {
 });
 
 Deno.test("MessageValidator should accept content with unicode characters", () => {
-  const validator = new MessageValidator();
+  const validator: MessageValidator = new MessageValidator();
   const unicodeContent = "Hello 世界 🌍 مرحبا";
 
   // Should not throw
@@ -264,7 +264,7 @@ Deno.test("MessageValidator should accept content with unicode characters", () =
 // ==================== MessagesValidator Tests ====================
 
 Deno.test("MessagesValidator should validate array structure first", () => {
-  const validator = new MessagesValidator();
+  const validator: MessagesValidator = new MessagesValidator();
 
   assertThrows(
     () => validator.validate([]),
@@ -274,7 +274,7 @@ Deno.test("MessagesValidator should validate array structure first", () => {
 });
 
 Deno.test("MessagesValidator should validate each message", () => {
-  const validator = new MessagesValidator();
+  const validator: MessagesValidator = new MessagesValidator();
   const messages = [
     { role: "user", content: "Hello" },
     { role: "invalid", content: "World" }
@@ -288,7 +288,7 @@ Deno.test("MessagesValidator should validate each message", () => {
 });
 
 Deno.test("MessagesValidator should report first failing message", () => {
-  const validator = new MessagesValidator();
+  const validator: MessagesValidator = new MessagesValidator();
   const messages = [
     { role: "user", content: "Hello" },
     { role: "user", content: "" },
@@ -303,7 +303,7 @@ Deno.test("MessagesValidator should report first failing message", () => {
 });
 
 Deno.test("MessagesValidator should accept valid message array", () => {
-  const validator = new MessagesValidator();
+  const validator: MessagesValidator = new MessagesValidator();
   const messages = [
     createValidMessage({ role: "user" }),
     createValidMessage({ role: "assistant" }),
@@ -315,7 +315,7 @@ Deno.test("MessagesValidator should accept valid message array", () => {
 });
 
 Deno.test("MessagesValidator should perform type assertion", () => {
-  const validator = new MessagesValidator();
+  const validator: MessagesValidator = new MessagesValidator();
   const messages: any = [createValidMessage()];
 
   validator.validate(messages);
@@ -328,7 +328,7 @@ Deno.test("MessagesValidator should perform type assertion", () => {
 // ==================== ImageRequestValidator Tests ====================
 
 Deno.test("ImageRequestValidator should reject non-object request", () => {
-  const validator = new ImageRequestValidator();
+  const validator: ImageRequestValidator = new ImageRequestValidator();
 
   assertThrows(
     () => validator.validate("not an object"),
@@ -338,7 +338,7 @@ Deno.test("ImageRequestValidator should reject non-object request", () => {
 });
 
 Deno.test("ImageRequestValidator should reject missing prompt", () => {
-  const validator = new ImageRequestValidator();
+  const validator: ImageRequestValidator = new ImageRequestValidator();
 
   assertThrows(
     () => validator.validate({ mode: "generate" }),
@@ -348,7 +348,7 @@ Deno.test("ImageRequestValidator should reject missing prompt", () => {
 });
 
 Deno.test("ImageRequestValidator should reject non-string prompt", () => {
-  const validator = new ImageRequestValidator();
+  const validator: ImageRequestValidator = new ImageRequestValidator();
 
   assertThrows(
     () => validator.validate({ prompt: 123, mode: "generate" }),
@@ -358,7 +358,7 @@ Deno.test("ImageRequestValidator should reject non-string prompt", () => {
 });
 
 Deno.test("ImageRequestValidator should reject empty prompt", () => {
-  const validator = new ImageRequestValidator();
+  const validator: ImageRequestValidator = new ImageRequestValidator();
 
   assertThrows(
     () => validator.validate({ prompt: "", mode: "generate" }),
@@ -368,7 +368,7 @@ Deno.test("ImageRequestValidator should reject empty prompt", () => {
 });
 
 Deno.test("ImageRequestValidator should reject whitespace-only prompt", () => {
-  const validator = new ImageRequestValidator();
+  const validator: ImageRequestValidator = new ImageRequestValidator();
 
   assertThrows(
     () => validator.validate({ prompt: "   ", mode: "generate" }),
@@ -378,7 +378,7 @@ Deno.test("ImageRequestValidator should reject whitespace-only prompt", () => {
 });
 
 Deno.test("ImageRequestValidator should reject prompt exceeding MAX_PROMPT_LENGTH", () => {
-  const validator = new ImageRequestValidator();
+  const validator: ImageRequestValidator = new ImageRequestValidator();
   const tooLongPrompt = generateString(VALIDATION_LIMITS.MAX_PROMPT_LENGTH + 1);
 
   assertThrows(
@@ -389,7 +389,7 @@ Deno.test("ImageRequestValidator should reject prompt exceeding MAX_PROMPT_LENGT
 });
 
 Deno.test("ImageRequestValidator should reject missing mode", () => {
-  const validator = new ImageRequestValidator();
+  const validator: ImageRequestValidator = new ImageRequestValidator();
 
   assertThrows(
     () => validator.validate({ prompt: "A beautiful sunset" }),
@@ -399,7 +399,7 @@ Deno.test("ImageRequestValidator should reject missing mode", () => {
 });
 
 Deno.test("ImageRequestValidator should reject non-string mode", () => {
-  const validator = new ImageRequestValidator();
+  const validator: ImageRequestValidator = new ImageRequestValidator();
 
   assertThrows(
     () => validator.validate({ prompt: "Test", mode: 123 }),
@@ -409,7 +409,7 @@ Deno.test("ImageRequestValidator should reject non-string mode", () => {
 });
 
 Deno.test("ImageRequestValidator should reject invalid mode value", () => {
-  const validator = new ImageRequestValidator();
+  const validator: ImageRequestValidator = new ImageRequestValidator();
 
   assertThrows(
     () => validator.validate({ prompt: "Test", mode: "invalid" }),
@@ -419,7 +419,7 @@ Deno.test("ImageRequestValidator should reject invalid mode value", () => {
 });
 
 Deno.test("ImageRequestValidator should reject edit mode without baseImage", () => {
-  const validator = new ImageRequestValidator();
+  const validator: ImageRequestValidator = new ImageRequestValidator();
 
   assertThrows(
     () => validator.validate({ prompt: "Test", mode: "edit" }),
@@ -429,7 +429,7 @@ Deno.test("ImageRequestValidator should reject edit mode without baseImage", () 
 });
 
 Deno.test("ImageRequestValidator should reject non-string baseImage", () => {
-  const validator = new ImageRequestValidator();
+  const validator: ImageRequestValidator = new ImageRequestValidator();
 
   assertThrows(
     () => validator.validate({ prompt: "Test", mode: "edit", baseImage: 123 }),
@@ -439,7 +439,7 @@ Deno.test("ImageRequestValidator should reject non-string baseImage", () => {
 });
 
 Deno.test("ImageRequestValidator should reject invalid baseImage format", () => {
-  const validator = new ImageRequestValidator();
+  const validator: ImageRequestValidator = new ImageRequestValidator();
 
   assertThrows(
     () => validator.validate({ prompt: "Test", mode: "edit", baseImage: "not-a-data-url" }),
@@ -449,7 +449,7 @@ Deno.test("ImageRequestValidator should reject invalid baseImage format", () => 
 });
 
 Deno.test("ImageRequestValidator should accept valid generate request", () => {
-  const validator = new ImageRequestValidator();
+  const validator: ImageRequestValidator = new ImageRequestValidator();
   const request = createValidImageRequest({ mode: "generate" });
 
   // Should not throw
@@ -457,7 +457,7 @@ Deno.test("ImageRequestValidator should accept valid generate request", () => {
 });
 
 Deno.test("ImageRequestValidator should accept valid edit request", () => {
-  const validator = new ImageRequestValidator();
+  const validator: ImageRequestValidator = new ImageRequestValidator();
   const request = createValidImageRequest({
     mode: "edit",
     baseImage: createValidDataUrl()
@@ -468,7 +468,7 @@ Deno.test("ImageRequestValidator should accept valid edit request", () => {
 });
 
 Deno.test("ImageRequestValidator should accept prompt at max boundary", () => {
-  const validator = new ImageRequestValidator();
+  const validator: ImageRequestValidator = new ImageRequestValidator();
   const maxPrompt = generateString(VALIDATION_LIMITS.MAX_PROMPT_LENGTH);
 
   // Should not throw
@@ -476,7 +476,7 @@ Deno.test("ImageRequestValidator should accept prompt at max boundary", () => {
 });
 
 Deno.test("ImageRequestValidator should accept various data URL formats", () => {
-  const validator = new ImageRequestValidator();
+  const validator: ImageRequestValidator = new ImageRequestValidator();
   const formats = ["image/png", "image/jpeg", "image/gif", "image/webp"];
 
   formats.forEach(format => {
@@ -493,7 +493,7 @@ Deno.test("ImageRequestValidator should accept various data URL formats", () => 
 // ==================== ChatRequestValidator Tests ====================
 
 Deno.test("ChatRequestValidator should reject non-object request", () => {
-  const validator = new ChatRequestValidator();
+  const validator: ChatRequestValidator = new ChatRequestValidator();
 
   assertThrows(
     () => validator.validate("not an object"),
@@ -503,7 +503,7 @@ Deno.test("ChatRequestValidator should reject non-object request", () => {
 });
 
 Deno.test("ChatRequestValidator should reject missing messages", () => {
-  const validator = new ChatRequestValidator();
+  const validator: ChatRequestValidator = new ChatRequestValidator();
 
   assertThrows(
     () => validator.validate({}),
@@ -513,7 +513,7 @@ Deno.test("ChatRequestValidator should reject missing messages", () => {
 });
 
 Deno.test("ChatRequestValidator should validate messages array", () => {
-  const validator = new ChatRequestValidator();
+  const validator: ChatRequestValidator = new ChatRequestValidator();
 
   assertThrows(
     () => validator.validate({ messages: [] }),
@@ -523,7 +523,7 @@ Deno.test("ChatRequestValidator should validate messages array", () => {
 });
 
 Deno.test("ChatRequestValidator should reject invalid sessionId type", () => {
-  const validator = new ChatRequestValidator();
+  const validator: ChatRequestValidator = new ChatRequestValidator();
 
   assertThrows(
     () => validator.validate({
@@ -536,7 +536,7 @@ Deno.test("ChatRequestValidator should reject invalid sessionId type", () => {
 });
 
 Deno.test("ChatRequestValidator should reject invalid isGuest type", () => {
-  const validator = new ChatRequestValidator();
+  const validator: ChatRequestValidator = new ChatRequestValidator();
 
   assertThrows(
     () => validator.validate({
@@ -549,7 +549,7 @@ Deno.test("ChatRequestValidator should reject invalid isGuest type", () => {
 });
 
 Deno.test("ChatRequestValidator should reject non-object currentArtifact", () => {
-  const validator = new ChatRequestValidator();
+  const validator: ChatRequestValidator = new ChatRequestValidator();
 
   assertThrows(
     () => validator.validate({
@@ -562,7 +562,7 @@ Deno.test("ChatRequestValidator should reject non-object currentArtifact", () =>
 });
 
 Deno.test("ChatRequestValidator should reject artifact without title", () => {
-  const validator = new ChatRequestValidator();
+  const validator: ChatRequestValidator = new ChatRequestValidator();
 
   assertThrows(
     () => validator.validate({
@@ -575,7 +575,7 @@ Deno.test("ChatRequestValidator should reject artifact without title", () => {
 });
 
 Deno.test("ChatRequestValidator should reject artifact with non-string title", () => {
-  const validator = new ChatRequestValidator();
+  const validator: ChatRequestValidator = new ChatRequestValidator();
 
   assertThrows(
     () => validator.validate({
@@ -588,7 +588,7 @@ Deno.test("ChatRequestValidator should reject artifact with non-string title", (
 });
 
 Deno.test("ChatRequestValidator should reject artifact without type", () => {
-  const validator = new ChatRequestValidator();
+  const validator: ChatRequestValidator = new ChatRequestValidator();
 
   assertThrows(
     () => validator.validate({
@@ -601,7 +601,7 @@ Deno.test("ChatRequestValidator should reject artifact without type", () => {
 });
 
 Deno.test("ChatRequestValidator should reject artifact without content", () => {
-  const validator = new ChatRequestValidator();
+  const validator: ChatRequestValidator = new ChatRequestValidator();
 
   assertThrows(
     () => validator.validate({
@@ -614,7 +614,7 @@ Deno.test("ChatRequestValidator should reject artifact without content", () => {
 });
 
 Deno.test("ChatRequestValidator should accept valid chat request with all fields", () => {
-  const validator = new ChatRequestValidator();
+  const validator: ChatRequestValidator = new ChatRequestValidator();
   const request = createValidChatRequest({
     sessionId: "test-session",
     isGuest: false,
@@ -630,7 +630,7 @@ Deno.test("ChatRequestValidator should accept valid chat request with all fields
 });
 
 Deno.test("ChatRequestValidator should accept request without optional fields", () => {
-  const validator = new ChatRequestValidator();
+  const validator: ChatRequestValidator = new ChatRequestValidator();
   const request = { messages: [createValidMessage()] };
 
   // Should not throw
@@ -638,7 +638,7 @@ Deno.test("ChatRequestValidator should accept request without optional fields", 
 });
 
 Deno.test("ChatRequestValidator should accept request with only sessionId", () => {
-  const validator = new ChatRequestValidator();
+  const validator: ChatRequestValidator = new ChatRequestValidator();
   const request = {
     messages: [createValidMessage()],
     sessionId: "test-session"
@@ -649,7 +649,7 @@ Deno.test("ChatRequestValidator should accept request with only sessionId", () =
 });
 
 Deno.test("ChatRequestValidator should perform type assertion", () => {
-  const validator = new ChatRequestValidator();
+  const validator: ChatRequestValidator = new ChatRequestValidator();
   const request: any = createValidChatRequest();
 
   validator.validate(request);
@@ -714,7 +714,7 @@ Deno.test("RequestValidator.validateImage should throw on invalid data", () => {
 // ==================== Edge Cases and Boundary Tests ====================
 
 Deno.test("Validators should handle exact boundary values (MAX - 1)", () => {
-  const messageValidator = new MessageValidator();
+  const messageValidator: MessageValidator = new MessageValidator();
   const contentAtBoundary = generateString(VALIDATION_LIMITS.MAX_MESSAGE_CONTENT_LENGTH - 1);
 
   // Should not throw
@@ -722,7 +722,7 @@ Deno.test("Validators should handle exact boundary values (MAX - 1)", () => {
 });
 
 Deno.test("Validators should handle exact boundary values (MAX)", () => {
-  const messageValidator = new MessageValidator();
+  const messageValidator: MessageValidator = new MessageValidator();
   const contentAtMax = generateString(VALIDATION_LIMITS.MAX_MESSAGE_CONTENT_LENGTH);
 
   // Should not throw
@@ -730,7 +730,7 @@ Deno.test("Validators should handle exact boundary values (MAX)", () => {
 });
 
 Deno.test("Validators should reject values one over boundary (MAX + 1)", () => {
-  const messageValidator = new MessageValidator();
+  const messageValidator: MessageValidator = new MessageValidator();
   const contentOverMax = generateString(VALIDATION_LIMITS.MAX_MESSAGE_CONTENT_LENGTH + 1);
 
   assertThrows(
@@ -741,7 +741,7 @@ Deno.test("Validators should reject values one over boundary (MAX + 1)", () => {
 });
 
 Deno.test("Validators should handle special characters in prompts", () => {
-  const imageValidator = new ImageRequestValidator();
+  const imageValidator: ImageRequestValidator = new ImageRequestValidator();
   const specialPrompt = "Test with 'quotes', \"double\", <html>, & ampersand, emoji 🎨";
 
   // Should not throw
@@ -749,7 +749,7 @@ Deno.test("Validators should handle special characters in prompts", () => {
 });
 
 Deno.test("Validators should handle newlines in content", () => {
-  const messageValidator = new MessageValidator();
+  const messageValidator: MessageValidator = new MessageValidator();
   const multilineContent = "Line 1\nLine 2\nLine 3";
 
   // Should not throw
@@ -757,7 +757,7 @@ Deno.test("Validators should handle newlines in content", () => {
 });
 
 Deno.test("Validators should reject content with only newlines", () => {
-  const messageValidator = new MessageValidator();
+  const messageValidator: MessageValidator = new MessageValidator();
 
   assertThrows(
     () => messageValidator.validate({ role: "user", content: "\n\n\n" }),
@@ -767,11 +767,12 @@ Deno.test("Validators should reject content with only newlines", () => {
 });
 
 Deno.test("ValidationError should include detailed error messages", () => {
-  const validator = new MessageValidator();
+  const validator: MessageValidator = new MessageValidator();
 
   try {
     validator.validate({ role: "user", content: "" }, 3);
-  } catch (error) {
+  } catch (e) {
+    const error = e as ValidationError;
     assert(error instanceof ValidationError);
     assert(error.message.includes("at index 3"));
     assertExists(error.details);

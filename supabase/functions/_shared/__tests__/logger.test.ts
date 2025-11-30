@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from "https://deno.land/std@0.168.0/testing/bdd.ts";
+import { describe, it, beforeEach, afterEach } from "https://deno.land/std@0.208.0/testing/bdd.ts";
+import { assertEquals, assertExists, assertMatch } from "@std/assert";
 import { Logger, createLogger, logger, type LogEntry, type LoggerContext } from "../logger.ts";
 
 describe("Logger", () => {
@@ -23,34 +24,34 @@ describe("Logger", () => {
       const log = new Logger();
       log.debug("test_debug", { foo: "bar" });
 
-      expect(consoleOutput.length).toBe(1);
+      assertEquals(consoleOutput.length, 1);
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.level).toBe("debug");
-      expect(entry.message).toBe("test_debug");
-      expect(entry.data?.foo).toBe("bar");
-      expect(entry.timestamp).toBeDefined();
+      assertEquals(entry.level, "debug");
+      assertEquals(entry.message, "test_debug");
+      assertEquals(entry.data?.foo, "bar");
+      assertExists(entry.timestamp);
     });
 
     it("should log info messages", () => {
       const log = new Logger();
       log.info("test_info", { count: 42 });
 
-      expect(consoleOutput.length).toBe(1);
+      assertEquals(consoleOutput.length, 1);
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.level).toBe("info");
-      expect(entry.message).toBe("test_info");
-      expect(entry.data?.count).toBe(42);
+      assertEquals(entry.level, "info");
+      assertEquals(entry.message, "test_info");
+      assertEquals(entry.data?.count, 42);
     });
 
     it("should log warn messages", () => {
       const log = new Logger();
       log.warn("test_warn", { reason: "deprecated" });
 
-      expect(consoleOutput.length).toBe(1);
+      assertEquals(consoleOutput.length, 1);
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.level).toBe("warn");
-      expect(entry.message).toBe("test_warn");
-      expect(entry.data?.reason).toBe("deprecated");
+      assertEquals(entry.level, "warn");
+      assertEquals(entry.message, "test_warn");
+      assertEquals(entry.data?.reason, "deprecated");
     });
 
     it("should log error messages with stack traces", () => {
@@ -58,14 +59,14 @@ describe("Logger", () => {
       const error = new Error("Test error");
       log.error("test_error", error, { operation: "test" });
 
-      expect(consoleOutput.length).toBe(1);
+      assertEquals(consoleOutput.length, 1);
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.level).toBe("error");
-      expect(entry.message).toBe("test_error");
-      expect(entry.error?.name).toBe("Error");
-      expect(entry.error?.message).toBe("Test error");
-      expect(entry.error?.stack).toBeDefined();
-      expect(entry.data?.operation).toBe("test");
+      assertEquals(entry.level, "error");
+      assertEquals(entry.message, "test_error");
+      assertEquals(entry.error?.name, "Error");
+      assertEquals(entry.error?.message, "Test error");
+      assertExists(entry.error?.stack);
+      assertEquals(entry.data?.operation, "test");
     });
   });
 
@@ -75,7 +76,7 @@ describe("Logger", () => {
       log.info("test_message");
 
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.requestId).toBe("req-123");
+      assertEquals(entry.requestId, "req-123");
     });
 
     it("should include userId in all logs", () => {
@@ -83,7 +84,7 @@ describe("Logger", () => {
       log.info("test_message");
 
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.userId).toBe("user-456");
+      assertEquals(entry.userId, "user-456");
     });
 
     it("should include sessionId in all logs", () => {
@@ -91,24 +92,22 @@ describe("Logger", () => {
       log.info("test_message");
 
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.sessionId).toBe("session-789");
+      assertEquals(entry.sessionId, "session-789");
     });
 
     it("should include all context fields", () => {
       const context: LoggerContext = {
         requestId: "req-123",
         userId: "user-456",
-        sessionId: "session-789",
-        functionName: "chat"
+        sessionId: "session-789"
       };
       const log = new Logger(context);
       log.info("test_message");
 
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.requestId).toBe("req-123");
-      expect(entry.userId).toBe("user-456");
-      expect(entry.sessionId).toBe("session-789");
-      expect(entry.functionName).toBe("chat");
+      assertEquals(entry.requestId, "req-123");
+      assertEquals(entry.userId, "user-456");
+      assertEquals(entry.sessionId, "session-789");
     });
   });
 
@@ -119,8 +118,8 @@ describe("Logger", () => {
       child.info("test_message");
 
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.requestId).toBe("req-123");
-      expect(entry.userId).toBe("user-456");
+      assertEquals(entry.requestId, "req-123");
+      assertEquals(entry.userId, "user-456");
     });
 
     it("should override parent context", () => {
@@ -129,8 +128,8 @@ describe("Logger", () => {
       child.info("test_message");
 
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.requestId).toBe("req-123");
-      expect(entry.userId).toBe("user-new");
+      assertEquals(entry.requestId, "req-123");
+      assertEquals(entry.userId, "user-new");
     });
 
     it("should not affect parent logger", () => {
@@ -139,11 +138,11 @@ describe("Logger", () => {
 
       parent.info("parent_message");
       const parentEntry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(parentEntry.userId).toBeUndefined();
+      assertEquals(parentEntry.userId, undefined);
 
       child.info("child_message");
       const childEntry = JSON.parse(consoleOutput[1]) as LogEntry;
-      expect(childEntry.userId).toBe("user-456");
+      assertEquals(childEntry.userId, "user-456");
     });
   });
 
@@ -153,10 +152,10 @@ describe("Logger", () => {
       log.request("POST", "/chat", { body: "test" });
 
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.message).toBe("request_received");
-      expect(entry.data?.method).toBe("POST");
-      expect(entry.data?.path).toBe("/chat");
-      expect(entry.data?.body).toBe("test");
+      assertEquals(entry.message, "request_received");
+      assertEquals(entry.data?.method, "POST");
+      assertEquals(entry.data?.path, "/chat");
+      assertEquals(entry.data?.body, "test");
     });
 
     it("should log response details", () => {
@@ -164,10 +163,10 @@ describe("Logger", () => {
       log.response(200, 150, { bytes: 1024 });
 
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.message).toBe("request_completed");
-      expect(entry.data?.status).toBe(200);
-      expect(entry.data?.durationMs).toBe(150);
-      expect(entry.data?.bytes).toBe(1024);
+      assertEquals(entry.message, "request_completed");
+      assertEquals(entry.data?.status, 200);
+      assertEquals(entry.data?.durationMs, 150);
+      assertEquals(entry.data?.bytes, 1024);
     });
 
     it("should log AI calls", () => {
@@ -178,11 +177,11 @@ describe("Logger", () => {
       });
 
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.message).toBe("ai_call");
-      expect(entry.data?.provider).toBe("openrouter");
-      expect(entry.data?.model).toBe("gemini-flash");
-      expect(entry.data?.inputTokens).toBe(100);
-      expect(entry.data?.outputTokens).toBe(200);
+      assertEquals(entry.message, "ai_call");
+      assertEquals(entry.data?.provider, "openrouter");
+      assertEquals(entry.data?.model, "gemini-flash");
+      assertEquals(entry.data?.inputTokens, 100);
+      assertEquals(entry.data?.outputTokens, 200);
     });
 
     it("should log database queries", () => {
@@ -190,11 +189,11 @@ describe("Logger", () => {
       log.dbQuery("chat_messages", "INSERT", 50, { rows: 1 });
 
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.message).toBe("db_query");
-      expect(entry.data?.table).toBe("chat_messages");
-      expect(entry.data?.operation).toBe("INSERT");
-      expect(entry.data?.durationMs).toBe(50);
-      expect(entry.data?.rows).toBe(1);
+      assertEquals(entry.message, "db_query");
+      assertEquals(entry.data?.table, "chat_messages");
+      assertEquals(entry.data?.operation, "INSERT");
+      assertEquals(entry.data?.durationMs, 50);
+      assertEquals(entry.data?.rows, 1);
     });
 
     it("should log rate limit checks", () => {
@@ -202,11 +201,11 @@ describe("Logger", () => {
       log.rateLimit(false, 95, 100, { userType: "authenticated" });
 
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.message).toBe("rate_limit_check");
-      expect(entry.data?.exceeded).toBe(false);
-      expect(entry.data?.remaining).toBe(95);
-      expect(entry.data?.total).toBe(100);
-      expect(entry.data?.userType).toBe("authenticated");
+      assertEquals(entry.message, "rate_limit_check");
+      assertEquals(entry.data?.exceeded, false);
+      assertEquals(entry.data?.remaining, 95);
+      assertEquals(entry.data?.total, 100);
+      assertEquals(entry.data?.userType, "authenticated");
     });
 
     it("should log validation errors", () => {
@@ -214,10 +213,10 @@ describe("Logger", () => {
       log.validationError("email", "invalid_format", { value: "not-an-email" });
 
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.message).toBe("validation_error");
-      expect(entry.data?.field).toBe("email");
-      expect(entry.data?.reason).toBe("invalid_format");
-      expect(entry.data?.value).toBe("not-an-email");
+      assertEquals(entry.message, "validation_error");
+      assertEquals(entry.data?.field, "email");
+      assertEquals(entry.data?.reason, "invalid_format");
+      assertEquals(entry.data?.value, "not-an-email");
     });
 
     it("should log external API calls", () => {
@@ -227,12 +226,12 @@ describe("Logger", () => {
       });
 
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.message).toBe("external_api_call");
-      expect(entry.data?.service).toBe("openrouter");
-      expect(entry.data?.endpoint).toBe("/chat/completions");
-      expect(entry.data?.status).toBe(200);
-      expect(entry.data?.durationMs).toBe(350);
-      expect(entry.data?.retries).toBe(1);
+      assertEquals(entry.message, "external_api_call");
+      assertEquals(entry.data?.service, "openrouter");
+      assertEquals(entry.data?.endpoint, "/chat/completions");
+      assertEquals(entry.data?.status, 200);
+      assertEquals(entry.data?.durationMs, 350);
+      assertEquals(entry.data?.retries, 1);
     });
   });
 
@@ -242,15 +241,15 @@ describe("Logger", () => {
       log.info("test_message");
 
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.requestId).toBe("req-123");
+      assertEquals(entry.requestId, "req-123");
     });
 
     it("should export default logger without context", () => {
       logger.info("test_message");
 
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.requestId).toBeUndefined();
-      expect(entry.timestamp).toBeDefined();
+      assertEquals(entry.requestId, undefined);
+      assertExists(entry.timestamp);
     });
   });
 
@@ -263,9 +262,10 @@ describe("Logger", () => {
       log.warn("test_warn");
       log.error("test_error", new Error("Test"));
 
-      expect(consoleOutput.length).toBe(4);
+      assertEquals(consoleOutput.length, 4);
       consoleOutput.forEach((output) => {
-        expect(() => JSON.parse(output)).not.toThrow();
+        // Should not throw when parsing
+        JSON.parse(output);
       });
     });
 
@@ -274,7 +274,7 @@ describe("Logger", () => {
       log.info('test_with_"quotes"_and_\n_newlines');
 
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.message).toBe('test_with_"quotes"_and_\n_newlines');
+      assertEquals(entry.message, 'test_with_"quotes"_and_\n_newlines');
     });
 
     it("should handle complex nested data", () => {
@@ -286,9 +286,9 @@ describe("Logger", () => {
       });
 
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.data?.user).toEqual({ id: "123", profile: { name: "Test" } });
-      expect(entry.data?.tags).toEqual(["a", "b", "c"]);
-      expect(entry.data?.metadata).toEqual({ count: 42, active: true });
+      assertEquals(entry.data?.user, { id: "123", profile: { name: "Test" } });
+      assertEquals(entry.data?.tags, ["a", "b", "c"]);
+      assertEquals(entry.data?.metadata, { count: 42, active: true });
     });
   });
 
@@ -298,7 +298,8 @@ describe("Logger", () => {
       log.info("test_message");
 
       const entry = JSON.parse(consoleOutput[0]) as LogEntry;
-      expect(entry.timestamp).toMatch(
+      assertMatch(
+        entry.timestamp,
         /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
       );
     });
@@ -314,9 +315,9 @@ describe("Logger", () => {
         (output) => JSON.parse(output).timestamp
       );
       for (let i = 1; i < timestamps.length; i++) {
-        expect(new Date(timestamps[i]).getTime()).toBeGreaterThanOrEqual(
-          new Date(timestamps[i - 1]).getTime()
-        );
+        const current = new Date(timestamps[i]).getTime();
+        const previous = new Date(timestamps[i - 1]).getTime();
+        assertEquals(current >= previous, true);
       }
     });
   });

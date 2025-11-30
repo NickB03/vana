@@ -209,12 +209,16 @@ Generate reasoning steps as JSON:`;
 
   try {
     // Call OpenRouter API
+    // OpenRouter requires HTTP-Referer to match registered domain
+    // Filter for HTTPS origins to avoid using localhost in production
+    const allowedOrigins = Deno.env.get('ALLOWED_ORIGINS')?.split(',').map(o => o.trim()) || [];
+    const refererDomain = allowedOrigins.find(o => o.startsWith('https://')) || 'https://vana.chat';
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${Deno.env.get('OPENROUTER_GEMINI_FLASH_KEY')}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://your-app.com', // TODO: Replace with actual domain
+        'HTTP-Referer': refererDomain,
         'X-Title': 'Chain of Thought Reasoning',
       },
       body: JSON.stringify({
@@ -271,9 +275,10 @@ Generate reasoning steps as JSON:`;
     }
 
     return reasoning;
-  } catch (error) {
+  } catch (e) {
     clearTimeout(timeoutId);
 
+    const error = e as Error;
     if (error.name === 'AbortError') {
       throw new Error(`Reasoning generation timeout after ${timeout}ms`);
     }
@@ -319,8 +324,20 @@ export function validateReasoningSteps(reasoning: StructuredReasoning): void {
   const validPhases: ReasoningPhase[] = ['research', 'analysis', 'solution', 'custom'];
   const validIcons: ReasoningIcon[] = ['search', 'lightbulb', 'target', 'sparkles'];
 
-  // XSS prevention: detect dangerous patterns
-  const dangerousPatterns = /<script|<iframe|javascript:|onerror=|onload=|onclick=|<embed|<object/i;
+  // XSS prevention: detect dangerous patterns (synchronized with frontend)
+  // These patterns must match src/types/reasoning.ts for consistent validation
+  const dangerousPatterns = [
+    /<script|<iframe|javascript:|onerror=|onload=|onclick=/i,
+    /<svg[^>]*onload/i,
+    /<img[^>]*onerror/i,
+    /onfocus=|onmouseover=|onmouseout=/i,
+    /<embed|<object/i,
+    /data:text\/html/i,
+  ];
+
+  // Helper to check if content matches any dangerous pattern
+  const containsDangerousContent = (content: string): boolean =>
+    dangerousPatterns.some(pattern => pattern.test(content));
 
   // Validate each step
   for (const [index, step] of reasoning.steps.entries()) {
@@ -338,7 +355,7 @@ export function validateReasoningSteps(reasoning: StructuredReasoning): void {
     if (step.title.length < 10 || step.title.length > 500) {
       throw new Error(`${stepPrefix} Title must be 10-500 characters (got ${step.title.length})`);
     }
-    if (dangerousPatterns.test(step.title)) {
+    if (containsDangerousContent(step.title)) {
       throw new Error(`${stepPrefix} Title contains potentially dangerous content`);
     }
 
@@ -371,7 +388,7 @@ export function validateReasoningSteps(reasoning: StructuredReasoning): void {
       if (item.length > 2000) {
         throw new Error(`${itemPrefix} Exceeds 2000 characters (got ${item.length})`);
       }
-      if (dangerousPatterns.test(item)) {
+      if (containsDangerousContent(item)) {
         throw new Error(`${itemPrefix} Contains potentially dangerous content`);
       }
     }
@@ -385,7 +402,7 @@ export function validateReasoningSteps(reasoning: StructuredReasoning): void {
     if (reasoning.summary.length > 1000) {
       throw new Error(`Summary exceeds 1000 characters (got ${reasoning.summary.length})`);
     }
-    if (dangerousPatterns.test(reasoning.summary)) {
+    if (containsDangerousContent(reasoning.summary)) {
       throw new Error('Summary contains potentially dangerous content');
     }
   }

@@ -119,6 +119,32 @@ const BundledArtifactFrame = memo(({
         // Framer Motion UMD uses window.React which is set by the UMD React script.
         // Since we're using ?external=react,react-dom for esm.sh packages, they'll also use
         // window.React via import map shims, so everything shares the same React instance.
+
+        // Check if PropTypes library is missing (CRITICAL: Required by Recharts and other UMD libs)
+        // PropTypes was removed from React 15.5+ and is now a separate package
+        // Many UMD libraries (like Recharts) expect window.PropTypes to be available
+        if (!htmlContent.includes('prop-types')) {
+          console.log('[BundledArtifactFrame] Injecting PropTypes library (required for Recharts)');
+          const propTypesScript = `
+  <!-- Injected: PropTypes library for component validation -->
+  <script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+  <script>
+    if (typeof PropTypes !== 'undefined') {
+      console.log('PropTypes injected successfully');
+      window.PropTypes = PropTypes;
+    }
+  </script>`;
+          // CRITICAL: PropTypes must load BEFORE any library that uses it (like Recharts)
+          // Inject after ReactDOM script
+          const reactDomScriptMatch = htmlContent.match(/(<script[^>]*react-dom[^>]*\.js[^>]*><\/script>)/i);
+          if (reactDomScriptMatch) {
+            htmlContent = htmlContent.replace(reactDomScriptMatch[1], reactDomScriptMatch[1] + propTypesScript);
+          } else {
+            // Fallback: inject before </head>
+            htmlContent = htmlContent.replace('</head>', propTypesScript + '\n</head>');
+          }
+        }
+
         const needsFramerMotion = !htmlContent.includes('framer-motion') &&
           (htmlContent.includes('motion.') || htmlContent.includes('Motion') || htmlContent.includes('AnimatePresence'));
         if (needsFramerMotion) {
@@ -1012,8 +1038,21 @@ ${artifact.content}
       .replace(/^export\s+default\s+/gm, '')
       .trim();
 
-    const componentMatch = artifact.content.match(/(?:export\s+default\s+)?(?:function\s+)?(\w+)(?=\s*\(|\s*=)/);
-    const componentName = componentMatch?.[1] || 'App';
+    // Extract component name with priority:
+    // 1. export default function ComponentName
+    // 2. function ComponentName (standalone function declaration)
+    // 3. const ComponentName = ( or const ComponentName = function (arrow/function expression)
+    // 4. export default ComponentName (at end, references existing component)
+    const exportDefaultFunctionMatch = artifact.content.match(/export\s+default\s+function\s+(\w+)/);
+    const functionMatch = artifact.content.match(/^function\s+([A-Z]\w*)\s*\(/m); // Function starting with capital letter
+    const constComponentMatch = artifact.content.match(/const\s+([A-Z]\w*)\s*=\s*(?:\([^)]*\)\s*=>|\(\s*\)\s*=>|function)/);
+    const exportDefaultMatch = artifact.content.match(/export\s+default\s+([A-Z]\w*)\s*;?\s*$/m);
+
+    const componentName = exportDefaultFunctionMatch?.[1]
+      || functionMatch?.[1]
+      || constComponentMatch?.[1]
+      || exportDefaultMatch?.[1]
+      || 'App';
 
     const reactPreviewContent = `<!DOCTYPE html>
 <html lang="en">
@@ -1037,22 +1076,26 @@ ${artifact.content}
   <script type="importmap">
     {
       "imports": {
-        "react": "https://esm.sh/react@18.3.1",
-        "react-dom": "https://esm.sh/react-dom@18.3.1",
-        "@radix-ui/react-dialog": "https://esm.sh/@radix-ui/react-dialog@1.0.5?deps=react@18.3.1,react-dom@18.3.1",
-        "@radix-ui/react-dropdown-menu": "https://esm.sh/@radix-ui/react-dropdown-menu@2.0.6?deps=react@18.3.1,react-dom@18.3.1",
-        "@radix-ui/react-popover": "https://esm.sh/@radix-ui/react-popover@1.0.7?deps=react@18.3.1,react-dom@18.3.1",
-        "@radix-ui/react-tabs": "https://esm.sh/@radix-ui/react-tabs@1.0.4?deps=react@18.3.1,react-dom@18.3.1",
-        "@radix-ui/react-select": "https://esm.sh/@radix-ui/react-select@2.0.0?deps=react@18.3.1,react-dom@18.3.1",
-        "@radix-ui/react-slider": "https://esm.sh/@radix-ui/react-slider@1.1.2?deps=react@18.3.1,react-dom@18.3.1",
-        "@radix-ui/react-switch": "https://esm.sh/@radix-ui/react-switch@1.0.3?deps=react@18.3.1,react-dom@18.3.1",
-        "@radix-ui/react-tooltip": "https://esm.sh/@radix-ui/react-tooltip@1.0.7?deps=react@18.3.1,react-dom@18.3.1",
-        "lucide-react": "https://esm.sh/lucide-react@0.263.1?deps=react@18.3.1"
+        "react": "data:text/javascript,const R=window.React;export default R;export const{useState,useEffect,useRef,useMemo,useCallback,useContext,createContext,createElement,Fragment,memo,forwardRef,useReducer,useLayoutEffect,useImperativeHandle,useDebugValue,useDeferredValue,useTransition,useId,useSyncExternalStore,lazy,Suspense,startTransition,Children,cloneElement,isValidElement,createRef,Component,PureComponent,StrictMode}=R;",
+        "react-dom": "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync,findDOMNode,unmountComponentAtNode,render,hydrate}=D;",
+        "react-dom/client": "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync}=D;",
+        "react/jsx-runtime": "data:text/javascript,const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};",
+        "react/jsx-dev-runtime": "data:text/javascript,const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};",
+        "@radix-ui/react-dialog": "https://esm.sh/@radix-ui/react-dialog@1.0.5?external=react,react-dom",
+        "@radix-ui/react-dropdown-menu": "https://esm.sh/@radix-ui/react-dropdown-menu@2.0.6?external=react,react-dom",
+        "@radix-ui/react-popover": "https://esm.sh/@radix-ui/react-popover@1.0.7?external=react,react-dom",
+        "@radix-ui/react-tabs": "https://esm.sh/@radix-ui/react-tabs@1.0.4?external=react,react-dom",
+        "@radix-ui/react-select": "https://esm.sh/@radix-ui/react-select@2.0.0?external=react,react-dom",
+        "@radix-ui/react-slider": "https://esm.sh/@radix-ui/react-slider@1.1.2?external=react,react-dom",
+        "@radix-ui/react-switch": "https://esm.sh/@radix-ui/react-switch@1.0.3?external=react,react-dom",
+        "@radix-ui/react-tooltip": "https://esm.sh/@radix-ui/react-tooltip@1.0.7?external=react,react-dom",
+        "lucide-react": "https://esm.sh/lucide-react@0.263.1?external=react,react-dom"
       }
     }
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
+  <script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/recharts@2.5.0/umd/Recharts.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/framer-motion@11.11.11/dist/framer-motion.js"></script>
   ${injectedCDNs}
@@ -1107,8 +1150,30 @@ ${artifact.content}
 
     // Radix UI Select components (imported dynamically from ESM CDN)
     // These are provided for artifacts that use "const { Select, ... } = RadixUISelect" pattern
-    const RadixUISelect = await import('@radix-ui/react-select');
-    const { Root: Select, Trigger: SelectTrigger, Value: SelectValue, Content: SelectContent, Item: SelectItem, Portal: SelectPortal, Viewport: SelectViewport, Group: SelectGroup, Label: SelectLabel, Separator: SelectSeparator, Icon: SelectIcon, ItemText: SelectItemText, ItemIndicator: SelectItemIndicator, ScrollUpButton: SelectScrollUpButton, ScrollDownButton: SelectScrollDownButton } = RadixUISelect;
+    // Wrapped in try-catch so artifacts without Radix UI still work if import fails
+    let RadixUISelect = {};
+    let Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectPortal, SelectViewport, SelectGroup, SelectLabel, SelectSeparator, SelectIcon, SelectItemText, SelectItemIndicator, SelectScrollUpButton, SelectScrollDownButton;
+    try {
+      RadixUISelect = await import('@radix-ui/react-select');
+      Select = RadixUISelect.Root;
+      SelectTrigger = RadixUISelect.Trigger;
+      SelectValue = RadixUISelect.Value;
+      SelectContent = RadixUISelect.Content;
+      SelectItem = RadixUISelect.Item;
+      SelectPortal = RadixUISelect.Portal;
+      SelectViewport = RadixUISelect.Viewport;
+      SelectGroup = RadixUISelect.Group;
+      SelectLabel = RadixUISelect.Label;
+      SelectSeparator = RadixUISelect.Separator;
+      SelectIcon = RadixUISelect.Icon;
+      SelectItemText = RadixUISelect.ItemText;
+      SelectItemIndicator = RadixUISelect.ItemIndicator;
+      SelectScrollUpButton = RadixUISelect.ScrollUpButton;
+      SelectScrollDownButton = RadixUISelect.ScrollDownButton;
+      console.log('[Artifact] Radix UI Select loaded successfully');
+    } catch (e) {
+      console.warn('[Artifact] Radix UI Select not available:', e.message);
+    }
 
     ${processedCode}
 

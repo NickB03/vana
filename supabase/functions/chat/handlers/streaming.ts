@@ -44,7 +44,7 @@ export function createStreamTransformer(
         reasoningStepsSent = structuredReasoning.steps.length;
 
         console.log(
-          `[${requestId}] =� Sent reasoning event with ${structuredReasoning.steps.length} steps (frontend will animate)`
+          `[${requestId}] 🧠 Sent reasoning event with ${structuredReasoning.steps.length} steps (frontend will animate)`
         );
       }
 
@@ -64,7 +64,7 @@ export function createStreamTransformer(
         searchSent = true;
 
         console.log(
-          `[${requestId}] =� Sent web search results: ${searchResult.searchResultsData.sources.length} sources`
+          `[${requestId}] 🔍 Sent web search results: ${searchResult.searchResultsData.sources.length} sources`
         );
       }
     },
@@ -94,7 +94,7 @@ export function createStreamTransformer(
             const result = transformArtifactCode(content);
 
             if (result.hadIssues) {
-              console.log("=' Auto-fixed artifact imports:", result.changes);
+              console.log("🔧 Auto-fixed artifact imports:", result.changes);
               // Replace the artifact content with transformed version
               buffer = buffer.replace(
                 fullMatch,
@@ -103,7 +103,7 @@ export function createStreamTransformer(
             }
           } catch (error) {
             console.error(
-              "L Transform failed, sending original artifact:",
+              "❌ Transform failed, sending original artifact:",
               error
             );
             // Continue with original artifact - better than breaking the stream
@@ -126,7 +126,7 @@ export function createStreamTransformer(
         buffer = "";
       } else if (buffer.length > 50000) {
         // Safety: if buffer gets too large, send it anyway to avoid memory issues
-        console.warn("� Buffer overflow - sending untransformed artifact");
+        console.warn("⚠️ Buffer overflow - sending untransformed artifact");
         controller.enqueue(buffer);
         buffer = "";
         insideArtifact = false;

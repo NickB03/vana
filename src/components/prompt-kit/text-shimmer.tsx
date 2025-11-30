@@ -9,6 +9,8 @@ export type TextShimmerProps = {
   duration?: number;
   /** Shimmer spread width (constrained 5-45) */
   spread?: number;
+  /** Use pulsing animation variant (slower, left-to-right pulse) */
+  pulse?: boolean;
   /** Content to display with shimmer effect */
   children: React.ReactNode;
 } & React.HTMLAttributes<HTMLElement>;
@@ -21,8 +23,14 @@ export type TextShimmerProps = {
  *
  * @example
  * ```tsx
+ * // Standard shimmer (fast sweep)
  * <TextShimmer duration={2} spread={30}>
  *   Processing...
+ * </TextShimmer>
+ *
+ * // Pulsing shimmer (slow, gentle pulse)
+ * <TextShimmer pulse duration={3} spread={30}>
+ *   Analyzing request...
  * </TextShimmer>
  * ```
  */
@@ -31,6 +39,7 @@ export function TextShimmer({
   className,
   duration = 4,
   spread = 20,
+  pulse = false,
   children,
   ...props
 }: TextShimmerProps) {
@@ -41,8 +50,8 @@ export function TextShimmer({
   return (
     <Component
       className={cn(
-        "bg-clip-text bg-size-200% font-medium text-transparent",
-        "animate-shimmer",
+        "bg-clip-text font-medium text-transparent",
+        pulse ? "animate-shimmer-pulse" : "animate-shimmer",
         className
       )}
       style={{

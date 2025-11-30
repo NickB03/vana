@@ -15,7 +15,7 @@ serve(async (req) => {
 
   try {
     const requestBody = await req.json();
-    const { content, type, errorMessage } = requestBody;
+    const { content, type, errorMessage, validationContext } = requestBody;
 
     // Input validation
     if (!content || typeof content !== "string") {
@@ -87,9 +87,9 @@ serve(async (req) => {
       { data: apiThrottleResult, error: apiThrottleError },
       { data: userRateLimitResult, error: userRateLimitError }
     ] = await Promise.all([
-      // Check Kimi API throttle (10 RPM for artifact generation - stricter than chat)
+      // Check GLM-4.6 API throttle (10 RPM for artifact generation - stricter than chat)
       serviceClient.rpc("check_api_throttle", {
-        p_api_name: "kimi-k2",
+        p_api_name: "glm-4.6",
         p_max_requests: RATE_LIMITS.ARTIFACT.API_THROTTLE.MAX_REQUESTS,
         p_window_seconds: RATE_LIMITS.ARTIFACT.API_THROTTLE.WINDOW_SECONDS
       }),
@@ -116,7 +116,7 @@ serve(async (req) => {
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
       );
     } else if (apiThrottleResult && !apiThrottleResult.allowed) {
-      console.warn(`[${requestId}] 🚨 API throttle exceeded for Kimi K2 artifact fix`);
+      console.warn(`[${requestId}] 🚨 API throttle exceeded for GLM-4.6 artifact fix`);
       return new Response(
         JSON.stringify({
           error: "API rate limit exceeded. Please try again in a moment.",
@@ -189,6 +189,24 @@ serve(async (req) => {
     const relevantPatterns = getRelevantPatterns(errorMessage);
     const typeGuidance = getTypeSpecificGuidance(type);
 
+    // Build validation context section if available
+    const validationSection = validationContext ? `
+[VALIDATION CONTEXT]
+
+${validationContext.multipleMutations ? `⚠️ MULTIPLE MUTATIONS DETECTED: This code mutates the same array/object in multiple places.
+Auto-fix was DISABLED to prevent "Identifier already declared" errors.
+You MUST manually refactor using one of these patterns:
+- Use a single mutable copy at function start
+- Use functional patterns (map, filter, reduce)
+- Use separate variables for each mutation site
+` : ''}
+${validationContext.autoFixDisabled ? `⚠️ AUTO-FIX WAS DISABLED: The validation system detected issues too complex to auto-fix.
+Pay special attention to immutability patterns.
+` : ''}
+${validationContext.specificIssues?.length > 0 ? `Specific issues detected:
+${validationContext.specificIssues.map((issue: string) => `- ${issue}`).join('\n')}
+` : ''}` : '';
+
     // Build focused system prompt with dynamic pattern injection
     const systemPrompt = `You are an expert artifact debugger.
 
@@ -196,7 +214,7 @@ serve(async (req) => {
 
 ERROR: ${errorMessage}
 ARTIFACT TYPE: ${type}
-
+${validationSection}
 [FIX PATTERNS]
 
 ${relevantPatterns.map((pattern, i) => `${i + 1}. ${pattern}`).join('\n')}
