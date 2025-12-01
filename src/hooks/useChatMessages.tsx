@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getAuthErrorMessage } from "@/utils/authHelpers";
 import { chatRequestThrottle } from "@/utils/requestThrottle";
-import { StructuredReasoning, parseReasoningSteps } from "@/types/reasoning";
+import { StructuredReasoning, parseReasoningSteps, ReasoningStep } from "@/types/reasoning";
 import { WebSearchResults } from "@/types/webSearch";
 
 export interface ChatMessage {
@@ -31,6 +31,7 @@ export interface StreamProgress {
   percentage: number;
   reasoningSteps?: StructuredReasoning; // Structured reasoning for streaming
   streamingReasoningText?: string; // Raw reasoning text being streamed (GLM native thinking)
+  reasoningStatus?: string; // Semantic status update from GLM-4.5-AirX
   searchResults?: WebSearchResults; // Web search results for streaming
 }
 
@@ -440,7 +441,7 @@ export function useChatMessages(
               switch (eventType) {
                 case "reasoning_step": {
                   // New structured reasoning step detected by server
-                  const step = eventData.step as { phase: string; title: string; icon?: string; items: string[] };
+                  const step = eventData.step as ReasoningStep;
                   const stepIndex = eventData.stepIndex as number;
                   currentThinkingText = (eventData.currentThinking as string) || step.title;
 
@@ -746,7 +747,7 @@ export function useChatMessages(
 
             // Handle new progressive reasoning_step events
             if (parsed.type === 'reasoning_step') {
-              const step = parsed.step as { phase: string; title: string; icon?: string; items: string[] };
+              const step = parsed.step as ReasoningStep;
               const stepIndex = parsed.stepIndex as number;
 
               // Build up reasoningSteps incrementally
@@ -780,6 +781,18 @@ export function useChatMessages(
               onDelta('', progress);
 
               continue; // Skip to next event
+            }
+
+            // Handle reasoning_status event (GLM-4.5-AirX summaries)
+            if (parsed.type === 'reasoning_status') {
+              const status = parsed.content as string;
+              console.log(`[StreamProgress] Reasoning status: "${status}"`);
+
+              const progress = updateProgress();
+              progress.reasoningStatus = status;
+              onDelta('', progress);
+
+              continue;
             }
 
             // LEGACY: Handle old 'reasoning' event format (all steps at once)

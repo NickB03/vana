@@ -235,6 +235,8 @@ export const MODELS = {
   GEMINI_FLASH: 'google/gemini-2.5-flash-lite',
   /** GLM-4.6 for artifact generation and fixing (replaces Kimi K2) - via Z.ai API */
   GLM_4_6: 'zhipu/glm-4.6',
+  /** GLM-4-AirX for fast reasoning summarization */
+  GLM_4_AIRX: 'zhipu/glm-4-airx',
   /** @deprecated Use GLM_4_6 instead - kept for backward compatibility */
   KIMI_K2: 'moonshotai/kimi-k2-thinking',
   /** Gemini Flash Image for image generation */

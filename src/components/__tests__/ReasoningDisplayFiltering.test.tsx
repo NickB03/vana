@@ -35,10 +35,16 @@ describe('ReasoningDisplay Filtering Logic', () => {
         expect(screen.getAllByText('Thinking...')[0]).toBeInTheDocument();
     });
 
-    it('filters out filler phrases', () => {
-        renderWithStreamingText('Let me check the database.');
-        // "Let me" is a filler
+    it('filters out filler phrases with non-action verbs', () => {
+        // "Let me think" stays as filler because "think" is a non-action verb
+        renderWithStreamingText('Let me think about this problem.');
         expect(screen.getAllByText('Thinking...')[0]).toBeInTheDocument();
+    });
+
+    it('transforms filler phrases with action verbs', () => {
+        // "Let me check" transforms to "Checking" because "check" is an action verb
+        renderWithStreamingText('Let me check the database.');
+        expect(screen.getAllByText('Checking the database')[0]).toBeInTheDocument();
     });
 
     it('filters out incomplete sentences', () => {
@@ -93,9 +99,10 @@ describe('ReasoningDisplay Filtering Logic', () => {
             />
         );
 
-        expect(screen.getAllByText('Valid sentence here now.')[0]).toBeInTheDocument();
+        // Period stripped for cleaner UI display
+        expect(screen.getAllByText('Valid sentence here now')[0]).toBeInTheDocument();
 
-        // Immediate update should be ignored
+        // Immediate update should be ignored due to throttling
         rerender(
             <ReasoningDisplay
                 reasoning={null}
@@ -105,7 +112,7 @@ describe('ReasoningDisplay Filtering Logic', () => {
             />
         );
 
-        expect(screen.getAllByText('Valid sentence here now.')[0]).toBeInTheDocument();
+        expect(screen.getAllByText('Valid sentence here now')[0]).toBeInTheDocument();
 
         // Advance time > 1.5s
         act(() => {
@@ -122,7 +129,8 @@ describe('ReasoningDisplay Filtering Logic', () => {
             />
         );
 
-        expect(screen.getAllByText('Second valid sentence here now.')[0]).toBeInTheDocument();
+        // Period stripped for cleaner UI display
+        expect(screen.getAllByText('Second valid sentence here now')[0]).toBeInTheDocument();
     });
 
     it('filters out raw GLM validation thoughts', () => {
@@ -165,7 +173,7 @@ describe('ReasoningDisplay Filtering Logic', () => {
         const { rerender } = renderWithStreamingText('Thinking...');
         act(() => { vi.advanceTimersByTime(2000); });
 
-        // "I will analyze the requirements" -> "Analyzing requirements"
+        // "I will analyze the requirements." -> "Analyzing the requirements" (period stripped for cleaner UI)
         rerender(
             <ReasoningDisplay
                 reasoning={null}
@@ -174,14 +182,14 @@ describe('ReasoningDisplay Filtering Logic', () => {
                 isStreaming={true}
             />
         );
-        expect(screen.getAllByText('Analyzing the requirements.')[0]).toBeInTheDocument();
+        expect(screen.getAllByText('Analyzing the requirements')[0]).toBeInTheDocument();
     });
 
     it('transforms continuous tense to action verbs (Polishing)', async () => {
         const { rerender } = renderWithStreamingText('Thinking...');
         act(() => { vi.advanceTimersByTime(2000); });
 
-        // "I am checking the database" -> "Checking the database"
+        // "I am checking the database." -> "Checking the database" (period stripped for cleaner UI)
         rerender(
             <ReasoningDisplay
                 reasoning={null}
@@ -190,7 +198,7 @@ describe('ReasoningDisplay Filtering Logic', () => {
                 isStreaming={true}
             />
         );
-        expect(screen.getAllByText('Checking the database.')[0]).toBeInTheDocument();
+        expect(screen.getAllByText('Checking the database')[0]).toBeInTheDocument();
     });
 
     it('filters out state description sentences (Polishing)', async () => {

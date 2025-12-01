@@ -273,7 +273,7 @@ export function ChatInterface({
       }
 
       // Add file reference to input
-      setInput(prev => `${prev}\n[${file.name}](${signedUrlData.signedUrl})`);
+      setInput(`${input}\n[${file.name}](${signedUrlData.signedUrl})`);
 
       toast({ title: "File uploaded successfully" });
     } catch (error) {
@@ -472,104 +472,104 @@ export function ChatInterface({
               CHAT_SPACING.messageList,
               CHAT_SPACING.message.gap
             )}
-          aria-label="Chat conversation"
-          data-testid="message-list"
-        >
+            aria-label="Chat conversation"
+            data-testid="message-list"
+          >
 
-          {messages.map((message, index) => {
-            const isAssistant = message.role === "assistant";
-            const isLastMessage = index === messages.length - 1;
+            {messages.map((message, index) => {
+              const isAssistant = message.role === "assistant";
+              const isLastMessage = index === messages.length - 1;
 
-            // Only animate new messages (last message when not streaming)
-            // This prevents performance issues with long chat histories
-            const shouldAnimate = isLastMessage && !isStreaming;
-            const hasReasoning = Boolean(message.reasoning || message.reasoning_steps);
+              // Only animate new messages (last message when not streaming)
+              // This prevents performance issues with long chat histories
+              const shouldAnimate = isLastMessage && !isStreaming;
+              const hasReasoning = Boolean(message.reasoning || message.reasoning_steps);
 
-            const messageContent = (
-              <MessageComponent
-                className={cn(
-                  "chat-message mx-auto flex w-full max-w-3xl flex-col items-start",
-                  CHAT_SPACING.message.container
-                )}
-                data-testid="chat-message"
-              >
-                {isAssistant ? (
-                  <div className="group flex w-full flex-col gap-2">
-                    {hasReasoning && (
-                      <ReasoningErrorBoundary>
-                        <ReasoningDisplay
-                          reasoning={message.reasoning}
-                          reasoningSteps={message.reasoning_steps}
-                          isStreaming={false}
-                        />
-                      </ReasoningErrorBoundary>
-                    )}
-                    <MessageWithArtifacts
-                      content={message.content}
-                      messageId={message.id}
-                      sessionId={message.session_id}
-                      onArtifactOpen={handleArtifactOpen}
-                      searchResults={message.search_results}
-                    />
+              const messageContent = (
+                <MessageComponent
+                  className={cn(
+                    "chat-message mx-auto flex w-full max-w-3xl flex-col items-start",
+                    CHAT_SPACING.message.container
+                  )}
+                  data-testid="chat-message"
+                >
+                  {isAssistant ? (
+                    <div className="group flex w-full flex-col gap-2">
+                      {hasReasoning && (
+                        <ReasoningErrorBoundary>
+                          <ReasoningDisplay
+                            reasoning={message.reasoning}
+                            reasoningSteps={message.reasoning_steps}
+                            isStreaming={false}
+                          />
+                        </ReasoningErrorBoundary>
+                      )}
+                      <MessageWithArtifacts
+                        content={message.content}
+                        messageId={message.id}
+                        sessionId={message.session_id}
+                        onArtifactOpen={handleArtifactOpen}
+                        searchResults={message.search_results}
+                      />
 
-                    {/* Compact action buttons - positioned at bottom right */}
-                    <div className="flex justify-end">
+                      {/* Compact action buttons - positioned at bottom right */}
+                      <div className="flex justify-end">
+                        <MessageActions
+                          className={cn(
+                            "flex gap-1",
+                            "opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100",
+                            isLastMessage && "opacity-100"
+                          )}
+                        >
+                          <MessageAction tooltip="Retry" delayDuration={100}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 rounded-sm hover:bg-muted/50"
+                              onClick={() => handleRetry(message.id)}
+                              disabled={isLoading || isStreaming}
+                              aria-label="Regenerate response"
+                            >
+                              <RotateCw className="h-3 w-3 text-muted-foreground/60" />
+                            </Button>
+                          </MessageAction>
+                          <MessageAction tooltip="Copy" delayDuration={100}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 rounded-sm hover:bg-muted/50"
+                              onClick={() => handleCopyMessage(message.content)}
+                              aria-label="Copy message content"
+                            >
+                              <Copy className="h-3 w-3 text-muted-foreground/60" />
+                            </Button>
+                          </MessageAction>
+                        </MessageActions>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="group flex w-full items-start gap-2">
+                      {/* User message with subtle pill background (Claude-style) */}
+                      {/* Subtle pill container with proper spacing */}
+                      <div className="flex items-center gap-2.5 rounded-2xl bg-muted/60 px-3 py-1.5">
+                        {/* User avatar: 32px circle (Claude-style) */}
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold text-sm">
+                          U
+                        </div>
+
+                        {/* Message content - clean text without extra styling */}
+                        <div className="text-[15px] text-foreground leading-relaxed py-0.5">
+                          {message.content}
+                        </div>
+                      </div>
+
+                      {/* Compact action buttons - positioned to the right of pill */}
                       <MessageActions
                         className={cn(
-                          "flex gap-1",
-                          "opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100",
-                          isLastMessage && "opacity-100"
+                          "flex gap-1 mt-0.5",
+                          "opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100"
                         )}
                       >
-                        <MessageAction tooltip="Retry" delayDuration={100}>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 rounded-sm hover:bg-muted/50"
-                            onClick={() => handleRetry(message.id)}
-                            disabled={isLoading || isStreaming}
-                            aria-label="Regenerate response"
-                          >
-                            <RotateCw className="h-3 w-3 text-muted-foreground/60" />
-                          </Button>
-                        </MessageAction>
-                        <MessageAction tooltip="Copy" delayDuration={100}>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 rounded-sm hover:bg-muted/50"
-                            onClick={() => handleCopyMessage(message.content)}
-                            aria-label="Copy message content"
-                          >
-                            <Copy className="h-3 w-3 text-muted-foreground/60" />
-                          </Button>
-                        </MessageAction>
-                      </MessageActions>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="group flex w-full items-start gap-2">
-                    {/* User message with subtle pill background (Claude-style) */}
-                    {/* Subtle pill container with proper spacing */}
-                    <div className="flex items-center gap-2.5 rounded-2xl bg-muted/60 px-3 py-1.5">
-                      {/* User avatar: 32px circle (Claude-style) */}
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold text-sm">
-                        U
-                      </div>
-
-                      {/* Message content - clean text without extra styling */}
-                      <div className="text-[15px] text-foreground leading-relaxed py-0.5">
-                        {message.content}
-                      </div>
-                    </div>
-
-                    {/* Compact action buttons - positioned to the right of pill */}
-                    <MessageActions
-                      className={cn(
-                        "flex gap-1 mt-0.5",
-                        "opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100"
-                      )}
-                    >
                         <MessageAction tooltip="Edit" delayDuration={100}>
                           <Button
                             variant="ghost"
@@ -593,107 +593,108 @@ export function ChatInterface({
                           </Button>
                         </MessageAction>
                       </MessageActions>
-                  </div>
-                )}
-              </MessageComponent>
-            );
+                    </div>
+                  )}
+                </MessageComponent>
+              );
 
-            // Wrap with motion animation only for new messages to optimize performance
-            return shouldAnimate ? (
-              <motion.div
-                key={message.id}
-                className="will-change-transform transform-gpu"
-                {...scaleIn}
-                transition={{
-                  duration: ANIMATION_DURATIONS.moderate,
-                  ease: ANIMATION_EASINGS.easeOut,
-                }}
+              // Wrap with motion animation only for new messages to optimize performance
+              return shouldAnimate ? (
+                <motion.div
+                  key={message.id}
+                  className="will-change-transform transform-gpu"
+                  {...scaleIn}
+                  transition={{
+                    duration: ANIMATION_DURATIONS.moderate,
+                    ease: ANIMATION_EASINGS.easeOut,
+                  }}
+                >
+                  {messageContent}
+                </motion.div>
+              ) : (
+                <div key={message.id}>{messageContent}</div>
+              );
+            })}
+
+            {isStreaming && (
+              <MessageComponent
+                className={cn(
+                  "mx-auto flex w-full max-w-3xl flex-col items-start",
+                  CHAT_SPACING.message.container
+                )}
               >
-                {messageContent}
-              </motion.div>
-            ) : (
-              <div key={message.id}>{messageContent}</div>
-            );
-          })}
+                <div className="flex w-full flex-col gap-2">
+                  {/* Always show reasoning during streaming, even if no data yet */}
+                  <ReasoningErrorBoundary fallback={<ThinkingIndicator status="Loading reasoning..." />}>
+                    <ReasoningDisplay
+                      reasoningSteps={streamProgress.reasoningSteps}
+                      streamingReasoningText={streamProgress.streamingReasoningText}
+                      reasoningStatus={streamProgress.reasoningStatus}
+                      isStreaming={true}
+                      onStop={cancelStream}
+                    />
+                  </ReasoningErrorBoundary>
+                  {/* Show content immediately - reasoning is supplementary context, not blocking */}
+                  {streamingMessage && (
+                    <MessageWithArtifacts
+                      content={streamingMessage}
+                      sessionId={sessionId || ''}
+                      onArtifactOpen={handleArtifactOpen}
+                      searchResults={streamProgress.searchResults}
+                    />
+                  )}
+                </div>
+              </MessageComponent>
+            )}
 
-          {isStreaming && (
-            <MessageComponent
-              className={cn(
-                "mx-auto flex w-full max-w-3xl flex-col items-start",
-                CHAT_SPACING.message.container
-              )}
+            {/* Show skeleton only when loading but not yet streaming */}
+            {isLoading && !isStreaming && (
+              <MessageSkeleton variant="assistant" />
+            )}
+          </ChatContainerContent>
+
+          <div className="absolute bottom-4 right-4">
+            <ScrollButton className="shadow-sm" />
+          </div>
+
+          {/* Prompt Input - embedded within chat card */}
+          <div className={combineSpacing("shrink-0 bg-transparent safe-mobile-input px-4 pb-4", SAFE_AREA_SPACING.bottom)}>
+            <PromptInput
+              value={input}
+              onValueChange={setInput}
+              isLoading={isLoading || isStreaming}
+              onSubmit={handleSend}
+              className="w-full relative rounded-xl bg-black/50 backdrop-blur-sm p-0 pt-1"
             >
-              <div className="flex w-full flex-col gap-2">
-                {/* Always show reasoning during streaming, even if no data yet */}
-                <ReasoningErrorBoundary fallback={<ThinkingIndicator status="Loading reasoning..." />}>
-                  <ReasoningDisplay
-                    reasoningSteps={streamProgress.reasoningSteps}
-                    streamingReasoningText={streamProgress.streamingReasoningText}
-                    isStreaming={true}
-                    onStop={cancelStream}
-                  />
-                </ReasoningErrorBoundary>
-                {/* Show content immediately - reasoning is supplementary context, not blocking */}
-                {streamingMessage && (
-                  <MessageWithArtifacts
-                    content={streamingMessage}
-                    sessionId={sessionId || ''}
-                    onArtifactOpen={handleArtifactOpen}
-                    searchResults={streamProgress.searchResults}
-                  />
-                )}
+              <div className="flex flex-col">
+                <PromptInputTextarea
+                  placeholder="Ask anything"
+                  className={combineSpacing("min-h-[44px] text-base leading-[1.3]", CHAT_SPACING.input.textarea)}
+                />
+                <PromptInputControls
+                  className="mt-5 px-3 pb-3"
+                  imageMode={imageMode}
+                  onImageModeChange={setImageMode}
+                  artifactMode={artifactMode}
+                  onArtifactModeChange={setArtifactMode}
+                  isCanvasOpen={isCanvasOpen}
+                  currentArtifact={currentArtifact}
+                  onCreateClick={handleCreateClick}
+                  isLoading={isLoading}
+                  isStreaming={isStreaming}
+                  input={input}
+                  onSend={() => handleSend()}
+                  onStop={cancelStream}
+                  showFileUpload={true}
+                  fileInputRef={fileInputRef}
+                  isUploadingFile={isUploadingFile}
+                  onFileUpload={handleFileUpload}
+                  sendIcon="arrow"
+                />
               </div>
-            </MessageComponent>
-          )}
-
-          {/* Show skeleton only when loading but not yet streaming */}
-          {isLoading && !isStreaming && (
-            <MessageSkeleton variant="assistant" />
-          )}
-        </ChatContainerContent>
-
-        <div className="absolute bottom-4 right-4">
-          <ScrollButton className="shadow-sm" />
-        </div>
-
-        {/* Prompt Input - embedded within chat card */}
-        <div className={combineSpacing("shrink-0 bg-transparent safe-mobile-input px-4 pb-4", SAFE_AREA_SPACING.bottom)}>
-          <PromptInput
-            value={input}
-            onValueChange={setInput}
-            isLoading={isLoading || isStreaming}
-            onSubmit={handleSend}
-            className="w-full relative rounded-xl bg-black/50 backdrop-blur-sm p-0 pt-1"
-          >
-            <div className="flex flex-col">
-              <PromptInputTextarea
-                placeholder="Ask anything"
-                className={combineSpacing("min-h-[44px] text-base leading-[1.3]", CHAT_SPACING.input.textarea)}
-              />
-              <PromptInputControls
-                className="mt-5 px-3 pb-3"
-                imageMode={imageMode}
-                onImageModeChange={setImageMode}
-                artifactMode={artifactMode}
-                onArtifactModeChange={setArtifactMode}
-                isCanvasOpen={isCanvasOpen}
-                currentArtifact={currentArtifact}
-                onCreateClick={handleCreateClick}
-                isLoading={isLoading}
-                isStreaming={isStreaming}
-                input={input}
-                onSend={() => handleSend()}
-                onStop={cancelStream}
-                showFileUpload={true}
-                fileInputRef={fileInputRef}
-                isUploadingFile={isUploadingFile}
-                onFileUpload={handleFileUpload}
-                sendIcon="arrow"
-              />
-            </div>
-          </PromptInput>
-        </div>
-      </ChatContainerRoot>
+            </PromptInput>
+          </div>
+        </ChatContainerRoot>
       </div>
     </div>
   );

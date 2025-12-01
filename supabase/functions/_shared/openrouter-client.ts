@@ -126,6 +126,7 @@ export interface GeminiFlashOptions {
   max_tokens?: number;
   requestId?: string;
   stream?: boolean;
+  model?: string;
 }
 
 /**
@@ -144,7 +145,8 @@ export async function callGeminiFlash(
     temperature = 0.7,
     max_tokens = 8000,
     requestId = crypto.randomUUID(),
-    stream = false
+    stream = false,
+    model = MODELS.GEMINI_FLASH
   } = options || {};
 
   if (!OPENROUTER_GEMINI_FLASH_KEY) {
@@ -165,7 +167,7 @@ export async function callGeminiFlash(
       "X-Title": "AI Chat Assistant"
     },
     body: JSON.stringify({
-      model: MODELS.GEMINI_FLASH,
+      model,
       messages,
       temperature,
       max_tokens,

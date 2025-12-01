@@ -8,6 +8,11 @@ import {
 import { Clock, ChevronDown, StopCircle } from "lucide-react";
 import { TextShimmer } from "@/components/prompt-kit/text-shimmer";
 import { useReasoningTimer } from "@/hooks/useReasoningTimer";
+import {
+  extractStatusText,
+  createExtractionState,
+  type ExtractionState,
+} from "@/utils/reasoningTextExtractor";
 
 interface ReasoningDisplayProps {
   // Support both old and new formats for backward compatibility
@@ -15,6 +20,8 @@ interface ReasoningDisplayProps {
   reasoningSteps?: StructuredReasoning | unknown | null;
   /** Raw reasoning text being streamed from GLM (native thinking mode) */
   streamingReasoningText?: string | null;
+  /** Semantic status update from GLM-4.5-AirX */
+  reasoningStatus?: string | null;
   isStreaming?: boolean;
   /** Callback when user clicks stop button during streaming */
   onStop?: () => void;
@@ -67,6 +74,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   reasoning,
   reasoningSteps,
   streamingReasoningText,
+  reasoningStatus,
   isStreaming,
   onStop,
 }: ReasoningDisplayProps) {
@@ -84,10 +92,8 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   const wasStreamingRef = useRef(false);
   // Track the previous step count to detect new steps arriving
   const prevStepCountRef = useRef(0);
-  // Track the last valid thinking text to prevent flickering
-  const lastThinkingTextRef = useRef<string>("Thinking...");
-  // Track when the pill label was last updated for throttling
-  const lastUpdateTimestampRef = useRef<number>(0);
+  // State for the reasoning text extractor (throttling, last valid text, etc.)
+  const extractionStateRef = useRef<ExtractionState>(createExtractionState());
 
   // Timer for reasoning duration (Claude-style)
   const elapsedTime = useReasoningTimer(isStreaming ?? false);
@@ -166,8 +172,8 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
       setFinalElapsedTime("");
       clearTimeouts();
       prevStepCountRef.current = 0;
-      lastThinkingTextRef.current = "Thinking...";
-      lastUpdateTimestampRef.current = 0;
+      // Reset the extraction state for new streaming session
+      extractionStateRef.current = createExtractionState();
     }
   }, [isStreaming, clearTimeouts]);
 
@@ -222,6 +228,8 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
    * - During streaming: current status ("Thinking...", "Scrutinizing...", etc.)
    * - Collapsed after streaming: last status ("Interrogated feasibility gaps...")
    * - Expanded after streaming: "Thought process" (Claude-style)
+   *
+   * Uses the extractStatusText utility for clean text extraction from raw reasoning.
    */
   const getPillLabel = (): string => {
     // When expanded after streaming: show "Thought process" (like Claude)
@@ -231,233 +239,31 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
 
     // During streaming: show current step title
     if (isStreaming) {
+      // 1. Prefer explicit semantic status from GLM-4.5-AirX (highest priority)
+      if (reasoningStatus) {
+        return reasoningStatus;
+      }
+
+      // 2. Prefer structured reasoning steps
       if (validatedSteps && currentSection) {
-        // Structured reasoning is always preferred
-        lastThinkingTextRef.current = currentSection.title;
         return currentSection.title;
       }
 
-      // Fallback to GLM native streaming text
+      // 3. Extract status from GLM native streaming text using the utility
       if (hasStreamingText && streamingReasoningText) {
-        const text = streamingReasoningText.trim();
+        const result = extractStatusText(
+          streamingReasoningText,
+          extractionStateRef.current
+        );
 
-        // STABILIZATION LOGIC:
-        // 1. Prefer the last COMPLETE sentence (ending in punctuation)
-        // 2. If no complete sentence, prefer the last COMPLETE line (newline separated)
-        // 3. Only fall back to partial text if we have nothing else and it's been a while
+        // Update state for next call
+        extractionStateRef.current = result.state;
 
-        // Find all complete sentences
-        // Regex finds sequences ending in . ! ? followed by space or end of string
-        const sentenceMatches = text.match(/[^.!?\n]+[.!?](?:\s|$)/g);
-
-        if (sentenceMatches && sentenceMatches.length > 0) {
-          // Get the last complete sentence
-          let lastSentence = sentenceMatches[sentenceMatches.length - 1].trim();
-
-          // Clean up bullet points
-          if (/^[-*•]/.test(lastSentence)) {
-            lastSentence = lastSentence.replace(/^[-*•]\s*/, '');
-          }
-
-          // Heuristic checks
-          const looksLikeCode = /[{}[\]<>]/.test(lastSentence) ||
-            lastSentence.includes("const ") ||
-            lastSentence.includes("function ") ||
-            lastSentence.includes("import ") ||
-            lastSentence.includes("return ");
-          const looksLikeData = lastSentence.includes('":') || lastSentence.endsWith(',');
-          const isQuoted = lastSentence.startsWith('"') || lastSentence.startsWith("'");
-          const isStepLabel = /^Step \d+/.test(lastSentence) && lastSentence.length < 20;
-          // STRICT FILTER: Block numbered lists (e.g. "1. Analyze") and short bullets
-          const isNumberedList = /^\d+\.\s/.test(lastSentence);
-          const isShortBullet = /^[-*•]\s/.test(lastSentence) && lastSentence.length < 40;
-
-          // BLOCK COLONS: Lines ending in : are usually headers or intros
-          const endsWithColon = lastSentence.trim().endsWith(':');
-
-          // FILLER PHRASE FILTER: Block common conversational fillers
-          const FILLER_PHRASES = [
-            "let me", "let's", "i will", "i'll", "i need", "i should",
-            "i am", "i'm", "we", "this", "okay", "so", "here", "now",
-            "first", "starting"
-          ];
-
-          // Strip common prefixes (e.g. "Building:", "Thinking:") before checking filler
-          // This handles cases like "Building: I need to make sure"
-          let cleanSentence = lastSentence;
-          if (/^[A-Za-z]+:\s/.test(cleanSentence)) {
-            cleanSentence = cleanSentence.replace(/^[A-Za-z]+:\s/, '');
-          }
-
-          // ACTION VERB TRANSFORMATION (Polishing)
-          // "I will analyze" -> "Analyzing"
-          // "I am checking" -> "Checking"
-          // "We are designing" -> "Designing"
-          if (/^(I|We)\s+(will|am|are)\s+([a-z]+)/i.test(cleanSentence)) {
-            cleanSentence = cleanSentence.replace(/^(I|We)\s+(will|am|are)\s+([a-z]+)/i, (match, p1, p2, verb) => {
-              const nextWord = verb;
-              if (nextWord.endsWith('ing')) {
-                return nextWord.charAt(0).toUpperCase() + nextWord.slice(1);
-              }
-              return nextWord.charAt(0).toUpperCase() + nextWord.slice(1);
-            });
-
-            // Special case: "Analyze" -> "Analyzing" looks cooler? 
-            if (cleanSentence.startsWith("Analyze ")) cleanSentence = cleanSentence.replace("Analyze ", "Analyzing ");
-            if (cleanSentence.startsWith("Check ")) cleanSentence = cleanSentence.replace("Check ", "Checking ");
-            if (cleanSentence.startsWith("Create ")) cleanSentence = cleanSentence.replace("Create ", "Creating ");
-            if (cleanSentence.startsWith("Design ")) cleanSentence = cleanSentence.replace("Design ", "Designing ");
-            if (cleanSentence.startsWith("Review ")) cleanSentence = cleanSentence.replace("Review ", "Reviewing ");
-          }
-
-          const lowerSentence = cleanSentence.toLowerCase();
-          const isFiller = FILLER_PHRASES.some(phrase => lowerSentence.startsWith(phrase));
-
-          // NEGATIVE INSTRUCTION FILTER (Ported from backend)
-          const isNegativeInstruction =
-            /^(no|do not|don't|must not|avoid|never)\s+/i.test(cleanSentence) ||
-            /<!DOCTYPE|<html|<head|<body|<script/i.test(cleanSentence) ||
-            /<[a-z]+>/i.test(cleanSentence);
-
-          // STATE SENTENCE FILTER (Polishing)
-          // Filter out "X is Y", "There are...", "It has..."
-          // These are usually descriptions of the solution, not the thought process.
-          const isStateSentence =
-            /\s(is|are|was|were|has|have)\s/i.test(cleanSentence) &&
-            !/(checking|analyzing|creating|designing|reviewing|generating|writing)/i.test(cleanSentence) && // Allow if it contains an action verb
-            !cleanSentence.endsWith("?"); // Allow questions
-
-          // STRICT STATUS MODE:
-          const startsWithCapital = /^[A-Z]/.test(lastSentence); // Check original for capitalization
-          const isLongEnough = lastSentence.length > 15;
-          const wordCount = lastSentence.split(/\s+/).length;
-          const hasEnoughWords = wordCount >= 3; // Lowered to 3 to allow punchier updates like "Analyzing requirements"
-
-          if (startsWithCapital && isLongEnough && hasEnoughWords && !isFiller && !isNegativeInstruction && !isStateSentence && !endsWithColon && !looksLikeCode && !looksLikeData && !isQuoted && !isStepLabel && !isNumberedList && !isShortBullet) {
-            // Use the CLEANED sentence for display!
-            const finalSentence = cleanSentence;
-
-            // THROTTLING LOGIC:
-            const now = Date.now();
-            const timeSinceLastUpdate = now - lastUpdateTimestampRef.current;
-            const isInitialState = lastThinkingTextRef.current === "Thinking..." || lastThinkingTextRef.current === "Processing...";
-
-            if (isInitialState || timeSinceLastUpdate > 1500) {
-              lastThinkingTextRef.current = finalSentence;
-              lastUpdateTimestampRef.current = now;
-              return finalSentence;
-            }
-
-            return lastThinkingTextRef.current;
-          } else if (looksLikeCode) {
-            const codeNow = Date.now();
-            if (codeNow - lastUpdateTimestampRef.current > 2000) {
-              lastThinkingTextRef.current = "Writing code...";
-              lastUpdateTimestampRef.current = codeNow;
-              return "Writing code...";
-            }
-          }
-        }
-
-        // If no new complete sentence, check for complete lines
-        const lines = text.split('\n').filter(line => line.trim().length > 0);
-
-        if (lines.length > 1) {
-          let stableLine = lines[lines.length - 2].trim();
-
-          if (/^[-*•]/.test(stableLine)) {
-            stableLine = stableLine.replace(/^[-*•]\s*/, '');
-          }
-
-          const looksLikeCode = /[{}[\]<>]/.test(stableLine) ||
-            stableLine.includes("const ") ||
-            stableLine.includes("function ") ||
-            stableLine.includes("import ") ||
-            stableLine.includes("return ");
-          const looksLikeData = stableLine.includes('":') || stableLine.endsWith(',');
-          const isQuoted = stableLine.startsWith('"') || stableLine.startsWith("'");
-          const isStepLabel = /^Step \d+/.test(stableLine) && stableLine.length < 20;
-          const isNumberedList = /^\d+\.\s/.test(stableLine);
-          const isShortBullet = /^[-*•]\s/.test(stableLine) && stableLine.length < 40;
-          const endsWithColon = stableLine.trim().endsWith(':');
-
-          const FILLER_PHRASES = [
-            "let me", "let's", "i will", "i'll", "i need", "i should",
-            "i am", "i'm", "we", "this", "okay", "so", "here", "now",
-            "first", "starting", "checking", "thinking", "analyzing",
-            "reviewing", "considering"
-          ];
-
-          // Strip common prefixes (e.g. "Building:", "Thinking:") before checking filler
-          let cleanLine = stableLine;
-          if (/^[A-Za-z]+:\s/.test(cleanLine)) {
-            cleanLine = cleanLine.replace(/^[A-Za-z]+:\s/, '');
-          }
-
-          // ACTION VERB TRANSFORMATION (Polishing)
-          if (/^(I|We)\s+(will|am|are)\s+([a-z]+)/i.test(cleanLine)) {
-            cleanLine = cleanLine.replace(/^(I|We)\s+(will|am|are)\s+([a-z]+)/i, (match, p1, p2, verb) => {
-              const nextWord = verb;
-              if (nextWord.endsWith('ing')) {
-                return nextWord.charAt(0).toUpperCase() + nextWord.slice(1);
-              }
-              return nextWord.charAt(0).toUpperCase() + nextWord.slice(1);
-            });
-
-            if (cleanLine.startsWith("Analyze ")) cleanLine = cleanLine.replace("Analyze ", "Analyzing ");
-            if (cleanLine.startsWith("Check ")) cleanLine = cleanLine.replace("Check ", "Checking ");
-            if (cleanLine.startsWith("Create ")) cleanLine = cleanLine.replace("Create ", "Creating ");
-            if (cleanLine.startsWith("Design ")) cleanLine = cleanLine.replace("Design ", "Designing ");
-            if (cleanLine.startsWith("Review ")) cleanLine = cleanLine.replace("Review ", "Reviewing ");
-          }
-
-          const lowerLine = cleanLine.toLowerCase();
-          const isFiller = FILLER_PHRASES.some(phrase => lowerLine.startsWith(phrase));
-
-          // NEGATIVE INSTRUCTION FILTER (Ported from backend)
-          const isNegativeInstruction =
-            /^(no|do not|don't|must not|avoid|never)\s+/i.test(cleanLine) ||
-            /<!DOCTYPE|<html|<head|<body|<script/i.test(cleanLine) ||
-            /<[a-z]+>/i.test(cleanLine);
-
-          // STATE SENTENCE FILTER (Polishing)
-          const isStateSentence =
-            /\s(is|are|was|were|has|have)\s/i.test(cleanLine) &&
-            !/(checking|analyzing|creating|designing|reviewing|generating|writing)/i.test(cleanLine) &&
-            !cleanLine.endsWith("?");
-
-          const startsWithCapital = /^[A-Z]/.test(stableLine);
-          const isLongEnough = stableLine.length > 15;
-          const wordCount = stableLine.split(/\s+/).length;
-          const hasEnoughWords = wordCount >= 3;
-
-          if (startsWithCapital && isLongEnough && hasEnoughWords && !isFiller && !isNegativeInstruction && !isStateSentence && !endsWithColon && !looksLikeCode && !looksLikeData && !isQuoted && !isStepLabel && !isNumberedList && !isShortBullet) {
-            const now = Date.now();
-            const timeSinceLastUpdate = now - lastUpdateTimestampRef.current;
-            const isInitialState = lastThinkingTextRef.current === "Thinking..." || lastThinkingTextRef.current === "Processing...";
-
-            if (isInitialState || timeSinceLastUpdate > 1500) {
-              lastThinkingTextRef.current = cleanLine;
-              lastUpdateTimestampRef.current = now;
-              return cleanLine;
-            }
-
-            return lastThinkingTextRef.current;
-          } else if (looksLikeCode) {
-            const codeNow = Date.now();
-            if (codeNow - lastUpdateTimestampRef.current > 2000) {
-              lastThinkingTextRef.current = "Writing code...";
-              lastUpdateTimestampRef.current = codeNow;
-              return "Writing code...";
-            }
-          }
-        }
-
-        // If we found nothing new and stable, return the LAST stable text we saw.
-        return lastThinkingTextRef.current;
+        return result.text;
       }
 
-      return lastThinkingTextRef.current;
+      // Default fallback
+      return extractionStateRef.current.lastText;
     }
 
     // After streaming (collapsed): show LAST status (not "Thought for X seconds")
