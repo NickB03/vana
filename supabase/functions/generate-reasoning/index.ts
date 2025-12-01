@@ -1,11 +1,19 @@
 /**
  * Generate Reasoning Edge Function
  *
+ * @deprecated This endpoint is currently NOT being called by the frontend.
+ * As of the GLM-4.6 migration (Nov 2025), artifact generation now uses GLM's
+ * native thinking mode, which streams reasoning directly from /generate-artifact.
+ *
+ * This endpoint is kept for:
+ * 1. Potential future use as a standalone reasoning API
+ * 2. Fallback if GLM native thinking is disabled
+ * 3. Reference implementation for Gemini-based structured reasoning
+ *
+ * Original purpose:
  * Lightweight endpoint that generates structured reasoning using Gemini Flash.
  * Called in parallel with /generate-artifact to provide immediate reasoning
  * while artifact generation runs in the background.
- *
- * This enables real-time reasoning streaming even when using direct artifact routing.
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";

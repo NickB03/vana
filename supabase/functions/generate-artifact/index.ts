@@ -1,9 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { callGLMWithRetryTracking, extractTextFromGLM, extractTextAndReasoningFromGLM, extractGLMTokenUsage, calculateGLMCost, logGLMUsage, handleGLMError } from "../_shared/glm-client.ts";
-import { parseGLMReasoningToStructured } from "../_shared/glm-reasoning-parser.ts";
+import { callGLM, callGLMWithRetryTracking, extractTextFromGLM, extractTextAndReasoningFromGLM, extractGLMTokenUsage, calculateGLMCost, logGLMUsage, handleGLMError, processGLMStream } from "../_shared/glm-client.ts";
+import { parseGLMReasoningToStructured, parseReasoningIncrementally, createIncrementalParseState, type IncrementalParseState } from "../_shared/glm-reasoning-parser.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
-import { MODELS, RATE_LIMITS } from "../_shared/config.ts";
+import { MODELS, RATE_LIMITS, FEATURE_FLAGS } from "../_shared/config.ts";
 import { validateArtifactCode, autoFixArtifactCode } from "../_shared/artifact-validator.ts";
 import { getSystemInstruction } from "../_shared/system-prompt-inline.ts";
 
@@ -27,7 +27,7 @@ serve(async (req) => {
     const requestId = crypto.randomUUID();
 
     const requestBody = await req.json();
-    const { prompt, artifactType, sessionId } = requestBody;
+    const { prompt, artifactType, sessionId, stream = false } = requestBody;
 
     // Input validation
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
@@ -99,136 +99,147 @@ serve(async (req) => {
     // 3. Financial damage (Kimi K2 costs ~$0.02 per 1K tokens)
     // 4. Rate-limit bypass via fake auth tokens (now fixed!)
     // ============================================================================
-    const [
-      { data: apiThrottleResult, error: apiThrottleError },
-      rateLimitResult
-    ] = await Promise.all([
-      // Check GLM-4.6 API throttle (10 RPM for artifact generation - stricter than chat)
-      serviceClient.rpc("check_api_throttle", {
-        p_api_name: "glm-4.6",
-        p_max_requests: RATE_LIMITS.ARTIFACT.API_THROTTLE.MAX_REQUESTS,
-        p_window_seconds: RATE_LIMITS.ARTIFACT.API_THROTTLE.WINDOW_SECONDS
-      }),
-      // Check appropriate rate limit based on VALIDATED auth status
-      isGuest ? (async () => {
-        // Get client IP address (trusted headers set by Supabase Edge infrastructure)
-        // X-Forwarded-For is sanitized by Supabase proxy to prevent spoofing
-        const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0].trim()
-          || req.headers.get("x-real-ip")
-          || "unknown";
 
-        return await serviceClient.rpc("check_guest_rate_limit", {
-          p_identifier: clientIp,
-          p_max_requests: RATE_LIMITS.ARTIFACT.GUEST.MAX_REQUESTS,
-          p_window_hours: RATE_LIMITS.ARTIFACT.GUEST.WINDOW_HOURS
-        });
-      })() : serviceClient.rpc("check_user_rate_limit", {
-        p_user_id: user!.id,
-        p_max_requests: RATE_LIMITS.ARTIFACT.AUTHENTICATED.MAX_REQUESTS,
-        p_window_hours: RATE_LIMITS.ARTIFACT.AUTHENTICATED.WINDOW_HOURS
-      })
-    ]);
-
-    // Handle API throttle check results
-    if (apiThrottleError) {
-      console.error(`[${requestId}] API throttle check error:`, apiThrottleError);
-      return new Response(
-        JSON.stringify({
-          error: "Service temporarily unavailable",
-          requestId,
-          retryable: true
-        }),
-        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
-      );
-    } else if (apiThrottleResult && !apiThrottleResult.allowed) {
-      console.warn(`[${requestId}] 🚨 API throttle exceeded for GLM-4.6 artifact generation`);
-      return new Response(
-        JSON.stringify({
-          error: "API rate limit exceeded. Please try again in a moment.",
-          rateLimitExceeded: true,
-          resetAt: apiThrottleResult.reset_at,
-          retryAfter: apiThrottleResult.retry_after
-        }),
-        {
-          status: 429,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-            "X-RateLimit-Limit": apiThrottleResult.total.toString(),
-            "X-RateLimit-Remaining": "0",
-            "X-RateLimit-Reset": new Date(apiThrottleResult.reset_at).getTime().toString(),
-            "Retry-After": apiThrottleResult.retry_after.toString(),
-            "X-Request-ID": requestId
-          }
-        }
-      );
+    // Skip rate limiting if feature flag is set (for local development only!)
+    if (FEATURE_FLAGS.RATE_LIMIT_DISABLED) {
+      console.warn(`[${requestId}] ⚠️ Rate limiting DISABLED via feature flag - development mode only!`);
     }
 
-    // Handle rate limit check results (guest or authenticated)
-    const { data: rateLimitData, error: rateLimitError } = rateLimitResult;
-    let rateLimitHeaders = {};
+    let rateLimitData: { allowed: boolean; remaining: number; total: number; reset_at: string } | null = null;
+    let rateLimitHeaders: Record<string, string> = {};
 
-    if (rateLimitError) {
-      const errorType = isGuest ? "Guest" : "User";
-      console.error(`[${requestId}] ${errorType} rate limit check error:`, rateLimitError);
-      return new Response(
-        JSON.stringify({
-          error: "Service temporarily unavailable",
-          requestId,
-          retryable: true
+    if (!FEATURE_FLAGS.RATE_LIMIT_DISABLED) {
+      const [
+        { data: apiThrottleResult, error: apiThrottleError },
+        rateLimitResult
+      ] = await Promise.all([
+        // Check GLM-4.6 API throttle (10 RPM for artifact generation - stricter than chat)
+        serviceClient.rpc("check_api_throttle", {
+          p_api_name: "glm-4.6",
+          p_max_requests: RATE_LIMITS.ARTIFACT.API_THROTTLE.MAX_REQUESTS,
+          p_window_seconds: RATE_LIMITS.ARTIFACT.API_THROTTLE.WINDOW_SECONDS
         }),
-        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
-      );
-    } else if (rateLimitData && !rateLimitData.allowed) {
-      if (isGuest) {
-        console.warn(`[${requestId}] 🚨 Guest rate limit exceeded (${RATE_LIMITS.ARTIFACT.GUEST.MAX_REQUESTS} per ${RATE_LIMITS.ARTIFACT.GUEST.WINDOW_HOURS}h)`);
+        // Check appropriate rate limit based on VALIDATED auth status
+        isGuest ? (async () => {
+          // Get client IP address (trusted headers set by Supabase Edge infrastructure)
+          // X-Forwarded-For is sanitized by Supabase proxy to prevent spoofing
+          const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0].trim()
+            || req.headers.get("x-real-ip")
+            || "unknown";
+
+          return await serviceClient.rpc("check_guest_rate_limit", {
+            p_identifier: clientIp,
+            p_max_requests: RATE_LIMITS.ARTIFACT.GUEST.MAX_REQUESTS,
+            p_window_hours: RATE_LIMITS.ARTIFACT.GUEST.WINDOW_HOURS
+          });
+        })() : serviceClient.rpc("check_user_rate_limit", {
+          p_user_id: user!.id,
+          p_max_requests: RATE_LIMITS.ARTIFACT.AUTHENTICATED.MAX_REQUESTS,
+          p_window_hours: RATE_LIMITS.ARTIFACT.AUTHENTICATED.WINDOW_HOURS
+        })
+      ]);
+
+      // Handle API throttle check results
+      if (apiThrottleError) {
+        console.error(`[${requestId}] API throttle check error:`, apiThrottleError);
         return new Response(
           JSON.stringify({
-            error: "Rate limit exceeded. Please sign in to continue using artifact generation.",
-            rateLimitExceeded: true,
-            resetAt: rateLimitData.reset_at
+            error: "Service temporarily unavailable",
+            requestId,
+            retryable: true
           }),
-          {
-            status: 429,
-            headers: {
-              ...corsHeaders,
-              "Content-Type": "application/json",
-              "X-RateLimit-Limit": rateLimitData.total.toString(),
-              "X-RateLimit-Remaining": "0",
-              "X-RateLimit-Reset": new Date(rateLimitData.reset_at).getTime().toString(),
-              "X-Request-ID": requestId
-            }
-          }
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
         );
-      } else {
-        console.warn(`[${requestId}] 🚨 User rate limit exceeded (${RATE_LIMITS.ARTIFACT.AUTHENTICATED.MAX_REQUESTS} per ${RATE_LIMITS.ARTIFACT.AUTHENTICATED.WINDOW_HOURS}h)`);
+      } else if (apiThrottleResult && !apiThrottleResult.allowed) {
+        console.warn(`[${requestId}] 🚨 API throttle exceeded for GLM-4.6 artifact generation`);
         return new Response(
           JSON.stringify({
-            error: "Rate limit exceeded. Please try again later.",
+            error: "API rate limit exceeded. Please try again in a moment.",
             rateLimitExceeded: true,
-            resetAt: rateLimitData.reset_at
+            resetAt: apiThrottleResult.reset_at,
+            retryAfter: apiThrottleResult.retry_after
           }),
           {
             status: 429,
             headers: {
               ...corsHeaders,
               "Content-Type": "application/json",
-              "X-RateLimit-Limit": rateLimitData.total.toString(),
+              "X-RateLimit-Limit": apiThrottleResult.total.toString(),
               "X-RateLimit-Remaining": "0",
-              "X-RateLimit-Reset": new Date(rateLimitData.reset_at).getTime().toString(),
+              "X-RateLimit-Reset": new Date(apiThrottleResult.reset_at).getTime().toString(),
+              "Retry-After": apiThrottleResult.retry_after.toString(),
               "X-Request-ID": requestId
             }
           }
         );
       }
-    } else if (rateLimitData) {
-      // Add rate limit headers to successful responses
-      rateLimitHeaders = {
-        "X-RateLimit-Limit": rateLimitData.total.toString(),
-        "X-RateLimit-Remaining": rateLimitData.remaining.toString(),
-        "X-RateLimit-Reset": new Date(rateLimitData.reset_at).getTime().toString()
-      };
-    }
+
+      // Handle rate limit check results (guest or authenticated)
+      const { data: rlData, error: rateLimitError } = rateLimitResult;
+      rateLimitData = rlData;
+
+      if (rateLimitError) {
+        const errorType = isGuest ? "Guest" : "User";
+        console.error(`[${requestId}] ${errorType} rate limit check error:`, rateLimitError);
+        return new Response(
+          JSON.stringify({
+            error: "Service temporarily unavailable",
+            requestId,
+            retryable: true
+          }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
+        );
+      } else if (rateLimitData && !rateLimitData.allowed) {
+        if (isGuest) {
+          console.warn(`[${requestId}] 🚨 Guest rate limit exceeded (${RATE_LIMITS.ARTIFACT.GUEST.MAX_REQUESTS} per ${RATE_LIMITS.ARTIFACT.GUEST.WINDOW_HOURS}h)`);
+          return new Response(
+            JSON.stringify({
+              error: "Rate limit exceeded. Please sign in to continue using artifact generation.",
+              rateLimitExceeded: true,
+              resetAt: rateLimitData.reset_at
+            }),
+            {
+              status: 429,
+              headers: {
+                ...corsHeaders,
+                "Content-Type": "application/json",
+                "X-RateLimit-Limit": rateLimitData.total.toString(),
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": new Date(rateLimitData.reset_at).getTime().toString(),
+                "X-Request-ID": requestId
+              }
+            }
+          );
+        } else {
+          console.warn(`[${requestId}] 🚨 User rate limit exceeded (${RATE_LIMITS.ARTIFACT.AUTHENTICATED.MAX_REQUESTS} per ${RATE_LIMITS.ARTIFACT.AUTHENTICATED.WINDOW_HOURS}h)`);
+          return new Response(
+            JSON.stringify({
+              error: "Rate limit exceeded. Please try again later.",
+              rateLimitExceeded: true,
+              resetAt: rateLimitData.reset_at
+            }),
+            {
+              status: 429,
+              headers: {
+                ...corsHeaders,
+                "Content-Type": "application/json",
+                "X-RateLimit-Limit": rateLimitData.total.toString(),
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": new Date(rateLimitData.reset_at).getTime().toString(),
+                "X-Request-ID": requestId
+              }
+            }
+          );
+        }
+      } else if (rateLimitData) {
+        // Add rate limit headers to successful responses
+        rateLimitHeaders = {
+          "X-RateLimit-Limit": rateLimitData.total.toString(),
+          "X-RateLimit-Remaining": rateLimitData.remaining.toString(),
+          "X-RateLimit-Reset": new Date(rateLimitData.reset_at).getTime().toString()
+        };
+      }
+    } // End of rate limiting block
 
     const userType = user ? `user ${user.id}` : "guest";
     console.log(`[${requestId}] Artifact generation request from ${userType}:`, prompt.substring(0, 100));
@@ -282,6 +293,223 @@ For React artifacts: Return ONLY pure JSX/React component code. Do NOT include <
 
 Include the opening <artifact> tag, the complete code, and the closing </artifact> tag.`;
 
+    // ============================================================================
+    // STREAMING MODE: Real-time GLM thinking + content streaming (SSE)
+    // ============================================================================
+    // When stream=true, we stream GLM's native thinking (reasoning_content) first,
+    // then the artifact content. This provides true real-time feedback instead of
+    // fake animations on pre-received data.
+    //
+    // SSE Event Format:
+    // - event: reasoning_chunk / data: { chunk: "..." }
+    // - event: reasoning_complete / data: { reasoning: "full text" }
+    // - event: content_chunk / data: { chunk: "..." }
+    // - event: artifact_complete / data: { artifactCode, reasoning, reasoningSteps }
+    // - event: error / data: { error: "message" }
+    // ============================================================================
+    if (stream) {
+      console.log(`[${requestId}] 🌊 Streaming mode enabled - using SSE for GLM response`);
+
+      // Create SSE response stream
+      const encoder = new TextEncoder();
+      const streamHeaders = {
+        ...corsHeaders,
+        ...rateLimitHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "X-Request-ID": requestId,
+      };
+
+      // Use TransformStream for SSE output
+      const { readable, writable } = new TransformStream();
+      const writer = writable.getWriter();
+
+      // Helper to send SSE events
+      const sendEvent = async (event: string, data: unknown) => {
+        const eventStr = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+        await writer.write(encoder.encode(eventStr));
+      };
+
+      // Start streaming GLM response in background
+      (async () => {
+        try {
+          // Call GLM with streaming enabled
+          const glmResponse = await callGLM(
+            ARTIFACT_SYSTEM_PROMPT,
+            userPrompt,
+            {
+              temperature: 1.0,
+              max_tokens: 16000,
+              requestId,
+              enableThinking: true,
+              stream: true, // Enable SSE streaming from GLM
+            }
+          );
+
+          if (!glmResponse.ok) {
+            const errorText = await glmResponse.text();
+            console.error(`[${requestId}] GLM streaming error (${glmResponse.status}):`, errorText.substring(0, 200));
+            await sendEvent("error", { error: `GLM API error: ${glmResponse.status}`, requestId });
+            await writer.close();
+            return;
+          }
+
+          // ============================================================================
+          // CLAUDE-LIKE STREAMING: Parse reasoning into steps instead of raw chunks
+          // ============================================================================
+          // Instead of streaming raw reasoning_content text (verbose, hard to read),
+          // we incrementally parse it into structured steps and emit them one-by-one.
+          // This provides a clean, Claude-like "Thinking..." experience with discrete
+          // reasoning steps appearing progressively.
+          //
+          // SSE Events (new format):
+          // - reasoning_step: { step: ReasoningStep, currentThinking: string }
+          // - reasoning_complete: { reasoning: string, reasoningSteps: StructuredReasoning }
+          // - content_chunk: { chunk: string }
+          // - artifact_complete: { ... }
+          // ============================================================================
+
+          let incrementalState: IncrementalParseState = createIncrementalParseState();
+          let fullReasoning = "";
+          const accumulatedSteps: Array<{ phase: string; title: string; icon?: string; items: string[] }> = [];
+
+          // Process GLM SSE stream with incremental step detection
+          const { reasoning, content } = await processGLMStream(
+            glmResponse,
+            {
+              onReasoningChunk: async (chunk: string) => {
+                // Accumulate full reasoning text
+                fullReasoning += chunk;
+
+                // Incrementally parse for new steps
+                const result = parseReasoningIncrementally(fullReasoning, incrementalState);
+                incrementalState = result.state;
+
+                if (result.newStep) {
+                  // New complete step detected - emit it
+                  accumulatedSteps.push(result.newStep);
+                  await sendEvent("reasoning_step", {
+                    step: result.newStep,
+                    stepIndex: accumulatedSteps.length - 1,
+                    currentThinking: result.currentThinking,
+                  });
+                  console.log(`[${requestId}] 🧠 Emitted reasoning step ${accumulatedSteps.length}: "${result.newStep.title}"`);
+                } else {
+                  // No new step, but update current thinking indicator periodically
+                  // Only send updates every 200 chars to avoid flooding
+                  if (fullReasoning.length % 200 < chunk.length) {
+                    await sendEvent("thinking_update", {
+                      currentThinking: result.currentThinking,
+                      progress: Math.min(45, 5 + (fullReasoning.length / 100)),
+                    });
+                  }
+                }
+              },
+              onContentChunk: async (chunk: string) => {
+                await sendEvent("content_chunk", { chunk });
+              },
+              onComplete: async (fullReasoningText: string, _fullContent: string) => {
+                // Send final reasoning complete event with structured data
+                if (fullReasoningText) {
+                  const finalReasoningSteps = parseGLMReasoningToStructured(fullReasoningText);
+                  await sendEvent("reasoning_complete", {
+                    reasoning: fullReasoningText,
+                    reasoningSteps: finalReasoningSteps,
+                    stepCount: accumulatedSteps.length,
+                  });
+                }
+              },
+              onError: async (error: Error) => {
+                console.error(`[${requestId}] GLM stream error:`, error);
+                await sendEvent("error", { error: error.message, requestId });
+              },
+            },
+            requestId
+          );
+
+          // Post-process artifact code
+          let artifactCode = content;
+
+          // Strip HTML document structure if present
+          if (artifactType === 'react' || artifactCode.includes('application/vnd.ant.react')) {
+            const htmlDocPattern = /<!DOCTYPE\s+html[\s\S]*$/i;
+            if (htmlDocPattern.test(artifactCode)) {
+              console.log(`[${requestId}] ⚠️  Stripping HTML document structure from streamed artifact`);
+              artifactCode = artifactCode.replace(htmlDocPattern, '').trim();
+              artifactCode = artifactCode.replace(/<\/artifact>\s*$/i, '').trim();
+              if (artifactCode.includes('<artifact') && !artifactCode.includes('</artifact>')) {
+                artifactCode = artifactCode + '\n</artifact>';
+              }
+            }
+          }
+
+          // Validate and auto-fix artifact code
+          const validation = validateArtifactCode(artifactCode, artifactType || 'react');
+          if (!validation.valid && validation.canAutoFix) {
+            const { fixed, changes } = autoFixArtifactCode(artifactCode);
+            if (changes.length > 0) {
+              console.log(`[${requestId}] ✅ Auto-fixed ${changes.length} streaming artifact issue(s)`);
+              artifactCode = fixed;
+            }
+          }
+
+          // Parse reasoning to structured format
+          const reasoningSteps = reasoning ? parseGLMReasoningToStructured(reasoning) : null;
+
+          // Send final completion event
+          await sendEvent("artifact_complete", {
+            success: true,
+            artifactCode,
+            reasoning,
+            reasoningSteps,
+            requestId,
+            validation: {
+              autoFixed: !validation.valid && validation.canAutoFix,
+              issueCount: validation.issues.length,
+            },
+          });
+
+          // Log usage (fire-and-forget)
+          const latencyMs = Date.now() - startTime;
+          logGLMUsage({
+            requestId,
+            functionName: 'generate-artifact-stream',
+            provider: 'z.ai',
+            model: MODELS.GLM_4_6,
+            userId: user?.id,
+            isGuest: !user,
+            inputTokens: 0, // Not available in streaming mode
+            outputTokens: 0,
+            totalTokens: 0,
+            latencyMs,
+            statusCode: 200,
+            estimatedCost: 0,
+            retryCount: 0,
+            promptPreview: prompt.substring(0, 200),
+            responseLength: artifactCode.length,
+          }).catch(err => console.error(`[${requestId}] Failed to log streaming usage:`, err));
+
+          console.log(`[${requestId}] ✅ Streaming artifact complete: ${artifactCode.length} chars in ${latencyMs}ms`);
+          await writer.close();
+        } catch (error) {
+          console.error(`[${requestId}] Streaming error:`, error);
+          try {
+            await sendEvent("error", { error: error instanceof Error ? error.message : "Unknown streaming error", requestId });
+            await writer.close();
+          } catch {
+            // Writer may already be closed
+          }
+        }
+      })();
+
+      // Return SSE response immediately
+      return new Response(readable, { headers: streamHeaders });
+    }
+
+    // ============================================================================
+    // NON-STREAMING MODE: Original behavior (wait for complete response)
+    // ============================================================================
     // Call GLM-4.6 via Z.ai API with retry logic and tracking
     console.log(`[${requestId}] 🤖 Routing to GLM-4.6 via Z.ai API`);
     const { response, retryCount } = await callGLMWithRetryTracking(

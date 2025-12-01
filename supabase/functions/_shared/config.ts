@@ -9,6 +9,26 @@
  */
 
 /**
+ * Feature Flags
+ *
+ * Environment-controlled feature toggles for development and production.
+ *
+ * @example
+ * ```bash
+ * # Disable rate limiting for local development
+ * RATE_LIMIT_DISABLED=true supabase functions serve
+ * ```
+ */
+export const FEATURE_FLAGS = {
+  /**
+   * Disable all rate limiting checks.
+   * Set RATE_LIMIT_DISABLED=true to bypass rate limits during development.
+   * WARNING: Never enable this in production!
+   */
+  RATE_LIMIT_DISABLED: Deno.env.get('RATE_LIMIT_DISABLED') === 'true',
+} as const;
+
+/**
  * Safely parse an integer from environment variable with validation
  *
  * @param key - Environment variable name

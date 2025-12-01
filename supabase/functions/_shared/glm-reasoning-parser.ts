@@ -18,6 +18,7 @@
 
 import {
   type StructuredReasoning,
+  type ReasoningStep,
   type ReasoningPhase,
   type ReasoningIcon,
   validateReasoningSteps,
@@ -135,7 +136,15 @@ function extractSections(text: string): ReasoningSection[] {
 
     // Check if this line is a section header
     const isNumberedStep = /^(\d+\.|Step\s+\d+:?|\d+\))\s+/i.test(line);
-    const isHeader = line.endsWith(':') && line.length < 100;
+    // Enhanced header detection:
+    // 1. Ends with colon (original)
+    // 2. Wrapped in bold (**Title**)
+    // 3. Markdown header (### Title)
+    const isColonHeader = line.endsWith(':') && line.length < 100;
+    const isBoldHeader = /^\*\*.*\*\*$/.test(line) && line.length < 100;
+    const isMarkdownHeader = /^#{1,6}\s+/.test(line) && line.length < 100;
+
+    const isHeader = isColonHeader || isBoldHeader || isMarkdownHeader;
     const isBulletPoint = /^[-*•]\s+/.test(line);
 
     if (isNumberedStep || isHeader) {
@@ -155,7 +164,12 @@ function extractSections(text: string): ReasoningSection[] {
       if (isNumberedStep) {
         title = line.replace(/^(\d+\.|Step\s+\d+:?|\d+\))\s+/i, '').trim();
       } else if (isHeader) {
-        title = line.replace(/:+$/, '').trim();
+        // Clean up header formatting
+        title = line
+          .replace(/:+$/, '')           // Remove trailing colons
+          .replace(/^\*\*|\*\*$/g, '')  // Remove bold markers
+          .replace(/^#{1,6}\s+/, '')    // Remove markdown header markers
+          .trim();
       }
 
       currentSection = {
@@ -347,8 +361,8 @@ function generateTitle(section: ReasoningSection, phase: ReasoningPhase): string
   // If doesn't start with action and is short, add context
   if (!startsWithAction && title.length < 25) {
     const prefix = phase === 'research' ? 'Analyzing' :
-                   phase === 'analysis' ? 'Planning' :
-                   phase === 'solution' ? 'Building' : 'Processing';
+      phase === 'analysis' ? 'Planning' :
+        phase === 'solution' ? 'Building' : 'Processing';
     // Only add prefix if it doesn't make title redundant
     if (!title.toLowerCase().includes(prefix.toLowerCase())) {
       title = `${prefix}: ${title}`;
@@ -366,9 +380,9 @@ function generateTitle(section: ReasoningSection, phase: ReasoningPhase): string
     title = fallbackMap[phase];
   }
 
-  // Trim to reasonable length
-  if (title.length > 60) {
-    title = title.substring(0, 57) + '...';
+  // Relaxed limit: Allow up to 120 chars (was 60) to capture full context
+  if (title.length > 120) {
+    title = title.substring(0, 117) + '...';
   }
 
   // Capitalize first letter
@@ -422,3 +436,307 @@ function createFallbackReasoning(rawText: string): StructuredReasoning {
     summary: rawText.length > 150 ? rawText.substring(0, 147) + '...' : rawText,
   };
 }
+
+// ============================================================================
+// INCREMENTAL PARSING - Claude-like streaming support
+// ============================================================================
+// These functions enable progressive step detection as GLM streams reasoning.
+// Instead of waiting for complete reasoning text, we detect new steps as they
+// appear and emit them one-by-one, similar to Claude's extended thinking UX.
+// ============================================================================
+
+/**
+ * State for incremental reasoning parsing
+ * Tracks what we've already emitted to detect new steps
+ */
+export interface IncrementalParseState {
+  /** Number of complete steps already detected and emitted */
+  emittedStepCount: number;
+  /** Last known text length to detect substantial changes */
+  lastTextLength: number;
+  /** Minimum chars between re-parse attempts (debounce) */
+  minCharsForReparse: number;
+}
+
+/**
+ * Result from incremental parsing
+ */
+export interface IncrementalParseResult {
+  /** Newly detected step (if any) */
+  newStep: ReasoningStep | null;
+  /** Updated state for next parse */
+  state: IncrementalParseState;
+  /** Current thinking summary for display (last line or current section title) */
+  currentThinking: string;
+}
+
+/**
+ * Create initial state for incremental parsing
+ */
+export function createIncrementalParseState(): IncrementalParseState {
+  return {
+    emittedStepCount: 0,
+    lastTextLength: 0,
+    minCharsForReparse: 100, // Don't re-parse too frequently
+  };
+}
+
+/**
+ * Parse reasoning incrementally to detect new steps as they stream in
+ *
+ * This is the key function for Claude-like streaming. Instead of showing
+ * raw reasoning text, we detect structured steps as they become complete
+ * and emit them one-by-one.
+ *
+ * Strategy:
+ * 1. Skip parsing if text hasn't grown enough (debounce)
+ * 2. Extract all sections from current text
+ * 3. If we have more complete sections than before, emit the new one
+ * 4. Return current thinking summary for the streaming pill display
+ *
+ * @param currentText - Full accumulated reasoning text so far
+ * @param state - Previous parse state
+ * @returns New step if detected, updated state, and current thinking text
+ *
+ * @example
+ * ```typescript
+ * let state = createIncrementalParseState();
+ *
+ * onReasoningChunk((chunk) => {
+ *   fullReasoning += chunk;
+ *   const result = parseReasoningIncrementally(fullReasoning, state);
+ *   state = result.state;
+ *
+ *   if (result.newStep) {
+ *     sendEvent("reasoning_step", result.newStep);
+ *   }
+ *   // Update UI with result.currentThinking
+ * });
+ * ```
+ */
+export function parseReasoningIncrementally(
+  currentText: string,
+  state: IncrementalParseState
+): IncrementalParseResult {
+  const textLength = currentText.length;
+
+  // Debounce: skip if text hasn't grown enough since last parse
+  const textGrowth = textLength - state.lastTextLength;
+  if (textGrowth < state.minCharsForReparse && state.emittedStepCount > 0) {
+    return {
+      newStep: null,
+      state,
+      currentThinking: extractCurrentThinking(currentText),
+    };
+  }
+
+  // Parse current text into sections
+  const trimmed = currentText.trim();
+  if (trimmed.length === 0) {
+    return {
+      newStep: null,
+      state,
+      currentThinking: 'Thinking...',
+    };
+  }
+
+  try {
+    const sections = extractSectionsPublic(trimmed);
+
+    // Check if we have a new complete section
+    // A section is "complete" if:
+    // 1. There's another section after it, OR
+    // 2. It has at least one item/substantial content
+    const completeCount = countCompleteSections(sections);
+
+    if (completeCount > state.emittedStepCount) {
+      // New complete section detected!
+      const newSectionIndex = state.emittedStepCount;
+      const section = sections[newSectionIndex];
+
+      // Convert to ReasoningStep
+      const phase = inferPhasePublic(section, newSectionIndex, Math.max(completeCount, 3));
+      const icon = getIconForPhasePublic(phase);
+      const title = generateTitlePublic(section, phase);
+
+      // CRITICAL: Ensure items array is NEVER empty - Zod schema requires min(1)
+      // If both items and rawText are empty, use the title as a fallback item
+      // This prevents validation failure that causes the "flashing" fallback path
+      let stepItems: string[];
+      if (section.items.length > 0) {
+        stepItems = section.items;
+      } else if (section.rawText.trim().length > 0) {
+        stepItems = [section.rawText.trim()];
+      } else {
+        // Ultimate fallback: use the title so we always have at least one item
+        stepItems = [title || 'Processing...'];
+      }
+
+      const newStep: ReasoningStep = {
+        phase,
+        title,
+        icon,
+        items: stepItems,
+        timestamp: Date.now(),
+      };
+
+      console.log(`[GLM Incremental] New step ${newSectionIndex + 1}: "${title}"`);
+
+      return {
+        newStep,
+        state: {
+          ...state,
+          emittedStepCount: state.emittedStepCount + 1,
+          lastTextLength: textLength,
+        },
+        currentThinking: title,
+      };
+    }
+
+    // No new complete section, but update current thinking
+    const currentThinking = sections.length > 0
+      ? sections[sections.length - 1].title || extractCurrentThinking(currentText)
+      : extractCurrentThinking(currentText);
+
+    return {
+      newStep: null,
+      state: {
+        ...state,
+        lastTextLength: textLength,
+      },
+      currentThinking,
+    };
+
+  } catch (error) {
+    console.warn('[GLM Incremental] Parse error:', error);
+    return {
+      newStep: null,
+      state,
+      currentThinking: extractCurrentThinking(currentText),
+    };
+  }
+}
+
+/**
+ * Count sections that appear "complete" (have content or are followed by another section)
+ */
+function countCompleteSections(sections: ReasoningSection[]): number {
+  if (sections.length === 0) return 0;
+
+  let completeCount = 0;
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i];
+    const hasFollowingSection = i < sections.length - 1;
+    const hasSubstantialContent =
+      section.items.length > 0 ||
+      (section.rawText && section.rawText.length > 50);
+
+    // A section is complete if there's another section after it,
+    // OR it has substantial content
+    if (hasFollowingSection || hasSubstantialContent) {
+      completeCount++;
+    }
+  }
+
+  return completeCount;
+}
+
+/**
+ * Extract a brief current thinking summary from the end of the text
+ * Used when no structured section is being worked on
+ *
+ * IMPORTANT: This should return short, human-readable summaries like:
+ * - "Analyzing request"
+ * - "Planning component structure"
+ * - "Processing..."
+ *
+ * NOT raw content like:
+ * - "{ id: 10, name: 'Tuna'..."
+ * - "<artifact type=..."
+ * - "const foods = [..."
+ */
+function extractCurrentThinking(text: string): string {
+  const lines = text.trim().split('\n').filter(l => l.trim().length > 0);
+  if (lines.length === 0) return 'Thinking...';
+
+  // Get last non-empty line
+  let lastLine = lines[lines.length - 1].trim();
+
+  // Clean up common prefixes
+  lastLine = lastLine.replace(/^(\d+\.|Step\s+\d+:?|\d+\))\s*/i, '');
+  lastLine = lastLine.replace(/^[-*•]\s*/, '');
+
+  // STRICT FILTERING: Return generic text if line looks like code/data
+  // Check for JSON objects/arrays, HTML/XML tags, code patterns
+  const looksLikeCode =
+    /^[{<[]/.test(lastLine) ||            // JSON/HTML/array start
+    /^["'`]/.test(lastLine) ||            // String literals
+    /^(const|let|var|function|import|export|return)\s/.test(lastLine) || // JS keywords
+    /^\w+\s*[:=]\s*/.test(lastLine) ||    // Variable assignments
+    /^(id|name|type|value|data):/i.test(lastLine) || // Property definitions
+    /{.*}/.test(lastLine) ||              // Inline JSON
+    /\[.*\]/.test(lastLine) ||            // Inline arrays
+    /^\d+[,}]/.test(lastLine);            // Numeric data
+
+  if (looksLikeCode) {
+    return 'Processing...';
+  }
+
+  // If too short, provide generic thinking
+  if (lastLine.length < 5) {
+    return 'Processing...';
+  }
+
+  // Relaxed limit: Allow up to 120 chars (was 50)
+  // If longer, try to extract the first sentence
+  if (lastLine.length > 120) {
+    // Try to split by sentence boundary
+    const sentenceMatch = lastLine.match(/^(.+?)[.!?]\s/);
+    if (sentenceMatch && sentenceMatch[1].length < 120) {
+      return sentenceMatch[1];
+    }
+    // Fallback to truncation
+    lastLine = lastLine.substring(0, 117) + '...';
+  }
+
+  return lastLine || 'Thinking...';
+}
+
+// ============================================================================
+// Public wrappers for private functions (needed for incremental parsing)
+// ============================================================================
+
+/**
+ * Public wrapper for extractSections
+ */
+export function extractSectionsPublic(text: string): ReasoningSection[] {
+  return extractSections(text);
+}
+
+/**
+ * Public wrapper for inferPhase
+ */
+export function inferPhasePublic(
+  section: ReasoningSection,
+  index: number,
+  totalSections: number
+): ReasoningPhase {
+  return inferPhase(section, index, totalSections);
+}
+
+/**
+ * Public wrapper for getIconForPhase
+ */
+export function getIconForPhasePublic(phase: ReasoningPhase): ReasoningIcon {
+  return getIconForPhase(phase);
+}
+
+/**
+ * Public wrapper for generateTitle
+ */
+export function generateTitlePublic(section: ReasoningSection, phase: ReasoningPhase): string {
+  return generateTitle(section, phase);
+}
+
+// Export ReasoningSection type for external use
+export type { ReasoningSection };

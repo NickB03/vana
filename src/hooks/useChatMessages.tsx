@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ensureValidSession, getAuthErrorMessage } from "@/utils/authHelpers";
+import { getAuthErrorMessage } from "@/utils/authHelpers";
 import { chatRequestThrottle } from "@/utils/requestThrottle";
 import { StructuredReasoning, parseReasoningSteps } from "@/types/reasoning";
 import { WebSearchResults } from "@/types/webSearch";
@@ -29,8 +29,9 @@ export interface StreamProgress {
   message: string;
   artifactDetected: boolean;
   percentage: number;
-  reasoningSteps?: StructuredReasoning; // New: structured reasoning for streaming
-  searchResults?: WebSearchResults; // New: web search results for streaming
+  reasoningSteps?: StructuredReasoning; // Structured reasoning for streaming
+  streamingReasoningText?: string; // Raw reasoning text being streamed (GLM native thinking)
+  searchResults?: WebSearchResults; // Web search results for streaming
 }
 
 export interface RateLimitHeaders {
@@ -131,35 +132,25 @@ export function useChatMessages(
 
     // For authenticated users, save to database
     try {
-      // DEBUG: Log what we're about to save
-      const payload = {
-        session_id: sessionId,
-        role,
-        content,
-        reasoning,
-        reasoning_steps: validatedReasoningSteps, // FIX: Use validated reasoning steps
-        search_results: searchResults || null,
-      };
-      console.log("[DEBUG] Saving message to database:", {
-        ...payload,
-        content_preview: content.substring(0, 100),
-        reasoning_steps_type: typeof validatedReasoningSteps,
-        reasoning_steps_value: validatedReasoningSteps,
-        search_results_type: typeof searchResults,
-      });
-
       const { data, error } = await supabase
         .from("chat_messages")
-        .insert(payload)
+        .insert({
+          session_id: sessionId,
+          role,
+          content,
+          reasoning,
+          reasoning_steps: validatedReasoningSteps,
+          search_results: searchResults || null,
+        })
         .select()
         .single();
 
       if (error) {
-        console.error("[DEBUG] Database error details:", {
+        console.error("Database error saving message:", {
           message: error.message,
+          code: error.code,
           details: error.details,
           hint: error.hint,
-          code: error.code,
         });
         throw error;
       }
@@ -255,7 +246,7 @@ export function useChatMessages(
         artifactPatterns.some(pattern => pattern.test(userMessage));
 
       if (isArtifactRequest) {
-        console.log("🎨 [useChatMessages] Direct artifact routing - calling /generate-artifact + /generate-reasoning in parallel");
+        console.log("🎨 [useChatMessages] Direct artifact routing - using SSE streaming from /generate-artifact");
 
         // Send initial progress immediately
         onDelta("", {
@@ -265,32 +256,22 @@ export function useChatMessages(
           percentage: 5,
         });
 
-        // Call both endpoints in parallel:
-        // 1. /generate-reasoning - Fast (2-4s) - Provides immediate reasoning
-        // 2. /generate-artifact - Slow (30-60s) - Generates the actual artifact
-        const reasoningPromise = fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-reasoning`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(session ? { Authorization: `Bearer ${session.access_token}` } : {})
-            },
-            body: JSON.stringify({ prompt: userMessage }),
-            signal: abortSignal,
-          }
-        ).then(async (res) => {
-          if (!res.ok) {
-            console.warn("⚠️ Reasoning generation failed, continuing without it");
-            return null;
-          }
-          return res.json();
-        }).catch((err) => {
-          console.warn("⚠️ Reasoning fetch error:", err);
-          return null;
-        });
+        // ============================================================================
+        // GLM-NATIVE THINKING FLOW: Stream reasoning + content from single endpoint
+        // ============================================================================
+        // Instead of calling /generate-reasoning and /generate-artifact in parallel,
+        // we call /generate-artifact with stream=true to get GLM's native thinking
+        // streamed in real-time, followed by the artifact content.
+        //
+        // SSE Events:
+        // - reasoning_chunk: Live reasoning text as GLM thinks
+        // - reasoning_complete: Full reasoning text (for saving)
+        // - content_chunk: Artifact code chunks
+        // - artifact_complete: Final artifact + structured reasoning
+        // - error: Error message
+        // ============================================================================
 
-        const artifactPromise = fetch(
+        const artifactResponse = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-artifact`,
           {
             method: "POST",
@@ -300,58 +281,13 @@ export function useChatMessages(
             },
             body: JSON.stringify({
               prompt: userMessage,
-              artifactType: "react", // Default to React artifacts
+              artifactType: "react",
               sessionId: isAuthenticated ? sessionId : undefined,
+              stream: true, // Enable SSE streaming
             }),
             signal: abortSignal,
           }
         );
-
-        // Wait for reasoning first (fast ~2-4s) - show it immediately
-        const reasoningData = await reasoningPromise;
-
-        if (reasoningData?.success && reasoningData.reasoning?.steps) {
-          console.log(`🧠 [useChatMessages] Reasoning ready with ${reasoningData.reasoning.steps.length} steps - streaming now`);
-
-          // Stream reasoning steps progressively while artifact generates
-          // OPTIMIZED: Faster transition (300ms) for smoother perceived performance
-          const steps = reasoningData.reasoning.steps;
-          for (let i = 0; i < steps.length; i++) {
-            const step = steps[i];
-            const progressPercentage = 10 + Math.round((i / steps.length) * 40); // 10-50%
-
-            // Create partial reasoning with steps up to current index
-            const partialReasoning = {
-              steps: steps.slice(0, i + 1),
-              summary: i === steps.length - 1 ? reasoningData.reasoning.summary : undefined,
-            };
-
-            onDelta("", {
-              stage: i === 0 ? "analyzing" : i < steps.length - 1 ? "planning" : "generating",
-              message: step.title || `Step ${i + 1}`,
-              artifactDetected: true,
-              percentage: progressPercentage,
-              reasoningSteps: partialReasoning,
-            });
-
-            // Brief pause between steps for animation effect (reduced from 600ms)
-            if (i < steps.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 300));
-            }
-          }
-        }
-
-        // Update progress while waiting for artifact
-        onDelta("", {
-          stage: "generating",
-          message: "Generating artifact code...",
-          artifactDetected: true,
-          percentage: 55,
-          reasoningSteps: reasoningData?.reasoning || undefined,
-        });
-
-        // Now wait for artifact generation to complete
-        const artifactResponse = await artifactPromise;
 
         // Handle rate limit exceeded (429)
         if (artifactResponse.status === 429) {
@@ -376,42 +312,264 @@ export function useChatMessages(
           const errorData = await artifactResponse.json();
           console.error("Artifact generation error:", errorData);
 
-          // Handle retryable errors (503)
           if (artifactResponse.status === 503 && errorData.retryable) {
             throw new Error("SERVICE_UNAVAILABLE");
           }
 
-          const errorMsg = errorData.error || "Failed to generate artifact";
-          throw new Error(errorMsg);
+          throw new Error(errorData.error || "Failed to generate artifact");
         }
 
-        const artifactData = await artifactResponse.json();
+        // Check content-type to determine if we got SSE streaming or JSON fallback
+        const contentType = artifactResponse.headers.get("content-type") || "";
+        const isSSEStream = contentType.includes("text/event-stream");
 
-        if (!artifactData.success || !artifactData.artifactCode) {
-          throw new Error("No artifact code returned");
+        // FALLBACK: Handle JSON response (non-streaming backend)
+        // This occurs when the Edge Function hasn't been deployed with streaming support
+        if (!isSSEStream && contentType.includes("application/json")) {
+          console.log("📦 [useChatMessages] Falling back to JSON response (non-streaming backend)");
+
+          const jsonData = await artifactResponse.json();
+
+          if (!jsonData.success || !jsonData.artifactCode) {
+            throw new Error(jsonData.error || "Failed to generate artifact");
+          }
+
+          // Update progress to show we're generating
+          onDelta("", {
+            stage: "generating",
+            message: "Generating artifact...",
+            artifactDetected: true,
+            percentage: 50,
+            reasoningSteps: jsonData.reasoningSteps,
+          });
+
+          // Simulate brief progress for UX
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+          // Final progress update - pass empty string to avoid flashing artifact code
+          // The artifact will be properly rendered via saveMessage() -> MessageWithArtifacts
+          onDelta("", {
+            stage: "complete",
+            message: "Done!",
+            artifactDetected: true,
+            percentage: 100,
+            reasoningSteps: jsonData.reasoningSteps,
+          });
+
+          // Clear streaming state
+          setIsLoading(false);
+          onDone();
+
+          // Small delay to ensure streaming state is cleared
+          await new Promise(resolve => setTimeout(resolve, 50));
+
+          // Save the assistant response with reasoning data
+          await saveMessage(
+            "assistant",
+            jsonData.artifactCode,
+            jsonData.reasoning || undefined,
+            jsonData.reasoningSteps || undefined
+          );
+
+          return;
         }
 
-        console.log("✅ [useChatMessages] Artifact generated successfully, length:", artifactData.artifactCode.length);
+        // Process SSE stream
+        const reader = artifactResponse.body?.getReader();
+        if (!reader) {
+          throw new Error("No response body for streaming");
+        }
 
-        const artifactCode = artifactData.artifactCode;
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let streamingReasoningText = "";
+        let streamingContentText = "";
+        // Track structured reasoning steps as they stream in (Claude-like)
+        let streamingReasoningSteps: StructuredReasoning = { steps: [] };
+        let currentThinkingText = "Thinking...";
+        let finalArtifactData: {
+          artifactCode?: string;
+          reasoning?: string;
+          reasoningSteps?: StructuredReasoning;
+        } | null = null;
 
-        // Use the pre-generated reasoning (from fast model) for display
-        // Fall back to GLM reasoning if pre-generation failed
-        const finalReasoning = reasoningData?.reasoning || artifactData.reasoningSteps;
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+
+            // Process complete lines (SSE format)
+            let newlineIndex: number;
+            while ((newlineIndex = buffer.indexOf("\n\n")) !== -1) {
+              const eventBlock = buffer.slice(0, newlineIndex);
+              buffer = buffer.slice(newlineIndex + 2);
+
+              // Parse SSE event
+              const eventMatch = eventBlock.match(/^event: (.+)$/m);
+              const dataMatch = eventBlock.match(/^data: (.+)$/m);
+
+              if (!eventMatch || !dataMatch) continue;
+
+              const eventType = eventMatch[1];
+              let eventData: Record<string, unknown>;
+
+              try {
+                eventData = JSON.parse(dataMatch[1]);
+              } catch {
+                console.warn("Failed to parse SSE data:", dataMatch[1]);
+                continue;
+              }
+
+              // Handle different event types
+              // ============================================================================
+              // CLAUDE-LIKE STREAMING: Handle structured reasoning steps
+              // ============================================================================
+              // The backend now parses GLM's raw reasoning into structured steps and
+              // streams them progressively. This provides a clean UX similar to Claude's
+              // extended thinking, instead of showing verbose raw thinking text.
+              //
+              // Event types:
+              // - reasoning_step: New complete step detected (phase, title, icon, items)
+              // - thinking_update: Current thinking indicator (for pill display)
+              // - reasoning_complete: Final structured reasoning + raw text
+              // - content_chunk: Artifact code chunks
+              // - artifact_complete: Final artifact data
+              // ============================================================================
+              switch (eventType) {
+                case "reasoning_step": {
+                  // New structured reasoning step detected by server
+                  const step = eventData.step as { phase: string; title: string; icon?: string; items: string[] };
+                  const stepIndex = eventData.stepIndex as number;
+                  currentThinkingText = (eventData.currentThinking as string) || step.title;
+
+                  // Add step to accumulated structured reasoning
+                  streamingReasoningSteps = {
+                    ...streamingReasoningSteps,
+                    steps: [...streamingReasoningSteps.steps, step],
+                  };
+
+                  console.log(`🧠 [useChatMessages] Reasoning step ${stepIndex + 1}: "${step.title}"`);
+
+                  // Update progress with structured reasoning (Claude-like)
+                  onDelta("", {
+                    stage: "analyzing",
+                    message: currentThinkingText,
+                    artifactDetected: true,
+                    percentage: Math.min(10 + (stepIndex * 12), 45),
+                    reasoningSteps: streamingReasoningSteps,
+                  });
+                  break;
+                }
+
+                case "thinking_update": {
+                  // Periodic update during GLM native thinking
+                  // We DON'T show the raw currentThinking text - instead we just update progress
+                  // The pill will show "Thinking..." until structured steps arrive
+                  const progress = (eventData.progress as number) || 15;
+
+                  onDelta("", {
+                    stage: "analyzing",
+                    message: "Thinking...", // Always use clean message, not raw text
+                    artifactDetected: true,
+                    percentage: Math.min(progress, 45),
+                    reasoningSteps: streamingReasoningSteps.steps.length > 0 ? streamingReasoningSteps : undefined,
+                  });
+                  break;
+                }
+
+                case "reasoning_chunk":
+                  // LEGACY: Fallback for raw reasoning chunks (if backend sends them)
+                  // This path is deprecated but kept for backward compatibility
+                  streamingReasoningText += eventData.chunk as string;
+                  onDelta("", {
+                    stage: "analyzing",
+                    message: "Thinking...",
+                    artifactDetected: true,
+                    percentage: Math.min(10 + (streamingReasoningText.length / 50), 45),
+                    streamingReasoningText,
+                  });
+                  break;
+
+                case "reasoning_complete":
+                  console.log(`🧠 [useChatMessages] Reasoning complete: ${(eventData.reasoning as string)?.length || 0} chars, ${(eventData.stepCount as number) || 0} steps`);
+
+                  // Use server-provided structured reasoning if available
+                  if (eventData.reasoningSteps) {
+                    streamingReasoningSteps = eventData.reasoningSteps as StructuredReasoning;
+                  }
+                  if (eventData.reasoning) {
+                    streamingReasoningText = eventData.reasoning as string;
+                  }
+
+                  // Transition to generating stage
+                  onDelta("", {
+                    stage: "generating",
+                    message: "Generating artifact...",
+                    artifactDetected: true,
+                    percentage: 50,
+                    reasoningSteps: streamingReasoningSteps.steps.length > 0 ? streamingReasoningSteps : undefined,
+                    streamingReasoningText: streamingReasoningSteps.steps.length === 0 ? streamingReasoningText : undefined,
+                  });
+                  break;
+
+                case "content_chunk":
+                  // Append to streaming content (accumulate but DON'T display in chat)
+                  // The artifact code contains <artifact> tags which must be parsed by
+                  // MessageWithArtifacts AFTER saveMessage() - not streamed as raw text
+                  streamingContentText += eventData.chunk as string;
+
+                  // Update progress only - pass empty string to avoid showing raw artifact code
+                  onDelta("", {
+                    stage: "generating",
+                    message: "Writing code...",
+                    artifactDetected: true,
+                    percentage: Math.min(50 + (streamingContentText.length / 200), 95),
+                    reasoningSteps: streamingReasoningSteps.steps.length > 0 ? streamingReasoningSteps : undefined,
+                  });
+                  break;
+
+                case "artifact_complete":
+                  console.log("✅ [useChatMessages] Artifact stream complete");
+                  finalArtifactData = {
+                    artifactCode: eventData.artifactCode as string,
+                    reasoning: eventData.reasoning as string,
+                    reasoningSteps: (eventData.reasoningSteps as StructuredReasoning) ||
+                      (streamingReasoningSteps.steps.length > 0 ? streamingReasoningSteps : undefined),
+                  };
+                  break;
+
+                case "error":
+                  console.error("SSE error:", eventData.error);
+                  throw new Error(eventData.error as string);
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock();
+        }
+
+        if (!finalArtifactData?.artifactCode) {
+          throw new Error("No artifact code received from stream");
+        }
+
+        console.log("✅ [useChatMessages] Artifact generated via stream, length:", finalArtifactData.artifactCode.length);
 
         // CRITICAL: Clear streaming state BEFORE saving to prevent duplicate keys
-        // The saved message will render with the artifact code, so we don't need
-        // the streaming message anymore. Clearing it first prevents both from
-        // rendering simultaneously with the same content/key.
         setIsLoading(false);
-        onDone(); // This clears streamingMessage and isStreaming
+        onDone();
 
         // Small delay to ensure streaming state is cleared before saving
         await new Promise(resolve => setTimeout(resolve, 50));
 
         // Save the assistant response with reasoning data
-        // Store raw GLM reasoning for potential debugging, but use structured for display
-        await saveMessage("assistant", artifactCode, artifactData.reasoning || undefined, finalReasoning || undefined);
+        await saveMessage(
+          "assistant",
+          finalArtifactData.artifactCode,
+          finalArtifactData.reasoning || undefined,
+          finalArtifactData.reasoningSteps || undefined
+        );
 
         return;
       }
@@ -578,9 +736,53 @@ export function useChatMessages(
             const parsed = JSON.parse(jsonStr);
 
             // ========================================
-            // CHAIN OF THOUGHT: Handle reasoning events
-            // Character-by-character streaming is handled in ReasoningDisplay component
+            // CLAUDE-LIKE STREAMING: Handle reasoning events
             // ========================================
+            // The backend now sends reasoning as individual steps (reasoning_step)
+            // followed by a complete event (reasoning_complete). This creates
+            // a smooth, animated experience matching Claude's extended thinking.
+            // Legacy 'reasoning' events are still supported for backward compat.
+            // ========================================
+
+            // Handle new progressive reasoning_step events
+            if (parsed.type === 'reasoning_step') {
+              const step = parsed.step as { phase: string; title: string; icon?: string; items: string[] };
+              const stepIndex = parsed.stepIndex as number;
+
+              // Build up reasoningSteps incrementally
+              if (!reasoningSteps) {
+                reasoningSteps = { steps: [] };
+              }
+              reasoningSteps = {
+                ...reasoningSteps,
+                steps: [...reasoningSteps.steps, step],
+              };
+
+              console.log(`[StreamProgress] Received reasoning step ${stepIndex + 1}: "${step.title}"`);
+
+              const progress = updateProgress();
+              progress.reasoningSteps = reasoningSteps;
+              onDelta('', progress);
+
+              continue; // Skip to next event
+            }
+
+            // Handle reasoning_complete event (final structured data for saving)
+            if (parsed.type === 'reasoning_complete') {
+              if (parsed.reasoningSteps) {
+                reasoningSteps = parsed.reasoningSteps as StructuredReasoning;
+              }
+
+              console.log(`[StreamProgress] Reasoning complete: ${reasoningSteps?.steps?.length || 0} steps`);
+
+              const progress = updateProgress();
+              progress.reasoningSteps = reasoningSteps;
+              onDelta('', progress);
+
+              continue; // Skip to next event
+            }
+
+            // LEGACY: Handle old 'reasoning' event format (all steps at once)
             if (parsed.type === 'reasoning') {
               // Check sequence number to prevent out-of-order AND duplicate updates
               // Use <= to skip duplicates (same sequence processed twice)
@@ -599,7 +801,7 @@ export function useChatMessages(
               progress.reasoningSteps = reasoningSteps;
               onDelta('', progress);
 
-              console.log('[StreamProgress] Received reasoning with', reasoningSteps?.steps?.length || 0, 'steps');
+              console.log('[StreamProgress] Received legacy reasoning with', reasoningSteps?.steps?.length || 0, 'steps');
               continue; // Skip to next event
             }
 

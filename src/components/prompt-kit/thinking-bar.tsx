@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { TextShimmer } from "@/components/prompt-kit/text-shimmer";
-import { ChevronDown, StopCircle } from "lucide-react";
+import { ChevronDown, Square } from "lucide-react";
 
 export type ThinkingBarProps = {
   /** Text to display (e.g., "Thinking...") */
@@ -119,7 +119,7 @@ export function ThinkingBar({
             aria-label="Stop thinking"
             type="button"
           >
-            <StopCircle className="size-3" aria-hidden="true" />
+            <Square className="size-3" aria-hidden="true" />
             <span>{stopLabel}</span>
           </button>
         )}

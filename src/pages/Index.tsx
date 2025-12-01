@@ -290,6 +290,8 @@ const IndexContent = () => {
               <ChatInterface
                 sessionId={currentSessionId}
                 initialPrompt={input}
+                initialImageMode={imageMode}
+                initialArtifactMode={artifactMode}
                 isCanvasOpen={isCanvasOpen}
                 onCanvasToggle={handleCanvasToggle}
                 onArtifactChange={handleArtifactChange}

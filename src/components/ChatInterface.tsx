@@ -620,8 +620,8 @@ export function ChatInterface({
                 {/* Always show reasoning during streaming, even if no data yet */}
                 <ReasoningErrorBoundary fallback={<ThinkingIndicator status="Loading reasoning..." />}>
                   <ReasoningDisplay
-                    reasoning={streamProgress.message}
                     reasoningSteps={streamProgress.reasoningSteps}
+                    streamingReasoningText={streamProgress.streamingReasoningText}
                     isStreaming={true}
                     onStop={cancelStream}
                   />

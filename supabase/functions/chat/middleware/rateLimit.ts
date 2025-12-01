@@ -4,6 +4,7 @@
  */
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
+import { FEATURE_FLAGS } from "../../_shared/config.ts";
 
 export interface RateLimitResult {
   ok: boolean;
@@ -26,6 +27,12 @@ export async function checkApiThrottle(
   serviceClient: SupabaseClient,
   requestId: string
 ): Promise<RateLimitResult> {
+  // Skip rate limiting if feature flag is set (for local development only!)
+  if (FEATURE_FLAGS.RATE_LIMIT_DISABLED) {
+    console.warn(`[${requestId}] ⚠️ API throttle DISABLED via feature flag - development mode only!`);
+    return { ok: true, headers: {} };
+  }
+
   const { data: apiThrottleResult, error: apiThrottleError } =
     await serviceClient.rpc("check_api_throttle", {
       p_api_name: "gemini",
@@ -83,6 +90,12 @@ export async function checkGuestRateLimit(
   serviceClient: SupabaseClient,
   requestId: string
 ): Promise<RateLimitResult> {
+  // Skip rate limiting if feature flag is set (for local development only!)
+  if (FEATURE_FLAGS.RATE_LIMIT_DISABLED) {
+    console.warn(`[${requestId}] ⚠️ Guest rate limit DISABLED via feature flag - development mode only!`);
+    return { ok: true, headers: {} };
+  }
+
   // Get client IP address (trusted headers set by Supabase Edge infrastructure)
   // X-Forwarded-For is sanitized by Supabase proxy to prevent spoofing
   const clientIp =
@@ -156,6 +169,12 @@ export async function checkUserRateLimit(
   serviceClient: SupabaseClient,
   requestId: string
 ): Promise<RateLimitResult> {
+  // Skip rate limiting if feature flag is set (for local development only!)
+  if (FEATURE_FLAGS.RATE_LIMIT_DISABLED) {
+    console.warn(`[${requestId}] ⚠️ User rate limit DISABLED via feature flag - development mode only!`);
+    return { ok: true, headers: {} };
+  }
+
   const { data: userRateLimitResult, error: userRateLimitError } =
     await serviceClient.rpc("check_user_rate_limit", {
       p_user_id: userId,

@@ -33,7 +33,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, WandSparkles, ImagePlus, ArrowUp, Send, StopCircle } from "lucide-react";
+import { Plus, WandSparkles, ImagePlus, ArrowUp, Send, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PromptInputAction } from "@/components/prompt-kit/prompt-input";
 import React from "react";
@@ -207,16 +207,16 @@ export function PromptInputControls({
 
       {/* Right side - Send/Stop button */}
       {isStreaming && onStop ? (
-        // Stop button during streaming
+        // Stop button during streaming - neutral styling to match action buttons
         <PromptInputAction tooltip="Stop generating">
           <Button
             type="button"
             size="icon"
-            className="size-9 rounded-full bg-destructive hover:bg-destructive/90 transition-all duration-200"
+            className="size-9 rounded-full bg-muted/80 hover:bg-muted border border-border/50 transition-all duration-200"
             onClick={onStop}
             data-testid="stop-button"
           >
-            <StopCircle size={18} className="text-white" />
+            <Square size={18} className="text-muted-foreground" />
           </Button>
         </PromptInputAction>
       ) : (
