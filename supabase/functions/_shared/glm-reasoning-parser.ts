@@ -23,6 +23,7 @@ import {
   type ReasoningIcon,
   validateReasoningSteps,
 } from './reasoning-generator.ts';
+import { transformToGerund, stripTitlePrefix } from './title-transformer.ts';
 
 /**
  * Section detected in raw reasoning text
@@ -149,7 +150,7 @@ function extractSections(text: string): ReasoningSection[] {
 
     if (isNumberedStep || isHeader) {
       // Start new section
-      if (currentSection && currentSection.items && currentSection.items.length > 0) {
+      if (currentSection && (currentSection.items!.length > 0 || currentSection.rawText)) {
         sections.push({
           title: currentSection.title || '',
           items: currentSection.items,
@@ -325,54 +326,52 @@ function getIconForPhase(phase: ReasoningPhase): ReasoningIcon {
 function generateTitle(section: ReasoningSection, phase: ReasoningPhase): string {
   let title = section.title.trim();
 
-  // Patterns that indicate a poor title (too generic or not an action)
-  const poorTitlePatterns = [
-    /^pure\s+(jsx|react|code|html|css)/i,
-    /^(the|a|an)\s+/i,
-    /^(jsx|react|code|html|css|component|artifact)/i,
-    /^(output|result|answer|response)/i,
-    /^(yes|no|okay|sure)/i,
-    /^[<{[]/,  // Starts with code characters
-    /^[-*•]\s*(no|do not|don't|must not|avoid)/i,  // Bullet points with negative instructions
-    /<!DOCTYPE|<html|<head|<body|<script/i,  // HTML document structure references
-    /<[a-z]+>/i,  // HTML tag patterns
-    /^(no|do not|don't|must not|avoid|never)\s+/i,  // Negative instruction starters
-    /^(include|exclude|use|return|wrap|add)\s+/i,  // Code instruction patterns
-  ];
+  // 1. Strip any existing prefixes first
+  title = stripTitlePrefix(title);
 
-  const isPoorTitle = !title ||
-    title.length > 80 ||
-    title.length < 5 ||
-    poorTitlePatterns.some(pattern => pattern.test(title));
+  // 2. Apply verb transformation
+  const transformed = transformToGerund(title);
 
-  // If title is poor, generate a meaningful one based on phase
-  if (isPoorTitle) {
-    const titleMap: Record<ReasoningPhase, string> = {
-      research: 'Analyzing requirements',
-      analysis: 'Planning implementation',
-      solution: 'Building the solution',
-      custom: 'Processing request',
-    };
-    title = titleMap[phase];
-  }
+  // 3. Check if transformation was successful (text changed)
+  const wasTransformed = transformed !== title;
+  title = transformed;
 
-  // Remove common prefixes
-  title = title.replace(/^(Step\s+\d+:?\s*|Section\s+\d+:?\s*)/i, '');
+  // 4. Only check for "poor title" if transformation didn't help
+  if (!wasTransformed) {
+    // Patterns that indicate a poor title (too generic or not an action)
+    const poorTitlePatterns = [
+      /^pure\s+(jsx|react|code|html|css)/i,
+      /^(the|a|an)\s+/i,
+      /^(jsx|react|code|html|css|component|artifact)/i,
+      /^(output|result|answer|response)/i,
+      /^(yes|no|okay|sure)/i,
+      /^[<{[]/,  // Starts with code characters
+      /^[-*•]\s*(no|do not|don't|must not|avoid)/i,  // Bullet points with negative instructions
+      /<!DOCTYPE|<html|<head|<body|<script/i,  // HTML document structure references
+      /<[a-z]+>/i,  // HTML tag patterns
+      /^(no|do not|don't|must not|avoid|never)\s+/i,  // Negative instruction starters
+      /^(include|exclude|use|return|wrap|add)\s+/i,  // Code instruction patterns
+    ];
 
-  // Ensure it starts with an action verb for better UX
-  const actionVerbs = ['analyzing', 'planning', 'building', 'creating', 'designing', 'implementing', 'generating', 'evaluating', 'considering', 'processing'];
-  const startsWithAction = actionVerbs.some(verb => title.toLowerCase().startsWith(verb));
+    const isPoorTitle = !title ||
+      title.length > 80 ||
+      title.length < 5 ||
+      poorTitlePatterns.some(pattern => pattern.test(title));
 
-  // If doesn't start with action and is short, add context
-  if (!startsWithAction && title.length < 25) {
-    const prefix = phase === 'research' ? 'Analyzing' :
-      phase === 'analysis' ? 'Planning' :
-        phase === 'solution' ? 'Building' : 'Processing';
-    // Only add prefix if it doesn't make title redundant
-    if (!title.toLowerCase().includes(prefix.toLowerCase())) {
-      title = `${prefix}: ${title}`;
+    // If title is poor, generate a meaningful one based on phase
+    if (isPoorTitle) {
+      const titleMap: Record<ReasoningPhase, string> = {
+        research: 'Analyzing requirements',
+        analysis: 'Planning implementation',
+        solution: 'Building the solution',
+        custom: 'Processing request',
+      };
+      title = titleMap[phase];
     }
   }
+
+  // 5. Strip trailing punctuation
+  title = title.replace(/[.!?]+$/, '');
 
   // Ensure minimum length by adding phase context
   if (title.length < 10) {
@@ -385,7 +384,7 @@ function generateTitle(section: ReasoningSection, phase: ReasoningPhase): string
     title = fallbackMap[phase];
   }
 
-  // Relaxed limit: Allow up to 120 chars (was 60) to capture full context
+  // 6. Truncation (keep existing 120 char limit)
   if (title.length > 120) {
     title = title.substring(0, 117) + '...';
   }
@@ -699,6 +698,12 @@ function extractCurrentThinking(text: string): string {
   if (lastLine.length < 5) {
     return 'Processing...';
   }
+
+  // NEW: Apply verb transformation
+  lastLine = transformToGerund(lastLine);
+
+  // Strip trailing punctuation for cleaner display
+  lastLine = lastLine.replace(/[.!?]+$/, '');
 
   // Relaxed limit: Allow up to 120 chars (was 50)
   // If longer, try to extract the first sentence

@@ -377,8 +377,8 @@ Deno.test("parseGLMReasoningToStructured - creates fallback for completely unstr
 
   assertExists(result);
   assertEquals(result.steps.length, 1);
-  assertEquals(result.steps[0].phase, "custom");
-  assertEquals(result.steps[0].icon, "sparkles");
+  assertEquals(result.steps[0].phase, "research");
+  assertEquals(result.steps[0].icon, "search");
   validateReasoningSteps(result);
 });
 
@@ -552,6 +552,31 @@ Deno.test("parseGLMReasoningToStructured - all outputs pass validateReasoningSte
       validateReasoningSteps(result);
     }
   }
+});
+
+// ============================================================================
+// SECTION 13: Title Transformation Integration
+// ============================================================================
+
+Deno.test("parseGLMReasoningToStructured - transforms titles to gerund form", () => {
+  const rawReasoning = `
+1. I will analyze the requirements
+Content here.
+
+2. Let me check the database
+Content here.
+
+3. We need to build the component
+Content here.
+  `.trim();
+
+  const result = parseGLMReasoningToStructured(rawReasoning);
+
+  assertExists(result);
+  assertEquals(result.steps.length, 3);
+  assertEquals(result.steps[0].title, "Analyzing the requirements");
+  assertEquals(result.steps[1].title, "Checking the database");
+  assertEquals(result.steps[2].title, "Building the component");
 });
 
 // Run tests
