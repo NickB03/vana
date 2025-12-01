@@ -55,7 +55,15 @@ export function TextShimmer({
         className
       )}
       style={{
-        backgroundImage: `linear-gradient(to right, hsl(var(--muted-foreground)) ${50 - dynamicSpread}%, hsl(var(--foreground)) 50%, hsl(var(--muted-foreground)) ${50 + dynamicSpread}%)`,
+        // Create a gradient that's 200% wide so it can sweep across the text
+        backgroundImage: `linear-gradient(90deg,
+          hsl(var(--muted-foreground)) 0%,
+          hsl(var(--muted-foreground)) ${40 - dynamicSpread / 2}%,
+          hsl(var(--foreground)) 40%,
+          hsl(var(--foreground)) 60%,
+          hsl(var(--muted-foreground)) ${60 + dynamicSpread / 2}%,
+          hsl(var(--muted-foreground)) 100%)`,
+        backgroundSize: '200% 100%',
         animationDuration: `${duration}s`,
       }}
       {...props}

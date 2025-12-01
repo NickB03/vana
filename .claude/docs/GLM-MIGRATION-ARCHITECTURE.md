@@ -1,7 +1,7 @@
 # GLM Migration - System Architecture
 
-**Last Updated**: 2025-11-29
-**Migration Status**: Phase 3 Complete (Router Implementation)
+**Last Updated**: 2025-12-01
+**Migration Status**: Phase 4 Complete (SSE Streaming Implementation)
 
 ## Overview
 
@@ -157,6 +157,69 @@ Stream response to user
     └─ After 60s: Circuit auto-resets to CLOSED
 ```
 
+## SSE Streaming Architecture (Phase 4)
+
+### Artifact Generation Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Frontend (React)                              │
+│                                                                  │
+│  useChatMessages.tsx                   ReasoningDisplay.tsx      │
+│  ├─ EventSource connection             ├─ Claude-style ticker    │
+│  ├─ reasoning_chunk handler    ───►    ├─ Live status updates    │
+│  ├─ content_chunk handler              ├─ Timer display          │
+│  └─ artifact_complete handler          └─ Expandable reasoning   │
+│                                                                  │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+              GET /generate-artifact?stream=true
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│           Edge Function: generate-artifact/                      │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │              SSE Stream Controller                        │   │
+│  │                                                           │   │
+│  │  GLM API Response       SSE Events                        │   │
+│  │  ┌────────────┐        ┌────────────────────────────┐    │   │
+│  │  │ reasoning_ │ ───►   │ event: reasoning_chunk      │    │   │
+│  │  │ content    │        │ data: "Let me analyze..."   │    │   │
+│  │  └────────────┘        └────────────────────────────┘    │   │
+│  │  ┌────────────┐        ┌────────────────────────────┐    │   │
+│  │  │ content    │ ───►   │ event: content_chunk        │    │   │
+│  │  │            │        │ data: "export default..."   │    │   │
+│  │  └────────────┘        └────────────────────────────┘    │   │
+│  │                        ┌────────────────────────────┐    │   │
+│  │  On Complete ─────────►│ event: artifact_complete    │    │   │
+│  │                        │ data: {artifact JSON}       │    │   │
+│  │                        └────────────────────────────┘    │   │
+│  └──────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### SSE Event Types
+
+| Event Type | Data Format | Description |
+|------------|-------------|-------------|
+| `reasoning_chunk` | string | Incremental GLM thinking text |
+| `reasoning_complete` | string | Full reasoning text (end marker) |
+| `content_chunk` | string | Incremental artifact code |
+| `artifact_complete` | JSON | Full artifact with metadata |
+| `error` | JSON | Error details on failure |
+
+### Key Implementation Files
+
+| File | Purpose |
+|------|---------|
+| `generate-artifact/index.ts` | SSE stream controller, GLM integration |
+| `useChatMessages.tsx` | EventSource setup, event handlers |
+| `ReasoningDisplay.tsx` | Claude-style ticker pill component |
+| `glm-reasoning-parser.ts` | Incremental parsing for live updates |
+
+---
+
 ## Component Responsibilities
 
 ### `glm-chat-router.ts` (NEW)
@@ -262,18 +325,25 @@ Fallback to OpenRouter
 - [x] Message format conversion
 - [x] Comprehensive documentation
 
-### 🚧 Phase 4: Chat Integration (Next)
-- [ ] Update `chat/` function to use router
-- [ ] Add provider/fallback metrics
-- [ ] Update admin dashboard
-- [ ] Add circuit breaker monitoring
-- [ ] Staging tests
+### ✅ Phase 4: SSE Streaming Implementation (Complete - 2025-12-01)
+- [x] Replace parallel dual-endpoint approach with single SSE stream
+- [x] Implement `reasoning_chunk`, `content_chunk` SSE event types
+- [x] Add Claude-style ticker pill UI (`ReasoningDisplay.tsx`)
+- [x] Fix artifact code appearing in chat during generation
+- [x] Add incremental reasoning parser (`glm-reasoning-parser.ts`)
+- [x] Implement stop button for stream cancellation
+- [x] Add JSON fallback for backward compatibility
 
-### 📋 Phase 5: Production Rollout (Future)
+### 🚧 Phase 5: Production Optimization (Next)
+- [ ] Add provider/fallback metrics
+- [ ] Update admin dashboard with streaming analytics
+- [ ] Add circuit breaker monitoring
+- [ ] Performance benchmarking
+
+### 📋 Phase 6: Production Rollout (Future)
 - [ ] Gradual rollout (10% → 50% → 100%)
 - [ ] Monitor error rates
 - [ ] Track cost savings
-- [ ] Performance benchmarking
 - [ ] User feedback collection
 
 ## Monitoring & Observability

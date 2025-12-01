@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, MutableRefObject } from "react";
 import { Copy, Pencil, RotateCw, Maximize2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -96,6 +96,8 @@ export function ChatInterface({
   const [artifactMode, setArtifactMode] = useState(initialArtifactMode);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  // Ref to store handleSend for stable access in effects (prevents re-triggering initialPrompt effect)
+  const handleSendRef = useRef<((message?: string) => Promise<void>) | null>(null);
 
   // Memoized artifact open handler to prevent breaking MessageWithArtifacts memo
   const handleArtifactOpen = useCallback((artifact: ArtifactData) => {
@@ -162,6 +164,9 @@ export function ChatInterface({
     );
   }, [input, isLoading, isStreaming, setInput, streamChat, currentArtifact, isEditingArtifact, imageMode, artifactMode, startStream, completeStream]);
 
+  // Keep ref updated with latest handleSend (for stable access in effects)
+  handleSendRef.current = handleSend;
+
   // Reset when session changes
   useEffect(() => {
     setStreamingMessage("");
@@ -181,11 +186,13 @@ export function ChatInterface({
 
   useEffect(() => {
     // Allow auto-send for both authenticated (with sessionId) AND guests (without sessionId)
-    if (initialPrompt && !hasInitialized) {
+    // Uses handleSendRef to avoid dependency on handleSend (which changes on every render cycle)
+    // This prevents the effect from re-firing when isStreaming changes after a response completes
+    if (initialPrompt && !hasInitialized && handleSendRef.current) {
       setHasInitialized(true);
-      handleSend(initialPrompt);
+      handleSendRef.current(initialPrompt);
     }
-  }, [sessionId, initialPrompt, hasInitialized, handleSend]);
+  }, [sessionId, initialPrompt, hasInitialized]);
 
   // Parse artifacts from messages (removed auto-open behavior)
   useEffect(() => {

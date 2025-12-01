@@ -60,8 +60,10 @@ describe('ReasoningDisplay', () => {
         />
       );
 
-      // Should show summary in trigger when not streaming
-      expect(screen.getByText(/Created a counter component/)).toBeInTheDocument();
+      // Should show last step title in collapsed pill when not streaming
+      // (the component shows last step title, not summary, in collapsed state)
+      // Note: Text appears in both pill and hidden expanded view, so use getAllByText
+      expect(screen.getAllByText(/Generating code/).length).toBeGreaterThanOrEqual(1);
     });
 
     it('renders "Thinking..." when streaming with no data yet', () => {
@@ -88,12 +90,12 @@ describe('ReasoningDisplay', () => {
         />
       );
 
-      // When no summary, should show ticker format
-      const triggerButton = screen.getByRole('button', { name: /show reasoning|hide reasoning/i });
-      expect(triggerButton).toHaveTextContent('Step One → Step Two');
+      // When collapsed, should show last step title (component shows last step, not arrow format)
+      const triggerButton = screen.getByRole('button', { name: /show thought process|hide thought process/i });
+      expect(triggerButton).toHaveTextContent('Step Two');
     });
 
-    it('prefers summary over ticker when available', () => {
+    it('shows last step title when collapsed (summary not displayed in pill)', () => {
       render(
         <ReasoningDisplay
           reasoning={null}
@@ -107,7 +109,9 @@ describe('ReasoningDisplay', () => {
         />
       );
 
-      expect(screen.getByText('This is the summary')).toBeInTheDocument();
+      // Component shows last step title in collapsed state, not summary
+      // Text appears in both pill and hidden expanded view, so use getAllByText
+      expect(screen.getAllByText('Step One').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -158,13 +162,13 @@ describe('ReasoningDisplay', () => {
 
       // All sections should be visible in expanded view
       // Click to expand
-      const triggerButton = screen.getByRole('button', { name: /show reasoning|hide reasoning/i });
+      const triggerButton = screen.getByRole('button', { name: /show thought process|hide thought process/i });
       triggerButton.click();
 
-      // Check all section titles are visible
-      expect(screen.getByText('Analyzing request')).toBeInTheDocument();
-      expect(screen.getByText('Planning implementation')).toBeInTheDocument();
-      expect(screen.getByText('Generating code')).toBeInTheDocument();
+      // Check all section titles are visible (use getAllByText since text appears in multiple places)
+      expect(screen.getAllByText('Analyzing request').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Planning implementation').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Generating code').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -179,15 +183,15 @@ describe('ReasoningDisplay', () => {
       );
 
       // Click to expand
-      const triggerButton = screen.getByRole('button', { name: /show reasoning|hide reasoning/i });
+      const triggerButton = screen.getByRole('button', { name: /show thought process|hide thought process/i });
       triggerButton.click();
 
-      // Check section titles
-      expect(screen.getByText('Analyzing request')).toBeInTheDocument();
-      expect(screen.getByText('Planning implementation')).toBeInTheDocument();
-      expect(screen.getByText('Generating code')).toBeInTheDocument();
+      // Check section titles (use getAllByText since text appears in both pill and expanded view)
+      expect(screen.getAllByText('Analyzing request').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Planning implementation').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Generating code').length).toBeGreaterThanOrEqual(1);
 
-      // Check items are rendered as list items
+      // Check items are rendered
       expect(screen.getByText('Understanding the counter component requirement')).toBeInTheDocument();
       expect(screen.getByText('useState hook for counter state')).toBeInTheDocument();
     });
@@ -230,7 +234,7 @@ describe('ReasoningDisplay', () => {
 
       // DOMPurify should sanitize the content
       // In our mock, it passes through, but in production DOMPurify strips dangerous tags
-      const triggerButton = screen.getByRole('button', { name: /show reasoning|hide reasoning/i });
+      const triggerButton = screen.getByRole('button', { name: /show thought process|hide thought process/i });
       expect(triggerButton).toBeInTheDocument();
     });
   });

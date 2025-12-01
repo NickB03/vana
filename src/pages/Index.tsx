@@ -27,6 +27,7 @@ const IndexContent = () => {
   } = useSidebar();
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>();
   const [input, setInput] = useState("");
+  const [pendingInitialPrompt, setPendingInitialPrompt] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -111,6 +112,7 @@ const IndexContent = () => {
   const handleNewChat = () => {
     setCurrentSessionId(undefined);
     setInput("");
+    setPendingInitialPrompt(undefined);
     setShowChat(false);
     setIsCanvasOpen(false);
     setHasArtifact(false);
@@ -167,9 +169,14 @@ const IndexContent = () => {
       return;
     }
     setIsLoading(true);
-    const sessionId = await createSession(input);
+    const promptToSend = input; // Capture before clearing
+    const sessionId = await createSession(promptToSend);
     if (sessionId) {
       setCurrentSessionId(sessionId);
+      // Set pending prompt and clear input to prevent auto-send bugs
+      // ChatInterface receives pendingInitialPrompt on mount, which is cleared after use
+      setPendingInitialPrompt(promptToSend);
+      setInput(""); // Clear input so it doesn't persist
       setShowChat(true);
       // Push state for browser back button
       window.history.pushState({
@@ -289,7 +296,7 @@ const IndexContent = () => {
             ) : (
               <ChatInterface
                 sessionId={currentSessionId}
-                initialPrompt={input}
+                initialPrompt={pendingInitialPrompt}
                 initialImageMode={imageMode}
                 initialArtifactMode={artifactMode}
                 isCanvasOpen={isCanvasOpen}
@@ -297,7 +304,11 @@ const IndexContent = () => {
                 onArtifactChange={handleArtifactChange}
                 input={input}
                 onInputChange={setInput}
-                onSendMessage={handler => setChatSendHandler(() => handler)}
+                onSendMessage={handler => {
+                  setChatSendHandler(() => handler);
+                  // Clear pending prompt after ChatInterface has consumed it
+                  setPendingInitialPrompt(undefined);
+                }}
               />
             )}
           </div>
