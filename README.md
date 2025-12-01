@@ -51,9 +51,17 @@
 
 ### Recent Major Improvements
 
+**December 1, 2025 - SSE Streaming for Artifact Generation:**
+- 🎯 **Native GLM Streaming**: Single SSE endpoint replaces parallel dual-endpoint approach
+- 🧠 **Claude-Style Reasoning Display**: Progressive ticker pill shows "Thinking..." → "Analyzing..." → status updates
+- 📡 **Real-time SSE Events**: `reasoning_chunk`, `content_chunk`, `artifact_complete` event types
+- 🐛 **Bug Fix**: Artifact code no longer streams to chat UI during generation
+- ⏱️ **Timer Persistence**: Elapsed reasoning time displays after generation completes
+- ⏹️ **Stop Button**: Cancel artifact generation mid-stream
+
 **November 28, 2025 - GLM-4.6 Reasoning Display:**
 - 🧠 **Real-time Reasoning Streaming**: GLM-4.6 reasoning displays immediately via parallel requests
-- ⚡ **Fast Parallel Architecture**: `/generate-reasoning` (Gemini, 2-4s) runs alongside `/generate-artifact` (GLM, 30-60s)
+- ⚡ **Fast Parallel Architecture**: `/generate-reasoning` (Gemini, 2-4s) runs alongside `/generate-artifact` (GLM, 30-60s) *(now deprecated in favor of SSE)*
 - 🔧 **CORS Fix**: Fixed 500 error in generate-reasoning preflight handler
 - 🐛 **Duplicate Key Fix**: Resolved React warning for duplicate message keys during streaming
 - 📦 **New GLM Client**: Added `glm-client.ts` with streaming support and `glm-reasoning-parser.ts`
@@ -65,7 +73,7 @@
 - 🛡️ **CSP Security**: Updated Content Security Policy for Tailwind CDN and data: URL shims
 - 📊 **Response Quality Tracking**: New `response_quality_logs` and `message_feedback` tables
 - 🔄 **State Machine Architecture**: Conversation state tracking in `_shared/state-machine.ts`
-- ⚡ **683 Tests**: Expanded test coverage from 432 to 683 tests
+- ⚡ **692 Tests**: Expanded test coverage from 432 to 692 tests
 
 **November 17, 2025 - Kimi K2-Thinking Migration (Now Deprecated):**
 - 🚀 **Faster Artifact Generation**: Migrated to Kimi K2-Thinking with enhanced reasoning *(since migrated to GLM-4.6)*
@@ -97,7 +105,7 @@
 - 🚀 **Automated CI/CD Pipeline**: GitHub Actions workflow (lint → test → coverage → build)
 - 📊 **Coverage Tracking**: Codecov integration with automatic PR comments and trend analysis
 - 🛡️ **Branch Protection**: GitHub ruleset requiring PR approval and passing checks
-- ✅ **Testing Expansion**: 683 tests (coverage: 68% → 74%), exportArtifact.ts: 23% → 98%
+- ✅ **Testing Expansion**: 692 tests (coverage: 68% → 74%), exportArtifact.ts: 23% → 98%
 - 🔒 **Security Testing**: 9 XSS attack scenarios validated, performance benchmarks added
 - 📚 **Comprehensive Docs**: 5 detailed guides (setup, CI/CD, coverage, quickstart)
 
@@ -789,8 +797,8 @@ The project uses Vitest for frontend testing with comprehensive coverage:
 
 **Current Metrics:**
 ```
-Tests:     432 passing (432 total)
-Runtime:   4.83s
+Tests:     692 passing (692 total)
+Runtime:   ~10s
 Coverage:  74.21% statements (exceeds 55% threshold by 19%)
 ```
 

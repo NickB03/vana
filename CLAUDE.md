@@ -1,4 +1,4 @@
-<!-- CLAUDE.md v2.6 | Last updated: 2025-11-29 | Added GLM-4.6 API reference section -->
+<!-- CLAUDE.md v2.7 | Last updated: 2025-12-01 | Added SSE streaming architecture for artifact generation -->
 
 # CLAUDE.md
 
@@ -83,7 +83,7 @@ npm run build:dev        # Dev build with sourcemaps
 npm run preview          # Preview production build
 ```
 
-### Testing (683 tests, 74% coverage)
+### Testing (692 tests, 74% coverage)
 ```bash
 npm run test                  # Run all tests
 npm run test -- --watch       # Watch mode
@@ -208,8 +208,8 @@ Full schema: `supabase/migrations/`
 | Function | Purpose |
 |----------|---------|
 | `chat/` | Main chat streaming with handlers/ and middleware/ |
-| `generate-artifact/` | Artifact generation with GLM-4.6 + validation |
-| `generate-reasoning/` | Fast parallel reasoning (Gemini Flash, 2-4s) |
+| `generate-artifact/` | Artifact generation with GLM-4.6 + SSE streaming + validation |
+| `generate-reasoning/` | Fast parallel reasoning (deprecated, now integrated in generate-artifact) |
 | `bundle-artifact/` | Server-side npm bundling (Radix UI, framer-motion) |
 | `generate-artifact-fix/` | Error fixing with GLM-4.6 deep reasoning |
 | `generate-title/` | Session title generation |
@@ -255,6 +255,11 @@ GLM-4.6 powers artifact generation via Z.ai. Key implementation details:
 ```
 
 **Error Handling**: 429 = rate limited (check Retry-After header), 503 = retry with backoff
+
+**SSE Streaming (Updated 2025-12-01)**: Artifact generation uses real-time SSE streaming:
+- **Event types**: `reasoning_chunk`, `reasoning_complete`, `content_chunk`, `artifact_complete`, `error`
+- **Frontend**: `useChatMessages.tsx` handles EventSource, `ReasoningDisplay.tsx` shows Claude-style ticker
+- **Key fix**: Artifact code no longer appears as raw text in chat during generation
 
 **Full Documentation**: `.claude/docs/GLM-4.6-CAPABILITIES.md`
 

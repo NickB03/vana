@@ -9,13 +9,13 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     testTimeout: 5000, // Increased from default 1000ms for async operations
     teardownTimeout: 10000, // Allow 10s for cleanup
-    // Use threads pool for cleaner shutdown (forks has hardcoded 1000ms close timeout bug)
+    // Use threads pool locally for faster execution (some OOM warnings may appear at end but don't affect results)
     // CI uses forks for memory isolation during coverage generation
     pool: process.env.CI ? 'forks' : 'threads',
     poolOptions: {
       threads: {
-        // Use fewer threads locally for cleaner shutdown
-        maxThreads: 4,
+        // Reduce threads to prevent OOM during large test runs
+        maxThreads: 2,
         minThreads: 1,
         isolate: true
       },

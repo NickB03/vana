@@ -49,6 +49,7 @@ const Home = () => {
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   const [hasArtifact, setHasArtifact] = useState(false);
   const [guestInitialPrompt, setGuestInitialPrompt] = useState<string | undefined>();
+  const [pendingAuthPrompt, setPendingAuthPrompt] = useState<string | undefined>(); // For authenticated users
   const [autoOpenCanvas, setAutoOpenCanvas] = useState(false);
   const [loadingSuggestionId, setLoadingSuggestionId] = useState<string | null>(null);
   const [imageMode, setImageMode] = useState(false);
@@ -285,7 +286,9 @@ const Home = () => {
       const sessionId = await createSession(prompt);
       if (sessionId) {
         setCurrentSessionId(sessionId);
-        setInput(prompt); // Set input so ChatInterface receives the prompt via initialPrompt prop
+        // Use pendingAuthPrompt instead of input to prevent auto-send bugs
+        setPendingAuthPrompt(prompt);
+        setInput(""); // Clear input so it doesn't persist and re-trigger
         setShowChat(true);
       }
       setIsLoading(false);
@@ -475,7 +478,7 @@ const Home = () => {
                 ) : (
                   <ChatInterface
                     sessionId={currentSessionId ?? guestSession.sessionId ?? undefined}
-                    initialPrompt={!isAuthenticated ? guestInitialPrompt : input}
+                    initialPrompt={!isAuthenticated ? guestInitialPrompt : pendingAuthPrompt}
                     initialImageMode={imageMode}
                     initialArtifactMode={artifactMode}
                     isCanvasOpen={isCanvasOpen}
@@ -483,7 +486,12 @@ const Home = () => {
                     onArtifactChange={handleArtifactChange}
                     input={input}
                     onInputChange={setInput}
-                    onSendMessage={handler => { chatSendHandlerRef.current = handler; }}
+                    onSendMessage={handler => {
+                      chatSendHandlerRef.current = handler;
+                      // Clear pending prompts after ChatInterface has consumed them
+                      setGuestInitialPrompt(undefined);
+                      setPendingAuthPrompt(undefined);
+                    }}
                     isGuest={!isAuthenticated}
                     guestMessageCount={guestSession.messageCount}
                     guestMaxMessages={guestSession.maxMessages}

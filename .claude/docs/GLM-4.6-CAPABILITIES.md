@@ -1,6 +1,6 @@
 # GLM-4.6 Capabilities Reference
 
-> **Last Updated**: 2025-11-29
+> **Last Updated**: 2025-12-01
 > **Source**: [Z.ai Documentation](https://docs.z.ai)
 > **API Base URL**: `https://api.z.ai/api/coding/paas/v4` (Coding Plan - used by this project)
 
@@ -497,30 +497,75 @@ const response = await callGLM(systemPrompt, userPrompt, {
 | `_shared/glm-client.ts` | GLM API client with streaming, retry, and error handling |
 | `_shared/glm-reasoning-parser.ts` | Converts raw reasoning to structured format for UI |
 | `_shared/config.ts` | Model configuration (`MODELS.GLM_4_6`) |
-| `generate-artifact/index.ts` | Artifact generation Edge Function |
+| `generate-artifact/index.ts` | Artifact generation Edge Function with SSE streaming |
 | `generate-artifact-fix/index.ts` | Error fixing with deep reasoning |
+| `src/components/ReasoningDisplay.tsx` | Claude-style ticker pill UI for reasoning display |
+| `src/hooks/useChatMessages.tsx` | SSE event handlers for streaming |
 
-### Streaming Implementation
+### SSE Streaming Implementation (Updated 2025-12-01)
+
+The artifact generation system uses real-time SSE streaming to display GLM's native thinking process:
 
 ```typescript
-// Process GLM streaming response
-export async function processGLMStream(
-  response: Response,
-  callbacks: GLMStreamCallbacks,
-  requestId?: string
-): Promise<{ reasoning: string; content: string }> {
-  // GLM streams reasoning_content FIRST, then content
-  // Accumulate both and call callbacks for each chunk
-}
+// Backend: generate-artifact/index.ts emits structured SSE events
+// Event types: reasoning_chunk, reasoning_complete, content_chunk, artifact_complete, error
+
+// Frontend: useChatMessages.tsx handles SSE events
+eventSource.addEventListener('reasoning_chunk', (event) => {
+  // Update UI with live reasoning text
+  setStreamingReasoningText(prev => prev + event.data);
+});
+
+eventSource.addEventListener('content_chunk', (event) => {
+  // Artifact code streams separately (not shown in chat during generation)
+  accumulatedContent.current += event.data;
+});
+```
+
+### Stream Processing Flow
+
+```
+1. User requests artifact → POST /generate-artifact?stream=true
+2. Backend streams GLM reasoning_content chunks → reasoning_chunk events
+3. UI displays Claude-style ticker pill with live status updates
+4. Backend streams GLM content chunks → content_chunk events
+5. UI renders final artifact when artifact_complete received
 ```
 
 ### Reasoning Display
 
-The `glm-reasoning-parser.ts` converts GLM's raw `reasoning_content` into structured UI:
+The `ReasoningDisplay` component provides a Claude-style experience:
 
 ```typescript
+// ReasoningDisplay.tsx features:
+// - Live ticker pill showing "Thinking..." → "Analyzing..." → status updates
+// - Timer showing elapsed reasoning time
+// - Expandable "Thought process" view with full reasoning steps
+// - Stop button to cancel generation
+// - Smooth crossfade animations between status updates
+
+<ReasoningDisplay
+  streamingReasoningText={reasoningText}  // Live streaming text
+  isStreaming={true}
+  onStop={handleCancel}
+/>
+```
+
+### Incremental Reasoning Parser
+
+The `glm-reasoning-parser.ts` converts GLM's raw `reasoning_content` into structured UI incrementally:
+
+```typescript
+// Parse reasoning as it streams in
 const structured = parseGLMReasoningToStructured(reasoningContent);
 // Returns: { steps: [...], summary: "..." }
+
+// Incremental parsing state for progressive display
+interface IncrementalParseState {
+  completedSteps: ReasoningStep[];
+  currentStepBuffer: string;
+  lastProcessedIndex: number;
+}
 ```
 
 ---

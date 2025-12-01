@@ -19,6 +19,7 @@ const Signup = lazy(() => import("./pages/Signup"));
 const Landing = lazy(() => import("./pages/Landing"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const LoadingDemo = lazy(() => import("./pages/LoadingDemo"));
 
 // Optimized React Query configuration for mobile
 const queryClient = new QueryClient({
@@ -56,6 +57,7 @@ const AnimatedRoutes = () => {
         <Route path="/signup" element={<AnimatedRoute><Signup /></AnimatedRoute>} />
         <Route path="/landing" element={<AnimatedRoute><Landing /></AnimatedRoute>} />
         <Route path="/admin" element={<AnimatedRoute><AdminDashboard /></AnimatedRoute>} />
+        <Route path="/loading-demo" element={<AnimatedRoute><LoadingDemo /></AnimatedRoute>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<AnimatedRoute><NotFound /></AnimatedRoute>} />
       </Routes>

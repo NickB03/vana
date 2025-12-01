@@ -6,7 +6,7 @@ import {
   parseReasoningSteps,
   ReasoningStep,
 } from "@/types/reasoning";
-import { Clock, ChevronDown, Square } from "lucide-react";
+import { Clock, ChevronDown, StopCircle } from "lucide-react";
 import { TextShimmer } from "@/components/prompt-kit/text-shimmer";
 import { useReasoningTimer } from "@/hooks/useReasoningTimer";
 
@@ -51,6 +51,19 @@ function isListItem(item: string): boolean {
  */
 function stripListPrefix(item: string): string {
   return item.replace(/^[-*•\d+.)]\s*/, '');
+}
+
+/**
+ * Validate if a string is a meaningful status update
+ * Filters out empty lines, very short text, and non-status content
+ */
+function isValidStatus(text: string): boolean {
+  if (!text || text.length < 3) return false;
+  // Filter out lines that are just punctuation or whitespace
+  if (/^[\s\p{P}]+$/u.test(text)) return false;
+  // Filter out lines that look like code or JSON
+  if (/^[{[\]}<>]/.test(text)) return false;
+  return true;
 }
 
 /**

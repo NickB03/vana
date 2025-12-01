@@ -128,7 +128,10 @@ function PromptInputTextarea({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
-      onSubmit?.()
+      // Guard against submitting empty messages
+      if (value.trim()) {
+        onSubmit?.()
+      }
     }
     onKeyDown?.(e)
   }
