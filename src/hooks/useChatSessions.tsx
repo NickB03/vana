@@ -17,6 +17,15 @@ export function useChatSessions() {
 
   const fetchSessions = useCallback(async () => {
     try {
+      // Check if user is authenticated first to avoid 401 errors
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        // User is not authenticated (guest mode) - skip fetch
+        setSessions([]);
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("chat_sessions")
         .select("*")
