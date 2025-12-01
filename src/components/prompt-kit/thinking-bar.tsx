@@ -93,7 +93,7 @@ export function ThinkingBar({
         {/* Shimmer text */}
         <TextShimmer
           className="flex-1 text-sm line-clamp-1"
-          duration={2}
+          duration={3}
           spread={25}
         >
           {text}

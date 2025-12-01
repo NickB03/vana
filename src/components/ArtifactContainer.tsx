@@ -264,11 +264,6 @@ ${artifact.content}
               {validation.errors.length} error{validation.errors.length > 1 ? 's' : ''}
             </Badge>
           )}
-          {validation && validation.warnings.length > 0 && (
-            <Badge variant="secondary" className="text-xs">
-              {validation.warnings.length} warning{validation.warnings.length > 1 ? 's' : ''}
-            </Badge>
-          )}
         </div>
         <ArtifactActions>
           <ArtifactToolbar

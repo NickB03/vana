@@ -333,6 +333,11 @@ function generateTitle(section: ReasoningSection, phase: ReasoningPhase): string
     /^(output|result|answer|response)/i,
     /^(yes|no|okay|sure)/i,
     /^[<{[]/,  // Starts with code characters
+    /^[-*•]\s*(no|do not|don't|must not|avoid)/i,  // Bullet points with negative instructions
+    /<!DOCTYPE|<html|<head|<body|<script/i,  // HTML document structure references
+    /<[a-z]+>/i,  // HTML tag patterns
+    /^(no|do not|don't|must not|avoid|never)\s+/i,  // Negative instruction starters
+    /^(include|exclude|use|return|wrap|add)\s+/i,  // Code instruction patterns
   ];
 
   const isPoorTitle = !title ||
@@ -666,8 +671,8 @@ function extractCurrentThinking(text: string): string {
   lastLine = lastLine.replace(/^(\d+\.|Step\s+\d+:?|\d+\))\s*/i, '');
   lastLine = lastLine.replace(/^[-*•]\s*/, '');
 
-  // STRICT FILTERING: Return generic text if line looks like code/data
-  // Check for JSON objects/arrays, HTML/XML tags, code patterns
+  // STRICT FILTERING: Return generic text if line looks like code/data/instructions
+  // Check for JSON objects/arrays, HTML/XML tags, code patterns, and instruction text
   const looksLikeCode =
     /^[{<[]/.test(lastLine) ||            // JSON/HTML/array start
     /^["'`]/.test(lastLine) ||            // String literals
@@ -678,7 +683,15 @@ function extractCurrentThinking(text: string): string {
     /\[.*\]/.test(lastLine) ||            // Inline arrays
     /^\d+[,}]/.test(lastLine);            // Numeric data
 
-  if (looksLikeCode) {
+  // Filter out instruction-like text (validation messages, requirements)
+  const looksLikeInstruction =
+    /<!DOCTYPE|<html|<head|<body|<script/i.test(lastLine) ||  // HTML doc structure refs
+    /<[a-z]+>/i.test(lastLine) ||                              // HTML tag patterns
+    /^(no|do not|don't|must not|avoid|never)\s+/i.test(lastLine) || // Negative instructions
+    /^(include|exclude|use|return|wrap|add)\s+/i.test(lastLine) ||  // Code instructions
+    /^(critical|important|note|warning):/i.test(lastLine);         // Alert prefixes
+
+  if (looksLikeCode || looksLikeInstruction) {
     return 'Processing...';
   }
 
