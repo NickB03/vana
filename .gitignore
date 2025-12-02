@@ -121,3 +121,4 @@ screenshots/
 .screenshots/
 supabase/.env.local
 supabase/functions/deno.lock
+deno.lock

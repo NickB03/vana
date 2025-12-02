@@ -5,9 +5,8 @@ import {
   StructuredReasoning,
   parseReasoningSteps,
 } from "@/types/reasoning";
-import { Clock, ChevronDown, StopCircle } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { TextShimmer } from "@/components/prompt-kit/text-shimmer";
-import { useReasoningTimer } from "@/hooks/useReasoningTimer";
 import {
   extractStatusText,
   createExtractionState,
@@ -23,8 +22,6 @@ interface ReasoningDisplayProps {
   /** Semantic status update from GLM-4.5-AirX */
   reasoningStatus?: string | null;
   isStreaming?: boolean;
-  /** Callback when user clicks stop button during streaming */
-  onStop?: () => void;
 }
 
 /**
@@ -76,7 +73,6 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   streamingReasoningText,
   reasoningStatus,
   isStreaming,
-  onStop,
 }: ReasoningDisplayProps) {
   // Expand/collapse state
   const [isExpanded, setIsExpanded] = useState(false);
@@ -84,8 +80,6 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   // Animation state for crossfade
   const [isTransitioning, setIsTransitioning] = useState(false);
-  // Store final elapsed time when streaming ends
-  const [finalElapsedTime, setFinalElapsedTime] = useState<string>("");
 
   // Track all active timeouts for proper cleanup
   const timeoutRefs = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
@@ -94,17 +88,6 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   const prevStepCountRef = useRef(0);
   // State for the reasoning text extractor (throttling, last valid text, etc.)
   const extractionStateRef = useRef<ExtractionState>(createExtractionState());
-
-  // Timer for reasoning duration (Claude-style)
-  const elapsedTime = useReasoningTimer(isStreaming ?? false);
-
-  // Capture final elapsed time when streaming ends
-  useEffect(() => {
-    if (wasStreamingRef.current && !isStreaming && elapsedTime) {
-      setFinalElapsedTime(elapsedTime);
-    }
-    wasStreamingRef.current = isStreaming ?? false;
-  }, [isStreaming, elapsedTime]);
 
   // Validate and parse reasoning steps
   const validatedSteps = useMemo(() => {
@@ -169,12 +152,12 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
       setCurrentSectionIndex(0);
       setIsTransitioning(false);
       setIsExpanded(false);
-      setFinalElapsedTime("");
       clearTimeouts();
       prevStepCountRef.current = 0;
       // Reset the extraction state for new streaming session
       extractionStateRef.current = createExtractionState();
     }
+    wasStreamingRef.current = isStreaming ?? false;
   }, [isStreaming, clearTimeouts]);
 
   // Handle streaming end - show final state
@@ -277,9 +260,6 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
     return text.length > 70 ? `${text.slice(0, 67)}...` : text || "View reasoning";
   };
 
-  // Get timer display value
-  const timerValue = isStreaming ? elapsedTime : finalElapsedTime;
-
   // Don't render if no data and not streaming
   if (!isStreaming && !validatedSteps && !reasoning && !streamingReasoningText) {
     return null;
@@ -292,9 +272,6 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   const showThinkingBar = isStreaming;
   const showShimmer = isStreaming;
   const showExpandButton = hasContent || isStreaming;
-
-  // Show timer when we have a value (during streaming or after completion)
-  const showTimer = Boolean(timerValue);
 
   return (
     <div className="w-full">
@@ -331,7 +308,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
           {/* Show spinner only during initial thinking state */}
           {showThinkingBar && (
             <div
-              className="w-4 h-4 border-2 border-orange-400/30 border-t-orange-500 rounded-full animate-spin shrink-0"
+              className="w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin shrink-0"
               aria-hidden="true"
             />
           )}
@@ -348,12 +325,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
               </TextShimmer>
             ) : (
               <span
-                className={cn(
-                  "text-sm line-clamp-1 w-full",
-                  "transition-all duration-150",
-                  // Text color changes when expanded (like Claude)
-                  isExpanded ? "text-muted-foreground" : "text-foreground"
-                )}
+                className="text-sm text-muted-foreground line-clamp-1 w-full"
               >
                 {getPillLabel()}
               </span>
@@ -361,43 +333,8 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
           </div>
         </div>
 
-        {/* Right side: Timer + Stop/Chevron */}
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Timer with clock icon (shows during streaming AND after) */}
-          {showTimer && (
-            <span className={cn(
-              "flex items-center gap-1 text-xs font-mono tabular-nums",
-              isStreaming ? "text-orange-500" : "text-muted-foreground"
-            )}>
-              {/* Only show clock icon when NOT streaming (optional, matches Claude cleaner look) */}
-              {!isStreaming && <Clock className="size-3" aria-hidden="true" />}
-              {timerValue}
-            </span>
-          )}
-
-          {/* Stop button while thinking (no data yet) */}
-          {showThinkingBar && onStop && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onStop();
-              }}
-              className={cn(
-                "flex items-center gap-1.5 px-2 py-1",
-                "text-xs text-muted-foreground",
-                "rounded-md border border-border/40",
-                "transition-colors",
-                "hover:bg-muted/20 hover:text-foreground"
-              )}
-              aria-label="Stop AI thinking process"
-              type="button"
-            >
-              <StopCircle className="size-3" aria-hidden="true" />
-              <span>Stop</span>
-            </button>
-          )}
-
-          {/* Chevron for expand/collapse */}
+        {/* Right side: Chevron for expand/collapse */}
+        <div className="flex items-center gap-1.5 shrink-0">
           {showExpandButton && (
             <ChevronDown
               className={cn(
@@ -429,43 +366,29 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
           {/* Structured reasoning steps - show FULL content */}
           {hasStructuredContent && sanitizedSteps && (
             <div className="space-y-4">
-              {sanitizedSteps.steps.map((step, stepIndex) => {
-                // Separate list items from paragraphs for semantic HTML
-                const listItems = step.items.filter(isListItem);
-                const paragraphs = step.items.filter(item => !isListItem(item));
+              {sanitizedSteps.steps.map((step, stepIndex) => (
+                <div key={stepIndex} className="space-y-1">
+                  {/* Step Title - Bold heading */}
+                  <h4 className="text-sm font-semibold text-foreground/90">
+                    {step.title}
+                  </h4>
 
-                return (
-                  <div key={stepIndex} className="space-y-2">
-                    {/* Step Title (Optional, but helpful for context) */}
-                    <h4 className="text-sm font-medium text-foreground/80 mb-1">
-                      {step.title}
-                    </h4>
-
-                    {/* Render paragraphs first */}
-                    {paragraphs.map((item, itemIndex) => (
-                      <p
-                        key={`p-${itemIndex}`}
-                        className="text-sm text-muted-foreground leading-relaxed"
-                      >
-                        {item}
-                      </p>
-                    ))}
-                    {/* Wrap list items in proper <ul> for semantic HTML */}
-                    {listItems.length > 0 && (
-                      <ul className="list-disc ml-6 space-y-1">
-                        {listItems.map((item, itemIndex) => (
-                          <li
-                            key={`li-${itemIndex}`}
-                            className="text-sm text-muted-foreground"
-                          >
-                            {stripListPrefix(item)}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                );
-              })}
+                  {/* All items as bullet points */}
+                  {step.items.length > 0 && (
+                    <ul className="space-y-0.5 ml-0.5">
+                      {step.items.map((item, itemIndex) => (
+                        <li
+                          key={itemIndex}
+                          className="text-sm text-muted-foreground/90 leading-snug flex items-start gap-1.5"
+                        >
+                          <span className="text-muted-foreground/40 mt-[0.35em] select-none text-[8px]">●</span>
+                          <span className="flex-1">{stripListPrefix(item)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
             </div>
           )}
 
