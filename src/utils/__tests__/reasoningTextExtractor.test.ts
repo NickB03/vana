@@ -439,33 +439,49 @@ describe("extractStatusText", () => {
     state = createExtractionState();
   });
 
-  describe("sentence extraction", () => {
-    it("extracts the last valid sentence", () => {
-      const text = `
-        Let me think about this.
-        I need to analyze the schema.
-        Checking the database constraints carefully now.
-      `;
+  // NOTE: extractStatusText now uses PHASE-BASED detection instead of raw text extraction
+  // This prevents the "flashing ticker" issue where rapidly changing text was confusing users.
+  // Instead of extracting sentences from raw text, it detects thinking phases and shows
+  // stable, semantic messages like "Thinking...", "Analyzing the request...", etc.
+
+  describe("phase detection", () => {
+    it("starts with 'Thinking...' phase", () => {
+      const text = "Short text without keywords";
       const result = extractStatusText(text, state);
-      expect(result.text).toBe("Checking the database constraints carefully now");
+      expect(result.text).toBe("Thinking...");
+    });
+
+    it("detects analyzing phase with 'understand' keyword", () => {
+      const text = "I need to understand what the user is asking for here.";
+      const result = extractStatusText(text, state);
+      expect(result.text).toBe("Analyzing the request...");
       expect(result.updated).toBe(true);
     });
 
-    it("skips invalid sentences and finds valid ones", () => {
-      const text = `
-        The data is complex.
-        Building the React component for the user interface.
-        Let me see.
-      `;
+    it("detects analyzing phase with 'request' keyword", () => {
+      const text = "Looking at the user request to determine requirements.";
       const result = extractStatusText(text, state);
-      expect(result.text).toContain("Building");
+      expect(result.text).toBe("Analyzing the request...");
       expect(result.updated).toBe(true);
     });
 
-    it("transforms imperative sentences to gerund", () => {
-      const text = "Analyze the API response structure carefully.";
-      const result = extractStatusText(text, state);
-      expect(result.text).toBe("Analyzing the API response structure carefully");
+    it("detects planning phase when text is long enough and has keywords", () => {
+      // Phase progression is forward-only, so we need to simulate:
+      // 1. First call advances from 'starting' -> 'analyzing' (needs 50+ chars with keyword)
+      // 2. Second call with longer text advances from 'analyzing' -> 'planning'
+      const analyzingText = "I need to understand the user request and what they are looking for in this application."; // 50+ chars with keyword
+      const result1 = extractStatusText(analyzingText, state);
+      expect(result1.text).toBe("Analyzing the request...");
+
+      // Now add planning keywords and enough length (>200 chars)
+      const longText = `
+        ${analyzingText}
+        Now I should plan the approach for implementing this feature.
+        I need to structure the component properly with good architecture.
+        Let me design the component hierarchy and state management.
+      `.repeat(2); // Make it long enough
+      const result2 = extractStatusText(longText, result1.state);
+      expect(result2.text).toBe("Planning the implementation...");
     });
   });
 
@@ -498,35 +514,36 @@ describe("extractStatusText", () => {
     });
   });
 
-  describe("line extraction fallback", () => {
-    it("uses complete lines when no sentences found", () => {
-      const text = `
-        Setting up the project
-        Configuring the build system properly
-        Installing dependencies
-      `;
-      const result = extractStatusText(text, state);
-      // Should find "Configuring the build system properly" (second to last complete)
-      expect(result.text).toContain("Configuring");
-      expect(result.updated).toBe(true);
+  describe("phase progression", () => {
+    it("phases progress forward only (never back)", () => {
+      // Start at analyzing phase (needs 50+ chars with keyword)
+      const text1 = "I need to understand the user request and what they are looking for in this feature.";
+      const result1 = extractStatusText(text1, state);
+      expect(result1.text).toBe("Analyzing the request...");
+
+      // Even with short text, phase should not go back
+      const text2 = "Short text.";
+      const result2 = extractStatusText(text2, result1.state);
+      expect(result2.text).toBe("Analyzing the request...");
     });
   });
 
   describe("throttling", () => {
-    it("throttles updates based on config", () => {
+    it("throttles updates when phase stays the same", () => {
       const config = { ...DEFAULT_CONFIG, throttleMs: 5000 };
 
-      // First update should work
+      // First update triggers analyzing phase (needs 50+ chars with keyword)
       const result1 = extractStatusText(
-        "Analyzing the schema carefully now.",
+        "I need to understand this request and determine what the user is looking for in this feature.",
         state,
         config
       );
+      expect(result1.text).toBe("Analyzing the request...");
       expect(result1.updated).toBe(true);
 
-      // Second update should be throttled
+      // Second update with same phase should be throttled
       const result2 = extractStatusText(
-        "Building the component framework.",
+        "Still understanding the request here and analyzing what components are needed for the application.",
         result1.state,
         config
       );
@@ -534,12 +551,24 @@ describe("extractStatusText", () => {
       expect(result2.text).toBe(result1.text);
     });
 
-    it("allows updates in initial state", () => {
-      const result = extractStatusText(
-        "Analyzing the database schema carefully.",
+    it("allows updates when phase changes", () => {
+      // Start with analyzing phase (needs 50+ chars with keyword)
+      const result1 = extractStatusText(
+        "I need to understand this request and determine what the user is looking for in this feature.",
         state
       );
-      expect(result.updated).toBe(true);
+      expect(result1.text).toBe("Analyzing the request...");
+
+      // Long text with planning keywords should advance phase
+      // Note: Must use result1.state to continue from 'analyzing' phase
+      const longPlanningText = `
+        Understanding the request now. Need to plan the approach carefully.
+        The structure should be clean and maintainable for the project.
+        Let me design the architecture properly with good patterns.
+      `.repeat(3);
+      const result2 = extractStatusText(longPlanningText, result1.state);
+      expect(result2.text).toBe("Planning the implementation...");
+      expect(result2.updated).toBe(true);
     });
   });
 
@@ -560,8 +589,11 @@ describe("extractStatusText", () => {
     });
   });
 
-  describe("real-world examples", () => {
-    it("handles typical GLM reasoning output", () => {
+  describe("real-world examples (phase-based)", () => {
+    // NOTE: Phase-based ticker returns stable semantic messages instead of raw text
+    // to prevent the "flashing" issue where rapidly changing text was confusing users
+
+    it("handles typical GLM reasoning output with phase detection", () => {
       const text = `
         Okay, let me understand what the user is asking for.
         They want a dashboard component with charts.
@@ -570,29 +602,41 @@ describe("extractStatusText", () => {
         Now I'll start building the chart component.
       `;
       const result = extractStatusText(text, state);
-      expect(result.text).toContain("Reviewing");
+      // Phase-based: detects "understand" keyword -> 'analyzing' phase
+      expect(result.text).toBe("Analyzing the request...");
       expect(result.updated).toBe(true);
     });
 
-    it("handles mixed code and thinking", () => {
+    it("handles mixed code and thinking - phase detection takes priority", () => {
+      // Phase detection runs BEFORE code detection in the implementation
+      // So when text has both phase keywords AND code, phase detection wins
       const text = `
-        I need to create a state hook.
+        I need to understand the user requirements for this component they are building.
+        Let me create a state hook for the counter functionality.
         const [count, setCount] = useState(0);
       `;
       const result = extractStatusText(text, state);
-      expect(result.text).toBe("Writing code...");
+      // Phase detection finds "understand" keyword (>50 chars) -> analyzing phase
+      // Code detection only runs AFTER phase detection returns false
+      expect(result.text).toBe("Analyzing the request...");
     });
 
-    it("handles bullet point lists", () => {
-      const text = `
-        Requirements analysis:
-        - User authentication
-        - Dashboard layout
-        - Data visualization
-        Building the authentication module now.
-      `;
-      const result = extractStatusText(text, state);
-      expect(result.text).toContain("Building");
+    it("handles longer text with phase progression", () => {
+      // Phase progression is forward-only, so simulate progressive calls:
+      // 1. First text triggers 'analyzing' (needs 50+ chars with keyword)
+      const analyzingText = "Requirements analysis is complete. I understand the user needs and what they require for this project.";
+      const result1 = extractStatusText(analyzingText, state);
+      expect(result1.text).toBe("Analyzing the request...");
+
+      // 2. Longer text with planning keywords advances to 'planning'
+      const longText = `
+        ${analyzingText}
+        Looking at the request to determine what components are required.
+        Now let me plan the approach for implementing this feature.
+        I need to structure the component properly with good architecture.
+        `.repeat(2); // Repeat to exceed minChars threshold
+      const result2 = extractStatusText(longText, result1.state);
+      expect(result2.text).toBe("Planning the implementation...");
     });
   });
 });
@@ -620,7 +664,7 @@ describe("utility exports", () => {
 
   it("exports default config with expected values", () => {
     expect(DEFAULT_CONFIG.minLength).toBe(15);
-    expect(DEFAULT_CONFIG.minWordCount).toBe(2);
+    expect(DEFAULT_CONFIG.minWordCount).toBe(3); // "Verb Object Modifier" e.g. "Analyzing the schema"
     expect(DEFAULT_CONFIG.throttleMs).toBe(1500);
     expect(DEFAULT_CONFIG.maxLength).toBe(70);
   });

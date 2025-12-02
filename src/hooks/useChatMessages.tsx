@@ -1,10 +1,71 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getAuthErrorMessage } from "@/utils/authHelpers";
 import { chatRequestThrottle } from "@/utils/requestThrottle";
 import { StructuredReasoning, parseReasoningSteps, ReasoningStep } from "@/types/reasoning";
 import { WebSearchResults } from "@/types/webSearch";
+
+// ============================================================================
+// PHASE-BASED TICKER SYSTEM (Client-side)
+// ============================================================================
+// Overrides raw backend text with stable phase-based messages (3-6 updates)
+// to prevent the "flashing ticker" issue.
+
+// ============================================================================
+// PHASE-BASED TICKER: More granular phases for better progress indication
+// ============================================================================
+type ThinkingPhase =
+  | 'starting'
+  | 'analyzing'
+  | 'planning'
+  | 'structuring'
+  | 'implementing'
+  | 'adding_logic'
+  | 'styling'
+  | 'polishing'
+  | 'finalizing';
+
+const PHASE_MESSAGES: Record<ThinkingPhase, string> = {
+  starting: 'Thinking...',
+  analyzing: 'Analyzing the request...',
+  planning: 'Planning the approach...',
+  structuring: 'Designing component structure...',
+  implementing: 'Writing core logic...',
+  adding_logic: 'Adding game mechanics...',
+  styling: 'Applying styles...',
+  polishing: 'Adding final touches...',
+  finalizing: 'Wrapping up...',
+};
+
+// More granular phase detection with lower thresholds
+const PHASE_CONFIG: { phase: ThinkingPhase; keywords: string[]; minChars: number }[] = [
+  { phase: 'analyzing', keywords: ['understand', 'request', 'user wants', 'looking for', 'asking', 'need to', 'requires', 'let me'], minChars: 30 },
+  { phase: 'planning', keywords: ['plan', 'approach', 'will need', 'going to', 'should', 'first'], minChars: 100 },
+  { phase: 'structuring', keywords: ['structure', 'component', 'layout', 'organize', 'architecture', 'design'], minChars: 200 },
+  { phase: 'implementing', keywords: ['implement', 'create', 'build', 'code', 'function', 'useState', 'const'], minChars: 350 },
+  { phase: 'adding_logic', keywords: ['logic', 'algorithm', 'minimax', 'check', 'calculate', 'handle', 'detect'], minChars: 500 },
+  { phase: 'styling', keywords: ['style', 'css', 'tailwind', 'color', 'flex', 'grid', 'padding', 'className'], minChars: 700 },
+  { phase: 'polishing', keywords: ['animation', 'transition', 'effect', 'motion', 'framer', 'polish'], minChars: 900 },
+  { phase: 'finalizing', keywords: ['final', 'complete', 'finish', 'done', 'ready', 'result', 'export default'], minChars: 1100 },
+];
+
+function detectPhase(text: string, currentPhase: ThinkingPhase): ThinkingPhase {
+  const lowerText = text.toLowerCase();
+  const textLength = text.length;
+
+  const currentIndex = PHASE_CONFIG.findIndex(p => p.phase === currentPhase);
+
+  // Only check phases AFTER current (forward progression only)
+  for (let i = Math.max(0, currentIndex); i < PHASE_CONFIG.length; i++) {
+    const config = PHASE_CONFIG[i];
+    if (textLength >= config.minChars && config.keywords.some(kw => lowerText.includes(kw))) {
+      return config.phase;
+    }
+  }
+
+  return currentPhase;
+}
 
 export interface ChatMessage {
   id: string;
@@ -142,6 +203,22 @@ export function useChatMessages(
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, []);
+
+  // Timeout fallback: If artifact render signal isn't received within 10s after loading ends,
+  // assume rendered. This prevents the "Rendering artifact..." spinner from getting stuck.
+  useEffect(() => {
+    // Only start timeout when we're NOT loading and status is still pending
+    if (isLoading || artifactRenderStatus !== 'pending') return;
+
+    const timeout = setTimeout(() => {
+      if (artifactRenderStatus === 'pending' && !isLoading) {
+        console.warn('[useChatMessages] Artifact render timeout - assuming success');
+        setArtifactRenderStatus('rendered');
+      }
+    }, 10000); // 10 second timeout after loading completes
+
+    return () => clearTimeout(timeout);
+  }, [isLoading, artifactRenderStatus]);
 
   const saveMessage = async (
     role: "user" | "assistant",
@@ -436,12 +513,17 @@ export function useChatMessages(
         let streamingContentText = "";
         // Track structured reasoning steps as they stream in (Claude-like)
         let streamingReasoningSteps: StructuredReasoning = { steps: [] };
-        let currentThinkingText = "Thinking...";
+        const currentThinkingText = "Thinking...";
         let finalArtifactData: {
           artifactCode?: string;
           reasoning?: string;
           reasoningSteps?: StructuredReasoning;
         } | null = null;
+
+        // PHASE-BASED TICKER: Track current phase for stable status updates
+        // This prevents "flashing" by showing only 3-6 meaningful phase transitions
+        let currentPhase: ThinkingPhase = 'starting';
+        let phaseDisplayMessage = PHASE_MESSAGES.starting;
 
         // Stream timeout protection
         const STREAM_TIMEOUT_MS = 120000; // 2 minutes max for artifact generation
@@ -506,7 +588,6 @@ export function useChatMessages(
                   // New structured reasoning step detected by server
                   const step = eventData.step as ReasoningStep;
                   const stepIndex = eventData.stepIndex as number;
-                  currentThinkingText = (eventData.currentThinking as string) || step.title;
 
                   // Add step to accumulated structured reasoning
                   streamingReasoningSteps = {
@@ -514,49 +595,84 @@ export function useChatMessages(
                     steps: [...streamingReasoningSteps.steps, step],
                   };
 
-                  console.log(`🧠 [useChatMessages] Reasoning step ${stepIndex + 1}: "${step.title}"`);
+                  // PHASE-BASED TICKER: Use step title to detect phase advancement
+                  const stepText = step.title + ' ' + (step.items?.join(' ') || '');
+                  streamingReasoningText += stepText;
+
+                  const newPhase = detectPhase(streamingReasoningText, currentPhase);
+                  if (newPhase !== currentPhase) {
+                    currentPhase = newPhase;
+                    phaseDisplayMessage = PHASE_MESSAGES[newPhase];
+                    console.log(`📊 [Phase Ticker] Step triggered phase "${newPhase}"`);
+                  }
+
+                  console.log(`🧠 [useChatMessages] Reasoning step ${stepIndex + 1}: "${step.title}" → Phase: ${currentPhase}`);
 
                   // Update progress with structured reasoning (Claude-like)
+                  // CRITICAL: reasoningStatus drives the ticker pill display
+                  // NOTE: Only pass reasoningSteps for dropdown - NOT raw text (causes ugly display)
                   onDelta("", {
                     stage: "analyzing",
-                    message: currentThinkingText,
+                    message: phaseDisplayMessage,
                     artifactDetected: true,
                     percentage: Math.min(10 + (stepIndex * 12), 45),
                     reasoningSteps: streamingReasoningSteps,
+                    reasoningStatus: phaseDisplayMessage,
                   });
                   break;
                 }
 
                 case "thinking_update": {
                   // Periodic update during GLM native thinking
-                  // We DON'T show the raw currentThinking text - instead we just update progress
-                  // The pill will show "Thinking..." until structured steps arrive
                   const progress = (eventData.progress as number) || 15;
+
+                  // PHASE-BASED TICKER: Accumulate reasoning text for phase detection ONLY
+                  // Don't pass raw text to UI - it creates ugly duplicated display
+                  streamingReasoningText += (eventData.chunk as string) || '';
+
+                  // Detect if we should advance to a new phase
+                  const newPhase = detectPhase(streamingReasoningText, currentPhase);
+                  if (newPhase !== currentPhase) {
+                    currentPhase = newPhase;
+                    phaseDisplayMessage = PHASE_MESSAGES[newPhase];
+                    console.log(`📊 [Phase Ticker] Transitioned to "${newPhase}" at ${streamingReasoningText.length} chars`);
+                  }
 
                   onDelta("", {
                     stage: "analyzing",
-                    message: "Thinking...", // Always use clean message, not raw text
+                    message: phaseDisplayMessage,
                     artifactDetected: true,
                     percentage: Math.min(progress, 45),
                     reasoningSteps: streamingReasoningSteps.steps.length > 0 ? streamingReasoningSteps : undefined,
+                    reasoningStatus: phaseDisplayMessage,
                   });
                   break;
                 }
 
-                case "reasoning_chunk":
+                case "reasoning_chunk": {
                   // LEGACY: Fallback for raw reasoning chunks (if backend sends them)
-                  // This path is deprecated but kept for backward compatibility
+                  // PHASE-BASED TICKER: Accumulate text for phase detection ONLY
                   streamingReasoningText += eventData.chunk as string;
+
+                  const newPhase = detectPhase(streamingReasoningText, currentPhase);
+                  if (newPhase !== currentPhase) {
+                    currentPhase = newPhase;
+                    phaseDisplayMessage = PHASE_MESSAGES[newPhase];
+                    console.log(`📊 [Phase Ticker] Chunk triggered phase "${newPhase}" at ${streamingReasoningText.length} chars`);
+                  }
+
                   onDelta("", {
                     stage: "analyzing",
-                    message: "Thinking...",
+                    message: phaseDisplayMessage,
                     artifactDetected: true,
                     percentage: Math.min(10 + (streamingReasoningText.length / 50), 45),
-                    streamingReasoningText,
+                    reasoningSteps: streamingReasoningSteps.steps.length > 0 ? streamingReasoningSteps : undefined,
+                    reasoningStatus: phaseDisplayMessage,
                   });
                   break;
+                }
 
-                case "reasoning_complete":
+                case "reasoning_complete": {
                   console.log(`🧠 [useChatMessages] Reasoning complete: ${(eventData.reasoning as string)?.length || 0} chars, ${(eventData.stepCount as number) || 0} steps`);
 
                   // Use server-provided structured reasoning if available
@@ -567,32 +683,48 @@ export function useChatMessages(
                     streamingReasoningText = eventData.reasoning as string;
                   }
 
-                  // Transition to generating stage
+                  // Transition to generating stage - continue phase detection
+                  const reasoningCompletePhase = detectPhase(streamingReasoningText, currentPhase);
+                  if (reasoningCompletePhase !== currentPhase) {
+                    currentPhase = reasoningCompletePhase;
+                    phaseDisplayMessage = PHASE_MESSAGES[reasoningCompletePhase];
+                  }
+
                   onDelta("", {
                     stage: "generating",
-                    message: "Generating artifact...",
+                    message: phaseDisplayMessage,
                     artifactDetected: true,
                     percentage: 50,
                     reasoningSteps: streamingReasoningSteps.steps.length > 0 ? streamingReasoningSteps : undefined,
-                    streamingReasoningText: streamingReasoningSteps.steps.length === 0 ? streamingReasoningText : undefined,
+                    reasoningStatus: phaseDisplayMessage,
                   });
                   break;
+                }
 
-                case "content_chunk":
+                case "content_chunk": {
                   // Append to streaming content (accumulate but DON'T display in chat)
                   // The artifact code contains <artifact> tags which must be parsed by
                   // MessageWithArtifacts AFTER saveMessage() - not streamed as raw text
                   streamingContentText += eventData.chunk as string;
 
-                  // Update progress only - pass empty string to avoid showing raw artifact code
+                  // Continue phase detection during content generation
+                  const contentPhase = detectPhase(streamingReasoningText + streamingContentText, currentPhase);
+                  if (contentPhase !== currentPhase) {
+                    currentPhase = contentPhase;
+                    phaseDisplayMessage = PHASE_MESSAGES[contentPhase];
+                    console.log(`📊 [Phase Ticker] Content triggered phase "${contentPhase}" at ${streamingContentText.length} content chars`);
+                  }
+
                   onDelta("", {
                     stage: "generating",
-                    message: "Writing code...",
+                    message: phaseDisplayMessage,
                     artifactDetected: true,
                     percentage: Math.min(50 + (streamingContentText.length / 200), 95),
                     reasoningSteps: streamingReasoningSteps.steps.length > 0 ? streamingReasoningSteps : undefined,
+                    reasoningStatus: phaseDisplayMessage,
                   });
                   break;
+                }
 
                 case "artifact_complete":
                   console.log("✅ [useChatMessages] Artifact stream complete");
@@ -734,23 +866,23 @@ export function useChatMessages(
 
         if (tokenCount < 50) {
           stage = "analyzing";
-          message = "Analyzing request...";
+          message = "Analyzing the user request...";
           percentage = Math.min(15, (tokenCount / 50) * 15);
         } else if (tokenCount < 150 && !artifactDetected) {
           stage = "planning";
-          message = "Planning approach...";
+          message = "Planning the implementation approach...";
           percentage = 15 + Math.min(25, ((tokenCount - 50) / 100) * 25);
         } else if (artifactDetected && !artifactClosed) {
           stage = "generating";
-          message = "Generating code...";
+          message = "Generating the solution code...";
           percentage = 40 + Math.min(45, (tokenCount / 1000) * 45);
         } else if (artifactClosed || tokenCount > 500) {
           stage = "finalizing";
-          message = "Finalizing response...";
+          message = "Finalizing the generated response...";
           percentage = 85 + Math.min(15, ((tokenCount - 500) / 200) * 15);
         } else {
           stage = "generating";
-          message = "Creating response...";
+          message = "Creating the final response...";
           percentage = 40 + Math.min(45, (tokenCount / 1000) * 45);
         }
 
