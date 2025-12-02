@@ -156,14 +156,17 @@ import { Button } from "@/components/ui/button"
 import * as Dialog from '@radix-ui/react-dialog';
 ```
 
-**React Instance Unification** (Fixed 2025-11-27):
+**React Instance Unification** (Fixed server-side 2025-12-01):
 Server-bundled artifacts use a single React instance via import map shims:
-- esm.sh packages use `?external=react,react-dom` (don't bundle React internally)
-- Import map redirects `react`/`react-dom` → `data:` URL shims → `window.React`
-- JSX runtime shim provides `jsx`/`jsxs`/`Fragment` exports
-- Parent CSP (`index.html`) includes `data:` in `script-src` for shim modules
+- **Server** (`bundle-artifact/`): Generates esm.sh URLs with `?external=react,react-dom` (don't bundle React internally)
+- **Import map**: Includes bare specifiers (`react`, `react-dom`, `react/jsx-runtime`) that redirect to `data:` URL shims → `window.React`
+- **Client** (`BundledArtifactFrame`): Client-side patching kept as safety net for old bundles
+- **CSP**: Server bundles include `data:` in `script-src` for shim modules
+- **Bundle timeout**: Increased to 60 seconds for large dependency trees
 
-Key file: `src/components/ArtifactRenderer.tsx` (lines 204-294) — `BundledArtifactFrame` component
+Key files:
+- `supabase/functions/bundle-artifact/index.ts` (lines 395-472) — Server-side fix
+- `src/components/ArtifactRenderer.tsx` (lines 204-294) — Client-side safety net
 
 ### 5-Layer Artifact Validation
 

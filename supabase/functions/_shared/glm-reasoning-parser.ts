@@ -153,7 +153,7 @@ function extractSections(text: string): ReasoningSection[] {
       if (currentSection && (currentSection.items!.length > 0 || currentSection.rawText)) {
         sections.push({
           title: currentSection.title || '',
-          items: currentSection.items,
+          items: currentSection.items || [],
           rawText: currentSection.rawText || '',
           lineStart: currentSection.lineStart || 0,
           lineEnd: i - 1,

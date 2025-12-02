@@ -32,6 +32,7 @@ interface BundleRequest {
   artifactId: string;               // Unique artifact identifier (UUID)
   sessionId: string;                // Chat session identifier (UUID)
   title: string;                    // Artifact title (max 200 chars)
+  isGuest?: boolean;                // Whether this is a guest request (skips auth)
 }
 
 interface BundleResponse {
@@ -48,7 +49,24 @@ interface BundleResponse {
 const MAX_CODE_SIZE = 500 * 1024; // 500KB
 const MAX_TITLE_LENGTH = 200;
 const MAX_BUNDLE_SIZE = 10 * 1024 * 1024; // 10MB (matches storage bucket limit)
-const BUNDLE_TIMEOUT_MS = 30000; // 30 seconds
+// NOTE: Bundle timeout is handled by Supabase Edge Function runtime (default 60s).
+// Client-side timeout in useChatMessages.tsx:bundleArtifact() is 60 seconds.
+
+// React/ReactDOM import map shims (data URLs that redirect ESM imports to window globals)
+// Used by esm.sh packages with ?external=react,react-dom
+// CRITICAL: Include error detection to surface load failures clearly to users
+const REACT_SHIM = 'data:text/javascript,if(!window.React){throw new Error("React failed to load. Please refresh the page.")}const R=window.React;export default R;export const{useState,useEffect,useRef,useMemo,useCallback,useContext,createContext,createElement,Fragment,memo,forwardRef,useReducer,useLayoutEffect,useImperativeHandle,useDebugValue,useDeferredValue,useTransition,useId,useSyncExternalStore,lazy,Suspense,startTransition,Children,cloneElement,isValidElement,createRef,Component,PureComponent,StrictMode}=R;';
+const REACT_DOM_SHIM = 'data:text/javascript,if(!window.ReactDOM){throw new Error("ReactDOM failed to load. Please refresh the page.")}const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync,findDOMNode,unmountComponentAtNode,render,hydrate}=D;';
+const REACT_DOM_CLIENT_SHIM = 'data:text/javascript,if(!window.ReactDOM){throw new Error("ReactDOM failed to load. Please refresh the page.")}const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync}=D;';
+const JSX_RUNTIME_SHIM = 'data:text/javascript,if(!window.React){throw new Error("React failed to load (jsx-runtime). Please refresh the page.")}const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};';
+
+/**
+ * Generate esm.sh CDN URL for a package with React externalized.
+ * Uses ?external=react,react-dom so packages import React from window globals via import map.
+ */
+function buildEsmUrl(pkg: string, version: string): string {
+  return `https://esm.sh/${pkg}@${version}?external=react,react-dom`;
+}
 
 // Security validation patterns
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -387,22 +405,21 @@ serve(async (req) => {
 
     console.log(`[${requestId}] Applied malformed syntax fixes to code`);
 
-    // Replace import statements for npm packages with esm.sh URLs
-    // This handles: import X from 'package', import { X } from 'package', import * as X from 'package'
+    // Replace npm package imports with esm.sh CDN URLs
     for (const [pkg, version] of Object.entries(dependencies)) {
       if (pkg === 'react' || pkg === 'react-dom') continue;
 
-      const esmUrl = `https://esm.sh/${pkg}@${version}?deps=react@18.3.1,react-dom@18.3.1`;
+      const esmUrl = buildEsmUrl(pkg, version);
+      const escapedPkg = pkg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-      // Replace various import patterns
       // import X from 'package'
       transformedCode = transformedCode.replace(
-        new RegExp(`from\\s+['"]${pkg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]`, 'g'),
+        new RegExp(`from\\s+['"]${escapedPkg}['"]`, 'g'),
         `from '${esmUrl}'`
       );
       // import 'package' (side effects)
       transformedCode = transformedCode.replace(
-        new RegExp(`import\\s+['"]${pkg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]`, 'g'),
+        new RegExp(`import\\s+['"]${escapedPkg}['"]`, 'g'),
         `import '${esmUrl}'`
       );
     }
@@ -442,16 +459,25 @@ serve(async (req) => {
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
 
-    // Build import map for browser
+    // Build import map for browser using shared shim constants
+    // Shims redirect ESM imports to window.React/ReactDOM globals loaded via UMD
     const browserImportMap: Record<string, string> = {
-      'react-shim': 'data:text/javascript,const React = window.React; export default React; export const { useState, useEffect, useRef, useMemo, useCallback, useContext, createContext, createElement, Fragment, memo, forwardRef, useReducer, useLayoutEffect, useImperativeHandle, useDebugValue, useDeferredValue, useTransition, useId, useSyncExternalStore, lazy, Suspense, startTransition, Children, cloneElement, isValidElement, createRef, Component, PureComponent, StrictMode } = React;',
-      'react-dom-shim': 'data:text/javascript,const ReactDOM = window.ReactDOM; export default ReactDOM; export const { createRoot, hydrateRoot, createPortal, flushSync, findDOMNode, unmountComponentAtNode, render, hydrate } = ReactDOM;',
+      // Shims for transformed code (code that explicitly imports 'react-shim')
+      'react-shim': REACT_SHIM,
+      'react-dom-shim': REACT_DOM_SHIM,
+      // Bare specifiers for esm.sh packages with ?external=react,react-dom
+      'react': REACT_SHIM,
+      'react-dom': REACT_DOM_SHIM,
+      'react-dom/client': REACT_DOM_CLIENT_SHIM,
+      // JSX runtime shims for modern JSX transform (React 17+)
+      'react/jsx-runtime': JSX_RUNTIME_SHIM,
+      'react/jsx-dev-runtime': JSX_RUNTIME_SHIM,
     };
 
     // Add npm dependencies to import map
     for (const [pkg, version] of Object.entries(dependencies)) {
       if (pkg === 'react' || pkg === 'react-dom') continue;
-      browserImportMap[pkg] = `https://esm.sh/${pkg}@${version}?deps=react@18.3.1,react-dom@18.3.1`;
+      browserImportMap[pkg] = buildEsmUrl(pkg, version);
     }
 
     const importMapJson = JSON.stringify({ imports: browserImportMap }, null, 2);
@@ -616,20 +642,43 @@ ${importMapJson}
         rootElement.innerHTML = '<div class="error-container"><h2>Component Error</h2><p>App component was not exported correctly.</p></div>';
       }
 
-      // Global error handling
-      window.addEventListener('error', (event) => {
-        console.error('Runtime error:', event.error);
-        const root = document.getElementById('root');
-        if (root && root.querySelector('.loading-container')) {
-          root.innerHTML = '<div class="error-container"><h2>Component Error</h2><p>' + (event.error?.message || 'Unknown error occurred') + '</p></div>';
-        }
-      });
-
       console.log('Artifact loaded successfully');
     } catch (error) {
       console.error('Failed to load artifact:', error);
-      document.getElementById('root').innerHTML = '<div class="error-container"><h2>Load Error</h2><p>' + error.message + '</p></div>';
+      const rootEl = document.getElementById('root');
+      if (rootEl) {
+        // Provide user-friendly error messages for common failures
+        let userMessage = error.message;
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          userMessage = 'Failed to load dependencies. Check your internet connection and refresh.';
+        } else if (error.message.includes('esm.sh')) {
+          userMessage = 'Package server (esm.sh) is temporarily unavailable. Please try again.';
+        }
+        rootEl.innerHTML = '<div class="error-container"><h2>Load Error</h2><p>' + userMessage + '</p><p style="font-size:0.8em;color:#666;margin-top:1em;">Technical: ' + error.message + '</p></div>';
+      }
     }
+  </script>
+
+  <!-- Global error handler for module load failures (catches errors OUTSIDE the module) -->
+  <script>
+    window.addEventListener('error', (event) => {
+      console.error('Runtime error:', event.error || event.message);
+      const root = document.getElementById('root');
+      if (root && root.querySelector('.loading-container')) {
+        const msg = event.error?.message || event.message || 'Unknown error occurred';
+        root.innerHTML = '<div class="error-container"><h2>Component Error</h2><p>' + msg + '</p></div>';
+      }
+    });
+
+    // Catch unhandled promise rejections (common with dynamic imports)
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      const root = document.getElementById('root');
+      if (root && root.querySelector('.loading-container')) {
+        const msg = event.reason?.message || String(event.reason) || 'Unknown error';
+        root.innerHTML = '<div class="error-container"><h2>Load Error</h2><p>' + msg + '</p></div>';
+      }
+    });
   </script>
 </body>
 </html>`;
