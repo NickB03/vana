@@ -12,6 +12,8 @@ import { RefreshCw, Maximize2, Download, Edit } from "lucide-react";
 import { ValidationResult, categorizeError } from "@/utils/artifactValidator";
 import { detectNpmImports } from '@/utils/npmDetection';
 import { lazy } from "react";
+import { classifyError, shouldAttemptRecovery, getFallbackRenderer, ArtifactError } from "@/utils/artifactErrorRecovery";
+import { ArtifactErrorRecovery } from "./ArtifactErrorRecovery";
 
 // Lazy load Sandpack component for code splitting
 const SandpackArtifactRenderer = lazy(() =>
@@ -551,16 +553,47 @@ export const ArtifactRenderer = memo(({
 }: ArtifactRendererProps) => {
   const mermaidRef = useRef<HTMLDivElement>(null);
 
+  // Error recovery state
+  const [recoveryAttempts, setRecoveryAttempts] = useState(0);
+  const [currentError, setCurrentError] = useState<ArtifactError | null>(null);
+  const [isRecovering, setIsRecovering] = useState(false);
+  const [currentRenderer, setCurrentRenderer] = useState<'bundle' | 'sandpack' | 'babel'>(
+    artifact.bundleUrl ? 'bundle' : detectNpmImports(artifact.content) ? 'sandpack' : 'babel'
+  );
+  const MAX_RECOVERY_ATTEMPTS = 2;
+
+  // Refs for cleanup and preventing state updates after unmount
+  const recoveryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
+
+  // Cleanup effect for mounted state and timeout
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (recoveryTimeoutRef.current) {
+        clearTimeout(recoveryTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Listen for iframe messages
   useEffect(() => {
     onLoadingChange(true);
     onPreviewErrorChange(null);
 
     const handleIframeMessage = (e: MessageEvent) => {
+      // Security: Only accept messages from our iframes (blob URLs report 'null') or same origin
+      // Prevents malicious iframes or websites from sending fake artifact signals
+      const validOrigins = ['null', window.location.origin];
+      if (!validOrigins.includes(e.origin)) {
+        // Silently ignore messages from untrusted origins
+        return;
+      }
+
+
       if (e.data?.type === 'artifact-error') {
-        const errorInfo = categorizeError(e.data.message);
-        onPreviewErrorChange(e.data.message);
-        onErrorCategoryChange(errorInfo.category);
+        handleArtifactError(e.data.message);
         onLoadingChange(false);
       } else if (e.data?.type === 'artifact-ready') {
         onLoadingChange(false);
@@ -576,7 +609,7 @@ export const ArtifactRenderer = memo(({
       window.removeEventListener('message', handleIframeMessage);
       clearTimeout(loadTimeout);
     };
-  }, [artifact.content, onLoadingChange, onPreviewErrorChange, onErrorCategoryChange]);
+  }, [artifact.content, onLoadingChange, onPreviewErrorChange, onErrorCategoryChange, recoveryAttempts]);
 
   // Render mermaid diagrams
   useEffect(() => {
@@ -616,6 +649,76 @@ export const ArtifactRenderer = memo(({
     if (!sandpackEnabled) return false;
     return detectNpmImports(artifact.content);
   }, [artifact.content, artifact.type]);
+
+  // Map error type to error category for parent component
+  const mapErrorTypeToCategory = (type: string): 'syntax' | 'runtime' | 'import' | 'unknown' => {
+    if (type === 'syntax' || type === 'runtime' || type === 'import') {
+      return type;
+    }
+    return 'unknown';
+  };
+
+  // Handle artifact errors with recovery logic
+  const handleArtifactError = (errorMessage: string) => {
+    const classifiedError = classifyError(errorMessage);
+    setCurrentError(classifiedError);
+
+    // Update existing error handlers
+    onPreviewErrorChange(errorMessage);
+    onErrorCategoryChange(mapErrorTypeToCategory(classifiedError.type));
+
+    // Check if automatic recovery should be attempted
+    if (shouldAttemptRecovery(classifiedError, recoveryAttempts, MAX_RECOVERY_ATTEMPTS)) {
+      if (classifiedError.retryStrategy === 'with-fix' && classifiedError.canAutoFix) {
+        // Automatically trigger AI fix for auto-fixable errors
+        setIsRecovering(true);
+        setRecoveryAttempts(prev => prev + 1);
+
+        // Clear any existing timeout
+        if (recoveryTimeoutRef.current) {
+          clearTimeout(recoveryTimeoutRef.current);
+        }
+
+        // Set new timeout with mounted check
+        recoveryTimeoutRef.current = setTimeout(() => {
+          if (isMountedRef.current) {
+            onAIFix();
+            setIsRecovering(false);
+          }
+        }, 500);
+      } else if (classifiedError.retryStrategy === 'different-renderer' && classifiedError.fallbackRenderer) {
+        // Automatically switch renderer
+        handleUseFallback();
+      }
+    }
+  };
+
+  // Handle manual retry
+  const handleRetry = () => {
+    setRecoveryAttempts(prev => prev + 1);
+    setCurrentError(null);
+    onRefresh();
+  };
+
+  // Handle fallback renderer
+  const handleUseFallback = () => {
+    if (!currentError) return;
+
+    const fallback = getFallbackRenderer(currentError, currentRenderer);
+    if (fallback) {
+      setRecoveryAttempts(prev => prev + 1);
+      setCurrentRenderer(fallback === 'sandpack' ? 'sandpack' : 'babel');
+      setCurrentError(null);
+      onRefresh();
+    }
+  };
+
+  // Reset recovery state when artifact changes
+  useEffect(() => {
+    setRecoveryAttempts(0);
+    setCurrentError(null);
+    setIsRecovering(false);
+  }, [artifact.id]);
 
   // Code/HTML rendering
   if (artifact.type === "code" || artifact.type === "html") {
@@ -697,62 +800,17 @@ ${artifact.content}
               <ArtifactSkeleton type={artifact.type} />
             </div>
           )}
-          {previewError && !isLoading && (
-            <div className={`absolute top-2 left-2 right-2 text-xs p-3 rounded z-10 flex flex-col gap-2 ${
-              errorCategory === 'syntax' ? 'bg-red-50 border border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200' :
-              errorCategory === 'runtime' ? 'bg-orange-50 border border-orange-200 text-orange-800 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-200' :
-              errorCategory === 'import' ? 'bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200' :
-              'bg-destructive/10 border border-destructive text-destructive'
-            }`}>
-              <div className="flex items-start gap-2">
-                <span className="font-semibold shrink-0">
-                  {errorCategory === 'syntax' ? '🔴 Syntax Error:' :
-                   errorCategory === 'runtime' ? '🟠 Runtime Error:' :
-                   errorCategory === 'import' ? '🟡 Import Error:' :
-                   '⚠️ Error:'}
-                </span>
-                <span className="flex-1 break-words font-mono text-xs">{previewError}</span>
-              </div>
-              {isFixingError && (
-                <div className="flex items-center gap-2 pl-6 text-xs">
-                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                  <span>AI is fixing the error...</span>
-                </div>
-              )}
-              <div className="flex gap-2 pl-6">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-6 text-xs"
-                  onClick={() => {
-                    navigator.clipboard.writeText(previewError);
-                    toast.success("Error copied to clipboard");
-                  }}
-                  disabled={isFixingError}
-                >
-                  Copy Error
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-6 text-xs"
-                  onClick={onAIFix}
-                  disabled={isFixingError}
-                >
-                  {isFixingError ? "Fixing..." : "🤖 Ask AI to Fix"}
-                </Button>
-                {onEdit && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-6 text-xs"
-                    onClick={() => onEdit(`Fix this error: ${previewError}`)}
-                    disabled={isFixingError}
-                  >
-                    Ask in Chat
-                  </Button>
-                )}
-              </div>
+          {previewError && !isLoading && currentError && (
+            <div className="absolute top-2 left-2 right-2 z-10">
+              <ArtifactErrorRecovery
+                error={currentError}
+                isRecovering={isRecovering || isFixingError}
+                canRetry={recoveryAttempts < MAX_RECOVERY_ATTEMPTS}
+                canUseFallback={!!getFallbackRenderer(currentError, currentRenderer)}
+                onRetry={handleRetry}
+                onUseFallback={handleUseFallback}
+                onAskAIFix={onAIFix}
+              />
             </div>
           )}
           <WebPreview defaultUrl="about:blank" key={`webpreview-${themeRefreshKey}`}>
@@ -1186,11 +1244,15 @@ ${artifact.content}
       }
 
       root.render(<Component />);
+
+      // Signal to parent that artifact has finished rendering
+      window.parent.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
     } catch (error) {
       window.parent.postMessage({
         type: 'artifact-error',
         message: error.message || 'Failed to render component'
       }, '*');
+      window.parent.postMessage({ type: 'artifact-rendered-complete', success: false, error: error.message }, '*');
       console.error('Render error:', error);
     }
   </script>
@@ -1216,52 +1278,17 @@ ${artifact.content}
               <ArtifactSkeleton type="react" />
             </div>
           )}
-          {previewError && !isLoading && (
-            <div className="absolute top-2 left-2 right-2 bg-destructive/10 border border-destructive text-destructive text-xs p-3 rounded z-10 flex flex-col gap-2">
-              <div className="flex items-start gap-2">
-                <span className="font-semibold shrink-0">⚠️ Error:</span>
-                <span className="flex-1 break-words font-mono">{previewError}</span>
-              </div>
-              {isFixingError && (
-                <div className="flex items-center gap-2 pl-6 text-xs">
-                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                  <span>AI is fixing the error...</span>
-                </div>
-              )}
-              <div className="flex gap-2 pl-6">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-6 text-xs"
-                  onClick={() => {
-                    navigator.clipboard.writeText(previewError);
-                    toast.success("Error copied to clipboard");
-                  }}
-                  disabled={isFixingError}
-                >
-                  Copy Error
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-6 text-xs"
-                  onClick={onAIFix}
-                  disabled={isFixingError}
-                >
-                  {isFixingError ? "Fixing..." : "🤖 Ask AI to Fix"}
-                </Button>
-                {onEdit && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-6 text-xs"
-                    onClick={() => onEdit(`Fix this error: ${previewError}`)}
-                    disabled={isFixingError}
-                  >
-                    Ask in Chat
-                  </Button>
-                )}
-              </div>
+          {previewError && !isLoading && currentError && (
+            <div className="absolute top-2 left-2 right-2 z-10">
+              <ArtifactErrorRecovery
+                error={currentError}
+                isRecovering={isRecovering || isFixingError}
+                canRetry={recoveryAttempts < MAX_RECOVERY_ATTEMPTS}
+                canUseFallback={!!getFallbackRenderer(currentError, currentRenderer)}
+                onRetry={handleRetry}
+                onUseFallback={handleUseFallback}
+                onAskAIFix={onAIFix}
+              />
             </div>
           )}
           <WebPreview defaultUrl="about:blank" key={`webpreview-react-${themeRefreshKey}`}>

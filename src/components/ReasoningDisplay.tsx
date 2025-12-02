@@ -22,6 +22,8 @@ interface ReasoningDisplayProps {
   /** Semantic status update from GLM-4.5-AirX */
   reasoningStatus?: string | null;
   isStreaming?: boolean;
+  /** Whether the artifact has finished rendering (optional, defaults to true) */
+  artifactRendered?: boolean;
 }
 
 /**
@@ -43,14 +45,7 @@ function sanitizeContent(content: string): string {
 }
 
 /**
- * Detect if a string is a list item (bullet or numbered)
- */
-function isListItem(item: string): boolean {
-  return /^[-*•]\s/.test(item) || /^\d+[.)]\s/.test(item);
-}
-
-/**
- * Strip list prefix from item
+ * Strip list prefix from item (bullets, numbers, etc.)
  */
 function stripListPrefix(item: string): string {
   return item.replace(/^[-*•\d+.)]\s*/, '');
@@ -73,6 +68,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   streamingReasoningText,
   reasoningStatus,
   isStreaming,
+  artifactRendered = true, // Default to true for backward compatibility
 }: ReasoningDisplayProps) {
   // Expand/collapse state
   const [isExpanded, setIsExpanded] = useState(false);
@@ -207,57 +203,73 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   const lastStep = validatedSteps?.steps[totalSections - 1];
 
   /**
+   * Truncate text to max length with ellipsis
+   */
+  const truncateText = (text: string, maxLength: number): string => {
+    if (text.length <= maxLength) return text;
+    return `${text.slice(0, maxLength - 3)}...`;
+  };
+
+  /**
+   * Get the streaming status text from available sources
+   * Priority: semantic status > structured steps > raw text extraction > fallback
+   */
+  const getStreamingStatus = (): string => {
+    // 1. Prefer explicit semantic status from GLM-4.5-AirX
+    if (reasoningStatus) {
+      return reasoningStatus;
+    }
+
+    // 2. Prefer structured reasoning steps
+    if (validatedSteps && currentSection) {
+      return currentSection.title;
+    }
+
+    // 3. Extract status from GLM native streaming text
+    if (hasStreamingText && streamingReasoningText) {
+      const result = extractStatusText(
+        streamingReasoningText,
+        extractionStateRef.current
+      );
+      extractionStateRef.current = result.state;
+      return result.text;
+    }
+
+    // 4. Use last known text
+    return extractionStateRef.current.lastText;
+  };
+
+  /**
    * Get the pill label text based on current state
    * - During streaming: current status ("Thinking...", "Scrutinizing...", etc.)
+   * - Waiting for render: "Rendering..." (after streaming completes but before artifact renders)
    * - Collapsed after streaming: last status ("Interrogated feasibility gaps...")
    * - Expanded after streaming: "Thought process" (Claude-style)
-   *
-   * Uses the extractStatusText utility for clean text extraction from raw reasoning.
    */
   const getPillLabel = (): string => {
-    // When expanded after streaming: show "Thought process" (like Claude)
-    if (isExpanded && !isStreaming) {
+    // Expanded after streaming: show "Thought process" (like Claude)
+    if (isExpanded && !isStreaming && artifactRendered) {
       return "Thought process";
+    }
+
+    // Streaming done but artifact not rendered: show "Rendering..."
+    if (!isStreaming && !artifactRendered) {
+      return "Rendering...";
     }
 
     // During streaming: show current step title
     if (isStreaming) {
-      // 1. Prefer explicit semantic status from GLM-4.5-AirX (highest priority)
-      if (reasoningStatus) {
-        return reasoningStatus;
-      }
-
-      // 2. Prefer structured reasoning steps
-      if (validatedSteps && currentSection) {
-        return currentSection.title;
-      }
-
-      // 3. Extract status from GLM native streaming text using the utility
-      if (hasStreamingText && streamingReasoningText) {
-        const result = extractStatusText(
-          streamingReasoningText,
-          extractionStateRef.current
-        );
-
-        // Update state for next call
-        extractionStateRef.current = result.state;
-
-        return result.text;
-      }
-
-      // Default fallback
-      return extractionStateRef.current.lastText;
+      return getStreamingStatus();
     }
 
-    // After streaming (collapsed): show LAST status (not "Thought for X seconds")
+    // After streaming (collapsed): show last status
     if (validatedSteps && lastStep) {
-      const title = lastStep.title;
-      return title.length > 70 ? `${title.slice(0, 67)}...` : title;
+      return truncateText(lastStep.title, 70);
     }
 
     // Fallback for non-structured reasoning
     const text = reasoning || "";
-    return text.length > 70 ? `${text.slice(0, 67)}...` : text || "View reasoning";
+    return text ? truncateText(text, 70) : "View reasoning";
   };
 
   // Don't render if no data and not streaming
@@ -269,8 +281,9 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   const hasContent = hasStructuredContent || hasStreamingText || sanitizedReasoning;
   // STABILITY FIX: Always show the spinner when streaming, even if we have text.
   // This prevents the "different sized pill" jump when switching from "Thinking..." to text.
-  const showThinkingBar = isStreaming;
-  const showShimmer = isStreaming;
+  // PHASE 2: Also show spinner if streaming is complete but artifact hasn't rendered yet
+  const showThinkingBar = isStreaming || (!isStreaming && !artifactRendered);
+  const showShimmer = isStreaming || (!isStreaming && !artifactRendered);
   const showExpandButton = hasContent || isStreaming;
 
   return (

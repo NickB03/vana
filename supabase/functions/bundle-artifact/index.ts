@@ -635,11 +635,16 @@ ${importMapJson}
         const root = ReactDOM.createRoot(rootElement);
         root.render(React.createElement(App));
         console.log('Component rendered successfully');
+
+        // Signal to parent that artifact has finished rendering
+        window.parent.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
       } else if (!rootElement) {
         console.error('Root element not found');
+        window.parent.postMessage({ type: 'artifact-rendered-complete', success: false, error: 'Root element not found' }, '*');
       } else {
         console.error('App component not defined');
         rootElement.innerHTML = '<div class="error-container"><h2>Component Error</h2><p>App component was not exported correctly.</p></div>';
+        window.parent.postMessage({ type: 'artifact-rendered-complete', success: false, error: 'App component not defined' }, '*');
       }
 
       console.log('Artifact loaded successfully');
@@ -656,6 +661,9 @@ ${importMapJson}
         }
         rootEl.innerHTML = '<div class="error-container"><h2>Load Error</h2><p>' + userMessage + '</p><p style="font-size:0.8em;color:#666;margin-top:1em;">Technical: ' + error.message + '</p></div>';
       }
+
+      // Signal error to parent
+      window.parent.postMessage({ type: 'artifact-rendered-complete', success: false, error: error.message }, '*');
     }
   </script>
 

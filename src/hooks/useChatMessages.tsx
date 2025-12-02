@@ -47,6 +47,26 @@ export interface UseChatMessagesOptions {
   isGuest?: boolean; // Explicit guest mode flag - when true, messages are saved to local state only
 }
 
+/**
+ * Parse rate limit headers from HTTP response
+ */
+function parseRateLimitHeaders(headers: Headers): RateLimitHeaders | null {
+  const limit = headers.get("X-RateLimit-Limit");
+  const remaining = headers.get("X-RateLimit-Remaining");
+  const reset = headers.get("X-RateLimit-Reset");
+  const retryAfter = headers.get("Retry-After");
+
+  if (limit && remaining && reset) {
+    return {
+      limit: parseInt(limit, 10),
+      remaining: parseInt(remaining, 10),
+      reset: parseInt(reset, 10),
+      retryAfter: retryAfter ? parseInt(retryAfter, 10) : undefined,
+    };
+  }
+  return null;
+}
+
 export function useChatMessages(
   sessionId: string | undefined,
   options?: UseChatMessagesOptions
@@ -54,6 +74,7 @@ export function useChatMessages(
   const isGuest = options?.isGuest ?? false;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [artifactRenderStatus, setArtifactRenderStatus] = useState<'pending' | 'rendered' | 'error'>('pending');
   const { toast } = useToast();
 
   const fetchMessages = useCallback(async () => {
@@ -94,6 +115,33 @@ export function useChatMessages(
       setMessages([]);
     }
   }, [sessionId, fetchMessages]);
+
+  // Listen for artifact render completion messages
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Security: Only accept messages from our iframes (blob URLs report 'null') or same origin
+      // Prevents malicious iframes or websites from sending fake artifact signals
+      const validOrigins = ['null', window.location.origin];
+      if (!validOrigins.includes(event.origin)) {
+        // Silently ignore messages from untrusted origins
+        return;
+      }
+
+
+      if (event.data?.type === 'artifact-rendered-complete') {
+        if (event.data.success) {
+          console.log('[useChatMessages] Artifact rendered successfully');
+          setArtifactRenderStatus('rendered');
+        } else {
+          console.error('[useChatMessages] Artifact render failed:', event.data.error);
+          setArtifactRenderStatus('error');
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   const saveMessage = async (
     role: "user" | "assistant",
@@ -187,6 +235,7 @@ export function useChatMessages(
     const RETRY_DELAYS = [2000, 5000, 10000]; // Exponential backoff: 2s, 5s, 10s
 
     setIsLoading(true);
+    setArtifactRenderStatus('pending');
 
     try {
       // Client-side throttling: silently wait for token (protects API from burst requests)
@@ -394,10 +443,24 @@ export function useChatMessages(
           reasoningSteps?: StructuredReasoning;
         } | null = null;
 
+        // Stream timeout protection
+        const STREAM_TIMEOUT_MS = 120000; // 2 minutes max for artifact generation
+        const streamStartTime = Date.now();
+        let lastDataReceivedTime = Date.now();
+
         try {
           while (true) {
+            // Check for timeout - use "last data received" to avoid timing out during active streaming
+            const timeSinceLastData = Date.now() - lastDataReceivedTime;
+            if (timeSinceLastData > STREAM_TIMEOUT_MS) {
+              throw new Error('Stream timeout: Artifact generation took too long. Please try again with a simpler request.');
+            }
+
             const { done, value } = await reader.read();
             if (done) break;
+
+            // Update last data received timestamp
+            lastDataReceivedTime = Date.now();
 
             buffer += decoder.decode(value, { stream: true });
 
@@ -588,24 +651,6 @@ export function useChatMessages(
         }
       );
 
-      // Parse rate limit headers from response
-      const parseRateLimitHeaders = (headers: Headers): RateLimitHeaders | null => {
-        const limit = headers.get("X-RateLimit-Limit");
-        const remaining = headers.get("X-RateLimit-Remaining");
-        const reset = headers.get("X-RateLimit-Reset");
-        const retryAfter = headers.get("Retry-After");
-
-        if (limit && remaining && reset) {
-          return {
-            limit: parseInt(limit, 10),
-            remaining: parseInt(remaining, 10),
-            reset: parseInt(reset, 10),
-            retryAfter: retryAfter ? parseInt(retryAfter, 10) : undefined,
-          };
-        }
-        return null;
-      };
-
       // Handle rate limit exceeded (429)
       if (response.status === 429) {
         const errorData = await response.json();
@@ -669,6 +714,10 @@ export function useChatMessages(
       let searchResults: WebSearchResults | undefined; // Store web search results
       let lastSequence = 0; // Track SSE event sequence
 
+      // Stream timeout protection
+      const CHAT_STREAM_TIMEOUT_MS = 120000; // 2 minutes max for chat streaming
+      let lastDataReceivedTime = Date.now();
+
       const updateProgress = (): StreamProgress => {
         // Detect artifact tags
         if (!artifactDetected && fullResponse.includes('<artifact')) {
@@ -716,8 +765,17 @@ export function useChatMessages(
       };
 
       while (true) {
+        // Check for timeout - use "last data received" to avoid timing out during active streaming
+        const timeSinceLastData = Date.now() - lastDataReceivedTime;
+        if (timeSinceLastData > CHAT_STREAM_TIMEOUT_MS) {
+          throw new Error('Stream timeout: Response generation took too long. Please try again.');
+        }
+
         const { done, value } = await reader.read();
         if (done) break;
+
+        // Update last data received timestamp
+        lastDataReceivedTime = Date.now();
 
         textBuffer += decoder.decode(value, { stream: true });
 
@@ -881,6 +939,18 @@ export function useChatMessages(
 
       console.error("Stream error:", error);
 
+      // Handle timeout errors specifically
+      if (error.message?.includes('Stream timeout')) {
+        toast({
+          title: "Request Timeout",
+          description: error.message,
+          variant: "destructive",
+          duration: 8000,
+        });
+        onDone();
+        return;
+      }
+
       // Handle retryable errors with exponential backoff
       if (error.message === "SERVICE_UNAVAILABLE" && retryCount < MAX_RETRIES) {
         const delay = RETRY_DELAYS[retryCount];
@@ -974,5 +1044,6 @@ export function useChatMessages(
     saveMessage,
     deleteMessage,
     updateMessage,
+    artifactRenderStatus,
   };
 }

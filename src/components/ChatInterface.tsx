@@ -75,7 +75,7 @@ export function ChatInterface({
 }: ChatInterfaceProps) {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const { messages, isLoading, streamChat, deleteMessage, updateMessage } = useChatMessages(sessionId, { isGuest });
+  const { messages, isLoading, streamChat, deleteMessage, updateMessage, artifactRenderStatus } = useChatMessages(sessionId, { isGuest });
   const { cancelStream, startStream, completeStream } = useStreamCancellation();
   const [localInput, setLocalInput] = useState("");
   const input = typeof parentInput === 'string' ? parentInput : localInput;
@@ -501,6 +501,7 @@ export function ChatInterface({
                             reasoning={message.reasoning}
                             reasoningSteps={message.reasoning_steps}
                             isStreaming={false}
+                            artifactRendered={artifactRenderStatus === 'rendered' || artifactRenderStatus === 'error'}
                           />
                         </ReasoningErrorBoundary>
                       )}
@@ -631,6 +632,7 @@ export function ChatInterface({
                       streamingReasoningText={streamProgress.streamingReasoningText}
                       reasoningStatus={streamProgress.reasoningStatus}
                       isStreaming={true}
+                      artifactRendered={artifactRenderStatus === 'rendered' || artifactRenderStatus === 'error'}
                       onStop={cancelStream}
                     />
                   </ReasoningErrorBoundary>
