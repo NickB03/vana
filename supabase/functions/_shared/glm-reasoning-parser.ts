@@ -358,15 +358,40 @@ function generateTitle(section: ReasoningSection, phase: ReasoningPhase): string
       title.length < 5 ||
       poorTitlePatterns.some(pattern => pattern.test(title));
 
-    // If title is poor, generate a meaningful one based on phase
+    // If title is poor, try to extract a meaningful one from the content
     if (isPoorTitle) {
-      const titleMap: Record<ReasoningPhase, string> = {
-        research: 'Analyzing requirements',
-        analysis: 'Planning implementation',
-        solution: 'Building the solution',
-        custom: 'Processing request',
-      };
-      title = titleMap[phase];
+      // Try to get the first sentence or item from the content
+      let contentTitle = '';
+
+      if (section.items.length > 0) {
+        contentTitle = section.items[0];
+      } else if (section.rawText) {
+        contentTitle = section.rawText;
+      }
+
+      // Clean up the extracted content
+      contentTitle = stripTitlePrefix(contentTitle).trim();
+
+      // Transform to gerund
+      const transformedContent = transformToGerund(contentTitle);
+
+      // Check if the extracted content is a valid title
+      const isContentValid = contentTitle.length >= 10 &&
+        contentTitle.length <= 100 &&
+        !poorTitlePatterns.some(pattern => pattern.test(contentTitle));
+
+      if (isContentValid) {
+        title = transformedContent;
+      } else {
+        // Only use static fallback if we couldn't extract a good title from content
+        const titleMap: Record<ReasoningPhase, string> = {
+          research: 'Analyzing the user requirements',
+          analysis: 'Planning the implementation details',
+          solution: 'Building the proposed solution',
+          custom: 'Processing the user request',
+        };
+        title = titleMap[phase];
+      }
     }
   }
 
@@ -376,10 +401,10 @@ function generateTitle(section: ReasoningSection, phase: ReasoningPhase): string
   // Ensure minimum length by adding phase context
   if (title.length < 10) {
     const fallbackMap: Record<ReasoningPhase, string> = {
-      research: 'Analyzing the request',
-      analysis: 'Planning the approach',
-      solution: 'Implementing the solution',
-      custom: 'Processing the task',
+      research: 'Analyzing the user request',
+      analysis: 'Planning the implementation approach',
+      solution: 'Implementing the proposed solution',
+      custom: 'Processing the user task',
     };
     title = fallbackMap[phase];
   }
@@ -450,6 +475,69 @@ function createFallbackReasoning(rawText: string): StructuredReasoning {
 // ============================================================================
 
 /**
+ * Phase-based ticker system for Claude-like reasoning display
+ *
+ * Instead of showing rapidly flashing raw text, we detect phase transitions
+ * and show pre-defined semantic messages (3-6 meaningful updates).
+ */
+
+/** Phases of reasoning that the model goes through */
+export type ThinkingPhase =
+  | 'starting'      // Initial thinking
+  | 'analyzing'     // Understanding the request
+  | 'planning'      // Designing the approach
+  | 'implementing'  // Writing the solution
+  | 'styling'       // Adding visual polish
+  | 'finalizing';   // Wrapping up
+
+/** Configuration for each thinking phase */
+interface PhaseConfig {
+  /** Keywords that indicate this phase has started */
+  keywords: string[];
+  /** Message to display in the ticker */
+  displayMessage: string;
+  /** Minimum characters before this phase can trigger */
+  minChars: number;
+}
+
+/** Phase detection configuration */
+const PHASE_CONFIG: Record<ThinkingPhase, PhaseConfig> = {
+  starting: {
+    keywords: [],
+    displayMessage: 'Thinking...',
+    minChars: 0,
+  },
+  analyzing: {
+    keywords: ['understand', 'request', 'user wants', 'looking for', 'asking', 'need to', 'requires'],
+    displayMessage: 'Analyzing the request...',
+    minChars: 50,
+  },
+  planning: {
+    keywords: ['structure', 'approach', 'design', 'plan', 'architecture', 'component', 'layout', 'organize'],
+    displayMessage: 'Planning the implementation...',
+    minChars: 200,
+  },
+  implementing: {
+    keywords: ['implement', 'create', 'build', 'code', 'function', 'component', 'return', 'export', 'import'],
+    displayMessage: 'Building the solution...',
+    minChars: 400,
+  },
+  styling: {
+    keywords: ['style', 'css', 'tailwind', 'color', 'layout', 'responsive', 'flex', 'grid', 'padding', 'margin'],
+    displayMessage: 'Applying styling...',
+    minChars: 600,
+  },
+  finalizing: {
+    keywords: ['final', 'complete', 'finish', 'done', 'ready', 'result', 'output'],
+    displayMessage: 'Finalizing the solution...',
+    minChars: 800,
+  },
+};
+
+/** Order of phases for sequential detection */
+const PHASE_ORDER: ThinkingPhase[] = ['starting', 'analyzing', 'planning', 'implementing', 'styling', 'finalizing'];
+
+/**
  * State for incremental reasoning parsing
  * Tracks what we've already emitted to detect new steps
  */
@@ -460,6 +548,10 @@ export interface IncrementalParseState {
   lastTextLength: number;
   /** Minimum chars between re-parse attempts (debounce) */
   minCharsForReparse: number;
+  /** Current detected phase (for phase-based ticker) */
+  currentPhase: ThinkingPhase;
+  /** Last phase transition message (to avoid duplicates) */
+  lastPhaseMessage: string;
 }
 
 /**
@@ -482,7 +574,54 @@ export function createIncrementalParseState(): IncrementalParseState {
     emittedStepCount: 0,
     lastTextLength: 0,
     minCharsForReparse: 100, // Don't re-parse too frequently
+    currentPhase: 'starting',
+    lastPhaseMessage: 'Thinking...',
   };
+}
+
+/**
+ * Detect the current thinking phase based on accumulated text
+ *
+ * Phases progress sequentially - once we've detected a later phase,
+ * we don't go back to an earlier one. This ensures stable, progressive updates.
+ *
+ * @param text - Full accumulated reasoning text
+ * @param currentPhase - Currently detected phase
+ * @returns The new phase (may be same as current)
+ */
+function detectThinkingPhase(text: string, currentPhase: ThinkingPhase): ThinkingPhase {
+  const lowerText = text.toLowerCase();
+  const textLength = text.length;
+
+  // Get current phase index
+  const currentIndex = PHASE_ORDER.indexOf(currentPhase);
+
+  // Only check phases AFTER the current one (phases progress forward only)
+  for (let i = currentIndex + 1; i < PHASE_ORDER.length; i++) {
+    const phase = PHASE_ORDER[i];
+    const config = PHASE_CONFIG[phase];
+
+    // Check minimum character threshold
+    if (textLength < config.minChars) {
+      continue; // Haven't reached minimum chars for this phase yet
+    }
+
+    // Check for keyword matches
+    const hasKeyword = config.keywords.some(keyword => lowerText.includes(keyword));
+    if (hasKeyword) {
+      console.log(`[Phase Detection] Transitioning to "${phase}" phase at ${textLength} chars`);
+      return phase;
+    }
+  }
+
+  return currentPhase; // No phase transition detected
+}
+
+/**
+ * Get the display message for the current phase
+ */
+function getPhaseDisplayMessage(phase: ThinkingPhase): string {
+  return PHASE_CONFIG[phase].displayMessage;
 }
 
 /**
@@ -524,13 +663,32 @@ export function parseReasoningIncrementally(
 ): IncrementalParseResult {
   const textLength = currentText.length;
 
-  // Debounce: skip if text hasn't grown enough since last parse
+  // ==========================================================================
+  // PHASE-BASED TICKER: Detect phase transitions for stable, meaningful updates
+  // ==========================================================================
+  // Instead of extracting the "last line" (which causes flashing), we detect
+  // which phase of thinking the model is in and show pre-defined messages.
+  // This produces 3-6 stable updates like Claude's extended thinking.
+  // ==========================================================================
+
+  // Detect phase transition
+  const newPhase = detectThinkingPhase(currentText, state.currentPhase);
+  const phaseChanged = newPhase !== state.currentPhase;
+  const phaseMessage = getPhaseDisplayMessage(newPhase);
+
+  // Debounce: skip full section parsing if text hasn't grown enough
   const textGrowth = textLength - state.lastTextLength;
-  if (textGrowth < state.minCharsForReparse && state.emittedStepCount > 0) {
+  if (textGrowth < state.minCharsForReparse && state.emittedStepCount > 0 && !phaseChanged) {
     return {
       newStep: null,
-      state,
-      currentThinking: extractCurrentThinking(currentText),
+      state: {
+        ...state,
+        currentPhase: newPhase,
+        lastPhaseMessage: phaseMessage,
+      },
+      // CRITICAL: Use phase message instead of extractCurrentThinking()
+      // This prevents the "flashing" behavior from raw text extraction
+      currentThinking: phaseMessage,
     };
   }
 
@@ -539,7 +697,11 @@ export function parseReasoningIncrementally(
   if (trimmed.length === 0) {
     return {
       newStep: null,
-      state,
+      state: {
+        ...state,
+        currentPhase: 'starting',
+        lastPhaseMessage: 'Thinking...',
+      },
       currentThinking: 'Thinking...',
     };
   }
@@ -592,31 +754,38 @@ export function parseReasoningIncrementally(
           ...state,
           emittedStepCount: state.emittedStepCount + 1,
           lastTextLength: textLength,
+          currentPhase: newPhase,
+          lastPhaseMessage: phaseMessage,
         },
-        currentThinking: title,
+        // Use the step title for sections, but fall back to phase message
+        currentThinking: title || phaseMessage,
       };
     }
 
-    // No new complete section, but update current thinking
-    const currentThinking = sections.length > 0
-      ? sections[sections.length - 1].title || extractCurrentThinking(currentText)
-      : extractCurrentThinking(currentText);
-
+    // No new complete section - use phase-based message for stable ticker
     return {
       newStep: null,
       state: {
         ...state,
         lastTextLength: textLength,
+        currentPhase: newPhase,
+        lastPhaseMessage: phaseMessage,
       },
-      currentThinking,
+      // CRITICAL: Use phase message for stable ticker (not extractCurrentThinking)
+      currentThinking: phaseMessage,
     };
 
   } catch (error) {
     console.warn('[GLM Incremental] Parse error:', error);
+    // Even on error, use phase message instead of raw text extraction
     return {
       newStep: null,
-      state,
-      currentThinking: extractCurrentThinking(currentText),
+      state: {
+        ...state,
+        currentPhase: newPhase,
+        lastPhaseMessage: phaseMessage,
+      },
+      currentThinking: phaseMessage,
     };
   }
 }

@@ -556,5 +556,6 @@ export function stripTitlePrefix(text: string): string {
         .replace(/^Step\s+\d+[:.]\s*/i, "") // "Step 1: ..." → "..."
         .replace(/^Phase\s+\d+[:.]\s*/i, "") // "Phase 1: ..." → "..."
         .replace(/^Section\s+\d+[:.]\s*/i, "") // "Section 1: ..." → "..."
-        .replace(/^\d+[.)]\s*/, ""); // "1. ..." → "..."
+        .replace(/^\d+[.)]\s*/, "") // "1. ..." → "..."
+        .replace(/^[-*•]\s*/, ""); // "- ..." → "..."
 }

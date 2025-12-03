@@ -576,20 +576,22 @@ export interface ExtractionConfig {
  */
 export const DEFAULT_CONFIG: ExtractionConfig = {
   minLength: 15, // "Analyzing X" = 11 chars minimum
-  minWordCount: 2, // At least "Verb Object"
+  minWordCount: 3, // At least "Verb Object Modifier" (e.g. "Analyzing the schema")
   throttleMs: 1500, // 1.5 seconds between updates
   maxLength: 70, // Fits in typical pill UI
 };
 
 /**
  * State maintained between extraction calls
- * Enables throttling and fallback to previous good text
+ * Enables throttling, phase tracking, and fallback to previous good text
  */
 export interface ExtractionState {
   /** Last successfully extracted text */
   lastText: string;
   /** Timestamp of last update */
   lastUpdateTime: number;
+  /** Current thinking phase (for phase-based ticker) */
+  currentPhase?: ThinkingPhase;
 }
 
 /**
@@ -599,6 +601,7 @@ export function createExtractionState(): ExtractionState {
   return {
     lastText: "Thinking...",
     lastUpdateTime: 0,
+    currentPhase: 'starting',
   };
 }
 
@@ -982,6 +985,88 @@ export function validateCandidate(
 }
 
 // ============================================================================
+// PHASE-BASED TICKER SYSTEM (3-6 meaningful updates)
+// ============================================================================
+// Instead of extracting raw text (which causes flashing), we detect phases
+// and show pre-defined semantic messages like Claude's extended thinking.
+
+/** Phases of reasoning that the model goes through */
+type ThinkingPhase =
+  | 'starting'
+  | 'analyzing'
+  | 'planning'
+  | 'implementing'
+  | 'styling'
+  | 'finalizing';
+
+/** Configuration for each thinking phase */
+interface PhaseConfig {
+  keywords: string[];
+  displayMessage: string;
+  minChars: number;
+}
+
+/** Phase detection configuration - order matters for sequential progression */
+const PHASE_CONFIG: Record<ThinkingPhase, PhaseConfig> = {
+  starting: {
+    keywords: [],
+    displayMessage: 'Thinking...',
+    minChars: 0,
+  },
+  analyzing: {
+    keywords: ['understand', 'request', 'user wants', 'looking for', 'asking', 'need to', 'requires'],
+    displayMessage: 'Analyzing the request...',
+    minChars: 50,
+  },
+  planning: {
+    keywords: ['structure', 'approach', 'design', 'plan', 'architecture', 'component', 'layout', 'organize'],
+    displayMessage: 'Planning the implementation...',
+    minChars: 200,
+  },
+  implementing: {
+    keywords: ['implement', 'create', 'build', 'code', 'function', 'component', 'return', 'export', 'import'],
+    displayMessage: 'Building the solution...',
+    minChars: 400,
+  },
+  styling: {
+    keywords: ['style', 'css', 'tailwind', 'color', 'layout', 'responsive', 'flex', 'grid', 'padding', 'margin'],
+    displayMessage: 'Applying styling...',
+    minChars: 600,
+  },
+  finalizing: {
+    keywords: ['final', 'complete', 'finish', 'done', 'ready', 'result', 'output'],
+    displayMessage: 'Finalizing the solution...',
+    minChars: 800,
+  },
+};
+
+/** Order of phases for sequential detection */
+const PHASE_ORDER: ThinkingPhase[] = ['starting', 'analyzing', 'planning', 'implementing', 'styling', 'finalizing'];
+
+/**
+ * Detect which phase of thinking based on accumulated text
+ * Phases progress forward only - no going back
+ */
+function detectPhase(text: string, currentPhase: ThinkingPhase): ThinkingPhase {
+  const lowerText = text.toLowerCase();
+  const textLength = text.length;
+  const currentIndex = PHASE_ORDER.indexOf(currentPhase);
+
+  // Only check phases AFTER current (forward progression only)
+  for (let i = currentIndex + 1; i < PHASE_ORDER.length; i++) {
+    const phase = PHASE_ORDER[i];
+    const config = PHASE_CONFIG[phase];
+
+    if (textLength < config.minChars) continue;
+    if (config.keywords.some(kw => lowerText.includes(kw))) {
+      return phase;
+    }
+  }
+
+  return currentPhase;
+}
+
+// ============================================================================
 // MAIN EXTRACTION FUNCTION
 // ============================================================================
 
@@ -1000,11 +1085,8 @@ export interface ExtractionResult {
 /**
  * Extract the best status text from raw reasoning
  *
- * Strategies tried in order:
- * 1. Check for code patterns (→ "Writing code...")
- * 2. Find complete sentences (ending in .!?)
- * 3. Find complete lines (newline-separated)
- * 4. Fall back to previous state
+ * UPDATED: Now uses phase-based detection to show 3-6 meaningful updates
+ * instead of rapidly changing raw text extraction.
  *
  * @param rawText - Raw reasoning text from LLM
  * @param state - Previous extraction state
@@ -1017,97 +1099,58 @@ export function extractStatusText(
   config: ExtractionConfig = DEFAULT_CONFIG
 ): ExtractionResult {
   const now = Date.now();
-  const timeSinceLastUpdate = now - state.lastUpdateTime;
-  const isInitialState =
-    state.lastText === "Thinking..." || state.lastText === "Processing...";
+  const text = rawText.trim();
 
-  // Throttle updates unless in initial state
+  // Extract current phase from state (use 'starting' as default)
+  const currentPhase = state.currentPhase || 'starting';
+
+  // Detect phase transition
+  const newPhase = detectPhase(text, currentPhase);
+  const phaseChanged = newPhase !== currentPhase;
+  const phaseMessage = PHASE_CONFIG[newPhase].displayMessage;
+
+  // If phase changed, update immediately
+  if (phaseChanged) {
+    const newState: ExtractionState = {
+      lastText: phaseMessage,
+      lastUpdateTime: now,
+      currentPhase: newPhase,
+    };
+    return { text: phaseMessage, updated: true, state: newState };
+  }
+
+  // Check throttling
+  const timeSinceLastUpdate = now - state.lastUpdateTime;
+  const isInitialState = state.lastText === "Thinking..." || state.lastText === "Processing...";
+
   if (!isInitialState && timeSinceLastUpdate < config.throttleMs) {
     return { text: state.lastText, updated: false, state };
   }
 
-  const text = rawText.trim();
-
-  // Strategy 0: Check for code patterns first (special case)
-  // If the entire recent text looks like code, show "Writing code..."
+  // Special case: if we see code patterns, show "Writing code..." as part of implementing phase
   const lines = text.split("\n");
   const recentLines = lines.slice(-3);
   const recentText = recentLines.join("\n");
 
-  if (looksLikeCode(recentText)) {
-    // Only update if enough time has passed
-    if (isInitialState || timeSinceLastUpdate > 2000) {
-      const newState = { lastText: "Writing code...", lastUpdateTime: now };
-      return { text: "Writing code...", updated: true, state: newState };
-    }
-    return { text: state.lastText, updated: false, state };
+  if (looksLikeCode(recentText) && (isInitialState || timeSinceLastUpdate > 2000)) {
+    const newState: ExtractionState = {
+      lastText: "Writing code...",
+      lastUpdateTime: now,
+      currentPhase: 'implementing',
+    };
+    return { text: "Writing code...", updated: true, state: newState };
   }
 
-  // Strategy 1: Find complete sentences (ending in .!?)
-  // Use a regex that finds sentences properly
-  const sentencePattern = /[^.!?\n]+[.!?]/g;
-  const sentences: string[] = [];
-  let match;
-  while ((match = sentencePattern.exec(text)) !== null) {
-    sentences.push(match[0].trim());
-  }
-
-  if (sentences.length > 0) {
-    // Try sentences from most recent to oldest
-    for (let i = sentences.length - 1; i >= 0; i--) {
-      const sentence = sentences[i];
-      const validation = validateCandidate(sentence, config);
-
-      if (validation.valid) {
-        const newState = {
-          lastText: validation.cleaned,
-          lastUpdateTime: now,
-        };
-        return { text: validation.cleaned, updated: true, state: newState };
-      }
-    }
-  }
-
-  // Strategy 2: Try complete lines (newline-separated)
-  const nonEmptyLines = lines.filter((line) => line.trim().length > 0);
-
-  if (nonEmptyLines.length > 1) {
-    // Try lines from second-to-last backwards (most recent complete line)
-    for (let i = nonEmptyLines.length - 2; i >= 0; i--) {
-      const line = nonEmptyLines[i].trim();
-      const validation = validateCandidate(line, config);
-
-      if (validation.valid) {
-        const newState = {
-          lastText: validation.cleaned,
-          lastUpdateTime: now,
-        };
-        return { text: validation.cleaned, updated: true, state: newState };
-      }
-
-      // Check if this line is code
-      if (looksLikeCode(line)) {
-        if (isInitialState || timeSinceLastUpdate > 2000) {
-          const newState = { lastText: "Writing code...", lastUpdateTime: now };
-          return { text: "Writing code...", updated: true, state: newState };
-        }
-      }
-    }
-  }
-
-  // Strategy 3: Check last line for code pattern
-  if (nonEmptyLines.length > 0) {
-    const lastLine = nonEmptyLines[nonEmptyLines.length - 1].trim();
-    if (looksLikeCode(lastLine)) {
-      if (isInitialState || timeSinceLastUpdate > 2000) {
-        const newState = { lastText: "Writing code...", lastUpdateTime: now };
-        return { text: "Writing code...", updated: true, state: newState };
-      }
-    }
-  }
-
-  // No valid candidate found, keep previous state
-  return { text: state.lastText, updated: false, state };
+  // No phase transition - return current phase message (stable, no flashing)
+  return {
+    text: phaseMessage,
+    updated: state.lastText !== phaseMessage,
+    state: {
+      ...state,
+      lastText: phaseMessage,
+      currentPhase: newPhase,
+    },
+  };
 }
 
 // ============================================================================

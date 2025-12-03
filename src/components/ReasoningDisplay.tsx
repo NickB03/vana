@@ -5,8 +5,9 @@ import {
   StructuredReasoning,
   parseReasoningSteps,
 } from "@/types/reasoning";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Clock } from "lucide-react";
 import { TextShimmer } from "@/components/prompt-kit/text-shimmer";
+import { useReasoningTimer } from "@/hooks/useReasoningTimer";
 import {
   extractStatusText,
   createExtractionState,
@@ -76,10 +77,15 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   // Animation state for crossfade
   const [isTransitioning, setIsTransitioning] = useState(false);
+  // Store final elapsed time when streaming ends
+  const [finalElapsedTime, setFinalElapsedTime] = useState<string>("");
 
   // Track all active timeouts for proper cleanup
   const timeoutRefs = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
   const wasStreamingRef = useRef(false);
+
+  // Timer for reasoning duration (Claude-style)
+  const elapsedTime = useReasoningTimer(isStreaming ?? false);
   // Track the previous step count to detect new steps arriving
   const prevStepCountRef = useRef(0);
   // State for the reasoning text extractor (throttling, last valid text, etc.)
@@ -148,6 +154,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
       setCurrentSectionIndex(0);
       setIsTransitioning(false);
       setIsExpanded(false);
+      setFinalElapsedTime("");
       clearTimeouts();
       prevStepCountRef.current = 0;
       // Reset the extraction state for new streaming session
@@ -155,6 +162,13 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
     }
     wasStreamingRef.current = isStreaming ?? false;
   }, [isStreaming, clearTimeouts]);
+
+  // Capture final elapsed time when streaming ends
+  useEffect(() => {
+    if (!isStreaming && wasStreamingRef.current && elapsedTime) {
+      setFinalElapsedTime(elapsedTime);
+    }
+  }, [isStreaming, elapsedTime]);
 
   // Handle streaming end - show final state
   useEffect(() => {
@@ -252,9 +266,9 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
       return "Thought process";
     }
 
-    // Streaming done but artifact not rendered: show "Rendering..."
+    // Streaming done but artifact not rendered: show "Rendering the generated artifact..."
     if (!isStreaming && !artifactRendered) {
-      return "Rendering...";
+      return "Rendering the generated artifact...";
     }
 
     // During streaming: show current step title
@@ -285,6 +299,10 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   const showThinkingBar = isStreaming || (!isStreaming && !artifactRendered);
   const showShimmer = isStreaming || (!isStreaming && !artifactRendered);
   const showExpandButton = hasContent || isStreaming;
+
+  // Get timer display value (shows during streaming AND after completion)
+  const timerValue = isStreaming ? elapsedTime : finalElapsedTime;
+  const showTimer = Boolean(timerValue);
 
   return (
     <div className="w-full">
@@ -346,8 +364,21 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
           </div>
         </div>
 
-        {/* Right side: Chevron for expand/collapse */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        {/* Right side: Timer + Chevron */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Timer with clock icon (shows during streaming AND after) */}
+          {showTimer && (
+            <span className={cn(
+              "flex items-center gap-1 text-xs font-mono tabular-nums",
+              isStreaming ? "text-muted-foreground" : "text-muted-foreground"
+            )}>
+              {/* Show clock icon when NOT streaming (completed state) */}
+              {!isStreaming && <Clock className="size-3" aria-hidden="true" />}
+              {timerValue}
+            </span>
+          )}
+
+          {/* Chevron for expand/collapse */}
           {showExpandButton && (
             <ChevronDown
               className={cn(
