@@ -342,7 +342,7 @@ const BundledArtifactFrame = memo(({
 
         // Check if bundle has JSX (component tags like <Component or <div)
         const hasJsx = /<(?:[A-Z][a-zA-Z]*|[a-z]+)[\s>/]/.test(htmlContent) &&
-                       htmlContent.includes('<script type="module">');
+          htmlContent.includes('<script type="module">');
 
         if (hasJsx) {
           console.log('[BundledArtifactFrame] Detected JSX in bundle - adding Babel transpilation');
@@ -440,6 +440,7 @@ const BundledArtifactFrame = memo(({
           setFetchError(errorMessage);
           onPreviewErrorChange(errorMessage);
           onLoadingChange(false);
+          window.postMessage({ type: 'artifact-rendered-complete', success: false, error: errorMessage }, '*');
         }
       }
     };
@@ -495,11 +496,18 @@ const BundledArtifactFrame = memo(({
             className="w-full h-full border-0 bg-background"
             title={title}
             sandbox="allow-scripts allow-same-origin"
-            onLoad={() => onLoadingChange(false)}
+            onLoad={() => {
+              onLoadingChange(false);
+              // Ensure we signal completion when iframe loads (fallback for bundles that don't signal)
+              window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
+              // Signal to parent that artifact has finished rendering
+              window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
+            }}
             onError={(e) => {
               console.error('[BundledArtifactFrame] iframe error:', e);
               onPreviewErrorChange('Failed to render bundled artifact');
               onLoadingChange(false);
+              window.postMessage({ type: 'artifact-rendered-complete', success: false, error: 'Failed to render bundled artifact' }, '*');
             }}
           />
         )}
@@ -577,6 +585,18 @@ export const ArtifactRenderer = memo(({
     };
   }, []);
 
+  // Watchdog timer: Force completion if rendering takes too long (15s)
+  useEffect(() => {
+    if (isLoading) {
+      const timer = setTimeout(() => {
+        console.warn('[ArtifactRenderer] Watchdog timer fired - forcing completion');
+        onLoadingChange(false);
+        window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
+      }, 15000);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, onLoadingChange]);
+
   // Listen for iframe messages
   useEffect(() => {
     onLoadingChange(true);
@@ -595,8 +615,12 @@ export const ArtifactRenderer = memo(({
       if (e.data?.type === 'artifact-error') {
         handleArtifactError(e.data.message);
         onLoadingChange(false);
+        // Ensure we signal completion even on error if not already sent
+        window.postMessage({ type: 'artifact-rendered-complete', success: false, error: e.data.message }, '*');
       } else if (e.data?.type === 'artifact-ready') {
         onLoadingChange(false);
+        // Ensure we signal completion when ready (redundant for some paths but safe)
+        window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
       }
     };
 
@@ -632,10 +656,12 @@ export const ArtifactRenderer = memo(({
             }
           }
           onLoadingChange(false);
+          window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
         } catch (error) {
           console.error('Mermaid render error:', error);
           onPreviewErrorChange(error instanceof Error ? error.message : 'Failed to render diagram');
           onLoadingChange(false);
+          window.postMessage({ type: 'artifact-rendered-complete', success: false, error: error instanceof Error ? error.message : 'Failed to render diagram' }, '*');
         }
       };
       renderMermaid();
@@ -1018,8 +1044,12 @@ ${artifact.content}
               onError={(error) => {
                 onPreviewErrorChange(error);
                 onLoadingChange(false);
+                window.postMessage({ type: 'artifact-rendered-complete', success: false, error }, '*');
               }}
-              onReady={() => onLoadingChange(false)}
+              onReady={() => {
+                onLoadingChange(false);
+                window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
+              }}
             />
           </Suspense>
         </div>

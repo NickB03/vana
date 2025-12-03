@@ -501,7 +501,7 @@ export function ChatInterface({
                             reasoning={message.reasoning}
                             reasoningSteps={message.reasoning_steps}
                             isStreaming={false}
-                            artifactRendered={artifactRenderStatus === 'rendered' || artifactRenderStatus === 'error'}
+                            artifactRendered={!isLastMessage || !message.content.includes('<artifact') || artifactRenderStatus === 'rendered' || artifactRenderStatus === 'error'}
                           />
                         </ReasoningErrorBoundary>
                       )}
