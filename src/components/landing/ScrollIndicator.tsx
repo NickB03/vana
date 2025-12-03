@@ -31,7 +31,7 @@ export const ScrollIndicator = ({ visible = true, onClick, className }: ScrollIn
       className={cn(
         "fixed bottom-16 left-1/2 -translate-x-1/2 z-30",
         "pointer-events-auto cursor-pointer",
-        "flex flex-col items-center gap-2",
+        "hidden [@media(min-height:700px)]:flex flex-col items-center gap-2",
         className
       )}
       onClick={onClick}
@@ -57,25 +57,9 @@ export const ScrollIndicator = ({ visible = true, onClick, className }: ScrollIn
       }}
     >
       {/* Text hint */}
-      <motion.span
-        className="text-white/80 text-sm font-medium"
-        animate={
-          prefersReducedMotion
-            ? {}
-            : {
-                opacity: [0.8, 0.5, 0.8],
-              }
-        }
-        transition={{
-          duration: 2,
-          delay: 1.3,
-          repeat: Infinity,
-          repeatType: "loop",
-          ease: "easeInOut",
-        }}
-      >
+      <span className="text-white/80 text-sm font-medium">
         Scroll to explore
-      </motion.span>
+      </span>
 
       {/* Enhanced bounce arrow */}
       <motion.svg
@@ -84,14 +68,14 @@ export const ScrollIndicator = ({ visible = true, onClick, className }: ScrollIn
         viewBox="0 0 48 48"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="text-white/90"
+        className="text-white/50"
         style={{ willChange: prefersReducedMotion ? 'auto' : 'transform' }}
         animate={
           prefersReducedMotion
             ? {}
             : {
-                y: [0, 12, 0],
-                scale: [1, 0.95, 1],
+                y: [0, 6, 0],
+                scale: [1, 0.98, 1],
               }
         }
         transition={{
@@ -99,7 +83,7 @@ export const ScrollIndicator = ({ visible = true, onClick, className }: ScrollIn
           delay: 1.3,
           repeat: Infinity,
           repeatType: "loop",
-          ease: "easeInOut",
+          ease: "easeOut",
         }}
       >
         {/* Arrow with glow effect */}

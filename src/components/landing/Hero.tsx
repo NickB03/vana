@@ -18,8 +18,8 @@ export const Hero = () => {
 
   return (
     <section className={combineSpacing("relative min-h-[100dvh] w-full flex items-center justify-center", SECTION_SPACING.full)}>
-      <div className="container max-w-7xl mx-auto relative z-10 w-full">
-        <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center w-full">
+      <div className="container max-w-[90rem] mx-auto relative z-10 w-full px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-[1fr,0.99fr] gap-8 sm:gap-12 lg:gap-16 items-center w-full">
           {/* Left: Headline + CTAs */}
           <motion.div
             className="space-y-4 sm:space-y-6 text-center lg:text-left will-change-transform transform-gpu"
@@ -47,8 +47,7 @@ export const Hero = () => {
               className={cn(TYPOGRAPHY.BODY.lg.full, "text-white/90 max-w-2xl")}
               variants={staggerItem}
             >
-              Real-time AI that generates interactive code, images, diagrams, and
-              deep research—all in one seamless interface.
+              A powerful AI platform able to generate interactive artifacts like websites & code. Perform deep research, generate images and much more.
             </motion.p>
             <motion.div
               className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start"
@@ -59,7 +58,7 @@ export const Hero = () => {
                 className="bg-white hover:bg-gray-100 text-black transition-all hover:scale-105 active:scale-95"
                 onClick={scrollToApp}
               >
-                Get Started Free
+                Explore
               </Button>
             </motion.div>
             <motion.div
