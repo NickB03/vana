@@ -9,11 +9,6 @@ import { cn } from "@/lib/utils";
 import VanaTextAnimation from "./VanaTextAnimation";
 
 export const Hero = () => {
-  const scrollToDemo = () => {
-    const showcaseSection = document.getElementById("showcase");
-    showcaseSection?.scrollIntoView({ behavior: "smooth" });
-  };
-
   const scrollToApp = () => {
     window.scrollTo({
       top: document.documentElement.scrollHeight,
@@ -31,10 +26,13 @@ export const Hero = () => {
             variants={staggerContainer}
             initial="hidden"
             animate="visible"
+            style={{
+              textShadow: '0 2px 8px rgba(0, 0, 0, 0.8), 0 4px 16px rgba(0, 0, 0, 0.6)'
+            }}
           >
             <motion.div variants={staggerItem}>
               <Badge variant="secondary" className="text-sm">
-                Powered by Claude AI
+                Designed and built by Nick Bohmer
               </Badge>
             </motion.div>
             <motion.div variants={staggerItem}>
@@ -46,11 +44,11 @@ export const Hero = () => {
               />
             </motion.div>
             <motion.p
-              className={cn(TYPOGRAPHY.BODY.lg.full, "text-gray-300 max-w-2xl")}
+              className={cn(TYPOGRAPHY.BODY.lg.full, "text-white/90 max-w-2xl")}
               variants={staggerItem}
             >
-              Real-time AI conversations that generate interactive code, React
-              components, diagrams, and more—all in one seamless interface.
+              Real-time AI that generates interactive code, images, diagrams, and
+              deep research—all in one seamless interface.
             </motion.p>
             <motion.div
               className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start"
@@ -63,26 +61,18 @@ export const Hero = () => {
               >
                 Get Started Free
               </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-gray-700 text-white hover:bg-gray-800 hover:border-gray-600 transition-all hover:scale-105 active:scale-95"
-                onClick={scrollToDemo}
-              >
-                Watch Demo
-              </Button>
             </motion.div>
             <motion.div
-              className="flex flex-wrap items-center gap-4 sm:gap-6 justify-center lg:justify-start text-xs sm:text-sm text-gray-400 pt-2 sm:pt-4"
+              className="flex flex-wrap items-center gap-4 sm:gap-6 justify-center lg:justify-start text-xs sm:text-sm text-gray-200 pt-2 sm:pt-4"
               variants={staggerItem}
             >
               <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50" />
-                <span>No credit card required</span>
+                <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50" aria-hidden="true" />
+                <span>Cloud based</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50" />
-                <span>Free to start</span>
+                <div className="h-2 w-2 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50" aria-hidden="true" />
+                <span>No sign-in required</span>
               </div>
             </motion.div>
           </motion.div>

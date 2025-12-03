@@ -37,11 +37,14 @@ export const CTASection = () => {
           </Button>
         </div>
         <div className="pt-2 sm:pt-4 flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm text-white/70">
-          <span>✓ No credit card required</span>
+          <span>✓ Interactive code previews</span>
           <span className="hidden sm:inline">•</span>
-          <span>✓ Free forever plan</span>
+          <span>✓ Multi-model AI</span>
           <span className="hidden sm:inline">•</span>
-          <span>✓ Cancel anytime</span>
+          <span>✓ Production-ready output</span>
+        </div>
+        <div className="pt-8 sm:pt-12 text-xs text-white/40">
+          Designed and built by Nick Bohmer
         </div>
       </div>
     </section>

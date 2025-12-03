@@ -59,7 +59,7 @@ export const BenefitsSection = () => {
             <div className="space-y-3 sm:space-y-4">
               <h3 className={cn(TYPOGRAPHY.HEADING.md.full, "font-bold")}>From idea to code in seconds</h3>
               <p className={cn(TYPOGRAPHY.BODY.lg.full, "text-muted-foreground")}>
-                Vana uses Claude AI to generate production-ready code as you type. Watch your ideas materialize with streaming responses that render instantly in an interactive preview canvas.
+                Vana generates production-ready code as you type. Watch your ideas materialize with streaming responses that render instantly in an interactive preview canvas.
               </p>
               <ul className="space-y-2">
                 <li className="flex items-start gap-2">
@@ -103,7 +103,7 @@ export const BenefitsSection = () => {
               <ul className="space-y-2">
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span>shadcn/ui component support</span>
+                  <span>Radix UI component support</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
@@ -138,7 +138,7 @@ export const BenefitsSection = () => {
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Library approval system</span>
+                  <span>Input validation & sanitization</span>
                 </li>
               </ul>
             </div>
