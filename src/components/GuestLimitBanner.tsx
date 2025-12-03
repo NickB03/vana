@@ -4,6 +4,7 @@ import { Gift, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useState } from "react";
 import { CountdownTimer } from "@/components/CountdownTimer";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 
 interface GuestLimitBannerProps {
   messageCount: number;
@@ -32,7 +33,11 @@ export const GuestLimitBanner = ({
   const shouldShow = messageCount >= Math.floor(maxMessages * WARNING_THRESHOLD) && !isDismissed;
 
   // Determine variant based on remaining messages
+  // Feature flag: GUEST_BANNER_URGENCY controls color changes
   const getVariant = () => {
+    if (!FEATURE_FLAGS.GUEST_BANNER_URGENCY) {
+      return "info"; // Neutral style when feature is disabled
+    }
     if (remaining === 0) return "error";
     if (remaining <= 5) return "warning"; // Warning when 5 or fewer remaining
     return "info";

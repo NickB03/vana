@@ -33,7 +33,7 @@ export function useChatSessions() {
 
       if (error) throw error;
       setSessions(data || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching sessions:", error);
       toast({
         title: "Error",
@@ -79,7 +79,7 @@ export function useChatSessions() {
 
       setSessions((prev) => [session, ...prev]);
       return session.id;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating session:", error);
       toast({
         title: "Error",
@@ -117,7 +117,7 @@ export function useChatSessions() {
       setSessions((prev) =>
         prev.map((s) => (s.id === sessionId ? { ...s, title } : s))
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error generating title:", error);
       // Silently fail - keep temporary title
     }
@@ -137,7 +137,7 @@ export function useChatSessions() {
         title: "Session deleted",
         description: "Chat session has been removed",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting session:", error);
       toast({
         title: "Error",

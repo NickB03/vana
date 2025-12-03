@@ -1,4 +1,4 @@
-import { Suspense, useRef, useEffect, useState, memo, useMemo } from "react";
+import { Suspense, useRef, useEffect, useState, memo, useMemo, useCallback } from "react";
 import { ArtifactData } from "./ArtifactContainer";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -390,6 +390,8 @@ const BundledArtifactFrame = memo(({
               if (defaultMatch) {
                 return `const { default: ${defaultMatch[1]} } = await import('${defaultMatch[2]}');`;
               }
+              // Log warning for debugging when import cannot be converted
+              console.warn('[BundledArtifactFrame] Could not convert import statement:', imp);
               return '// Could not convert: ' + imp;
             }).join('\n');
 
@@ -397,6 +399,16 @@ const BundledArtifactFrame = memo(({
             // NOTE: UMD React/ReactDOM are already loaded and set window.React/window.ReactDOM
             // The import map shims redirect 'react' and 'react-dom' to window globals
             // esm.sh packages with ?external=react,react-dom will use the import map
+
+            // FIX: Check if dynamic imports already include react-shim (which exports hooks)
+            // If so, skip adding duplicate hook declarations to avoid "already declared" error
+            const hasReactShimImport = dynamicImports.includes("'react-shim'") ||
+                                       dynamicImports.includes("'react'");
+
+            const reactHooksDeclaration = hasReactShimImport
+              ? '// React hooks imported via react-shim above'
+              : 'const { useState, useEffect, useCallback, useMemo, useRef, useContext, useReducer, useLayoutEffect, createContext, createElement, Fragment, memo, forwardRef } = window.React;';
+
             const wrappedContent = `
 (async () => {
   // Verify UMD React is available (loaded by <script> tags before this runs)
@@ -405,11 +417,12 @@ const BundledArtifactFrame = memo(({
   }
   console.log('[Artifact] Using UMD React ' + window.React.version);
 
-  // Expose React hooks globally for component code that uses them directly
-  const { useState, useEffect, useCallback, useMemo, useRef, useContext, useReducer, useLayoutEffect, createContext, createElement, Fragment, memo, forwardRef } = window.React;
-
   // Load user dependencies (esm.sh packages with ?external=react,react-dom will use import map shims)
   ${dynamicImports}
+
+  // Expose React hooks globally for component code that uses them directly
+  // (Only if not already imported from react-shim)
+  ${reactHooksDeclaration}
 
   // Run component code
   ${moduleContent}
@@ -597,6 +610,62 @@ export const ArtifactRenderer = memo(({
     }
   }, [isLoading, onLoadingChange]);
 
+  // Map error type to error category for parent component
+  const mapErrorTypeToCategory = useCallback((type: string): 'syntax' | 'runtime' | 'import' | 'unknown' => {
+    if (type === 'syntax' || type === 'runtime' || type === 'import') {
+      return type;
+    }
+    return 'unknown';
+  }, []);
+
+  // Handle fallback renderer
+  const handleUseFallback = useCallback(() => {
+    if (!currentError) return;
+
+    const fallback = getFallbackRenderer(currentError, currentRenderer);
+    if (fallback) {
+      setRecoveryAttempts(prev => prev + 1);
+      setCurrentRenderer(fallback === 'sandpack' ? 'sandpack' : 'babel');
+      setCurrentError(null);
+      onRefresh();
+    }
+  }, [currentError, currentRenderer, onRefresh]);
+
+  // Handle artifact errors with recovery logic
+  const handleArtifactError = useCallback((errorMessage: string) => {
+    const classifiedError = classifyError(errorMessage);
+    setCurrentError(classifiedError);
+
+    // Update existing error handlers
+    onPreviewErrorChange(errorMessage);
+    onErrorCategoryChange(mapErrorTypeToCategory(classifiedError.type));
+
+    // Check if automatic recovery should be attempted
+    if (shouldAttemptRecovery(classifiedError, recoveryAttempts, MAX_RECOVERY_ATTEMPTS)) {
+      if (classifiedError.retryStrategy === 'with-fix' && classifiedError.canAutoFix) {
+        // Automatically trigger AI fix for auto-fixable errors
+        setIsRecovering(true);
+        setRecoveryAttempts(prev => prev + 1);
+
+        // Clear any existing timeout
+        if (recoveryTimeoutRef.current) {
+          clearTimeout(recoveryTimeoutRef.current);
+        }
+
+        // Set new timeout with mounted check
+        recoveryTimeoutRef.current = setTimeout(() => {
+          if (isMountedRef.current) {
+            onAIFix();
+            setIsRecovering(false);
+          }
+        }, 500);
+      } else if (classifiedError.retryStrategy === 'different-renderer' && classifiedError.fallbackRenderer) {
+        // Automatically switch renderer
+        handleUseFallback();
+      }
+    }
+  }, [onPreviewErrorChange, onErrorCategoryChange, mapErrorTypeToCategory, recoveryAttempts, onAIFix, handleUseFallback]);
+
   // Listen for iframe messages
   useEffect(() => {
     onLoadingChange(true);
@@ -633,7 +702,7 @@ export const ArtifactRenderer = memo(({
       window.removeEventListener('message', handleIframeMessage);
       clearTimeout(loadTimeout);
     };
-  }, [artifact.content, onLoadingChange, onPreviewErrorChange, onErrorCategoryChange, recoveryAttempts]);
+  }, [artifact.content, onLoadingChange, onPreviewErrorChange, onErrorCategoryChange, recoveryAttempts, handleArtifactError]);
 
   // Render mermaid diagrams
   useEffect(() => {
@@ -676,67 +745,11 @@ export const ArtifactRenderer = memo(({
     return detectNpmImports(artifact.content);
   }, [artifact.content, artifact.type]);
 
-  // Map error type to error category for parent component
-  const mapErrorTypeToCategory = (type: string): 'syntax' | 'runtime' | 'import' | 'unknown' => {
-    if (type === 'syntax' || type === 'runtime' || type === 'import') {
-      return type;
-    }
-    return 'unknown';
-  };
-
-  // Handle artifact errors with recovery logic
-  const handleArtifactError = (errorMessage: string) => {
-    const classifiedError = classifyError(errorMessage);
-    setCurrentError(classifiedError);
-
-    // Update existing error handlers
-    onPreviewErrorChange(errorMessage);
-    onErrorCategoryChange(mapErrorTypeToCategory(classifiedError.type));
-
-    // Check if automatic recovery should be attempted
-    if (shouldAttemptRecovery(classifiedError, recoveryAttempts, MAX_RECOVERY_ATTEMPTS)) {
-      if (classifiedError.retryStrategy === 'with-fix' && classifiedError.canAutoFix) {
-        // Automatically trigger AI fix for auto-fixable errors
-        setIsRecovering(true);
-        setRecoveryAttempts(prev => prev + 1);
-
-        // Clear any existing timeout
-        if (recoveryTimeoutRef.current) {
-          clearTimeout(recoveryTimeoutRef.current);
-        }
-
-        // Set new timeout with mounted check
-        recoveryTimeoutRef.current = setTimeout(() => {
-          if (isMountedRef.current) {
-            onAIFix();
-            setIsRecovering(false);
-          }
-        }, 500);
-      } else if (classifiedError.retryStrategy === 'different-renderer' && classifiedError.fallbackRenderer) {
-        // Automatically switch renderer
-        handleUseFallback();
-      }
-    }
-  };
-
   // Handle manual retry
   const handleRetry = () => {
     setRecoveryAttempts(prev => prev + 1);
     setCurrentError(null);
     onRefresh();
-  };
-
-  // Handle fallback renderer
-  const handleUseFallback = () => {
-    if (!currentError) return;
-
-    const fallback = getFallbackRenderer(currentError, currentRenderer);
-    if (fallback) {
-      setRecoveryAttempts(prev => prev + 1);
-      setCurrentRenderer(fallback === 'sandpack' ? 'sandpack' : 'babel');
-      setCurrentError(null);
-      onRefresh();
-    }
   };
 
   // Reset recovery state when artifact changes

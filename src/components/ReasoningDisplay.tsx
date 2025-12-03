@@ -310,8 +310,8 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
       <div
         className={cn(
           "flex w-full cursor-pointer items-center justify-between gap-2",
-          "rounded-md border",
-          "px-3 py-1.5 text-left",
+          "rounded-2xl border",
+          "px-3 py-2 text-left",
           "transition-all duration-300",
           // CRITICAL: Background changes when expanded (like Claude screenshots)
           isExpanded && !isStreaming
@@ -345,10 +345,10 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
           )}
 
           {/* Text with smooth transitions - Wrapped in fixed height container to prevent jumps */}
-          <div className="flex-1 min-w-0 h-[20px] flex items-center">
+          <div className="flex-1 min-w-0 h-[20px] flex items-center overflow-hidden">
             {showShimmer ? (
               <TextShimmer
-                className="font-mono text-sm text-muted-foreground"
+                className="font-mono text-sm text-muted-foreground truncate"
                 duration={3}
                 spread={25}
               >
@@ -356,7 +356,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
               </TextShimmer>
             ) : (
               <span
-                className="text-sm text-muted-foreground line-clamp-1 w-full"
+                className="text-sm text-muted-foreground truncate w-full"
               >
                 {getPillLabel()}
               </span>
@@ -370,7 +370,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
           {showTimer && (
             <span className={cn(
               "flex items-center gap-1 text-xs font-mono tabular-nums",
-              isStreaming ? "text-muted-foreground" : "text-muted-foreground"
+              isStreaming ? "text-muted-foreground animate-pulse" : "text-muted-foreground"
             )}>
               {/* Show clock icon when NOT streaming (completed state) */}
               {!isStreaming && <Clock className="size-3" aria-hidden="true" />}
@@ -402,7 +402,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
       >
         <div className={cn(
           "pt-3 px-4 pb-4",
-          "rounded-md",
+          "rounded-2xl",
           "bg-muted/30",  // Lighter gray background (matches Claude)
           "border border-border/40",
           "max-h-[50vh] overflow-y-auto"

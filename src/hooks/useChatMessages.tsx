@@ -158,7 +158,7 @@ export function useChatMessages(
       }));
 
       setMessages(typedData);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching messages:", error);
       toast({
         title: "Error",
@@ -288,7 +288,7 @@ export function useChatMessages(
 
       setMessages((prev) => [...prev, typedMessage]);
       return typedMessage;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving message:", error);
       toast({
         title: "Error",
@@ -375,12 +375,13 @@ export function useChatMessages(
       if (isArtifactRequest) {
         console.log("🎨 [useChatMessages] Direct artifact routing - using SSE streaming from /generate-artifact");
 
-        // Send initial progress immediately
+        // Send initial progress immediately with reasoningStatus for ticker pill
         onDelta("", {
           stage: "analyzing",
           message: "Analyzing your request...",
           artifactDetected: true,
           percentage: 5,
+          reasoningStatus: PHASE_MESSAGES.starting, // Shows "Thinking..." in ticker pill
         });
 
         // ============================================================================
@@ -1061,9 +1062,9 @@ export function useChatMessages(
       await new Promise(resolve => setTimeout(resolve, 50));
 
       onDone();
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle stream cancellation gracefully (don't show error toast)
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         console.log("Stream cancelled by user");
         onDone();
         return;
@@ -1071,11 +1072,13 @@ export function useChatMessages(
 
       console.error("Stream error:", error);
 
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
       // Handle timeout errors specifically
-      if (error.message?.includes('Stream timeout')) {
+      if (errorMessage.includes('Stream timeout')) {
         toast({
           title: "Request Timeout",
-          description: error.message,
+          description: errorMessage,
           variant: "destructive",
           duration: 8000,
         });
@@ -1084,7 +1087,7 @@ export function useChatMessages(
       }
 
       // Handle retryable errors with exponential backoff
-      if (error.message === "SERVICE_UNAVAILABLE" && retryCount < MAX_RETRIES) {
+      if (errorMessage === "SERVICE_UNAVAILABLE" && retryCount < MAX_RETRIES) {
         const delay = RETRY_DELAYS[retryCount];
         const retryNumber = retryCount + 1;
 
@@ -1101,12 +1104,12 @@ export function useChatMessages(
         return streamChat(userMessage, onDelta, onDone, currentArtifact, forceImageMode, forceArtifactMode, retryCount + 1, abortSignal);
       }
 
-      const errorMessage = getAuthErrorMessage(error);
+      const authErrorMessage = getAuthErrorMessage(error);
       toast({
         title: "Error",
-        description: errorMessage === error.message && error.message === "SERVICE_UNAVAILABLE"
+        description: authErrorMessage === errorMessage && errorMessage === "SERVICE_UNAVAILABLE"
           ? "The AI service is temporarily unavailable. Please try again in a few moments."
-          : errorMessage,
+          : authErrorMessage,
         variant: "destructive",
       });
       onDone();
@@ -1132,7 +1135,7 @@ export function useChatMessages(
 
       // Optimistically update local state
       setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting message:", error);
       throw error;
     }
@@ -1163,7 +1166,7 @@ export function useChatMessages(
           msg.id === messageId ? { ...msg, content } : msg
         )
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating message:", error);
       throw error;
     }

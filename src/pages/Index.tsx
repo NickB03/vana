@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarInset, useSidebar } from "@/components/ui/sidebar";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatInterface } from "@/components/ChatInterface";
@@ -13,6 +13,8 @@ import { ensureValidSession } from "@/utils/authHelpers";
 import { suggestions, type SuggestionItem } from "@/data/suggestions";
 const IndexContent = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { sessionId: urlSessionId } = useParams<{ sessionId?: string }>();
   const {
     toast
   } = useToast();
@@ -29,7 +31,6 @@ const IndexContent = () => {
   const [input, setInput] = useState("");
   const [pendingInitialPrompt, setPendingInitialPrompt] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState(false);
-  const [showChat, setShowChat] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   const [hasArtifact, setHasArtifact] = useState(false);
@@ -38,6 +39,17 @@ const IndexContent = () => {
   const [imageMode, setImageMode] = useState(false);
   const [artifactMode, setArtifactMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Derive showChat from URL path instead of state
+  const showChat = location.pathname.startsWith('/main') || location.pathname.startsWith('/chat');
+
+  // Sync URL session ID with component state
+  useEffect(() => {
+    if (urlSessionId) {
+      setCurrentSessionId(urlSessionId);
+    }
+  }, [urlSessionId]);
+
   useEffect(() => {
     // Check authentication with session validation
     const checkAuth = async () => {
@@ -96,28 +108,14 @@ const IndexContent = () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [navigate, toast]);
-
-  // Handle browser back button
-  useEffect(() => {
-    const handlePopState = () => {
-      if (showChat) {
-        setShowChat(false);
-        setCurrentSessionId(undefined);
-        setInput("");
-      }
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, [showChat]);
   const handleNewChat = () => {
     setCurrentSessionId(undefined);
     setInput("");
     setPendingInitialPrompt(undefined);
-    setShowChat(false);
     setIsCanvasOpen(false);
     setHasArtifact(false);
-    // Reset browser history to home state
-    window.history.pushState(null, "", "/");
+    // Navigate to home page
+    navigate("/");
   };
   const handleCanvasToggle = (forceState?: boolean) => {
     const newCanvasState = forceState !== undefined ? forceState : !isCanvasOpen;
@@ -140,11 +138,8 @@ const IndexContent = () => {
   const handleSessionSelect = (sessionId: string) => {
     setInput(""); // Clear input when switching sessions
     setCurrentSessionId(sessionId);
-    setShowChat(true);
-    // Push state for browser back button
-    window.history.pushState({
-      showChat: true
-    }, "", "/");
+    // Navigate to chat route with session ID
+    navigate(`/chat/${sessionId}`);
   };
   const handleSubmit = async () => {
     if (!input.trim()) return;
@@ -177,11 +172,8 @@ const IndexContent = () => {
       // ChatInterface receives pendingInitialPrompt on mount, which is cleared after use
       setPendingInitialPrompt(promptToSend);
       setInput(""); // Clear input so it doesn't persist
-      setShowChat(true);
-      // Push state for browser back button
-      window.history.pushState({
-        showChat: true
-      }, "", "/");
+      // Navigate to chat route with session ID
+      navigate(`/chat/${sessionId}`);
     }
     setIsLoading(false);
   };

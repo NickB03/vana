@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, MutableRefObject } from "react";
-import { Copy, Pencil, RotateCw, Maximize2 } from "lucide-react";
+import { Copy, Pencil, RotateCw, Maximize2, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { validateFile, sanitizeFilename } from "@/utils/fileValidation";
@@ -464,7 +464,7 @@ export function ChatInterface({
       )}
 
       {/* Unified chat card with embedded prompt input */}
-      <div className="relative mx-auto flex flex-1 min-h-0 w-full max-w-5xl rounded-3xl bg-black/50 backdrop-blur-sm shadow-[inset_-2px_0_4px_rgba(255,255,255,0.05)] border border-border/50">
+      <div className="relative mx-auto flex flex-1 min-h-0 w-full max-w-5xl rounded-3xl bg-black/70 backdrop-blur-sm shadow-[inset_-2px_0_4px_rgba(255,255,255,0.05)] border border-border/50">
         <ChatContainerRoot className="flex flex-1 flex-col min-h-0 overflow-hidden">
           <ChatContainerContent
             className={combineSpacing(
@@ -488,13 +488,21 @@ export function ChatInterface({
               const messageContent = (
                 <MessageComponent
                   className={cn(
-                    "chat-message mx-auto flex w-full max-w-3xl flex-col items-start",
+                    "chat-message mx-auto flex w-full max-w-5xl flex-col items-start",
                     CHAT_SPACING.message.container
                   )}
                   data-testid="chat-message"
                 >
                   {isAssistant ? (
-                    <div className="group flex w-full flex-col gap-2">
+                    <div className="group flex w-full flex-col gap-1.5">
+                      {/* Assistant header with icon and name */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                          <Sparkles className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <span className="text-sm font-medium text-foreground">Vana</span>
+                      </div>
+
                       {hasReasoning && (
                         <ReasoningErrorBoundary>
                           <ReasoningDisplay
@@ -518,7 +526,7 @@ export function ChatInterface({
                         <MessageActions
                           className={cn(
                             "flex gap-1",
-                            "opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100",
+                            "opacity-60 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100",
                             isLastMessage && "opacity-100"
                           )}
                         >
@@ -549,51 +557,52 @@ export function ChatInterface({
                       </div>
                     </div>
                   ) : (
-                    <div className="group flex w-full items-start gap-2">
+                    <div className="group flex w-full flex-col gap-2">
                       {/* User message with subtle pill background (Claude-style) */}
-                      {/* Subtle pill container with proper spacing */}
-                      <div className="flex items-center gap-2.5 rounded-2xl bg-muted/60 px-3 py-1.5">
+                      <div className="flex items-start gap-2.5 rounded-2xl bg-muted/60 px-3 py-2">
                         {/* User avatar: 32px circle (Claude-style) */}
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold text-sm">
                           U
                         </div>
 
-                        {/* Message content - clean text without extra styling */}
-                        <div className="text-[15px] text-foreground leading-relaxed py-0.5">
+                        {/* Message content - wraps properly within container */}
+                        <div className="text-[15px] text-foreground leading-relaxed min-w-0 break-words">
                           {message.content}
                         </div>
                       </div>
 
-                      {/* Compact action buttons - positioned to the right of pill */}
-                      <MessageActions
-                        className={cn(
-                          "flex gap-1 mt-0.5",
-                          "opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100"
-                        )}
-                      >
-                        <MessageAction tooltip="Edit" delayDuration={100}>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 rounded-sm hover:bg-muted/50"
-                            onClick={() => handleEditMessage(message.id, message.content)}
-                            aria-label="Edit message"
-                          >
-                            <Pencil className="h-3 w-3 text-muted-foreground/60" />
-                          </Button>
-                        </MessageAction>
-                        <MessageAction tooltip="Copy" delayDuration={100}>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 rounded-sm hover:bg-muted/50"
-                            onClick={() => handleCopyMessage(message.content)}
-                            aria-label="Copy message content"
-                          >
-                            <Copy className="h-3 w-3 text-muted-foreground/60" />
-                          </Button>
-                        </MessageAction>
-                      </MessageActions>
+                      {/* Compact action buttons - positioned at bottom right (consistent with assistant) */}
+                      <div className="flex justify-end">
+                        <MessageActions
+                          className={cn(
+                            "flex gap-1",
+                            "opacity-60 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100"
+                          )}
+                        >
+                          <MessageAction tooltip="Edit" delayDuration={100}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 rounded-sm hover:bg-muted/50"
+                              onClick={() => handleEditMessage(message.id, message.content)}
+                              aria-label="Edit message"
+                            >
+                              <Pencil className="h-3 w-3 text-muted-foreground/60" />
+                            </Button>
+                          </MessageAction>
+                          <MessageAction tooltip="Copy" delayDuration={100}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 rounded-sm hover:bg-muted/50"
+                              onClick={() => handleCopyMessage(message.content)}
+                              aria-label="Copy message content"
+                            >
+                              <Copy className="h-3 w-3 text-muted-foreground/60" />
+                            </Button>
+                          </MessageAction>
+                        </MessageActions>
+                      </div>
                     </div>
                   )}
                 </MessageComponent>
@@ -620,11 +629,19 @@ export function ChatInterface({
             {isStreaming && (
               <MessageComponent
                 className={cn(
-                  "mx-auto flex w-full max-w-3xl flex-col items-start",
+                  "mx-auto flex w-full max-w-5xl flex-col items-start",
                   CHAT_SPACING.message.container
                 )}
               >
                 <div className="flex w-full flex-col gap-2">
+                  {/* Assistant header with icon and name */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <span className="text-sm font-medium text-foreground">Vana</span>
+                  </div>
+
                   {/* Always show reasoning during streaming, even if no data yet */}
                   <ReasoningErrorBoundary fallback={<ThinkingIndicator status="Loading reasoning..." />}>
                     <ReasoningDisplay
@@ -666,7 +683,7 @@ export function ChatInterface({
               onValueChange={setInput}
               isLoading={isLoading || isStreaming}
               onSubmit={handleSend}
-              className="w-full relative rounded-xl bg-black/50 backdrop-blur-sm p-0 pt-1"
+              className="w-full relative rounded-xl bg-black/70 backdrop-blur-sm p-0 pt-1"
             >
               <div className="flex flex-col">
                 <PromptInputTextarea

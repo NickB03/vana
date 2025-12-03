@@ -20,6 +20,11 @@ const Landing = lazy(() => import("./pages/Landing"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const LoadingDemo = lazy(() => import("./pages/LoadingDemo"));
+const LandingV2 = lazy(() => import("./pages/LandingV2"));
+const DemoMode = lazy(() => import("./pages/DemoMode"));
+const DemoModeV2 = lazy(() => import("./pages/DemoModeV2"));
+const UIShowcase = lazy(() => import("./pages/UIShowcase"));
+const FroggerHeroTest = lazy(() => import("./pages/FroggerHeroTest"));
 
 // Optimized React Query configuration for mobile
 const queryClient = new QueryClient({
@@ -51,6 +56,10 @@ const AnimatedRoutes = () => {
     <AnimatePresence mode="sync">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<AnimatedRoute><Home /></AnimatedRoute>} />
+        {/* Main chat interface routes */}
+        <Route path="/main" element={<AnimatedRoute><Home /></AnimatedRoute>} />
+        <Route path="/chat" element={<AnimatedRoute><Home /></AnimatedRoute>} />
+        <Route path="/chat/:sessionId" element={<AnimatedRoute><Home /></AnimatedRoute>} />
         {/* Redirect old /app route to new home page */}
         <Route path="/app" element={<Navigate to="/" replace />} />
         <Route path="/auth" element={<AnimatedRoute><Auth /></AnimatedRoute>} />
@@ -58,6 +67,11 @@ const AnimatedRoutes = () => {
         <Route path="/landing" element={<AnimatedRoute><Landing /></AnimatedRoute>} />
         <Route path="/admin" element={<AnimatedRoute><AdminDashboard /></AnimatedRoute>} />
         <Route path="/loading-demo" element={<AnimatedRoute><LoadingDemo /></AnimatedRoute>} />
+        <Route path="/landing-v2" element={<AnimatedRoute><LandingV2 /></AnimatedRoute>} />
+        <Route path="/demo-frogger" element={<DemoMode />} />
+        <Route path="/demo-frogger-v2" element={<DemoModeV2 />} />
+        <Route path="/ui-showcase" element={<AnimatedRoute><UIShowcase /></AnimatedRoute>} />
+        <Route path="/frogger-hero-test" element={<AnimatedRoute><FroggerHeroTest /></AnimatedRoute>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<AnimatedRoute><NotFound /></AnimatedRoute>} />
       </Routes>

@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DemoPreview } from "./DemoPreview";
+import { FroggerDemoVideo } from "@/components/demo/FroggerDemoVideo";
 import { motion } from "motion/react";
 import { staggerContainer, staggerItem } from "@/utils/animationConstants";
 import { SECTION_SPACING, combineSpacing } from "@/utils/spacingConstants";
@@ -17,9 +17,9 @@ export const Hero = () => {
   };
 
   return (
-    <section className={combineSpacing("relative min-h-[100dvh] w-full flex items-center justify-center", SECTION_SPACING.full)}>
-      <div className="container max-w-[90rem] mx-auto relative z-10 w-full px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-[1fr,0.99fr] gap-8 sm:gap-12 lg:gap-16 items-center w-full">
+    <section className={combineSpacing("relative min-h-[100dvh] w-full flex items-start justify-center pt-[12vh]", SECTION_SPACING.full)}>
+      <div className="container max-w-[100rem] mx-auto relative z-10 w-full px-4 sm:px-6 lg:px-8">
+        <div className="grid md:grid-cols-[1.3fr,1.5fr] lg:grid-cols-[1.5fr,1.8fr] gap-8 sm:gap-10 lg:gap-10 items-center w-full">
           {/* Left: Headline + CTAs */}
           <motion.div
             className="space-y-4 sm:space-y-6 text-center lg:text-left will-change-transform transform-gpu"
@@ -44,10 +44,10 @@ export const Hero = () => {
               />
             </motion.div>
             <motion.p
-              className={cn(TYPOGRAPHY.BODY.lg.full, "text-white/90 max-w-2xl")}
+              className={cn(TYPOGRAPHY.BODY.lg.full, "text-white/90")}
               variants={staggerItem}
             >
-              A powerful AI platform able to generate interactive artifacts like websites & code. Perform deep research, generate images and much more.
+              A powerful AI platform able to generate code, websites, games, dashboards, perform deep research, generate images and much more.
             </motion.p>
             <motion.div
               className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start"
@@ -76,9 +76,34 @@ export const Hero = () => {
             </motion.div>
           </motion.div>
 
-          {/* Right: Animated Preview */}
+          {/* Right: Interactive Frogger Game in Browser Chrome */}
           <div className="order-first lg:order-last">
-            <DemoPreview />
+            <motion.div
+              className="relative w-full aspect-[892/720]"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+            >
+              {/* Browser chrome container */}
+              <div className="relative w-full h-full bg-black/50 border border-border/50 rounded-xl shadow-2xl overflow-hidden flex flex-col">
+                {/* Browser chrome header */}
+                <div className="bg-black/50 border-b border-border/50 px-4 py-2 flex items-center gap-2 shrink-0">
+                  <div className="flex gap-1.5">
+                    <div className="h-3 w-3 rounded-full bg-red-500" />
+                    <div className="h-3 w-3 rounded-full bg-yellow-500" />
+                    <div className="h-3 w-3 rounded-full bg-green-500" />
+                  </div>
+                  <div className="flex-1 bg-black/50 rounded px-3 py-1 text-xs text-muted-foreground ml-2">
+                    vana.bot/demos/frogger-demo
+                  </div>
+                </div>
+
+                {/* Video content - fills remaining space */}
+                <div className="flex-1 overflow-hidden bg-neutral-900">
+                  <FroggerDemoVideo autoPlay={true} loop={true} />
+                </div>
+              </div>
+            </motion.div>
           </div>
         </div>
       </div>

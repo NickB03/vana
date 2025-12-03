@@ -129,17 +129,17 @@ export default function GalleryHoverCarousel({
               variant="outline"
               size="icon"
               onClick={handlePrev}
-              className="h-12 w-12 rounded-full pointer-events-auto bg-background/30 backdrop-blur-sm hover:bg-background/50 border-white/30 opacity-70 hover:opacity-100 transition-opacity"
+              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full pointer-events-auto bg-background/30 backdrop-blur-sm hover:bg-background/50 border-white/30 opacity-70 hover:opacity-100 transition-opacity"
             >
-              <ChevronLeft className="h-6 w-6" />
+              <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
             <Button
               variant="outline"
               size="icon"
               onClick={handleNext}
-              className="h-12 w-12 rounded-full pointer-events-auto bg-background/30 backdrop-blur-sm hover:bg-background/50 border-white/30 opacity-70 hover:opacity-100 transition-opacity"
+              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full pointer-events-auto bg-background/30 backdrop-blur-sm hover:bg-background/50 border-white/30 opacity-70 hover:opacity-100 transition-opacity"
             >
-              <ChevronRight className="h-6 w-6" />
+              <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
           </div>
           <Carousel
@@ -157,7 +157,7 @@ export default function GalleryHoverCarousel({
                 <CarouselItem key={item.id} className="pl-2 sm:pl-3 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5 2xl:basis-1/6">
                   <div
                     onClick={() => !isLoading && onItemClick?.(item)}
-                    className={`group block relative w-full h-[140px] sm:h-[160px] md:h-[180px] ${isLoading ? 'cursor-wait' : 'cursor-pointer'}`}
+                    className={`group block relative w-full h-[100px] sm:h-[110px] md:h-[120px] ${isLoading ? 'cursor-wait' : 'cursor-pointer'}`}
                   >
                     <Card className={`overflow-hidden rounded-3xl h-full w-full transition-all duration-300 hover:scale-105 ${isLoading ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
                       {/* Image */}
@@ -186,17 +186,17 @@ export default function GalleryHoverCarousel({
                       </div>
 
                       {/* Text Section */}
-                      <div className="absolute bottom-0 left-0 w-full px-3 transition-all duration-500 group-hover:h-1/2 group-hover:flex flex-col justify-center bg-background/95 backdrop-blur-sm opacity-0 group-hover:opacity-100">
-                        <h3 className="text-sm font-medium md:text-base">{item.title}</h3>
-                        <p className="text-muted-foreground text-xs md:text-sm line-clamp-2">
+                      <div className="absolute bottom-0 left-0 w-full px-2 sm:px-3 transition-all duration-500 group-hover:h-1/2 group-hover:flex flex-col justify-center bg-background/95 backdrop-blur-sm opacity-0 group-hover:opacity-100">
+                        <h3 className="text-xs font-medium sm:text-sm">{item.title}</h3>
+                        <p className="text-muted-foreground text-[10px] sm:text-xs line-clamp-2">
                           {item.summary}
                         </p>
                         <Button
                           variant="outline"
                           size="icon"
-                          className="absolute bottom-1.5 right-1.5 border border-gray-200 dark:border-gray-800 hover:-rotate-45 transition-all duration-500 rounded-full h-7 w-7 flex items-center justify-center text-primary hover:text-primary/80"
+                          className="absolute bottom-1 right-1 sm:bottom-1.5 sm:right-1.5 border border-gray-200 dark:border-gray-800 hover:-rotate-45 transition-all duration-500 rounded-full h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center text-primary hover:text-primary/80"
                         >
-                          <ArrowRight className="h-3 w-3" />
+                          <ArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                         </Button>
                       </div>
                     </Card>

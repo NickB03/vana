@@ -33,7 +33,7 @@ export const DemoPreview = () => {
   }, []);
 
   return (
-    <div className="relative w-full aspect-[4/3] lg:aspect-[16/10] bg-background border-2 rounded-xl shadow-2xl overflow-hidden flex flex-col">
+    <div className="relative w-full aspect-[892/720] bg-background border-2 rounded-xl shadow-2xl overflow-hidden flex flex-col">
       {/* Simulated browser chrome */}
       <div className="bg-muted border-b px-4 py-2 flex items-center gap-2 shrink-0">
         <div className="flex gap-1.5">
