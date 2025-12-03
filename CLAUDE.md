@@ -1,4 +1,4 @@
-<!-- CLAUDE.md v2.7 | Last updated: 2025-12-01 | Added SSE streaming architecture for artifact generation -->
+<!-- CLAUDE.md v2.8 | Last updated: 2025-12-03 | Added demo video compression guide -->
 
 # CLAUDE.md
 
@@ -315,6 +315,43 @@ export function useChatSessions() {
 **Features**: Brotli + Gzip, PWA service worker, Terser minification, 52% bundle reduction via externalized prompts
 
 **Cache**: Supabase API (NetworkFirst, 30s), Images (NetworkFirst, 5min), Service Worker (immediate activation)
+
+## Demo Video Compression
+
+Demo videos must be compressed before committing to avoid Cloudflare Pages build failures and slow page loads.
+
+**Target**: 2-5 MB for hero/demo videos (max 10 MB)
+
+**FFmpeg Compression Command**:
+```bash
+ffmpeg -i source.mp4 \
+  -c:v libx264 -crf 23 -preset slow \
+  -an \
+  -movflags +faststart \
+  public/Demos/output-compressed.mp4
+```
+
+**Parameters**:
+| Parameter | Value | Purpose |
+|-----------|-------|---------|
+| `-c:v libx264` | H.264 codec | Universal browser support |
+| `-crf` | 18-28 (lower=better) | Quality level. 23 = good balance, 20 = high quality |
+| `-preset slow` | Compression efficiency | Better compression, slower encode |
+| `-an` | No audio | Remove audio track (demos don't need it) |
+| `-movflags +faststart` | Streaming | Enables progressive playback |
+
+**Resolution** (optional — omit to keep original):
+```bash
+-vf "scale=1280:-2"   # 720p (smaller file)
+-vf "scale=1920:-2"   # 1080p
+```
+
+**Video Location**: `public/Demos/` — served statically by Vite/Cloudflare
+
+**Best Practices**:
+- Keep original source files in `Demos/` (not in `public/`)
+- Only commit compressed versions to `public/Demos/`
+- Use WebM + MP4 fallback for maximum compression: `<source src="demo.webm">` then `<source src="demo.mp4">`
 
 ## Common Patterns
 
