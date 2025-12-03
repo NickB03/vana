@@ -9,6 +9,13 @@
 
 export const FEATURE_FLAGS = {
   /**
+   * Rate Limit Warnings
+   * When enabled, shows toast notifications and banners warning users about
+   * approaching rate limits. Disable during testing to avoid visual noise.
+   */
+  RATE_LIMIT_WARNINGS: false,
+
+  /**
    * Guest Banner Urgency Gradient
    * When enabled, the guest limit banner changes color based on remaining messages:
    * - info (blue): Many messages remaining

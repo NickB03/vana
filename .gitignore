@@ -122,3 +122,4 @@ screenshots/
 supabase/.env.local
 supabase/functions/deno.lock
 deno.lock
+Demos/*.mp4

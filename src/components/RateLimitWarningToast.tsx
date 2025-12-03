@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { CountdownTimer } from "@/components/CountdownTimer";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 
 export interface RateLimitWarningToastProps {
   remaining: number;
@@ -29,6 +30,9 @@ export const RateLimitWarningToast = ({
   const [hasShown, setHasShown] = useState(false);
 
   useEffect(() => {
+    // Feature flag to disable rate limit warnings
+    if (!FEATURE_FLAGS.RATE_LIMIT_WARNINGS) return;
+
     // Check if already dismissed for this session
     const dismissed = sessionStorage.getItem(TOAST_STORAGE_KEY);
     if (dismissed || hasShown) return;

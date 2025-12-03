@@ -30,7 +30,9 @@ export const GuestLimitBanner = ({
   const WARNING_THRESHOLD = 0.75; // Show at 75% (15/20 messages)
 
   // Show banner when user reaches warning threshold (75%)
-  const shouldShow = messageCount >= Math.floor(maxMessages * WARNING_THRESHOLD) && !isDismissed;
+  // Controlled by RATE_LIMIT_WARNINGS feature flag
+  const shouldShow = FEATURE_FLAGS.RATE_LIMIT_WARNINGS &&
+    messageCount >= Math.floor(maxMessages * WARNING_THRESHOLD) && !isDismissed;
 
   // Determine variant based on remaining messages
   // Feature flag: GUEST_BANNER_URGENCY controls color changes
