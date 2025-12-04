@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Vana Banner](https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200&h=400&fit=crop)
+![Vana Banner](.claude/Gemini_Generated_Image_2imzp72imzp72imz.jpg)
 
 **Transform natural language into interactive code, components, and diagrams in real-time**
 

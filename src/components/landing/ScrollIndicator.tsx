@@ -29,7 +29,7 @@ export const ScrollIndicator = ({ visible = true, onClick, className }: ScrollIn
   return (
     <motion.div
       className={cn(
-        "fixed bottom-16 left-1/2 -translate-x-1/2 z-30",
+        "fixed bottom-6 left-1/2 -translate-x-1/2 z-30",
         "pointer-events-auto cursor-pointer",
         "hidden [@media(min-height:700px)]:flex flex-col items-center gap-2",
         className

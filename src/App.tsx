@@ -23,6 +23,7 @@ const LoadingDemo = lazy(() => import("./pages/LoadingDemo"));
 const LandingV2 = lazy(() => import("./pages/LandingV2"));
 const DemoMode = lazy(() => import("./pages/DemoMode"));
 const DemoModeV2 = lazy(() => import("./pages/DemoModeV2"));
+const DemoModeDashboard = lazy(() => import("./pages/DemoModeDashboard"));
 const UIShowcase = lazy(() => import("./pages/UIShowcase"));
 const FroggerHeroTest = lazy(() => import("./pages/FroggerHeroTest"));
 
@@ -70,6 +71,7 @@ const AnimatedRoutes = () => {
         <Route path="/landing-v2" element={<AnimatedRoute><LandingV2 /></AnimatedRoute>} />
         <Route path="/demo-frogger" element={<DemoMode />} />
         <Route path="/demo-frogger-v2" element={<DemoModeV2 />} />
+        <Route path="/demo-dashboard" element={<DemoModeDashboard />} />
         <Route path="/ui-showcase" element={<AnimatedRoute><UIShowcase /></AnimatedRoute>} />
         <Route path="/frogger-hero-test" element={<AnimatedRoute><FroggerHeroTest /></AnimatedRoute>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

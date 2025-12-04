@@ -440,12 +440,16 @@ export async function logGLMUsage(logData: {
 
 /**
  * Callback type for streaming GLM responses
+ *
+ * NOTE: Callbacks can be async - processGLMStream will await them.
+ * This is critical for SSE streaming where sendEvent() must complete
+ * before processing the next chunk.
  */
 export interface GLMStreamCallbacks {
-  onReasoningChunk?: (chunk: string) => void;
-  onContentChunk?: (chunk: string) => void;
-  onComplete?: (fullReasoning: string, fullContent: string) => void;
-  onError?: (error: Error) => void;
+  onReasoningChunk?: (chunk: string) => void | Promise<void>;
+  onContentChunk?: (chunk: string) => void | Promise<void>;
+  onComplete?: (fullReasoning: string, fullContent: string) => void | Promise<void>;
+  onError?: (error: Error) => void | Promise<void>;
 }
 
 /**
@@ -508,14 +512,15 @@ export async function processGLMStream(
 
             if (delta) {
               // GLM streams reasoning_content first, then content
+              // CRITICAL: Await callbacks to ensure SSE events are sent before continuing
               if (delta.reasoning_content) {
                 fullReasoning += delta.reasoning_content;
-                callbacks.onReasoningChunk?.(delta.reasoning_content);
+                await callbacks.onReasoningChunk?.(delta.reasoning_content);
               }
 
               if (delta.content) {
                 fullContent += delta.content;
-                callbacks.onContentChunk?.(delta.content);
+                await callbacks.onContentChunk?.(delta.content);
               }
             }
           } catch (parseError) {
@@ -527,13 +532,13 @@ export async function processGLMStream(
     }
 
     console.log(`${logPrefix} ✅ Stream processed: reasoning=${fullReasoning.length} chars, content=${fullContent.length} chars`);
-    callbacks.onComplete?.(fullReasoning, fullContent);
+    await callbacks.onComplete?.(fullReasoning, fullContent);
 
     return { reasoning: fullReasoning, content: fullContent };
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
     console.error(`${logPrefix} ❌ Stream error:`, err);
-    callbacks.onError?.(err);
+    await callbacks.onError?.(err);
     throw err;
   }
 }

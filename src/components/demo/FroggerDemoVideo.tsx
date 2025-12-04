@@ -8,9 +8,10 @@ interface FroggerDemoVideoProps {
 }
 
 /**
- * FroggerDemoVideo - Video player component for Frogger demo
- * 
- * Plays the recorded MP4 video of the Frogger game demo
+ * FroggerDemoVideo - Video player component for Hero demo
+ *
+ * Plays a combined MP4 video featuring the Frogger game (sped up 10%)
+ * and dashboard demo with a crossfade transition, looping continuously
  * inside a browser chrome frame for landing page showcase.
  */
 export function FroggerDemoVideo({ 
@@ -63,7 +64,7 @@ export function FroggerDemoVideo({
         <video
           ref={videoRef}
           className="w-full h-full object-cover"
-          src="/Demos/frogger-demo-compressed.mp4"
+          src="/Demos/hero-demo-combined.mp4"
           autoPlay={autoPlay}
           muted={muted}
           loop={loop}

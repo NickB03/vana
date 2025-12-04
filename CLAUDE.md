@@ -49,6 +49,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Add routes after `*` | Add ABOVE catch-all | Routes unreachable |
 | Hardcode model names | Use `MODELS.*` | CI/CD fails |
 | Manual CORS headers | Use `corsHeaders` from cors-config.ts | Security |
+| Start new dev server on 8081+ | Kill 8080 and restart there | Port confusion, perf |
 
 ## Chrome DevTools MCP Setup
 
@@ -82,6 +83,16 @@ npm run build            # Production build
 npm run build:dev        # Dev build with sourcemaps
 npm run preview          # Preview production build
 ```
+
+**Dev Server Management** (IMPORTANT):
+- **Port 8080 is the standard dev port** — do NOT start new servers on 8081, 8082, etc.
+- **Vite HMR handles most changes** — no need to restart the server for code changes
+- If HMR isn't working or you need a full reload:
+  ```bash
+  # Kill existing dev server on port 8080
+  lsof -ti:8080 | xargs kill -9 2>/dev/null; npm run dev
+  ```
+- **Never run multiple dev servers** — kills performance and causes port confusion
 
 ### Testing (692 tests, 74% coverage)
 ```bash

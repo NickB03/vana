@@ -3,7 +3,6 @@ import { Badge } from "@/components/ui/badge";
 import { FroggerDemoVideo } from "@/components/demo/FroggerDemoVideo";
 import { motion } from "motion/react";
 import { staggerContainer, staggerItem } from "@/utils/animationConstants";
-import { SECTION_SPACING, combineSpacing } from "@/utils/spacingConstants";
 import { TYPOGRAPHY } from "@/utils/typographyConstants";
 import { cn } from "@/lib/utils";
 import VanaTextAnimation from "./VanaTextAnimation";
@@ -17,7 +16,7 @@ export const Hero = () => {
   };
 
   return (
-    <section className={combineSpacing("relative min-h-[100dvh] w-full flex items-start justify-center pt-[12vh]", SECTION_SPACING.full)}>
+    <section className="relative min-h-[100dvh] w-full flex items-center justify-center px-4 md:px-6">
       <div className="container max-w-[100rem] mx-auto relative z-10 w-full px-4 sm:px-6 lg:px-8">
         <div className="grid md:grid-cols-[1.3fr,1.5fr] lg:grid-cols-[1.5fr,1.8fr] gap-8 sm:gap-10 lg:gap-10 items-center w-full">
           {/* Left: Headline + CTAs */}
@@ -77,9 +76,9 @@ export const Hero = () => {
           </motion.div>
 
           {/* Right: Interactive Frogger Game in Browser Chrome */}
-          <div className="order-first lg:order-last">
+          <div className="order-first lg:order-last flex justify-center lg:justify-end">
             <motion.div
-              className="relative w-full aspect-[892/720]"
+              className="relative w-[90%] aspect-[892/720]"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
@@ -94,7 +93,7 @@ export const Hero = () => {
                     <div className="h-3 w-3 rounded-full bg-green-500" />
                   </div>
                   <div className="flex-1 bg-black/50 rounded px-3 py-1 text-xs text-muted-foreground ml-2">
-                    vana.bot/demos/frogger-demo
+                    vana.bot
                   </div>
                 </div>
 
