@@ -37,16 +37,51 @@ export const REASONING_CONFIG = {
 /**
  * Safe parsing function with error logging
  * Returns null if validation fails (graceful degradation)
+ *
+ * Uses rate-limited logging to avoid console spam during React re-renders.
  */
+// Track last logged error to rate-limit logging (prevent console spam)
+let lastLoggedError: string | null = null;
+let lastLogTime = 0;
+const LOG_THROTTLE_MS = 5000; // Only log same error once per 5 seconds
+
+/**
+ * Reset the rate-limiting state (for testing purposes)
+ * @internal
+ */
+export function _resetParserLogState(): void {
+  lastLoggedError = null;
+  lastLogTime = 0;
+}
+
 export function parseReasoningSteps(data: unknown): StructuredReasoning | null {
+  // Early return for null/undefined - these are expected cases, not errors
+  if (data === null || data === undefined) {
+    return null;
+  }
+
+  // Quick structural check before Zod parsing to avoid noisy errors
+  // for clearly invalid data (like error objects or primitives)
+  if (typeof data !== 'object' || !('steps' in data)) {
+    return null;
+  }
+
   try {
     return StructuredReasoningSchema.parse(data);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.error('[ReasoningParser] Invalid reasoning steps:', {
-        errors: error.errors,
-        rawData: data,
-      });
+      // Rate-limited logging to prevent console spam during React re-renders
+      const errorKey = JSON.stringify(error.errors.map(e => e.path.join('.')));
+      const now = Date.now();
+
+      if (errorKey !== lastLoggedError || now - lastLogTime > LOG_THROTTLE_MS) {
+        console.warn('[ReasoningParser] Invalid reasoning steps:', {
+          errors: error.errors,
+          rawData: typeof data === 'object' ? Object.keys(data) : typeof data,
+        });
+        lastLoggedError = errorKey;
+        lastLogTime = now;
+      }
 
       // TODO: Log to monitoring service (Sentry, DataDog, etc.)
       // logToMonitoring('invalid_reasoning_steps', {

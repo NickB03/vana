@@ -1,10 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   ReasoningStepSchema,
   StructuredReasoningSchema,
   parseReasoningSteps,
   validateReasoningSteps,
   REASONING_CONFIG,
+  _resetParserLogState,
   type ReasoningStep,
   type StructuredReasoning,
 } from '../reasoning';
@@ -382,6 +383,11 @@ describe('StructuredReasoningSchema', () => {
 });
 
 describe('parseReasoningSteps', () => {
+  // Reset rate-limiting state before each test to ensure consistent behavior
+  beforeEach(() => {
+    _resetParserLogState();
+  });
+
   it('parses valid reasoning successfully', () => {
     const validData = {
       steps: [
@@ -417,37 +423,48 @@ describe('parseReasoningSteps', () => {
     expect(result).toBeNull();
   });
 
-  it('logs error to console for invalid data', () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
+  it('returns null silently for objects without steps property', () => {
+    // Objects without 'steps' are silently rejected (not logged) to reduce noise
+    // Note: Our early-exit check only skips logging for clearly invalid data,
+    // not all objects without steps. This test verifies the function returns null.
     const invalidData = { invalid: 'structure' };
+    const result = parseReasoningSteps(invalidData);
+
+    expect(result).toBeNull();
+  });
+
+  it('logs warning to console for data with steps but invalid schema', () => {
+    // Uses console.warn (not error) with rate-limiting
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const invalidData = { steps: [] }; // Empty array violates min constraint
     parseReasoningSteps(invalidData);
 
     expect(consoleSpy).toHaveBeenCalled();
-    const errorCalls = consoleSpy.mock.calls.filter(call =>
+    const warnCalls = consoleSpy.mock.calls.filter(call =>
       call[0].includes('[ReasoningParser]')
     );
-    expect(errorCalls.length).toBeGreaterThan(0);
+    expect(warnCalls.length).toBeGreaterThan(0);
 
     consoleSpy.mockRestore();
   });
 
-  it('includes raw data in error log', () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  it('includes object keys in warning log (not raw data for brevity)', () => {
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const invalidData = { test: 'data' };
+    const invalidData = { steps: [], extra: 'field' };
     parseReasoningSteps(invalidData);
 
     expect(consoleSpy).toHaveBeenCalledWith(
       expect.stringContaining('[ReasoningParser]'),
-      expect.objectContaining({ rawData: invalidData })
+      expect.objectContaining({ rawData: expect.arrayContaining(['steps', 'extra']) })
     );
 
     consoleSpy.mockRestore();
   });
 
   it('includes Zod errors in log', () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     const invalidData = { steps: [] }; // Empty array violates min constraint
     parseReasoningSteps(invalidData);

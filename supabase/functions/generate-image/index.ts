@@ -5,7 +5,9 @@ import { MODELS, RATE_LIMITS, STORAGE_CONFIG } from "../_shared/config.ts";
 import { ErrorResponseBuilder } from "../_shared/error-handler.ts";
 import { uploadWithRetry } from "../_shared/storage-retry.ts";
 
-const OPENROUTER_GEMINI_IMAGE_KEY = Deno.env.get("OPENROUTER_GEMINI_IMAGE_KEY");
+// Fallback to FLASH key for local development where IMAGE key might not be set
+const OPENROUTER_GEMINI_IMAGE_KEY = Deno.env.get("OPENROUTER_GEMINI_IMAGE_KEY")
+  || Deno.env.get("OPENROUTER_GEMINI_FLASH_KEY");
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 serve(async (req) => {
