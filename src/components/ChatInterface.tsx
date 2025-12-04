@@ -53,6 +53,7 @@ interface ChatInterfaceProps {
   input?: string;
   onInputChange?: (value: string) => void;
   onSendMessage?: (handleSend: (message?: string) => Promise<void>) => void;
+  onInitialPromptSent?: () => void;
   isGuest?: boolean;
   guestMessageCount?: number;
   guestMaxMessages?: number;
@@ -69,6 +70,7 @@ export function ChatInterface({
   input: parentInput,
   onInputChange: parentOnInputChange,
   onSendMessage,
+  onInitialPromptSent,
   isGuest = false,
   guestMessageCount = 0,
   guestMaxMessages = 10
@@ -88,7 +90,6 @@ export function ChatInterface({
     artifactDetected: false,
     percentage: 0
   });
-  const [hasInitialized, setHasInitialized] = useState(false);
   const [currentArtifact, setCurrentArtifact] = useState<ArtifactData | null>(null);
   const [isEditingArtifact, setIsEditingArtifact] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
@@ -98,6 +99,8 @@ export function ChatInterface({
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   // Ref to store handleSend for stable access in effects (prevents re-triggering initialPrompt effect)
   const handleSendRef = useRef<((message?: string) => Promise<void>) | null>(null);
+  // Track which session+prompt combination has been initialized (using ref to avoid stale closure issues)
+  const initializedSessionRef = useRef<string | null>(null);
 
   // Memoized artifact open handler to prevent breaking MessageWithArtifacts memo
   const handleArtifactOpen = useCallback((artifact: ArtifactData) => {
@@ -171,10 +174,10 @@ export function ChatInterface({
   useEffect(() => {
     setStreamingMessage("");
     setIsStreaming(false);
-    setHasInitialized(false);
     setCurrentArtifact(null);
     setIsEditingArtifact(false);
     onArtifactChange?.(false);
+    // Note: initializedSessionRef is managed separately in the initialPrompt effect
   }, [sessionId, onArtifactChange]);
 
   // Expose handleSend to parent component
@@ -187,12 +190,28 @@ export function ChatInterface({
   useEffect(() => {
     // Allow auto-send for both authenticated (with sessionId) AND guests (without sessionId)
     // Uses handleSendRef to avoid dependency on handleSend (which changes on every render cycle)
-    // This prevents the effect from re-firing when isStreaming changes after a response completes
-    if (initialPrompt && !hasInitialized && handleSendRef.current) {
-      setHasInitialized(true);
-      handleSendRef.current(initialPrompt);
+    // Uses initializedSessionRef to track which session has been initialized (ref avoids stale state issues)
+    if (!initialPrompt || !handleSendRef.current) {
+      return;
     }
-  }, [sessionId, initialPrompt, hasInitialized]);
+
+    // Create a unique key for this session+prompt combination
+    const initKey = `${sessionId || 'guest'}:${initialPrompt}`;
+
+    // Skip if we've already initialized this exact session+prompt
+    if (initializedSessionRef.current === initKey) {
+      return;
+    }
+
+    // Mark as initialized BEFORE sending to prevent re-entry
+    initializedSessionRef.current = initKey;
+
+    // Send the initial prompt
+    handleSendRef.current(initialPrompt);
+
+    // Notify parent that initial prompt has been sent
+    onInitialPromptSent?.();
+  }, [sessionId, initialPrompt, onInitialPromptSent]);
 
   // Parse artifacts from messages (removed auto-open behavior)
   useEffect(() => {

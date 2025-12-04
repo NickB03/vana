@@ -123,7 +123,6 @@ describe("useArtifactVersions", () => {
       }),
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from as any) = mockFrom;
 
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {
@@ -166,7 +165,6 @@ describe("useArtifactVersions", () => {
       }),
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from as any) = mockFrom;
 
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {
@@ -192,7 +190,6 @@ describe("useArtifactVersions", () => {
       }),
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from as any) = mockFrom;
 
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {
@@ -215,13 +212,11 @@ describe("useArtifactVersions", () => {
 
   it("should create new version successfully", async () => {
     // Mock successful session
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.auth.getSession as any) = vi.fn().mockResolvedValue({
       data: { session: { access_token: "token123" } },
     });
 
     // Mock successful RPC call
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.rpc as any) = vi.fn().mockResolvedValue({
       data: mockVersions[0],
       error: null,
@@ -238,7 +233,6 @@ describe("useArtifactVersions", () => {
         }),
       }),
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from as any) = mockFrom;
 
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {
@@ -271,7 +265,6 @@ describe("useArtifactVersions", () => {
 
   it("should handle authentication errors", async () => {
     // Mock no session
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.auth.getSession as any) = vi.fn().mockResolvedValue({
       data: { session: null },
     });
@@ -287,7 +280,6 @@ describe("useArtifactVersions", () => {
         }),
       }),
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from as any) = mockFrom;
 
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {
@@ -308,12 +300,10 @@ describe("useArtifactVersions", () => {
   });
 
   it("should handle RLS errors during version creation", async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.auth.getSession as any) = vi.fn().mockResolvedValue({
       data: { session: { access_token: "token123" } },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.rpc as any) = vi.fn().mockResolvedValue({
       data: null,
       error: {
@@ -334,12 +324,10 @@ describe("useArtifactVersions", () => {
   });
 
   it("should handle foreign key constraint errors", async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.auth.getSession as any) = vi.fn().mockResolvedValue({
       data: { session: { access_token: "token123" } },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.rpc as any) = vi.fn().mockResolvedValue({
       data: null,
       error: {
@@ -365,7 +353,6 @@ describe("useArtifactVersions", () => {
       data: { session: { user: { id: "user-123" } } },
       error: null,
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.auth.getSession as any) = mockAuthGetSession;
 
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {
@@ -384,7 +371,6 @@ describe("useArtifactVersions", () => {
       data: { session: { user: { id: "user-123" } } },
       error: null,
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.auth.getSession as any) = mockAuthGetSession;
 
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {
@@ -401,7 +387,6 @@ describe("useArtifactVersions", () => {
       data: { session: { user: { id: "user-123" } } },
       error: null,
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.auth.getSession as any) = mockAuthGetSession;
 
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {
@@ -420,7 +405,6 @@ describe("useArtifactVersions", () => {
       data: { session: { user: { id: "user-123" } } },
       error: null,
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.auth.getSession as any) = mockAuthGetSession;
 
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {
@@ -439,7 +423,6 @@ describe("useArtifactVersions", () => {
       data: { session: { user: { id: "user-123" } } },
       error: null,
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.auth.getSession as any) = mockAuthGetSession;
 
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {
@@ -458,7 +441,6 @@ describe("useArtifactVersions", () => {
       data: { session: { user: { id: "user-123" } } },
       error: null,
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.auth.getSession as any) = mockAuthGetSession;
 
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {
@@ -489,7 +471,6 @@ describe("useArtifactVersions", () => {
       }),
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from as any) = mockFrom;
 
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {
@@ -517,7 +498,6 @@ describe("useArtifactVersions", () => {
       }),
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from as any) = mockFrom;
 
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {
@@ -544,7 +524,6 @@ describe("useArtifactVersions", () => {
       }),
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from as any) = mockFrom;
 
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {
@@ -578,7 +557,6 @@ describe("useArtifactVersions", () => {
       }),
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from as any) = mockFrom;
 
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {
@@ -605,7 +583,6 @@ describe("useArtifactVersions", () => {
       }),
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from as any) = mockFrom;
 
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {
@@ -632,7 +609,6 @@ describe("useArtifactVersions", () => {
       }),
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from as any) = mockFrom;
 
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {
@@ -664,7 +640,6 @@ describe("useArtifactVersions", () => {
       }),
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from as any) = mockFrom;
 
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {
@@ -699,7 +674,6 @@ describe("useArtifactVersions", () => {
       }),
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from as any) = mockFrom;
 
     const { result } = renderHook(() => useArtifactVersions(mockArtifactId), {

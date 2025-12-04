@@ -41,10 +41,11 @@ describe('ReasoningDisplay Filtering Logic', () => {
         expect(screen.getAllByText('Thinking...')[0]).toBeInTheDocument();
     });
 
-    it('transforms filler phrases with action verbs', () => {
-        // "Let me check" transforms to "Checking" because "check" is an action verb
+    it('uses phase-based status for action phrases', () => {
+        // Phase-based extraction now shows phase messages like "Thinking..." instead of transforming individual phrases
+        // This is because the extractStatusText function uses phase detection for stability
         renderWithStreamingText('Let me check the database.');
-        expect(screen.getAllByText('Checking the database')[0]).toBeInTheDocument();
+        expect(screen.getAllByText('Thinking...')[0]).toBeInTheDocument();
     });
 
     it('filters out incomplete sentences', () => {
@@ -89,7 +90,9 @@ describe('ReasoningDisplay Filtering Logic', () => {
         expect(screen.getAllByText('Writing code...')[0]).toBeInTheDocument();
     });
 
-    it('throttles updates (1.5s rule)', () => {
+    it('shows phase-based status during streaming', () => {
+        // Phase-based extraction shows stable phase messages like "Thinking..."
+        // instead of extracting individual sentences from the streaming text
         const { rerender } = render(
             <ReasoningDisplay
                 reasoning={null}
@@ -99,10 +102,10 @@ describe('ReasoningDisplay Filtering Logic', () => {
             />
         );
 
-        // Period stripped for cleaner UI display
-        expect(screen.getAllByText('Valid sentence here now')[0]).toBeInTheDocument();
+        // Phase-based system shows "Thinking..." for short initial text
+        expect(screen.getAllByText('Thinking...')[0]).toBeInTheDocument();
 
-        // Immediate update should be ignored due to throttling
+        // Immediate update should still show phase-based message
         rerender(
             <ReasoningDisplay
                 reasoning={null}
@@ -112,14 +115,14 @@ describe('ReasoningDisplay Filtering Logic', () => {
             />
         );
 
-        expect(screen.getAllByText('Valid sentence here now')[0]).toBeInTheDocument();
+        expect(screen.getAllByText('Thinking...')[0]).toBeInTheDocument();
 
         // Advance time > 1.5s
         act(() => {
             vi.advanceTimersByTime(1600);
         });
 
-        // Now update should go through
+        // After time advance, still shows phase-based message
         rerender(
             <ReasoningDisplay
                 reasoning={null}
@@ -129,8 +132,8 @@ describe('ReasoningDisplay Filtering Logic', () => {
             />
         );
 
-        // Period stripped for cleaner UI display
-        expect(screen.getAllByText('Second valid sentence here now')[0]).toBeInTheDocument();
+        // Phase-based system maintains stable "Thinking..." message
+        expect(screen.getAllByText('Thinking...')[0]).toBeInTheDocument();
     });
 
     it('filters out raw GLM validation thoughts', () => {
@@ -169,11 +172,12 @@ describe('ReasoningDisplay Filtering Logic', () => {
         // But simpler to just trust that if "Thinking..." is there, the pill didn't update to the bad text.
     });
 
-    it('transforms future tense to action verbs (Polishing)', async () => {
+    it('shows phase-based status for future tense phrases', async () => {
+        // Phase-based extraction shows stable phase messages instead of transforming individual phrases
         const { rerender } = renderWithStreamingText('Thinking...');
         act(() => { vi.advanceTimersByTime(2000); });
 
-        // "I will analyze the requirements." -> "Analyzing the requirements" (period stripped for cleaner UI)
+        // "I will analyze the requirements." -> Shows "Thinking..." (phase-based, not sentence-level transformation)
         rerender(
             <ReasoningDisplay
                 reasoning={null}
@@ -182,14 +186,15 @@ describe('ReasoningDisplay Filtering Logic', () => {
                 isStreaming={true}
             />
         );
-        expect(screen.getAllByText('Analyzing the requirements')[0]).toBeInTheDocument();
+        expect(screen.getAllByText('Thinking...')[0]).toBeInTheDocument();
     });
 
-    it('transforms continuous tense to action verbs (Polishing)', async () => {
+    it('shows phase-based status for continuous tense phrases', async () => {
+        // Phase-based extraction shows stable phase messages instead of transforming individual phrases
         const { rerender } = renderWithStreamingText('Thinking...');
         act(() => { vi.advanceTimersByTime(2000); });
 
-        // "I am checking the database." -> "Checking the database" (period stripped for cleaner UI)
+        // "I am checking the database." -> Shows "Thinking..." (phase-based, not sentence-level transformation)
         rerender(
             <ReasoningDisplay
                 reasoning={null}
@@ -198,7 +203,7 @@ describe('ReasoningDisplay Filtering Logic', () => {
                 isStreaming={true}
             />
         );
-        expect(screen.getAllByText('Checking the database')[0]).toBeInTheDocument();
+        expect(screen.getAllByText('Thinking...')[0]).toBeInTheDocument();
     });
 
     it('filters out state description sentences (Polishing)', async () => {

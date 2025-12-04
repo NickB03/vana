@@ -6,6 +6,7 @@ import { staggerContainer, staggerItem } from "@/utils/animationConstants";
 import { TYPOGRAPHY } from "@/utils/typographyConstants";
 import { cn } from "@/lib/utils";
 import VanaTextAnimation from "./VanaTextAnimation";
+import { Link } from "react-router-dom";
 
 export const Hero = () => {
   const scrollToApp = () => {
@@ -58,6 +59,14 @@ export const Hero = () => {
                 onClick={scrollToApp}
               >
                 Explore
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="bg-white/10 hover:bg-white/20 text-white border-white/30 transition-all hover:scale-105 active:scale-95"
+                asChild
+              >
+                <Link to="/auth">Sign In</Link>
               </Button>
             </motion.div>
             <motion.div

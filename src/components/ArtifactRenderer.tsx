@@ -307,7 +307,7 @@ const BundledArtifactFrame = memo(({
               // Use the existing shim URLs if present, or create new ones
               // The shims export window.React/window.ReactDOM which were loaded via UMD
               const reactShim = importMap.imports['react-shim'] ||
-                "data:text/javascript,const R=window.React;export default R;export const{useState,useEffect,useRef,useMemo,useCallback,useContext,createContext,createElement,Fragment,memo,forwardRef,useReducer,useLayoutEffect,useImperativeHandle,useDebugValue,useDeferredValue,useTransition,useId,useSyncExternalStore,lazy,Suspense,startTransition,Children,cloneElement,isValidElement,createRef,Component,PureComponent,StrictMode}=R;";
+                "data:text/javascript,const R=window.React;export default R;export const{useState,useEffect,useRef,useMemo,useCallback,useContext,createContext,createElement,Fragment,memo,forwardRef,useReducer,useLayoutEffect,useImperativeHandle,useDebugValue,useDeferredValue,useTransition,useId,useSyncExternalStore,useInsertionEffect,lazy,Suspense,startTransition,Children,cloneElement,isValidElement,createRef,Component,PureComponent,StrictMode}=R;";
               const reactDomShim = importMap.imports['react-dom-shim'] ||
                 "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync,findDOMNode,unmountComponentAtNode,render,hydrate}=D;";
               // JSX Runtime shim - esm.sh packages use the modern JSX transform which imports jsx/jsxs from react/jsx-runtime
@@ -1177,7 +1177,7 @@ ${artifact.content}
   <script type="importmap">
     {
       "imports": {
-        "react": "data:text/javascript,const R=window.React;export default R;export const{useState,useEffect,useRef,useMemo,useCallback,useContext,createContext,createElement,Fragment,memo,forwardRef,useReducer,useLayoutEffect,useImperativeHandle,useDebugValue,useDeferredValue,useTransition,useId,useSyncExternalStore,lazy,Suspense,startTransition,Children,cloneElement,isValidElement,createRef,Component,PureComponent,StrictMode}=R;",
+        "react": "data:text/javascript,const R=window.React;export default R;export const{useState,useEffect,useRef,useMemo,useCallback,useContext,createContext,createElement,Fragment,memo,forwardRef,useReducer,useLayoutEffect,useImperativeHandle,useDebugValue,useDeferredValue,useTransition,useId,useSyncExternalStore,useInsertionEffect,lazy,Suspense,startTransition,Children,cloneElement,isValidElement,createRef,Component,PureComponent,StrictMode}=R;",
         "react-dom": "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync,findDOMNode,unmountComponentAtNode,render,hydrate}=D;",
         "react-dom/client": "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync}=D;",
         "react/jsx-runtime": "data:text/javascript,const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};",

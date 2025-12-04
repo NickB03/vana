@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import { useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { MultiArtifactContext, ArtifactState, MultiArtifactContextType } from "@/contexts/MultiArtifactContextDef";
 import { ArtifactData } from "@/components/Artifact";

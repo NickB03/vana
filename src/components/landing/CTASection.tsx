@@ -4,8 +4,11 @@ import { ArrowRight } from "lucide-react";
 import { SECTION_SPACING, combineSpacing } from "@/utils/spacingConstants";
 import { TYPOGRAPHY } from "@/utils/typographyConstants";
 import { cn } from "@/lib/utils";
+import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 
 export const CTASection = () => {
+  const { signInWithGoogle, isGoogleLoading } = useGoogleAuth();
+
   return (
     <section className={combineSpacing("text-white relative w-full", SECTION_SPACING.full)}>
       <div className="container max-w-4xl mx-auto text-center space-y-4 sm:space-y-6 relative z-10 w-full px-4 sm:px-0">
@@ -31,9 +34,10 @@ export const CTASection = () => {
             size="lg"
             variant="outline"
             className="bg-white/10 hover:bg-white/20 text-white border-white/30 font-semibold transition-all hover:scale-105 active:scale-95"
-            asChild
+            onClick={signInWithGoogle}
+            disabled={isGoogleLoading}
           >
-            <Link to="/signup">Sign Up with Google</Link>
+            {isGoogleLoading ? "Connecting..." : "Sign Up with Google"}
           </Button>
         </div>
         <div className="pt-2 sm:pt-4 flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm text-white/70">

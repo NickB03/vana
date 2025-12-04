@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,9 @@ export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isProcessingOAuth, setIsProcessingOAuth] = useState(false);
+  // Track first load to prevent Safari race condition with password manager
+  // Safari aggressively restores localStorage, causing stale sessions to redirect immediately
+  const isFirstLoad = useRef(true);
 
   useEffect(() => {
     // Check if this is an OAuth callback (has hash or code in URL)
@@ -61,6 +64,8 @@ export default function Auth() {
     }
 
     // Check if user is already logged in with VALID session
+    // Only redirect if we have OAuth params (callback) - otherwise let user stay on auth page
+    // This prevents Safari's aggressive localStorage restoration from causing unwanted redirects
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       console.log('Initial session check:', session ? 'Session exists' : 'No session');
 
@@ -69,7 +74,9 @@ export default function Auth() {
         return;
       }
 
-      if (session) {
+      // Only auto-redirect if this is an OAuth callback with valid session
+      // Regular navigation to /auth should show the login form, not auto-redirect
+      if (session && hasOAuthParams) {
         // Verify session is actually valid by making a test auth call
         const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -80,8 +87,8 @@ export default function Auth() {
           return;
         }
 
-        // Session is valid - redirect to home
-        console.log('Valid session found, redirecting to /');
+        // Session is valid and we have OAuth params - redirect to home
+        console.log('Valid session found with OAuth callback, redirecting to /');
         navigate("/");
       }
     });
@@ -89,6 +96,14 @@ export default function Auth() {
     // Listen for auth changes (critical for OAuth)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session ? 'Session exists' : 'No session');
+
+      // Skip INITIAL_SESSION on first load to prevent Safari password manager race condition
+      // Safari restores localStorage so fast that stale sessions trigger immediate redirects
+      if (event === 'INITIAL_SESSION' && isFirstLoad.current) {
+        console.log('Skipping INITIAL_SESSION redirect on first load (Safari fix)');
+        isFirstLoad.current = false;
+        return;
+      }
 
       if (event === 'SIGNED_OUT') {
         console.log('User signed out, staying on auth page');
@@ -98,7 +113,8 @@ export default function Auth() {
       if (event === 'SIGNED_IN' && session) {
         console.log('User signed in via OAuth, redirecting to /');
         navigate("/");
-      } else if (session) {
+      } else if (session && event !== 'INITIAL_SESSION') {
+        // Only redirect for non-initial session events (e.g., TOKEN_REFRESHED)
         // Validate session before redirecting
         const { data: { user }, error: userError } = await supabase.auth.getUser();
 

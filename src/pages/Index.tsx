@@ -298,7 +298,9 @@ const IndexContent = () => {
                 onInputChange={setInput}
                 onSendMessage={handler => {
                   setChatSendHandler(() => handler);
-                  // Clear pending prompt after ChatInterface has consumed it
+                }}
+                onInitialPromptSent={() => {
+                  // Clear pending prompt only after it has been sent
                   setPendingInitialPrompt(undefined);
                 }}
               />

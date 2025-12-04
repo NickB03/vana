@@ -24,6 +24,7 @@ const LandingV2 = lazy(() => import("./pages/LandingV2"));
 const DemoMode = lazy(() => import("./pages/DemoMode"));
 const DemoModeV2 = lazy(() => import("./pages/DemoModeV2"));
 const DemoModeDashboard = lazy(() => import("./pages/DemoModeDashboard"));
+const DemoModeImageGeneration = lazy(() => import("./pages/DemoModeImageGeneration"));
 const UIShowcase = lazy(() => import("./pages/UIShowcase"));
 const FroggerHeroTest = lazy(() => import("./pages/FroggerHeroTest"));
 
@@ -47,14 +48,14 @@ const queryClient = new QueryClient({
 /**
  * AnimatedRoutes: Wraps all routes with motion animations and AnimatePresence
  * - Manages page transition animations with fade + vertical slide effects
- * - Uses "sync" mode to allow exit/entrance animations to overlap for better performance
+ * - Uses "wait" mode so the exiting page fully unmounts before the entering page renders
  * - Wrapped in AnimationErrorBoundary to gracefully handle animation failures
  */
 const AnimatedRoutes = () => {
   const location = useLocation();
 
   return (
-    <AnimatePresence mode="sync">
+    <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<AnimatedRoute><Home /></AnimatedRoute>} />
         {/* Main chat interface routes */}
@@ -72,6 +73,7 @@ const AnimatedRoutes = () => {
         <Route path="/demo-frogger" element={<DemoMode />} />
         <Route path="/demo-frogger-v2" element={<DemoModeV2 />} />
         <Route path="/demo-dashboard" element={<DemoModeDashboard />} />
+        <Route path="/demo-image-gen" element={<DemoModeImageGeneration />} />
         <Route path="/ui-showcase" element={<AnimatedRoute><UIShowcase /></AnimatedRoute>} />
         <Route path="/frogger-hero-test" element={<AnimatedRoute><FroggerHeroTest /></AnimatedRoute>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

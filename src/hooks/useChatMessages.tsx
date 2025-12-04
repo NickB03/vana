@@ -57,7 +57,8 @@ function detectPhase(text: string, currentPhase: ThinkingPhase): ThinkingPhase {
   const currentIndex = PHASE_CONFIG.findIndex(p => p.phase === currentPhase);
 
   // Only check phases AFTER current (forward progression only)
-  for (let i = Math.max(0, currentIndex); i < PHASE_CONFIG.length; i++) {
+  // CRITICAL: Start from currentIndex + 1, not currentIndex, otherwise we re-match the same phase forever
+  for (let i = currentIndex + 1; i < PHASE_CONFIG.length; i++) {
     const config = PHASE_CONFIG[i];
     if (textLength >= config.minChars && config.keywords.some(kw => lowerText.includes(kw))) {
       return config.phase;

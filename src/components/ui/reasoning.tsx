@@ -125,7 +125,7 @@ function ReasoningTrigger({
   return (
     <button
       className={cn(
-        "flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-border/40 bg-transparent px-3 py-1.5 text-left transition-all hover:border-border/60 hover:bg-muted/10",
+        "inline-flex w-fit cursor-pointer items-center gap-2 rounded-md border border-border/40 bg-transparent px-3 py-1.5 text-left transition-all hover:border-border/60 hover:bg-muted/10",
         className
       )}
       onClick={() => onOpenChange(!isOpen)}
@@ -135,7 +135,7 @@ function ReasoningTrigger({
       {...props}
     >
       <span
-        className="flex-1 text-sm text-muted-foreground line-clamp-1"
+        className="text-sm text-muted-foreground"
       >
         {children}
       </span>

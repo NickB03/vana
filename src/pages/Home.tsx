@@ -488,7 +488,9 @@ const Home = () => {
                     onInputChange={setInput}
                     onSendMessage={handler => {
                       chatSendHandlerRef.current = handler;
-                      // Clear pending prompts after ChatInterface has consumed them
+                    }}
+                    onInitialPromptSent={() => {
+                      // Clear pending prompts only after they have been sent
                       setGuestInitialPrompt(undefined);
                       setPendingAuthPrompt(undefined);
                     }}

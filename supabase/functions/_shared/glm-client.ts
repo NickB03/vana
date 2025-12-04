@@ -481,7 +481,8 @@ export async function processGLMStream(
   let fullContent = "";
 
   try {
-    while (true) {
+    // Labeled loop to allow breaking out of both loops when [DONE] is received
+    readLoop: while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
@@ -503,7 +504,7 @@ export async function processGLMStream(
           // Check for stream end marker
           if (jsonStr === "[DONE]") {
             console.log(`${logPrefix} 🏁 GLM stream complete`);
-            break;
+            break readLoop; // CRITICAL: Break outer loop, not just inner buffer loop
           }
 
           try {
