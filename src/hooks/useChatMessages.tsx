@@ -39,19 +39,19 @@ const PHASE_MESSAGES: Record<ThinkingPhase, string> = {
 };
 
 // More granular phase detection with lower thresholds
-const PHASE_CONFIG: { phase: ThinkingPhase; keywords: string[]; minChars: number }[] = [
-  { phase: 'analyzing', keywords: ['understand', 'request', 'user wants', 'looking for', 'asking', 'need to', 'requires', 'let me'], minChars: 30 },
-  { phase: 'planning', keywords: ['plan', 'approach', 'will need', 'going to', 'should', 'first'], minChars: 100 },
-  { phase: 'structuring', keywords: ['structure', 'component', 'layout', 'organize', 'architecture', 'design'], minChars: 200 },
-  { phase: 'implementing', keywords: ['implement', 'create', 'build', 'code', 'function', 'useState', 'const'], minChars: 350 },
-  { phase: 'adding_logic', keywords: ['logic', 'algorithm', 'minimax', 'check', 'calculate', 'handle', 'detect'], minChars: 500 },
-  { phase: 'styling', keywords: ['style', 'css', 'tailwind', 'color', 'flex', 'grid', 'padding', 'className'], minChars: 700 },
-  { phase: 'polishing', keywords: ['animation', 'transition', 'effect', 'motion', 'framer', 'polish'], minChars: 900 },
-  { phase: 'finalizing', keywords: ['final', 'complete', 'finish', 'done', 'ready', 'result', 'export default'], minChars: 1100 },
+// Uses word boundary regex patterns to avoid matching partial words
+const PHASE_CONFIG: { phase: ThinkingPhase; keywords: RegExp[]; minChars: number }[] = [
+  { phase: 'analyzing', keywords: [/\b(understand|request|user wants|looking for|asking|need to|requires|let me)\b/i], minChars: 30 },
+  { phase: 'planning', keywords: [/\b(plan|approach|will need|going to|should|first)\b/i], minChars: 100 },
+  { phase: 'structuring', keywords: [/\b(structure|component|layout|organize|architecture|design)\b/i], minChars: 200 },
+  { phase: 'implementing', keywords: [/\b(implement|create|build|code|function|usestate|const)\b/i], minChars: 350 },
+  { phase: 'adding_logic', keywords: [/\b(logic|algorithm|minimax|check|calculate|handle|detect)\b/i], minChars: 500 },
+  { phase: 'styling', keywords: [/\b(style|css|tailwind|color|flex|grid|padding|classname)\b/i], minChars: 700 },
+  { phase: 'polishing', keywords: [/\b(animation|transition|effect|motion|framer|polish)\b/i], minChars: 900 },
+  { phase: 'finalizing', keywords: [/\b(wrapping up|winding down|putting it all together|final review|outputting|wrapping|finishing touches)\b/i], minChars: 1500 },
 ];
 
 function detectPhase(text: string, currentPhase: ThinkingPhase): ThinkingPhase {
-  const lowerText = text.toLowerCase();
   const textLength = text.length;
 
   const currentIndex = PHASE_CONFIG.findIndex(p => p.phase === currentPhase);
@@ -60,7 +60,7 @@ function detectPhase(text: string, currentPhase: ThinkingPhase): ThinkingPhase {
   // CRITICAL: Start from currentIndex + 1, not currentIndex, otherwise we re-match the same phase forever
   for (let i = currentIndex + 1; i < PHASE_CONFIG.length; i++) {
     const config = PHASE_CONFIG[i];
-    if (textLength >= config.minChars && config.keywords.some(kw => lowerText.includes(kw))) {
+    if (textLength >= config.minChars && config.keywords.some(pattern => pattern.test(text))) {
       return config.phase;
     }
   }

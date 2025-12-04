@@ -277,6 +277,7 @@ export const MessageWithArtifacts = memo(({
           artifact={artifact}
           onOpen={() => onArtifactOpen(artifact)}
           className="mt-3"
+          isBundling={bundlingStatus[artifact.id] === 'bundling'}
         />
       ))}
     </MessageErrorBoundary>

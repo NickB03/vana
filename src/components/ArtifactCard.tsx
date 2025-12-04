@@ -7,6 +7,7 @@ interface ArtifactCardProps {
   artifact: ArtifactData;
   onOpen: () => void;
   className?: string;
+  isBundling?: boolean;
 }
 
 // Get icon based on artifact type and title keywords
@@ -110,7 +111,7 @@ const getTypeLabel = (type: string, title: string) => {
   }
 };
 
-export function ArtifactCard({ artifact, onOpen, className }: ArtifactCardProps) {
+export function ArtifactCard({ artifact, onOpen, className, isBundling = false }: ArtifactCardProps) {
   const IconComponent = getArtifactIcon(artifact.type, artifact.title);
   const typeLabel = getTypeLabel(artifact.type, artifact.title);
 
@@ -139,16 +140,18 @@ export function ArtifactCard({ artifact, onOpen, className }: ArtifactCardProps)
         </p>
       </div>
 
-      {/* Open button */}
+      {/* Open button - disabled while bundling to prevent race condition */}
       <Button
         type="button"
         variant="outline"
         size="sm"
         onClick={onOpen}
-        className="shrink-0 gap-1.5 rounded-full px-4 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
+        disabled={isBundling}
+        className="shrink-0 gap-1.5 rounded-full px-4 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        title={isBundling ? "Bundling artifact with dependencies..." : "Open artifact in full screen"}
       >
         <Maximize2 className="h-3.5 w-3.5" />
-        Open
+        {isBundling ? "Bundling..." : "Open"}
       </Button>
     </div>
   );

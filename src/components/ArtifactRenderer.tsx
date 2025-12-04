@@ -583,6 +583,17 @@ export const ArtifactRenderer = memo(({
   );
   const MAX_RECOVERY_ATTEMPTS = 2;
 
+  // Defense-in-depth: React to bundleUrl changes to handle race conditions
+  // If bundleUrl becomes available after initial render, update the renderer choice
+  useEffect(() => {
+    if (artifact.bundleUrl && currentRenderer !== 'bundle') {
+      console.log('[ArtifactRenderer] bundleUrl became available, switching to bundle renderer');
+      setCurrentRenderer('bundle');
+      // Reset loading state to allow BundledArtifactFrame to take over
+      onLoadingChange(true);
+    }
+  }, [artifact.bundleUrl, currentRenderer, onLoadingChange]);
+
   // Refs for cleanup and preventing state updates after unmount
   const recoveryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef(true);
