@@ -1,0 +1,384 @@
+name: AI Change Guardrails
+
+# Purpose: Catch common AI-generated code regressions before they reach production
+# Based on analysis of actual regressions from the past 14 days:
+# - CSP drift (4 issues)
+# - esm.sh URL syntax (2 issues)
+# - Hardcoded values (2 issues)
+# - Missing cleanup/edge cases (3 issues)
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  guardrails:
+    name: AI Regression Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch base branch
+        run: |
+          git fetch origin ${{ github.base_ref || 'main' }} --depth=1
+
+      # ============================================================
+      # BLOCKING CHECKS - These fail the build
+      # ============================================================
+
+      - name: "🚫 Block: Dangerous Code Patterns"
+        run: |
+          echo "Scanning for dangerous code patterns..."
+
+          # Get diff excluding test files
+          DIFF=$(git diff origin/${{ github.base_ref || 'main' }} --unified=0 -- \
+            '*.ts' '*.tsx' \
+            ':!*.test.ts' ':!*.test.tsx' ':!*.spec.ts' ':!*.spec.tsx' \
+            ':!**/__tests__/**' ':!**/test/**' || true)
+
+          if [ -z "$DIFF" ]; then
+            echo "✅ No TypeScript changes to scan"
+            exit 0
+          fi
+
+          # Extract only added lines (excluding file headers)
+          ADDED_LINES=$(echo "$DIFF" | grep -E "^\+" | grep -vE "^\+\+\+" || true)
+
+          if [ -z "$ADDED_LINES" ]; then
+            echo "✅ No new lines added"
+            exit 0
+          fi
+
+          # Pattern 1: eval() - almost never legitimate
+          # Matches: eval(, eval (, but not "eval" in strings/comments contextually
+          EVAL_HITS=$(echo "$ADDED_LINES" | grep -E "eval\s*\(" || true)
+
+          # Pattern 2: new Function() - dynamic code execution
+          FUNC_HITS=$(echo "$ADDED_LINES" | grep -E "new\s+Function\s*\(" || true)
+
+          # Pattern 3: document.write - XSS risk, blocks parsing
+          DOCWRITE_HITS=$(echo "$ADDED_LINES" | grep -E "document\.write\s*\(" || true)
+
+          BLOCKED=""
+
+          if [ -n "$EVAL_HITS" ]; then
+            echo "::error::eval() detected - this is almost never needed and poses security risks"
+            echo "$EVAL_HITS"
+            BLOCKED="true"
+          fi
+
+          if [ -n "$FUNC_HITS" ]; then
+            echo "::error::new Function() detected - dynamic code execution is dangerous"
+            echo "$FUNC_HITS"
+            BLOCKED="true"
+          fi
+
+          if [ -n "$DOCWRITE_HITS" ]; then
+            echo "::error::document.write() detected - blocks parsing and enables XSS"
+            echo "$DOCWRITE_HITS"
+            BLOCKED="true"
+          fi
+
+          if [ -n "$BLOCKED" ]; then
+            echo ""
+            echo "These patterns have caused security issues. If this is intentional,"
+            echo "add a code comment explaining why and request manual review."
+            exit 1
+          fi
+
+          echo "✅ No dangerous patterns detected"
+
+      - name: "🚫 Block: esm.sh Dual React Pattern"
+        run: |
+          echo "Checking esm.sh URL patterns..."
+
+          # This specific pattern caused 2 regressions (dual React instances)
+          # ?deps=react bundles React internally, breaking hooks
+          # ?external=react makes esm.sh use the page's React instance
+
+          DIFF=$(git diff origin/${{ github.base_ref || 'main' }} -- '*.ts' '*.tsx' || true)
+
+          BAD_PATTERN=$(echo "$DIFF" | grep -E "^\+.*esm\.sh.*\?deps=.*react" || true)
+
+          if [ -n "$BAD_PATTERN" ]; then
+            echo "::error::esm.sh with ?deps=react causes dual React instance errors"
+            echo ""
+            echo "Found:"
+            echo "$BAD_PATTERN"
+            echo ""
+            echo "Fix: Use ?external=react,react-dom instead of ?deps=react@version"
+            echo ""
+            echo "Example:"
+            echo "  ❌ https://esm.sh/package?deps=react@18.3.1,react-dom@18.3.1"
+            echo "  ✅ https://esm.sh/package?external=react,react-dom"
+            exit 1
+          fi
+
+          echo "✅ esm.sh URLs are correct"
+
+      - name: "🚫 Block: Unsafe Database Migrations"
+        run: |
+          echo "Checking database migration safety..."
+
+          NEW_MIGRATIONS=$(git diff origin/${{ github.base_ref || 'main' }} --name-only -- 'supabase/migrations/*.sql' 2>/dev/null || true)
+
+          if [ -z "$NEW_MIGRATIONS" ]; then
+            echo "✅ No new migrations"
+            exit 0
+          fi
+
+          echo "New migrations found:"
+          echo "$NEW_MIGRATIONS"
+          echo ""
+
+          ERRORS=""
+
+          for FILE in $NEW_MIGRATIONS; do
+            if [ ! -f "$FILE" ]; then
+              continue
+            fi
+
+            # Check for destructive operations without safeguards
+            if grep -iE "DROP\s+TABLE\s+[a-z_]+" "$FILE" >/dev/null 2>&1; then
+              echo "::error file=$FILE::DROP TABLE detected - requires manual review"
+              ERRORS="true"
+            fi
+
+            if grep -iE "TRUNCATE\s+TABLE" "$FILE" >/dev/null 2>&1; then
+              echo "::error file=$FILE::TRUNCATE TABLE detected - requires manual review"
+              ERRORS="true"
+            fi
+
+            if grep -iE "DROP\s+COLUMN" "$FILE" >/dev/null 2>&1; then
+              echo "::error file=$FILE::DROP COLUMN detected - data loss risk, requires manual review"
+              ERRORS="true"
+            fi
+
+            # Check for SECURITY DEFINER without search_path (SQL injection risk)
+            if grep -i "SECURITY DEFINER" "$FILE" >/dev/null 2>&1; then
+              if ! grep -i "search_path" "$FILE" >/dev/null 2>&1; then
+                echo "::error file=$FILE::SECURITY DEFINER without SET search_path = public, pg_temp"
+                echo "This is a security vulnerability. Add: SET search_path = public, pg_temp"
+                ERRORS="true"
+              fi
+            fi
+          done
+
+          if [ -n "$ERRORS" ]; then
+            echo ""
+            echo "Destructive migrations require explicit approval."
+            echo "If intentional, add [migration-reviewed] to commit message."
+            exit 1
+          fi
+
+          echo "✅ Migrations look safe"
+
+      - name: "🚫 Block: Hardcoded Model Names"
+        run: |
+          echo "Checking for hardcoded AI model names..."
+
+          # This pattern caused 2 regressions - AI writes model strings instead of MODELS.*
+
+          DIFF=$(git diff origin/${{ github.base_ref || 'main' }} -- \
+            'supabase/functions/**/*.ts' \
+            ':!supabase/functions/_shared/config.ts' \
+            ':!supabase/functions/_shared/__tests__/**' || true)
+
+          # Look for hardcoded model name patterns in new lines
+          # Matches: "google/gemini-", "anthropic/claude-", "openai/gpt-", etc.
+          HARDCODED=$(echo "$DIFF" | grep -E "^\+" | grep -E '"(google|anthropic|openai|moonshotai|zhipu)/[a-z0-9.-]+"' || true)
+
+          if [ -n "$HARDCODED" ]; then
+            echo "::error::Hardcoded model names detected"
+            echo ""
+            echo "Found:"
+            echo "$HARDCODED"
+            echo ""
+            echo "Fix: Import and use MODELS.* from _shared/config.ts"
+            echo ""
+            echo "Example:"
+            echo "  ❌ model: \"google/gemini-2.5-flash-lite\""
+            echo "  ✅ import { MODELS } from '../_shared/config.ts'"
+            echo "     model: MODELS.GEMINI_FLASH"
+            exit 1
+          fi
+
+          echo "✅ No hardcoded model names"
+
+      # ============================================================
+      # WARNING CHECKS - These annotate but don't fail
+      # ============================================================
+
+      - name: "⚠️ Warn: CSP Consistency"
+        run: |
+          echo "Checking Content Security Policy consistency..."
+
+          # Get new external domains from code changes
+          DIFF=$(git diff origin/${{ github.base_ref || 'main' }} -- '*.ts' '*.tsx' || true)
+
+          NEW_DOMAINS=$(echo "$DIFF" | \
+            grep -E "^\+" | \
+            grep -oE "https://[a-zA-Z0-9.-]+\.(com|io|dev|sh|org|net|co|ai)" | \
+            sed 's|https://||' | \
+            sort -u || true)
+
+          if [ -z "$NEW_DOMAINS" ]; then
+            echo "✅ No new external domains"
+            exit 0
+          fi
+
+          # Domains that don't need CSP entries (APIs, not scripts/styles)
+          SKIP_DOMAINS="api.openrouter.ai|api.z.ai|supabase.co|localhost|127.0.0.1"
+
+          CSP=$(cat index.html 2>/dev/null || echo "")
+          MISSING=""
+
+          for DOMAIN in $NEW_DOMAINS; do
+            # Skip API domains
+            if echo "$DOMAIN" | grep -qE "$SKIP_DOMAINS"; then
+              continue
+            fi
+
+            # Check if domain is in CSP
+            if ! echo "$CSP" | grep -q "$DOMAIN"; then
+              MISSING="$MISSING\n  - $DOMAIN"
+            fi
+          done
+
+          if [ -n "$MISSING" ]; then
+            echo "::warning::New external domains may need CSP entries:"
+            echo -e "$MISSING"
+            echo ""
+            echo "If these domains serve JavaScript or CSS, add them to"
+            echo "Content-Security-Policy in index.html (script-src or style-src)"
+            echo ""
+            echo "Past regressions: 4 CSP-related issues in the last 14 days"
+          fi
+
+          echo "✅ CSP check complete"
+
+      - name: "⚠️ Warn: New Dependencies"
+        run: |
+          echo "Checking for new dependencies..."
+
+          DIFF=$(git diff origin/${{ github.base_ref || 'main' }} -- package.json || true)
+
+          # Extract newly added dependencies
+          ADDED=$(echo "$DIFF" | \
+            grep -E '^\+\s+"[@a-zA-Z]' | \
+            grep -v '"version"' | \
+            grep -v '"name"' | \
+            grep -v '"private"' | \
+            grep -v '"type"' || true)
+
+          if [ -n "$ADDED" ]; then
+            echo "::notice::New dependencies added - review for necessity:"
+            echo "$ADDED"
+            echo ""
+            echo "Questions to consider:"
+            echo "  - Is this dependency necessary or could we use existing packages?"
+            echo "  - Is it actively maintained with good security practices?"
+            echo "  - What is the bundle size impact?"
+          fi
+
+      - name: "⚠️ Warn: Potential XSS Patterns"
+        run: |
+          echo "Checking for XSS-sensitive patterns..."
+
+          DIFF=$(git diff origin/${{ github.base_ref || 'main' }} --unified=0 -- \
+            '*.ts' '*.tsx' \
+            ':!*.test.ts' ':!*.test.tsx' || true)
+
+          ADDED_LINES=$(echo "$DIFF" | grep -E "^\+" | grep -vE "^\+\+\+" || true)
+
+          # These patterns aren't always wrong but need review
+          DANGEROUS_HTML=$(echo "$ADDED_LINES" | grep -E "dangerouslySetInnerHTML" || true)
+          INNER_HTML=$(echo "$ADDED_LINES" | grep -E "\.innerHTML\s*=" || true)
+
+          if [ -n "$DANGEROUS_HTML" ] || [ -n "$INNER_HTML" ]; then
+            echo "::warning::XSS-sensitive patterns detected - ensure proper sanitization"
+
+            if [ -n "$DANGEROUS_HTML" ]; then
+              echo ""
+              echo "dangerouslySetInnerHTML usage:"
+              echo "$DANGEROUS_HTML"
+            fi
+
+            if [ -n "$INNER_HTML" ]; then
+              echo ""
+              echo "innerHTML assignment:"
+              echo "$INNER_HTML"
+            fi
+
+            echo ""
+            echo "Ensure content is sanitized with DOMPurify before rendering."
+            echo "Example: DOMPurify.sanitize(untrustedHTML)"
+          fi
+
+      - name: "⚠️ Warn: Large Change Size"
+        run: |
+          echo "Analyzing change size..."
+
+          STATS=$(git diff origin/${{ github.base_ref || 'main' }} --stat | tail -1)
+          FILES_CHANGED=$(git diff origin/${{ github.base_ref || 'main' }} --name-only | wc -l | tr -d ' ')
+
+          # Extract insertions count
+          INSERTIONS=$(echo "$STATS" | grep -oE '[0-9]+ insertion' | grep -oE '[0-9]+' || echo "0")
+          DELETIONS=$(echo "$STATS" | grep -oE '[0-9]+ deletion' | grep -oE '[0-9]+' || echo "0")
+
+          echo "Changes: +$INSERTIONS -$DELETIONS across $FILES_CHANGED files"
+
+          if [ "${INSERTIONS:-0}" -gt 1000 ]; then
+            echo "::warning::Very large PR ($INSERTIONS insertions)"
+            echo ""
+            echo "Large PRs are harder to review and more likely to contain unintended changes."
+            echo "Consider breaking into smaller, focused PRs if possible."
+          elif [ "${INSERTIONS:-0}" -gt 500 ]; then
+            echo "::notice::Large PR ($INSERTIONS insertions) - review carefully for scope creep"
+          fi
+
+      - name: "⚠️ Warn: Config File Changes"
+        run: |
+          echo "Checking for config file modifications..."
+
+          CRITICAL_CONFIGS="vite.config.ts|tsconfig.json|tailwind.config.ts|eslint.config.js|supabase/config.toml"
+
+          CHANGED=$(git diff origin/${{ github.base_ref || 'main' }} --name-only | grep -E "$CRITICAL_CONFIGS" || true)
+
+          if [ -n "$CHANGED" ]; then
+            echo "::notice::Critical config files modified:"
+            echo "$CHANGED"
+            echo ""
+            echo "Config changes can have wide-reaching effects. Review carefully."
+          fi
+
+      # ============================================================
+      # SUMMARY
+      # ============================================================
+
+      - name: Generate Summary
+        if: always()
+        run: |
+          echo "## AI Change Guardrails" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Automated checks based on past AI-generated regressions." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Category | Check | Severity |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | eval/Function/document.write | 🚫 Block |" >> $GITHUB_STEP_SUMMARY
+          echo "| React | esm.sh ?deps= pattern | 🚫 Block |" >> $GITHUB_STEP_SUMMARY
+          echo "| Database | Destructive migrations | 🚫 Block |" >> $GITHUB_STEP_SUMMARY
+          echo "| Database | SECURITY DEFINER | 🚫 Block |" >> $GITHUB_STEP_SUMMARY
+          echo "| Config | Hardcoded model names | 🚫 Block |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | CSP consistency | ⚠️ Warn |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | XSS patterns | ⚠️ Warn |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | New dependencies | ⚠️ Warn |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | Change size | ⚠️ Warn |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | Config modifications | ⚠️ Warn |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Based on analysis of 12 fix commits from the past 14 days." >> $GITHUB_STEP_SUMMARY

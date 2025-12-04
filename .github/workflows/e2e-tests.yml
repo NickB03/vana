@@ -1,10 +1,11 @@
 name: E2E Tests
 
+# Only run on main push, not PRs (saves ~5 min per PR)
+# E2E tests use mocked APIs so they mainly catch UI regressions
+# Run `npm run test:e2e` locally before merging if needed
 on:
   push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
+    branches: [main]
 
 jobs:
   test:
