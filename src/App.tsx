@@ -27,6 +27,7 @@ const DemoModeDashboard = lazy(() => import("./pages/DemoModeDashboard"));
 const DemoModeImageGeneration = lazy(() => import("./pages/DemoModeImageGeneration"));
 const UIShowcase = lazy(() => import("./pages/UIShowcase"));
 const FroggerHeroTest = lazy(() => import("./pages/FroggerHeroTest"));
+const TestSidebarStates = lazy(() => import("./pages/TestSidebarStates"));
 
 // Optimized React Query configuration for mobile
 const queryClient = new QueryClient({
@@ -76,6 +77,7 @@ const AnimatedRoutes = () => {
         <Route path="/demo-image-gen" element={<DemoModeImageGeneration />} />
         <Route path="/ui-showcase" element={<AnimatedRoute><UIShowcase /></AnimatedRoute>} />
         <Route path="/frogger-hero-test" element={<AnimatedRoute><FroggerHeroTest /></AnimatedRoute>} />
+        <Route path="/test-sidebar-states" element={<AnimatedRoute><TestSidebarStates /></AnimatedRoute>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<AnimatedRoute><NotFound /></AnimatedRoute>} />
       </Routes>
