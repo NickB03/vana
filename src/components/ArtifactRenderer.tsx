@@ -445,6 +445,7 @@ const BundledArtifactFrame = memo(({
         if (isMounted) {
           console.log('[BundledArtifactFrame] Created blob URL successfully');
           setBlobUrl(objectUrl);
+          onLoadingChange(false);
         }
       } catch (error) {
         console.error('[BundledArtifactFrame] Failed to fetch bundle:', error);
@@ -589,10 +590,12 @@ export const ArtifactRenderer = memo(({
     if (artifact.bundleUrl && currentRenderer !== 'bundle') {
       console.log('[ArtifactRenderer] bundleUrl became available, switching to bundle renderer');
       setCurrentRenderer('bundle');
-      // Reset loading state to allow BundledArtifactFrame to take over
-      onLoadingChange(true);
+      // NOTE: Don't reset isLoading here - BundledArtifactFrame will set it to true
+      // when it starts fetching (line 76). Resetting here caused a race condition where
+      // loading was set to true AFTER the 3-second timeout had already cleared it,
+      // leaving the skeleton overlay stuck on screen.
     }
-  }, [artifact.bundleUrl, currentRenderer, onLoadingChange]);
+  }, [artifact.bundleUrl, currentRenderer]);
 
   // Refs for cleanup and preventing state updates after unmount
   const recoveryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
