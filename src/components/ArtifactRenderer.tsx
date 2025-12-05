@@ -65,6 +65,9 @@ const BundledArtifactFrame = memo(({
 }: BundledArtifactFrameProps) => {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  // Track local loading state for skeleton display - independent from parent's isLoading
+  // This fixes the race condition where parent's state update lags behind our fetch completion
+  const [isFetching, setIsFetching] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -73,6 +76,7 @@ const BundledArtifactFrame = memo(({
     const fetchBundle = async () => {
       try {
         console.log('[BundledArtifactFrame] Fetching bundle from:', bundleUrl);
+        setIsFetching(true);
         onLoadingChange(true);
         setFetchError(null);
 
@@ -445,6 +449,7 @@ const BundledArtifactFrame = memo(({
         if (isMounted) {
           console.log('[BundledArtifactFrame] Created blob URL successfully');
           setBlobUrl(objectUrl);
+          setIsFetching(false);
           onLoadingChange(false);
         }
       } catch (error) {
@@ -452,6 +457,7 @@ const BundledArtifactFrame = memo(({
         if (isMounted) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to load bundle';
           setFetchError(errorMessage);
+          setIsFetching(false);
           onPreviewErrorChange(errorMessage);
           onLoadingChange(false);
           window.postMessage({ type: 'artifact-rendered-complete', success: false, error: errorMessage }, '*');
@@ -473,12 +479,13 @@ const BundledArtifactFrame = memo(({
   return (
     <div className="w-full h-full relative flex flex-col">
       <div className="flex-1 relative">
-        {(isLoading || !blobUrl) && !fetchError && (
+        {/* Use local isFetching state for skeleton to avoid race conditions with parent state */}
+        {isFetching && !fetchError && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-20">
             <ArtifactSkeleton type="react" />
           </div>
         )}
-        {(previewError || fetchError) && !isLoading && (
+        {(previewError || fetchError) && !isFetching && (
           <div className="absolute top-2 left-2 right-2 bg-destructive/10 border border-destructive text-destructive text-xs p-3 rounded z-10 flex flex-col gap-2">
             <div className="flex items-start gap-2">
               <span className="font-semibold shrink-0">⚠️ Bundle Error:</span>
