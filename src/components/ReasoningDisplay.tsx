@@ -25,6 +25,10 @@ interface ReasoningDisplayProps {
   isStreaming?: boolean;
   /** Whether the artifact has finished rendering (optional, defaults to true) */
   artifactRendered?: boolean;
+  /** Optional callback to stop the streaming process */
+  onStop?: () => void;
+  /** Elapsed time passed from parent (for cross-component persistence) */
+  parentElapsedTime?: string;
 }
 
 /**
@@ -70,6 +74,8 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   reasoningStatus,
   isStreaming,
   artifactRendered = true, // Default to true for backward compatibility
+  onStop,
+  parentElapsedTime,
 }: ReasoningDisplayProps) {
   // Expand/collapse state
   const [isExpanded, setIsExpanded] = useState(false);
@@ -86,6 +92,8 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
 
   // Timer for reasoning duration (Claude-style)
   const elapsedTime = useReasoningTimer(isStreaming ?? false);
+  // Track the last valid elapsed time (before it resets to empty)
+  const lastElapsedTimeRef = useRef<string>("");
   // Track the previous step count to detect new steps arriving
   const prevStepCountRef = useRef(0);
   // State for the reasoning text extractor (throttling, last valid text, etc.)
@@ -147,28 +155,41 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
     };
   }, [clearTimeouts]);
 
-  // Reset state when starting a NEW streaming session
+  // Continuously track the last non-empty elapsed time while streaming
+  // This is crucial because elapsedTime may become empty before we can capture it in the transition effect
   useEffect(() => {
+    if (isStreaming && elapsedTime) {
+      lastElapsedTimeRef.current = elapsedTime;
+    }
+  }, [isStreaming, elapsedTime]);
+
+  // Reset state when starting a NEW streaming session AND capture final time when ending
+  useEffect(() => {
+    if (!isStreaming && wasStreamingRef.current) {
+      // Just stopped streaming - capture the final time
+      // Use lastElapsedTimeRef as fallback if elapsedTime is already empty
+      const timeToCapture = elapsedTime || lastElapsedTimeRef.current;
+      if (timeToCapture) {
+        setFinalElapsedTime(timeToCapture);
+      }
+    }
+
     if (isStreaming && !wasStreamingRef.current) {
       // Just started streaming - reset to initial state
       setCurrentSectionIndex(0);
       setIsTransitioning(false);
       setIsExpanded(false);
       setFinalElapsedTime("");
+      lastElapsedTimeRef.current = "";
       clearTimeouts();
       prevStepCountRef.current = 0;
       // Reset the extraction state for new streaming session
       extractionStateRef.current = createExtractionState();
     }
-    wasStreamingRef.current = isStreaming ?? false;
-  }, [isStreaming, clearTimeouts]);
 
-  // Capture final elapsed time when streaming ends
-  useEffect(() => {
-    if (!isStreaming && wasStreamingRef.current && elapsedTime) {
-      setFinalElapsedTime(elapsedTime);
-    }
-  }, [isStreaming, elapsedTime]);
+    // Update ref AFTER all checks
+    wasStreamingRef.current = isStreaming ?? false;
+  }, [isStreaming, elapsedTime, clearTimeouts]);
 
   // Handle streaming end - show final state
   useEffect(() => {
@@ -301,7 +322,8 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   const showExpandButton = hasContent || isStreaming;
 
   // Get timer display value (shows during streaming AND after completion)
-  const timerValue = isStreaming ? elapsedTime : finalElapsedTime;
+  // Priority: parentElapsedTime > local timer values (handles component unmount/remount)
+  const timerValue = parentElapsedTime || (isStreaming ? elapsedTime : finalElapsedTime);
   const showTimer = Boolean(timerValue);
 
   return (
@@ -312,7 +334,9 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
           "flex w-full cursor-pointer items-center justify-between gap-2",
           "rounded-2xl border",
           "px-3 py-2 text-left",
-          "transition-all duration-300",
+          // Use specific transitions instead of transition-all for better performance
+          // Only animate properties that actually change (background, border)
+          "transition-colors duration-300",
           // CRITICAL: Background changes when expanded (like Claude screenshots)
           isExpanded && !isStreaming
             ? "bg-muted/30 border-border/60"
@@ -395,8 +419,11 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
       <div
         id="reasoning-expanded-content"
         className={cn(
-          "overflow-hidden transition-all duration-300",
-          isExpanded ? "max-h-[60vh] opacity-100 mt-2" : "max-h-0 opacity-0"
+          // Animate max-height and opacity for expand/collapse
+          // Using GPU-accelerated opacity + max-height for smooth animation
+          "overflow-hidden",
+          "transition-[max-height,opacity,margin] duration-300 ease-out",
+          isExpanded ? "max-h-[60vh] opacity-100 mt-2" : "max-h-0 opacity-0 mt-0"
         )}
         aria-hidden={!isExpanded}
       >

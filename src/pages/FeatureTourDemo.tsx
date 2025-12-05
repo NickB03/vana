@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,61 +6,357 @@ import {
   PromptInput,
   PromptInputTextarea
 } from "@/components/prompt-kit/prompt-input";
+import { PromptInputControls } from "@/components/prompt-kit/prompt-input-controls";
 import {
   Sparkles,
-  Play,
-  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  MessageSquare,
   Image as ImageIcon,
   Wand2,
+  History,
+  RotateCcw,
+  Play
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { InteractiveOnboardingChecklist, Step } from "@/components/ui/onboarding-checklist";
+import { motion, AnimatePresence } from "motion/react";
 
 /**
  * Feature Tour Demo Page
  *
- * Demonstrates the onboarding checklist component for new users.
- * Uses the shadcn onboarding-checklist component from 21st.dev.
+ * Demonstrates the onboarding feature tour UX pattern for new users.
+ * Shows how tooltips/spotlights guide users through the main UI elements.
  */
 
-const onboardingSteps: Step[] = [
+interface TourStep {
+  id: string;
+  target: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  position: "top" | "bottom" | "left" | "right";
+}
+
+const tourSteps: TourStep[] = [
   {
     id: "chat-input",
+    target: "#demo-chat-input",
     title: "Start Chatting",
     description: "Type anything here to chat with Vana. Ask questions, get help with code, or request creative content.",
-    targetSelector: "#demo-chat-input",
+    icon: <MessageSquare className="h-5 w-5" />,
+    position: "top"
   },
   {
     id: "image-mode",
+    target: "#demo-image-mode",
     title: "Generate Images",
     description: "Enable Image Mode to create AI-generated images from your text descriptions.",
-    targetSelector: "#demo-image-mode",
+    icon: <ImageIcon className="h-5 w-5" />,
+    position: "top"
   },
   {
     id: "artifact-mode",
+    target: "#demo-artifact-mode",
     title: "Create Artifacts",
     description: "Artifact Mode generates interactive React components, games, dashboards, and more.",
-    targetSelector: "#demo-artifact-mode",
+    icon: <Wand2 className="h-5 w-5" />,
+    position: "top"
   },
   {
     id: "suggestions",
+    target: "#demo-suggestions",
     title: "Quick Ideas",
     description: "Choose from pre-built suggestions to see what Vana can do instantly.",
-    targetSelector: "#demo-suggestions",
+    icon: <Sparkles className="h-5 w-5" />,
+    position: "top"
   },
   {
     id: "sidebar",
+    target: "#demo-sidebar",
     title: "Chat History",
     description: "Access your previous conversations here. All chats are saved automatically.",
-    targetSelector: "#demo-sidebar",
+    icon: <History className="h-5 w-5" />,
+    position: "right"
   }
 ];
 
+// Spotlight overlay component with enhanced visuals
+const SpotlightOverlay = ({
+  targetRect,
+  isVisible
+}: {
+  targetRect: DOMRect | null;
+  isVisible: boolean;
+}) => {
+  if (!isVisible || !targetRect) return null;
+
+  // Create a mask that highlights the target element
+  const padding = 12;
+  const borderRadius = 16;
+
+  return (
+    <div className="fixed inset-0 z-40 pointer-events-none">
+      {/* Backdrop with gradient overlay */}
+      <svg className="w-full h-full">
+        <defs>
+          {/* Radial gradient for spotlight glow */}
+          <radialGradient id="spotlight-glow" cx="50%" cy="50%">
+            <stop offset="0%" stopColor="rgba(0, 0, 0, 0.6)" />
+            <stop offset="100%" stopColor="rgba(0, 0, 0, 0.85)" />
+          </radialGradient>
+
+          {/* Mask for spotlight cutout */}
+          <mask id="spotlight-mask">
+            {/* White background (visible area) */}
+            <rect width="100%" height="100%" fill="white" />
+            {/* Black rectangle (cut out / transparent area) with larger border radius */}
+            <rect
+              x={targetRect.left - padding}
+              y={targetRect.top - padding}
+              width={targetRect.width + padding * 2}
+              height={targetRect.height + padding * 2}
+              rx={borderRadius}
+              ry={borderRadius}
+              fill="black"
+            />
+          </mask>
+        </defs>
+        {/* Dark overlay with mask and gradient applied */}
+        <rect
+          width="100%"
+          height="100%"
+          fill="url(#spotlight-glow)"
+          mask="url(#spotlight-mask)"
+        />
+      </svg>
+
+      {/* Animated highlight ring with gradient border */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="absolute rounded-2xl"
+        style={{
+          left: targetRect.left - padding,
+          top: targetRect.top - padding,
+          width: targetRect.width + padding * 2,
+          height: targetRect.height + padding * 2,
+        }}
+      >
+        {/* Outer glow */}
+        <div
+          className="absolute inset-0 rounded-2xl animate-pulse"
+          style={{
+            background: 'linear-gradient(135deg, hsl(var(--accent-primary) / 0.4), hsl(var(--accent-primary-bright) / 0.4))',
+            filter: 'blur(12px)',
+          }}
+        />
+
+        {/* Border ring with gradient */}
+        <div
+          className="absolute inset-0 rounded-2xl border-2"
+          style={{
+            borderImage: 'linear-gradient(135deg, hsl(var(--accent-primary)), hsl(var(--accent-primary-bright))) 1',
+            boxShadow: `
+              0 0 0 1px hsl(var(--accent-primary) / 0.3),
+              0 0 20px hsl(var(--accent-primary) / 0.4),
+              0 0 40px hsl(var(--accent-primary) / 0.2)
+            `
+          }}
+        />
+      </motion.div>
+    </div>
+  );
+};
+
+// Tour tooltip component
+const TourTooltip = ({
+  step,
+  currentStep,
+  totalSteps,
+  targetRect,
+  onNext,
+  onPrev,
+  onSkip,
+  onComplete
+}: {
+  step: TourStep;
+  currentStep: number;
+  totalSteps: number;
+  targetRect: DOMRect | null;
+  onNext: () => void;
+  onPrev: () => void;
+  onSkip: () => void;
+  onComplete: () => void;
+}) => {
+  if (!targetRect) return null;
+
+  const isLastStep = currentStep === totalSteps - 1;
+  const isFirstStep = currentStep === 0;
+
+  // Calculate tooltip position
+  const getTooltipStyle = () => {
+    const tooltipWidth = 320;
+    const tooltipHeight = 180;
+    const gap = 16;
+
+    let left = targetRect.left + targetRect.width / 2 - tooltipWidth / 2;
+    let top = targetRect.bottom + gap;
+
+    // Position based on step preference
+    switch (step.position) {
+      case "top":
+        top = targetRect.top - tooltipHeight - gap;
+        break;
+      case "bottom":
+        top = targetRect.bottom + gap;
+        break;
+      case "left":
+        left = targetRect.left - tooltipWidth - gap;
+        top = targetRect.top + targetRect.height / 2 - tooltipHeight / 2;
+        break;
+      case "right":
+        left = targetRect.right + gap;
+        top = targetRect.top + targetRect.height / 2 - tooltipHeight / 2;
+        break;
+    }
+
+    // Keep tooltip within viewport
+    left = Math.max(16, Math.min(left, window.innerWidth - tooltipWidth - 16));
+    top = Math.max(16, Math.min(top, window.innerHeight - tooltipHeight - 16));
+
+    return { left, top, width: tooltipWidth };
+  };
+
+  const style = getTooltipStyle();
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      className="fixed z-50 pointer-events-auto"
+      style={style}
+    >
+      <Card className="bg-card/95 backdrop-blur-xl border-border shadow-2xl relative overflow-hidden">
+        {/* Gradient accent bar at top */}
+        <div
+          className="absolute top-0 left-0 right-0 h-1"
+          style={{
+            background: 'linear-gradient(90deg, hsl(var(--accent-primary)), hsl(var(--accent-primary-bright)))',
+          }}
+        />
+
+        <CardContent className="p-5">
+          {/* Header with icon and title */}
+          <div className="flex items-start gap-3 mb-4">
+            {/* Icon with gradient background */}
+            <div
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl relative overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, hsl(var(--accent-primary) / 0.15), hsl(var(--accent-primary-bright) / 0.15))',
+                border: '1px solid hsl(var(--accent-primary) / 0.2)'
+              }}
+            >
+              <div style={{ color: 'hsl(var(--accent-primary))' }}>
+                {step.icon}
+              </div>
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-foreground text-base mb-1.5">
+                {step.title}
+              </h3>
+              <p className="text-sm text-muted-foreground-accessible leading-relaxed">
+                {step.description}
+              </p>
+            </div>
+          </div>
+
+          {/* Footer with navigation */}
+          <div className="flex items-center justify-between mt-5 pt-4 border-t border-border/50">
+            {/* Skip link */}
+            <button
+              onClick={onSkip}
+              className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Skip tour
+            </button>
+
+            {/* Progress and navigation */}
+            <div className="flex items-center gap-3">
+              {/* Progress dots */}
+              <div className="flex gap-1.5 mr-1">
+                {Array.from({ length: totalSteps }).map((_, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ scale: 0.8 }}
+                    animate={{ scale: i === currentStep ? 1 : 0.8 }}
+                    className={cn(
+                      "rounded-full transition-all duration-300",
+                      i === currentStep
+                        ? "w-6 h-2"
+                        : "w-2 h-2"
+                    )}
+                    style={{
+                      background: i === currentStep
+                        ? 'linear-gradient(90deg, hsl(var(--accent-primary)), hsl(var(--accent-primary-bright)))'
+                        : 'hsl(var(--muted-foreground) / 0.25)'
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* Previous button */}
+              {!isFirstStep && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onPrev}
+                  className="h-8 w-8 p-0 hover:bg-accent/50"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              )}
+
+              {/* Next/Complete button with gradient */}
+              <Button
+                size="sm"
+                onClick={isLastStep ? onComplete : onNext}
+                className="h-8 gap-1.5 font-medium px-4 border-0 shadow-lg"
+                style={{
+                  background: 'linear-gradient(135deg, hsl(var(--accent-primary)), hsl(var(--accent-primary-bright)))',
+                  boxShadow: '0 4px 12px hsl(var(--accent-primary) / 0.3)',
+                  color: 'white'
+                }}
+              >
+                {isLastStep ? (
+                  "Get Started"
+                ) : (
+                  <>
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+};
+
 // Mock chat sidebar for demo
-const MockSidebar = () => (
+const MockSidebar = ({ isHighlighted }: { isHighlighted: boolean }) => (
   <div
     id="demo-sidebar"
-    className="w-64 bg-black/50 border-r border-border/50 p-4 flex flex-col gap-2"
+    className={cn(
+      "w-64 bg-black/50 border-r border-border/50 p-4 flex flex-col gap-2",
+      isHighlighted && "relative z-50"
+    )}
   >
     <div className="text-sm font-medium text-muted-foreground mb-2">Recent Chats</div>
     {["Build a todo app", "Help with React hooks", "Explain TypeScript generics"].map((title, i) => (
@@ -75,10 +371,13 @@ const MockSidebar = () => (
 );
 
 // Mock suggestion cards
-const MockSuggestions = () => (
+const MockSuggestions = ({ isHighlighted }: { isHighlighted: boolean }) => (
   <div
     id="demo-suggestions"
-    className="flex gap-3 overflow-x-auto pb-2"
+    className={cn(
+      "flex gap-3 overflow-x-auto pb-2",
+      isHighlighted && "relative z-50"
+    )}
   >
     {[
       { title: "Build a Game", emoji: "🎮" },
@@ -100,30 +399,60 @@ const MockSuggestions = () => (
 );
 
 export default function FeatureTourDemo() {
-  const [isChecklistOpen, setIsChecklistOpen] = useState(false);
-  const [completedSteps, setCompletedSteps] = useState<string[]>([]);
+  const [isTourActive, setIsTourActive] = useState(false);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [input, setInput] = useState("");
   const [imageMode, setImageMode] = useState(false);
   const [artifactMode, setArtifactMode] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const stepsWithCompletion = onboardingSteps.map(step => ({
-    ...step,
-    completed: completedSteps.includes(step.id)
-  }));
+  const currentStep = tourSteps[currentStepIndex];
 
-  const handleCompleteStep = (stepId: string) => {
-    if (!completedSteps.includes(stepId)) {
-      setCompletedSteps(prev => [...prev, stepId]);
+  // Update target element rect when step changes
+  useEffect(() => {
+    if (!isTourActive) {
+      setTargetRect(null);
+      return;
+    }
+
+    const updateRect = () => {
+      const element = document.querySelector(currentStep.target);
+      if (element) {
+        setTargetRect(element.getBoundingClientRect());
+      }
+    };
+
+    updateRect();
+    window.addEventListener("resize", updateRect);
+    window.addEventListener("scroll", updateRect);
+
+    return () => {
+      window.removeEventListener("resize", updateRect);
+      window.removeEventListener("scroll", updateRect);
+    };
+  }, [isTourActive, currentStep?.target]);
+
+  const startTour = () => {
+    setCurrentStepIndex(0);
+    setIsTourActive(true);
+  };
+
+  const endTour = () => {
+    setIsTourActive(false);
+    setCurrentStepIndex(0);
+  };
+
+  const nextStep = () => {
+    if (currentStepIndex < tourSteps.length - 1) {
+      setCurrentStepIndex(prev => prev + 1);
     }
   };
 
-  const handleFinish = () => {
-    setIsChecklistOpen(false);
-  };
-
-  const resetDemo = () => {
-    setCompletedSteps([]);
-    setIsChecklistOpen(false);
+  const prevStep = () => {
+    if (currentStepIndex > 0) {
+      setCurrentStepIndex(prev => prev - 1);
+    }
   };
 
   return (
@@ -135,29 +464,27 @@ export default function FeatureTourDemo() {
             <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
               Demo
             </Badge>
-            <h1 className="text-lg font-semibold">Onboarding Checklist Preview</h1>
+            <h1 className="text-lg font-semibold">Feature Tour Preview</h1>
           </div>
           <div className="flex items-center gap-2">
-            {completedSteps.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={resetDemo}
-                className="gap-2"
-              >
-                <RotateCcw className="h-4 w-4" />
-                Reset
-              </Button>
-            )}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setIsChecklistOpen(true)}
+              onClick={startTour}
               className="gap-2"
             >
               <Play className="h-4 w-4" />
-              {isChecklistOpen ? "Checklist Open" : "Start Onboarding"}
+              {isTourActive ? "Restart Tour" : "Start Tour"}
             </Button>
+            {isTourActive && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={endTour}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -165,7 +492,7 @@ export default function FeatureTourDemo() {
       {/* Main demo area */}
       <div className="flex h-[calc(100vh-57px)]">
         {/* Mock sidebar */}
-        <MockSidebar />
+        <MockSidebar isHighlighted={isTourActive && currentStep?.id === "sidebar"} />
 
         {/* Main content */}
         <div className="flex-1 flex flex-col p-6">
@@ -183,11 +510,17 @@ export default function FeatureTourDemo() {
 
             {/* Suggestion cards */}
             <div className="w-full mb-6">
-              <MockSuggestions />
+              <MockSuggestions isHighlighted={isTourActive && currentStep?.id === "suggestions"} />
             </div>
 
             {/* Chat input */}
-            <div id="demo-chat-input" className="w-full">
+            <div
+              id="demo-chat-input"
+              className={cn(
+                "w-full",
+                isTourActive && currentStep?.id === "chat-input" && "relative z-50"
+              )}
+            >
               <PromptInput
                 value={input}
                 onValueChange={setInput}
@@ -203,7 +536,12 @@ export default function FeatureTourDemo() {
                   <div className="flex items-center justify-between px-3 pb-3 mt-5">
                     {/* Left controls with IDs for targeting */}
                     <div className="flex items-center gap-2">
-                      <div id="demo-image-mode">
+                      <div
+                        id="demo-image-mode"
+                        className={cn(
+                          isTourActive && currentStep?.id === "image-mode" && "relative z-50"
+                        )}
+                      >
                         <Button
                           variant="ghost"
                           size="icon"
@@ -218,7 +556,12 @@ export default function FeatureTourDemo() {
                           <ImageIcon className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div id="demo-artifact-mode">
+                      <div
+                        id="demo-artifact-mode"
+                        className={cn(
+                          isTourActive && currentStep?.id === "artifact-mode" && "relative z-50"
+                        )}
+                      >
                         <Button
                           variant="ghost"
                           size="icon"
@@ -244,7 +587,7 @@ export default function FeatureTourDemo() {
                         boxShadow: '0 4px 14px hsl(var(--accent-primary) / 0.4)',
                       }}
                     >
-                      <Sparkles className="h-4 w-4 text-white" />
+                      <ChevronRight className="h-4 w-4 text-white" />
                     </Button>
                   </div>
                 </div>
@@ -258,10 +601,10 @@ export default function FeatureTourDemo() {
               <div className="flex items-start gap-3">
                 <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                 <div>
-                  <h3 className="font-medium text-sm mb-1">Onboarding Checklist Demo</h3>
+                  <h3 className="font-medium text-sm mb-1">Feature Tour Demo</h3>
                   <p className="text-sm text-muted-foreground">
-                    Click "Start Onboarding" to see the checklist panel. Click on each step to highlight
-                    the corresponding UI element. Complete steps by pressing Enter or clicking the element.
+                    Click "Start Tour" above to see how the onboarding experience would look for new users.
+                    The tour highlights key UI elements with contextual tooltips.
                   </p>
                 </div>
               </div>
@@ -270,14 +613,27 @@ export default function FeatureTourDemo() {
         </div>
       </div>
 
-      {/* Onboarding Checklist Component */}
-      <InteractiveOnboardingChecklist
-        steps={stepsWithCompletion}
-        open={isChecklistOpen}
-        onOpenChange={setIsChecklistOpen}
-        onCompleteStep={handleCompleteStep}
-        onFinish={handleFinish}
-      />
+      {/* Tour overlay and tooltip */}
+      <AnimatePresence>
+        {isTourActive && (
+          <>
+            <SpotlightOverlay
+              targetRect={targetRect}
+              isVisible={isTourActive}
+            />
+            <TourTooltip
+              step={currentStep}
+              currentStep={currentStepIndex}
+              totalSteps={tourSteps.length}
+              targetRect={targetRect}
+              onNext={nextStep}
+              onPrev={prevStep}
+              onSkip={endTour}
+              onComplete={endTour}
+            />
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

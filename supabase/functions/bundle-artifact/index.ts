@@ -5,6 +5,8 @@ import { ErrorResponseBuilder } from "../_shared/error-handler.ts";
 import { RATE_LIMITS } from "../_shared/config.ts";
 import { uploadWithRetry } from "../_shared/storage-retry.ts";
 import { fixOrphanedMethodChains } from "../_shared/artifact-validator.ts";
+import { getPrebuiltBundles } from "../_shared/prebuilt-bundles.ts";
+import { getWorkingCdnUrl, CDN_PROVIDERS } from "../_shared/cdn-fallback.ts";
 
 /**
  * Bundle Artifact Edge Function
@@ -13,9 +15,10 @@ import { fixOrphanedMethodChains } from "../_shared/artifact-validator.ts";
  *
  * Features:
  * - Server-side bundling with Deno native bundler (uses esbuild internally, 10x faster than WASM)
- * - npm dependency support via ESM CDN (esm.sh)
+ * - npm dependency support via multi-CDN fallback (esm.sh → esm.run → jsdelivr)
+ * - Automatic CDN health verification with 3s timeout per provider
  * - Standalone HTML generation with embedded scripts
- * - Supabase Storage integration with signed URLs (1-hour expiry)
+ * - Supabase Storage integration with signed URLs (4-week expiry)
  * - Authentication required (expensive operation, prevents abuse)
  * - Rate limiting (50 requests/5h for authenticated users)
  * - Comprehensive error handling with automatic temp directory cleanup
@@ -37,7 +40,7 @@ interface BundleRequest {
 
 interface BundleResponse {
   success: true;
-  bundleUrl: string;      // Signed URL (1-hour expiry)
+  bundleUrl: string;      // Signed URL (4-week expiry)
   bundleSize: number;     // Total HTML size in bytes
   bundleTime: number;     // Bundling time in milliseconds
   dependencies: string[]; // List of bundled dependencies
@@ -59,6 +62,11 @@ const REACT_SHIM = 'data:text/javascript,if(!window.React){throw new Error("Reac
 const REACT_DOM_SHIM = 'data:text/javascript,if(!window.ReactDOM){throw new Error("ReactDOM failed to load. Please refresh the page.")}const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync,findDOMNode,unmountComponentAtNode,render,hydrate}=D;';
 const REACT_DOM_CLIENT_SHIM = 'data:text/javascript,if(!window.ReactDOM){throw new Error("ReactDOM failed to load. Please refresh the page.")}const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync}=D;';
 const JSX_RUNTIME_SHIM = 'data:text/javascript,if(!window.React){throw new Error("React failed to load (jsx-runtime). Please refresh the page.")}const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};';
+
+// Framer Motion shim - redirects ESM imports to window.Motion loaded via UMD
+// This avoids the esm.sh import which has issues with Safari's import map resolution
+// The UMD build exposes: motion, AnimatePresence, useAnimation, useMotionValue, etc.
+const FRAMER_MOTION_SHIM = 'data:text/javascript,if(!window.Motion){throw new Error("Framer Motion failed to load. Please refresh the page.")}const M=window.Motion;export default M;export const{motion,AnimatePresence,useAnimation,useMotionValue,useTransform,useSpring,useScroll,useInView,useDragControls,useAnimationControls,useReducedMotion,useMotionTemplate,animate,stagger,delay,spring,easeIn,easeOut,easeInOut,circIn,circOut,circInOut,backIn,backOut,backInOut,anticipate,cubicBezier,MotionConfig,LazyMotion,domAnimation,domMax,m}=M;';
 
 /**
  * Generate esm.sh CDN URL for a package with React externalized.
@@ -472,12 +480,44 @@ serve(async (req) => {
       // JSX runtime shims for modern JSX transform (React 17+)
       'react/jsx-runtime': JSX_RUNTIME_SHIM,
       'react/jsx-dev-runtime': JSX_RUNTIME_SHIM,
+      // Framer Motion shim - avoids esm.sh import issues with Safari's import map resolution
+      // The UMD is already loaded via <script> tag, so we just redirect to window.Motion
+      'framer-motion': FRAMER_MOTION_SHIM,
     };
 
-    // Add npm dependencies to import map
-    for (const [pkg, version] of Object.entries(dependencies)) {
-      if (pkg === 'react' || pkg === 'react-dom') continue;
-      browserImportMap[pkg] = buildEsmUrl(pkg, version);
+    // Check for prebuilt bundles - these use ?bundle for faster loading
+    // Prebuilt packages get single-file bundles, remaining get standard ESM URLs
+    const { prebuilt, remaining, stats: prebuiltStats } = getPrebuiltBundles(dependencies);
+
+    if (prebuiltStats.prebuiltCount > 0) {
+      console.log(
+        `[${requestId}] Using ${prebuiltStats.prebuiltCount} prebuilt bundles:`,
+        prebuilt.map(p => p.name).join(', '),
+        `(~${prebuiltStats.estimatedSavingsMs}ms savings)`
+      );
+    }
+
+    // Add prebuilt packages with ?bundle URLs (faster, single-file bundles)
+    for (const pkg of prebuilt) {
+      browserImportMap[pkg.name] = pkg.bundleUrl;
+    }
+
+    // Add remaining npm dependencies with CDN fallback
+    // Skip packages that have UMD shims (react, react-dom, framer-motion)
+    for (const [pkg, version] of Object.entries(remaining)) {
+      if (pkg === 'react' || pkg === 'react-dom' || pkg === 'framer-motion') continue;
+
+      // Try to get working CDN URL with fallback chain
+      const cdnResult = await getWorkingCdnUrl(pkg, version, requestId);
+      if (cdnResult) {
+        browserImportMap[pkg] = cdnResult.url;
+        console.log(`[${requestId}] Using ${cdnResult.provider} for ${pkg}@${version}`);
+      } else {
+        // Last resort: use primary CDN (esm.sh) anyway and hope for the best
+        // The browser will handle the failure if it's still unavailable at runtime
+        console.warn(`[${requestId}] No CDN available for ${pkg}@${version}, using esm.sh as fallback`);
+        browserImportMap[pkg] = buildEsmUrl(pkg, version);
+      }
     }
 
     const importMapJson = JSON.stringify({ imports: browserImportMap }, null, 2);
@@ -513,10 +553,10 @@ serve(async (req) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self';
-                 script-src 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://esm.sh blob: data:;
+                 script-src 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://esm.sh https://esm.run https://cdn.jsdelivr.net blob: data:;
                  style-src 'unsafe-inline' https://cdn.tailwindcss.com;
                  img-src 'self' data: https:;
-                 connect-src 'self' https://esm.sh https://*.esm.sh;">
+                 connect-src 'self' https://esm.sh https://*.esm.sh https://esm.run https://cdn.jsdelivr.net;">
   <title>${sanitizedTitle}</title>
 
   <!-- React/ReactDOM UMD globals (CRITICAL: Must load before component) -->
@@ -696,7 +736,7 @@ ${importMapJson}
 
     // 10. Upload to Supabase Storage with retry logic
     const storagePath = `${sessionId}/${artifactId}/bundle.html`;
-    const expiresIn = 3600; // 1 hour in seconds
+    const expiresIn = 2419200; // 4 weeks in seconds (28 * 24 * 60 * 60) - extended for demo site UX
 
     let uploadResult;
     try {

@@ -14,17 +14,19 @@ export function useReasoningTimer(isActive: boolean): string {
 
   useEffect(() => {
     if (!isActive) {
-      // Timer stopped - clear interval but preserve displayed value
+      // Timer stopped - clear interval but PRESERVE displayed value
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      // DON'T reset elapsedSeconds - keep the final time displayed
       // Reset start time so next activation starts fresh
       startTimeRef.current = null;
       return;
     }
 
-    // Start new timer session - always reset when becoming active
+    // Start new timer session - reset to 0 when becoming active
+    // This happens when isActive changes from false to true
     startTimeRef.current = Date.now();
     setElapsedSeconds(0);
 

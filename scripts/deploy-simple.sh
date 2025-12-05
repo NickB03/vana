@@ -8,7 +8,7 @@ trap 'echo -e "${NC}"' EXIT ERR  # Reset terminal color on exit/error
 ENV=$1
 
 # Configuration (use environment variables with fallbacks)
-STAGING_REF="${STAGING_REF:-<YOUR-STAGING-REF>}"
+STAGING_REF="${STAGING_REF:-tkqubuaqzqjvrcnlipts}"
 PROD_REF="${SUPABASE_PRODUCTION_REF:-vznhbocnuykdmjvujaka}"
 
 # Colors

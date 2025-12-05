@@ -507,6 +507,124 @@ export function fixOrphanedMethodChains(
 }
 
 /**
+ * Pre-validation and fixing result interface
+ */
+export interface PreValidationResult {
+  fixed: string;
+  issues: Array<{ type: string; original: string; fixed: string }>;
+  isValid: boolean;
+}
+
+/**
+ * Pre-validate and fix common GLM syntax issues before client receives code.
+ * This catches issues that would cause bundling/rendering failures.
+ *
+ * This is the SINGLE SOURCE OF TRUTH for GLM syntax fixes - consolidates fixes
+ * that were previously scattered across bundle-artifact and ArtifactRenderer.
+ *
+ * @param code - The artifact code to validate and fix
+ * @param requestId - Optional request ID for logging
+ * @returns Fixed code, list of issues found, and validation status
+ */
+export function preValidateAndFixGlmSyntax(
+  code: string,
+  requestId?: string
+): PreValidationResult {
+  const issues: Array<{ type: string; original: string; fixed: string }> = [];
+  let fixed = code;
+
+  // 1. Fix "const * as X from 'pkg'" -> "import * as X from 'pkg'"
+  // GLM generates this invalid hybrid syntax that Babel/bundlers can't parse
+  const constStarPattern = /^(\s*)const\s*\*\s*as\s+(\w+)\s+from\s+(['"][^'"]+['"])\s*;?\s*$/gm;
+  fixed = fixed.replace(constStarPattern, (match, indent, name, pkg) => {
+    const replacement = `${indent}import * as ${name} from ${pkg};`;
+    issues.push({
+      type: 'const-star-import',
+      original: match.trim(),
+      fixed: replacement.trim()
+    });
+    return replacement;
+  });
+
+  // 2. Fix unquoted package names: "from React;" -> "from 'react';"
+  // GLM sometimes generates imports without quotes around the package name
+  const unquotedPatterns = [
+    { pattern: /from\s+React\s*;/g, replacement: "from 'react';", pkg: 'React' },
+    { pattern: /from\s+ReactDOM\s*;/g, replacement: "from 'react-dom';", pkg: 'ReactDOM' },
+  ];
+
+  for (const { pattern, replacement, pkg } of unquotedPatterns) {
+    if (pattern.test(fixed)) {
+      const matches = fixed.match(pattern);
+      if (matches) {
+        issues.push({
+          type: 'unquoted-import',
+          original: `from ${pkg};`,
+          fixed: replacement
+        });
+        fixed = fixed.replace(pattern, replacement);
+      }
+    }
+  }
+
+  // 3. Strip duplicate React hook destructuring (hooks are UMD globals)
+  // Pattern: const { useState, useEffect, ... } = React;
+  const hookDestructuring = /^(\s*)const\s*\{[^}]*(?:useState|useEffect|useReducer|useRef|useMemo|useCallback|useContext|useLayoutEffect)[^}]*\}\s*=\s*React;?\s*$/gm;
+  fixed = fixed.replace(hookDestructuring, (match) => {
+    issues.push({
+      type: 'duplicate-hook-destructure',
+      original: match.trim(),
+      fixed: '// (removed duplicate - hooks are UMD globals)'
+    });
+    return '';
+  });
+
+  // 4. Strip duplicate Framer Motion destructuring (already imported via esm.sh)
+  // Pattern: const { motion, AnimatePresence } = Motion;
+  const motionDestructuring = /^(\s*)const\s*\{\s*motion\s*,?\s*AnimatePresence\s*,?\s*\}\s*=\s*(?:Motion|FramerMotion|window\.Motion);?\s*$/gm;
+  fixed = fixed.replace(motionDestructuring, (match) => {
+    issues.push({
+      type: 'duplicate-motion-destructure',
+      original: match.trim(),
+      fixed: '// (removed duplicate - Motion is esm.sh import)'
+    });
+    return '';
+  });
+
+  // 5. Fix orphaned method chains (existing function)
+  // GLM bug: statement ends prematurely, method chain continues on next line
+  const chainResult = fixOrphanedMethodChains(fixed, requestId);
+  if (chainResult.changes.length > 0) {
+    fixed = chainResult.fixed;
+    for (const change of chainResult.changes) {
+      issues.push({
+        type: 'orphaned-chain',
+        original: change,
+        fixed: change.replace('Fixed orphaned method chain: ', 'Reconnected: ')
+      });
+    }
+  }
+
+  // 6. Validate basic structure
+  // React artifacts should have at least an export and a function/component
+  const hasExport = /export\s+default/.test(fixed) || /export\s+\{[^}]*default/.test(fixed);
+  const hasFunction = /function\s+\w+|const\s+\w+\s*=/.test(fixed);
+  const isValid = hasExport && hasFunction;
+
+  if (issues.length > 0 && requestId) {
+    console.log(`[${requestId}] Pre-validation fixed ${issues.length} GLM syntax issue(s):`,
+      issues.map(i => i.type).join(', ')
+    );
+  }
+
+  if (!isValid && requestId) {
+    console.warn(`[${requestId}] Pre-validation warning: artifact may have structural issues (missing export or function)`);
+  }
+
+  return { fixed, issues, isValid };
+}
+
+/**
  * Main validation function - checks artifact code for common issues
  */
 export function validateArtifactCode(code: string, artifactType: string = 'react'): ValidationResult {

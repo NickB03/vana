@@ -1,0 +1,263 @@
+{
+  "version": "2.0.0",
+  "generated": "2025-12-04T00:00:00.000Z",
+  "packages": [
+    {
+      "name": "date-fns",
+      "version": "4.1.0",
+      "compatibleVersions": [
+        "^4.0.0"
+      ],
+      "esmUrl": "https://esm.sh/date-fns@4.1.0?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/date-fns@4.1.0?bundle&external=react,react-dom",
+      "size": 115,
+      "fetchTime": 58
+    },
+    {
+      "name": "clsx",
+      "version": "2.1.1",
+      "compatibleVersions": [
+        "^2.0.0",
+        "^1.0.0"
+      ],
+      "esmUrl": "https://esm.sh/clsx@2.1.1?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/clsx@2.1.1?bundle&external=react,react-dom",
+      "size": 190,
+      "fetchTime": 14
+    },
+    {
+      "name": "class-variance-authority",
+      "version": "0.7.1",
+      "compatibleVersions": [
+        "^0.7.0",
+        "^0.6.0"
+      ],
+      "esmUrl": "https://esm.sh/class-variance-authority@0.7.1?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/class-variance-authority@0.7.1?bundle&external=react,react-dom",
+      "size": 163,
+      "fetchTime": 17
+    },
+    {
+      "name": "@radix-ui/react-dialog",
+      "version": "1.1.2",
+      "compatibleVersions": [
+        "^1.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@radix-ui/react-dialog@1.1.2?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@radix-ui/react-dialog@1.1.2?bundle&external=react,react-dom",
+      "size": 0,
+      "fetchTime": 50
+    },
+    {
+      "name": "@radix-ui/react-dropdown-menu",
+      "version": "2.1.2",
+      "compatibleVersions": [
+        "^2.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@radix-ui/react-dropdown-menu@2.1.2?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@radix-ui/react-dropdown-menu@2.1.2?bundle&external=react,react-dom",
+      "size": 0,
+      "fetchTime": 50
+    },
+    {
+      "name": "@radix-ui/react-select",
+      "version": "2.1.2",
+      "compatibleVersions": [
+        "^2.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@radix-ui/react-select@2.1.2?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@radix-ui/react-select@2.1.2?bundle&external=react,react-dom",
+      "size": 0,
+      "fetchTime": 50
+    },
+    {
+      "name": "@radix-ui/react-tabs",
+      "version": "1.1.1",
+      "compatibleVersions": [
+        "^1.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@radix-ui/react-tabs@1.1.1?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@radix-ui/react-tabs@1.1.1?bundle&external=react,react-dom",
+      "size": 0,
+      "fetchTime": 50
+    },
+    {
+      "name": "@radix-ui/react-tooltip",
+      "version": "1.1.4",
+      "compatibleVersions": [
+        "^1.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@radix-ui/react-tooltip@1.1.4?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@radix-ui/react-tooltip@1.1.4?bundle&external=react,react-dom",
+      "size": 0,
+      "fetchTime": 50
+    },
+    {
+      "name": "@radix-ui/react-popover",
+      "version": "1.1.2",
+      "compatibleVersions": [
+        "^1.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@radix-ui/react-popover@1.1.2?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@radix-ui/react-popover@1.1.2?bundle&external=react,react-dom",
+      "size": 0,
+      "fetchTime": 50
+    },
+    {
+      "name": "@radix-ui/react-accordion",
+      "version": "1.2.1",
+      "compatibleVersions": [
+        "^1.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@radix-ui/react-accordion@1.2.1?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@radix-ui/react-accordion@1.2.1?bundle&external=react,react-dom",
+      "size": 0,
+      "fetchTime": 50
+    },
+    {
+      "name": "@radix-ui/react-checkbox",
+      "version": "1.1.2",
+      "compatibleVersions": [
+        "^1.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@radix-ui/react-checkbox@1.1.2?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@radix-ui/react-checkbox@1.1.2?bundle&external=react,react-dom",
+      "size": 0,
+      "fetchTime": 50
+    },
+    {
+      "name": "@radix-ui/react-radio-group",
+      "version": "1.2.1",
+      "compatibleVersions": [
+        "^1.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@radix-ui/react-radio-group@1.2.1?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@radix-ui/react-radio-group@1.2.1?bundle&external=react,react-dom",
+      "size": 0,
+      "fetchTime": 50
+    },
+    {
+      "name": "@radix-ui/react-switch",
+      "version": "1.1.1",
+      "compatibleVersions": [
+        "^1.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@radix-ui/react-switch@1.1.1?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@radix-ui/react-switch@1.1.1?bundle&external=react,react-dom",
+      "size": 0,
+      "fetchTime": 50
+    },
+    {
+      "name": "@radix-ui/react-slider",
+      "version": "1.2.1",
+      "compatibleVersions": [
+        "^1.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@radix-ui/react-slider@1.2.1?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@radix-ui/react-slider@1.2.1?bundle&external=react,react-dom",
+      "size": 0,
+      "fetchTime": 50
+    },
+    {
+      "name": "@radix-ui/react-scroll-area",
+      "version": "1.2.0",
+      "compatibleVersions": [
+        "^1.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@radix-ui/react-scroll-area@1.2.0?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@radix-ui/react-scroll-area@1.2.0?bundle&external=react,react-dom",
+      "size": 0,
+      "fetchTime": 50
+    },
+    {
+      "name": "@radix-ui/react-avatar",
+      "version": "1.1.1",
+      "compatibleVersions": [
+        "^1.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@radix-ui/react-avatar@1.1.1?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@radix-ui/react-avatar@1.1.1?bundle&external=react,react-dom",
+      "size": 0,
+      "fetchTime": 50
+    },
+    {
+      "name": "@radix-ui/react-progress",
+      "version": "1.1.0",
+      "compatibleVersions": [
+        "^1.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@radix-ui/react-progress@1.1.0?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@radix-ui/react-progress@1.1.0?bundle&external=react,react-dom",
+      "size": 0,
+      "fetchTime": 50
+    },
+    {
+      "name": "@radix-ui/react-separator",
+      "version": "1.1.0",
+      "compatibleVersions": [
+        "^1.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@radix-ui/react-separator@1.1.0?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@radix-ui/react-separator@1.1.0?bundle&external=react,react-dom",
+      "size": 0,
+      "fetchTime": 50
+    },
+    {
+      "name": "recharts",
+      "version": "2.15.0",
+      "compatibleVersions": [
+        "^2.0.0"
+      ],
+      "esmUrl": "https://esm.sh/recharts@2.15.0?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/recharts@2.15.0?bundle&external=react,react-dom",
+      "size": 0,
+      "fetchTime": 50
+    },
+    {
+      "name": "lucide-react",
+      "version": "0.468.0",
+      "compatibleVersions": [
+        "^0.400.0"
+      ],
+      "esmUrl": "https://esm.sh/lucide-react@0.468.0?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/lucide-react@0.468.0?bundle&external=react,react-dom",
+      "size": 0,
+      "fetchTime": 50
+    },
+    {
+      "name": "tailwind-merge",
+      "version": "2.6.0",
+      "compatibleVersions": [
+        "^2.0.0"
+      ],
+      "esmUrl": "https://esm.sh/tailwind-merge@2.6.0?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/tailwind-merge@2.6.0?bundle&external=react,react-dom",
+      "size": 0,
+      "fetchTime": 50
+    },
+    {
+      "name": "@tanstack/react-query",
+      "version": "5.62.3",
+      "compatibleVersions": [
+        "^5.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@tanstack/react-query@5.62.3?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@tanstack/react-query@5.62.3?bundle&external=react,react-dom",
+      "size": 0,
+      "fetchTime": 50
+    },
+    {
+      "name": "uuid",
+      "version": "11.0.3",
+      "compatibleVersions": [
+        "^11.0.0",
+        "^10.0.0",
+        "^9.0.0"
+      ],
+      "esmUrl": "https://esm.sh/uuid@11.0.3?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/uuid@11.0.3?bundle&external=react,react-dom",
+      "size": 0,
+      "fetchTime": 50
+    }
+  ]
+}

@@ -5,6 +5,7 @@ import {
   autoFixArtifactCode,
   validateImmutability,
   fixOrphanedMethodChains,
+  preValidateAndFixGlmSyntax,
   type MutationValidation,
 } from "../artifact-validator.ts";
 
@@ -800,4 +801,122 @@ export default function App() {
   const revalidation = validateArtifactCode(fixed, 'react');
   assertEquals(revalidation.issues.filter(i => i.message.includes('const * as')).length, 0);
   assertEquals(revalidation.issues.filter(i => i.message.includes('Unquoted package name')).length, 0);
+});
+
+// ============================================================================
+// preValidateAndFixGlmSyntax Tests (New Centralized Pre-Validation)
+// ============================================================================
+
+Deno.test("preValidateAndFixGlmSyntax - fixes const * as import syntax", () => {
+  const code = `const * as Icons from 'lucide-react';\n\nexport default function App() { return <div />; }`;
+  const result = preValidateAndFixGlmSyntax(code);
+
+  assertEquals(result.issues.length, 1);
+  assertEquals(result.issues[0].type, 'const-star-import');
+  assertEquals(result.fixed.includes('import * as Icons from'), true);
+  assertEquals(result.fixed.includes('const * as Icons'), false);
+  assertEquals(result.isValid, true);
+});
+
+Deno.test("preValidateAndFixGlmSyntax - fixes unquoted package names", () => {
+  const code = `import React from React;\nimport ReactDOM from ReactDOM;\n\nexport default function App() { return <div />; }`;
+  const result = preValidateAndFixGlmSyntax(code);
+
+  assertEquals(result.issues.length, 2);
+  assertEquals(result.issues[0].type, 'unquoted-import');
+  assertEquals(result.issues[1].type, 'unquoted-import');
+  assertEquals(result.fixed.includes("from 'react';"), true);
+  assertEquals(result.fixed.includes("from 'react-dom';"), true);
+  assertEquals(result.fixed.includes('from React;'), false);
+});
+
+Deno.test("preValidateAndFixGlmSyntax - strips duplicate React hook destructuring", () => {
+  const code = `const { useState, useEffect } = React;\n\nexport default function App() { return <div />; }`;
+  const result = preValidateAndFixGlmSyntax(code);
+
+  assertEquals(result.issues.length, 1);
+  assertEquals(result.issues[0].type, 'duplicate-hook-destructure');
+  assertEquals(result.fixed.includes('const { useState'), false);
+  assertEquals(result.isValid, true);
+});
+
+Deno.test("preValidateAndFixGlmSyntax - strips duplicate Motion destructuring", () => {
+  const code = `const { motion, AnimatePresence } = Motion;\n\nexport default function App() { return <div />; }`;
+  const result = preValidateAndFixGlmSyntax(code);
+
+  assertEquals(result.issues.length, 1);
+  assertEquals(result.issues[0].type, 'duplicate-motion-destructure');
+  assertEquals(result.fixed.includes('const { motion'), false);
+  assertEquals(result.isValid, true);
+});
+
+Deno.test("preValidateAndFixGlmSyntax - fixes orphaned method chains", () => {
+  const code = `const items = data;\n  .filter(x => x.active);\n\nexport default function App() { return <div />; }`;
+  const result = preValidateAndFixGlmSyntax(code);
+
+  assertEquals(result.issues.length, 1);
+  assertEquals(result.issues[0].type, 'orphaned-chain');
+  assertEquals(result.fixed.includes('const items = data\n  .filter'), true);
+  assertEquals(result.isValid, true);
+});
+
+Deno.test("preValidateAndFixGlmSyntax - handles multiple GLM issues at once", () => {
+  const code = `
+const * as Dialog from '@radix-ui/react-dialog';
+import { useState } from React;
+const { useEffect } = React;
+
+export default function App() {
+  const data = items;
+    .filter(x => x.active);
+  return <Dialog.Root><Dialog.Content>Hello</Dialog.Content></Dialog.Root>;
+}
+  `;
+
+  const result = preValidateAndFixGlmSyntax(code);
+
+  // Should fix: const * as, unquoted import, duplicate hook destructure, orphaned chain
+  assertEquals(result.issues.length >= 4, true);
+
+  // Check all fixes applied
+  assertEquals(result.fixed.includes('import * as Dialog from'), true);
+  assertEquals(result.fixed.includes("from 'react';"), true);
+  assertEquals(result.fixed.includes('const { useEffect }'), false);
+  assertEquals(result.fixed.includes('const data = items\n    .filter'), true);
+  assertEquals(result.isValid, true);
+});
+
+Deno.test("preValidateAndFixGlmSyntax - validates structural requirements", () => {
+  const codeWithExportAndFunction = `export default function App() { return <div />; }`;
+  const result1 = preValidateAndFixGlmSyntax(codeWithExportAndFunction);
+  assertEquals(result1.isValid, true);
+
+  const codeWithoutExport = `function App() { return <div />; }`;
+  const result2 = preValidateAndFixGlmSyntax(codeWithoutExport);
+  assertEquals(result2.isValid, false);
+
+  const codeWithoutFunction = `export default { value: 123 };`;
+  const result3 = preValidateAndFixGlmSyntax(codeWithoutFunction);
+  assertEquals(result3.isValid, false);
+});
+
+Deno.test("preValidateAndFixGlmSyntax - preserves valid code unchanged", () => {
+  const validCode = `
+import * as Icons from 'lucide-react';
+import { motion } from 'framer-motion';
+
+export default function App() {
+  const items = data.filter(x => x.active);
+  return (
+    <motion.div>
+      <Icons.Star />
+    </motion.div>
+  );
+}
+  `;
+
+  const result = preValidateAndFixGlmSyntax(validCode);
+  assertEquals(result.issues.length, 0);
+  assertEquals(result.fixed.trim(), validCode.trim());
+  assertEquals(result.isValid, true);
 });

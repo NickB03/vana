@@ -591,6 +591,24 @@ export function useChatMessages(
                   const step = eventData.step as ReasoningStep;
                   const stepIndex = eventData.stepIndex as number;
 
+                  // Validate step before adding - skip invalid steps to prevent Zod validation failures
+                  // The Zod schema requires: phase (enum), title (1-500 chars), items (min 1 item)
+                  const isValidStep = step &&
+                    step.phase &&
+                    step.title &&
+                    step.title.length >= 1 &&
+                    Array.isArray(step.items) &&
+                    step.items.length > 0;
+
+                  if (!isValidStep) {
+                    console.warn(`[useChatMessages] Skipping invalid reasoning step ${stepIndex}:`, {
+                      hasPhase: !!step?.phase,
+                      titleLength: step?.title?.length || 0,
+                      itemsLength: step?.items?.length || 0,
+                    });
+                    break;
+                  }
+
                   // Add step to accumulated structured reasoning
                   streamingReasoningSteps = {
                     ...streamingReasoningSteps,
@@ -613,12 +631,13 @@ export function useChatMessages(
                   // Update progress with structured reasoning (Claude-like)
                   // CRITICAL: reasoningStatus drives the ticker pill display
                   // NOTE: Only pass reasoningSteps for dropdown - NOT raw text (causes ugly display)
+                  // FIX: Use empty-check to prevent Zod validation failure (min(1) constraint on steps array)
                   onDelta("", {
                     stage: "analyzing",
                     message: phaseDisplayMessage,
                     artifactDetected: true,
                     percentage: Math.min(10 + (stepIndex * 12), 45),
-                    reasoningSteps: streamingReasoningSteps,
+                    reasoningSteps: streamingReasoningSteps.steps.length > 0 ? streamingReasoningSteps : undefined,
                     reasoningStatus: phaseDisplayMessage,
                   });
                   break;
@@ -685,12 +704,11 @@ export function useChatMessages(
                     streamingReasoningText = eventData.reasoning as string;
                   }
 
-                  // Transition to generating stage - continue phase detection
-                  const reasoningCompletePhase = detectPhase(streamingReasoningText, currentPhase);
-                  if (reasoningCompletePhase !== currentPhase) {
-                    currentPhase = reasoningCompletePhase;
-                    phaseDisplayMessage = PHASE_MESSAGES[reasoningCompletePhase];
-                  }
+                  // FIX: When reasoning completes, transition to implementation phase
+                  // Don't rely on text-based detection which gets stuck
+                  currentPhase = 'implementing';
+                  phaseDisplayMessage = PHASE_MESSAGES[currentPhase];
+                  console.log(`📊 [Phase Ticker] Reasoning complete → "${currentPhase}"`);
 
                   onDelta("", {
                     stage: "generating",
@@ -709,12 +727,24 @@ export function useChatMessages(
                   // MessageWithArtifacts AFTER saveMessage() - not streamed as raw text
                   streamingContentText += eventData.chunk as string;
 
-                  // Continue phase detection during content generation
-                  const contentPhase = detectPhase(streamingReasoningText + streamingContentText, currentPhase);
-                  if (contentPhase !== currentPhase) {
-                    currentPhase = contentPhase;
-                    phaseDisplayMessage = PHASE_MESSAGES[contentPhase];
-                    console.log(`📊 [Phase Ticker] Content triggered phase "${contentPhase}" at ${streamingContentText.length} content chars`);
+                  // FIX: Event-driven phase progression during content generation
+                  // Progress through phases based on content milestones, not text analysis
+                  const contentLength = streamingContentText.length;
+                  let newPhase = currentPhase;
+
+                  // Implement basic phase progression based on content generation progress
+                  if (contentLength > 2000 && currentPhase === 'implementing') {
+                    newPhase = 'styling';
+                  } else if (contentLength > 4000 && currentPhase === 'styling') {
+                    newPhase = 'polishing';
+                  } else if (contentLength > 6000 && currentPhase === 'polishing') {
+                    newPhase = 'finalizing';
+                  }
+
+                  if (newPhase !== currentPhase) {
+                    currentPhase = newPhase;
+                    phaseDisplayMessage = PHASE_MESSAGES[newPhase];
+                    console.log(`📊 [Phase Ticker] Content milestone → "${newPhase}" at ${contentLength} chars`);
                   }
 
                   onDelta("", {

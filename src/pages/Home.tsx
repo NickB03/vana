@@ -348,8 +348,8 @@ const Home = () => {
             isTransitioning
               ? transitions.backdrop.transitioning(progress)
               : phase === "app"
-              ? transitions.backdrop.complete
-              : transitions.backdrop.initial
+                ? transitions.backdrop.complete
+                : transitions.backdrop.initial
           }
           transition={{ duration: 0 }}
         />
@@ -372,13 +372,13 @@ const Home = () => {
               ...(isTransitioning
                 ? transitions.landing.fadeOut.transitioning(progress)
                 : phase === "landing"
-                ? transitions.landing.fadeOut.initial
-                : transitions.landing.fadeOut.complete),
+                  ? transitions.landing.fadeOut.initial
+                  : transitions.landing.fadeOut.complete),
               ...(isTransitioning
                 ? transitions.landing.blurOut.transitioning(progress)
                 : phase === "landing"
-                ? transitions.landing.blurOut.initial
-                : transitions.landing.blurOut.complete),
+                  ? transitions.landing.blurOut.initial
+                  : transitions.landing.blurOut.complete),
             }}
             transition={{ duration: 0 }}
           >
@@ -424,8 +424,8 @@ const Home = () => {
             isTransitioning
               ? transitions.app.fadeIn.transitioning(progress)
               : phase === "app"
-              ? transitions.app.fadeIn.complete
-              : transitions.app.fadeIn.initial
+                ? transitions.app.fadeIn.complete
+                : transitions.app.fadeIn.initial
           }
           transition={{ duration: 0 }}
         >
@@ -444,66 +444,66 @@ const Home = () => {
             />
 
             <SidebarInset className="relative bg-transparent">
-            <main className="flex h-[100dvh] flex-col overflow-hidden">
-              {/* Header - only show when guest limit banner is needed */}
-              {!isAuthenticated && guestSession.messageCount > 0 && (
-                <header className="bg-black/50 backdrop-blur-sm border-b border-border/30 sticky top-0 z-20 flex h-16 w-full shrink-0 items-center justify-between gap-2 px-4">
-                  <div className="flex-1 max-w-md">
-                    <GuestLimitBanner
-                      messageCount={guestSession.messageCount}
-                      maxMessages={guestSession.maxMessages}
-                    />
-                  </div>
-                </header>
-              )}
-
-              {/* Main Content */}
-              <div className="flex-1 overflow-hidden flex flex-col">
-                {!showChat ? (
-                  <ChatLayout
-                    input={input}
-                    onInputChange={setInput}
-                    onSubmit={handleSubmit}
-                    isLoading={isLoading}
-                    suggestions={suggestions}
-                    loadingSuggestions={loadingSuggestions}
-                    loadingItemId={loadingSuggestionId}
-                    onSuggestionClick={handleSuggestionClick}
-                    imageMode={imageMode}
-                    onImageModeChange={setImageMode}
-                    artifactMode={artifactMode}
-                    onArtifactModeChange={setArtifactMode}
-                    sendIcon="send"
-                  />
-                ) : (
-                  <ChatInterface
-                    sessionId={currentSessionId ?? guestSession.sessionId ?? undefined}
-                    initialPrompt={!isAuthenticated ? guestInitialPrompt : pendingAuthPrompt}
-                    initialImageMode={imageMode}
-                    initialArtifactMode={artifactMode}
-                    isCanvasOpen={isCanvasOpen}
-                    onCanvasToggle={handleCanvasToggle}
-                    onArtifactChange={handleArtifactChange}
-                    input={input}
-                    onInputChange={setInput}
-                    onSendMessage={handler => {
-                      chatSendHandlerRef.current = handler;
-                    }}
-                    onInitialPromptSent={() => {
-                      // Clear pending prompts only after they have been sent
-                      setGuestInitialPrompt(undefined);
-                      setPendingAuthPrompt(undefined);
-                    }}
-                    isGuest={!isAuthenticated}
-                    guestMessageCount={guestSession.messageCount}
-                    guestMaxMessages={guestSession.maxMessages}
-                  />
+              <main className="flex h-[100dvh] flex-col overflow-hidden">
+                {/* Header - only show when guest limit banner is needed */}
+                {!isAuthenticated && guestSession.messageCount > 0 && (
+                  <header className="bg-black/50 backdrop-blur-sm border-b border-border/30 sticky top-0 z-20 flex h-16 w-full shrink-0 items-center justify-between gap-2 px-4">
+                    <div className="flex-1 max-w-md">
+                      <GuestLimitBanner
+                        messageCount={guestSession.messageCount}
+                        maxMessages={guestSession.maxMessages}
+                      />
+                    </div>
+                  </header>
                 )}
-              </div>
-            </main>
-          </SidebarInset>
-        </SidebarProvider>
-      </motion.div>
+
+                {/* Main Content */}
+                <div className="flex-1 overflow-hidden flex flex-col">
+                  {!showChat ? (
+                    <ChatLayout
+                      input={input}
+                      onInputChange={setInput}
+                      onSubmit={handleSubmit}
+                      isLoading={isLoading}
+                      suggestions={suggestions}
+                      loadingSuggestions={loadingSuggestions}
+                      loadingItemId={loadingSuggestionId}
+                      onSuggestionClick={handleSuggestionClick}
+                      imageMode={imageMode}
+                      onImageModeChange={setImageMode}
+                      artifactMode={artifactMode}
+                      onArtifactModeChange={setArtifactMode}
+                      sendIcon="send"
+                    />
+                  ) : (
+                    <ChatInterface
+                      sessionId={currentSessionId ?? guestSession.sessionId ?? undefined}
+                      initialPrompt={!isAuthenticated ? guestInitialPrompt : pendingAuthPrompt}
+                      initialImageMode={imageMode}
+                      initialArtifactMode={artifactMode}
+                      isCanvasOpen={isCanvasOpen}
+                      onCanvasToggle={handleCanvasToggle}
+                      onArtifactChange={handleArtifactChange}
+                      input={input}
+                      onInputChange={setInput}
+                      onSendMessage={handler => {
+                        chatSendHandlerRef.current = handler;
+                      }}
+                      onInitialPromptSent={() => {
+                        // Clear pending prompts only after they have been sent
+                        setGuestInitialPrompt(undefined);
+                        setPendingAuthPrompt(undefined);
+                      }}
+                      isGuest={!isAuthenticated}
+                      guestMessageCount={guestSession.messageCount}
+                      guestMaxMessages={guestSession.maxMessages}
+                    />
+                  )}
+                </div>
+              </main>
+            </SidebarInset>
+          </SidebarProvider>
+        </motion.div>
       )}
 
       {/* Guest limit dialog */}

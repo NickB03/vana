@@ -28,6 +28,7 @@ const DemoModeImageGeneration = lazy(() => import("./pages/DemoModeImageGenerati
 const UIShowcase = lazy(() => import("./pages/UIShowcase"));
 const FroggerHeroTest = lazy(() => import("./pages/FroggerHeroTest"));
 const TestSidebarStates = lazy(() => import("./pages/TestSidebarStates"));
+const FeatureTourDemo = lazy(() => import("./pages/FeatureTourDemo"));
 
 // Optimized React Query configuration for mobile
 const queryClient = new QueryClient({
@@ -78,6 +79,7 @@ const AnimatedRoutes = () => {
         <Route path="/ui-showcase" element={<AnimatedRoute><UIShowcase /></AnimatedRoute>} />
         <Route path="/frogger-hero-test" element={<AnimatedRoute><FroggerHeroTest /></AnimatedRoute>} />
         <Route path="/test-sidebar-states" element={<AnimatedRoute><TestSidebarStates /></AnimatedRoute>} />
+        <Route path="/demo-feature-tour" element={<AnimatedRoute><FeatureTourDemo /></AnimatedRoute>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<AnimatedRoute><NotFound /></AnimatedRoute>} />
       </Routes>
@@ -107,7 +109,7 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
+          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <Suspense fallback={
               <div className="flex min-h-screen items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

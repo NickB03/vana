@@ -4,7 +4,7 @@ import { callGLM, callGLMWithRetryTracking, extractTextFromGLM, extractTextAndRe
 import { parseGLMReasoningToStructured, parseReasoningIncrementally, createIncrementalParseState, type IncrementalParseState } from "../_shared/glm-reasoning-parser.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 import { MODELS, RATE_LIMITS, FEATURE_FLAGS } from "../_shared/config.ts";
-import { validateArtifactCode, autoFixArtifactCode } from "../_shared/artifact-validator.ts";
+import { validateArtifactCode, autoFixArtifactCode, preValidateAndFixGlmSyntax } from "../_shared/artifact-validator.ts";
 import { getSystemInstruction } from "../_shared/system-prompt-inline.ts";
 
 // NOTE: Retry logic handled in glm-client.ts
@@ -444,7 +444,19 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
             }
           }
 
-          // Validate and auto-fix artifact code
+          // ============================================================================
+          // PRE-VALIDATION: Fix GLM syntax issues BEFORE sending to client
+          // ============================================================================
+          // This is the FIRST line of defense - catches GLM syntax bugs (const * as,
+          // unquoted imports, orphaned chains) before they reach the client.
+          // Prevents bundling failures and client-side rendering errors.
+          const preValidation = preValidateAndFixGlmSyntax(artifactCode, requestId);
+          if (preValidation.issues.length > 0) {
+            console.log(`[${requestId}] 🔧 Pre-validation fixed ${preValidation.issues.length} GLM syntax issue(s) in streaming mode`);
+            artifactCode = preValidation.fixed;
+          }
+
+          // Validate and auto-fix artifact code (catches other issues like reserved keywords, mutations)
           const validation = validateArtifactCode(artifactCode, artifactType || 'react');
           if (!validation.valid && validation.canAutoFix) {
             const { fixed, changes } = autoFixArtifactCode(artifactCode);
@@ -569,6 +581,18 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
 
         console.log(`[${requestId}] ✅ Stripped HTML document structure, cleaned length: ${artifactCode.length}`);
       }
+    }
+
+    // ============================================================================
+    // PRE-VALIDATION: Fix GLM syntax issues BEFORE sending to client
+    // ============================================================================
+    // This is the FIRST line of defense - catches GLM syntax bugs (const * as,
+    // unquoted imports, orphaned chains) before they reach the client.
+    // Prevents bundling failures and client-side rendering errors.
+    const preValidation = preValidateAndFixGlmSyntax(artifactCode, requestId);
+    if (preValidation.issues.length > 0) {
+      console.log(`[${requestId}] 🔧 Pre-validation fixed ${preValidation.issues.length} GLM syntax issue(s)`);
+      artifactCode = preValidation.fixed;
     }
 
     // ============================================================================

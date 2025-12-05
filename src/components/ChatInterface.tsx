@@ -84,6 +84,10 @@ export function ChatInterface({
   const setInput = parentOnInputChange ?? setLocalInput;
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  // Track elapsed time for the last streamed message (preserved after streaming ends)
+  const [lastMessageElapsedTime, setLastMessageElapsedTime] = useState<string>("");
+  const streamingStartTimeRef = useRef<number | null>(null);
+  const elapsedTimeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [streamProgress, setStreamProgress] = useState<StreamProgress>({
     stage: "analyzing",
     message: "Analyzing request...",
@@ -176,9 +180,48 @@ export function ChatInterface({
     setIsStreaming(false);
     setCurrentArtifact(null);
     setIsEditingArtifact(false);
+    setLastMessageElapsedTime("");
     onArtifactChange?.(false);
     // Note: initializedSessionRef is managed separately in the initialPrompt effect
   }, [sessionId, onArtifactChange]);
+
+  // Timer effect: Start timer when streaming begins, capture final time when streaming ends
+  useEffect(() => {
+    if (isStreaming) {
+      // Start streaming - begin timing
+      streamingStartTimeRef.current = Date.now();
+      setLastMessageElapsedTime(""); // Reset for new stream
+
+      // Update elapsed time every second
+      elapsedTimeIntervalRef.current = setInterval(() => {
+        if (streamingStartTimeRef.current) {
+          const elapsed = Math.floor((Date.now() - streamingStartTimeRef.current) / 1000);
+          if (elapsed < 60) {
+            setLastMessageElapsedTime(`${elapsed}s`);
+          } else {
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            setLastMessageElapsedTime(`${minutes}m ${seconds}s`);
+          }
+        }
+      }, 1000);
+    } else {
+      // Streaming ended - stop timer but KEEP the final elapsed time
+      if (elapsedTimeIntervalRef.current) {
+        clearInterval(elapsedTimeIntervalRef.current);
+        elapsedTimeIntervalRef.current = null;
+      }
+      // Don't reset lastMessageElapsedTime - keep it for display
+      streamingStartTimeRef.current = null;
+    }
+
+    return () => {
+      if (elapsedTimeIntervalRef.current) {
+        clearInterval(elapsedTimeIntervalRef.current);
+        elapsedTimeIntervalRef.current = null;
+      }
+    };
+  }, [isStreaming]);
 
   // Expose handleSend to parent component
   useEffect(() => {
@@ -529,6 +572,7 @@ export function ChatInterface({
                             reasoningSteps={message.reasoning_steps}
                             isStreaming={false}
                             artifactRendered={!isLastMessage || !message.content.includes('<artifact') || artifactRenderStatus === 'rendered' || artifactRenderStatus === 'error'}
+                            parentElapsedTime={isLastMessage ? lastMessageElapsedTime : undefined}
                           />
                         </ReasoningErrorBoundary>
                       )}
@@ -670,6 +714,7 @@ export function ChatInterface({
                       isStreaming={true}
                       artifactRendered={artifactRenderStatus === 'rendered' || artifactRenderStatus === 'error'}
                       onStop={cancelStream}
+                      parentElapsedTime={lastMessageElapsedTime}
                     />
                   </ReasoningErrorBoundary>
                   {/* Show content immediately - reasoning is supplementary context, not blocking */}
