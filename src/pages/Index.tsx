@@ -165,17 +165,36 @@ const IndexContent = () => {
     }
     setIsLoading(true);
     const promptToSend = input; // Capture before clearing
-    const sessionId = await createSession(promptToSend);
-    if (sessionId) {
-      setCurrentSessionId(sessionId);
-      // Set pending prompt and clear input to prevent auto-send bugs
-      // ChatInterface receives pendingInitialPrompt on mount, which is cleared after use
-      setPendingInitialPrompt(promptToSend);
-      setInput(""); // Clear input so it doesn't persist
-      // Navigate to chat route with session ID
-      navigate(`/chat/${sessionId}`);
+
+    try {
+      const sessionId = await createSession(promptToSend);
+
+      if (sessionId) {
+        setCurrentSessionId(sessionId);
+        // Set pending prompt and clear input to prevent auto-send bugs
+        // ChatInterface receives pendingInitialPrompt on mount, which is cleared after use
+        setPendingInitialPrompt(promptToSend);
+        setInput(""); // Clear input only on success
+        // Navigate to chat route with session ID
+        navigate(`/chat/${sessionId}`);
+      } else {
+        // createSession returned null - show error toast
+        toast({
+          title: "Failed to start chat",
+          description: "Could not create a new session. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      // Handle unexpected errors
+      toast({
+        title: "Failed to create session",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
   const handleValueChange = (value: string) => {
     setInput(value);

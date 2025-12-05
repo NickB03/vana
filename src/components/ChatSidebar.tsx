@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { CirclePlus, MessageSquare, MoreHorizontal, PanelLeft } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { ChatSession } from "@/hooks/useChatSessions";
 import { ViggleLogo } from "@/components/ViggleLogo";
@@ -138,7 +139,28 @@ export function ChatSidebar({
               <MessageSquare className="h-6 w-6" strokeWidth={1.5} />
             </Button>
           </div>
+        ) : isLoading ? (
+          // Loading skeleton
+          <div className="px-4 pt-3 space-y-3">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-10 w-full rounded-md" />
+            </div>
+            <div className="space-y-2 pt-2">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-10 w-full rounded-md" />
+            </div>
+          </div>
+        ) : sessions.length === 0 ? (
+          // Empty state
+          <div className="px-4 py-12 text-center">
+            <MessageSquare className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" strokeWidth={1.5} />
+            <p className="text-sm text-muted-foreground">No conversations yet</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">Start a new chat to begin</p>
+          </div>
         ) : (
+          // Populated sessions
           groupedSessions.map(([period, periodSessions]) => (
             <SidebarGroup key={period} className="pt-1 pb-2">
               <SidebarGroupLabel className="px-4 pb-1">{period}</SidebarGroupLabel>
