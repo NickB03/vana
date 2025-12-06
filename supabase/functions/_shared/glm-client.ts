@@ -439,6 +439,37 @@ export async function logGLMUsage(logData: {
 }
 
 /**
+ * Parse [STATUS: ...] markers from GLM reasoning text
+ *
+ * GLM emits status markers during thinking like [STATUS: analyzing requirements]
+ * to indicate current action. These are parsed and sent as SSE events to the frontend.
+ *
+ * If multiple markers exist, returns the LAST one (most recent status).
+ *
+ * @param text - The reasoning text to parse (can be partial/accumulated)
+ * @returns The status text (trimmed) or null if no complete marker found
+ *
+ * @example
+ * parseStatusMarker("[STATUS: analyzing code]") // "analyzing code"
+ * parseStatusMarker("thinking... [STATUS: ") // null (incomplete)
+ * parseStatusMarker("no status here") // null
+ * parseStatusMarker("[STATUS: start] ... [STATUS: finish]") // "finish" (last marker)
+ */
+export function parseStatusMarker(text: string): string | null {
+  // Match all [STATUS: ...] patterns - must have closing bracket
+  const statusPattern = /\[STATUS:\s*([^\]]+)\]/g;
+  const matches = Array.from(text.matchAll(statusPattern));
+
+  if (matches.length > 0) {
+    // Return the LAST match (most recent status)
+    const lastMatch = matches[matches.length - 1];
+    return lastMatch[1].trim();
+  }
+
+  return null;
+}
+
+/**
  * Callback type for streaming GLM responses
  *
  * NOTE: Callbacks can be async - processGLMStream will await them.

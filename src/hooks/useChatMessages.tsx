@@ -11,6 +11,7 @@ import { WebSearchResults } from "@/types/webSearch";
 // ============================================================================
 // Overrides raw backend text with stable phase-based messages (3-6 updates)
 // to prevent the "flashing ticker" issue.
+// UPDATE: Now uses lastSemanticStatus from AI Commentator (GLM-4.5-Air) for semantic ticker updates
 
 // ============================================================================
 // PHASE-BASED TICKER: More granular phases for better progress indication
@@ -527,6 +528,10 @@ export function useChatMessages(
         let currentPhase: ThinkingPhase = 'starting';
         let phaseDisplayMessage = PHASE_MESSAGES.starting;
 
+        // AI COMMENTATOR: Track last semantic status from GLM-4.5-Air sidecar
+        // This takes priority over phase-based messages for the ticker pill
+        let lastSemanticStatus: string | null = null;
+
         // Stream timeout protection
         const STREAM_TIMEOUT_MS = 120000; // 2 minutes max for artifact generation
         const streamStartTime = Date.now();
@@ -579,6 +584,7 @@ export function useChatMessages(
               // extended thinking, instead of showing verbose raw thinking text.
               //
               // Event types:
+              // - status_update: Semantic status text from GLM-4.5-AirX (PRIORITY)
               // - reasoning_step: New complete step detected (phase, title, icon, items)
               // - thinking_update: Current thinking indicator (for pill display)
               // - reasoning_complete: Final structured reasoning + raw text
@@ -586,6 +592,41 @@ export function useChatMessages(
               // - artifact_complete: Final artifact data
               // ============================================================================
               switch (eventType) {
+                case "status_update": {
+                  // NEW: Priority status updates from GLM-4.5-AirX
+                  // These semantic status messages should be shown directly in the ticker
+                  const status = eventData.status as string;
+                  const isFinalStatus = eventData.final === true;
+
+                  if (!status) {
+                    console.warn('[useChatMessages] Received status_update with no status text');
+                    break;
+                  }
+
+                  console.log(`📊 [useChatMessages] Status update: "${status}"${isFinalStatus ? ' (FINAL)' : ''}`);
+
+                  // IMPORTANT: Save the semantic status so it persists across reasoning_step events
+                  // The AI Commentator (GLM-4.5-Air) provides semantic summaries like "Designing calculator UI"
+                  // that should take priority over generic phase-based messages like "AI is thinking"
+                  lastSemanticStatus = status;
+
+                  // If this is the final status ("Artifact complete"), transition to complete stage
+                  const stage = isFinalStatus ? "complete" : "analyzing";
+                  const percentage = isFinalStatus ? 100 : Math.min(10 + (streamingReasoningText.length / 50), 45);
+
+                  // Update progress with the status (shown in reasoning ticker pill)
+                  // CRITICAL: reasoningStatus takes priority over phase-based messages
+                  onDelta("", {
+                    stage,
+                    message: status,
+                    artifactDetected: true,
+                    percentage,
+                    reasoningSteps: streamingReasoningSteps.steps.length > 0 ? streamingReasoningSteps : undefined,
+                    reasoningStatus: status, // This drives the ticker pill display
+                  });
+                  break;
+                }
+
                 case "reasoning_step": {
                   // New structured reasoning step detected by server
                   const step = eventData.step as ReasoningStep;
@@ -629,16 +670,19 @@ export function useChatMessages(
                   console.log(`🧠 [useChatMessages] Reasoning step ${stepIndex + 1}: "${step.title}" → Phase: ${currentPhase}`);
 
                   // Update progress with structured reasoning (Claude-like)
-                  // CRITICAL: reasoningStatus drives the ticker pill display
+                  // IMPORTANT: Use lastSemanticStatus from AI Commentator if available
+                  // This preserves semantic summaries like "Designing calculator UI" instead of
+                  // overwriting with generic phase messages like "AI is thinking"
                   // NOTE: Only pass reasoningSteps for dropdown - NOT raw text (causes ugly display)
                   // FIX: Use empty-check to prevent Zod validation failure (min(1) constraint on steps array)
+                  const tickerStatus = lastSemanticStatus || phaseDisplayMessage;
                   onDelta("", {
                     stage: "analyzing",
                     message: phaseDisplayMessage,
                     artifactDetected: true,
                     percentage: Math.min(10 + (stepIndex * 12), 45),
                     reasoningSteps: streamingReasoningSteps.steps.length > 0 ? streamingReasoningSteps : undefined,
-                    reasoningStatus: phaseDisplayMessage,
+                    reasoningStatus: tickerStatus, // Prefer semantic status from AI Commentator
                   });
                   break;
                 }
@@ -649,7 +693,12 @@ export function useChatMessages(
 
                   // PHASE-BASED TICKER: Accumulate reasoning text for phase detection ONLY
                   // Don't pass raw text to UI - it creates ugly duplicated display
-                  streamingReasoningText += (eventData.chunk as string) || '';
+                  // Note: thinking_update sends `currentThinking` (summary), not `chunk` (raw text)
+                  // We use currentThinking as it contains the phase-appropriate status message
+                  const thinkingChunk = (eventData.currentThinking as string) || (eventData.chunk as string) || '';
+                  if (thinkingChunk) {
+                    streamingReasoningText += thinkingChunk + '\n';
+                  }
 
                   // Detect if we should advance to a new phase
                   const newPhase = detectPhase(streamingReasoningText, currentPhase);
@@ -659,13 +708,15 @@ export function useChatMessages(
                     console.log(`📊 [Phase Ticker] Transitioned to "${newPhase}" at ${streamingReasoningText.length} chars`);
                   }
 
+                  // Prefer semantic status from AI Commentator if available
+                  const thinkingTickerStatus = lastSemanticStatus || phaseDisplayMessage;
                   onDelta("", {
                     stage: "analyzing",
                     message: phaseDisplayMessage,
                     artifactDetected: true,
                     percentage: Math.min(progress, 45),
                     reasoningSteps: streamingReasoningSteps.steps.length > 0 ? streamingReasoningSteps : undefined,
-                    reasoningStatus: phaseDisplayMessage,
+                    reasoningStatus: thinkingTickerStatus,
                   });
                   break;
                 }
@@ -682,13 +733,15 @@ export function useChatMessages(
                     console.log(`📊 [Phase Ticker] Chunk triggered phase "${newPhase}" at ${streamingReasoningText.length} chars`);
                   }
 
+                  // Prefer semantic status from AI Commentator if available
+                  const chunkTickerStatus = lastSemanticStatus || phaseDisplayMessage;
                   onDelta("", {
                     stage: "analyzing",
                     message: phaseDisplayMessage,
                     artifactDetected: true,
                     percentage: Math.min(10 + (streamingReasoningText.length / 50), 45),
                     reasoningSteps: streamingReasoningSteps.steps.length > 0 ? streamingReasoningSteps : undefined,
-                    reasoningStatus: phaseDisplayMessage,
+                    reasoningStatus: chunkTickerStatus,
                   });
                   break;
                 }
@@ -710,13 +763,15 @@ export function useChatMessages(
                   phaseDisplayMessage = PHASE_MESSAGES[currentPhase];
                   console.log(`📊 [Phase Ticker] Reasoning complete → "${currentPhase}"`);
 
+                  // Prefer semantic status from AI Commentator if available
+                  const completeTickerStatus = lastSemanticStatus || phaseDisplayMessage;
                   onDelta("", {
                     stage: "generating",
                     message: phaseDisplayMessage,
                     artifactDetected: true,
                     percentage: 50,
                     reasoningSteps: streamingReasoningSteps.steps.length > 0 ? streamingReasoningSteps : undefined,
-                    reasoningStatus: phaseDisplayMessage,
+                    reasoningStatus: completeTickerStatus,
                   });
                   break;
                 }
@@ -747,26 +802,44 @@ export function useChatMessages(
                     console.log(`📊 [Phase Ticker] Content milestone → "${newPhase}" at ${contentLength} chars`);
                   }
 
+                  // Prefer semantic status from AI Commentator if available
+                  const contentTickerStatus = lastSemanticStatus || phaseDisplayMessage;
                   onDelta("", {
                     stage: "generating",
                     message: phaseDisplayMessage,
                     artifactDetected: true,
                     percentage: Math.min(50 + (streamingContentText.length / 200), 95),
                     reasoningSteps: streamingReasoningSteps.steps.length > 0 ? streamingReasoningSteps : undefined,
-                    reasoningStatus: phaseDisplayMessage,
+                    reasoningStatus: contentTickerStatus,
                   });
                   break;
                 }
 
-                case "artifact_complete":
+                case "artifact_complete": {
                   console.log("✅ [useChatMessages] Artifact stream complete");
+                  // DEBUG: Log what we received from backend
+                  console.log("📊 [artifact_complete] eventData.reasoning length:", (eventData.reasoning as string)?.length ?? 0);
+                  console.log("📊 [artifact_complete] eventData.reasoningSteps:", eventData.reasoningSteps ? "present" : "missing");
+                  console.log("📊 [artifact_complete] streamingReasoningText length:", streamingReasoningText.length);
+                  console.log("📊 [artifact_complete] streamingReasoningSteps count:", streamingReasoningSteps.steps.length);
+
+                  // Use backend reasoning if available, otherwise fall back to accumulated streaming text
+                  const finalReasoning = (eventData.reasoning as string) || streamingReasoningText || undefined;
+
+                  // Use backend reasoningSteps if available, otherwise fall back to accumulated streaming steps
+                  const finalReasoningSteps = (eventData.reasoningSteps as StructuredReasoning) ||
+                    (streamingReasoningSteps.steps.length > 0 ? streamingReasoningSteps : undefined);
+
+                  console.log("📊 [artifact_complete] Final reasoning length:", finalReasoning?.length ?? 0);
+                  console.log("📊 [artifact_complete] Final reasoningSteps:", finalReasoningSteps ? `${finalReasoningSteps.steps.length} steps` : "none");
+
                   finalArtifactData = {
                     artifactCode: eventData.artifactCode as string,
-                    reasoning: eventData.reasoning as string,
-                    reasoningSteps: (eventData.reasoningSteps as StructuredReasoning) ||
-                      (streamingReasoningSteps.steps.length > 0 ? streamingReasoningSteps : undefined),
+                    reasoning: finalReasoning,
+                    reasoningSteps: finalReasoningSteps,
                   };
                   break;
+                }
 
                 case "error":
                   console.error("SSE error:", eventData.error);
@@ -969,24 +1042,25 @@ export function useChatMessages(
 
             // Handle new progressive reasoning_step events
             if (parsed.type === 'reasoning_step') {
-              const step = parsed.step as ReasoningStep;
-              const stepIndex = parsed.stepIndex as number;
+              { // Added block to scope lexical declarations
+                const step = parsed.step as ReasoningStep;
+                const stepIndex = parsed.stepIndex as number;
 
-              // Build up reasoningSteps incrementally
-              if (!reasoningSteps) {
-                reasoningSteps = { steps: [] };
+                // Build up reasoningSteps incrementally
+                if (!reasoningSteps) {
+                  reasoningSteps = { steps: [] };
+                }
+                reasoningSteps = {
+                  ...reasoningSteps,
+                  steps: [...reasoningSteps.steps, step],
+                };
+
+                console.log(`[StreamProgress] Received reasoning step ${stepIndex + 1}: "${step.title}"`);
+
+                const progress = updateProgress();
+                progress.reasoningSteps = reasoningSteps;
+                onDelta('', progress);
               }
-              reasoningSteps = {
-                ...reasoningSteps,
-                steps: [...reasoningSteps.steps, step],
-              };
-
-              console.log(`[StreamProgress] Received reasoning step ${stepIndex + 1}: "${step.title}"`);
-
-              const progress = updateProgress();
-              progress.reasoningSteps = reasoningSteps;
-              onDelta('', progress);
-
               continue; // Skip to next event
             }
 

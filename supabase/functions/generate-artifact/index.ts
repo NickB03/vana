@@ -1,11 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { callGLM, callGLMWithRetryTracking, extractTextFromGLM, extractTextAndReasoningFromGLM, extractGLMTokenUsage, calculateGLMCost, logGLMUsage, handleGLMError, processGLMStream } from "../_shared/glm-client.ts";
+import { callGLM, callGLMWithRetryTracking, extractTextFromGLM, extractTextAndReasoningFromGLM, extractGLMTokenUsage, calculateGLMCost, logGLMUsage, handleGLMError, processGLMStream, parseStatusMarker } from "../_shared/glm-client.ts";
 import { parseGLMReasoningToStructured, parseReasoningIncrementally, createIncrementalParseState, type IncrementalParseState } from "../_shared/glm-reasoning-parser.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 import { MODELS, RATE_LIMITS, FEATURE_FLAGS } from "../_shared/config.ts";
 import { validateArtifactCode, autoFixArtifactCode, preValidateAndFixGlmSyntax } from "../_shared/artifact-validator.ts";
 import { getSystemInstruction } from "../_shared/system-prompt-inline.ts";
+import { AICommentator } from "../_shared/ai-commentator.ts";
 
 // NOTE: Retry logic handled in glm-client.ts
 // callGLMWithRetryTracking() handles exponential backoff automatically
@@ -303,6 +304,7 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
     // SSE Event Format:
     // - event: reasoning_chunk / data: { chunk: "..." }
     // - event: reasoning_complete / data: { reasoning: "full text" }
+    // - event: status_update / data: { status: "action phrase" }
     // - event: content_chunk / data: { chunk: "..." }
     // - event: artifact_complete / data: { artifactCode, reasoning, reasoningSteps }
     // - event: error / data: { error: "message" }
@@ -365,6 +367,8 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
           //
           // SSE Events (new format):
           // - reasoning_step: { step: ReasoningStep, currentThinking: string }
+          // - status_update: { status: string } (from [STATUS: ...] markers)
+          // - thinking_update: { currentThinking: string, progress: number }
           // - reasoning_complete: { reasoning: string, reasoningSteps: StructuredReasoning }
           // - content_chunk: { chunk: string }
           // - artifact_complete: { ... }
@@ -373,6 +377,45 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
           let incrementalState: IncrementalParseState = createIncrementalParseState();
           let fullReasoning = "";
           const accumulatedSteps: Array<{ phase: string; title: string; icon?: string; items: string[] }> = [];
+          let lastEmittedStatus: string | null = null; // Track last emitted status to avoid duplicates
+
+          // ============================================================================
+          // AI SIDECAR COMMENTATOR: Semantic status updates via GLM-4.5-AirX
+          // ============================================================================
+          // The Commentator runs in parallel with the main GLM-4.6 stream, providing
+          // semantic status updates (e.g., "Designing authentication flow") that are
+          // more meaningful than the raw reasoning text or [STATUS: ...] markers.
+          //
+          // Key features:
+          // - Buffer management: Accumulates text until meaningful chunks are ready
+          // - Anti-flicker: Minimum 1.5s between status updates
+          // - Non-blocking: Runs async, doesn't delay the main stream
+          // - Graceful fallback: If commentator fails, we still have [STATUS:] markers
+          // ============================================================================
+          const commentator = new AICommentator(
+            async (status: string) => {
+              // Only emit if different from last [STATUS: ...] marker
+              if (status !== lastEmittedStatus) {
+                // CRITICAL: Send as "status_update" event - this is what the frontend
+              // expects for semantic status updates in the ticker pill.
+              // "thinking_update" is for raw chunk accumulation, not ticker display.
+              await sendEvent("status_update", {
+                  status,
+                  source: "commentator"
+                });
+                console.log(`[${requestId}] 🎯 AI Commentator: "${status}"`);
+                // Don't update lastEmittedStatus here - let [STATUS:] markers take precedence
+              }
+            },
+            requestId,
+            {
+              minBufferChars: 150,   // Wait for meaningful content
+              maxBufferChars: 500,   // Force flush for long reasoning
+              maxWaitMs: 3000,       // Max time between updates
+              minUpdateIntervalMs: 1500, // Anti-flicker cooldown
+              timeoutMs: 2000,       // Sidecar call timeout
+            }
+          );
 
           // Process GLM SSE stream with incremental step detection
           const { reasoning, content } = await processGLMStream(
@@ -381,6 +424,30 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
               onReasoningChunk: async (chunk: string) => {
                 // Accumulate full reasoning text
                 fullReasoning += chunk;
+
+                // ============================================================================
+                // DUAL STATUS SOURCES: [STATUS:] markers + AI Sidecar Commentator
+                // ============================================================================
+                // 1. [STATUS: ...] markers: Fast-path, parsed from GLM's raw reasoning
+                // 2. AI Commentator: Semantic understanding via GLM-4.5-AirX (async)
+                //
+                // The [STATUS:] markers take precedence when available (lower latency).
+                // The Commentator provides semantic updates when markers are absent.
+                // ============================================================================
+
+                // Feed chunk to AI Commentator (async, non-blocking)
+                commentator.push(chunk);
+
+                // STATUS MARKER DETECTION: Parse [STATUS: ...] markers from reasoning
+                // GLM emits [STATUS: action phrase] markers during thinking to indicate
+                // current action. We detect these and emit status_update SSE events.
+                const currentStatus = parseStatusMarker(fullReasoning);
+                if (currentStatus && currentStatus !== lastEmittedStatus) {
+                  // New status detected - emit it immediately
+                  await sendEvent("status_update", { status: currentStatus });
+                  console.log(`[${requestId}] 📊 Status marker: "${currentStatus}"`);
+                  lastEmittedStatus = currentStatus;
+                }
 
                 // Incrementally parse for new steps
                 const result = parseReasoningIncrementally(fullReasoning, incrementalState);
@@ -407,6 +474,15 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
                 }
               },
               onContentChunk: async (chunk: string) => {
+                // Notify commentator that we're in content generation phase
+                // This triggers proactive heartbeat updates during code generation
+                commentator.notifyContentPhase();
+
+                // Also feed content chunks to the commentator for semantic analysis
+                // During code generation, the sidecar can analyze what's being built
+                // (e.g., "Writing React component", "Adding event handlers")
+                commentator.push(chunk);
+
                 await sendEvent("content_chunk", { chunk });
               },
               onComplete: async (fullReasoningText: string, _fullContent: string) => {
@@ -469,6 +545,13 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
           // Parse reasoning to structured format
           const reasoningSteps = reasoning ? parseGLMReasoningToStructured(reasoning) : null;
 
+          // Send final status update before artifact_complete (so ticker shows "Artifact complete")
+          await sendEvent("status_update", {
+            status: "Artifact complete",
+            source: "completion",
+            final: true,
+          });
+
           // Send final completion event
           await sendEvent("artifact_complete", {
             success: true,
@@ -503,6 +586,10 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
           }).catch(err => console.error(`[${requestId}] Failed to log streaming usage:`, err));
 
           console.log(`[${requestId}] ✅ Streaming artifact complete: ${artifactCode.length} chars in ${latencyMs}ms`);
+
+          // Flush any pending commentator calls (best-effort, with timeout)
+          await commentator.flush();
+
           await writer.close();
         } catch (error) {
           console.error(`[${requestId}] Streaming error:`, error);

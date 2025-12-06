@@ -250,7 +250,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
    * Priority: semantic status > structured steps > raw text extraction > fallback
    */
   const getStreamingStatus = (): string => {
-    // 1. Prefer explicit semantic status from GLM-4.5-AirX
+    // 1. Prefer explicit semantic status from GLM-4.5-AirX (AI Commentator)
     if (reasoningStatus) {
       return reasoningStatus;
     }

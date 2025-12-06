@@ -25,6 +25,45 @@ export interface StorageUploadResult {
 }
 
 /**
+ * Transform internal Docker URLs to publicly accessible URLs
+ *
+ * When running Supabase locally via `supabase start`, Edge Functions run inside
+ * Docker containers where SUPABASE_URL=http://kong:8000 (internal Docker network).
+ * However, browsers access Supabase through http://127.0.0.1:54321.
+ *
+ * This function transforms signed URLs from internal to public format so they
+ * can be accessed from the browser.
+ *
+ * @param url - The signed URL from Supabase Storage
+ * @returns The publicly accessible URL
+ *
+ * @example
+ * // Local dev: transforms internal Docker URL to localhost
+ * transformToPublicUrl('http://kong:8000/storage/v1/...?token=xxx')
+ * // Returns: 'http://127.0.0.1:54321/storage/v1/...?token=xxx'
+ *
+ * // Production: returns URL unchanged
+ * transformToPublicUrl('https://xyz.supabase.co/storage/v1/...?token=xxx')
+ * // Returns: 'https://xyz.supabase.co/storage/v1/...?token=xxx'
+ */
+function transformToPublicUrl(url: string): string {
+  // Only transform URLs with the internal Docker hostname
+  if (!url.includes('://kong:8000')) {
+    return url;
+  }
+
+  // Get the public port from environment (defaults to 54321 for local Supabase)
+  const publicPort = Deno.env.get('SUPABASE_INTERNAL_HOST_PORT') || '54321';
+  const publicUrl = `http://127.0.0.1:${publicPort}`;
+
+  const transformed = url.replace('http://kong:8000', publicUrl);
+
+  console.log(`[storage-retry] Transformed internal Docker URL to public URL: kong:8000 → 127.0.0.1:${publicPort}`);
+
+  return transformed;
+}
+
+/**
  * Check if an error is non-retriable (permanent failure)
  *
  * Non-retriable errors include:
@@ -139,8 +178,12 @@ export async function uploadWithRetry(
         `[${reqId}] Storage upload completed successfully${attempt > 0 ? ` (after ${attempt} retries)` : ''}`
       );
 
+      // Transform internal Docker URLs to publicly accessible URLs
+      // This is needed when running Supabase locally (kong:8000 → 127.0.0.1:54321)
+      const publicUrl = transformToPublicUrl(signedUrlData.signedUrl);
+
       return {
-        url: signedUrlData.signedUrl,
+        url: publicUrl,
         path: uploadData?.path || path
       };
 
