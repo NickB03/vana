@@ -94,10 +94,12 @@ export async function verifyCdnUrl(url: string, timeoutMs = 3000): Promise<boole
 }
 
 /**
- * Get working CDN URL with automatic fallback.
+ * Get working CDN URL with automatic fallback using parallel verification.
  *
- * Tries each CDN provider in sequence until one responds successfully.
- * Logs all attempts for debugging CDN availability issues.
+ * Tries ALL CDN providers in parallel and returns the first one that succeeds.
+ * Falls back to priority order if multiple succeed simultaneously.
+ *
+ * Performance: Worst case is now ~3s (single timeout) instead of 9s (3 × 3s sequential).
  *
  * @param pkg - Package name (e.g., 'lodash', '@radix-ui/react-dialog')
  * @param version - Package version (e.g., '4.17.21', '^1.0.0')
@@ -117,16 +119,35 @@ export async function getWorkingCdnUrl(
   requestId: string,
   useBundleUrl = false
 ): Promise<{ url: string; provider: string } | null> {
-  for (const cdn of CDN_PROVIDERS) {
-    const url = useBundleUrl ? cdn.buildBundleUrl(pkg, version) : cdn.buildUrl(pkg, version);
-    console.log(`[${requestId}] Trying ${cdn.name} for ${pkg}@${version}...`);
+  console.log(`[${requestId}] Checking CDNs in parallel for ${pkg}@${version}...`);
 
-    if (await verifyCdnUrl(url)) {
-      console.log(`[${requestId}] ✓ ${cdn.name} works for ${pkg}`);
-      return { url, provider: cdn.name };
+  // Try all CDNs in parallel
+  const results = await Promise.all(
+    CDN_PROVIDERS.map(async (cdn, index) => {
+      const url = useBundleUrl ? cdn.buildBundleUrl(pkg, version) : cdn.buildUrl(pkg, version);
+      const success = await verifyCdnUrl(url);
+
+      if (success) {
+        console.log(`[${requestId}] ✓ ${cdn.name} works for ${pkg}`);
+      } else {
+        console.log(`[${requestId}] ✗ ${cdn.name} failed for ${pkg}`);
+      }
+
+      return { cdn, url, success, priority: index };
+    })
+  );
+
+  // Find the first successful CDN (by priority order)
+  const successfulResults = results
+    .filter((r) => r.success)
+    .sort((a, b) => a.priority - b.priority);
+
+  if (successfulResults.length > 0) {
+    const best = successfulResults[0];
+    if (successfulResults.length > 1) {
+      console.log(`[${requestId}] Multiple CDNs available, using ${best.cdn.name} (highest priority)`);
     }
-
-    console.log(`[${requestId}] ✗ ${cdn.name} failed for ${pkg}`);
+    return { url: best.url, provider: best.cdn.name };
   }
 
   console.error(`[${requestId}] All CDN providers failed for ${pkg}@${version}`);

@@ -33,6 +33,8 @@ interface PrebuiltPackage {
   version: string;
   // Alternative versions that can use this prebuilt (semver compatible)
   compatibleVersions?: string[];
+  // Whether package is pure (no React dependencies) - safe for ?bundle optimization
+  pure?: boolean;
 }
 
 interface PrebuiltManifest {
@@ -52,25 +54,46 @@ interface PrebuiltPackageEntry {
 }
 
 // Top packages based on common artifact usage patterns
-// IMPORTANT: Only include packages that do NOT import from "react" internally!
-// Packages that import React hooks break with ?bundle because esm.sh's nested
-// bundle files resolve "react" relative to esm.sh, not our import map shims.
 //
-// EXCLUDED (use React internally - breaks with ?bundle):
-// - recharts (uses React hooks)
-// - @radix-ui/* (use React hooks like useInsertionEffect)
-// - framer-motion (uses useInsertionEffect)
-// - lucide-react (React component library)
-// - react-hook-form (React hooks library)
-// - @dnd-kit/* (React hooks library)
+// NOTE: This list includes ALL packages we want to prebuilt, including those with React dependencies.
+// For React-dependent packages, we DON'T use ?bundle (which breaks hooks), but we still fetch
+// the standard esm.sh URL to measure real fetchTime for accurate performance estimates.
 //
-// These packages work fine with our existing import map + ?external=react,react-dom approach.
-// The ?bundle optimization only works for packages with NO React dependencies.
+// Packages are categorized:
+// - PURE: No React dependencies - can use ?bundle optimization
+// - REACT: Uses React hooks - must use standard esm.sh URL (no ?bundle)
+//
 const PREBUILT_PACKAGES: PrebuiltPackage[] = [
-  // Pure utility libraries (no React dependencies - safe for ?bundle)
-  { name: "date-fns", version: "4.1.0", compatibleVersions: ["^4.0.0"] },
-  { name: "clsx", version: "2.1.1", compatibleVersions: ["^2.0.0", "^1.0.0"] },
-  { name: "class-variance-authority", version: "0.7.1", compatibleVersions: ["^0.7.0", "^0.6.0"] },
+  // ===== PURE UTILITY LIBRARIES (no React dependencies - safe for ?bundle) =====
+  { name: "date-fns", version: "4.1.0", compatibleVersions: ["^4.0.0"], pure: true },
+  { name: "clsx", version: "2.1.1", compatibleVersions: ["^2.0.0", "^1.0.0"], pure: true },
+  { name: "class-variance-authority", version: "0.7.1", compatibleVersions: ["^0.7.0", "^0.6.0"], pure: true },
+  { name: "tailwind-merge", version: "2.6.0", compatibleVersions: ["^2.0.0"], pure: true },
+  { name: "uuid", version: "11.0.3", compatibleVersions: ["^11.0.0", "^10.0.0", "^9.0.0"], pure: true },
+
+  // ===== RADIX UI COMPONENTS (use React hooks - no ?bundle) =====
+  // Updated 2025-12-06 to latest versions
+  { name: "@radix-ui/react-dialog", version: "1.1.15", compatibleVersions: ["^1.0.0"], pure: false },
+  { name: "@radix-ui/react-dropdown-menu", version: "2.1.16", compatibleVersions: ["^2.0.0"], pure: false },
+  { name: "@radix-ui/react-select", version: "2.2.6", compatibleVersions: ["^2.0.0"], pure: false },
+  { name: "@radix-ui/react-tabs", version: "1.1.13", compatibleVersions: ["^1.0.0"], pure: false },
+  { name: "@radix-ui/react-tooltip", version: "1.2.8", compatibleVersions: ["^1.0.0"], pure: false },
+  { name: "@radix-ui/react-popover", version: "1.1.15", compatibleVersions: ["^1.0.0"], pure: false },
+  { name: "@radix-ui/react-accordion", version: "1.2.12", compatibleVersions: ["^1.0.0"], pure: false },
+  { name: "@radix-ui/react-checkbox", version: "1.3.3", compatibleVersions: ["^1.0.0"], pure: false },
+  { name: "@radix-ui/react-radio-group", version: "1.3.8", compatibleVersions: ["^1.0.0"], pure: false },
+  { name: "@radix-ui/react-switch", version: "1.2.6", compatibleVersions: ["^1.0.0"], pure: false },
+  { name: "@radix-ui/react-slider", version: "1.3.6", compatibleVersions: ["^1.0.0"], pure: false },
+  { name: "@radix-ui/react-scroll-area", version: "1.2.10", compatibleVersions: ["^1.0.0"], pure: false },
+  { name: "@radix-ui/react-avatar", version: "1.1.11", compatibleVersions: ["^1.0.0"], pure: false },
+  { name: "@radix-ui/react-progress", version: "1.1.8", compatibleVersions: ["^1.0.0"], pure: false },
+  { name: "@radix-ui/react-separator", version: "1.1.8", compatibleVersions: ["^1.0.0"], pure: false },
+
+  // ===== OTHER REACT LIBRARIES (use React hooks - no ?bundle) =====
+  // Note: recharts kept at 2.15.0 (v3 has breaking changes requiring migration)
+  { name: "recharts", version: "2.15.0", compatibleVersions: ["^2.0.0"], pure: false },
+  { name: "lucide-react", version: "0.556.0", compatibleVersions: ["^0.400.0", "^0.500.0"], pure: false },
+  { name: "@tanstack/react-query", version: "5.90.12", compatibleVersions: ["^5.0.0"], pure: false },
 ];
 
 /**
@@ -90,19 +113,28 @@ function buildEsmUrl(name: string, version: string): string {
 }
 
 /**
- * Fetch a package bundle and measure timing
+ * Fetch a package and measure timing
+ *
+ * For pure packages: Uses ?bundle URL for single-file optimization
+ * For React packages: Uses standard esm.sh URL (no ?bundle to preserve hooks)
+ *
+ * @param name - Package name
+ * @param version - Package version
+ * @param pure - If true, use ?bundle URL; if false, use standard URL
  */
 async function fetchPackageBundle(
   name: string,
-  version: string
+  version: string,
+  pure = true
 ): Promise<{ size: number; fetchTime: number } | null> {
-  const bundleUrl = buildBundleUrl(name, version);
-  console.log(`  Fetching ${name}@${version}...`);
+  const url = pure ? buildBundleUrl(name, version) : buildEsmUrl(name, version);
+  const urlType = pure ? "bundle" : "standard";
+  console.log(`  Fetching ${name}@${version} (${urlType})...`);
 
   const startTime = Date.now();
 
   try {
-    const response = await fetch(bundleUrl, {
+    const response = await fetch(url, {
       headers: {
         "User-Agent": "Vana-Prebuild-Script/1.0",
       },
@@ -128,33 +160,58 @@ async function fetchPackageBundle(
 
 /**
  * Main build function
+ *
+ * Fetches all packages in parallel (with concurrency limit) to speed up the build.
+ * Pure packages get ?bundle URLs, React packages get standard URLs.
  */
 async function buildPrebuiltBundles(): Promise<void> {
   console.log("Building prebuilt bundle manifest...\n");
   console.log(`Processing ${PREBUILT_PACKAGES.length} packages:\n`);
+
+  const CONCURRENCY_LIMIT = 5; // Avoid overwhelming esm.sh
 
   const entries: PrebuiltPackageEntry[] = [];
   let totalSize = 0;
   let successCount = 0;
   let failCount = 0;
 
-  for (const pkg of PREBUILT_PACKAGES) {
-    const result = await fetchPackageBundle(pkg.name, pkg.version);
+  // Process packages in batches to limit concurrency
+  for (let i = 0; i < PREBUILT_PACKAGES.length; i += CONCURRENCY_LIMIT) {
+    const batch = PREBUILT_PACKAGES.slice(i, i + CONCURRENCY_LIMIT);
+    console.log(`\n--- Batch ${Math.floor(i / CONCURRENCY_LIMIT) + 1}/${Math.ceil(PREBUILT_PACKAGES.length / CONCURRENCY_LIMIT)} ---`);
 
-    if (result) {
-      entries.push({
-        name: pkg.name,
-        version: pkg.version,
-        compatibleVersions: pkg.compatibleVersions || [],
-        esmUrl: buildEsmUrl(pkg.name, pkg.version),
-        bundleUrl: buildBundleUrl(pkg.name, pkg.version),
-        size: result.size,
-        fetchTime: result.fetchTime,
-      });
-      totalSize += result.size;
-      successCount++;
-    } else {
-      failCount++;
+    const batchResults = await Promise.all(
+      batch.map(async (pkg) => {
+        const isPure = pkg.pure !== false; // Default to true if not specified
+        const result = await fetchPackageBundle(pkg.name, pkg.version, isPure);
+
+        if (result) {
+          return {
+            success: true as const,
+            entry: {
+              name: pkg.name,
+              version: pkg.version,
+              compatibleVersions: pkg.compatibleVersions || [],
+              esmUrl: buildEsmUrl(pkg.name, pkg.version),
+              // Only use bundleUrl for pure packages; React packages use esmUrl for both
+              bundleUrl: isPure ? buildBundleUrl(pkg.name, pkg.version) : buildEsmUrl(pkg.name, pkg.version),
+              size: result.size,
+              fetchTime: result.fetchTime,
+            },
+          };
+        }
+        return { success: false as const, name: pkg.name };
+      })
+    );
+
+    for (const result of batchResults) {
+      if (result.success) {
+        entries.push(result.entry);
+        totalSize += result.entry.size;
+        successCount++;
+      } else {
+        failCount++;
+      }
     }
   }
 
@@ -164,7 +221,7 @@ async function buildPrebuiltBundles(): Promise<void> {
 
   // Generate manifest
   const manifest: PrebuiltManifest = {
-    version: "1.0.0",
+    version: "2.1.0",
     generated: new Date().toISOString(),
     packages: entries,
   };
