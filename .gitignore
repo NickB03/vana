@@ -124,3 +124,9 @@ supabase/functions/deno.lock
 deno.lock
 Demos/*.mp4
 .archive/
+
+# gemini-cli settings
+.gemini/
+
+# GitHub App credentials
+gha-creds-*.json
