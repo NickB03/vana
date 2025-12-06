@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,17 +6,13 @@ import {
   PromptInput,
   PromptInputTextarea
 } from "@/components/prompt-kit/prompt-input";
-import { PromptInputControls } from "@/components/prompt-kit/prompt-input-controls";
 import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
   X,
-  MessageSquare,
   Image as ImageIcon,
   Wand2,
-  History,
-  RotateCcw,
   Play
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -34,7 +30,6 @@ interface TourStep {
   target: string;
   title: string;
   description: string;
-  icon: React.ReactNode;
   position: "top" | "bottom" | "left" | "right";
 }
 
@@ -44,7 +39,6 @@ const tourSteps: TourStep[] = [
     target: "#demo-chat-input",
     title: "Start Chatting",
     description: "Type anything here to chat with Vana. Ask questions, get help with code, or request creative content.",
-    icon: <MessageSquare className="h-5 w-5" />,
     position: "top"
   },
   {
@@ -52,7 +46,6 @@ const tourSteps: TourStep[] = [
     target: "#demo-image-mode",
     title: "Generate Images",
     description: "Enable Image Mode to create AI-generated images from your text descriptions.",
-    icon: <ImageIcon className="h-5 w-5" />,
     position: "top"
   },
   {
@@ -60,7 +53,6 @@ const tourSteps: TourStep[] = [
     target: "#demo-artifact-mode",
     title: "Create Artifacts",
     description: "Artifact Mode generates interactive React components, games, dashboards, and more.",
-    icon: <Wand2 className="h-5 w-5" />,
     position: "top"
   },
   {
@@ -68,7 +60,6 @@ const tourSteps: TourStep[] = [
     target: "#demo-suggestions",
     title: "Quick Ideas",
     description: "Choose from pre-built suggestions to see what Vana can do instantly.",
-    icon: <Sparkles className="h-5 w-5" />,
     position: "top"
   },
   {
@@ -76,13 +67,12 @@ const tourSteps: TourStep[] = [
     target: "#demo-sidebar",
     title: "Chat History",
     description: "Access your previous conversations here. All chats are saved automatically.",
-    icon: <History className="h-5 w-5" />,
     position: "right"
   }
 ];
 
-// Spotlight overlay component with enhanced visuals
-const SpotlightOverlay = ({
+// Gradient glow highlight border (no dark overlay)
+const GradientGlowBorder = ({
   targetRect,
   isVisible
 }: {
@@ -91,86 +81,63 @@ const SpotlightOverlay = ({
 }) => {
   if (!isVisible || !targetRect) return null;
 
-  // Create a mask that highlights the target element
-  const padding = 12;
-  const borderRadius = 16;
+  const padding = 8;
+  const borderRadius = 12;
 
   return (
-    <div className="fixed inset-0 z-40 pointer-events-none">
-      {/* Backdrop with gradient overlay */}
-      <svg className="w-full h-full">
-        <defs>
-          {/* Radial gradient for spotlight glow */}
-          <radialGradient id="spotlight-glow" cx="50%" cy="50%">
-            <stop offset="0%" stopColor="rgba(0, 0, 0, 0.6)" />
-            <stop offset="100%" stopColor="rgba(0, 0, 0, 0.85)" />
-          </radialGradient>
-
-          {/* Mask for spotlight cutout */}
-          <mask id="spotlight-mask">
-            {/* White background (visible area) */}
-            <rect width="100%" height="100%" fill="white" />
-            {/* Black rectangle (cut out / transparent area) with larger border radius */}
-            <rect
-              x={targetRect.left - padding}
-              y={targetRect.top - padding}
-              width={targetRect.width + padding * 2}
-              height={targetRect.height + padding * 2}
-              rx={borderRadius}
-              ry={borderRadius}
-              fill="black"
-            />
-          </mask>
-        </defs>
-        {/* Dark overlay with mask and gradient applied */}
-        <rect
-          width="100%"
-          height="100%"
-          fill="url(#spotlight-glow)"
-          mask="url(#spotlight-mask)"
-        />
-      </svg>
-
-      {/* Animated highlight ring with gradient border */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-        className="absolute rounded-2xl"
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="fixed z-40 pointer-events-none"
+      style={{
+        left: targetRect.left - padding,
+        top: targetRect.top - padding,
+        width: targetRect.width + padding * 2,
+        height: targetRect.height + padding * 2,
+      }}
+    >
+      {/* Outer glow layer */}
+      <div
+        className="absolute inset-0"
         style={{
-          left: targetRect.left - padding,
-          top: targetRect.top - padding,
-          width: targetRect.width + padding * 2,
-          height: targetRect.height + padding * 2,
+          borderRadius: `${borderRadius}px`,
+          background: 'linear-gradient(135deg, hsl(var(--accent-primary) / 0.3), hsl(var(--accent-primary-bright) / 0.3))',
+          filter: 'blur(8px)',
         }}
-      >
-        {/* Outer glow */}
-        <div
-          className="absolute inset-0 rounded-2xl animate-pulse"
-          style={{
-            background: 'linear-gradient(135deg, hsl(var(--accent-primary) / 0.4), hsl(var(--accent-primary-bright) / 0.4))',
-            filter: 'blur(12px)',
-          }}
-        />
+      />
 
-        {/* Border ring with gradient */}
-        <div
-          className="absolute inset-0 rounded-2xl border-2"
-          style={{
-            borderImage: 'linear-gradient(135deg, hsl(var(--accent-primary)), hsl(var(--accent-primary-bright))) 1',
-            boxShadow: `
-              0 0 0 1px hsl(var(--accent-primary) / 0.3),
-              0 0 20px hsl(var(--accent-primary) / 0.4),
-              0 0 40px hsl(var(--accent-primary) / 0.2)
-            `
-          }}
-        />
-      </motion.div>
-    </div>
+      {/* Gradient border using pseudo-element technique */}
+      <div
+        className="absolute inset-0"
+        style={{
+          borderRadius: `${borderRadius}px`,
+          padding: '2px',
+          background: 'linear-gradient(135deg, hsl(var(--accent-primary)), hsl(var(--accent-primary-bright)))',
+          WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+          WebkitMaskComposite: 'xor',
+          maskComposite: 'exclude',
+        }}
+      />
+
+      {/* Box shadow glow */}
+      <div
+        className="absolute inset-0"
+        style={{
+          borderRadius: `${borderRadius}px`,
+          boxShadow: `
+            0 0 20px hsl(var(--accent-primary) / 0.4),
+            0 0 40px hsl(var(--accent-primary) / 0.2),
+            inset 0 0 20px hsl(var(--accent-primary) / 0.1)
+          `,
+        }}
+      />
+    </motion.div>
   );
 };
 
-// Tour tooltip component
+// Compact tour tooltip component
 const TourTooltip = ({
   step,
   currentStep,
@@ -195,10 +162,10 @@ const TourTooltip = ({
   const isLastStep = currentStep === totalSteps - 1;
   const isFirstStep = currentStep === 0;
 
-  // Calculate tooltip position
+  // Calculate tooltip position - compact size
   const getTooltipStyle = () => {
-    const tooltipWidth = 320;
-    const tooltipHeight = 180;
+    const tooltipWidth = 280;
+    const tooltipHeight = 140; // Reduced height
     const gap = 16;
 
     let left = targetRect.left + targetRect.width / 2 - tooltipWidth / 2;
@@ -222,9 +189,9 @@ const TourTooltip = ({
         break;
     }
 
-    // Keep tooltip within viewport
-    left = Math.max(16, Math.min(left, window.innerWidth - tooltipWidth - 16));
-    top = Math.max(16, Math.min(top, window.innerHeight - tooltipHeight - 16));
+    // Keep tooltip within viewport with more margin
+    left = Math.max(20, Math.min(left, window.innerWidth - tooltipWidth - 20));
+    top = Math.max(20, Math.min(top, window.innerHeight - tooltipHeight - 20));
 
     return { left, top, width: tooltipWidth };
   };
@@ -233,113 +200,61 @@ const TourTooltip = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
       className="fixed z-50 pointer-events-auto"
       style={style}
     >
-      <Card className="bg-card/95 backdrop-blur-xl border-border shadow-2xl relative overflow-hidden">
-        {/* Gradient accent bar at top */}
-        <div
-          className="absolute top-0 left-0 right-0 h-1"
-          style={{
-            background: 'linear-gradient(90deg, hsl(var(--accent-primary)), hsl(var(--accent-primary-bright)))',
-          }}
-        />
+      <Card className="bg-card border-border shadow-xl">
+        <CardContent className="p-4">
+          {/* Title */}
+          <h3 className="font-semibold text-foreground text-base mb-0.5">
+            {step.title}
+          </h3>
 
-        <CardContent className="p-5">
-          {/* Header with icon and title */}
-          <div className="flex items-start gap-3 mb-4">
-            {/* Icon with gradient background */}
-            <div
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl relative overflow-hidden"
-              style={{
-                background: 'linear-gradient(135deg, hsl(var(--accent-primary) / 0.15), hsl(var(--accent-primary-bright) / 0.15))',
-                border: '1px solid hsl(var(--accent-primary) / 0.2)'
-              }}
-            >
-              <div style={{ color: 'hsl(var(--accent-primary))' }}>
-                {step.icon}
-              </div>
-            </div>
+          {/* Step counter */}
+          <p className="text-xs text-muted-foreground mb-2">
+            Step {currentStep + 1} of {totalSteps}
+          </p>
 
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-foreground text-base mb-1.5">
-                {step.title}
-              </h3>
-              <p className="text-sm text-muted-foreground-accessible leading-relaxed">
-                {step.description}
-              </p>
-            </div>
-          </div>
+          {/* Description - shorter */}
+          <p className="text-sm text-muted-foreground leading-snug mb-4">
+            {step.description}
+          </p>
 
-          {/* Footer with navigation */}
-          <div className="flex items-center justify-between mt-5 pt-4 border-t border-border/50">
+          {/* Navigation buttons */}
+          <div className="flex items-center justify-between">
             {/* Skip link */}
             <button
               onClick={onSkip}
-              className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               Skip tour
             </button>
 
-            {/* Progress and navigation */}
-            <div className="flex items-center gap-3">
-              {/* Progress dots */}
-              <div className="flex gap-1.5 mr-1">
-                {Array.from({ length: totalSteps }).map((_, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ scale: 0.8 }}
-                    animate={{ scale: i === currentStep ? 1 : 0.8 }}
-                    className={cn(
-                      "rounded-full transition-all duration-300",
-                      i === currentStep
-                        ? "w-6 h-2"
-                        : "w-2 h-2"
-                    )}
-                    style={{
-                      background: i === currentStep
-                        ? 'linear-gradient(90deg, hsl(var(--accent-primary)), hsl(var(--accent-primary-bright)))'
-                        : 'hsl(var(--muted-foreground) / 0.25)'
-                    }}
-                  />
-                ))}
-              </div>
-
-              {/* Previous button */}
-              {!isFirstStep && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onPrev}
-                  className="h-8 w-8 p-0 hover:bg-accent/50"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-              )}
-
-              {/* Next/Complete button with gradient */}
+            {/* Prev/Next buttons */}
+            <div className="flex items-center gap-2">
               <Button
+                variant="outline"
+                size="sm"
+                onClick={onPrev}
+                disabled={isFirstStep}
+                className="h-8 px-3 gap-1"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                Prev
+              </Button>
+
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={isLastStep ? onComplete : onNext}
-                className="h-8 gap-1.5 font-medium px-4 border-0 shadow-lg"
-                style={{
-                  background: 'linear-gradient(135deg, hsl(var(--accent-primary)), hsl(var(--accent-primary-bright)))',
-                  boxShadow: '0 4px 12px hsl(var(--accent-primary) / 0.3)',
-                  color: 'white'
-                }}
+                className="h-8 px-3 gap-1"
               >
-                {isLastStep ? (
-                  "Get Started"
-                ) : (
-                  <>
-                    Next
-                    <ChevronRight className="h-4 w-4" />
-                  </>
-                )}
+                {isLastStep ? "Finish" : "Next"}
+                {!isLastStep && <ChevronRight className="h-3.5 w-3.5" />}
               </Button>
             </div>
           </div>
@@ -405,7 +320,6 @@ export default function FeatureTourDemo() {
   const [input, setInput] = useState("");
   const [imageMode, setImageMode] = useState(false);
   const [artifactMode, setArtifactMode] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentStep = tourSteps[currentStepIndex];
 
@@ -613,11 +527,11 @@ export default function FeatureTourDemo() {
         </div>
       </div>
 
-      {/* Tour overlay and tooltip */}
+      {/* Tour highlight and tooltip */}
       <AnimatePresence>
         {isTourActive && (
           <>
-            <SpotlightOverlay
+            <GradientGlowBorder
               targetRect={targetRect}
               isVisible={isTourActive}
             />
