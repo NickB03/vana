@@ -618,7 +618,32 @@ Content-Type: application/json
 |-------|-----------|----------|
 | GLM-4.6 | Advanced reasoning, tool streaming | Artifacts, complex code |
 | GLM-4.5 | Balanced performance | General tasks |
+| GLM-4.5-Air | Ultra-fast response, lightweight | Status summaries (Sidecar Commentator) |
 | GLM-4.5V | Vision capabilities | Image understanding |
+
+### AI Sidecar Commentator (GLM-4.5-Air)
+
+The Sidecar Commentator uses GLM-4.5-Air for ultra-fast semantic summarization of reasoning text during artifact generation. It runs in parallel with GLM-4.6 and provides meaningful status updates like "Designing authentication flow" instead of raw reasoning text.
+
+**API Parameters for GLM-4.5-Air:**
+```json
+{
+  "model": "glm-4.5-air",
+  "messages": [...],
+  "max_tokens": 25,
+  "temperature": 0,
+  "stream": false,
+  "thinking": { "type": "disabled" }
+}
+```
+
+**Key Characteristics:**
+- Uses same endpoint and API key as GLM-4.6 (Coding Plan)
+- 128K context window
+- Designed for low-latency summarization (~200-400ms)
+- No deep thinking mode (disabled for speed)
+
+**Implementation:** `supabase/functions/_shared/ai-commentator.ts`
 
 ---
 
