@@ -545,12 +545,23 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
           // Parse reasoning to structured format
           const reasoningSteps = reasoning ? parseGLMReasoningToStructured(reasoning) : null;
 
-          // Send final status update before artifact_complete (so ticker shows "Artifact complete")
+          // Generate final summary using AI Commentator (non-blocking, with fallback)
+          // This provides a meaningful ticker message like "Created a counter button component"
+          const finalSummary = await commentator.generateFinalSummary(artifactCode, prompt).catch(() => null);
+
+          // Send final status update with the AI-generated summary (or fallback)
+          const finalStatus = finalSummary || "Artifact complete";
           await sendEvent("status_update", {
-            status: "Artifact complete",
+            status: finalStatus,
             source: "completion",
             final: true,
           });
+
+          // If we have a final summary, update the last step's title in reasoningSteps
+          // so the ticker shows the summary after streaming ends
+          if (finalSummary && reasoningSteps && reasoningSteps.steps.length > 0) {
+            reasoningSteps.steps[reasoningSteps.steps.length - 1].title = finalSummary;
+          }
 
           // Send final completion event
           await sendEvent("artifact_complete", {
@@ -558,6 +569,7 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
             artifactCode,
             reasoning,
             reasoningSteps,
+            finalSummary, // Include for frontend to use in ticker
             requestId,
             validation: {
               autoFixed: !validation.valid && validation.canAutoFix,

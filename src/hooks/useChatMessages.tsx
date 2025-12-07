@@ -749,10 +749,25 @@ export function useChatMessages(
                 case "reasoning_complete": {
                   console.log(`🧠 [useChatMessages] Reasoning complete: ${(eventData.reasoning as string)?.length || 0} chars, ${(eventData.stepCount as number) || 0} steps`);
 
-                  // Use server-provided structured reasoning if available
-                  if (eventData.reasoningSteps) {
-                    streamingReasoningSteps = eventData.reasoningSteps as StructuredReasoning;
+                  // Use server-provided structured reasoning ONLY if we haven't accumulated richer data
+                  // The backend re-parses reasoning text which often produces fewer, less granular steps
+                  const backendReasoningSteps = eventData.reasoningSteps as StructuredReasoning | undefined;
+                  const backendStepCount = backendReasoningSteps?.steps?.length ?? 0;
+                  const streamingStepCount = streamingReasoningSteps.steps.length;
+
+                  if (backendReasoningSteps && backendStepCount > streamingStepCount) {
+                    // Backend has more steps, use it
+                    streamingReasoningSteps = backendReasoningSteps;
+                    console.log(`📊 [reasoning_complete] Using backend steps (${backendStepCount}) over streaming (${streamingStepCount})`);
+                  } else if (streamingStepCount > 0) {
+                    // Keep accumulated streaming steps - they're richer
+                    console.log(`📊 [reasoning_complete] Keeping streaming steps (${streamingStepCount}) over backend (${backendStepCount})`);
+                  } else if (backendReasoningSteps) {
+                    // No streaming steps, use backend as fallback
+                    streamingReasoningSteps = backendReasoningSteps;
+                    console.log(`📊 [reasoning_complete] Using backend steps (${backendStepCount}) - no streaming steps`);
                   }
+
                   if (eventData.reasoning) {
                     streamingReasoningText = eventData.reasoning as string;
                   }
@@ -820,15 +835,37 @@ export function useChatMessages(
                   // DEBUG: Log what we received from backend
                   console.log("📊 [artifact_complete] eventData.reasoning length:", (eventData.reasoning as string)?.length ?? 0);
                   console.log("📊 [artifact_complete] eventData.reasoningSteps:", eventData.reasoningSteps ? "present" : "missing");
+                  console.log("📊 [artifact_complete] eventData.finalSummary:", eventData.finalSummary || "none");
                   console.log("📊 [artifact_complete] streamingReasoningText length:", streamingReasoningText.length);
                   console.log("📊 [artifact_complete] streamingReasoningSteps count:", streamingReasoningSteps.steps.length);
 
                   // Use backend reasoning if available, otherwise fall back to accumulated streaming text
                   const finalReasoning = (eventData.reasoning as string) || streamingReasoningText || undefined;
 
-                  // Use backend reasoningSteps if available, otherwise fall back to accumulated streaming steps
-                  const finalReasoningSteps = (eventData.reasoningSteps as StructuredReasoning) ||
-                    (streamingReasoningSteps.steps.length > 0 ? streamingReasoningSteps : undefined);
+                  // Prefer streaming steps if they have more content than the parsed backend steps
+                  // The backend re-parses reasoning into steps which may lose granularity
+                  const backendSteps = eventData.reasoningSteps as StructuredReasoning | undefined;
+                  const streamingStepsCount = streamingReasoningSteps.steps.length;
+                  const backendStepsCount = backendSteps?.steps?.length ?? 0;
+
+                  // Use streaming steps if they're richer, otherwise fall back to backend
+                  let finalReasoningSteps: StructuredReasoning | undefined;
+                  if (streamingStepsCount > 0 && streamingStepsCount >= backendStepsCount) {
+                    finalReasoningSteps = streamingReasoningSteps;
+                    console.log("📊 [artifact_complete] Using streaming steps (", streamingStepsCount, ") over backend (", backendStepsCount, ")");
+                  } else if (backendSteps && backendStepsCount > 0) {
+                    finalReasoningSteps = backendSteps;
+                    console.log("📊 [artifact_complete] Using backend steps (", backendStepsCount, ")");
+                  }
+
+                  // If we have a finalSummary from the AI Commentator, ensure it's in the last step
+                  // This provides a meaningful ticker message like "Created a counter button component"
+                  const finalSummary = eventData.finalSummary as string | undefined;
+                  if (finalSummary && finalReasoningSteps && finalReasoningSteps.steps.length > 0) {
+                    // Update the last step's title to the AI-generated summary
+                    finalReasoningSteps.steps[finalReasoningSteps.steps.length - 1].title = finalSummary;
+                    console.log("📊 [artifact_complete] Updated last step title to finalSummary:", finalSummary);
+                  }
 
                   console.log("📊 [artifact_complete] Final reasoning length:", finalReasoning?.length ?? 0);
                   console.log("📊 [artifact_complete] Final reasoningSteps:", finalReasoningSteps ? `${finalReasoningSteps.steps.length} steps` : "none");

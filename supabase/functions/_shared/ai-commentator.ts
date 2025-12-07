@@ -617,6 +617,116 @@ export class AICommentator {
       bufferLength: this.state.buffer.length,
     };
   }
+
+  /**
+   * Generate a final summary statement describing what was created
+   *
+   * This is called at the end of artifact generation to provide a concise
+   * summary for the ticker (e.g., "Created a counter button component")
+   *
+   * @param artifactCode - The generated artifact code
+   * @param userPrompt - The original user request
+   * @returns A concise summary statement, or null if generation fails
+   */
+  async generateFinalSummary(artifactCode: string, userPrompt: string): Promise<string | null> {
+    if (!this.enabled) {
+      return null;
+    }
+
+    const startTime = Date.now();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000); // Slightly longer timeout for summary
+
+    try {
+      const modelName = MODELS.GLM_4_5_AIR.split('/').pop();
+
+      const response = await fetch(`${GLM_BASE_URL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${GLM_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: modelName,
+          messages: [
+            {
+              role: 'system',
+              content: `You are a concise summarizer. Given a user's request and the generated code, write a brief past-tense summary (4-8 words) describing what was created.
+
+RULES:
+1. Use past tense: "Created", "Built", "Designed", "Implemented"
+2. Be specific about WHAT was created
+3. Keep it under 8 words
+4. No punctuation at the end
+5. Start with an action verb
+
+EXAMPLES:
+User: "make a todo app"
+Code: [React todo list code]
+Output: Created an interactive todo list app
+
+User: "build a landing page for my SaaS"
+Code: [Landing page code]
+Output: Built a SaaS landing page
+
+User: "create a counter button"
+Code: [Counter component]
+Output: Created a counter button component
+
+User: "make a snake game"
+Code: [Snake game code]
+Output: Built an interactive snake game
+
+OUTPUT: Return ONLY the summary phrase, nothing else.`
+            },
+            {
+              role: 'user',
+              content: `User request: "${userPrompt.slice(0, 200)}"\n\nGenerated code (first 500 chars):\n${artifactCode.slice(0, 500)}`
+            }
+          ],
+          max_tokens: 30,
+          temperature: 0,
+          stream: false,
+          thinking: { type: 'disabled' }
+        }),
+      });
+
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        console.warn(`[${this.requestId}] Final summary API error ${response.status}`);
+        return null;
+      }
+
+      const data = await response.json();
+      const summary = data.choices?.[0]?.message?.content?.trim();
+
+      if (!summary) {
+        return null;
+      }
+
+      // Clean up the summary
+      const cleanSummary = summary
+        .replace(/^["']|["']$/g, '')
+        .replace(/\.$/, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      console.log(`[${this.requestId}] Final summary: "${cleanSummary}" in ${Date.now() - startTime}ms`);
+
+      return cleanSummary;
+
+    } catch (err) {
+      clearTimeout(timeout);
+      if (err instanceof Error && err.name === 'AbortError') {
+        console.warn(`[${this.requestId}] Final summary timeout`);
+      } else {
+        console.warn(`[${this.requestId}] Final summary error:`, err);
+      }
+      return null;
+    }
+  }
 }
 
 /**

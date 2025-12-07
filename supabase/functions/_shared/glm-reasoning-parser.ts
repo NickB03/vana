@@ -457,7 +457,7 @@ function createFallbackReasoning(rawText: string): StructuredReasoning {
     steps: [
       {
         phase: 'custom',
-        title: 'Model reasoning',
+        title: 'AI reasoning complete',
         icon: 'sparkles',
         items: items.length > 0 ? items : [rawText.substring(0, 500)],
       },

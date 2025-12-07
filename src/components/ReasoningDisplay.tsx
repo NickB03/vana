@@ -297,9 +297,17 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
       return getStreamingStatus();
     }
 
-    // After streaming (collapsed): show last status
+    // After streaming (collapsed): show last step title
+    // This will be the AI-generated summary like "Created a counter button component"
+    // or fall back to "Thought process" for generic/missing titles
     if (validatedSteps && lastStep) {
-      return truncateText(lastStep.title, 70);
+      const title = lastStep.title;
+      // Only use fallback for truly generic titles that don't describe what was created
+      // Keep meaningful summaries like "Created a counter button component"
+      if (title === 'Model reasoning' || title === 'AI reasoning complete' || !title) {
+        return 'Thought process';
+      }
+      return truncateText(title, 70);
     }
 
     // Fallback for non-structured reasoning
