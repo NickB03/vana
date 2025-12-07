@@ -1,4 +1,4 @@
-<!-- CLAUDE.md v2.8 | Last updated: 2025-12-03 | Added demo video compression guide -->
+<!-- CLAUDE.md v2.9 | Last updated: 2025-12-06 | Added GEMINI.md reference -->
 
 # CLAUDE.md
 
@@ -501,6 +501,7 @@ docker exec -i supabase_db_vznhbocnuykdmjvujaka psql -U postgres -c "DELETE FROM
 - **GLM-4.6 Capabilities**: `.claude/docs/GLM-4.6-CAPABILITIES.md`
 - **Artifact Import Guide**: `.claude/artifact-import-restrictions.md`
 - **Chrome MCP Guide**: `.claude/CHROME_MCP_COMMANDS.md`
+- **Gemini CLI Context**: `GEMINI.md` — Project context for Gemini CLI PR reviews
 - **README**: `README.md`
 - **Supabase Docs**: https://supabase.com/docs
 - **OpenRouter Docs**: https://openrouter.ai/docs
