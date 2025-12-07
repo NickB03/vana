@@ -19,16 +19,16 @@ Deno.test("Model Router - Cost estimation", async (t) => {
     assertEquals(Math.abs(cost - 0.0001575) < 0.0000001, true);
   });
 
-  await t.step("calculates cost for Kimi K2", () => {
-    const cost = estimateCost(100, 500, MODELS.KIMI_K2);
+  await t.step("calculates cost for GLM-4.6", () => {
+    const cost = estimateCost(100, 500, MODELS.GLM_4_6);
     // (100 * 0.15 + 500 * 0.60) / 1M = 0.000315
     assertEquals(Math.abs(cost - 0.000315) < 0.0000001, true);
   });
 
-  await t.step("Kimi K2 is more expensive than Gemini Flash", () => {
-    const kimiCost = estimateCost(1000, 2000, MODELS.KIMI_K2);
+  await t.step("GLM-4.6 is more expensive than Gemini Flash", () => {
+    const glmCost = estimateCost(1000, 2000, MODELS.GLM_4_6);
     const geminiCost = estimateCost(1000, 2000, MODELS.GEMINI_FLASH);
-    assertEquals(kimiCost > geminiCost, true);
+    assertEquals(glmCost > geminiCost, true);
   });
 
   await t.step("handles unknown model gracefully", () => {
@@ -59,7 +59,7 @@ Deno.test("Model Router - Chat routing", async (t) => {
     const selection = selectModel(complexity, "chat");
 
     assertEquals(selection.model, MODELS.GEMINI_FLASH);
-    assertEquals(selection.reason.includes("moderate"), true);
+    assertEquals(selection.reason.toLowerCase().includes("moderate"), true);
   });
 
   await t.step("routes complex chat to Gemini Flash", () => {
@@ -84,11 +84,11 @@ Deno.test("Model Router - Chat routing", async (t) => {
 });
 
 Deno.test("Model Router - Artifact routing", async (t) => {
-  await t.step("always routes artifacts to Kimi K2", () => {
+  await t.step("always routes artifacts to GLM-4.6", () => {
     const simpleComplexity = analyzeComplexity("Build a button");
     const selection = selectModel(simpleComplexity, "artifact");
 
-    assertEquals(selection.model, MODELS.KIMI_K2);
+    assertEquals(selection.model, MODELS.GLM_4_6);
     assertEquals(selection.reason.includes("reasoning"), true);
   });
 
@@ -106,7 +106,7 @@ Deno.test("Model Router - Artifact routing", async (t) => {
     const chatSelection = selectModel(chatComplexity, "chat");
     const artifactSelection = selectModel(artifactComplexity, "artifact");
 
-    // Artifact should be more expensive (Kimi K2 vs Gemini Flash)
+    // Artifact should be more expensive (GLM-4.6 vs Gemini Flash)
     assertEquals(artifactSelection.estimatedCost > chatSelection.estimatedCost, true);
   });
 });
@@ -141,8 +141,8 @@ Deno.test("Model Router - Cost savings", async (t) => {
     assertEquals(savings.percentSaved < 100, true);
   });
 
-  await t.step("no savings when using Kimi K2", () => {
-    const savings = getCostSavings(MODELS.KIMI_K2, 1000, 2000);
+  await t.step("no savings when using GLM-4.6", () => {
+    const savings = getCostSavings(MODELS.GLM_4_6, 1000, 2000);
 
     assertEquals(savings.saved, 0);
     assertEquals(savings.percentSaved, 0);
@@ -210,7 +210,7 @@ Deno.test("Model Router - Integration scenarios", async (t) => {
     const complexity = analyzeComplexity("Build a React todo list component with TypeScript");
     const selection = selectModel(complexity, "artifact");
 
-    assertEquals(selection.model, MODELS.KIMI_K2);
+    assertEquals(selection.model, MODELS.GLM_4_6);
     assertEquals(complexity.factors.hasCodeRequest, true);
     // Higher cost for artifact generation
     assertEquals(selection.estimatedCost > 0.0002, true);
@@ -252,20 +252,20 @@ Deno.test("Model Router - Integration scenarios", async (t) => {
 Deno.test("Model Router - Cost optimization verification", async (t) => {
   await t.step("Gemini Flash is 50% cheaper for input", () => {
     const geminiCost = estimateCost(1_000_000, 0, MODELS.GEMINI_FLASH);
-    const kimiCost = estimateCost(1_000_000, 0, MODELS.KIMI_K2);
+    const glmCost = estimateCost(1_000_000, 0, MODELS.GLM_4_6);
 
     assertEquals(geminiCost, 0.075); // $0.075 per 1M tokens
-    assertEquals(kimiCost, 0.15);    // $0.15 per 1M tokens
-    assertEquals(kimiCost, geminiCost * 2);
+    assertEquals(glmCost, 0.15);    // $0.15 per 1M tokens
+    assertEquals(glmCost, geminiCost * 2);
   });
 
   await t.step("Gemini Flash is 50% cheaper for output", () => {
     const geminiCost = estimateCost(0, 1_000_000, MODELS.GEMINI_FLASH);
-    const kimiCost = estimateCost(0, 1_000_000, MODELS.KIMI_K2);
+    const glmCost = estimateCost(0, 1_000_000, MODELS.GLM_4_6);
 
     assertEquals(geminiCost, 0.30); // $0.30 per 1M tokens
-    assertEquals(kimiCost, 0.60);   // $0.60 per 1M tokens
-    assertEquals(kimiCost, geminiCost * 2);
+    assertEquals(glmCost, 0.60);   // $0.60 per 1M tokens
+    assertEquals(glmCost, geminiCost * 2);
   });
 
   await t.step("Using Gemini Flash saves 50% on typical chat", () => {

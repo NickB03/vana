@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Code, FileCode, Image, GitBranch, FileText, Braces, Gamepad2, LayoutDashboard, Calculator, Timer, ListTodo, Maximize2 } from "lucide-react";
-import { ArtifactData } from "./Artifact";
+import { ArtifactData } from "./ArtifactContainer";
 import { cn } from "@/lib/utils";
 
 interface ArtifactCardProps {

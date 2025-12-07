@@ -50,6 +50,12 @@ export const MODEL_BUDGETS: Record<string, TokenBudget> = {
     maxContextTokens: 128000,
     reservedForResponse: 8192,
     safetyMargin: 0.15 // 15% safety margin (more conservative due to reasoning tokens)
+  },
+  [MODELS.GLM_4_6]: {
+    model: MODELS.GLM_4_6,
+    maxContextTokens: 128000,
+    reservedForResponse: 8000,
+    safetyMargin: 0.15 // 15% safety margin (reasoning tokens overhead)
   }
 } as const;
 

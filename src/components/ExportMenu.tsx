@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArtifactData } from "./Artifact";
+import { ArtifactData } from "./ArtifactContainer";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,

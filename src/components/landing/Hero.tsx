@@ -40,7 +40,6 @@ export const Hero = () => {
                 prefix="Hi, I'm "
                 highlight="Vana"
                 initialDelay={200}
-                staggerDelay={60}
               />
             </motion.div>
             <motion.p

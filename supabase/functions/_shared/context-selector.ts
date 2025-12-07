@@ -12,8 +12,35 @@
  */
 
 import type { Message } from './token-counter.ts';
-import { countMessageTokens, countTotalTokens } from './token-counter.ts';
+import { countTokens } from './token-counter.ts';
 import { rankMessageImportance } from './context-ranker.ts';
+
+/**
+ * Calculates total token count for messages array.
+ * Uses new token-counter API (countTokens).
+ * @internal Replaces deprecated countTotalTokens()
+ */
+function getTotalMessageTokens(
+  messages: Array<{ role: string; content: string; reasoning_steps?: string | null }>
+): number {
+  return messages.reduce((total, msg) => total + getIndividualMessageTokens(msg), 0);
+}
+
+/**
+ * Calculates token count for a single message.
+ * Includes content, reasoning_steps, and formatting overhead.
+ * @internal Replaces deprecated countMessageTokens()
+ */
+function getIndividualMessageTokens(
+  message: { role: string; content: string; reasoning_steps?: string | null }
+): number {
+  const contentTokens = countTokens(message.content);
+  const reasoningTokens = message.reasoning_steps
+    ? countTokens(message.reasoning_steps)
+    : 0;
+  // Add overhead for role and formatting (~10 tokens per message)
+  return contentTokens + reasoningTokens + 10;
+}
 
 /**
  * Configuration options for context selection.
@@ -108,7 +135,7 @@ export async function selectContext(
     ...options,
   };
 
-  const totalTokens = countTotalTokens(messages);
+  const totalTokens = getTotalMessageTokens(messages);
 
   // Fast path: All messages fit within budget
   if (totalTokens <= tokenBudget) {
@@ -127,7 +154,7 @@ export async function selectContext(
   const olderMessages = messages.slice(0, -recentCount);
 
   // Reserve budget for recent messages and potential summary
-  const recentTokens = countTotalTokens(recentMessages);
+  const recentTokens = getTotalMessageTokens(recentMessages);
   const remainingBudget = tokenBudget - recentTokens - opts.summaryBudget;
 
   // Rank older messages by importance
@@ -154,7 +181,7 @@ export async function selectContext(
     if (!msgWithId) continue;
 
     const message = msgWithId._original;
-    const messageTokens = countMessageTokens(message);
+    const messageTokens = getIndividualMessageTokens(message);
     if (usedTokens + messageTokens <= remainingBudget) {
       selectedOlder.push(message);
       usedTokens += messageTokens;
@@ -175,7 +202,7 @@ export async function selectContext(
 
   // Combine selected older messages with recent messages
   const finalMessages = [...selectedOlder, ...recentMessages];
-  const finalTokens = countTotalTokens(finalMessages);
+  const finalTokens = getTotalMessageTokens(finalMessages);
 
   return {
     selectedMessages: finalMessages,

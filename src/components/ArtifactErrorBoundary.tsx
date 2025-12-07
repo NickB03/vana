@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
+import * as Sentry from "@sentry/react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "./ui/button";
 
@@ -45,16 +46,20 @@ export class ArtifactErrorBoundary extends Component<Props, State> {
       errorInfo
     );
 
-    // TODO: Log to monitoring service (Sentry, DataDog, etc.)
-    // logToSentry({
-    //   error,
-    //   errorInfo,
-    //   context: 'Artifact rendering',
-    //   tags: {
-    //     component: 'ArtifactContainer',
-    //     severity: 'error',
-    //   },
-    // });
+    // Report to Sentry with context
+    Sentry.captureException(error, {
+      contexts: {
+        react: {
+          componentStack: errorInfo.componentStack,
+        },
+      },
+      tags: {
+        component: 'ArtifactErrorBoundary',
+        severity: 'critical',
+        errorType: 'artifact_render_failure',
+      },
+      level: 'error',
+    });
 
     this.setState({
       error,

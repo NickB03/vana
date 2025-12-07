@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
+import * as Sentry from "@sentry/react";
 import { AlertCircle } from "lucide-react";
 import { Button } from "./ui/button";
 import { ThinkingIndicator } from "./ThinkingIndicator";
@@ -40,16 +41,20 @@ export class ReasoningErrorBoundary extends Component<Props, State> {
       errorInfo
     );
 
-    // TODO: Log to monitoring service (Sentry, DataDog, etc.)
-    // logToSentry({
-    //   error,
-    //   errorInfo,
-    //   context: 'ReasoningDisplay rendering',
-    //   tags: {
-    //     component: 'ReasoningDisplay',
-    //     severity: 'error',
-    //   },
-    // });
+    // Report to Sentry with context
+    Sentry.captureException(error, {
+      contexts: {
+        react: {
+          componentStack: errorInfo.componentStack,
+        },
+      },
+      tags: {
+        component: 'ReasoningErrorBoundary',
+        severity: 'medium',
+        errorType: 'reasoning_display_failure',
+      },
+      level: 'warning',
+    });
 
     this.setState({
       error,

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ImagePreviewDialog } from "./ImagePreviewDialog";
-import { ArtifactData } from "./Artifact";
+import { ArtifactData } from "./ArtifactContainer";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
 

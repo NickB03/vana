@@ -237,7 +237,11 @@ export const MODELS = {
   GLM_4_6: 'zhipu/glm-4.6',
   /** GLM-4.5-Air for ultra-fast reasoning summarization (sidecar commentator) - via Z.ai API */
   GLM_4_5_AIR: 'zhipu/glm-4.5-air',
-  /** @deprecated Use GLM_4_6 instead - kept for backward compatibility */
+  /**
+   * @deprecated Fully replaced by GLM_4_6 for artifact generation.
+   * Kept only for backward compatibility during transition.
+   * Will be removed in next major version.
+   */
   KIMI_K2: 'moonshotai/kimi-k2-thinking',
   /** Gemini Flash Image for image generation */
   GEMINI_FLASH_IMAGE: 'google/gemini-2.5-flash-image'

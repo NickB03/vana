@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
+import * as Sentry from "@sentry/react";
 import { AlertCircle, Eye } from "lucide-react";
 import { Button } from "./ui/button";
 
@@ -48,16 +49,20 @@ export class MessageErrorBoundary extends Component<Props, State> {
       errorInfo
     );
 
-    // TODO: Log to monitoring service (Sentry, DataDog, etc.)
-    // logToSentry({
-    //   error,
-    //   errorInfo,
-    //   context: 'Message rendering',
-    //   tags: {
-    //     component: 'MessageWithArtifacts',
-    //     severity: 'warning',
-    //   },
-    // });
+    // Report to Sentry with context
+    Sentry.captureException(error, {
+      contexts: {
+        react: {
+          componentStack: errorInfo.componentStack,
+        },
+      },
+      tags: {
+        component: 'MessageErrorBoundary',
+        severity: 'low',
+        errorType: 'message_render_failure',
+      },
+      level: 'warning',
+    });
 
     this.setState({
       error,

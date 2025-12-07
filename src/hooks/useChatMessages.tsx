@@ -722,8 +722,9 @@ export function useChatMessages(
                 }
 
                 case "reasoning_chunk": {
-                  // LEGACY: Fallback for raw reasoning chunks (if backend sends them)
-                  // PHASE-BASED TICKER: Accumulate text for phase detection ONLY
+                  // COMPATIBILITY: Handle raw reasoning chunks from generate-artifact backend.
+                  // Required during rolling deployments when backend/frontend versions differ.
+                  // Accumulates text for phase-based ticker detection (not displayed directly).
                   streamingReasoningText += eventData.chunk as string;
 
                   const newPhase = detectPhase(streamingReasoningText, currentPhase);
@@ -1128,7 +1129,10 @@ export function useChatMessages(
               continue;
             }
 
-            // LEGACY: Handle old 'reasoning' event format (all steps at once)
+            // COMPATIBILITY: Handle batch 'reasoning' event format from /chat endpoint.
+            // The /chat endpoint sends reasoning as a single event (all steps at once),
+            // while /generate-artifact streams individual reasoning_step events.
+            // Both formats must be supported for graceful degradation during deployments.
             if (parsed.type === 'reasoning') {
               // Check sequence number to prevent out-of-order AND duplicate updates
               // Use <= to skip duplicates (same sequence processed twice)
@@ -1147,7 +1151,7 @@ export function useChatMessages(
               progress.reasoningSteps = reasoningSteps;
               onDelta('', progress);
 
-              console.log('[StreamProgress] Received legacy reasoning with', reasoningSteps?.steps?.length || 0, 'steps');
+              console.log('[StreamProgress] Received batch reasoning event with', reasoningSteps?.steps?.length || 0, 'steps');
               continue; // Skip to next event
             }
 

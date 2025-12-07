@@ -23,6 +23,7 @@ export interface ModelSelection {
  */
 const COST_PER_1M_TOKENS = {
   [MODELS.GEMINI_FLASH]: { input: 0.075, output: 0.30 },
+  [MODELS.GLM_4_6]: { input: 0.15, output: 0.60 },
   [MODELS.KIMI_K2]: { input: 0.15, output: 0.60 },
   [MODELS.GEMINI_FLASH_IMAGE]: { input: 0.075, output: 0.30 }, // Same as Gemini Flash
 } as const;
@@ -88,12 +89,12 @@ export function selectModel(
     };
   }
 
-  // Artifact generation always uses Kimi K2 for deep reasoning
+  // Artifact generation always uses GLM-4.6 for deep reasoning
   if (taskType === 'artifact') {
     return {
-      model: MODELS.KIMI_K2,
+      model: MODELS.GLM_4_6,
       reason: 'Artifact generation requires deep reasoning and code synthesis capabilities',
-      estimatedCost: estimateCost(inputTokens, estimatedOutputTokens, MODELS.KIMI_K2),
+      estimatedCost: estimateCost(inputTokens, estimatedOutputTokens, MODELS.GLM_4_6),
       fallback: MODELS.GEMINI_FLASH,
     };
   }
@@ -157,7 +158,7 @@ export function getCostSavings(
   outputTokens: number,
 ): { saved: number; percentSaved: number } {
   const selectedCost = estimateCost(inputTokens, outputTokens, selectedModel);
-  const expensiveCost = estimateCost(inputTokens, outputTokens, MODELS.KIMI_K2);
+  const expensiveCost = estimateCost(inputTokens, outputTokens, MODELS.GLM_4_6);
 
   const saved = expensiveCost - selectedCost;
   const percentSaved = (saved / expensiveCost) * 100;

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import * as Sentry from '@sentry/react';
 
 /**
  * Zod schemas for runtime validation of reasoning steps
@@ -83,11 +84,18 @@ export function parseReasoningSteps(data: unknown): StructuredReasoning | null {
         lastLogTime = now;
       }
 
-      // TODO: Log to monitoring service (Sentry, DataDog, etc.)
-      // logToMonitoring('invalid_reasoning_steps', {
-      //   errors: error.errors,
-      //   rawData: data,
-      // });
+      // Report validation errors to Sentry (rate-limited with the console.warn above)
+      Sentry.captureMessage('Invalid reasoning steps', {
+        level: 'warning',
+        tags: {
+          component: 'ReasoningParser',
+          errorType: 'validation_failure',
+        },
+        extra: {
+          zodErrors: error.errors,
+          dataKeys: typeof data === 'object' && data !== null ? Object.keys(data) : typeof data,
+        },
+      });
     }
     return null;
   }

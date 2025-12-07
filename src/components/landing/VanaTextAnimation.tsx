@@ -28,8 +28,6 @@ interface VanaTextAnimationProps {
   className?: string;
   /** Delay before animation starts (ms) */
   initialDelay?: number;
-  /** @deprecated No longer used - kept for backward compatibility */
-  staggerDelay?: number;
 }
 
 export const VanaTextAnimation = ({

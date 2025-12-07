@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
-import { Artifact, ArtifactData, ArtifactType } from '../Artifact';
-import { ArtifactContainer } from '../ArtifactContainer';
+import { ArtifactContainer as Artifact, ArtifactData, ArtifactType } from '../ArtifactContainer';
 
 // ✅ Fixed: Mock Supabase to prevent storage errors
 vi.mock('@/integrations/supabase/client', () => ({
@@ -31,8 +30,9 @@ describe('Artifact (backward compatibility wrapper)', () => {
     };
   });
 
-  it('re-exports ArtifactContainer as Artifact', () => {
-    expect(Artifact).toBe(ArtifactContainer);
+  it('exports Artifact component (aliased from ArtifactContainer)', () => {
+    expect(Artifact).toBeDefined();
+    expect(typeof Artifact).toBe('function');
   });
 
   it('exports ArtifactData type', () => {
