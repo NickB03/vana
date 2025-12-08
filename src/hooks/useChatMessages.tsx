@@ -94,7 +94,7 @@ export interface StreamProgress {
   percentage: number;
   reasoningSteps?: StructuredReasoning; // Structured reasoning for streaming
   streamingReasoningText?: string; // Raw reasoning text being streamed (GLM native thinking)
-  reasoningStatus?: string; // Semantic status update from GLM-4.5-AirX
+  reasoningStatus?: string; // Semantic status update from GLM-4.5-Air
   searchResults?: WebSearchResults; // Web search results for streaming
 }
 
@@ -584,7 +584,7 @@ export function useChatMessages(
               // extended thinking, instead of showing verbose raw thinking text.
               //
               // Event types:
-              // - status_update: Semantic status text from GLM-4.5-AirX (PRIORITY)
+              // - status_update: Semantic status text from GLM-4.5-Air (PRIORITY)
               // - reasoning_step: New complete step detected (phase, title, icon, items)
               // - thinking_update: Current thinking indicator (for pill display)
               // - reasoning_complete: Final structured reasoning + raw text
@@ -593,7 +593,7 @@ export function useChatMessages(
               // ============================================================================
               switch (eventType) {
                 case "status_update": {
-                  // NEW: Priority status updates from GLM-4.5-AirX
+                  // NEW: Priority status updates from GLM-4.5-Air
                   // These semantic status messages should be shown directly in the ticker
                   const status = eventData.status as string;
                   const isFinalStatus = eventData.final === true;
@@ -1117,7 +1117,7 @@ export function useChatMessages(
               continue; // Skip to next event
             }
 
-            // Handle reasoning_status event (GLM-4.5-AirX summaries)
+            // Handle reasoning_status event (GLM-4.5-Air summaries)
             if (parsed.type === 'reasoning_status') {
               const status = parsed.content as string;
               console.log(`[StreamProgress] Reasoning status: "${status}"`);

@@ -48,6 +48,18 @@ docs/artifact-prompt-dont-archive.md
 verification-*.png
 .claude/settings.local.json
 
+# Temporary testing files
+*.test.html
+*.test.js
+verify-*.js
+verify-*.ts
+test-*.html
+test-*.js
+
+# Coverage reports
+coverage.json
+coverage/
+
 # Debug and development artifacts
 debug-*.txt
 snapshot-*.txt

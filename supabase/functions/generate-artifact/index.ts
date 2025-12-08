@@ -380,7 +380,7 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
           let lastEmittedStatus: string | null = null; // Track last emitted status to avoid duplicates
 
           // ============================================================================
-          // AI SIDECAR COMMENTATOR: Semantic status updates via GLM-4.5-AirX
+          // AI SIDECAR COMMENTATOR: Semantic status updates via GLM-4.5-Air
           // ============================================================================
           // The Commentator runs in parallel with the main GLM-4.6 stream, providing
           // semantic status updates (e.g., "Designing authentication flow") that are
@@ -429,7 +429,7 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
                 // DUAL STATUS SOURCES: [STATUS:] markers + AI Sidecar Commentator
                 // ============================================================================
                 // 1. [STATUS: ...] markers: Fast-path, parsed from GLM's raw reasoning
-                // 2. AI Commentator: Semantic understanding via GLM-4.5-AirX (async)
+                // 2. AI Commentator: Semantic understanding via GLM-4.5-Air (async)
                 //
                 // The [STATUS:] markers take precedence when available (lower latency).
                 // The Commentator provides semantic updates when markers are absent.

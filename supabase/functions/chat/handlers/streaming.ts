@@ -26,7 +26,7 @@ import { summarizeReasoningChunk } from "../../_shared/reasoning-summarizer.ts";
  * 1. Injects reasoning progressively as individual step events (Claude-like)
  * 2. Injects web search results as SSE event (if available)
  * 3. Transforms artifact code to fix invalid imports
- * 4. Summarizes raw reasoning stream using GLM-4.5-AirX (New)
+ * 4. Summarizes raw reasoning stream using GLM-4.5-Air (New)
  */
 export function createStreamTransformer(
   structuredReasoning: StructuredReasoning | null,
@@ -114,7 +114,7 @@ export function createStreamTransformer(
       }
     },
     transform(chunk, controller) {
-      // 1. Handle Reasoning Summarization (GLM-4.5-AirX)
+      // 1. Handle Reasoning Summarization (GLM-4.5-Air)
       // Check for reasoning tags
       if (chunk.includes("<think>")) insideReasoning = true;
       if (chunk.includes("</think>")) insideReasoning = false;

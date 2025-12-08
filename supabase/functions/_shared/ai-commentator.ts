@@ -1,12 +1,12 @@
 /**
  * AI Sidecar Commentator
  *
- * Uses GLM-4.5-AirX for ultra-fast semantic summarization of reasoning text.
+ * Uses GLM-4.5-Air for ultra-fast semantic summarization of reasoning text.
  * Runs asynchronously alongside the main GLM-4.6 artifact generation stream.
  *
  * Architecture:
  * - GLM-4.6 (Thinker): Deep reasoning, artifact code generation
- * - GLM-4.5-AirX (Commentator): Fast status summaries for UI ticker
+ * - GLM-4.5-Air (Commentator): Fast status summaries for UI ticker
  *
  * The Commentator monitors the reasoning text stream and generates concise,
  * semantic status updates (e.g., "Designing authentication flow") that replace
@@ -107,7 +107,7 @@ interface CommentatorState {
 }
 
 /**
- * System prompt for GLM-4.5-AirX to generate concise status updates
+ * System prompt for GLM-4.5-Air to generate concise status updates
  *
  * The prompt is carefully engineered to:
  * 1. Force present-participle verbs (Analyzing, Designing, etc.)
@@ -448,7 +448,7 @@ export class AICommentator {
   }
 
   /**
-   * Call GLM-4.5-AirX for status summarization
+   * Call GLM-4.5-Air for status summarization
    *
    * @param reasoningText - Buffered reasoning text to summarize
    * @param sequenceId - Sequence ID for ordering/staleness detection
@@ -521,7 +521,7 @@ export class AICommentator {
    * 2. Not duplicate (different from last emitted status)
    * 3. Not too soon (anti-flicker cooldown)
    *
-   * @param status - Status text from GLM-4.5-AirX
+   * @param status - Status text from GLM-4.5-Air
    * @param sequenceId - Sequence ID of the sidecar call
    * @param latencyMs - Time taken for the API call
    */
