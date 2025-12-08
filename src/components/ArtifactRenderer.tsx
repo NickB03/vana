@@ -1,4 +1,5 @@
 import { Suspense, useRef, useEffect, useState, memo, useMemo, useCallback } from "react";
+import * as Sentry from "@sentry/react";
 import { ArtifactData } from "./ArtifactContainer";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -68,6 +69,27 @@ const BundledArtifactFrame = memo(({
   // Track local loading state for skeleton display - independent from parent's isLoading
   // This fixes the race condition where parent's state update lags behind our fetch completion
   const [isFetching, setIsFetching] = useState(true);
+  const fetchStartTimeRef = useRef<number>(Date.now());
+
+  // Skeleton timeout: Force-clear isFetching after 10s to prevent stuck skeletons
+  // This handles cases where the fetch hangs or fails silently without triggering catch block
+  useEffect(() => {
+    if (isFetching) {
+      const skeletonTimeout = setTimeout(() => {
+        const elapsed = Date.now() - fetchStartTimeRef.current;
+        console.warn(`[BundledArtifactFrame] Skeleton timeout fired after ${elapsed}ms - forcing clear`);
+        Sentry.addBreadcrumb({
+          category: 'artifact.loading',
+          message: 'Skeleton timeout fired - forcing clear',
+          level: 'warning',
+          data: { elapsed, bundleUrl },
+        });
+        setIsFetching(false);
+        onLoadingChange(false);
+      }, 10000); // 10s max skeleton time
+      return () => clearTimeout(skeletonTimeout);
+    }
+  }, [isFetching, bundleUrl, onLoadingChange]);
 
   useEffect(() => {
     let isMounted = true;
@@ -76,6 +98,13 @@ const BundledArtifactFrame = memo(({
     const fetchBundle = async () => {
       try {
         console.log('[BundledArtifactFrame] Fetching bundle from:', bundleUrl);
+        fetchStartTimeRef.current = Date.now();
+        Sentry.addBreadcrumb({
+          category: 'artifact.loading',
+          message: 'Bundle fetch started',
+          level: 'info',
+          data: { bundleUrl },
+        });
         setIsFetching(true);
         onLoadingChange(true);
         setFetchError(null);
@@ -447,7 +476,14 @@ const BundledArtifactFrame = memo(({
         objectUrl = URL.createObjectURL(blob);
 
         if (isMounted) {
-          console.log('[BundledArtifactFrame] Created blob URL successfully');
+          const elapsed = Date.now() - fetchStartTimeRef.current;
+          console.log(`[BundledArtifactFrame] Created blob URL successfully in ${elapsed}ms`);
+          Sentry.addBreadcrumb({
+            category: 'artifact.loading',
+            message: 'Bundle fetch completed successfully',
+            level: 'info',
+            data: { elapsed, bundleUrl },
+          });
           setBlobUrl(objectUrl);
           setIsFetching(false);
           onLoadingChange(false);
@@ -455,7 +491,14 @@ const BundledArtifactFrame = memo(({
       } catch (error) {
         console.error('[BundledArtifactFrame] Failed to fetch bundle:', error);
         if (isMounted) {
+          const elapsed = Date.now() - fetchStartTimeRef.current;
           const errorMessage = error instanceof Error ? error.message : 'Failed to load bundle';
+          Sentry.addBreadcrumb({
+            category: 'artifact.loading',
+            message: 'Bundle fetch failed',
+            level: 'error',
+            data: { elapsed, bundleUrl, error: errorMessage },
+          });
           setFetchError(errorMessage);
           setIsFetching(false);
           onPreviewErrorChange(errorMessage);
@@ -619,14 +662,24 @@ export const ArtifactRenderer = memo(({
     };
   }, []);
 
-  // Watchdog timer: Force completion if rendering takes too long (15s)
+  // Watchdog timer: Force completion if rendering takes too long (10s)
+  // Reduced from 15s to 10s to match BundledArtifactFrame skeleton timeout
+  // Allows 2-5s bundling + 1-3s network latency + 1-2s bundle fetch + buffer
   useEffect(() => {
     if (isLoading) {
+      const watchdogStart = Date.now();
       const timer = setTimeout(() => {
-        console.warn('[ArtifactRenderer] Watchdog timer fired - forcing completion');
+        const elapsed = Date.now() - watchdogStart;
+        console.warn(`[ArtifactRenderer] Watchdog timer fired after ${elapsed}ms - forcing completion`);
+        Sentry.addBreadcrumb({
+          category: 'artifact.loading',
+          message: 'Watchdog timer fired - forcing completion',
+          level: 'warning',
+          data: { elapsed, isLoading: true },
+        });
         onLoadingChange(false);
         window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
-      }, 15000);
+      }, 10000);
       return () => clearTimeout(timer);
     }
   }, [isLoading, onLoadingChange]);
@@ -689,8 +742,15 @@ export const ArtifactRenderer = memo(({
 
   // Listen for iframe messages
   useEffect(() => {
+    const effectStartTime = Date.now();
     onLoadingChange(true);
     onPreviewErrorChange(null);
+    Sentry.addBreadcrumb({
+      category: 'artifact.loading',
+      message: 'Iframe message listener mounted, loading started',
+      level: 'info',
+      data: { artifactType: artifact.type },
+    });
 
     const handleIframeMessage = (e: MessageEvent) => {
       // Security: Only accept messages from our iframes (blob URLs report 'null') or same origin
@@ -703,18 +763,42 @@ export const ArtifactRenderer = memo(({
 
 
       if (e.data?.type === 'artifact-error') {
+        const elapsed = Date.now() - effectStartTime;
+        Sentry.addBreadcrumb({
+          category: 'artifact.loading',
+          message: 'Artifact error received from iframe',
+          level: 'error',
+          data: { elapsed, error: e.data.message },
+        });
         handleArtifactError(e.data.message);
         onLoadingChange(false);
         // Ensure we signal completion even on error if not already sent
         window.postMessage({ type: 'artifact-rendered-complete', success: false, error: e.data.message }, '*');
       } else if (e.data?.type === 'artifact-ready') {
+        const elapsed = Date.now() - effectStartTime;
+        Sentry.addBreadcrumb({
+          category: 'artifact.loading',
+          message: 'Artifact ready signal received from iframe',
+          level: 'info',
+          data: { elapsed },
+        });
         onLoadingChange(false);
         // Ensure we signal completion when ready (redundant for some paths but safe)
         window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
       }
     };
 
+    // Fallback timeout for non-bundled artifacts (Babel-rendered)
+    // Bundled artifacts have their own 10s skeleton timeout in BundledArtifactFrame
     const loadTimeout = setTimeout(() => {
+      const elapsed = Date.now() - effectStartTime;
+      console.log(`[ArtifactRenderer] 3s load timeout fired after ${elapsed}ms`);
+      Sentry.addBreadcrumb({
+        category: 'artifact.loading',
+        message: '3s load timeout fired',
+        level: 'info',
+        data: { elapsed },
+      });
       onLoadingChange(false);
     }, 3000);
 
@@ -723,7 +807,7 @@ export const ArtifactRenderer = memo(({
       window.removeEventListener('message', handleIframeMessage);
       clearTimeout(loadTimeout);
     };
-  }, [artifact.content, onLoadingChange, onPreviewErrorChange, onErrorCategoryChange, recoveryAttempts, handleArtifactError]);
+  }, [artifact.content, artifact.type, onLoadingChange, onPreviewErrorChange, onErrorCategoryChange, recoveryAttempts, handleArtifactError]);
 
   // Render mermaid diagrams
   useEffect(() => {
