@@ -132,6 +132,28 @@ const PREBUILT_PACKAGES: PrebuiltPackage[] = [
   // Chart.js
   { name: "chart.js", version: "4.4.7", compatibleVersions: ["^4.0.0"], pure: true },
   { name: "react-chartjs-2", version: "5.2.0", compatibleVersions: ["^5.0.0"], pure: false },
+
+  // ===== PHASE 3: GAMES & INTERACTIVE =====
+  // 2D Canvas
+  { name: "konva", version: "9.3.18", compatibleVersions: ["^9.0.0"], pure: true },
+  { name: "react-konva", version: "18.2.10", compatibleVersions: ["^18.0.0"], pure: false },
+
+  // Physics
+  { name: "matter-js", version: "0.20.0", compatibleVersions: ["^0.20.0", "^0.19.0"], pure: true },
+
+  // Gestures
+  { name: "@use-gesture/react", version: "10.3.1", compatibleVersions: ["^10.0.0"], pure: false },
+
+  // Animation
+  { name: "gsap", version: "3.12.5", compatibleVersions: ["^3.0.0"], pure: true },
+
+  // Audio
+  { name: "howler", version: "2.2.4", compatibleVersions: ["^2.0.0"], pure: true },
+
+  // Drag & Drop
+  { name: "@dnd-kit/core", version: "6.3.1", compatibleVersions: ["^6.0.0"], pure: false },
+  { name: "@dnd-kit/sortable", version: "9.0.0", compatibleVersions: ["^9.0.0"], pure: false },
+  { name: "@dnd-kit/utilities", version: "3.2.2", compatibleVersions: ["^3.0.0"], pure: false },
 ];
 
 /**
