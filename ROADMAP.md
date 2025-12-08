@@ -1,6 +1,6 @@
 # Vana - Product Roadmap
 
-**Last Updated**: 2025-11-28
+**Last Updated**: 2025-12-07
 **Project**: Vana AI Development Assistant
 **Status**: Historical Reference (Timeline Outdated)
 
@@ -45,6 +45,12 @@ Transform Vana into a best-in-class AI-powered development assistant with enterp
 ### 🚧 In Progress
 
 *No major features currently in progress*
+
+### 📋 Recently Planned
+
+| Feature | Priority | Added | Notes |
+|---------|----------|-------|-------|
+| **2-Way Voice Chat (#22)** | P3 | 2025-12-07 | Voice input + TTS output using VibeVoice |
 
 ---
 
@@ -248,8 +254,9 @@ const handleSuggestionClick = async (suggestion: string) => {
 | 19 | **ArtifactDescription Component** | 📋 Deferred | 1-2 hours | Rich metadata display |
 | 20 | **Artifact Templates Library** | 📋 Planned | 8-12 hours | Pre-built templates for common patterns |
 | 21 | **Inline Generative UI (Tool Calling)** | 📋 Planned | 33-46 hours | Inline widgets within chat messages |
+| 22 | **2-Way Voice Chat** | 📋 Planned | 20-30 hours | Voice input + TTS output for conversations |
 
-**Total P3 Effort**: 53-78 hours
+**Total P3 Effort**: 73-108 hours
 
 ### P3 Feature Details
 
@@ -328,6 +335,93 @@ We will use [MCP UI](https://github.com/MCP-UI-Org/mcp-ui) - a community-driven 
 **References**:
 - Inspired by assistant-ui ToolUI pattern
 - Research document: `.claude/archive/inline-generative-ui-research.md` (if created)
+
+#### #22: 2-Way Voice Chat 📋 PLANNED
+**User Impact**: Hands-free conversation with AI assistant via voice
+
+**Added**: 2025-12-07
+
+**Vision**: Full voice conversation loop - speak to send messages, hear AI responses spoken aloud:
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Type your message...                                               │
+│                                                                     │
+│  [+] [🖼️] [✨] [🎤]                                        [➤]    │
+│  File Image Artifact Voice ← NEW                            Send    │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Architecture**:
+```
+User speaks → Web Speech API (STT) → handleSend() → AI response
+                    FREE, ~100ms          ↓
+                                    streamingMessage
+                                          ↓
+                              /generate-tts Edge Function
+                                          ↓
+                              VibeVoice-Realtime-0.5B (~300ms latency)
+                                          ↓
+                              Web Audio API → Speakers
+```
+
+**Technology Stack**:
+| Component | Technology | Cost |
+|-----------|------------|------|
+| Speech-to-Text | Web Speech API (browser native) | FREE |
+| Text-to-Speech | VibeVoice-Realtime-0.5B (Microsoft) | Self-hosted GPU |
+| TTS Fallback | Google Cloud TTS | $0.016/1K chars |
+| Audio Playback | Web Audio API | FREE |
+
+**Why VibeVoice?**
+- **~300ms first-audio latency** - Can start speaking while LLM generates
+- **Open source (MIT)** - Self-hostable, no per-request costs at scale
+- **Streaming support** - Plays audio chunks as they arrive
+- **Natural voice quality** - 2.00% WER on LibriSpeech benchmark
+
+**Implementation Phases**:
+
+| Phase | Tasks | Effort | Dependencies |
+|-------|-------|--------|--------------|
+| **1. Voice Input** | Add 🎤 button, Web Speech API, auto-send on transcript | 8-10 hrs | None |
+| **2. TTS Backend** | `/generate-tts` Edge Function, Google Cloud TTS fallback | 6-8 hrs | Phase 1 |
+| **3. VibeVoice** | Self-host VibeVoice-Realtime, streaming audio playback | 8-12 hrs | Phase 2 |
+| **4. Polish** | Voice mode settings, keyboard shortcuts, interrupt handling | 4-6 hrs | Phase 3 |
+
+**New Files Required**:
+- `src/hooks/useVoiceChat.ts` - Voice input/output hook
+- `src/components/VoiceInputButton.tsx` - Microphone button component
+- `supabase/functions/generate-tts/index.ts` - TTS Edge Function
+
+**UI States**:
+- **Idle**: Gray microphone icon
+- **Listening**: Red pulsing ring (recording)
+- **Processing**: Spinner (transcribing)
+- **Speaking**: 🔊 indicator on message (AI speaking)
+
+**Accessibility Benefits**:
+- Screen reader users get natural voice instead of robotic TTS
+- Hands-free operation for users with motor impairments
+- Mobile users can listen while multitasking
+
+**Risks & Mitigations**:
+| Risk | Mitigation |
+|------|------------|
+| VibeVoice repo instability | Google Cloud TTS fallback ready |
+| GPU hosting costs | Start with Replicate/Modal pay-per-use |
+| Browser STT accuracy | Show transcript for user correction before send |
+| Voice mode battery drain | Auto-disable after inactivity |
+
+**Success Criteria**:
+- [ ] Voice input works in Chrome, Safari, Edge
+- [ ] < 500ms end-to-end STT latency
+- [ ] < 1s end-to-end TTS latency (first audio)
+- [ ] Voice mode toggle persists across sessions
+- [ ] Graceful fallback when microphone denied
+
+**References**:
+- VibeVoice GitHub: https://github.com/microsoft/VibeVoice
+- VibeVoice-Realtime-0.5B: https://huggingface.co/microsoft/VibeVoice-Realtime-0.5B
+- Web Speech API: https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API
 
 ---
 

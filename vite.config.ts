@@ -4,6 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import compression from "vite-plugin-compression";
 import { VitePWA } from "vite-plugin-pwa";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { createHash } from "crypto";
 import fs from "fs";
 
@@ -93,7 +94,21 @@ export default defineConfig(({ mode }) => ({
       transformIndexHtml(html) {
         return html.replace('data-build-hash="__BUILD_HASH__"', `data-build-hash="${buildHash}"`);
       },
-    }
+    },
+    // Sentry source map upload - only in production builds with auth token
+    mode === "production" && process.env.SENTRY_AUTH_TOKEN && sentryVitePlugin({
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      sourcemaps: {
+        assets: './dist/**',
+        filesToDeleteAfterUpload: ['**/*.js.map', '**/*.mjs.map'],
+      },
+      telemetry: false,
+      // Log upload status
+      silent: false,
+      debug: false,
+    })
   ].filter(Boolean),
   resolve: {
     alias: {
@@ -131,7 +146,8 @@ export default defineConfig(({ mode }) => ({
         pure_funcs: mode === "production" ? ["console.log", "console.info", "console.debug"] : [],
       },
     },
-    sourcemap: mode === "development",
+    // Generate source maps for Sentry (hidden in production to avoid exposing to end users)
+    sourcemap: mode === "production" ? "hidden" : true,
   },
   optimizeDeps: {
     include: ["react", "react-dom", "react-router-dom"],
