@@ -69,11 +69,40 @@ const JSX_RUNTIME_SHIM = 'data:text/javascript,if(!window.React){throw new Error
 const FRAMER_MOTION_SHIM = 'data:text/javascript,if(!window.Motion){throw new Error("Framer Motion failed to load. Please refresh the page.")}const M=window.Motion;export default M;export const{motion,AnimatePresence,useAnimation,useMotionValue,useTransform,useSpring,useScroll,useInView,useDragControls,useAnimationControls,useReducedMotion,useMotionTemplate,animate,stagger,delay,spring,easeIn,easeOut,easeInOut,circIn,circOut,circInOut,backIn,backOut,backInOut,anticipate,cubicBezier,MotionConfig,LazyMotion,domAnimation,domMax,m}=M;';
 
 /**
+ * Peer dependencies that need to be externalized to prevent dual instances.
+ * When a package has peer deps, we externalize them so they use the prebuilt version.
+ *
+ * Note: Includes entries for Phase 2/3 packages (forward-compatible).
+ * These won't affect current behavior - they only apply when those packages are used.
+ */
+const PEER_DEPENDENCIES: Record<string, string[]> = {
+  'react-konva': ['konva'],
+  '@nivo/bar': ['@nivo/core'],
+  '@nivo/line': ['@nivo/core'],
+  '@nivo/pie': ['@nivo/core'],
+  '@nivo/heatmap': ['@nivo/core'],
+  '@nivo/treemap': ['@nivo/core'],
+  '@dnd-kit/sortable': ['@dnd-kit/core'],
+  '@dnd-kit/utilities': ['@dnd-kit/core'],
+  'react-chartjs-2': ['chart.js'],
+  '@hookform/resolvers': ['react-hook-form'],
+};
+
+/**
  * Generate esm.sh CDN URL for a package with React externalized.
  * Uses ?external=react,react-dom so packages import React from window globals via import map.
+ * Also externalizes peer dependencies to prevent dual instances.
  */
 function buildEsmUrl(pkg: string, version: string): string {
-  return `https://esm.sh/${pkg}@${version}?external=react,react-dom`;
+  const externals = ['react', 'react-dom'];
+
+  // Add peer dependencies if this package has any
+  const peerDeps = PEER_DEPENDENCIES[pkg];
+  if (peerDeps) {
+    externals.push(...peerDeps);
+  }
+
+  return `https://esm.sh/${pkg}@${version}?external=${externals.join(',')}`;
 }
 
 // Security validation patterns

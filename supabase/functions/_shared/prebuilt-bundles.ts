@@ -34,6 +34,12 @@ export interface PrebuiltManifest {
 // Type the imported manifest
 const prebuiltManifest = manifest as PrebuiltManifest;
 
+// Build hash map for O(1) package lookup (instead of O(n) array.find)
+// This is important as we scale to 70+ packages
+const packageLookupMap = new Map<string, PrebuiltPackageEntry>(
+  prebuiltManifest.packages.map(pkg => [pkg.name, pkg])
+);
+
 /**
  * Check if a requested version matches a compatible version pattern
  *
@@ -233,8 +239,8 @@ export function getPrebuiltBundle(
   packageName: string,
   requestedVersion: string
 ): PrebuiltPackageEntry | null {
-  // Find matching package by name
-  const entry = prebuiltManifest.packages.find((pkg) => pkg.name === packageName);
+  // O(1) lookup instead of O(n) find
+  const entry = packageLookupMap.get(packageName);
 
   if (!entry) {
     return null;

@@ -94,6 +94,29 @@ const PREBUILT_PACKAGES: PrebuiltPackage[] = [
   { name: "recharts", version: "2.15.0", compatibleVersions: ["^2.0.0"], pure: false },
   { name: "lucide-react", version: "0.556.0", compatibleVersions: ["^0.400.0", "^0.500.0"], pure: false },
   { name: "@tanstack/react-query", version: "5.90.12", compatibleVersions: ["^5.0.0"], pure: false },
+
+  // ===== STATE & FORMS (Phase 1) =====
+  // Note: zustand uses React hooks but works with pure:true because external=react,react-dom
+  // externalizes React to window globals. Monitor for issues; change to pure:false if needed.
+  { name: "zustand", version: "5.0.2", compatibleVersions: ["^5.0.0"], pure: true },
+  { name: "immer", version: "10.1.1", compatibleVersions: ["^10.0.0"], pure: true },
+  { name: "react-hook-form", version: "7.54.2", compatibleVersions: ["^7.0.0"], pure: false },
+  { name: "zod", version: "3.24.1", compatibleVersions: ["^3.0.0"], pure: true },
+  { name: "@hookform/resolvers", version: "3.10.0", compatibleVersions: ["^3.0.0"], pure: false },
+  { name: "papaparse", version: "5.4.1", compatibleVersions: ["^5.0.0"], pure: true },
+
+  // ===== UI ESSENTIALS (Phase 1) =====
+  { name: "sonner", version: "1.7.1", compatibleVersions: ["^1.0.0"], pure: false },
+  { name: "embla-carousel-react", version: "8.5.1", compatibleVersions: ["^8.0.0"], pure: false },
+  { name: "react-loading-skeleton", version: "3.5.0", compatibleVersions: ["^3.0.0"], pure: false },
+  { name: "@formkit/auto-animate", version: "0.8.2", compatibleVersions: ["^0.8.0"], pure: false },
+
+  // ===== ANIMATION (Phase 1) =====
+  { name: "react-spring", version: "9.7.5", compatibleVersions: ["^9.0.0"], pure: false },
+
+  // ===== DATA (Phase 1) =====
+  { name: "@tanstack/react-table", version: "8.20.6", compatibleVersions: ["^8.0.0"], pure: false },
+  { name: "nanoid", version: "5.0.9", compatibleVersions: ["^5.0.0", "^4.0.0"], pure: true },
 ];
 
 /**
@@ -110,6 +133,32 @@ function buildBundleUrl(name: string, version: string): string {
  */
 function buildEsmUrl(name: string, version: string): string {
   return `https://esm.sh/${name}@${version}?external=react,react-dom`;
+}
+
+/**
+ * Fetch with retry and exponential backoff for rate limiting
+ */
+async function fetchWithRetry(
+  url: string,
+  maxRetries = 3
+): Promise<Response> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const response = await fetch(url, {
+      headers: { "User-Agent": "Vana-Prebuild-Script/1.0" },
+    });
+
+    if (response.status === 429) {
+      const retryAfter = parseInt(response.headers.get("Retry-After") || "5");
+      const delay = retryAfter * 1000 * (attempt + 1);
+      console.log(`    Rate limited, retrying in ${delay / 1000}s...`);
+      await new Promise((r) => setTimeout(r, delay));
+      continue;
+    }
+
+    return response;
+  }
+
+  throw new Error(`Failed after ${maxRetries} retries (rate limited)`);
 }
 
 /**
@@ -134,11 +183,7 @@ async function fetchPackageBundle(
   const startTime = Date.now();
 
   try {
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Vana-Prebuild-Script/1.0",
-      },
-    });
+    const response = await fetchWithRetry(url);
 
     if (!response.ok) {
       console.error(`    Failed: ${response.status} ${response.statusText}`);
@@ -168,7 +213,7 @@ async function buildPrebuiltBundles(): Promise<void> {
   console.log("Building prebuilt bundle manifest...\n");
   console.log(`Processing ${PREBUILT_PACKAGES.length} packages:\n`);
 
-  const CONCURRENCY_LIMIT = 5; // Avoid overwhelming esm.sh
+  const CONCURRENCY_LIMIT = 10; // Increased for 70+ package builds (esm.sh CDN handles this well)
 
   const entries: PrebuiltPackageEntry[] = [];
   let totalSize = 0;
