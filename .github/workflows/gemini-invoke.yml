@@ -144,7 +144,7 @@ jobs:
           fi
 
       - name: 'Retry with backup API key on quota error'
-        if: steps.run_gemini.outcome == 'failure' && steps.check_quota_error.outputs.is_quota_error == 'true' && secrets.GEMINI_API_KEY_2 != ''
+        if: steps.run_gemini.outcome == 'failure' && steps.check_quota_error.outputs.is_quota_error == 'true'
         uses: 'google-github-actions/run-gemini-cli@v0' # ratchet:exclude
         id: 'run_gemini_backup_key'
         continue-on-error: true

@@ -116,8 +116,7 @@ jobs:
         if: |
           steps.get_labels.outputs.available_labels != '' &&
           steps.gemini_analysis.outcome == 'failure' &&
-          steps.check_quota_error.outputs.is_quota_error == 'true' &&
-          secrets.GEMINI_API_KEY_2 != ''
+          steps.check_quota_error.outputs.is_quota_error == 'true'
         uses: 'google-github-actions/run-gemini-cli@v0' # ratchet:exclude
         continue-on-error: true
         env:
