@@ -154,6 +154,25 @@ const PREBUILT_PACKAGES: PrebuiltPackage[] = [
   { name: "@dnd-kit/core", version: "6.3.1", compatibleVersions: ["^6.0.0"], pure: false },
   { name: "@dnd-kit/sortable", version: "9.0.0", compatibleVersions: ["^9.0.0"], pure: false },
   { name: "@dnd-kit/utilities", version: "3.2.2", compatibleVersions: ["^3.0.0"], pure: false },
+
+  // ===== PHASE 4: 3D & WEBGL =====
+  // Core 3D Engine (pure - no React dependencies)
+  { name: "three", version: "0.170.0", compatibleVersions: ["^0.170.0", "^0.160.0"], pure: true },
+
+  // React Integration (requires React context - no ?bundle)
+  { name: "@react-three/fiber", version: "8.17.10", compatibleVersions: ["^8.0.0"], pure: false },
+  { name: "@react-three/drei", version: "9.117.3", compatibleVersions: ["^9.0.0"], pure: false },
+
+  // Animation & Physics (React-specific)
+  { name: "@react-spring/three", version: "9.7.5", compatibleVersions: ["^9.0.0"], pure: false },
+  { name: "@react-three/rapier", version: "1.5.0", compatibleVersions: ["^1.0.0"], pure: false },
+
+  // Helpers & Utilities (TypeScript types - pure, three-stdlib - pure)
+  { name: "three-stdlib", version: "2.35.12", compatibleVersions: ["^2.0.0"], pure: true },
+  { name: "@types/three", version: "0.170.0", compatibleVersions: ["^0.170.0", "^0.160.0"], pure: true },
+
+  // Post-processing (React-specific)
+  { name: "@react-three/postprocessing", version: "2.16.3", compatibleVersions: ["^2.0.0"], pure: false },
 ];
 
 /**
@@ -303,7 +322,7 @@ async function buildPrebuiltBundles(): Promise<void> {
 
   // Generate manifest
   const manifest: PrebuiltManifest = {
-    version: "2.1.0",
+    version: "2.2.0",
     generated: new Date().toISOString(),
     packages: entries,
   };

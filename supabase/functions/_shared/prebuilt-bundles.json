@@ -1,6 +1,6 @@
 {
-  "version": "2.1.0",
-  "generated": "2025-12-08T12:17:15.909Z",
+  "version": "2.2.0",
+  "generated": "2025-12-08T13:43:36.417Z",
   "packages": [
     {
       "name": "date-fns",
@@ -11,7 +11,7 @@
       "esmUrl": "https://esm.sh/date-fns@4.1.0?external=react,react-dom",
       "bundleUrl": "https://esm.sh/date-fns@4.1.0?bundle&external=react,react-dom",
       "size": 115,
-      "fetchTime": 135
+      "fetchTime": 513
     },
     {
       "name": "clsx",
@@ -23,7 +23,7 @@
       "esmUrl": "https://esm.sh/clsx@2.1.1?external=react,react-dom",
       "bundleUrl": "https://esm.sh/clsx@2.1.1?bundle&external=react,react-dom",
       "size": 190,
-      "fetchTime": 128
+      "fetchTime": 509
     },
     {
       "name": "class-variance-authority",
@@ -35,7 +35,7 @@
       "esmUrl": "https://esm.sh/class-variance-authority@0.7.1?external=react,react-dom",
       "bundleUrl": "https://esm.sh/class-variance-authority@0.7.1?bundle&external=react,react-dom",
       "size": 163,
-      "fetchTime": 132
+      "fetchTime": 509
     },
     {
       "name": "tailwind-merge",
@@ -46,7 +46,7 @@
       "esmUrl": "https://esm.sh/tailwind-merge@2.6.0?external=react,react-dom",
       "bundleUrl": "https://esm.sh/tailwind-merge@2.6.0?bundle&external=react,react-dom",
       "size": 133,
-      "fetchTime": 128
+      "fetchTime": 508
     },
     {
       "name": "uuid",
@@ -59,7 +59,7 @@
       "esmUrl": "https://esm.sh/uuid@11.0.3?external=react,react-dom",
       "bundleUrl": "https://esm.sh/uuid@11.0.3?bundle&external=react,react-dom",
       "size": 105,
-      "fetchTime": 132
+      "fetchTime": 508
     },
     {
       "name": "@radix-ui/react-dialog",
@@ -70,7 +70,7 @@
       "esmUrl": "https://esm.sh/@radix-ui/react-dialog@1.1.15?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@radix-ui/react-dialog@1.1.15?external=react,react-dom",
       "size": 1295,
-      "fetchTime": 132
+      "fetchTime": 508
     },
     {
       "name": "@radix-ui/react-dropdown-menu",
@@ -81,7 +81,7 @@
       "esmUrl": "https://esm.sh/@radix-ui/react-dropdown-menu@2.1.16?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@radix-ui/react-dropdown-menu@2.1.16?external=react,react-dom",
       "size": 740,
-      "fetchTime": 128
+      "fetchTime": 508
     },
     {
       "name": "@radix-ui/react-select",
@@ -92,7 +92,7 @@
       "esmUrl": "https://esm.sh/@radix-ui/react-select@2.2.6?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@radix-ui/react-select@2.2.6?external=react,react-dom",
       "size": 1905,
-      "fetchTime": 129
+      "fetchTime": 506
     },
     {
       "name": "@radix-ui/react-tabs",
@@ -103,7 +103,7 @@
       "esmUrl": "https://esm.sh/@radix-ui/react-tabs@1.1.13?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@radix-ui/react-tabs@1.1.13?external=react,react-dom",
       "size": 816,
-      "fetchTime": 132
+      "fetchTime": 508
     },
     {
       "name": "@radix-ui/react-tooltip",
@@ -114,7 +114,7 @@
       "esmUrl": "https://esm.sh/@radix-ui/react-tooltip@1.2.8?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@radix-ui/react-tooltip@1.2.8?external=react,react-dom",
       "size": 1195,
-      "fetchTime": 128
+      "fetchTime": 508
     },
     {
       "name": "@radix-ui/react-popover",
@@ -125,7 +125,7 @@
       "esmUrl": "https://esm.sh/@radix-ui/react-popover@1.1.15?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@radix-ui/react-popover@1.1.15?external=react,react-dom",
       "size": 1387,
-      "fetchTime": 56
+      "fetchTime": 145
     },
     {
       "name": "@radix-ui/react-accordion",
@@ -136,7 +136,7 @@
       "esmUrl": "https://esm.sh/@radix-ui/react-accordion@1.2.12?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@radix-ui/react-accordion@1.2.12?external=react,react-dom",
       "size": 920,
-      "fetchTime": 60
+      "fetchTime": 141
     },
     {
       "name": "@radix-ui/react-checkbox",
@@ -147,7 +147,7 @@
       "esmUrl": "https://esm.sh/@radix-ui/react-checkbox@1.3.3?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@radix-ui/react-checkbox@1.3.3?external=react,react-dom",
       "size": 829,
-      "fetchTime": 60
+      "fetchTime": 140
     },
     {
       "name": "@radix-ui/react-radio-group",
@@ -158,7 +158,7 @@
       "esmUrl": "https://esm.sh/@radix-ui/react-radio-group@1.3.8?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@radix-ui/react-radio-group@1.3.8?external=react,react-dom",
       "size": 1021,
-      "fetchTime": 60
+      "fetchTime": 144
     },
     {
       "name": "@radix-ui/react-switch",
@@ -169,7 +169,7 @@
       "esmUrl": "https://esm.sh/@radix-ui/react-switch@1.2.6?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@radix-ui/react-switch@1.2.6?external=react,react-dom",
       "size": 730,
-      "fetchTime": 55
+      "fetchTime": 144
     },
     {
       "name": "@radix-ui/react-slider",
@@ -180,7 +180,7 @@
       "esmUrl": "https://esm.sh/@radix-ui/react-slider@1.3.6?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@radix-ui/react-slider@1.3.6?external=react,react-dom",
       "size": 960,
-      "fetchTime": 60
+      "fetchTime": 144
     },
     {
       "name": "@radix-ui/react-scroll-area",
@@ -191,7 +191,7 @@
       "esmUrl": "https://esm.sh/@radix-ui/react-scroll-area@1.2.10?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@radix-ui/react-scroll-area@1.2.10?external=react,react-dom",
       "size": 892,
-      "fetchTime": 60
+      "fetchTime": 142
     },
     {
       "name": "@radix-ui/react-avatar",
@@ -202,7 +202,7 @@
       "esmUrl": "https://esm.sh/@radix-ui/react-avatar@1.1.11?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@radix-ui/react-avatar@1.1.11?external=react,react-dom",
       "size": 599,
-      "fetchTime": 60
+      "fetchTime": 146
     },
     {
       "name": "@radix-ui/react-progress",
@@ -213,7 +213,7 @@
       "esmUrl": "https://esm.sh/@radix-ui/react-progress@1.1.8?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@radix-ui/react-progress@1.1.8?external=react,react-dom",
       "size": 318,
-      "fetchTime": 60
+      "fetchTime": 146
     },
     {
       "name": "@radix-ui/react-separator",
@@ -224,7 +224,7 @@
       "esmUrl": "https://esm.sh/@radix-ui/react-separator@1.1.8?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@radix-ui/react-separator@1.1.8?external=react,react-dom",
       "size": 244,
-      "fetchTime": 194
+      "fetchTime": 144
     },
     {
       "name": "recharts",
@@ -235,7 +235,7 @@
       "esmUrl": "https://esm.sh/recharts@2.15.0?external=react,react-dom",
       "bundleUrl": "https://esm.sh/recharts@2.15.0?external=react,react-dom",
       "size": 1912,
-      "fetchTime": 20
+      "fetchTime": 54
     },
     {
       "name": "lucide-react",
@@ -247,7 +247,7 @@
       "esmUrl": "https://esm.sh/lucide-react@0.556.0?external=react,react-dom",
       "bundleUrl": "https://esm.sh/lucide-react@0.556.0?external=react,react-dom",
       "size": 124,
-      "fetchTime": 20
+      "fetchTime": 48
     },
     {
       "name": "@tanstack/react-query",
@@ -258,7 +258,7 @@
       "esmUrl": "https://esm.sh/@tanstack/react-query@5.90.12?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@tanstack/react-query@5.90.12?external=react,react-dom",
       "size": 203,
-      "fetchTime": 20
+      "fetchTime": 53
     },
     {
       "name": "zustand",
@@ -269,7 +269,7 @@
       "esmUrl": "https://esm.sh/zustand@5.0.2?external=react,react-dom",
       "bundleUrl": "https://esm.sh/zustand@5.0.2?bundle&external=react,react-dom",
       "size": 112,
-      "fetchTime": 20
+      "fetchTime": 53
     },
     {
       "name": "immer",
@@ -280,7 +280,7 @@
       "esmUrl": "https://esm.sh/immer@10.1.1?external=react,react-dom",
       "bundleUrl": "https://esm.sh/immer@10.1.1?bundle&external=react,react-dom",
       "size": 108,
-      "fetchTime": 20
+      "fetchTime": 53
     },
     {
       "name": "react-hook-form",
@@ -291,7 +291,7 @@
       "esmUrl": "https://esm.sh/react-hook-form@7.54.2?external=react,react-dom",
       "bundleUrl": "https://esm.sh/react-hook-form@7.54.2?external=react,react-dom",
       "size": 131,
-      "fetchTime": 20
+      "fetchTime": 53
     },
     {
       "name": "zod",
@@ -302,7 +302,7 @@
       "esmUrl": "https://esm.sh/zod@3.24.1?external=react,react-dom",
       "bundleUrl": "https://esm.sh/zod@3.24.1?bundle&external=react,react-dom",
       "size": 188,
-      "fetchTime": 20
+      "fetchTime": 53
     },
     {
       "name": "@hookform/resolvers",
@@ -313,7 +313,7 @@
       "esmUrl": "https://esm.sh/@hookform/resolvers@3.10.0?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@hookform/resolvers@3.10.0?external=react,react-dom",
       "size": 196,
-      "fetchTime": 20
+      "fetchTime": 53
     },
     {
       "name": "papaparse",
@@ -324,7 +324,7 @@
       "esmUrl": "https://esm.sh/papaparse@5.4.1?external=react,react-dom",
       "bundleUrl": "https://esm.sh/papaparse@5.4.1?bundle&external=react,react-dom",
       "size": 215,
-      "fetchTime": 20
+      "fetchTime": 52
     },
     {
       "name": "sonner",
@@ -335,7 +335,7 @@
       "esmUrl": "https://esm.sh/sonner@1.7.1?external=react,react-dom",
       "bundleUrl": "https://esm.sh/sonner@1.7.1?external=react,react-dom",
       "size": 102,
-      "fetchTime": 19
+      "fetchTime": 55
     },
     {
       "name": "embla-carousel-react",
@@ -346,7 +346,7 @@
       "esmUrl": "https://esm.sh/embla-carousel-react@8.5.1?external=react,react-dom",
       "bundleUrl": "https://esm.sh/embla-carousel-react@8.5.1?external=react,react-dom",
       "size": 402,
-      "fetchTime": 19
+      "fetchTime": 46
     },
     {
       "name": "react-loading-skeleton",
@@ -357,7 +357,7 @@
       "esmUrl": "https://esm.sh/react-loading-skeleton@3.5.0?external=react,react-dom",
       "bundleUrl": "https://esm.sh/react-loading-skeleton@3.5.0?external=react,react-dom",
       "size": 266,
-      "fetchTime": 19
+      "fetchTime": 46
     },
     {
       "name": "@formkit/auto-animate",
@@ -368,7 +368,7 @@
       "esmUrl": "https://esm.sh/@formkit/auto-animate@0.8.2?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@formkit/auto-animate@0.8.2?external=react,react-dom",
       "size": 243,
-      "fetchTime": 19
+      "fetchTime": 49
     },
     {
       "name": "react-spring",
@@ -379,7 +379,7 @@
       "esmUrl": "https://esm.sh/react-spring@9.7.5?external=react,react-dom",
       "bundleUrl": "https://esm.sh/react-spring@9.7.5?external=react,react-dom",
       "size": 195,
-      "fetchTime": 19
+      "fetchTime": 50
     },
     {
       "name": "@tanstack/react-table",
@@ -390,7 +390,7 @@
       "esmUrl": "https://esm.sh/@tanstack/react-table@8.20.6?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@tanstack/react-table@8.20.6?external=react,react-dom",
       "size": 200,
-      "fetchTime": 19
+      "fetchTime": 49
     },
     {
       "name": "nanoid",
@@ -402,7 +402,7 @@
       "esmUrl": "https://esm.sh/nanoid@5.0.9?external=react,react-dom",
       "bundleUrl": "https://esm.sh/nanoid@5.0.9?bundle&external=react,react-dom",
       "size": 109,
-      "fetchTime": 19
+      "fetchTime": 50
     },
     {
       "name": "@xyflow/react",
@@ -413,7 +413,7 @@
       "esmUrl": "https://esm.sh/@xyflow/react@12.3.6?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@xyflow/react@12.3.6?external=react,react-dom",
       "size": 339,
-      "fetchTime": 19
+      "fetchTime": 49
     },
     {
       "name": "react-grid-layout",
@@ -424,7 +424,7 @@
       "esmUrl": "https://esm.sh/react-grid-layout@1.5.0?external=react,react-dom",
       "bundleUrl": "https://esm.sh/react-grid-layout@1.5.0?external=react,react-dom",
       "size": 569,
-      "fetchTime": 18
+      "fetchTime": 49
     },
     {
       "name": "@nivo/core",
@@ -435,7 +435,7 @@
       "esmUrl": "https://esm.sh/@nivo/core@0.88.0?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@nivo/core@0.88.0?external=react,react-dom",
       "size": 1107,
-      "fetchTime": 18
+      "fetchTime": 49
     },
     {
       "name": "@nivo/bar",
@@ -446,7 +446,7 @@
       "esmUrl": "https://esm.sh/@nivo/bar@0.88.0?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@nivo/bar@0.88.0?external=react,react-dom",
       "size": 770,
-      "fetchTime": 18
+      "fetchTime": 49
     },
     {
       "name": "@nivo/line",
@@ -457,7 +457,7 @@
       "esmUrl": "https://esm.sh/@nivo/line@0.88.0?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@nivo/line@0.88.0?external=react,react-dom",
       "size": 758,
-      "fetchTime": 16
+      "fetchTime": 45
     },
     {
       "name": "@nivo/pie",
@@ -468,7 +468,7 @@
       "esmUrl": "https://esm.sh/@nivo/pie@0.88.0?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@nivo/pie@0.88.0?external=react,react-dom",
       "size": 514,
-      "fetchTime": 16
+      "fetchTime": 55
     },
     {
       "name": "chart.js",
@@ -479,7 +479,7 @@
       "esmUrl": "https://esm.sh/chart.js@4.4.7?external=react,react-dom",
       "bundleUrl": "https://esm.sh/chart.js@4.4.7?bundle&external=react,react-dom",
       "size": 112,
-      "fetchTime": 16
+      "fetchTime": 39
     },
     {
       "name": "react-chartjs-2",
@@ -490,7 +490,7 @@
       "esmUrl": "https://esm.sh/react-chartjs-2@5.2.0?external=react,react-dom",
       "bundleUrl": "https://esm.sh/react-chartjs-2@5.2.0?external=react,react-dom",
       "size": 170,
-      "fetchTime": 19
+      "fetchTime": 53
     },
     {
       "name": "konva",
@@ -501,7 +501,7 @@
       "esmUrl": "https://esm.sh/konva@9.3.18?external=react,react-dom",
       "bundleUrl": "https://esm.sh/konva@9.3.18?bundle&external=react,react-dom",
       "size": 198,
-      "fetchTime": 19
+      "fetchTime": 49
     },
     {
       "name": "react-konva",
@@ -512,7 +512,7 @@
       "esmUrl": "https://esm.sh/react-konva@18.2.10?external=react,react-dom",
       "bundleUrl": "https://esm.sh/react-konva@18.2.10?external=react,react-dom",
       "size": 497,
-      "fetchTime": 19
+      "fetchTime": 48
     },
     {
       "name": "matter-js",
@@ -524,7 +524,7 @@
       "esmUrl": "https://esm.sh/matter-js@0.20.0?external=react,react-dom",
       "bundleUrl": "https://esm.sh/matter-js@0.20.0?bundle&external=react,react-dom",
       "size": 218,
-      "fetchTime": 16
+      "fetchTime": 54
     },
     {
       "name": "@use-gesture/react",
@@ -535,7 +535,7 @@
       "esmUrl": "https://esm.sh/@use-gesture/react@10.3.1?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@use-gesture/react@10.3.1?external=react,react-dom",
       "size": 340,
-      "fetchTime": 19
+      "fetchTime": 54
     },
     {
       "name": "gsap",
@@ -546,7 +546,7 @@
       "esmUrl": "https://esm.sh/gsap@3.12.5?external=react,react-dom",
       "bundleUrl": "https://esm.sh/gsap@3.12.5?bundle&external=react,react-dom",
       "size": 193,
-      "fetchTime": 19
+      "fetchTime": 54
     },
     {
       "name": "howler",
@@ -557,7 +557,7 @@
       "esmUrl": "https://esm.sh/howler@2.2.4?external=react,react-dom",
       "bundleUrl": "https://esm.sh/howler@2.2.4?bundle&external=react,react-dom",
       "size": 200,
-      "fetchTime": 16
+      "fetchTime": 54
     },
     {
       "name": "@dnd-kit/core",
@@ -568,7 +568,7 @@
       "esmUrl": "https://esm.sh/@dnd-kit/core@6.3.1?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@dnd-kit/core@6.3.1?external=react,react-dom",
       "size": 250,
-      "fetchTime": 16
+      "fetchTime": 43
     },
     {
       "name": "@dnd-kit/sortable",
@@ -579,7 +579,7 @@
       "esmUrl": "https://esm.sh/@dnd-kit/sortable@9.0.0?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@dnd-kit/sortable@9.0.0?external=react,react-dom",
       "size": 263,
-      "fetchTime": 15
+      "fetchTime": 40
     },
     {
       "name": "@dnd-kit/utilities",
@@ -590,7 +590,97 @@
       "esmUrl": "https://esm.sh/@dnd-kit/utilities@3.2.2?external=react,react-dom",
       "bundleUrl": "https://esm.sh/@dnd-kit/utilities@3.2.2?external=react,react-dom",
       "size": 129,
-      "fetchTime": 11
+      "fetchTime": 49
+    },
+    {
+      "name": "three",
+      "version": "0.170.0",
+      "compatibleVersions": [
+        "^0.170.0",
+        "^0.160.0"
+      ],
+      "esmUrl": "https://esm.sh/three@0.170.0?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/three@0.170.0?bundle&external=react,react-dom",
+      "size": 110,
+      "fetchTime": 817
+    },
+    {
+      "name": "@react-three/fiber",
+      "version": "8.17.10",
+      "compatibleVersions": [
+        "^8.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@react-three/fiber@8.17.10?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@react-three/fiber@8.17.10?external=react,react-dom",
+      "size": 592,
+      "fetchTime": 87
+    },
+    {
+      "name": "@react-three/drei",
+      "version": "9.117.3",
+      "compatibleVersions": [
+        "^9.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@react-three/drei@9.117.3?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@react-three/drei@9.117.3?external=react,react-dom",
+      "size": 1278,
+      "fetchTime": 2144
+    },
+    {
+      "name": "@react-spring/three",
+      "version": "9.7.5",
+      "compatibleVersions": [
+        "^9.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@react-spring/three@9.7.5?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@react-spring/three@9.7.5?external=react,react-dom",
+      "size": 445,
+      "fetchTime": 88
+    },
+    {
+      "name": "@react-three/rapier",
+      "version": "1.5.0",
+      "compatibleVersions": [
+        "^1.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@react-three/rapier@1.5.0?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@react-three/rapier@1.5.0?external=react,react-dom",
+      "size": 424,
+      "fetchTime": 162
+    },
+    {
+      "name": "three-stdlib",
+      "version": "2.35.12",
+      "compatibleVersions": [
+        "^2.0.0"
+      ],
+      "esmUrl": "https://esm.sh/three-stdlib@2.35.12?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/three-stdlib@2.35.12?bundle&external=react,react-dom",
+      "size": 199,
+      "fetchTime": 844
+    },
+    {
+      "name": "@types/three",
+      "version": "0.170.0",
+      "compatibleVersions": [
+        "^0.170.0",
+        "^0.160.0"
+      ],
+      "esmUrl": "https://esm.sh/@types/three@0.170.0?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@types/three@0.170.0?bundle&external=react,react-dom",
+      "size": 294,
+      "fetchTime": 175
+    },
+    {
+      "name": "@react-three/postprocessing",
+      "version": "2.16.3",
+      "compatibleVersions": [
+        "^2.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@react-three/postprocessing@2.16.3?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@react-three/postprocessing@2.16.3?external=react,react-dom",
+      "size": 428,
+      "fetchTime": 306
     }
   ]
 }
