@@ -117,6 +117,21 @@ const PREBUILT_PACKAGES: PrebuiltPackage[] = [
   // ===== DATA (Phase 1) =====
   { name: "@tanstack/react-table", version: "8.20.6", compatibleVersions: ["^8.0.0"], pure: false },
   { name: "nanoid", version: "5.0.9", compatibleVersions: ["^5.0.0", "^4.0.0"], pure: true },
+
+  // ===== PHASE 2: DATA VISUALIZATION =====
+  // Flowcharts & Diagrams
+  { name: "@xyflow/react", version: "12.3.6", compatibleVersions: ["^12.0.0"], pure: false },
+  { name: "react-grid-layout", version: "1.5.0", compatibleVersions: ["^1.0.0"], pure: false },
+
+  // Charts (Nivo - modular)
+  { name: "@nivo/core", version: "0.88.0", compatibleVersions: ["^0.88.0"], pure: false },
+  { name: "@nivo/bar", version: "0.88.0", compatibleVersions: ["^0.88.0"], pure: false },
+  { name: "@nivo/line", version: "0.88.0", compatibleVersions: ["^0.88.0"], pure: false },
+  { name: "@nivo/pie", version: "0.88.0", compatibleVersions: ["^0.88.0"], pure: false },
+
+  // Chart.js
+  { name: "chart.js", version: "4.4.7", compatibleVersions: ["^4.0.0"], pure: true },
+  { name: "react-chartjs-2", version: "5.2.0", compatibleVersions: ["^5.0.0"], pure: false },
 ];
 
 /**
