@@ -130,8 +130,121 @@ jobs:
             }
           prompt: '/gemini-invoke'
 
-      - name: 'Retry Gemini CLI on failure'
+      - name: 'Check for quota error'
+        id: 'check_quota_error'
         if: steps.run_gemini.outcome == 'failure'
+        run: |
+          # Check if error report exists and contains quota error
+          ERROR_FILE=$(find /tmp -name "gemini-client-error-*.json" -type f 2>/dev/null | head -1)
+          if [ -n "$ERROR_FILE" ] && grep -qi "quota" "$ERROR_FILE" 2>/dev/null; then
+            echo "is_quota_error=true" >> $GITHUB_OUTPUT
+            echo "::warning::Primary API key quota exhausted, trying backup key..."
+          else
+            echo "is_quota_error=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 'Retry with backup API key on quota error'
+        if: steps.run_gemini.outcome == 'failure' && steps.check_quota_error.outputs.is_quota_error == 'true' && secrets.GEMINI_API_KEY_2 != ''
+        uses: 'google-github-actions/run-gemini-cli@v0' # ratchet:exclude
+        id: 'run_gemini_backup_key'
+        continue-on-error: true
+        env:
+          TITLE: '${{ github.event.pull_request.title || github.event.issue.title }}'
+          DESCRIPTION: '${{ github.event.pull_request.body || github.event.issue.body }}'
+          EVENT_NAME: '${{ github.event_name }}'
+          GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
+          IS_PULL_REQUEST: '${{ !!github.event.pull_request }}'
+          ISSUE_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
+          REPOSITORY: '${{ github.repository }}'
+          ADDITIONAL_CONTEXT: '${{ inputs.additional_context }}'
+        with:
+          gcp_location: '${{ vars.GOOGLE_CLOUD_LOCATION }}'
+          gcp_project_id: '${{ vars.GOOGLE_CLOUD_PROJECT }}'
+          gcp_service_account: '${{ vars.SERVICE_ACCOUNT_EMAIL }}'
+          gcp_workload_identity_provider: '${{ vars.GCP_WIF_PROVIDER }}'
+          gemini_api_key: '${{ secrets.GEMINI_API_KEY_2 }}'
+          gemini_cli_version: '${{ vars.GEMINI_CLI_VERSION || ''0.19.4'' }}'
+          gemini_debug: '${{ fromJSON(vars.DEBUG || vars.ACTIONS_STEP_DEBUG || false) }}'
+          gemini_model: '${{ vars.GEMINI_MODEL }}'
+          google_api_key: '${{ secrets.GEMINI_API_KEY_2 }}'
+          use_gemini_code_assist: '${{ vars.GOOGLE_GENAI_USE_GCA }}'
+          use_vertex_ai: '${{ vars.GOOGLE_GENAI_USE_VERTEXAI }}'
+          upload_artifacts: 'true'
+          workflow_name: 'gemini-invoke-backup'
+          settings: |-
+            {
+              "model": {
+                "maxSessionTurns": 25
+              },
+              "telemetry": {
+                "enabled": true,
+                "target": "local",
+                "outfile": ".gemini/telemetry.log"
+              },
+              "mcpServers": {
+                "github": {
+                  "command": "docker",
+                  "args": [
+                    "run",
+                    "-i",
+                    "--rm",
+                    "-e",
+                    "GITHUB_PERSONAL_ACCESS_TOKEN",
+                    "ghcr.io/github/github-mcp-server:v0.18.0"
+                  ],
+                  "includeTools": [
+                    "add_issue_comment",
+                    "get_issue",
+                    "get_issue_comments",
+                    "list_issues",
+                    "search_issues",
+                    "create_pull_request",
+                    "pull_request_read",
+                    "list_pull_requests",
+                    "search_pull_requests",
+                    "create_branch",
+                    "create_or_update_file",
+                    "delete_file",
+                    "fork_repository",
+                    "get_commit",
+                    "get_file_contents",
+                    "list_commits",
+                    "push_files",
+                    "search_code"
+                  ],
+                  "env": {
+                    "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+                  },
+                  "timeout": 60000
+                }
+              },
+              "tools": {
+                "core": [
+                  "run_shell_command(cat)",
+                  "run_shell_command(echo)",
+                  "run_shell_command(grep)",
+                  "run_shell_command(head)",
+                  "run_shell_command(tail)"
+                ]
+              }
+            }
+          prompt: '/gemini-invoke'
+
+      - name: 'Check backup key quota error'
+        id: 'check_backup_quota_error'
+        if: steps.run_gemini_backup_key.outcome == 'failure'
+        run: |
+          ERROR_FILE=$(find /tmp -name "gemini-client-error-*.json" -type f 2>/dev/null | sort -r | head -1)
+          if [ -n "$ERROR_FILE" ] && grep -qi "quota" "$ERROR_FILE" 2>/dev/null; then
+            echo "is_quota_error=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_quota_error=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 'Retry Gemini CLI on non-quota failure'
+        if: |
+          steps.run_gemini.outcome == 'failure' &&
+          steps.check_quota_error.outputs.is_quota_error != 'true'
         uses: 'google-github-actions/run-gemini-cli@v0' # ratchet:exclude
         id: 'run_gemini_retry'
         env:
@@ -215,3 +328,17 @@ jobs:
               }
             }
           prompt: '/gemini-invoke'
+
+      - name: 'Skip on quota exhaustion'
+        if: |
+          (steps.check_quota_error.outputs.is_quota_error == 'true' && steps.run_gemini_backup_key.outcome != 'success') ||
+          steps.check_backup_quota_error.outputs.is_quota_error == 'true'
+        env:
+          GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
+          ISSUE_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
+          REPOSITORY: '${{ github.repository }}'
+        run: |
+          echo "::warning::All API keys have exhausted their daily quota. Skipping Gemini invocation."
+          gh issue comment "${ISSUE_NUMBER}" \
+            --body "⚠️ **Gemini Skipped**: All API keys have reached their daily quota limit. Please try again when quotas reset (midnight PT)." \
+            --repo "${REPOSITORY}" || true
