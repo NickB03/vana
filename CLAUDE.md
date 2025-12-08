@@ -1,4 +1,4 @@
-<!-- CLAUDE.md v2.13 | Last updated: 2025-12-08 | AI code review completed: all critical and high priority issues addressed -->
+<!-- CLAUDE.md v2.14 | Last updated: 2025-12-08 | Updated with Phase 4 bundles, monitoring section, and recent improvements -->
 
 # CLAUDE.md
 
@@ -179,10 +179,11 @@ Optimizes artifact loading by using pre-bundled common dependencies instead of r
 **Features**:
 - **O(1) Package Lookup**: Hash map provides instant package access (vs O(n) array search)
 - **Version Compatibility**: Supports exact matches, caret ranges (^2.0.0), tilde ranges (~2.5.0), and latest
-- **Phased Rollout**: 70+ packages across three phases
+- **Phased Rollout**: 70+ packages across four phases
   - Phase 1: State management, forms, UI essentials, animation (18 packages)
   - Phase 2: Data visualization - flowcharts, Nivo charts, Chart.js (8 packages)
-  - Phase 3: Games & interactive - Konva, physics, GSAP, audio, drag-drop (8 packages)
+  - Phase 3: Games & interactive - Konva, physics, GSAP, audio, drag-drop (9 packages)
+  - Phase 4: 3D & WebGL - Three.js, React Three Fiber, Drei, React Three Postprocessing (8 packages)
 - **5-10x Faster Loading**: Eliminates CDN round-trips for common packages
 - **Smart Bundling**: Pure packages use `?bundle` for single-file optimization, React packages use standard URLs
 
@@ -411,6 +412,15 @@ if (isFeatureEnabled('RATE_LIMIT_WARNINGS')) {
 - **Database**: RLS policies, SECURITY DEFINER with `search_path`, JWT auth
 - **API**: Guest rate limiting (20/5h), CORS whitelist, input validation
 - **XSS**: DOMPurify + Zod schemas + server validation (14 attack scenarios tested)
+
+## Monitoring & Observability
+
+- **Sentry Integration**: Error tracking and performance monitoring
+  - Frontend: Automatic error capture, source maps for debugging
+  - Edge Functions: Structured error logging with context
+  - Setup: See `docs/SENTRY_INTEGRATION.md` for configuration
+- **AI Usage Tracking**: Comprehensive logging via `ai_usage_logs` table
+- **Rate Limit Analytics**: Real-time monitoring of API usage patterns
 
 ## Build Optimization
 
