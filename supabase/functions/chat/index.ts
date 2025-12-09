@@ -34,8 +34,9 @@ import {
   handleCorsPreflightRequest,
 } from "../_shared/cors-config.ts";
 import { getSystemInstruction } from "../_shared/system-prompt-inline.ts";
+// Legacy reasoning generator - DEPRECATED: GLM thinking mode now provides reasoning
+// Keeping type imports for backward compatibility with streaming handler
 import {
-  generateStructuredReasoning,
   createFallbackReasoning,
   type StructuredReasoning,
 } from "../_shared/reasoning-generator.ts";
@@ -215,39 +216,17 @@ serve(async (req) => {
     console.log(`[${requestId}] Intent:`, intent.type, "-", intent.reasoning);
 
     // ========================================
-    // STEP 5: Generate Reasoning (if requested)
+    // STEP 5: Reasoning (handled by GLM thinking mode in streaming)
     // ========================================
+    // NOTE: Legacy Gemini reasoning generation removed in Phase 4.
+    // GLM's native thinking mode now provides reasoning_content via SSE stream,
+    // which is parsed by streaming.ts and sent as reasoning_step events.
     let structuredReasoning: StructuredReasoning | null = null;
 
-    if (includeReasoning && lastUserMessage) {
-      console.log(
-        `[${requestId}] 🧠 Generating reasoning for: "${lastUserContent.substring(
-          0,
-          50
-        )}..."`
-      );
-
-      try {
-        structuredReasoning = await generateStructuredReasoning(
-          lastUserContent,
-          messages.filter((m) => m.role !== "system") as OpenRouterMessage[],
-          {
-            maxSteps: 3, // Limit for faster generation
-            timeout: 8000, // 8s timeout
-          }
-        );
-
-        console.log(
-          `[${requestId}] ✅ Reasoning generated: ${structuredReasoning.steps.length} steps`
-        );
-      } catch (reasoningError) {
-        console.error(
-          `[${requestId}] ⚠️ Reasoning generation failed:`,
-          reasoningError
-        );
-        // Use fallback reasoning instead of blocking the response
-        structuredReasoning = createFallbackReasoning(reasoningError.message);
-      }
+    // For non-GLM fallback (OpenRouter), we still support pre-streamed reasoning
+    // but don't generate it here - the stream handler will pass null
+    if (includeReasoning) {
+      console.log(`[${requestId}] 🧠 Reasoning will come from GLM thinking mode (SSE stream)`);
     }
 
     // ========================================
@@ -255,16 +234,16 @@ serve(async (req) => {
     // ========================================
     const searchResult = intent.shouldSearch
       ? await performWebSearch(
-          lastUserContent,
-          user?.id || null,
-          isGuest,
-          requestId
-        )
+        lastUserContent,
+        user?.id || null,
+        isGuest,
+        requestId
+      )
       : {
-          searchContext: "",
-          searchResultsData: null,
-          searchExecuted: false,
-        };
+        searchContext: "",
+        searchResultsData: null,
+        searchExecuted: false,
+      };
 
     // ========================================
     // STEP 6b: URL Content Extraction (if URLs detected)
