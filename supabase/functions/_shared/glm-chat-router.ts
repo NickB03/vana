@@ -156,7 +156,7 @@ async function callGLMChat(
       temperature,
       max_tokens,
       requestId,
-      enableThinking: false, // Disable thinking mode for chat (only for artifacts)
+      enableThinking: Deno.env.get('USE_GLM_THINKING_FOR_CHAT') !== 'false', // Enable thinking by default, disable with env var
       stream
     }
   );
