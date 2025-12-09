@@ -10,7 +10,7 @@ import { BenefitsSection } from "@/components/landing/BenefitsSection";
 import { CTASection } from "@/components/landing/CTASection";
 import { ScrollIndicator } from "@/components/landing/ScrollIndicator";
 import ScrollProgressBar from "@/components/ui/scroll-progress-bar";
-import { GuestLimitBanner } from "@/components/GuestLimitBanner";
+import { RateLimitPopup } from "@/components/RateLimitPopup";
 import { GuestLimitDialog } from "@/components/GuestLimitDialog";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { ChatSidebar } from "@/components/ChatSidebar";
@@ -445,18 +445,7 @@ const Home = () => {
 
             <SidebarInset className="relative bg-transparent">
               <main className="flex h-[100dvh] flex-col overflow-hidden">
-                {/* Header - only show when guest limit banner is needed */}
-                {!isAuthenticated && guestSession.messageCount > 0 && (
-                  <header className="bg-black/50 backdrop-blur-sm border-b border-border/30 sticky top-0 z-20 flex h-16 w-full shrink-0 items-center justify-between gap-2 px-4">
-                    <div className="flex-1 max-w-md">
-                      <GuestLimitBanner
-                        messageCount={guestSession.messageCount}
-                        maxMessages={guestSession.maxMessages}
-                      />
-                    </div>
-                  </header>
-                )}
-
+                
                 {/* Main Content */}
                 <div className="flex-1 overflow-hidden flex flex-col">
                   {!showChat ? (
@@ -497,6 +486,11 @@ const Home = () => {
                       isGuest={!isAuthenticated}
                       guestMessageCount={guestSession.messageCount}
                       guestMaxMessages={guestSession.maxMessages}
+                      guestSession={{
+                        saveMessages: guestSession.saveMessages,
+                        loadMessages: guestSession.loadMessages,
+                        clearMessages: guestSession.clearMessages,
+                      }}
                     />
                   )}
                 </div>

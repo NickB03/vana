@@ -108,6 +108,11 @@ export interface RateLimitHeaders {
 export interface UseChatMessagesOptions {
   onRateLimitUpdate?: (headers: RateLimitHeaders) => void;
   isGuest?: boolean; // Explicit guest mode flag - when true, messages are saved to local state only
+  guestSession?: {
+    saveMessages: (messages: ChatMessage[]) => void;
+    loadMessages: () => ChatMessage[];
+    clearMessages: () => void;
+  };
 }
 
 /**
@@ -135,9 +140,17 @@ export function useChatMessages(
   options?: UseChatMessagesOptions
 ) {
   const isGuest = options?.isGuest ?? false;
+  const guestSession = options?.guestSession;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [artifactRenderStatus, setArtifactRenderStatus] = useState<'pending' | 'rendered' | 'error'>('pending');
+  const [rateLimitPopup, setRateLimitPopup] = useState<{
+    isOpen: boolean;
+    resetAt?: string;
+  }>({
+    isOpen: false,
+    resetAt: undefined,
+  });
   const { toast } = useToast();
 
   const fetchMessages = useCallback(async () => {
@@ -254,7 +267,24 @@ export function useChatMessages(
         search_results: searchResults || null,
         created_at: new Date().toISOString(),
       };
-      setMessages((prev) => [...prev, guestMessage]);
+
+      // Update local state and persist to localStorage
+      setMessages((prev) => {
+        const updatedMessages = [...prev, guestMessage];
+
+        // Persist to localStorage if guest session functions are available
+        if (guestSession) {
+          try {
+            guestSession.saveMessages(updatedMessages);
+            console.log(`[saveMessage] Saved ${updatedMessages.length} messages to guest session`);
+          } catch (error) {
+            console.error("Failed to save guest messages:", error);
+          }
+        }
+
+        return updatedMessages;
+      });
+
       return guestMessage;
     }
 
@@ -422,15 +452,10 @@ export function useChatMessages(
         // Handle rate limit exceeded (429)
         if (artifactResponse.status === 429) {
           const errorData = await artifactResponse.json();
-          const resetTime = errorData.resetAt
-            ? new Date(errorData.resetAt).toLocaleTimeString()
-            : "soon";
 
-          toast({
-            title: "Rate Limit Exceeded",
-            description: `${errorData.error || "Too many requests."} Rate limit resets at ${resetTime}.`,
-            variant: "destructive",
-            duration: 10000,
+          setRateLimitPopup({
+            isOpen: true,
+            resetAt: errorData.resetAt,
           });
 
           setIsLoading(false);
@@ -935,19 +960,9 @@ export function useChatMessages(
           options.onRateLimitUpdate(rateLimitHeaders);
         }
 
-        const resetTime = errorData.resetAt
-          ? new Date(errorData.resetAt).toLocaleTimeString()
-          : "soon";
-
-        const retryMessage = rateLimitHeaders?.retryAfter
-          ? `Please try again in ${rateLimitHeaders.retryAfter} seconds.`
-          : `Rate limit resets at ${resetTime}.`;
-
-        toast({
-          title: "Rate Limit Exceeded",
-          description: `${errorData.error || "Too many requests."} ${retryMessage}`,
-          variant: "destructive",
-          duration: 10000,
+        setRateLimitPopup({
+          isOpen: true,
+          resetAt: errorData.resetAt,
         });
 
         setIsLoading(false);
@@ -1326,5 +1341,7 @@ export function useChatMessages(
     deleteMessage,
     updateMessage,
     artifactRenderStatus,
+    rateLimitPopup,
+    setRateLimitPopup,
   };
 }
