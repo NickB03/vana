@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { ChatMessage } from "./useChatMessages";
+import { ChatMessage } from "@/types/chat";
 
 const GUEST_SESSION_KEY = "vana_guest_session";
 const GUEST_MESSAGES_KEY = "vana_guest_messages";

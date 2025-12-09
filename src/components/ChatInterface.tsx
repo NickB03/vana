@@ -142,11 +142,13 @@ export function ChatInterface({
       shouldGenerateImage,
       shouldGenerateArtifact
     });
-    setImageMode(false);
-    setArtifactMode(false);
+    // NOTE: setImageMode/setArtifactMode moved to useEffect below to prevent render phase updates
 
     // Start stream with cancellation support
     const abortController = startStream();
+
+    // Increment tracker to trigger mode reset
+    setMessageSentTracker(prev => prev + 1);
 
     await streamChat(
       messageToSend,
@@ -181,6 +183,15 @@ export function ChatInterface({
   // Keep ref updated with latest handleSend (for stable access in effects)
   handleSendRef.current = handleSend;
 
+  // Track when messages are sent to reset image/artifact modes
+  const [messageSentTracker, setMessageSentTracker] = useState(0);
+
+  // Reset modes when a message is sent (moved from handleSend to prevent render phase updates)
+  useEffect(() => {
+    setImageMode(false);
+    setArtifactMode(false);
+  }, [messageSentTracker]);
+
   // Reset when session changes
   useEffect(() => {
     setStreamingMessage("");
@@ -189,6 +200,7 @@ export function ChatInterface({
     setIsEditingArtifact(false);
     setLastMessageElapsedTime("");
     onArtifactChange?.(false);
+    setMessageSentTracker(0); // Reset tracker
     // Note: initializedSessionRef is managed separately in the initialPrompt effect
   }, [sessionId, onArtifactChange]);
 

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getAuthErrorMessage } from "@/utils/authHelpers";
 import { chatRequestThrottle } from "@/utils/requestThrottle";
+import { ChatMessage } from "@/types/chat";
 import { StructuredReasoning, parseReasoningSteps, ReasoningStep } from "@/types/reasoning";
 import { WebSearchResults } from "@/types/webSearch";
 
@@ -69,16 +70,7 @@ function detectPhase(text: string, currentPhase: ThinkingPhase): ThinkingPhase {
   return currentPhase;
 }
 
-export interface ChatMessage {
-  id: string;
-  session_id: string;
-  role: "user" | "assistant";
-  content: string;
-  reasoning?: string | null;
-  reasoning_steps?: StructuredReasoning | null; // New: structured reasoning data
-  search_results?: WebSearchResults | null; // New: web search results data
-  created_at: string;
-}
+// ChatMessage interface is now imported from @/types/chat to avoid circular dependencies
 
 export type GenerationStage =
   | "analyzing"
@@ -112,6 +104,7 @@ export interface UseChatMessagesOptions {
     saveMessages: (messages: ChatMessage[]) => void;
     loadMessages: () => ChatMessage[];
     clearMessages: () => void;
+    sessionId?: string | null; // Guest session ID for API requests
   };
 }
 
@@ -1281,8 +1274,22 @@ export function useChatMessages(
 
   const deleteMessage = useCallback(async (messageId: string) => {
     if (!sessionId) {
-      // For guest users, delete from local state only
-      setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+      // For guest users, delete from local state and persist
+      setMessages((prev) => {
+        const updatedMessages = prev.filter((msg) => msg.id !== messageId);
+
+        // Persist to localStorage if guest session functions are available
+        if (guestSession) {
+          try {
+            guestSession.saveMessages(updatedMessages);
+            console.log(`[deleteMessage] Saved ${updatedMessages.length} messages after deletion`);
+          } catch (error) {
+            console.error("Failed to save guest messages after deletion:", error);
+          }
+        }
+
+        return updatedMessages;
+      });
       return;
     }
 
@@ -1300,16 +1307,28 @@ export function useChatMessages(
       console.error("Error deleting message:", error);
       throw error;
     }
-  }, [sessionId]);
+  }, [sessionId, guestSession]);
 
   const updateMessage = useCallback(async (messageId: string, content: string) => {
     if (!sessionId) {
-      // For guest users, update local state only
-      setMessages((prev) =>
-        prev.map((msg) =>
+      // For guest users, update local state and persist
+      setMessages((prev) => {
+        const updatedMessages = prev.map((msg) =>
           msg.id === messageId ? { ...msg, content } : msg
-        )
-      );
+        );
+
+        // Persist to localStorage if guest session functions are available
+        if (guestSession) {
+          try {
+            guestSession.saveMessages(updatedMessages);
+            console.log(`[updateMessage] Saved ${updatedMessages.length} messages after update`);
+          } catch (error) {
+            console.error("Failed to save guest messages after update:", error);
+          }
+        }
+
+        return updatedMessages;
+      });
       return;
     }
 
@@ -1331,7 +1350,7 @@ export function useChatMessages(
       console.error("Error updating message:", error);
       throw error;
     }
-  }, [sessionId]);
+  }, [sessionId, guestSession]);
 
   return {
     messages,
