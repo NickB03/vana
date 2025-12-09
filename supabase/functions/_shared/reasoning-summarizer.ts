@@ -3,7 +3,7 @@ import { MODELS } from "./config.ts";
 
 /**
  * Summarize a chunk of reasoning into a short, active-voice status update.
- * Uses GLM-4.5-AirX for fast, semantic summarization.
+ * Uses GLM-4.5-Air for fast, semantic summarization.
  *
  * @param reasoningChunk - The raw reasoning text to summarize
  * @param requestId - Request ID for logging
@@ -35,7 +35,7 @@ export async function summarizeReasoningChunk(
                 },
             ],
             {
-                model: MODELS.GLM_4_AIRX,
+                model: MODELS.GLM_4_AIR,
                 temperature: 0.3, // Low temperature for consistency
                 max_tokens: 20, // Very short output
                 requestId,

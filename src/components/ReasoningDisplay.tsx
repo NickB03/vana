@@ -20,7 +20,7 @@ interface ReasoningDisplayProps {
   reasoningSteps?: StructuredReasoning | unknown | null;
   /** Raw reasoning text being streamed from GLM (native thinking mode) */
   streamingReasoningText?: string | null;
-  /** Semantic status update from GLM-4.5-AirX */
+  /** Semantic status update from GLM-4.5-Air */
   reasoningStatus?: string | null;
   isStreaming?: boolean;
   /** Whether the artifact has finished rendering (optional, defaults to true) */
@@ -250,7 +250,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
    * Priority: semantic status > structured steps > raw text extraction > fallback
    */
   const getStreamingStatus = (): string => {
-    // 1. Prefer explicit semantic status from GLM-4.5-AirX (AI Commentator)
+    // 1. Prefer explicit semantic status from GLM-4.5-Air (AI Commentator)
     if (reasoningStatus) {
       return reasoningStatus;
     }

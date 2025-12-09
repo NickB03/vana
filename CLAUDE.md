@@ -1,4 +1,4 @@
-<!-- CLAUDE.md v2.9 | Last updated: 2025-12-06 | Added GEMINI.md reference -->
+<!-- CLAUDE.md v2.14 | Last updated: 2025-12-08 | Updated with Phase 4 bundles, monitoring section, and recent improvements -->
 
 # CLAUDE.md
 
@@ -8,7 +8,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Vana** is a production AI-powered development assistant that transforms natural language into interactive code, React components, diagrams, and images in real-time. Built with React 18, TypeScript, Vite, Supabase (PostgreSQL + Edge Functions), and multiple AI models via OpenRouter and Google AI Studio.
 
-**Tech Stack**: React 18.3 + TypeScript 5.8 + Vite 5.4 + Tailwind CSS + shadcn/ui + Supabase + TanStack Query + Vitest
+**Tech Stack**: React 18.3.1 + TypeScript 5.8.3 + Vite 5.4.19 + Tailwind CSS + shadcn/ui + Supabase + TanStack Query + Vitest
+
+## Features
+
+### Interactive Onboarding
+
+- **Feature Tour Demo**: Interactive guided tour at `/feature-tour` that introduces new users to key UI elements
+- **Visual Highlights**: Gradient glow borders spotlight UI elements without blocking the interface
+- **Step-by-Step Tooltips**: Contextual explanations for chat input, modes, and sidebar navigation
 
 ## ⚡ Quick Reference
 
@@ -22,7 +30,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Deploy production | `./scripts/deploy-simple.sh prod` |
 | Model names | Always use `MODELS.*` from `_shared/config.ts` |
 | Artifact imports | NO `@/` imports — use npm packages or Tailwind |
-| Chrome MCP | `chrome-mcp start` / `/chrome-status` |
+| Chrome MCP | `npx chrome-devtools-mcp start` / `/chrome-status` |
 
 ## 🎯 MUST Rules (Non-Negotiable)
 
@@ -54,15 +62,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Chrome DevTools MCP Setup
 
 ```bash
-chrome-mcp start|status|restart  # Manage Chrome instance
+npx chrome-devtools-mcp start|status|restart  # Manage Chrome instance
+```
+
+**Alias Setup** (recommended for convenience):
+```bash
+alias chrome-mcp="npx chrome-devtools-mcp"
 ```
 
 **Slash commands**: `/chrome-status`, `/chrome-restart`, `/kill-chromedev`
 
 **Screenshots** (file-based to avoid MCP serialization bug):
 ```bash
-./scripts/take-screenshot.sh "description"
-# Or: take_screenshot({ filePath: ".screenshots/name.png", format: "png" })
+# Take a screenshot with Chrome MCP (recommended)
+await browser.screenshot({ filePath: ".screenshots/name.png", format: "png" })
 ```
 
 **Browser Verification Pattern** (run after EVERY change):
@@ -94,7 +107,7 @@ npm run preview          # Preview production build
   ```
 - **Never run multiple dev servers** — kills performance and causes port confusion
 
-### Testing (692 tests, 74% coverage)
+### Testing (840 tests, 36 files)
 ```bash
 npm run test                  # Run all tests
 npm run test -- --watch       # Watch mode
@@ -118,7 +131,15 @@ supabase functions deploy <name> --project-ref <ref>  # Individual function
 | Artifact Generation | GLM-4.6 | Z.ai API | Thinking mode enabled, streams reasoning |
 | Artifact Error Fixing | GLM-4.6 | Z.ai API | Deep reasoning for debugging |
 | Fast Reasoning (parallel) | Gemini 2.5 Flash Lite | OpenRouter | 2-4s, shows while artifact generates |
+| AI Commentator | GLM-4.5-Air | Z.ai API | Ultra-fast semantic status updates |
 | Image Generation | Gemini Flash-Image | Google AI Studio | 10-key rotation, 150 RPM |
+
+**AI Commentator System**:
+- GLM-4.5-Air runs asynchronously alongside GLM-4.6 artifact generation
+- Provides phase-aware idle messages (analyzing, planning, implementing, styling, finalizing)
+- Converts reasoning text into concise status updates for UI ticker
+- Features anti-flicker cooldown and timeout protection
+- Generates final summaries of created artifacts
 
 ### Edge Function Decision Tree
 
@@ -126,7 +147,7 @@ supabase functions deploy <name> --project-ref <ref>  # Individual function
 |----------|----------|-------|
 | User sends chat message | `chat/` | Gemini Flash Lite |
 | User requests artifact | `generate-artifact/` | GLM-4.6 (Z.ai) |
-| Fast reasoning (parallel) | `generate-reasoning/` | Gemini Flash Lite |
+| Fast reasoning (parallel/fallback) | `generate-reasoning/` | Gemini Flash Lite |
 | Artifact has errors | `generate-artifact-fix/` | GLM-4.6 (Z.ai) |
 | First message in session | `generate-title/` | Gemini Flash Lite |
 | User requests image | `generate-image/` | Gemini Flash-Image |
@@ -148,6 +169,29 @@ Token-aware context windowing system that optimizes conversation history for AI 
 - Message importance ranking (recent > artifact-related > conversational)
 - Graceful degradation when context exceeds budget
 - Guest session support for artifact bundling
+
+### Prebuilt Bundle System
+
+Optimizes artifact loading by using pre-bundled common dependencies instead of runtime fetching:
+
+**Location**: `supabase/functions/_shared/prebuilt-bundles.ts`, `scripts/build-prebuilt-bundles.ts`
+
+**Features**:
+- **O(1) Package Lookup**: Hash map provides instant package access (vs O(n) array search)
+- **Version Compatibility**: Supports exact matches, caret ranges (^2.0.0), tilde ranges (~2.5.0), and latest
+- **Phased Rollout**: 70+ packages across four phases
+  - Phase 1: State management, forms, UI essentials, animation (18 packages)
+  - Phase 2: Data visualization - flowcharts, Nivo charts, Chart.js (8 packages)
+  - Phase 3: Games & interactive - Konva, physics, GSAP, audio, drag-drop (9 packages)
+  - Phase 4: 3D & WebGL - Three.js, React Three Fiber, Drei, React Three Postprocessing (8 packages)
+- **5-10x Faster Loading**: Eliminates CDN round-trips for common packages
+- **Smart Bundling**: Pure packages use `?bundle` for single-file optimization, React packages use standard URLs
+
+**Usage**:
+```typescript
+import { getPrebuiltBundles } from './prebuilt-bundles.ts';
+const { prebuilt, remaining, stats } = getPrebuiltBundles(dependencies);
+```
 
 ### Artifact System
 
@@ -173,7 +217,7 @@ Server-bundled artifacts use a single React instance via import map shims:
 - **Import map**: Includes bare specifiers (`react`, `react-dom`, `react/jsx-runtime`) that redirect to `data:` URL shims → `window.React`
 - **Client** (`BundledArtifactFrame`): Client-side patching kept as safety net for old bundles
 - **CSP**: Server bundles include `data:` in `script-src` for shim modules
-- **Bundle timeout**: Increased to 60 seconds for large dependency trees
+- **Bundle timeout**: 60 seconds for large dependency trees (handled by Supabase Edge Function runtime)
 
 Key files:
 - `supabase/functions/bundle-artifact/index.ts` (lines 395-472) — Server-side fix
@@ -203,14 +247,17 @@ const newBoard = [...board, value];
 
 ### Database Schema
 
-**Key Tables**: `chat_sessions`, `chat_messages`, `guest_rate_limits`, `ai_usage_tracking`, `message_feedback`, `response_quality_logs`
+**Key Tables**: `chat_sessions`, `chat_messages`, `guest_rate_limits`, `user_rate_limits`, `api_throttle`, `artifact_versions`, `ai_usage_logs`, `message_feedback`
 
 ```sql
-chat_sessions(id, user_id, title, first_message, conversation_summary, created_at, updated_at)
-chat_messages(id, session_id, role, content, reasoning, search_results, token_count, created_at)
-guest_rate_limits(id, identifier, request_count, window_start, last_request_at)
+chat_sessions(id, user_id, title, first_message, conversation_summary, summary_checkpoint, last_summarized_at, created_at, updated_at)
+chat_messages(id, session_id, role, content, reasoning, reasoning_steps, search_results, token_count, artifact_ids, created_at)
+guest_rate_limits(id, identifier, request_count, window_start, last_request, first_request_at)
+user_rate_limits(id, user_id, request_count, window_start, last_request, created_at)
+api_throttle(id, api_name, request_count, window_start, last_request, created_at)
+artifact_versions(id, message_id, artifact_id, version_number, artifact_type, artifact_title, artifact_content, content_hash, created_at)
+ai_usage_logs(id, request_id, function_name, provider, model, user_id, is_guest, input_tokens, output_tokens, total_tokens, latency_ms, status_code, estimated_cost, error_message, retry_count, prompt_preview, response_length, created_at)
 message_feedback(id, message_id, session_id, feedback_type, created_at)
-response_quality_logs(id, session_id, quality_score, latency_ms, model, created_at)
 ```
 
 **Security**: All tables have RLS policies. SECURITY DEFINER functions use `SET search_path = public, pg_temp`.
@@ -223,7 +270,7 @@ Full schema: `supabase/migrations/`
 |----------|---------|
 | `chat/` | Main chat streaming with handlers/ and middleware/ |
 | `generate-artifact/` | Artifact generation with GLM-4.6 + SSE streaming + validation |
-| `generate-reasoning/` | Fast parallel reasoning (deprecated, now integrated in generate-artifact) |
+| `generate-reasoning/` | Fast reasoning endpoint (2-4s) - fallback/parallel processing |
 | `bundle-artifact/` | Server-side npm bundling (Radix UI, framer-motion) |
 | `generate-artifact-fix/` | Error fixing with GLM-4.6 deep reasoning |
 | `generate-title/` | Session title generation |
@@ -236,11 +283,11 @@ Full schema: `supabase/migrations/`
 
 **Shared Utilities** (`_shared/`):
 - **Core**: `config.ts`, `cors-config.ts`, `logger.ts`, `validators.ts`
-- **AI/Models**: `openrouter-client.ts`, `glm-client.ts`, `model-router.ts`, `complexity-analyzer.ts`, `reasoning-generator.ts`, `glm-reasoning-parser.ts`
+- **AI/Models**: `openrouter-client.ts`, `glm-client.ts`, `model-router.ts`, `complexity-analyzer.ts`, `reasoning-generator.ts`, `glm-reasoning-parser.ts`, `ai-commentator.ts`
 - **Context Management**: `context-selector.ts`, `context-ranker.ts`, `token-counter.ts`
 - **State/Quality**: `state-machine.ts`, `conversation-state.ts`, `response-quality.ts`
-- **Artifacts**: `artifact-validator.ts`, `artifact-rules/`
-- **Utilities**: `storage-retry.ts`, `rate-limiter.ts`, `api-error-handler.ts`, `error-handler.ts`
+- **Artifacts**: `artifact-validator.ts`, `artifact-rules/`, `prebuilt-bundles.ts`
+- **Utilities**: `storage-retry.ts`, `rate-limiter.ts`, `api-error-handler.ts`, `error-handler.ts`, `cdn-fallback.ts`
 - **Prompts**: `system-prompt-inline.ts`, `system-prompt.txt`
 - **Integrations**: `tavily-client.ts` (web search)
 
@@ -313,11 +360,67 @@ export function useChatSessions() {
 
 **React Context**: `MultiArtifactContext.tsx` (multi-artifact selection)
 
+## Integrations
+
+### Tavily Web Search
+
+**Location**: `supabase/functions/_shared/tavily-client.ts`
+
+Provides real-time web search and content extraction capabilities for grounded AI responses:
+
+**Features**:
+- **AI-Optimized Results**: Tavily API returns search results formatted for LLM consumption
+- **Content Extraction**: Full webpage content reading for detailed analysis
+- **Cost Tracking**: Built-in analytics for API usage monitoring
+- **Retry Logic**: Exponential backoff for resilient requests
+- **Context Formatting**: Automatic formatting for injection into AI prompts
+
+**Usage**:
+```typescript
+import { searchWeb } from './tavily-client.ts';
+
+const results = await searchWeb({
+  query: "React hooks best practices",
+  max_results: 5,
+  include_raw_content: true
+});
+```
+
+## Feature Flags
+
+**Location**: `src/lib/featureFlags.ts`
+
+Centralized configuration for enabling/disabling features across the application:
+
+**Available Flags**:
+- `RATE_LIMIT_WARNINGS`: Show toast notifications for approaching rate limits (disabled)
+- `GUEST_BANNER_URGENCY`: Color-coded guest banner based on remaining messages (disabled)
+- `CONTEXT_AWARE_PLACEHOLDERS`: Dynamic input placeholder text based on current mode (disabled)
+- `CANVAS_SHADOW_DEPTH`: Visual depth cues for chat card shadows (disabled)
+
+**Usage**:
+```typescript
+import { isFeatureEnabled, FEATURE_FLAGS } from '@/lib/featureFlags';
+
+if (isFeatureEnabled('RATE_LIMIT_WARNINGS')) {
+  // Show warning
+}
+```
+
 ## Security
 
 - **Database**: RLS policies, SECURITY DEFINER with `search_path`, JWT auth
 - **API**: Guest rate limiting (20/5h), CORS whitelist, input validation
 - **XSS**: DOMPurify + Zod schemas + server validation (14 attack scenarios tested)
+
+## Monitoring & Observability
+
+- **Sentry Integration**: Error tracking and performance monitoring
+  - Frontend: Automatic error capture, source maps for debugging
+  - Edge Functions: Structured error logging with context
+  - Setup: See `docs/SENTRY_INTEGRATION.md` for configuration
+- **AI Usage Tracking**: Comprehensive logging via `ai_usage_logs` table
+- **Rate Limit Analytics**: Real-time monitoring of API usage patterns
 
 ## Build Optimization
 
@@ -326,6 +429,28 @@ export function useChatSessions() {
 **Features**: Brotli + Gzip, PWA service worker, Terser minification, 52% bundle reduction via externalized prompts
 
 **Cache**: Supabase API (NetworkFirst, 30s), Images (NetworkFirst, 5min), Service Worker (immediate activation)
+
+### CDN Fallback Chain
+
+**Location**: `supabase/functions/_shared/cdn-fallback.ts`
+
+Provides resilient multi-CDN strategy for ESM package loading with automatic failover:
+
+**Features**:
+- **Multi-Provider Fallback**: esm.sh → esm.run → jsdelivr (3-second timeout per provider)
+- **Parallel Verification**: Checks all CDNs simultaneously, returns fastest successful
+- **Health Monitoring**: Tracks CDN availability with detailed logging
+- **React Externalization**: Proper `?external=react,react-dom` handling where supported
+
+**Usage**:
+```typescript
+import { getWorkingCdnUrl } from './cdn-fallback.ts';
+
+const result = await getWorkingCdnUrl('lodash', '4.17.21', requestId);
+if (result) {
+  console.log(`Using ${result.provider}: ${result.url}`);
+}
+```
 
 ## Demo Video Compression
 
@@ -357,11 +482,10 @@ ffmpeg -i source.mp4 \
 -vf "scale=1920:-2"   # 1080p
 ```
 
-**Video Location**: `public/Demos/` — served statically by Vite/Cloudflare
+**Video Location**: `public/` — served statically by Vite/Cloudflare
 
 **Best Practices**:
-- Keep original source files in `Demos/` (not in `public/`)
-- Only commit compressed versions to `public/Demos/`
+- Only commit compressed versions to `public/`
 - Use WebM + MP4 fallback for maximum compression: `<source src="demo.webm">` then `<source src="demo.mp4">`
 
 ## Common Patterns
@@ -380,8 +504,8 @@ export default function App() { ... }
 ```
 
 ### Adding New Artifact Type
-1. Update `ArtifactType` in `src/components/Artifact.tsx`
-2. Add renderer logic in `Artifact` component
+1. Update `ArtifactType` in `src/components/ArtifactContainer.tsx`
+2. Add renderer logic in `ArtifactContainer` component
 3. Update parser in `src/utils/artifactParser.ts`
 
 ### Adding New Edge Function
@@ -412,16 +536,29 @@ export default function App() { ... }
 - `OPENROUTER_GEMINI_FLASH_KEY` (chat, titles, summaries, fast reasoning)
 - `GLM_API_KEY` (artifact generation via Z.ai)
 - `GOOGLE_KEY_1` through `GOOGLE_KEY_10` (image generation)
+- `TAVILY_API_KEY` (web search integration)
 - `ALLOWED_ORIGINS` (CORS)
+
+**Rate Limiting Configuration** (optional, overrides defaults):
+- `RATE_LIMIT_GUEST_MAX` (default: 20 requests per 5 hours)
+- `RATE_LIMIT_AUTH_MAX` (default: 100 requests per 5 hours)
+- `RATE_LIMIT_ARTIFACT_GUEST_MAX` (default: 5 per 5 hours)
+- `RATE_LIMIT_ARTIFACT_AUTH_MAX` (default: 50 per 5 hours)
+- `RATE_LIMIT_WARNINGS` (enable/disable rate limit warning toasts)
+- And many more - see `supabase/functions/_shared/config.ts` for complete list
 
 ## File Structure
 
 ```
 src/
 ├── components/
-│   ├── ui/                    # 69 shadcn components
+│   ├── ui/                    # 67 shadcn components
 │   ├── prompt-kit/            # Chat UI primitives
-│   ├── Artifact.tsx           # Main artifact renderer
+│   ├── ai-elements/           # AI-powered UI elements
+│   ├── demo/                  # Demo components
+│   ├── kibo-ui/               # Custom UI components
+│   ├── Artifact.tsx           # Deprecated re-export wrapper
+│   ├── ArtifactContainer.tsx  # Main artifact renderer (canonical)
 │   └── ChatInterface.tsx      # Main chat UI
 ├── hooks/                     # Data fetching hooks
 ├── utils/                     # Utilities + __tests__/
@@ -468,7 +605,7 @@ docker inspect supabase_edge_runtime_vznhbocnuykdmjvujaka | grep -E "RATE_LIMIT"
 
 **Reset rate limit counters** (if needed):
 ```bash
-docker exec -i supabase_db_vznhbocnuykdmjvujaka psql -U postgres -c "DELETE FROM guest_rate_limits; DELETE FROM api_throttle_state;"
+docker exec -i supabase_db_vznhbocnuykdmjvujaka psql -U postgres -c "DELETE FROM guest_rate_limits; DELETE FROM api_throttle;"
 ```
 
 **Note**: Chat and artifact endpoints share the same `guest_rate_limits` table but use different max values. If env vars aren't loaded, artifact requests fail after just 5 combined requests (production default) instead of 500 (local dev).
@@ -481,8 +618,8 @@ docker exec -i supabase_db_vznhbocnuykdmjvujaka psql -U postgres -c "DELETE FROM
 | LCP | < 2.5s |
 | TTI | < 3.5s |
 | CLS | < 0.1 |
-| Coverage | 55% min (current: 74%) |
-| Test execution | < 3s |
+| Coverage | 74% current (55% min) |
+| Test execution | < 3s (840 tests) |
 | CI/CD runtime | < 5min |
 
 ## Glossary
