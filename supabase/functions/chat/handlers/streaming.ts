@@ -1,32 +1,35 @@
 /**
  * SSE Streaming handler
- * Transforms OpenRouter streaming responses and injects reasoning/search results
+ * Transforms OpenRouter and GLM streaming responses and injects reasoning/search results
  *
  * SSE Event Format (Claude-like streaming):
  * - reasoning_step: Individual reasoning step (sent progressively)
- * - reasoning: Complete structured reasoning (legacy, still supported)
+ * - reasoning_status: Live phase-based status updates (for ticker display)
+ * - reasoning_complete: Final reasoning summary 
  * - web_search: Search results
  * - content chunks: LLM response text
+ *
+ * GLM-4.6 Integration (Phase 2):
+ * - Parses SSE delta.reasoning_content from GLM thinking mode
+ * - Uses parseReasoningIncrementally for progressive step detection
+ * - Replaces legacy <think> tag detection with proper SSE parsing
  */
 
 import { transformArtifactCode } from "../artifact-transformer.ts";
 import type { StructuredReasoning, ReasoningStep } from "../../_shared/reasoning-generator.ts";
 import type { SearchResult } from "./search.ts";
+import {
+  parseReasoningIncrementally,
+  createIncrementalParseState,
+  type IncrementalParseState,
+} from "../../_shared/glm-reasoning-parser.ts";
 
 /**
  * Creates a transform stream that:
- * 1. Injects reasoning progressively as individual step events (Claude-like)
- * 2. Injects web search results as SSE event (if available)
- * 3. Transforms artifact code to fix invalid imports
- */
-import { summarizeReasoningChunk } from "../../_shared/reasoning-summarizer.ts";
-
-/**
- * Creates a transform stream that:
- * 1. Injects reasoning progressively as individual step events (Claude-like)
- * 2. Injects web search results as SSE event (if available)
- * 3. Transforms artifact code to fix invalid imports
- * 4. Summarizes raw reasoning stream using GLM-4.5-Air (New)
+ * 1. Parses GLM SSE format to extract reasoning_content and content
+ * 2. Uses parseReasoningIncrementally for progressive step detection (Claude-like)
+ * 3. Injects web search results as SSE event (if available)
+ * 4. Transforms artifact code to fix invalid imports
  */
 export function createStreamTransformer(
   structuredReasoning: StructuredReasoning | null,
@@ -35,23 +38,28 @@ export function createStreamTransformer(
 ): TransformStream<string, string> {
   // Closure-scoped state variables - unique per stream instance
   let buffer = "";
+  let sseBuffer = ""; // Buffer for accumulating SSE lines
   let insideArtifact = false;
-  let reasoningStepsSent = 0; // Track how many reasoning steps have been sent
-  let searchSent = false; // Track if search event was sent
-  let reasoningComplete = false; // Track if all reasoning has been sent
+  let reasoningStepsSent = 0;
+  let searchSent = false;
+  let reasoningComplete = false;
 
-  // Reasoning summarization state
-  let reasoningBuffer = "";
-  let insideReasoning = false;
-  let lastSummaryTime = 0;
-  const pendingSummaries: Promise<void>[] = [];
+  // GLM SSE parsing state
+  let fullReasoningContent = ""; // Accumulated reasoning_content from GLM
+  let parseState: IncrementalParseState = createIncrementalParseState();
+  let lastStatusUpdate = 0;
+  const STATUS_UPDATE_INTERVAL_MS = 800; // Don't spam status updates
+
+  // Content output buffer (for artifact transforms and final output)
+  let contentBuffer = "";
 
   return new TransformStream({
     async start(controller) {
       // ========================================
-      // CLAUDE-LIKE STREAMING: Send reasoning steps progressively
+      // PRE-STREAMED REASONING: Send if provided upfront (legacy fallback path)
       // ========================================
-      // ... (existing logic) ...
+      // This handles the case where reasoning was generated separately (e.g., Gemini fallback)
+      // When GLM thinking mode is enabled, reasoning comes via SSE stream instead
       if (structuredReasoning && structuredReasoning.steps.length > 0) {
         const steps = structuredReasoning.steps;
 
@@ -90,7 +98,7 @@ export function createStreamTransformer(
         reasoningComplete = true;
 
         console.log(
-          `[${requestId}] 🧠 Sent ${steps.length} reasoning steps progressively (Claude-like streaming)`
+          `[${requestId}] 🧠 Sent ${steps.length} reasoning steps progressively (pre-streamed)`
         );
       }
 
@@ -113,66 +121,110 @@ export function createStreamTransformer(
         );
       }
     },
+
     transform(chunk, controller) {
-      // 1. Handle Reasoning Summarization (GLM-4.5-Air)
-      // Check for reasoning tags
-      if (chunk.includes("<think>")) insideReasoning = true;
-      if (chunk.includes("</think>")) insideReasoning = false;
+      // ========================================
+      // STEP 1: Parse GLM SSE format
+      // ========================================
+      // GLM sends SSE like: data: {"choices":[{"delta":{"reasoning_content":"..."}}]}
+      // We need to extract reasoning_content and content separately
 
-      // Also handle implicit reasoning (if model just starts reasoning without tags, hard to detect, assume tags for now)
-      // Or if we are in "thinking" mode from the start?
-      // For now, rely on tags or if the chunk looks like reasoning? No, too risky.
-      // Assume <think> tags for GLM-4.6.
+      sseBuffer += chunk;
 
-      if (insideReasoning) {
-        reasoningBuffer += chunk;
+      // Process complete SSE lines from buffer
+      let newlineIndex: number;
+      while ((newlineIndex = sseBuffer.indexOf("\n")) !== -1) {
+        const line = sseBuffer.slice(0, newlineIndex).trim();
+        sseBuffer = sseBuffer.slice(newlineIndex + 1);
 
-        // Check if we should summarize
-        const now = Date.now();
-        if (reasoningBuffer.length > 150 && now - lastSummaryTime > 1500) {
-          const textToSummarize = reasoningBuffer;
-          reasoningBuffer = ""; // Clear buffer
-          lastSummaryTime = now;
+        // Skip empty lines and comments
+        if (!line || line.startsWith(":")) continue;
 
-          // Fire and forget summarization (but track promise)
-          const summaryPromise = (async () => {
-            try {
-              const summary = await summarizeReasoningChunk(textToSummarize, requestId);
-              if (summary) {
-                const statusEvent = {
-                  type: "reasoning_status",
-                  content: summary,
-                  timestamp: Date.now()
-                };
-                // Enqueue safely
-                try {
-                  controller.enqueue(`data: ${JSON.stringify(statusEvent)}\n\n`);
-                } catch (e) {
-                  // Controller might be closed
-                }
-              }
-            } catch (err) {
-              console.error(`[${requestId}] Summarization task failed:`, err);
+        // Parse SSE data line
+        if (line.startsWith("data: ")) {
+          const jsonStr = line.slice(6);
+
+          // Check for stream end marker
+          if (jsonStr === "[DONE]") {
+            // Send reasoning_complete if we had reasoning content
+            if (fullReasoningContent.length > 0 && !reasoningComplete) {
+              const completeEvent = {
+                type: "reasoning_complete",
+                reasoning: fullReasoningContent.substring(0, 500),
+                stepCount: reasoningStepsSent,
+                timestamp: Date.now(),
+              };
+              controller.enqueue(`data: ${JSON.stringify(completeEvent)}\n\n`);
+              reasoningComplete = true;
+              console.log(`[${requestId}] 🧠 GLM reasoning complete: ${fullReasoningContent.length} chars`);
             }
-          })();
-
-          pendingSummaries.push(summaryPromise);
-
-          // Cleanup finished promises to avoid memory leaks
-          if (pendingSummaries.length > 10) {
-            // Simple cleanup strategy
-            Promise.allSettled(pendingSummaries).then(() => {
-              // This doesn't actually remove them from the array, but they are settled.
-              // In a real implementation, we'd use a Set or filter.
-              // For now, it's fine as the stream is short-lived.
-            });
+            // Forward the [DONE] marker
+            controller.enqueue(`${line}\n\n`);
+            continue;
           }
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const delta = parsed?.choices?.[0]?.delta;
+
+            if (delta) {
+              // Handle reasoning_content from GLM thinking mode
+              if (delta.reasoning_content) {
+                fullReasoningContent += delta.reasoning_content;
+
+                // Parse incrementally for Claude-like progressive steps
+                const parseResult = parseReasoningIncrementally(fullReasoningContent, parseState);
+                parseState = parseResult.state;
+
+                // Emit new step if detected
+                if (parseResult.newStep) {
+                  const stepEvent = {
+                    type: "reasoning_step",
+                    step: parseResult.newStep,
+                    stepIndex: reasoningStepsSent,
+                    currentThinking: parseResult.currentThinking,
+                    timestamp: Date.now(),
+                  };
+                  controller.enqueue(`data: ${JSON.stringify(stepEvent)}\n\n`);
+                  reasoningStepsSent++;
+                }
+
+                // Emit status update if enough time has passed
+                const now = Date.now();
+                if (now - lastStatusUpdate > STATUS_UPDATE_INTERVAL_MS) {
+                  const statusEvent = {
+                    type: "reasoning_status",
+                    content: parseResult.currentThinking,
+                    timestamp: now,
+                  };
+                  controller.enqueue(`data: ${JSON.stringify(statusEvent)}\n\n`);
+                  lastStatusUpdate = now;
+                }
+
+                // Don't forward reasoning_content - it's been processed
+                continue;
+              }
+
+              // Handle regular content
+              if (delta.content) {
+                contentBuffer += delta.content;
+                // Forward content directly (will be artifact-transformed below)
+              }
+            }
+          } catch (_parseError) {
+            // Non-JSON line or parse error - forward as-is
+          }
+        }
+
+        // Forward non-parsed lines (including content deltas)
+        if (!line.includes("reasoning_content")) {
+          buffer += line + "\n";
         }
       }
 
-      // 2. Handle Artifact Transformation (Existing Logic)
-      buffer += chunk;
-
+      // ========================================
+      // STEP 2: Handle Artifact Transformation
+      // ========================================
       // Check if we're entering an artifact
       if (!insideArtifact && buffer.includes("<artifact")) {
         const artifactStartMatch = buffer.match(/<artifact[^>]*>/);
@@ -188,7 +240,7 @@ export function createStreamTransformer(
           const fullArtifactMatch = buffer.match(
             /(<artifact[^>]*>)([\s\S]*?)(<\/artifact>)/
           );
-          if (!fullArtifactMatch) break; // No more complete artifacts
+          if (!fullArtifactMatch) break;
 
           const [fullMatch, openTag, content, closeTag] = fullArtifactMatch;
 
@@ -197,7 +249,6 @@ export function createStreamTransformer(
 
             if (result.hadIssues) {
               console.log("🔧 Auto-fixed artifact imports:", result.changes);
-              // Replace the artifact content with transformed version
               buffer = buffer.replace(
                 fullMatch,
                 openTag + result.transformedContent + closeTag
@@ -208,11 +259,9 @@ export function createStreamTransformer(
               "❌ Transform failed, sending original artifact:",
               error
             );
-            // Continue with original artifact - better than breaking the stream
             break;
           }
 
-          // Check if there are more artifacts to process
           if (!buffer.includes("</artifact>")) {
             insideArtifact = false;
             break;
@@ -221,29 +270,37 @@ export function createStreamTransformer(
         insideArtifact = false;
       }
 
-      // Send everything before the current artifact (or everything if no artifact)
+      // ========================================
+      // STEP 3: Output buffered content
+      // ========================================
       if (!insideArtifact) {
-        // No active artifact - send the buffer
         controller.enqueue(buffer);
         buffer = "";
       } else if (buffer.length > 50000) {
-        // Safety: if buffer gets too large, send it anyway to avoid memory issues
+        // Safety: if buffer gets too large, send it anyway
         console.warn("⚠️ Buffer overflow - sending untransformed artifact");
         controller.enqueue(buffer);
         buffer = "";
         insideArtifact = false;
       }
-      // Otherwise, keep buffering until artifact is complete
     },
+
     async flush(controller) {
       // Send any remaining buffered content
       if (buffer) {
         controller.enqueue(buffer);
       }
 
-      // Wait for any pending summarizations
-      if (pendingSummaries.length > 0) {
-        await Promise.allSettled(pendingSummaries);
+      // Emit final reasoning_complete if not already done
+      if (fullReasoningContent.length > 0 && !reasoningComplete) {
+        const completeEvent = {
+          type: "reasoning_complete",
+          reasoning: fullReasoningContent.substring(0, 500),
+          stepCount: reasoningStepsSent,
+          timestamp: Date.now(),
+        };
+        controller.enqueue(`data: ${JSON.stringify(completeEvent)}\n\n`);
+        console.log(`[${requestId}] 🧠 GLM reasoning finalized: ${fullReasoningContent.length} chars`);
       }
     },
   });
