@@ -22,6 +22,7 @@ import { extractUrlContent } from "./handlers/url-extract.ts";
 import { generateImage } from "./handlers/image.ts";
 import { generateArtifact } from "./handlers/artifact.ts";
 import { createStreamingResponse } from "./handlers/streaming.ts";
+import { handleToolCallingChat } from "./handlers/tool-calling-chat.ts";
 
 // Shared utilities
 import {
@@ -40,7 +41,7 @@ import {
   createFallbackReasoning,
   type StructuredReasoning,
 } from "../_shared/reasoning-generator.ts";
-import { TAVILY_CONFIG, MODELS } from "../_shared/config.ts";
+import { TAVILY_CONFIG, MODELS, shouldUseGLMToolCalling } from "../_shared/config.ts";
 import { selectContext, extractEntities } from "../_shared/context-selector.ts";
 import { calculateContextBudget } from "../_shared/token-counter.ts";
 import { getArtifactGuidance } from "./intent-detector-embeddings.ts";
@@ -315,6 +316,123 @@ serve(async (req) => {
     // STEP 8: Regular Chat Streaming (default case)
     // ========================================
     console.log("🎯 Intent detected: REGULAR CHAT");
+
+    // Check if this request should use GLM tool-calling
+    const useToolCalling = shouldUseGLMToolCalling(requestId);
+
+    if (useToolCalling) {
+      console.log(`[${requestId}] 🔧 Using GLM tool-calling (feature flag enabled)`);
+
+      // ========================================
+      // Smart Context Management (Issue #127)
+      // ========================================
+      // Apply token-aware context selection to fit within model limits
+      // while preserving important messages (code, decisions, entities)
+      const tokenBudget = calculateContextBudget(MODELS.GEMINI_FLASH);
+      const trackedEntities = extractEntities(messages.map(m => ({
+        role: m.role,
+        content: m.content,
+      })));
+
+      console.log(`[${requestId}] Context management: budget=${tokenBudget}, entities=${trackedEntities.size}`);
+
+      const contextResult = await selectContext(
+        messages.map(m => ({ role: m.role, content: m.content })),
+        tokenBudget,
+        {
+          trackedEntities,
+          alwaysKeepRecent: 5,
+          summaryBudget: 500,
+        }
+      );
+
+      console.log(`[${requestId}] Context strategy: ${contextResult.strategy}, tokens=${contextResult.totalTokens}, kept=${contextResult.selectedMessages.length}/${messages.length}`);
+
+      // Use selected messages as context
+      let contextMessages = contextResult.selectedMessages;
+
+      // If we need to summarize, try to get cached summary or trigger summarization
+      if (contextResult.summarizedMessages.length > 0) {
+        try {
+          const cacheResponse = await supabase.functions.invoke("cache-manager", {
+            body: { sessionId, operation: "get" },
+          });
+
+          if (cacheResponse.data?.cached?.summary) {
+            // Prepend cached summary to context
+            contextMessages = [
+              { role: "system", content: `Previous conversation summary: ${cacheResponse.data.cached.summary}` },
+              ...contextResult.selectedMessages,
+            ];
+            console.log(`[${requestId}] Using cached summary for ${contextResult.summarizedMessages.length} summarized messages`);
+          }
+        } catch (cacheError) {
+          console.warn(`[${requestId}] Cache fetch failed:`, cacheError);
+        }
+      }
+
+      // Add artifact type guidance based on intent detection
+      let artifactGuidance = lastUserMessage ? getArtifactGuidance(lastUserMessage.content) : "";
+
+      // Validate artifact request for potential import issues
+      if (lastUserMessage) {
+        const validation = validateArtifactRequest(lastUserMessage.content);
+        if (!validation.isValid) {
+          const validationGuidance = generateGuidanceFromValidation(validation);
+          artifactGuidance += validationGuidance;
+          console.log("Artifact validation warnings:", validation.warnings);
+        }
+      }
+
+      // Add artifact editing context if provided
+      let artifactContext = "";
+      if (currentArtifact) {
+        artifactContext = `
+
+CURRENT ARTIFACT CONTEXT (User is editing this):
+Title: ${currentArtifact.title}
+Type: ${currentArtifact.type}
+Current Code:
+\`\`\`
+${currentArtifact.content}
+\`\`\`
+
+When the user asks for changes, modifications, or improvements, you should:
+1. Understand what they want to change in the current artifact
+2. Generate an UPDATED version of the entire artifact with their requested changes
+3. Preserve the parts they didn't ask to change
+4. Use the same artifact type and structure unless they explicitly want to change it
+5. Always provide the COMPLETE updated artifact code, not just the changes
+
+Treat this as an iterative improvement of the existing artifact.`;
+      }
+
+      // Combine artifact guidance with context
+      const fullArtifactContext = (artifactContext || artifactGuidance)
+        ? artifactContext + (artifactGuidance ? `\n\n${artifactGuidance}` : '')
+        : '';
+
+      // Load system instruction from inline template (works in both local and deployed Edge Functions)
+      const systemInstruction = getSystemInstruction({
+        fullArtifactContext,
+        alwaysSearchEnabled: TAVILY_CONFIG.ALWAYS_SEARCH_ENABLED,
+        useToolCalling: true
+      });
+
+      return handleToolCallingChat({
+        messages: contextMessages,
+        fullArtifactContext,
+        searchContext: searchResult.searchContext || '',
+        urlExtractContext: urlExtractResult.extractedContext || '',
+        userId: user?.id || null,
+        isGuest,
+        requestId,
+        corsHeaders,
+        rateLimitHeaders,
+      });
+    }
+
+    // Fallback to existing GLM router (no tool-calling)
     console.log("🔀 Using: GLM router (GLM-4.6 primary, OpenRouter fallback)");
 
     // ========================================
@@ -409,7 +527,8 @@ Treat this as an iterative improvement of the existing artifact.`;
     // Load system instruction from inline template (works in both local and deployed Edge Functions)
     const systemInstruction = getSystemInstruction({
       fullArtifactContext,
-      alwaysSearchEnabled: TAVILY_CONFIG.ALWAYS_SEARCH_ENABLED
+      alwaysSearchEnabled: TAVILY_CONFIG.ALWAYS_SEARCH_ENABLED,
+      useToolCalling: false  // Explicit: legacy path doesn't use tool-calling
     });
 
     // Inject web search context if search was executed
