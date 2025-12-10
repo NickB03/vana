@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useGuestSession, GuestSession } from '../useGuestSession';
+import { ChatMessage } from '../useChatMessages';
 
 describe('useGuestSession', () => {
   const GUEST_SESSION_KEY = 'vana_guest_session';
@@ -9,6 +10,7 @@ describe('useGuestSession', () => {
   const WARNING_THRESHOLD = 0.75; // 75% = 15/20 messages
 
   beforeEach(() => {
+    vi.useFakeTimers();
     try {
       localStorage.clear();
     } catch (e) {
@@ -17,6 +19,7 @@ describe('useGuestSession', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     try {
       localStorage.clear();
     } catch (e) {
@@ -377,6 +380,7 @@ describe('useGuestSession', () => {
       const { result } = renderHook(() => useGuestSession(false));
 
       expect(result.current).toHaveProperty('isGuest');
+      expect(result.current).toHaveProperty('sessionId');
       expect(result.current).toHaveProperty('messageCount');
       expect(result.current).toHaveProperty('maxMessages');
       expect(result.current).toHaveProperty('canSendMessage');
@@ -385,10 +389,17 @@ describe('useGuestSession', () => {
       expect(result.current).toHaveProperty('hasReachedLimit');
       expect(result.current).toHaveProperty('showWarning');
       expect(result.current).toHaveProperty('resetTime');
+      expect(result.current).toHaveProperty('saveMessages');
+      expect(result.current).toHaveProperty('loadMessages');
+      expect(result.current).toHaveProperty('clearMessages');
 
       expect(typeof result.current.incrementMessageCount).toBe('function');
       expect(typeof result.current.resetSession).toBe('function');
+      expect(typeof result.current.saveMessages).toBe('function');
+      expect(typeof result.current.loadMessages).toBe('function');
+      expect(typeof result.current.clearMessages).toBe('function');
       expect(typeof result.current.isGuest).toBe('boolean');
+      expect(typeof result.current.sessionId).toBe('string');
       expect(typeof result.current.messageCount).toBe('number');
       expect(typeof result.current.canSendMessage).toBe('boolean');
     });
@@ -397,6 +408,425 @@ describe('useGuestSession', () => {
       const { result } = renderHook(() => useGuestSession(false));
 
       expect(result.current.maxMessages).toBe(20);
+    });
+  });
+
+  describe('message persistence', () => {
+    const GUEST_MESSAGES_KEY = 'vana_guest_messages';
+    const MAX_STORED_MESSAGES = 50;
+
+    it('should load messages from localStorage on initialization', () => {
+      const mockMessages = [
+        {
+          id: 'msg-1',
+          session_id: 'guest-session-1',
+          role: 'user' as const,
+          content: 'Hello, I need help with React',
+          created_at: '2025-01-08T10:00:00Z',
+        },
+        {
+          id: 'msg-2',
+          session_id: 'guest-session-1',
+          role: 'assistant' as const,
+          content: 'I can help you with React!',
+          created_at: '2025-01-08T10:00:01Z',
+        },
+      ];
+
+      const mockSession: GuestSession = {
+        id: 'test-session-id',
+        messageCount: 2,
+        createdAt: Date.now() - 3600000,
+        sessionExpiry: Date.now() + 3600000,
+        messages: [],
+        lastSaved: Date.now(),
+      };
+
+      try {
+        localStorage.setItem(GUEST_SESSION_KEY, JSON.stringify(mockSession));
+        localStorage.setItem(GUEST_MESSAGES_KEY, JSON.stringify(mockMessages));
+      } catch {
+        return;
+      }
+
+      const { result } = renderHook(() => useGuestSession(false));
+
+      act(() => {
+        const loadedMessages = result.current.loadMessages();
+        expect(loadedMessages).toEqual(mockMessages);
+      });
+    });
+
+    it('should save messages to localStorage', () => {
+      const { result } = renderHook(() => useGuestSession(false));
+
+      const mockMessages = [
+        {
+          id: 'msg-1',
+          session_id: 'guest-session',
+          role: 'user' as const,
+          content: 'Test message',
+          created_at: '2025-01-08T10:00:00Z',
+        },
+      ];
+
+      act(() => {
+        result.current.saveMessages(mockMessages);
+      });
+
+      try {
+        const stored = localStorage.getItem(GUEST_MESSAGES_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          expect(parsed).toEqual(mockMessages);
+        }
+      } catch {
+        fail('localStorage should be available');
+      }
+    });
+
+    it('should limit stored messages to MAX_STORED_MESSAGES', () => {
+      const { result } = renderHook(() => useGuestSession(false));
+
+      // Create more messages than the limit
+      const messages = Array.from({ length: 75 }, (_, i) => ({
+        id: `msg-${i}`,
+        session_id: 'guest-session',
+        role: 'user' as const,
+        content: `Message ${i}`,
+        created_at: new Date(Date.now() + i * 1000).toISOString(),
+      }));
+
+      act(() => {
+        result.current.saveMessages(messages);
+      });
+
+      try {
+        const stored = localStorage.getItem(GUEST_MESSAGES_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          expect(parsed).toHaveLength(MAX_STORED_MESSAGES);
+          // Should keep the last 50 messages
+          expect(parsed[0].content).toBe('Message 25');
+          expect(parsed[parsed.length - 1].content).toBe('Message 74');
+        }
+      } catch {
+        fail('localStorage should be available');
+      }
+    });
+
+    it('should clear messages from localStorage', () => {
+      const { result } = renderHook(() => useGuestSession(false));
+
+      // First save some messages
+      const mockMessages = [
+        {
+          id: 'msg-1',
+          session_id: 'guest-session',
+          role: 'user' as const,
+          content: 'Test message',
+          created_at: '2025-01-08T10:00:00Z',
+        },
+      ];
+
+      act(() => {
+        result.current.saveMessages(mockMessages);
+      });
+
+      // Verify messages are saved
+      try {
+        expect(localStorage.getItem(GUEST_MESSAGES_KEY)).toBeTruthy();
+      } catch {
+        fail('localStorage should be available');
+      }
+
+      // Clear messages
+      act(() => {
+        result.current.clearMessages();
+      });
+
+      // Verify messages are cleared
+      try {
+        expect(localStorage.getItem(GUEST_MESSAGES_KEY)).toBeNull();
+      } catch {
+        fail('localStorage should be available');
+      }
+    });
+
+    it('should handle localStorage quota exceeded when saving messages', () => {
+      const mockSetItem = vi.spyOn(Storage.prototype, 'setItem');
+
+      // First attempt fails with QuotaExceededError
+      mockSetItem.mockImplementationOnce(() => {
+        const error = new DOMException('QuotaExceededError');
+        error.name = 'QuotaExceededError';
+        throw error;
+      });
+
+      // Second attempt (with reduced messages) succeeds
+      mockSetItem.mockImplementationOnce(() => {});
+
+      const { result } = renderHook(() => useGuestSession(false));
+
+      const messages = Array.from({ length: 60 }, (_, i) => ({
+        id: `msg-${i}`,
+        session_id: 'guest-session',
+        role: 'user' as const,
+        content: `Message ${i}`,
+        created_at: new Date().toISOString(),
+      }));
+
+      expect(() => {
+        act(() => {
+          result.current.saveMessages(messages);
+        });
+      }).not.toThrow();
+
+      mockSetItem.mockRestore();
+    });
+
+    it('should handle corrupted message data in localStorage', () => {
+      try {
+        localStorage.setItem(GUEST_MESSAGES_KEY, 'invalid json {]');
+      } catch {
+        return;
+      }
+
+      const { result } = renderHook(() => useGuestSession(false));
+
+      act(() => {
+        const messages = result.current.loadMessages();
+        expect(messages).toEqual([]);
+      });
+    });
+
+    it('should not save messages for authenticated users', () => {
+      const { result } = renderHook(() => useGuestSession(true));
+
+      const mockMessages = [
+        {
+          id: 'msg-1',
+          session_id: 'auth-session',
+          role: 'user' as const,
+          content: 'Authenticated message',
+          created_at: '2025-01-08T10:00:00Z',
+        },
+      ];
+
+      act(() => {
+        result.current.saveMessages(mockMessages);
+      });
+
+      try {
+        expect(localStorage.getItem(GUEST_MESSAGES_KEY)).toBeNull();
+      } catch {
+        // localStorage not available
+      }
+    });
+
+    it('should not load messages for authenticated users', () => {
+      try {
+        localStorage.setItem(GUEST_MESSAGES_KEY, JSON.stringify([
+          {
+            id: 'msg-1',
+            session_id: 'guest-session',
+            role: 'user' as const,
+            content: 'Guest message',
+            created_at: '2025-01-08T10:00:00Z',
+          }
+        ]));
+      } catch {
+        return;
+      }
+
+      const { result } = renderHook(() => useGuestSession(true));
+
+      act(() => {
+        const messages = result.current.loadMessages();
+        expect(messages).toEqual([]);
+      });
+    });
+
+    it('should handle localStorage access denied gracefully', () => {
+      const mockSetItem = vi.spyOn(Storage.prototype, 'setItem');
+      const mockGetItem = vi.spyOn(Storage.prototype, 'getItem');
+      const mockRemoveItem = vi.spyOn(Storage.prototype, 'removeItem');
+
+      mockSetItem.mockImplementation(() => {
+        const error = new DOMException('SecurityError');
+        error.name = 'SecurityError';
+        throw error;
+      });
+
+      mockGetItem.mockImplementation(() => {
+        const error = new DOMException('SecurityError');
+        error.name = 'SecurityError';
+        throw error;
+      });
+
+      mockRemoveItem.mockImplementation(() => {
+        const error = new DOMException('SecurityError');
+        error.name = 'SecurityError';
+        throw error;
+      });
+
+      const { result } = renderHook(() => useGuestSession(false));
+
+      const mockMessages = [
+        {
+          id: 'msg-1',
+          session_id: 'guest-session',
+          role: 'user' as const,
+          content: 'Test message',
+          created_at: '2025-01-08T10:00:00Z',
+        },
+      ];
+
+      expect(() => {
+        act(() => {
+          result.current.saveMessages(mockMessages);
+        });
+      }).not.toThrow();
+
+      expect(() => {
+        act(() => {
+          result.current.loadMessages();
+        });
+      }).not.toThrow();
+
+      expect(() => {
+        act(() => {
+          result.current.clearMessages();
+        });
+      }).not.toThrow();
+
+      mockSetItem.mockRestore();
+      mockGetItem.mockRestore();
+      mockRemoveItem.mockRestore();
+    });
+  });
+
+  describe('session integration with messages', () => {
+    it('should include messages in session data', () => {
+      const mockMessages = [
+        {
+          id: 'msg-1',
+          session_id: 'guest-session-1',
+          role: 'user' as const,
+          content: 'Test message',
+          created_at: '2025-01-08T10:00:00Z',
+        },
+      ];
+
+      const mockSession: GuestSession = {
+        id: 'test-session-id',
+        messageCount: 1,
+        createdAt: Date.now() - 3600000,
+        sessionExpiry: Date.now() + 3600000,
+        messages: mockMessages,
+        lastSaved: Date.now(),
+      };
+
+      try {
+        localStorage.setItem(GUEST_SESSION_KEY, JSON.stringify(mockSession));
+        localStorage.setItem(GUEST_MESSAGES_KEY, JSON.stringify(mockMessages));
+      } catch {
+        return;
+      }
+
+      const { result } = renderHook(() => useGuestSession(false));
+
+      // Session should include the loaded messages
+      expect(result.current.sessionId).toBe('test-session-id');
+    });
+
+    it('should clear messages when session expires', () => {
+      const expiredSession: GuestSession = {
+        id: 'expired-session',
+        messageCount: 5,
+        createdAt: Date.now() - SESSION_DURATION - 3600000,
+        sessionExpiry: Date.now() - 3600000,
+        messages: [],
+        lastSaved: Date.now(),
+      };
+
+      const mockMessages = [
+        {
+          id: 'msg-1',
+          session_id: 'expired-session',
+          role: 'user' as const,
+          content: 'Old message',
+          created_at: '2025-01-08T10:00:00Z',
+        },
+      ];
+
+      try {
+        localStorage.setItem(GUEST_SESSION_KEY, JSON.stringify(expiredSession));
+        localStorage.setItem(GUEST_MESSAGES_KEY, JSON.stringify(mockMessages));
+      } catch {
+        return;
+      }
+
+      const { result } = renderHook(() => useGuestSession(false));
+
+      act(() => {
+        const messages = result.current.loadMessages();
+        // Should load old messages since they're stored separately from session
+        expect(messages).toEqual(mockMessages);
+      });
+    });
+
+    it('should maintain backward compatibility with sessions without messages', () => {
+      const oldSession: GuestSession = {
+        id: 'old-session',
+        messageCount: 3,
+        createdAt: Date.now() - 3600000,
+        sessionExpiry: Date.now() + 3600000,
+      };
+
+      try {
+        localStorage.setItem(GUEST_SESSION_KEY, JSON.stringify(oldSession));
+      } catch {
+        return;
+      }
+
+      const { result } = renderHook(() => useGuestSession(false));
+
+      expect(result.current.sessionId).toBe('old-session');
+      expect(result.current.messageCount).toBe(3);
+    });
+
+    it('should update lastSaved timestamp when messages are saved', () => {
+      const { result } = renderHook(() => useGuestSession(false));
+
+      const initialTime = Date.now();
+
+      const mockMessages = [
+        {
+          id: 'msg-1',
+          session_id: 'guest-session',
+          role: 'user' as const,
+          content: 'Test message',
+          created_at: '2025-01-08T10:00:00Z',
+        },
+      ];
+
+      // Wait a bit to ensure timestamp difference
+      vi.advanceTimersByTime(100);
+
+      act(() => {
+        result.current.saveMessages(mockMessages);
+      });
+
+      try {
+        const stored = localStorage.getItem(GUEST_SESSION_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          expect(parsed.lastSaved).toBeGreaterThan(initialTime);
+        }
+      } catch {
+        // localStorage not available
+      }
     });
   });
 

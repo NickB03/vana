@@ -10,6 +10,7 @@ import { useChatSessions } from "@/hooks/useChatSessions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ensureValidSession } from "@/utils/authHelpers";
+import { useGuestSession } from "@/hooks/useGuestSession";
 import { suggestions, type SuggestionItem } from "@/data/suggestions";
 const IndexContent = () => {
   const navigate = useNavigate();
@@ -39,6 +40,9 @@ const IndexContent = () => {
   const [imageMode, setImageMode] = useState(false);
   const [artifactMode, setArtifactMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Guest session for localStorage persistence
+  const guestSession = useGuestSession(isAuthenticated);
 
   // Derive showChat from URL path instead of state
   const showChat = location.pathname.startsWith('/main') || location.pathname.startsWith('/chat');
@@ -321,6 +325,12 @@ const IndexContent = () => {
                 onInitialPromptSent={() => {
                   // Clear pending prompt only after it has been sent
                   setPendingInitialPrompt(undefined);
+                }}
+                isGuest={!isAuthenticated}
+                guestSession={{
+                  saveMessages: guestSession.saveMessages,
+                  loadMessages: guestSession.loadMessages,
+                  clearMessages: guestSession.clearMessages,
                 }}
               />
             )}
