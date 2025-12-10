@@ -491,7 +491,7 @@ describe("Context Management Performance", () => {
       const startTime = performance.now();
       for (let iteration = 0; iteration < 10; iteration++) {
         let contextMessages: any[] = [];
-        let trackedEntities = new Set<string>();
+        const trackedEntities = new Set<string>();
 
         realisticMessages.forEach((msg, i) => {
           // Add to context

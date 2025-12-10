@@ -219,13 +219,14 @@ export function createStreamTransformer(
                 // Forward content directly (will be artifact-transformed below)
               }
             }
-          } catch (parseError) {
+          } catch (parseError: unknown) {
             // Log parse error for debugging but continue processing
+            const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
             console.warn(
               `[${requestId}] ⚠️ Failed to parse GLM SSE chunk:`,
               {
                 jsonStr: jsonStr.substring(0, 200) + (jsonStr.length > 200 ? "..." : ""),
-                error: parseError.message,
+                error: errorMessage,
               }
             );
             // Forward the malformed line as-is to maintain stream continuity

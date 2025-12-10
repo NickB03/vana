@@ -221,7 +221,7 @@ serve(async (req) => {
     // NOTE: Legacy Gemini reasoning generation removed in Phase 4.
     // GLM's native thinking mode now provides reasoning_content via SSE stream,
     // which is parsed by streaming.ts and sent as reasoning_step events.
-    let structuredReasoning: StructuredReasoning | null = null;
+    const structuredReasoning: StructuredReasoning | null = null;
 
     // For non-GLM fallback (OpenRouter), we still support pre-streamed reasoning
     // but don't generate it here - the stream handler will pass null

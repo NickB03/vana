@@ -215,7 +215,7 @@ describe("Entity Resolution", () => {
     resolver = new EntityResolver();
   });
 
-  describe("Pronoun Resolution", () => "it" Reference", () => {
+  describe("Pronoun Resolution - 'it' Reference", () => {
     it("should resolve 'it' to the most recent entity", () => {
       // Add conversation context
       resolver.addMessage({ id: "1", role: "user", content: "Create a React component for the event" });
@@ -313,8 +313,8 @@ describe("Entity Resolution", () => {
 
       expect(result.resolved).toBe(true);
       expect(result.confidence).toBeGreaterThan(0.6);
-      expect(result.entity?.name.toLowerCase()).toContain("volunteer") ||
-          result.entity?.name.toLowerCase().includes("vendor");
+      const entityName = result.entity?.name.toLowerCase() ?? "";
+      expect(entityName.includes("volunteer") || entityName.includes("vendor")).toBe(true);
     });
 
     it("should resolve 'they' to groups", () => {

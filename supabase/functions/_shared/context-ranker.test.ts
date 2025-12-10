@@ -237,17 +237,17 @@ describe("Context Ranker", () => {
     });
 
     it("should handle multiple code blocks", () => {
-      const content = `
-        First block:
-        ```js
-        const a = 1;
-        ```
-
-        Second block:
-        ```python
-        print("hello")
-        ```
-      `;
+      const content = [
+        "First block:",
+        "```js",
+        "const a = 1;",
+        "```",
+        "",
+        "Second block:",
+        "```python",
+        'print("hello")',
+        "```",
+      ].join("\n");
       expect(hasCodeBlock(content)).toBe(true);
     });
 
