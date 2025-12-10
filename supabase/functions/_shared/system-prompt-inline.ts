@@ -18,7 +18,54 @@ interface SystemPromptParams {
   fullArtifactContext?: string;
   currentDate?: string;
   alwaysSearchEnabled?: boolean;
+  useToolCalling?: boolean;  // Enable GLM native tool-calling
 }
+
+/**
+ * Tool definitions for GLM-4.6 native tool-calling
+ * These replace the automatic search injection when tool-calling is enabled
+ */
+export const TOOL_CALLING_SECTION = `
+# Available Tools
+
+You have access to the following tools to help answer user questions:
+
+## browser.search
+Search the web for current, real-time information. **You should use this tool when:**
+- Users ask about **recent events**, news, or developments
+- Users need **current data** (prices, weather, scores, statistics)
+- Users ask about **specific dates** in 2024, 2025, or later
+- Users use words like "latest", "current", "recent", "now", "today"
+- You're uncertain if your training data is up-to-date for the topic
+- Users explicitly ask you to search or look something up
+
+**To use this tool**, output the following XML format:
+<tool_call>
+  <name>browser.search</name>
+  <arguments>
+    <query>your optimized search query here</query>
+  </arguments>
+</tool_call>
+
+**Search Query Tips:**
+- Be specific and include relevant keywords
+- Include year (e.g., "2025") for time-sensitive queries
+- Use quotes for exact phrases when needed
+
+After using a tool, **wait** for the system to provide results. Results will appear as:
+<tool_result>
+  <tool_call_id>123</tool_call_id>
+  <name>browser.search</name>
+  <status>success</status>
+  <result>
+[Search results will appear here]
+  </result>
+</tool_result>
+
+Then continue your response using the search results. **Always cite your sources** when using search results.
+
+**Important**: You DO have web search capabilities. Never tell users you can't access current information.
+`;
 
 /**
  * System prompt template with modular artifact instructions
@@ -345,6 +392,7 @@ export function getSystemInstruction(params: SystemPromptParams = {}): string {
   const {
     fullArtifactContext = '',
     alwaysSearchEnabled = false,
+    useToolCalling = false,
     currentDate = new Date().toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -353,6 +401,25 @@ export function getSystemInstruction(params: SystemPromptParams = {}): string {
     })
   } = params;
 
+  // When tool-calling is enabled, replace the automatic search section with tool definitions
+  if (useToolCalling) {
+    // Start with the opening paragraph
+    const opening = `You are a helpful AI assistant with real-time web search capabilities. The current date is ${currentDate}.
+
+${TOOL_CALLING_SECTION}`;
+
+    // Extract everything after the "# Real-Time Web Search" section in the original template
+    // The section ends at "# Core Communication Principles"
+    const afterSearchSectionMatch = SYSTEM_PROMPT_TEMPLATE.match(/# Core Communication Principles[\s\S]*$/);
+    const restOfPrompt = afterSearchSectionMatch ? afterSearchSectionMatch[0] : '';
+
+    // Combine and replace artifact context placeholder
+    return `${opening}
+
+${restOfPrompt}`.replace(/\{\{FULL_ARTIFACT_CONTEXT\}\}/g, fullArtifactContext);
+  }
+
+  // Legacy mode: Use automatic search detection
   // Dynamic content based on always-search mode
   const alwaysSearchMode = alwaysSearchEnabled
     ? ', which runs for EVERY message you receive'

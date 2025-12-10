@@ -26,6 +26,21 @@ export const FEATURE_FLAGS = {
    * WARNING: Never enable this in production!
    */
   RATE_LIMIT_DISABLED: Deno.env.get('RATE_LIMIT_DISABLED') === 'true',
+
+  /**
+   * Enable GLM-4.6 native tool-calling for web search
+   * When true, GLM decides when to search using its built-in browser.search tool
+   * When false, uses legacy regex-based shouldPerformWebSearch()
+   * Set USE_GLM_TOOL_CALLING=true to enable
+   */
+  USE_GLM_TOOL_CALLING: Deno.env.get('USE_GLM_TOOL_CALLING') === 'true',
+
+  /**
+   * Percentage of requests to route to GLM tool-calling (0-100)
+   * Allows gradual rollout: 10 = 10% of requests use tool-calling
+   * Only applies when USE_GLM_TOOL_CALLING is true
+   */
+  GLM_TOOL_CALLING_ROLLOUT_PERCENT: getEnvInt('GLM_TOOL_CALLING_ROLLOUT_PERCENT', 0, 0),
 } as const;
 
 /**
@@ -345,3 +360,29 @@ export const TAVILY_CONFIG = {
    */
   ALWAYS_SEARCH_ENABLED: Deno.env.get('TAVILY_ALWAYS_SEARCH') === 'true'
 } as const;
+
+/**
+ * Determine if a specific request should use GLM tool-calling
+ * Based on feature flag AND rollout percentage
+ * @param requestId - Used for deterministic rollout (same request = same decision)
+ * @returns true if this request should use GLM native tool-calling
+ *
+ * @example
+ * ```ts
+ * // Full rollout
+ * const useToolCalling = shouldUseGLMToolCalling(requestId); // true when USE_GLM_TOOL_CALLING=true
+ *
+ * // Gradual rollout (10% of requests)
+ * // GLM_TOOL_CALLING_ROLLOUT_PERCENT=10
+ * const useToolCalling = shouldUseGLMToolCalling(requestId); // true for ~10% of requestIds
+ * ```
+ */
+export function shouldUseGLMToolCalling(requestId: string): boolean {
+  if (!FEATURE_FLAGS.USE_GLM_TOOL_CALLING) return false;
+  if (FEATURE_FLAGS.GLM_TOOL_CALLING_ROLLOUT_PERCENT >= 100) return true;
+  if (FEATURE_FLAGS.GLM_TOOL_CALLING_ROLLOUT_PERCENT <= 0) return false;
+
+  // Deterministic rollout based on requestId hash
+  const hash = requestId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return (hash % 100) < FEATURE_FLAGS.GLM_TOOL_CALLING_ROLLOUT_PERCENT;
+}
