@@ -79,6 +79,15 @@ export type GenerationStage =
   | "finalizing"
   | "complete";
 
+export interface ToolExecution {
+  toolName: string;
+  arguments?: Record<string, unknown>;
+  success?: boolean;
+  sourceCount?: number;
+  latencyMs?: number;
+  timestamp: number;
+}
+
 export interface StreamProgress {
   stage: GenerationStage;
   message: string;
@@ -88,6 +97,7 @@ export interface StreamProgress {
   streamingReasoningText?: string; // Raw reasoning text being streamed (GLM native thinking)
   reasoningStatus?: string; // Semantic status update from GLM-4.5-Air
   searchResults?: WebSearchResults; // Web search results for streaming
+  toolExecution?: ToolExecution; // Tool execution status for real-time display
 }
 
 export interface RateLimitHeaders {
@@ -608,8 +618,69 @@ export function useChatMessages(
               // - reasoning_complete: Final structured reasoning + raw text
               // - content_chunk: Artifact code chunks
               // - artifact_complete: Final artifact data
+              // - tool_call_start: Tool execution started (toolName, arguments, timestamp)
+              // - tool_result: Tool execution completed (toolName, success, sourceCount, latencyMs, timestamp)
               // ============================================================================
               switch (eventType) {
+                case "tool_call_start": {
+                  // Tool execution started - show in progress indicator
+                  const toolName = eventData.toolName as string;
+                  const toolArgs = eventData.arguments as Record<string, unknown> | undefined;
+                  const timestamp = eventData.timestamp as number;
+
+                  console.log(`🔧 [useChatMessages] Tool call started: ${toolName}`, toolArgs);
+
+                  // Update progress with tool execution status
+                  onDelta("", {
+                    stage: "analyzing",
+                    message: `Using ${toolName}...`,
+                    artifactDetected: true,
+                    percentage: Math.min(10 + (streamingReasoningText.length / 50), 45),
+                    reasoningSteps: streamingReasoningSteps.steps.length > 0 ? streamingReasoningSteps : undefined,
+                    reasoningStatus: lastSemanticStatus || phaseDisplayMessage,
+                    toolExecution: {
+                      toolName,
+                      arguments: toolArgs,
+                      timestamp,
+                    },
+                  });
+                  break;
+                }
+
+                case "tool_result": {
+                  // Tool execution completed - show results
+                  const toolName = eventData.toolName as string;
+                  const success = eventData.success as boolean;
+                  const sourceCount = eventData.sourceCount as number | undefined;
+                  const latencyMs = eventData.latencyMs as number | undefined;
+                  const timestamp = eventData.timestamp as number;
+
+                  console.log(`✅ [useChatMessages] Tool result: ${toolName} - ${success ? 'success' : 'failed'}`, {
+                    sourceCount,
+                    latencyMs
+                  });
+
+                  // Update progress with completed tool execution
+                  onDelta("", {
+                    stage: "analyzing",
+                    message: success
+                      ? `Found ${sourceCount || 0} sources`
+                      : `Tool ${toolName} failed`,
+                    artifactDetected: true,
+                    percentage: Math.min(10 + (streamingReasoningText.length / 50), 45),
+                    reasoningSteps: streamingReasoningSteps.steps.length > 0 ? streamingReasoningSteps : undefined,
+                    reasoningStatus: lastSemanticStatus || phaseDisplayMessage,
+                    toolExecution: {
+                      toolName,
+                      success,
+                      sourceCount,
+                      latencyMs,
+                      timestamp,
+                    },
+                  });
+                  break;
+                }
+
                 case "status_update": {
                   // NEW: Priority status updates from GLM-4.5-Air
                   // These semantic status messages should be shown directly in the ticker
@@ -1161,6 +1232,52 @@ export function useChatMessages(
 
               console.log('[StreamProgress] Received batch reasoning event with', reasoningSteps?.steps?.length || 0, 'steps');
               continue; // Skip to next event
+            }
+
+            // ========================================
+            // TOOL EXECUTION: Handle tool calls from backend
+            // ========================================
+            if (parsed.type === 'tool_call_start') {
+              const toolName = parsed.toolName as string;
+              const toolArgs = parsed.arguments as Record<string, unknown> | undefined;
+              const timestamp = parsed.timestamp as number;
+
+              console.log(`🔧 [StreamProgress] Tool call started: ${toolName}`, toolArgs);
+
+              const progress = updateProgress();
+              progress.toolExecution = {
+                toolName,
+                arguments: toolArgs,
+                timestamp,
+              };
+              onDelta('', progress);
+
+              continue;
+            }
+
+            if (parsed.type === 'tool_result') {
+              const toolName = parsed.toolName as string;
+              const success = parsed.success as boolean;
+              const sourceCount = parsed.sourceCount as number | undefined;
+              const latencyMs = parsed.latencyMs as number | undefined;
+              const timestamp = parsed.timestamp as number;
+
+              console.log(`✅ [StreamProgress] Tool result: ${toolName} - ${success ? 'success' : 'failed'}`, {
+                sourceCount,
+                latencyMs
+              });
+
+              const progress = updateProgress();
+              progress.toolExecution = {
+                toolName,
+                success,
+                sourceCount,
+                latencyMs,
+                timestamp,
+              };
+              onDelta('', progress);
+
+              continue;
             }
 
             // ========================================

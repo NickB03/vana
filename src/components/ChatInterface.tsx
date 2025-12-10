@@ -734,6 +734,7 @@ export function ChatInterface({
                       artifactRendered={artifactRenderStatus === 'rendered' || artifactRenderStatus === 'error'}
                       onStop={cancelStream}
                       parentElapsedTime={lastMessageElapsedTime}
+                      toolExecution={streamProgress.toolExecution}
                     />
                   </ReasoningErrorBoundary>
                   {/* Show content immediately - reasoning is supplementary context, not blocking */}

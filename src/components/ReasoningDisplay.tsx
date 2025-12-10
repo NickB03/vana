@@ -5,7 +5,7 @@ import {
   StructuredReasoning,
   parseReasoningSteps,
 } from "@/types/reasoning";
-import { ChevronDown, Clock } from "lucide-react";
+import { ChevronDown, Clock, Search, Wrench } from "lucide-react";
 import { TextShimmer } from "@/components/prompt-kit/text-shimmer";
 import { useReasoningTimer } from "@/hooks/useReasoningTimer";
 import {
@@ -13,6 +13,7 @@ import {
   createExtractionState,
   type ExtractionState,
 } from "@/utils/reasoningTextExtractor";
+import type { ToolExecution } from "@/hooks/useChatMessages";
 
 interface ReasoningDisplayProps {
   // Support both old and new formats for backward compatibility
@@ -29,6 +30,8 @@ interface ReasoningDisplayProps {
   onStop?: () => void;
   /** Elapsed time passed from parent (for cross-component persistence) */
   parentElapsedTime?: string;
+  /** Tool execution status for real-time display */
+  toolExecution?: ToolExecution | null;
 }
 
 /**
@@ -76,6 +79,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   artifactRendered = true, // Default to true for backward compatibility
   onStop,
   parentElapsedTime,
+  toolExecution,
 }: ReasoningDisplayProps) {
   // Expand/collapse state
   const [isExpanded, setIsExpanded] = useState(false);
@@ -247,9 +251,25 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
 
   /**
    * Get the streaming status text from available sources
-   * Priority: semantic status > structured steps > raw text extraction > fallback
+   * Priority: tool execution > semantic status > structured steps > raw text extraction > fallback
    */
   const getStreamingStatus = (): string => {
+    // 0. HIGHEST PRIORITY: Tool execution status (show when actively using tools)
+    if (toolExecution && isStreaming) {
+      const { toolName, success, sourceCount } = toolExecution;
+
+      // If we have a result (success is defined), show completion status
+      if (success !== undefined) {
+        if (success && sourceCount !== undefined) {
+          return `Found ${sourceCount} source${sourceCount !== 1 ? 's' : ''}`;
+        }
+        return success ? `${toolName} completed` : `${toolName} failed`;
+      }
+
+      // Otherwise show in-progress status
+      return `Searching web...`;
+    }
+
     // 1. Prefer explicit semantic status from GLM-4.5-Air (AI Commentator)
     if (reasoningStatus) {
       return reasoningStatus;
@@ -369,11 +389,27 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
         {/* Left side: Spinner (thinking) or Text */}
         <div className="flex items-center gap-2 flex-1 min-w-0">
           {/* Show spinner only during initial thinking state */}
-          {showThinkingBar && (
+          {showThinkingBar && !toolExecution && (
             <div
               className="w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin shrink-0"
               aria-hidden="true"
             />
+          )}
+
+          {/* Show tool execution icon when using tools */}
+          {showThinkingBar && toolExecution && isStreaming && (
+            <div className="shrink-0">
+              {toolExecution.success === undefined ? (
+                // In progress - show animated search icon
+                <Search className="w-4 h-4 text-muted-foreground animate-pulse" aria-hidden="true" />
+              ) : toolExecution.success ? (
+                // Success - show check mark briefly
+                <Search className="w-4 h-4 text-green-500/70" aria-hidden="true" />
+              ) : (
+                // Failure - show warning
+                <Wrench className="w-4 h-4 text-orange-500/70" aria-hidden="true" />
+              )}
+            </div>
           )}
 
           {/* Text with smooth transitions - Wrapped in fixed height container to prevent jumps */}
