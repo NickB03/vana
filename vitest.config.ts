@@ -6,7 +6,10 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    include: [
+      'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'src/**/*.{test,spec}.performance.{ts,tsx}'
+    ],
     testTimeout: 5000, // Increased from default 1000ms for async operations
     teardownTimeout: 10000, // Allow 10s for cleanup
     // Use threads pool locally for faster execution (some OOM warnings may appear at end but don't affect results)
@@ -38,7 +41,7 @@ export default defineConfig({
     include: ['src/**/*.{ts,tsx}'],
     exclude: [
       'src/**/*.d.ts',
-      'src/**/__tests__/**/*.{ts,tsx}',
+      // Note: Include performance tests in coverage - remove exclusion
       'src/test/**',
       'src/main.tsx',
       'src/vite-env.d.ts'

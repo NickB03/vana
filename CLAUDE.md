@@ -539,6 +539,10 @@ export default function App() { ... }
 - `TAVILY_API_KEY` (web search integration)
 - `ALLOWED_ORIGINS` (CORS)
 
+**GLM Thinking Mode**:
+- `USE_GLM_THINKING_FOR_CHAT` - Enable GLM-4.6 thinking mode for chat messages (default: true, disable with 'false')
+- `REASONING_STATUS_INTERVAL_MS` - Interval between reasoning status updates in milliseconds (default: 800)
+
 **Rate Limiting Configuration** (optional, overrides defaults):
 - `RATE_LIMIT_GUEST_MAX` (default: 20 requests per 5 hours)
 - `RATE_LIMIT_AUTH_MAX` (default: 100 requests per 5 hours)
