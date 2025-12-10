@@ -31,11 +31,6 @@ export const Hero = () => {
             }}
           >
             <motion.div variants={staggerItem}>
-              <Badge variant="secondary" className="text-sm">
-                Designed and built by Nick Bohmer
-              </Badge>
-            </motion.div>
-            <motion.div variants={staggerItem}>
               <VanaTextAnimation
                 prefix="Hi, I'm "
                 highlight="Vana"

@@ -790,7 +790,17 @@ export const ArtifactRenderer = memo(({
 
     // Fallback timeout for non-bundled artifacts (Babel-rendered)
     // Bundled artifacts have their own 10s skeleton timeout in BundledArtifactFrame
-    const loadTimeout = setTimeout(() => {
+    // Note: We skip this timeout for bundled artifacts to avoid race conditions
+    const shouldSkipTimeout = artifact.type === "react" && artifact.bundleUrl;
+    if (shouldSkipTimeout) {
+      Sentry.addBreadcrumb({
+        category: 'artifact.loading',
+        message: 'Skipping 3s timeout for bundled artifact (uses BundledArtifactFrame timeout)',
+        level: 'info',
+        data: { hasBundleUrl: !!artifact.bundleUrl },
+      });
+    }
+    const loadTimeout = shouldSkipTimeout ? undefined : setTimeout(() => {
       const elapsed = Date.now() - effectStartTime;
       console.log(`[ArtifactRenderer] 3s load timeout fired after ${elapsed}ms`);
       Sentry.addBreadcrumb({
@@ -805,7 +815,9 @@ export const ArtifactRenderer = memo(({
     window.addEventListener('message', handleIframeMessage);
     return () => {
       window.removeEventListener('message', handleIframeMessage);
-      clearTimeout(loadTimeout);
+      if (loadTimeout) {
+        clearTimeout(loadTimeout);
+      }
     };
   }, [artifact.content, artifact.type, onLoadingChange, onPreviewErrorChange, onErrorCategoryChange, recoveryAttempts, handleArtifactError]);
 

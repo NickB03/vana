@@ -46,33 +46,33 @@ export const BenefitsSection = () => {
             What is Vana?
           </h2>
           <p className={cn(TYPOGRAPHY.BODY.lg.full, "text-muted-foreground max-w-2xl mx-auto")}>
-            An AI-powered development assistant that transforms natural language into interactive code, components, and diagrams in real-time.
+            A production-grade AI development platform powered by a multi-model architecture, transforming natural language into interactive code, games, dashboards, and visualizations in real-time.
           </p>
         </motion.div>
 
         <div className="space-y-12 sm:space-y-16 lg:space-y-20">
-          {/* Benefit 1: Real-time Generation */}
+          {/* Benefit 1: Multi-Model AI Architecture */}
           <motion.div
             className="grid lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-center"
             {...fadeInUp}
           >
             <div className="space-y-3 sm:space-y-4">
-              <h3 className={cn(TYPOGRAPHY.HEADING.md.full, "font-bold")}>From idea to code in seconds</h3>
+              <h3 className={cn(TYPOGRAPHY.HEADING.md.full, "font-bold")}>Multi-Model AI Engine</h3>
               <p className={cn(TYPOGRAPHY.BODY.lg.full, "text-muted-foreground")}>
-                Vana generates production-ready code as you type. Watch your ideas materialize with streaming responses that render instantly in an interactive preview canvas.
+                Vana orchestrates multiple specialized AI models—Gemini 2.5 Flash Lite for chat, GLM-4.6 for complex artifact generation, and GLM-4.5-Air for real-time status updates.
               </p>
               <ul className="space-y-2">
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Real-time streaming code generation</span>
+                  <span>GLM-4.6 thinking mode for deep reasoning</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Instant artifact rendering</span>
+                  <span>Parallel processing with AI commentator</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Live preview updates</span>
+                  <span>Smart context management (up to 1M tokens)</span>
                 </li>
               </ul>
             </div>
@@ -85,7 +85,7 @@ export const BenefitsSection = () => {
             </div>
           </motion.div>
 
-          {/* Benefit 2: Interactive Artifacts */}
+          {/* Benefit 2: Modern Full-Stack Architecture */}
           <motion.div
             className="grid lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-center"
             {...fadeInUp}
@@ -96,49 +96,49 @@ export const BenefitsSection = () => {
               <div className="aspect-video bg-muted/20 animate-pulse rounded-lg" />
             )}
             <div className="space-y-3 sm:space-y-4">
-              <h3 className={cn(TYPOGRAPHY.HEADING.md.full, "font-bold")}>More than just chat</h3>
+              <h3 className={cn(TYPOGRAPHY.HEADING.md.full, "font-bold")}>Modern Full-Stack Architecture</h3>
               <p className={cn(TYPOGRAPHY.BODY.lg.full, "text-muted-foreground")}>
-                Every conversation can generate interactive artifacts—fully functional React components, validated HTML pages, Mermaid diagrams, and SVG graphics—all rendered in a sandboxed environment alongside your chat.
+                Built with React 18, TypeScript, Vite, and Supabase Edge Functions. Features a sophisticated artifact system with server-side bundling, prebuilt packages, and 5-layer validation for secure code execution.
               </p>
               <ul className="space-y-2">
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Radix UI component support</span>
+                  <span>React 18 + TypeScript + Vite</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span>External library integration</span>
+                  <span>Supabase (PostgreSQL + Edge Functions)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Code validation & error detection</span>
+                  <span>70+ prebuilt npm packages (5-10x faster)</span>
                 </li>
               </ul>
             </div>
           </motion.div>
 
-          {/* Benefit 3: Secure & Private */}
+          {/* Benefit 3: Advanced Features & Integrations */}
           <motion.div
             className="grid lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-center"
             {...fadeInUp}
           >
             <div className="space-y-3 sm:space-y-4">
-              <h3 className={cn(TYPOGRAPHY.HEADING.md.full, "font-bold")}>Built with security in mind</h3>
+              <h3 className={cn(TYPOGRAPHY.HEADING.md.full, "font-bold")}>Production-Grade Features</h3>
               <p className={cn(TYPOGRAPHY.BODY.lg.full, "text-muted-foreground")}>
-                Vana is built on Supabase with authentication, Row-Level Security policies, and sandboxed execution. Your conversations and artifacts remain private and secure.
+                Enterprise-level capabilities including real-time web search via Tavily, comprehensive monitoring with Sentry, multi-CDN fallback strategy, and advanced rate limiting with analytics tracking.
               </p>
               <ul className="space-y-2">
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Supabase Auth with RLS</span>
+                  <span>Real-time web search integration</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Sandboxed iframe execution</span>
+                  <span>Multi-provider CDN fallback</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Input validation & sanitization</span>
+                  <span>Sentry error tracking & analytics</span>
                 </li>
               </ul>
             </div>
