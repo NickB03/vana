@@ -40,6 +40,7 @@ import { ReasoningDisplay } from "@/components/ReasoningDisplay";
 import { ReasoningErrorBoundary } from "@/components/ReasoningErrorBoundary";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SystemMessage } from "@/components/ui/system-message";
+import { RateLimitPopup } from "@/components/RateLimitPopup";
 import { useNavigate } from "react-router-dom";
 
 interface ChatInterfaceProps {
@@ -57,6 +58,11 @@ interface ChatInterfaceProps {
   isGuest?: boolean;
   guestMessageCount?: number;
   guestMaxMessages?: number;
+  guestSession?: {
+    saveMessages: (messages: ChatMessage[]) => void;
+    loadMessages: () => ChatMessage[];
+    clearMessages: () => void;
+  };
 }
 
 export function ChatInterface({
@@ -73,11 +79,12 @@ export function ChatInterface({
   onInitialPromptSent,
   isGuest = false,
   guestMessageCount = 0,
-  guestMaxMessages = 10
+  guestMaxMessages = 10,
+  guestSession
 }: ChatInterfaceProps) {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const { messages, isLoading, streamChat, deleteMessage, updateMessage, artifactRenderStatus } = useChatMessages(sessionId, { isGuest });
+  const { messages, isLoading, streamChat, deleteMessage, updateMessage, artifactRenderStatus, rateLimitPopup, setRateLimitPopup } = useChatMessages(sessionId, { isGuest, guestSession });
   const { cancelStream, startStream, completeStream } = useStreamCancellation();
   const [localInput, setLocalInput] = useState("");
   const input = typeof parentInput === 'string' ? parentInput : localInput;
@@ -135,11 +142,13 @@ export function ChatInterface({
       shouldGenerateImage,
       shouldGenerateArtifact
     });
-    setImageMode(false);
-    setArtifactMode(false);
+    // NOTE: setImageMode/setArtifactMode moved to useEffect below to prevent render phase updates
 
     // Start stream with cancellation support
     const abortController = startStream();
+
+    // Increment tracker to trigger mode reset
+    setMessageSentTracker(prev => prev + 1);
 
     await streamChat(
       messageToSend,
@@ -174,6 +183,15 @@ export function ChatInterface({
   // Keep ref updated with latest handleSend (for stable access in effects)
   handleSendRef.current = handleSend;
 
+  // Track when messages are sent to reset image/artifact modes
+  const [messageSentTracker, setMessageSentTracker] = useState(0);
+
+  // Reset modes when a message is sent (moved from handleSend to prevent render phase updates)
+  useEffect(() => {
+    setImageMode(false);
+    setArtifactMode(false);
+  }, [messageSentTracker]);
+
   // Reset when session changes
   useEffect(() => {
     setStreamingMessage("");
@@ -182,6 +200,7 @@ export function ChatInterface({
     setIsEditingArtifact(false);
     setLastMessageElapsedTime("");
     onArtifactChange?.(false);
+    setMessageSentTracker(0); // Reset tracker
     // Note: initializedSessionRef is managed separately in the initialPrompt effect
   }, [sessionId, onArtifactChange]);
 
@@ -783,8 +802,15 @@ export function ChatInterface({
   );
 
   return (
-    <div className="flex flex-1 flex-col min-h-0">
-      {isMobile ? (
+    <>
+      <RateLimitPopup
+        isOpen={rateLimitPopup.isOpen}
+        resetAt={rateLimitPopup.resetAt}
+        onSignIn={() => navigate("/auth")}
+        onDismiss={() => setRateLimitPopup({ isOpen: false, resetAt: undefined })}
+      />
+      <div className="flex flex-1 flex-col min-h-0">
+        {isMobile ? (
         // Mobile Layout: Fullscreen artifact overlay or chat
         <div className="relative flex-1 min-h-0">
           {isCanvasOpen && currentArtifact ? (
@@ -859,6 +885,7 @@ export function ChatInterface({
           </ResizablePanel>
         </ResizablePanelGroup>
       )}
-    </div>
+      </div>
+    </>
   );
 }

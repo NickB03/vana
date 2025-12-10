@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getAuthErrorMessage } from "@/utils/authHelpers";
 import { chatRequestThrottle } from "@/utils/requestThrottle";
+import { ChatMessage } from "@/types/chat";
 import { StructuredReasoning, parseReasoningSteps, ReasoningStep } from "@/types/reasoning";
 import { WebSearchResults } from "@/types/webSearch";
 
@@ -69,16 +70,7 @@ function detectPhase(text: string, currentPhase: ThinkingPhase): ThinkingPhase {
   return currentPhase;
 }
 
-export interface ChatMessage {
-  id: string;
-  session_id: string;
-  role: "user" | "assistant";
-  content: string;
-  reasoning?: string | null;
-  reasoning_steps?: StructuredReasoning | null; // New: structured reasoning data
-  search_results?: WebSearchResults | null; // New: web search results data
-  created_at: string;
-}
+// ChatMessage interface is now imported from @/types/chat to avoid circular dependencies
 
 export type GenerationStage =
   | "analyzing"
@@ -108,6 +100,12 @@ export interface RateLimitHeaders {
 export interface UseChatMessagesOptions {
   onRateLimitUpdate?: (headers: RateLimitHeaders) => void;
   isGuest?: boolean; // Explicit guest mode flag - when true, messages are saved to local state only
+  guestSession?: {
+    saveMessages: (messages: ChatMessage[]) => void;
+    loadMessages: () => ChatMessage[];
+    clearMessages: () => void;
+    sessionId?: string | null; // Guest session ID for API requests
+  };
 }
 
 /**
@@ -135,9 +133,17 @@ export function useChatMessages(
   options?: UseChatMessagesOptions
 ) {
   const isGuest = options?.isGuest ?? false;
+  const guestSession = options?.guestSession;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [artifactRenderStatus, setArtifactRenderStatus] = useState<'pending' | 'rendered' | 'error'>('pending');
+  const [rateLimitPopup, setRateLimitPopup] = useState<{
+    isOpen: boolean;
+    resetAt?: string;
+  }>({
+    isOpen: false,
+    resetAt: undefined,
+  });
   const { toast } = useToast();
 
   const fetchMessages = useCallback(async () => {
@@ -254,7 +260,24 @@ export function useChatMessages(
         search_results: searchResults || null,
         created_at: new Date().toISOString(),
       };
-      setMessages((prev) => [...prev, guestMessage]);
+
+      // Update local state and persist to localStorage
+      setMessages((prev) => {
+        const updatedMessages = [...prev, guestMessage];
+
+        // Persist to localStorage if guest session functions are available
+        if (guestSession) {
+          try {
+            guestSession.saveMessages(updatedMessages);
+            console.log(`[saveMessage] Saved ${updatedMessages.length} messages to guest session`);
+          } catch (error) {
+            console.error("Failed to save guest messages:", error);
+          }
+        }
+
+        return updatedMessages;
+      });
+
       return guestMessage;
     }
 
@@ -422,15 +445,10 @@ export function useChatMessages(
         // Handle rate limit exceeded (429)
         if (artifactResponse.status === 429) {
           const errorData = await artifactResponse.json();
-          const resetTime = errorData.resetAt
-            ? new Date(errorData.resetAt).toLocaleTimeString()
-            : "soon";
 
-          toast({
-            title: "Rate Limit Exceeded",
-            description: `${errorData.error || "Too many requests."} Rate limit resets at ${resetTime}.`,
-            variant: "destructive",
-            duration: 10000,
+          setRateLimitPopup({
+            isOpen: true,
+            resetAt: errorData.resetAt,
           });
 
           setIsLoading(false);
@@ -935,19 +953,9 @@ export function useChatMessages(
           options.onRateLimitUpdate(rateLimitHeaders);
         }
 
-        const resetTime = errorData.resetAt
-          ? new Date(errorData.resetAt).toLocaleTimeString()
-          : "soon";
-
-        const retryMessage = rateLimitHeaders?.retryAfter
-          ? `Please try again in ${rateLimitHeaders.retryAfter} seconds.`
-          : `Rate limit resets at ${resetTime}.`;
-
-        toast({
-          title: "Rate Limit Exceeded",
-          description: `${errorData.error || "Too many requests."} ${retryMessage}`,
-          variant: "destructive",
-          duration: 10000,
+        setRateLimitPopup({
+          isOpen: true,
+          resetAt: errorData.resetAt,
         });
 
         setIsLoading(false);
@@ -1266,8 +1274,22 @@ export function useChatMessages(
 
   const deleteMessage = useCallback(async (messageId: string) => {
     if (!sessionId) {
-      // For guest users, delete from local state only
-      setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+      // For guest users, delete from local state and persist
+      setMessages((prev) => {
+        const updatedMessages = prev.filter((msg) => msg.id !== messageId);
+
+        // Persist to localStorage if guest session functions are available
+        if (guestSession) {
+          try {
+            guestSession.saveMessages(updatedMessages);
+            console.log(`[deleteMessage] Saved ${updatedMessages.length} messages after deletion`);
+          } catch (error) {
+            console.error("Failed to save guest messages after deletion:", error);
+          }
+        }
+
+        return updatedMessages;
+      });
       return;
     }
 
@@ -1285,16 +1307,28 @@ export function useChatMessages(
       console.error("Error deleting message:", error);
       throw error;
     }
-  }, [sessionId]);
+  }, [sessionId, guestSession]);
 
   const updateMessage = useCallback(async (messageId: string, content: string) => {
     if (!sessionId) {
-      // For guest users, update local state only
-      setMessages((prev) =>
-        prev.map((msg) =>
+      // For guest users, update local state and persist
+      setMessages((prev) => {
+        const updatedMessages = prev.map((msg) =>
           msg.id === messageId ? { ...msg, content } : msg
-        )
-      );
+        );
+
+        // Persist to localStorage if guest session functions are available
+        if (guestSession) {
+          try {
+            guestSession.saveMessages(updatedMessages);
+            console.log(`[updateMessage] Saved ${updatedMessages.length} messages after update`);
+          } catch (error) {
+            console.error("Failed to save guest messages after update:", error);
+          }
+        }
+
+        return updatedMessages;
+      });
       return;
     }
 
@@ -1316,7 +1350,7 @@ export function useChatMessages(
       console.error("Error updating message:", error);
       throw error;
     }
-  }, [sessionId]);
+  }, [sessionId, guestSession]);
 
   return {
     messages,
@@ -1326,5 +1360,7 @@ export function useChatMessages(
     deleteMessage,
     updateMessage,
     artifactRenderStatus,
+    rateLimitPopup,
+    setRateLimitPopup,
   };
 }

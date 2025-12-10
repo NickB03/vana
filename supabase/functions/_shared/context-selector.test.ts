@@ -1,0 +1,247 @@
+/**
+ * Unit tests for context-selector.ts
+ * Tests message selection, entity extraction, and context ranking
+ */
+
+import { describe, it, expect, beforeEach } from "https://deno.land/x/deno@v1.42.1/testing/bdd.ts";
+import { selectContext, extractEntities, type ContextOptions, type ContextSelectionResult } from "./context-selector.ts";
+import { rankMessageImportance } from "./context-ranker.ts";
+
+describe("Context Selector", () => {
+  let messages: Array<{ role: string; content: string }>;
+
+  beforeEach(() => {
+    messages = [
+      { role: "user", content: "Hello, I need help planning an event" },
+      { role: "assistant", content: "I'd be happy to help you plan your event! What type of event are you organizing?" },
+      { role: "user", content: "I'm organizing a Christmas event in Garland" },
+      { role: "assistant", content: "A Christmas event in Garland sounds wonderful! What activities are you planning?" },
+      { role: "user", content: "We'll have Santa visits, hot chocolate, and ornament making" },
+    ];
+  });
+
+  describe("selectContext", () => {
+    it("should return all messages when within token budget", async () => {
+      const result: ContextSelectionResult = await selectContext(
+        messages,
+        10000, // Large budget
+        {}
+      );
+
+      expect(result.strategy).toBe("full_context");
+      expect(result.selectedMessages).toHaveLength(messages.length);
+      expect(result.summarizedMessages).toHaveLength(0);
+      expect(result.totalTokens).toBeLessThanOrEqual(10000);
+    });
+
+    it("should prioritize recent messages when over budget", async () => {
+      const result: ContextSelectionResult = await selectContext(
+        messages,
+        200, // Small budget
+        { alwaysKeepRecent: 3 }
+      );
+
+      expect(result.strategy).toBe("importance_based_selection");
+      expect(result.selectedMessages).toHaveLength(3); // Last 3 messages
+      expect(result.summarizedMessages).toHaveLength(2); // First 2 messages
+      expect(result.selectedMessages).toEqual(messages.slice(-3));
+    });
+
+    it("should track important entities when over budget", async () => {
+      const messagesWithEntities = [
+        ...messages,
+        { role: "user", content: "I need to add a calculateTotal function for the budget" },
+        { role: "assistant", content: "Here's a calculateTotal function using TypeScript:" },
+      ];
+
+      const options: ContextOptions = {
+        trackedEntities: new Set(["Christmas", "Garland", "calculateTotal"]),
+        alwaysKeepRecent: 2,
+      };
+
+      const result: ContextSelectionResult = await selectContext(
+        messagesWithEntities,
+        300, // Small budget
+        options
+      );
+
+      // Should prioritize messages with tracked entities
+      const entityMessages = result.selectedMessages.filter(msg =>
+        msg.content.includes("Christmas") ||
+        msg.content.includes("Garland") ||
+        msg.content.includes("calculateTotal")
+      );
+
+      expect(entityMessages.length).toBeGreaterThan(0);
+    });
+
+    it("should respect token budget exactly", async () => {
+      // Create messages with known token counts
+      const shortMessages = messages.map((msg, idx) => ({
+        ...msg,
+        content: `Short message ${idx + 1}` // ~3 tokens each
+      }));
+
+      const result: ContextSelectionResult = await selectContext(
+        shortMessages,
+        20, // ~6 messages * ~3 tokens + overhead
+        { alwaysKeepRecent: 2 }
+      );
+
+      expect(result.totalTokens).toBeLessThanOrEqual(20);
+      expect(result.selectedMessages.length).toBeLessThanOrEqual(6);
+    });
+
+    it("should handle empty messages array", async () => {
+      const result: ContextSelectionResult = await selectContext(
+        [],
+        1000,
+        {}
+      );
+
+      expect(result.strategy).toBe("full_context");
+      expect(result.selectedMessages).toHaveLength(0);
+      expect(result.summarizedMessages).toHaveLength(0);
+      expect(result.totalTokens).toBe(0);
+    });
+
+    it("should handle single message array", async () => {
+      const singleMessage = [{ role: "user", content: "Hello" }];
+
+      const result: ContextSelectionResult = await selectContext(
+        singleMessage,
+        10,
+        {}
+      );
+
+      expect(result.strategy).toBe("full_context");
+      expect(result.selectedMessages).toHaveLength(1);
+      expect(result.summarizedMessages).toHaveLength(0);
+    });
+
+    it("should use summary budget when summarizing", async () => {
+      const result: ContextSelectionResult = await selectContext(
+        messages,
+        100, // Very small budget
+        { summaryBudget: 50, alwaysKeepRecent: 1 }
+      );
+
+      expect(result.strategy).toBe("importance_based_selection");
+      expect(result.selectedMessages).toHaveLength(1); // Only most recent
+      expect(result.summarizedMessages).toHaveLength(messages.length - 1);
+      expect(result.summary).toBeNull(); // Summary generated by caller
+    });
+  });
+
+  describe("extractEntities", () => {
+    it("should extract capitalized words as entities", () => {
+      const testMessages = [
+        { role: "user", content: "The Christmas Event in Garland needs planning" },
+        { role: "assistant", content: "The EventPlanner component will help organize it" },
+      ];
+
+      const entities = extractEntities(testMessages);
+
+      expect(entities.has("Christmas")).toBe(true);
+      expect(entities.has("Event")).toBe(true);
+      expect(entities.has("Garland")).toBe(true);
+      expect(entities.has("EventPlanner")).toBe(true);
+    });
+
+    it("should extract code identifiers as entities", () => {
+      const testMessages = [
+        { role: "user", content: "I need a calculateTotal function for budget tracking" },
+        { role: "assistant", content: "Here's a budgetTracker utility:" },
+      ];
+
+      const entities = extractEntities(testMessages);
+
+      expect(entities.has("calculateTotal")).toBe(true);
+      expect(entities.has("budgetTracker")).toBe(true);
+    });
+
+    it("should extract file paths as entities", () => {
+      const testMessages = [
+        { role: "user", content: "Check src/utils/eventPlanner.ts for reference" },
+        { role: "assistant", content: "The types are defined in types/event.ts" },
+      ];
+
+      const entities = extractEntities(testMessages);
+
+      expect(entities.has("src/utils/eventPlanner.ts")).toBe(true);
+      expect(entities.has("types/event.ts")).toBe(true);
+    });
+
+ it("should skip short words (< 3 chars)", () => {
+      const testMessages = [
+        { role: "user", content: "I need help with A and B for the event" },
+        { role: "assistant", content: "A and B are important" },
+      ];
+
+      const entities = extractEntities(testMessages);
+
+      expect(entities.has("A")).toBe(false);
+      expect(entities.has("B")).toBe(false);
+      expect(entities.has("event")).toBe(true); // This should be extracted
+    });
+
+    it("should handle empty messages", () => {
+      const entities = extractEntities([]);
+      expect(entities).toBeInstanceOf(Set);
+      expect(entities.size).toBe(0);
+    });
+
+    it("should handle messages with no entities", () => {
+      const testMessages = [
+        { role: "user", content: "Hello, how are you today?" },
+        { role: "assistant", content: "I'm doing well, thanks for asking!" },
+      ];
+
+      const entities = extractEntities(testMessages);
+      expect(entities.size).toBe(0);
+    });
+
+    it("should deduplicate entities", () => {
+      const testMessages = [
+        { role: "user", content: "The Christmas event is in Garland. Garland is beautiful." },
+        { role: "assistant", content: "Yes, Garland is great for Christmas events!" },
+      ];
+
+      const entities = extractEntities(testMessages);
+
+      // Garland should only appear once in the set
+      const garlandCount = Array.from(entities).filter(e => e === "Garland").length;
+      expect(garlandCount).toBe(1);
+    });
+  });
+
+  describe("integration with context-ranker", () => {
+    it("should work together for context selection", async () => {
+      const messagesWithIds = messages.map((msg, idx) => ({
+        id: `msg-${idx}`,
+        role: msg.role,
+        content: msg.content,
+      }));
+
+      // Rank messages using context-ranker
+      const trackedEntities = new Set(["Christmas", "Garland", "event"]);
+      const ranked = rankMessageImportance(messagesWithIds, trackedEntities);
+
+      // Use ranked messages for context selection
+      const rankedMessages = ranked.map(r => ({
+        role: messagesWithIds.find(m => m.id === r.id)!.role,
+        content: messagesWithIds.find(m => m.id === r.id)!.content,
+      }));
+
+      const result: ContextSelectionResult = await selectContext(
+        rankedMessages,
+        300,
+        { trackedEntities, alwaysKeepRecent: 2 }
+      );
+
+      // Should have selected important messages
+      expect(result.selectedMessages.length).toBeGreaterThan(0);
+      expect(result.totalTokens).toBeLessThanOrEqual(300);
+    });
+  });
+});

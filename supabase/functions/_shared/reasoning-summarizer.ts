@@ -35,7 +35,7 @@ export async function summarizeReasoningChunk(
                 },
             ],
             {
-                model: MODELS.GLM_4_AIR,
+                model: MODELS.GLM_4_5_AIR,
                 temperature: 0.3, // Low temperature for consistency
                 max_tokens: 20, // Very short output
                 requestId,
