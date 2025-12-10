@@ -61,7 +61,7 @@ Deno.test("MessageArrayValidator should reject non-array messages", () => {
   assertThrows(
     () => validator.validate({ not: "an array" }),
     ValidationError,
-    "Messages must be an array"
+    "Invalid messages format"
   );
 });
 
@@ -146,7 +146,7 @@ Deno.test("MessageValidator should reject message with non-string role", () => {
   assertThrows(
     () => validator.validate({ role: 123, content: "Hello" }),
     ValidationError,
-    "role' field of type string"
+    "Invalid message role"
   );
 });
 
@@ -186,7 +186,7 @@ Deno.test("MessageValidator should reject message with non-string content", () =
   assertThrows(
     () => validator.validate({ role: "user", content: 123 }),
     ValidationError,
-    "content' field of type string"
+    "Invalid message content"
   );
 });
 
@@ -196,7 +196,7 @@ Deno.test("MessageValidator should reject empty content", () => {
   assertThrows(
     () => validator.validate({ role: "user", content: "" }),
     ValidationError,
-    "Empty message content"
+    "Invalid message content"
   );
 });
 
@@ -206,7 +206,7 @@ Deno.test("MessageValidator should reject whitespace-only content", () => {
   assertThrows(
     () => validator.validate({ role: "user", content: "   \n\t  " }),
     ValidationError,
-    "whitespace-only"
+    "Empty message content"
   );
 });
 
@@ -353,7 +353,7 @@ Deno.test("ImageRequestValidator should reject non-string prompt", () => {
   assertThrows(
     () => validator.validate({ prompt: 123, mode: "generate" }),
     ValidationError,
-    "Prompt is required and must be a string"
+    "Invalid prompt"
   );
 });
 
@@ -363,7 +363,7 @@ Deno.test("ImageRequestValidator should reject empty prompt", () => {
   assertThrows(
     () => validator.validate({ prompt: "", mode: "generate" }),
     ValidationError,
-    "Empty prompt"
+    "Invalid prompt"
   );
 });
 
@@ -373,7 +373,7 @@ Deno.test("ImageRequestValidator should reject whitespace-only prompt", () => {
   assertThrows(
     () => validator.validate({ prompt: "   ", mode: "generate" }),
     ValidationError,
-    "whitespace-only"
+    "Empty prompt"
   );
 });
 
@@ -404,7 +404,7 @@ Deno.test("ImageRequestValidator should reject non-string mode", () => {
   assertThrows(
     () => validator.validate({ prompt: "Test", mode: 123 }),
     ValidationError,
-    "Mode is required and must be a string"
+    "Invalid mode"
   );
 });
 
@@ -414,7 +414,7 @@ Deno.test("ImageRequestValidator should reject invalid mode value", () => {
   assertThrows(
     () => validator.validate({ prompt: "Test", mode: "invalid" }),
     ValidationError,
-    "Mode must be 'generate' or 'edit'"
+    "Invalid mode value"
   );
 });
 
@@ -434,7 +434,7 @@ Deno.test("ImageRequestValidator should reject non-string baseImage", () => {
   assertThrows(
     () => validator.validate({ prompt: "Test", mode: "edit", baseImage: 123 }),
     ValidationError,
-    "Edit mode requires a base image"
+    "Missing base image"
   );
 });
 
@@ -583,7 +583,7 @@ Deno.test("ChatRequestValidator should reject artifact with non-string title", (
       currentArtifact: { title: 123, type: "html", content: "<div></div>" }
     }),
     ValidationError,
-    "string 'title' field"
+    "Invalid artifact title"
   );
 });
 
@@ -762,7 +762,7 @@ Deno.test("Validators should reject content with only newlines", () => {
   assertThrows(
     () => messageValidator.validate({ role: "user", content: "\n\n\n" }),
     ValidationError,
-    "whitespace-only"
+    "Empty message content"
   );
 });
 

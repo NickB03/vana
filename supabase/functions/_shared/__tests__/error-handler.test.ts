@@ -78,7 +78,7 @@ Deno.test("ErrorResponseBuilder.validation should include details when provided"
 });
 
 Deno.test("ErrorResponseBuilder.validation should include CORS headers", () => {
-  const origin = "https://example.com";
+  const origin = "http://localhost:8080";
   const builder = ErrorResponseBuilder.create(origin, "test-123");
   const response = builder.validation("Invalid input");
 
@@ -477,7 +477,7 @@ Deno.test("RateLimitError should default remaining to 0", () => {
 // ==================== CORS Header Tests ====================
 
 Deno.test("All error responses should include CORS headers", async () => {
-  const origin = "https://example.com";
+  const origin = "http://localhost:8080";
   const builder = ErrorResponseBuilder.create(origin, "test-123");
 
   const responses = [

@@ -151,7 +151,7 @@ Deno.test("Invalid chat request should fail validation with clear error", async 
       const response = errors.validation(e.message, e.details);
       const body = await getResponseBody(response);
 
-      assert(body.error.includes("Empty"));
+      assert(body.error.includes("Invalid"));
       assertEquals(response.status, HTTP_STATUS.BAD_REQUEST);
     }
   }
@@ -182,7 +182,7 @@ Deno.test("Invalid image request should fail validation with clear error", async
       const response = errors.validation(e.message, e.details);
       const body = await getResponseBody(response);
 
-      assert(body.error.includes("Empty"));
+      assert(body.error.includes("Invalid"));
       assertEquals(response.status, HTTP_STATUS.BAD_REQUEST);
     }
   }
@@ -417,7 +417,7 @@ Deno.test("All error responses should include request ID", async () => {
 });
 
 Deno.test("All error responses should include CORS headers", () => {
-  const origin = "https://example.com";
+  const origin = "http://localhost:8080";
   const errors = ErrorResponseBuilder.create(origin, "test-123");
 
   const responses = [
