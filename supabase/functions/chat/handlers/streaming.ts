@@ -48,7 +48,9 @@ export function createStreamTransformer(
   let fullReasoningContent = ""; // Accumulated reasoning_content from GLM
   let parseState: IncrementalParseState = createIncrementalParseState();
   let lastStatusUpdate = 0;
-  const STATUS_UPDATE_INTERVAL_MS = 800; // Don't spam status updates
+  const STATUS_UPDATE_INTERVAL_MS = parseInt(
+    Deno.env.get("REASONING_STATUS_INTERVAL_MS") || "800"
+  ); // Don't spam status updates
 
   // Content output buffer (for artifact transforms and final output)
   let contentBuffer = "";
@@ -158,6 +160,12 @@ export function createStreamTransformer(
               reasoningComplete = true;
               console.log(`[${requestId}] 🧠 GLM reasoning complete: ${fullReasoningContent.length} chars`);
             }
+
+            // Clean up buffers to prevent memory leaks
+            fullReasoningContent = "";
+            contentBuffer = "";
+            parseState = createIncrementalParseState();
+
             // Forward the [DONE] marker
             controller.enqueue(`${line}\n\n`);
             continue;
@@ -211,8 +219,16 @@ export function createStreamTransformer(
                 // Forward content directly (will be artifact-transformed below)
               }
             }
-          } catch (_parseError) {
-            // Non-JSON line or parse error - forward as-is
+          } catch (parseError) {
+            // Log parse error for debugging but continue processing
+            console.warn(
+              `[${requestId}] ⚠️ Failed to parse GLM SSE chunk:`,
+              {
+                jsonStr: jsonStr.substring(0, 200) + (jsonStr.length > 200 ? "..." : ""),
+                error: parseError.message,
+              }
+            );
+            // Forward the malformed line as-is to maintain stream continuity
           }
         }
 
