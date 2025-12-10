@@ -1,8 +1,16 @@
 /**
  * Reasoning Generator - Structured AI Reasoning for Chain of Thought UI
  *
- * Generates structured reasoning steps using AI to provide transparent,
- * educational insights into the AI's decision-making process.
+ * @deprecated This module is DEPRECATED as of Phase 4 of the GLM Thinking Migration.
+ * GLM-4.6's native thinking mode now provides reasoning via `reasoning_content` SSE stream.
+ * 
+ * This file is kept for:
+ * - Type exports (StructuredReasoning, ReasoningStep, etc.)
+ * - Fallback reasoning creation
+ * - OpenRouter fallback path (when GLM is unavailable)
+ *
+ * The `generateStructuredReasoning` function is no longer called from chat/index.ts.
+ * Reasoning is now handled by streaming.ts parsing GLM's SSE format.
  *
  * Architecture:
  * - Uses OpenRouter Gemini Flash for fast, cost-effective reasoning generation
@@ -12,6 +20,7 @@
  *
  * @module reasoning-generator
  * @since 2025-11-14
+ * @deprecated 2025-12-09 - Use GLM thinking mode instead
  */
 
 import { type OpenRouterMessage } from './openrouter-client.ts';

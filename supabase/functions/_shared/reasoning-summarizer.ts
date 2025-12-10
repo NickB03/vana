@@ -1,14 +1,24 @@
+/**
+ * @deprecated This module is DEPRECATED as of Phase 4 of the GLM Thinking Migration.
+ * 
+ * Reasoning summarization is now handled by:
+ * 1. streaming.ts - parses GLM SSE `reasoning_content` in real-time
+ * 2. glm-reasoning-parser.ts - provides `parseReasoningIncrementally()` for progressive step detection
+ * 
+ * This file is kept for potential future use or fallback scenarios.
+ * 
+ * @deprecated 2025-12-09 - Use streaming.ts + glm-reasoning-parser.ts instead
+ */
+
 import { callGeminiFlash, extractTextFromGeminiFlash } from "./openrouter-client.ts";
 import { MODELS } from "./config.ts";
-
-/**
- * Summarize a chunk of reasoning into a short, active-voice status update.
- * Uses GLM-4.5-Air for fast, semantic summarization.
+ * Summarize a chunk of reasoning into a short, active - voice status update.
+ * Uses GLM - 4.5 - Air for fast, semantic summarization.
  *
  * @param reasoningChunk - The raw reasoning text to summarize
- * @param requestId - Request ID for logging
- * @returns The summarized status update (e.g., "Analyzing database schema")
- */
+    * @param requestId - Request ID for logging
+        * @returns The summarized status update(e.g., "Analyzing database schema")
+            */
 export async function summarizeReasoningChunk(
     reasoningChunk: string,
     requestId: string
