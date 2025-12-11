@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   AlertDialog,
@@ -13,7 +13,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-import { Sparkles } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
+
+// ============================================================================
+// Types
+// ============================================================================
 
 export interface TourStep {
   content: React.ReactNode;
@@ -41,15 +45,49 @@ interface TourContextType {
 interface TourProviderProps {
   children: React.ReactNode;
   onComplete?: () => void;
+  onSkip?: (completedSteps: number) => void;
   className?: string;
   isTourCompleted?: boolean;
+  tourId?: string;
 }
 
-const TourContext = createContext<TourContextType | null>(null);
+// ============================================================================
+// Constants
+// ============================================================================
 
 const PADDING = 16;
-const CONTENT_WIDTH = 300;
+const CONTENT_WIDTH = 380;
 const CONTENT_HEIGHT = 200;
+const TOUR_STORAGE_KEY_PREFIX = "vana-tour-";
+
+// ============================================================================
+// Hooks
+// ============================================================================
+
+/**
+ * Hook to detect user's reduced motion preference
+ */
+function useReducedMotion(): boolean {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReducedMotion(mediaQuery.matches);
+
+    const handleChange = (event: MediaQueryListEvent) => {
+      setPrefersReducedMotion(event.matches);
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  return prefersReducedMotion;
+}
+
+// ============================================================================
+// Utilities
+// ============================================================================
 
 function getElementPosition(id: string) {
   const element = document.getElementById(id);
@@ -100,14 +138,28 @@ function calculateContentPosition(
   };
 }
 
+// ============================================================================
+// Context
+// ============================================================================
+
+const TourContext = createContext<TourContextType | null>(null);
+
+
+// ============================================================================
+// TourProvider Component
+// ============================================================================
+
 export function TourProvider({
   children,
   onComplete,
+  onSkip,
   className,
   isTourCompleted = false,
+  tourId = "default",
 }: TourProviderProps) {
   const [steps, setSteps] = useState<TourStep[]>([]);
   const [currentStep, setCurrentStep] = useState(-1);
+  const [direction, setDirection] = useState<"next" | "prev">("next");
   const [elementPosition, setElementPosition] = useState<{
     top: number;
     left: number;
@@ -115,6 +167,41 @@ export function TourProvider({
     height: number;
   } | null>(null);
   const [isCompleted, setIsCompleted] = useState(isTourCompleted);
+
+  const contentRef = useRef<HTMLDivElement>(null);
+  const handleClickRef = useRef<((e: MouseEvent) => void) | null>(null);
+  const reducedMotion = useReducedMotion();
+  const storageKey = `${TOUR_STORAGE_KEY_PREFIX}${tourId}`;
+
+  // Load persisted state on mount
+  useEffect(() => {
+    try {
+      const savedState = localStorage.getItem(storageKey);
+      if (savedState) {
+        const { completed } = JSON.parse(savedState);
+        if (completed) {
+          setIsCompleted(true);
+        }
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [storageKey]);
+
+  // Persist state changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          completed: isCompleted,
+          lastStep: currentStep,
+        })
+      );
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [isCompleted, currentStep, storageKey]);
 
   const updateElementPosition = useCallback(() => {
     if (currentStep >= 0 && currentStep < steps.length) {
@@ -136,65 +223,136 @@ export function TourProvider({
     };
   }, [updateElementPosition]);
 
-  const nextStep = useCallback(async () => {
+  // Focus management - focus tooltip when step changes
+  useEffect(() => {
+    if (currentStep >= 0 && contentRef.current) {
+      contentRef.current.focus();
+    }
+  }, [currentStep]);
+
+  const nextStep = useCallback(() => {
+    setDirection("next");
     setCurrentStep((prev) => {
-      if (prev >= steps.length - 1) {
+      const isLastStep = prev >= steps.length - 1;
+
+      if (isLastStep) {
+        // Trigger completion inside the updater to use correct state
+        setIsCompleted(true);
+        onComplete?.();
         return -1;
       }
       return prev + 1;
     });
-
-    if (currentStep === steps.length - 1) {
-      setIsTourCompleted(true);
-      onComplete?.();
-    }
-  }, [steps.length, onComplete, currentStep]);
+  }, [steps.length, onComplete]);
 
   const previousStep = useCallback(() => {
+    setDirection("prev");
     setCurrentStep((prev) => (prev > 0 ? prev - 1 : prev));
   }, []);
 
   const endTour = useCallback(() => {
+    const wasSkipped = currentStep >= 0 && currentStep < steps.length - 1;
+    if (wasSkipped && onSkip) {
+      onSkip(currentStep + 1);
+    }
     setCurrentStep(-1);
-  }, []);
+  }, [currentStep, steps.length, onSkip]);
 
   const startTour = useCallback(() => {
     if (isTourCompleted) {
       return;
     }
+    setDirection("next");
     setCurrentStep(0);
   }, [isTourCompleted]);
 
-  const handleClick = useCallback(
-    (e: MouseEvent) => {
-      if (currentStep >= 0 && elementPosition && steps[currentStep]?.onClickWithinArea) {
-        const clickX = e.clientX + window.scrollX;
-        const clickY = e.clientY + window.scrollY;
-
-        const isWithinBounds =
-          clickX >= elementPosition.left &&
-          clickX <= elementPosition.left + (steps[currentStep]?.width || elementPosition.width) &&
-          clickY >= elementPosition.top &&
-          clickY <= elementPosition.top + (steps[currentStep]?.height || elementPosition.height);
-
-        if (isWithinBounds) {
-          steps[currentStep].onClickWithinArea?.();
-        }
-      }
-    },
-    [currentStep, elementPosition, steps]
-  );
-
+  // Keyboard navigation
   useEffect(() => {
-    window.addEventListener("click", handleClick);
-    return () => {
-      window.removeEventListener("click", handleClick);
+    if (currentStep < 0) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case "ArrowRight":
+        case "Enter":
+          e.preventDefault();
+          nextStep();
+          break;
+        case "ArrowLeft":
+          e.preventDefault();
+          if (currentStep > 0) previousStep();
+          break;
+        case "Escape":
+          e.preventDefault();
+          endTour();
+          break;
+      }
     };
-  }, [handleClick]);
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentStep, nextStep, previousStep, endTour]);
+
+  // Update ref with latest click handler (avoids stale closure in event listener)
+  handleClickRef.current = (e: MouseEvent) => {
+    if (currentStep >= 0 && elementPosition && steps[currentStep]?.onClickWithinArea) {
+      const clickX = e.clientX + window.scrollX;
+      const clickY = e.clientY + window.scrollY;
+
+      const isWithinBounds =
+        clickX >= elementPosition.left &&
+        clickX <= elementPosition.left + (steps[currentStep]?.width || elementPosition.width) &&
+        clickY >= elementPosition.top &&
+        clickY <= elementPosition.top + (steps[currentStep]?.height || elementPosition.height);
+
+      if (isWithinBounds) {
+        steps[currentStep].onClickWithinArea?.();
+      }
+    }
+  };
+
+  // Stable event listener that delegates to ref (prevents memory leak)
+  useEffect(() => {
+    const stableClickHandler = (e: MouseEvent) => {
+      handleClickRef.current?.(e);
+    };
+
+    window.addEventListener("click", stableClickHandler);
+    return () => {
+      window.removeEventListener("click", stableClickHandler);
+    };
+  }, []); // Empty deps - listener is stable, ref updates
 
   const setIsTourCompleted = useCallback((completed: boolean) => {
     setIsCompleted(completed);
   }, []);
+
+  // Animation variants - memoized to prevent unnecessary recreations
+  const overlayAnimation = useMemo(() => ({
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit: { opacity: 0 }
+  }), []);
+
+  const spotlightAnimation = useMemo(() => (
+    reducedMotion
+      ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
+      : { initial: { opacity: 0, scale: 0.95 }, animate: { opacity: 1, scale: 1 }, exit: { opacity: 0, scale: 0.95 } }
+  ), [reducedMotion]);
+
+  const contentSlideDirection = direction === "next" ? 1 : -1;
+  const contentAnimation = useMemo(() => (
+    reducedMotion
+      ? {
+          initial: { opacity: 0 },
+          animate: { opacity: 1 },
+          exit: { opacity: 0 },
+        }
+      : {
+          initial: { opacity: 0, x: 20 * contentSlideDirection, filter: "blur(4px)" },
+          animate: { opacity: 1, x: 0, filter: "blur(0px)" },
+          exit: { opacity: 0, x: -20 * contentSlideDirection, filter: "blur(4px)" },
+        }
+  ), [reducedMotion, contentSlideDirection]);
 
   return (
     <TourContext.Provider
@@ -216,10 +374,10 @@ export function TourProvider({
       <AnimatePresence>
         {currentStep >= 0 && elementPosition && (
           <>
+            {/* Dark overlay with spotlight cutout */}
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              {...overlayAnimation}
+              transition={{ duration: reducedMotion ? 0.1 : 0.3 }}
               className="fixed inset-0 z-50 overflow-hidden bg-black/50"
               style={{
                 clipPath: `polygon(
@@ -234,12 +392,15 @@ export function TourProvider({
                   ${elementPosition.left}px ${elementPosition.top + (steps[currentStep]?.height || elementPosition.height)}px,
                   ${elementPosition.left}px 0%
                 )`,
+                transition: reducedMotion ? "none" : "clip-path 0.5s cubic-bezier(0.25, 0.1, 0.25, 1)",
               }}
+              aria-hidden="true"
             />
+
+            {/* Spotlight ring around target element */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              {...spotlightAnimation}
+              transition={{ duration: reducedMotion ? 0.1 : 0.3 }}
               style={{
                 position: "fixed",
                 top: elementPosition.top,
@@ -251,10 +412,17 @@ export function TourProvider({
                 "z-[100] rounded-lg ring-2 ring-primary ring-offset-2 ring-offset-background",
                 className
               )}
+              aria-hidden="true"
             />
 
+            {/* Tour content tooltip */}
             <motion.div
-              initial={{ opacity: 0, y: 10, top: 50, right: 50 }}
+              ref={contentRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label={`Tour step ${currentStep + 1} of ${steps.length}`}
+              tabIndex={-1}
+              initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
               animate={{
                 opacity: 1,
                 y: 0,
@@ -262,57 +430,67 @@ export function TourProvider({
                 left: calculateContentPosition(elementPosition, steps[currentStep]?.position).left,
               }}
               transition={{
-                duration: 0.8,
+                duration: reducedMotion ? 0.1 : 0.5,
                 ease: [0.16, 1, 0.3, 1],
-                opacity: { duration: 0.4 },
+                opacity: { duration: reducedMotion ? 0.1 : 0.3 },
               }}
-              exit={{ opacity: 0, y: 10 }}
+              exit={{ opacity: 0, y: reducedMotion ? 0 : 10 }}
               style={{
                 position: "fixed",
-                width: calculateContentPosition(elementPosition, steps[currentStep]?.position)
-                  .width,
+                width: calculateContentPosition(elementPosition, steps[currentStep]?.position).width,
               }}
-              className="bg-popover text-popover-foreground relative z-[100] rounded-lg border p-4 shadow-lg"
+              className="bg-popover text-popover-foreground relative z-[100] rounded-lg border p-4 shadow-lg outline-none"
             >
-              <div className="text-muted-foreground absolute right-4 top-4 text-xs">
+              {/* Step counter - top right */}
+              <span className="absolute top-3 right-4 text-sm text-muted-foreground tabular-nums">
                 {currentStep + 1} / {steps.length}
-              </div>
-              <AnimatePresence mode="wait">
-                <div>
-                  <motion.div
-                    key={`tour-content-${currentStep}`}
-                    initial={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
-                    animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                    exit={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
-                    className="overflow-hidden"
-                    transition={{
-                      duration: 0.2,
-                      height: {
-                        duration: 0.4,
-                      },
-                    }}
-                  >
-                    {steps[currentStep]?.content}
-                  </motion.div>
-                  <div className="mt-4 flex justify-between">
-                    {currentStep > 0 && (
-                      <button
-                        onClick={previousStep}
-                        disabled={currentStep === 0}
-                        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        Previous
-                      </button>
-                    )}
-                    <button
-                      onClick={nextStep}
-                      className="ml-auto text-sm font-medium text-primary hover:text-primary/90 transition-colors"
-                    >
-                      {currentStep === steps.length - 1 ? "Finish" : "Next"}
-                    </button>
-                  </div>
-                </div>
+              </span>
+
+              {/* Step content with directional animation */}
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={`tour-content-${currentStep}`}
+                  {...contentAnimation}
+                  transition={{ duration: reducedMotion ? 0.1 : 0.25 }}
+                  className="overflow-hidden"
+                >
+                  {steps[currentStep]?.content}
+                </motion.div>
               </AnimatePresence>
+
+              {/* Navigation */}
+              <div
+                className="mt-4 flex items-center justify-between"
+                role="navigation"
+                aria-label="Tour navigation"
+              >
+                {/* Previous button - left */}
+                {currentStep > 0 ? (
+                  <Button
+                    onClick={previousStep}
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Go to previous step (${currentStep} of ${steps.length})`}
+                  >
+                    Previous
+                  </Button>
+                ) : (
+                  <div />
+                )}
+
+                {/* Next button - right */}
+                <Button
+                  onClick={nextStep}
+                  size="sm"
+                  aria-label={
+                    currentStep === steps.length - 1
+                      ? "Finish tour"
+                      : `Go to next step (${currentStep + 2} of ${steps.length})`
+                  }
+                >
+                  {currentStep === steps.length - 1 ? "Finish" : "Next"}
+                </Button>
+              </div>
             </motion.div>
           </>
         )}
@@ -320,6 +498,10 @@ export function TourProvider({
     </TourContext.Provider>
   );
 }
+
+// ============================================================================
+// useTour Hook
+// ============================================================================
 
 export function useTour() {
   const context = useContext(TourContext);
@@ -329,39 +511,80 @@ export function useTour() {
   return context;
 }
 
-export function TourAlertDialog({ isOpen, setIsOpen }: { isOpen: boolean, setIsOpen: (isOpen: boolean) => void }) {
+// ============================================================================
+// TourAlertDialog Component
+// ============================================================================
+
+export function TourAlertDialog({
+  isOpen,
+  setIsOpen
+}: {
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
+}) {
   const { startTour, steps, isTourCompleted, currentStep } = useTour();
+  const reducedMotion = useReducedMotion();
 
   if (isTourCompleted || steps.length === 0 || currentStep > -1) {
     return null;
   }
-  const handleSkip = async () => {
+
+  const handleSkip = () => {
     setIsOpen(false);
   };
+
+  const iconAnimation = reducedMotion
+    ? {
+        initial: { scale: 0.9, opacity: 0 },
+        animate: { scale: 1, opacity: 1 },
+      }
+    : {
+        initial: { scale: 0.5, rotate: -180, opacity: 0 },
+        animate: {
+          scale: 1,
+          rotate: 0,
+          opacity: 1,
+          y: [0, -12, 0],
+        },
+      };
+
+  const iconTransition = reducedMotion
+    ? { duration: 0.2 }
+    : {
+        scale: { duration: 0.5, ease: [0.34, 1.56, 0.64, 1] },
+        rotate: { duration: 0.5, ease: "easeOut" },
+        opacity: { duration: 0.3 },
+        y: {
+          duration: 3,
+          repeat: Infinity,
+          ease: "easeInOut",
+        },
+      };
 
   return (
     <AlertDialog open={isOpen}>
       <AlertDialogContent className="max-w-md p-6">
         <AlertDialogHeader className="flex flex-col items-center justify-center">
           <div className="relative mb-4">
-            <motion.div
-              initial={{ scale: 0.7, filter: "blur(10px)" }}
-              animate={{
-                scale: 1,
-                filter: "blur(0px)",
-                y: [0, -8, 0],
-              }}
-              transition={{
-                duration: 0.4,
-                ease: "easeOut",
-                y: {
-                  duration: 2.5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                },
-              }}
-            >
-              <Sparkles className="size-24 stroke-1 text-primary" />
+            <motion.div {...iconAnimation} transition={iconTransition}>
+              <div className="relative">
+                <Sparkles className="size-24 stroke-1 text-primary" />
+                {/* Subtle pulse ring - only if motion not reduced */}
+                {!reducedMotion && (
+                  <motion.div
+                    className="absolute inset-0 rounded-full bg-primary/20"
+                    animate={{
+                      scale: [1, 1.4, 1],
+                      opacity: [0.4, 0, 0.4],
+                    }}
+                    transition={{
+                      duration: 2.5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  />
+                )}
+              </div>
             </motion.div>
           </div>
           <AlertDialogTitle className="text-center text-xl font-medium">

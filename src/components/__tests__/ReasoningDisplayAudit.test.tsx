@@ -9,6 +9,22 @@ vi.mock('isomorphic-dompurify', () => ({
     },
 }));
 
+/**
+ * ReasoningDisplay Audit Tests
+ *
+ * UPDATED: These tests reflect the phase-based ticker system implemented in
+ * reasoningTextExtractor.ts. The component now shows stable, semantic messages
+ * (e.g., "Thinking...", "Analyzing the request...", "Planning the implementation...")
+ * instead of raw sentence extraction to prevent UI flickering.
+ *
+ * Phase progression:
+ * 1. starting → "Thinking..." (initial state)
+ * 2. analyzing → "Analyzing the request..." (50+ chars with analyze keywords)
+ * 3. planning → "Planning the implementation..." (200+ chars with plan keywords)
+ * 4. implementing → "Building the solution..." (400+ chars with implement keywords)
+ * 5. styling → "Applying styling..." (600+ chars with style keywords)
+ * 6. finalizing → "Finalizing the solution..." (800+ chars with final keywords)
+ */
 describe('ReasoningDisplay Audit', () => {
     beforeEach(() => {
         vi.useFakeTimers();
@@ -32,29 +48,13 @@ describe('ReasoningDisplay Audit', () => {
         return { rerender, container };
     };
 
-    const getDisplayedText = () => {
-        // The component renders text in a span or TextShimmer
-        // We look for the text content of the pill
-        const pill = screen.getByRole('button', { hidden: true }) || screen.getByRole('status', { hidden: true });
-        // This might be tricky if role isn't perfect, let's try finding by class or structure if needed.
-        // Actually, the text is inside a span or TextShimmer.
-        // Let's just get all text in the container and filter.
-        return screen.queryByText((content, element) => {
-            return element?.tagName.toLowerCase() === 'span' &&
-                element.className.includes('line-clamp-1');
-        })?.textContent;
-    };
-
     const expectDisplayed = (text: string | RegExp) => {
         try {
-            // Use findByText to allow for async updates if any (though we use fake timers)
-            // Actually queryByText is fine.
             const element = screen.queryByText(text);
             expect(element).toBeInTheDocument();
         } catch (e) {
             console.log(`Expected "${text}" but found text content:`);
             console.log(document.body.textContent);
-            // Also try to find what IS displayed in the pill
             const pill = document.querySelector('.line-clamp-1');
             if (pill) console.log('Pill content:', pill.textContent);
             throw e;
@@ -65,157 +65,95 @@ describe('ReasoningDisplay Audit', () => {
         expectDisplayed("Thinking...");
     };
 
-    describe('Sentence Parsing & Filtering', () => {
-        it('displays a complete sentence', () => {
-            // Must be > 15 chars, use action verb to pass validation, periods stripped
-            renderStreaming('Analyzing the database structure properly.');
-            expectDisplayed('Analyzing the database structure properly');
-        });
-
-        it('displays the last complete sentence', () => {
-            // Periods stripped for cleaner UI, transforms "I will check" to "Checking"
-            renderStreaming('First step. I will check the database connection properly.');
-            expectDisplayed('Checking the database connection properly');
-        });
-
-        it('ignores partial sentences at the end', () => {
-            // Periods stripped for cleaner UI
-            renderStreaming('Reviewing the code structure in detail. Partial');
-            expectDisplayed('Reviewing the code structure in detail');
-        });
-
-        it('cleans bullet points and transforms verb', () => {
-            // Long enough (>40 chars after cleaning) and transforms "Check" to "Checking"
-            renderStreaming('- Check this bullet point item thoroughly now.');
-            expectDisplayed('Checking this bullet point item thoroughly now');
-        });
-
-        it('cleans asterisk bullets and transforms verb', () => {
-            // Long enough (>40 chars after cleaning) and transforms "Analyze" to "Analyzing"
-            renderStreaming('* Analyze this star point item properly now.');
-            expectDisplayed('Analyzing this star point item properly now');
-        });
-    });
-
-    describe('Filtering Logic (The "Pill" Logic)', () => {
-        it('filters numbered lists', () => {
-            renderStreaming('1. This is a numbered list item that is long enough.');
+    describe('Phase-Based Status Display', () => {
+        it('displays "Thinking..." for initial short text', () => {
+            renderStreaming('Short text here.');
             expectThinking();
         });
 
-        it('filters short bullets', () => {
-            // Even if > 15 chars, if it matches "Short Bullet" logic?
-            // Logic: isShortBullet = /^[-*•]\s/.test(lastSentence) && lastSentence.length < 40;
-            renderStreaming('- This is a bullet that is longer than 15 but shorter than 40.');
+        it('displays "Thinking..." for empty string', () => {
+            renderStreaming('');
             expectThinking();
         });
 
-        it('filters lines ending in colon', () => {
-            renderStreaming('This is a header line that ends in a colon:');
+        it('displays "Thinking..." for whitespace only', () => {
+            renderStreaming('   ');
             expectThinking();
         });
 
-        it('filters negative instructions', () => {
-            renderStreaming('Do not generate bad code in this response.');
-            expectThinking();
+        it('displays "Analyzing the request..." when analyze keywords appear with sufficient text', () => {
+            const text = 'I understand the user wants to create a button component. Let me think about what they need and how to approach this request.';
+            renderStreaming(text);
+            expectDisplayed('Analyzing the request...');
         });
 
-        it('filters "no" instructions', () => {
-            renderStreaming('No markdown should be included in the output.');
-            expectThinking();
+        it('advances to analyzing phase first when both analyze and plan keywords present', () => {
+            // Phase detection advances one phase at a time from starting
+            // Even with planning keywords present, it first enters analyzing phase
+            // because analyzing comes before planning in the phase order
+            const text = 'I understand what the user needs. Now I will design the component structure and plan the architecture. The approach should include a main component with proper layout and state management.'.repeat(2);
+            renderStreaming(text);
+            // First matching phase from starting is analyzing (has "understand" keyword)
+            expectDisplayed('Analyzing the request...');
         });
 
-        it('filters state sentences (is/are/has)', () => {
-            renderStreaming('The code is valid and has no errors.');
-            expectThinking();
+        it('shows first matching phase on initial render', () => {
+            // Phase progression is sequential and happens one step at a time
+            // On initial render with long text containing many keywords,
+            // the extractor progresses from starting → first matching phase
+            const text = 'I understand what the user is looking for. '.repeat(3);  // 129+ chars
+            renderStreaming(text);
+
+            // With 50+ chars and "understand" keyword, moves from starting → analyzing
+            expectDisplayed('Analyzing the request...');
         });
 
-        it('allows state sentences if they have action verbs', () => {
-            // Period stripped for cleaner UI
-            renderStreaming('Checking if the code is valid and has no errors.');
-            expectDisplayed('Checking if the code is valid and has no errors');
-        });
-    });
-
-    describe('Action Verb Transformation', () => {
-        it('transforms "I will analyze"', () => {
-            // Period stripped for cleaner UI
-            renderStreaming('I will analyze the request details now.');
-            expectDisplayed('Analyzing the request details now');
+        it('stays in analyzing phase when only analyze requirements met', () => {
+            // Only analyzing phase requirements: 50+ chars with analyze keywords
+            const text = 'I understand what the user is looking for and asking about. Let me analyze their request to determine the best approach here.';
+            renderStreaming(text);
+            expectDisplayed('Analyzing the request...');
         });
 
-        it('transforms "I am checking"', () => {
-            // Period stripped for cleaner UI
-            renderStreaming('I am checking the database connection string.');
-            expectDisplayed('Checking the database connection string');
-        });
-
-        it('transforms "We are designing"', () => {
-            // Period stripped for cleaner UI
-            renderStreaming('We are designing the user interface layout.');
-            expectDisplayed('Designing the user interface layout');
-        });
-
-        it('transforms "Analyze ..."', () => {
-            // Period stripped for cleaner UI
-            renderStreaming('Analyze the input data for inconsistencies.');
-            expectDisplayed('Analyzing the input data for inconsistencies');
+        it('maintains stable output for very long text without crashing', () => {
+            // Very long text should not cause any errors
+            const longText = 'I understand and need to implement this solution with proper code. '.repeat(20);
+            renderStreaming(longText);
+            // Should render something, not crash
+            expect(document.body.textContent).toBeTruthy();
         });
     });
 
     describe('Code Detection', () => {
-        it('detects code blocks and shows "Writing code..." (Sentence Mode)', () => {
+        it('detects code blocks and shows "Writing code..."', () => {
             renderStreaming('const a = 1;\n');
             act(() => { vi.advanceTimersByTime(2500); });
             expectDisplayed('Writing code...');
         });
 
-        it('detects imports (Line Mode)', () => {
+        it('detects imports', () => {
             renderStreaming('import React from "react";\n');
             act(() => { vi.advanceTimersByTime(2500); });
             expectDisplayed('Writing code...');
         });
 
-        it('detects JSON-like data (Line Mode)', () => {
-            // Use actual JSON structure with brackets to trigger code detection
+        it('detects JSON-like data', () => {
             renderStreaming('{ "key": "value" }\n');
             act(() => { vi.advanceTimersByTime(2500); });
             expectDisplayed('Writing code...');
         });
 
-        it('detects single line code without newline (Bug Fix Verification)', () => {
-            // This should now PASS with the fix
+        it('detects single line code without newline', () => {
             renderStreaming('const a = 1;');
             act(() => { vi.advanceTimersByTime(2500); });
             expectDisplayed('Writing code...');
         });
     });
 
-    describe('Standalone Verb Transformation', () => {
-        it('transforms "Analyze ..."', () => {
-            // Period stripped for cleaner UI
-            renderStreaming('Analyze the input data.');
-            expectDisplayed('Analyzing the input data');
-        });
-
-        it('transforms "Check ..."', () => {
-            // Period stripped for cleaner UI
-            renderStreaming('Check the validation logic.');
-            expectDisplayed('Checking the validation logic');
-        });
-
-        it('transforms "Create ..."', () => {
-            // Period stripped for cleaner UI
-            renderStreaming('Create a new component.');
-            expectDisplayed('Creating a new component');
-        });
-    });
-
     describe('Throttling & Stability', () => {
-        it('throttles updates that happen too fast', () => {
-            // Use action-oriented sentences that pass validation
-            const { rerender } = renderStreaming('Analyzing the first database query.');
-            expectDisplayed('Analyzing the first database query');
+        it('maintains stable phase display during streaming', () => {
+            const { rerender } = renderStreaming('Initial thinking text here.');
+            expectThinking();
 
             act(() => {
                 vi.advanceTimersByTime(100);
@@ -225,47 +163,80 @@ describe('ReasoningDisplay Audit', () => {
                 <ReasoningDisplay
                     reasoning={null}
                     reasoningSteps={null}
-                    streamingReasoningText="Analyzing the first database query. Reviewing the second component now."
+                    streamingReasoningText="Initial thinking text here. More text added."
                     isStreaming={true}
                 />
             );
 
-            // Should still show first update due to throttling
-            expectDisplayed('Analyzing the first database query');
+            // Should still show same phase due to throttling
+            expectThinking();
+        });
+
+        it('progresses phases as text accumulates', () => {
+            const { rerender } = renderStreaming('Short.');
+            expectThinking();
+
+            // Add enough text to trigger analyzing phase
+            const analyzeText = 'I understand what the user is looking for and asking about. Let me analyze their request to determine the best approach.';
 
             act(() => {
-                vi.advanceTimersByTime(1500);
+                vi.advanceTimersByTime(2000);
             });
 
             rerender(
                 <ReasoningDisplay
                     reasoning={null}
                     reasoningSteps={null}
-                    streamingReasoningText="Analyzing the first database query. Reviewing the second component now."
+                    streamingReasoningText={analyzeText}
                     isStreaming={true}
                 />
             );
-            expectDisplayed('Reviewing the second component now');
+
+            expectDisplayed('Analyzing the request...');
+        });
+    });
+
+    describe('Filtering Logic (Still Applied)', () => {
+        it('filters numbered lists (shows phase message instead)', () => {
+            renderStreaming('1. This is a numbered list item that is long enough.');
+            expectThinking();
+        });
+
+        it('filters short bullets (shows phase message instead)', () => {
+            renderStreaming('- This is a short bullet point.');
+            expectThinking();
+        });
+
+        it('filters lines ending in colon (shows phase message instead)', () => {
+            renderStreaming('This is a header line that ends in a colon:');
+            expectThinking();
+        });
+
+        it('filters negative instructions (shows phase message instead)', () => {
+            renderStreaming('Do not generate bad code in this response.');
+            expectThinking();
+        });
+
+        it('filters "no" instructions (shows phase message instead)', () => {
+            renderStreaming('No markdown should be included in the output.');
+            expectThinking();
         });
     });
 
     describe('Edge Cases', () => {
-        it('handles empty string', () => {
-            renderStreaming('');
+        it('handles special characters gracefully', () => {
+            renderStreaming('Handling <special> & "characters" gracefully!');
             expectThinking();
         });
 
-        it('handles whitespace only', () => {
-            renderStreaming('   ');
+        it('handles multi-line text', () => {
+            renderStreaming('Line 1.\nLine 2.\nLine 3.');
             expectThinking();
         });
 
-        it('handles very long sentences (truncation at 70 chars)', () => {
-            // Use a proper sentence with multiple words so it passes validation
-            const long = 'Analyzing the extremely complex and intricate database schema that spans multiple tables and relationships.';
-            renderStreaming(long);
-            // Period stripped, truncated to 70 chars with ellipsis
-            expectDisplayed('Analyzing the extremely complex and intricate database schema that...');
+        it('handles unicode characters', () => {
+            renderStreaming('Testing with émojis 🚀 and ünïcödë characters.');
+            expectThinking();
         });
     });
 });

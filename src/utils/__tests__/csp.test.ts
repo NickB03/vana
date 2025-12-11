@@ -88,6 +88,7 @@ describe('Content Security Policy', () => {
     expect(connectSrc).toContain('https://openrouter.ai'); // AI API
     expect(connectSrc).toContain('https://api.tavily.com'); // Search API
     expect(connectSrc).toContain('https://esm.sh'); // npm packages
+    expect(connectSrc).toContain('https://*.ingest.sentry.io'); // Sentry error reporting
   });
 
   it('should allow blob iframes for artifact sandboxing', () => {
