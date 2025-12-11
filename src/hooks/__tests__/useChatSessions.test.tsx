@@ -10,6 +10,7 @@ vi.mock('@/integrations/supabase/client', () => ({
     from: vi.fn(),
     auth: {
       getUser: vi.fn(),
+      getSession: vi.fn(),
     },
     functions: {
       invoke: vi.fn(),
@@ -54,7 +55,9 @@ describe('useChatSessions', () => {
     it('should fetch sessions on mount and set loading state', async () => {
       const mockSelect = vi.fn().mockReturnThis();
       const mockOrder = vi.fn().mockResolvedValue({ data: mockSessions, error: null });
+      const mockSession = { session: { user: { id: 'test-user' } } };
 
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({ data: mockSession, error: null });
       vi.mocked(supabase.from).mockReturnValue({
         select: mockSelect,
       } as any);
@@ -78,18 +81,22 @@ describe('useChatSessions', () => {
     it('should order sessions by updated_at descending', async () => {
       const mockSelect = vi.fn().mockReturnThis();
       const mockOrder = vi.fn().mockResolvedValue({ data: mockSessions, error: null });
+      const mockSession = { session: { user: { id: 'test-user' } } };
 
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({ data: mockSession, error: null });
       vi.mocked(supabase.from).mockReturnValue({
         select: mockSelect,
       } as any);
 
       mockSelect.mockReturnValue({ order: mockOrder });
 
-      renderHook(() => useChatSessions());
+      const { result } = renderHook(() => useChatSessions());
 
       await waitFor(() => {
-        expect(mockOrder).toHaveBeenCalledWith('updated_at', { ascending: false });
+        expect(result.current.isLoading).toBe(false);
       });
+
+      expect(mockOrder).toHaveBeenCalledWith('updated_at', { ascending: false });
     });
 
     it('should handle fetch errors gracefully', async () => {

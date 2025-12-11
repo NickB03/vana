@@ -12,22 +12,23 @@ export default defineConfig({
     ],
     testTimeout: 5000, // Increased from default 1000ms for async operations
     teardownTimeout: 10000, // Allow 10s for cleanup
-    // Use threads pool locally for faster execution (some OOM warnings may appear at end but don't affect results)
-    // CI uses forks for memory isolation during coverage generation
-    pool: process.env.CI ? 'forks' : 'threads',
+    // Use forks for memory isolation (threads share memory limit with main process)
+    // Forks get their own memory space and respect NODE_OPTIONS
+    pool: 'forks',
     poolOptions: {
       threads: {
-        // Reduce threads to prevent OOM during large test runs
-        maxThreads: 2,
+        // Reduce to single-thread mode for memory isolation during large test runs
+        maxThreads: 1,
         minThreads: 1,
-        isolate: true
+        isolate: true,
+        singleThread: true
       },
       forks: {
-        // In CI: reduce concurrency from 4 to 2 with aggressive GC (NODE_OPTIONS flags)
-        // This prevents OOM during istanbul coverage instrumentation of 28 test files
-        // Each fork + instrumentation consumes ~1.5-2GB; 2 forks = 3-4GB + OS overhead
-        maxForks: 2,
-        isolate: true
+        // Reduce to 1 fork for memory isolation
+        // Each fork consumes ~1.5-2GB; single fork prevents OOM
+        maxForks: 1,
+        isolate: true,
+        singleFork: true
       }
     }
   },

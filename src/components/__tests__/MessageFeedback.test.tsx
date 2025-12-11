@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { MessageFeedback } from '../MessageFeedback';
 import * as useMessageFeedbackHook from '@/hooks/useMessageFeedback';
 
@@ -23,6 +23,10 @@ describe('MessageFeedback', () => {
 
     // No existing feedback by default
     mockGetFeedbackForMessage.mockResolvedValue(null);
+  });
+
+  afterEach(() => {
+    cleanup();
   });
 
   it('should render thumbs up and thumbs down buttons', () => {

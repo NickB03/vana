@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
 import { ArtifactContainer, ArtifactData } from './ArtifactContainer';
 import '@testing-library/jest-dom';
 
@@ -70,6 +70,11 @@ describe('ArtifactContainer Performance Tests', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.clearAllTimers();
+    cleanup();
   });
 
   describe('detectNpmImports memoization', () => {

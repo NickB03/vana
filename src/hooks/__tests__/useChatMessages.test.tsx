@@ -225,4 +225,149 @@ describe('useChatMessages', () => {
       }
     });
   });
+
+  // ============================================================================
+  // ERROR HANDLING / NEGATIVE TEST CASES
+  // ============================================================================
+  // These tests verify the hook handles failures gracefully and doesn't silently
+  // swallow errors that could leave the UI in an inconsistent state.
+  // ============================================================================
+
+  describe('error handling - invalid data', () => {
+    it('should handle null reasoning steps gracefully', async () => {
+      const { result } = renderHook(() => useChatMessages(undefined));
+
+      let savedMessage;
+      await act(async () => {
+        savedMessage = await result.current.saveMessage(
+          'assistant',
+          'Response',
+          undefined,
+          null as any // Explicitly null reasoning steps
+        );
+      });
+
+      expect(savedMessage).toBeDefined();
+      expect(savedMessage?.reasoning_steps).toBeNull();
+    });
+
+    it('should handle empty string content', async () => {
+      const { result } = renderHook(() => useChatMessages(undefined));
+
+      let savedMessage;
+      await act(async () => {
+        savedMessage = await result.current.saveMessage('user', '');
+      });
+
+      // Empty content is technically valid - up to business logic to reject
+      expect(savedMessage).toBeDefined();
+      expect(savedMessage?.content).toBe('');
+    });
+  });
+
+  describe('error handling - deleteMessage edge cases', () => {
+    it('should handle deleting non-existent message ID gracefully', async () => {
+      const { result } = renderHook(() => useChatMessages(undefined));
+
+      // Save a real message first
+      await act(async () => {
+        await result.current.saveMessage('user', 'Real message');
+      });
+
+      expect(result.current.messages).toHaveLength(1);
+
+      // Try to delete a message that doesn't exist
+      await act(async () => {
+        await result.current.deleteMessage('non-existent-uuid-12345');
+      });
+
+      // Original message should still be there
+      expect(result.current.messages).toHaveLength(1);
+      expect(result.current.messages[0].content).toBe('Real message');
+    });
+  });
+
+  describe('error handling - updateMessage edge cases', () => {
+    it('should handle updating non-existent message ID gracefully', async () => {
+      const { result } = renderHook(() => useChatMessages(undefined));
+
+      // Save a real message first
+      await act(async () => {
+        await result.current.saveMessage('user', 'Original');
+      });
+
+      const originalContent = result.current.messages[0].content;
+
+      // Try to update a message that doesn't exist
+      await act(async () => {
+        await result.current.updateMessage('non-existent-uuid-12345', 'Updated');
+      });
+
+      // Original message should be unchanged
+      expect(result.current.messages).toHaveLength(1);
+      expect(result.current.messages[0].content).toBe(originalContent);
+    });
+  });
+
+  describe('error handling - guest session persistence', () => {
+    it('should handle localStorage save failure gracefully', async () => {
+      const mockSaveMessages = vi.fn().mockImplementation(() => {
+        throw new Error('localStorage quota exceeded');
+      });
+
+      const { result } = renderHook(() =>
+        useChatMessages(undefined, {
+          isGuest: true,
+          guestSession: {
+            saveMessages: mockSaveMessages,
+            loadMessages: () => [],
+            clearMessages: vi.fn(),
+          },
+        })
+      );
+
+      // Should not throw even though localStorage fails
+      let savedMessage;
+      await act(async () => {
+        savedMessage = await result.current.saveMessage('user', 'Test message');
+      });
+
+      // Message should still be saved to local state
+      expect(savedMessage).toBeDefined();
+      expect(result.current.messages).toHaveLength(1);
+
+      // But saveMessages was attempted
+      expect(mockSaveMessages).toHaveBeenCalled();
+    });
+  });
+
+  describe('edge cases - special characters', () => {
+    it('should handle messages with special characters', async () => {
+      const { result } = renderHook(() => useChatMessages(undefined));
+
+      const specialContent = '<script>alert("xss")</script> & "quotes" \'apostrophe\'';
+
+      let savedMessage;
+      await act(async () => {
+        savedMessage = await result.current.saveMessage('user', specialContent);
+      });
+
+      // Content should be preserved exactly as-is (sanitization is done at render)
+      expect(savedMessage?.content).toBe(specialContent);
+    });
+
+    it('should handle very long messages', async () => {
+      const { result } = renderHook(() => useChatMessages(undefined));
+
+      const longContent = 'A'.repeat(10000); // 10KB message
+
+      let savedMessage;
+      await act(async () => {
+        savedMessage = await result.current.saveMessage('user', longContent);
+      });
+
+      expect(savedMessage?.content).toBe(longContent);
+      expect(savedMessage?.content.length).toBe(10000);
+    });
+  });
 });

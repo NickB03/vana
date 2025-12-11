@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, cleanup } from '@testing-library/react';
 import { ReasoningDisplay } from '../ReasoningDisplay';
 import type { StructuredReasoning } from '@/types/reasoning';
 
@@ -16,7 +16,9 @@ describe('ReasoningDisplay', () => {
   });
 
   afterEach(() => {
+    vi.clearAllTimers();
     vi.useRealTimers();
+    cleanup();
   });
 
   const mockReasoningSteps: StructuredReasoning = {

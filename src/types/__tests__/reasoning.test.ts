@@ -874,14 +874,33 @@ describe('Type Safety', () => {
     expect(step.phase).toBeDefined();
   });
 
-  it('enforces required fields at compile time', () => {
-    // This should cause TypeScript error if uncommented:
-    // const invalidStep: ReasoningStep = {
-    //   phase: 'research',
-    //   // Missing required: title, items
-    // };
+  it('enforces required fields via Zod schema validation', () => {
+    // Test that Zod catches missing required fields at runtime
+    // This is more robust than compile-time checks since it validates real data
+    const invalidStep = {
+      phase: 'research',
+      // Missing required: title, items
+    };
 
-    // Placeholder to avoid empty test
-    expect(true).toBe(true);
+    const result = ReasoningStepSchema.safeParse(invalidStep);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      // Verify specific fields are flagged as missing
+      const missingFields = result.error.issues.map(issue => issue.path[0]);
+      expect(missingFields).toContain('title');
+      expect(missingFields).toContain('items');
+    }
+  });
+
+  it('rejects invalid phase values via Zod schema', () => {
+    const invalidStep = {
+      phase: 'invalid-phase', // Not a valid ReasoningPhase
+      title: 'Test',
+      items: ['Item'],
+    };
+
+    const result = ReasoningStepSchema.safeParse(invalidStep);
+    expect(result.success).toBe(false);
   });
 });

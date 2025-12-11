@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, cleanup } from '@testing-library/react';
 import { ReasoningDisplay } from '../ReasoningDisplay';
 
 // Mock DOMPurify
@@ -15,7 +15,9 @@ describe('ReasoningDisplay Filtering Logic', () => {
     });
 
     afterEach(() => {
+        vi.clearAllTimers();
         vi.useRealTimers();
+        cleanup();
     });
 
     const renderWithStreamingText = (text: string) => {

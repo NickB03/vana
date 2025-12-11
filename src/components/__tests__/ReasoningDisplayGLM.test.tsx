@@ -1,8 +1,11 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, cleanup } from "@testing-library/react";
 import { ReasoningDisplay } from "../ReasoningDisplay";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 
 describe("ReasoningDisplay GLM Integration", () => {
+    afterEach(() => {
+        cleanup();
+    });
     it("displays reasoningStatus when provided during streaming", () => {
         render(
             <ReasoningDisplay

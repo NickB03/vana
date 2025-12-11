@@ -29,6 +29,8 @@ const UIShowcase = lazy(() => import("./pages/UIShowcase"));
 const FroggerHeroTest = lazy(() => import("./pages/FroggerHeroTest"));
 const TestSidebarStates = lazy(() => import("./pages/TestSidebarStates"));
 const FeatureTourDemo = lazy(() => import("./pages/FeatureTourDemo"));
+const JoyrideTourDemo = lazy(() => import("./pages/JoyrideTourDemo"));
+const ShadcnTourDemo = lazy(() => import("./pages/ShadcnTourDemo"));
 
 // Optimized React Query configuration for mobile
 const queryClient = new QueryClient({
@@ -80,6 +82,8 @@ const AnimatedRoutes = () => {
         <Route path="/frogger-hero-test" element={<AnimatedRoute><FroggerHeroTest /></AnimatedRoute>} />
         <Route path="/test-sidebar-states" element={<AnimatedRoute><TestSidebarStates /></AnimatedRoute>} />
         <Route path="/demo-feature-tour" element={<AnimatedRoute><FeatureTourDemo /></AnimatedRoute>} />
+        <Route path="/demo-joyride-tour" element={<AnimatedRoute><JoyrideTourDemo /></AnimatedRoute>} />
+        <Route path="/demo-shadcn-tour" element={<AnimatedRoute><ShadcnTourDemo /></AnimatedRoute>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<AnimatedRoute><NotFound /></AnimatedRoute>} />
       </Routes>

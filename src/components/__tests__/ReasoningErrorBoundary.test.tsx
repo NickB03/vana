@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ReasoningErrorBoundary, withReasoningErrorBoundary } from '../ReasoningErrorBoundary';
 import { ThinkingIndicator } from '../ThinkingIndicator';
@@ -39,6 +39,7 @@ describe('ReasoningErrorBoundary', () => {
 
   afterEach(() => {
     console.error = originalError;
+    cleanup();
   });
 
   describe('Error Catching', () => {
