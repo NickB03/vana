@@ -39,6 +39,21 @@ afterEach(() => {
   localStorageMock.clear();
 });
 
+// Mock window.matchMedia for media query tests
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});
+
 // Note: The "Timeout waiting for worker to respond" error during close is a known
 // Vitest 4.x issue with the pool runner. It doesn't affect test results - all tests
 // pass successfully. The error occurs during worker cleanup, not during test execution.

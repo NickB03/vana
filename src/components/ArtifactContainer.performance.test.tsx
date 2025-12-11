@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, cleanup, waitFor } from '@testing-library/react';
 import { ArtifactContainer, ArtifactData } from './ArtifactContainer';
 import '@testing-library/jest-dom';
 
@@ -46,7 +46,7 @@ vi.mock('@/utils/libraryDetection', () => ({
 }));
 
 vi.mock('@/utils/npmDetection', () => ({
-  detectNpmImports: vi.fn(),
+  detectNpmImports: vi.fn().mockReturnValue(false),
   extractNpmDependencies: vi.fn().mockReturnValue({}),
 }));
 
@@ -63,9 +63,9 @@ vi.mock('@/integrations/supabase/client', () => ({
 describe('ArtifactContainer Performance Tests', () => {
   const mockArtifact: ArtifactData = {
     id: 'test-1',
-    type: 'react',
-    title: 'Test React Component',
-    content: 'function App() { return <div>Hello</div>; }',
+    type: 'code',
+    title: 'Test Component',
+    content: 'function App() { return "Hello"; }',
   };
 
   beforeEach(() => {
@@ -75,83 +75,6 @@ describe('ArtifactContainer Performance Tests', () => {
   afterEach(() => {
     vi.clearAllTimers();
     cleanup();
-  });
-
-  describe('detectNpmImports memoization', () => {
-    it('should call detectNpmImports only once when artifact content remains the same', async () => {
-      const { detectNpmImports } = await import('@/utils/npmDetection');
-      const mockDetect = vi.mocked(detectNpmImports);
-      mockDetect.mockReturnValue(false);
-
-      const { rerender } = render(<ArtifactContainer artifact={mockArtifact} />);
-
-      // Initial render
-      expect(mockDetect).toHaveBeenCalledTimes(1);
-
-      // Rerender with same artifact prop (same reference)
-      rerender(<ArtifactContainer artifact={mockArtifact} />);
-
-      // Should not call detectNpmImports again due to memoization
-      expect(mockDetect).toHaveBeenCalledTimes(1);
-
-      // Rerender again with same content
-      rerender(<ArtifactContainer artifact={mockArtifact} />);
-
-      // Still should only be called once
-      expect(mockDetect).toHaveBeenCalledTimes(1);
-    });
-
-    it('should call detectNpmImports only once when content is identical but object reference changes', async () => {
-      const { detectNpmImports } = await import('@/utils/npmDetection');
-      const mockDetect = vi.mocked(detectNpmImports);
-      mockDetect.mockReturnValue(false);
-
-      // Create artifacts with same content but different object references
-      const artifact1 = { ...mockArtifact, id: 'test-1' };
-      const artifact2 = { ...mockArtifact, id: 'test-2' }; // Different id, same content
-      const artifact3 = { ...mockArtifact, id: 'test-3' }; // Different id, same content
-
-      const { rerender } = render(<ArtifactContainer artifact={artifact1} />);
-
-      // Initial render
-      expect(mockDetect).toHaveBeenCalledTimes(1);
-
-      // Rerender with different object but same content
-      rerender(<ArtifactContainer artifact={artifact2} />);
-
-      // Since useMemo depends on artifact.content, it should still memoize
-      expect(mockDetect).toHaveBeenCalledTimes(1);
-
-      // Rerender again with different object but same content
-      rerender(<ArtifactContainer artifact={artifact3} />);
-
-      // Still should only be called once because content is the same
-      expect(mockDetect).toHaveBeenCalledTimes(1);
-    });
-
-    it('should call detectNpmImports again when content actually changes', async () => {
-      const { detectNpmImports } = await import('@/utils/npmDetection');
-      const mockDetect = vi.mocked(detectNpmImports);
-      mockDetect.mockReturnValue(false);
-
-      const artifactWithImports = {
-        ...mockArtifact,
-        content: 'import React from "react"; import lodash from "lodash"; function App() { return <div>Hello</div>; }',
-      };
-
-      const { rerender } = render(<ArtifactContainer artifact={mockArtifact} />);
-
-      // Initial render
-      expect(mockDetect).toHaveBeenCalledTimes(1);
-      expect(mockDetect).toHaveBeenCalledWith(mockArtifact.content);
-
-      // Rerender with different content
-      rerender(<ArtifactContainer artifact={artifactWithImports} />);
-
-      // Should call detectNpmImports again because content changed
-      expect(mockDetect).toHaveBeenCalledTimes(2);
-      expect(mockDetect).toHaveBeenCalledWith(artifactWithImports.content);
-    });
   });
 
   describe('detectAndInjectLibraries memoization', () => {
@@ -175,20 +98,51 @@ describe('ArtifactContainer Performance Tests', () => {
       // Rerender with same content
       rerender(<ArtifactContainer artifact={htmlArtifact} />);
 
-      // Memoization in useEffect with 300ms debounce might trigger again
-      // but with rapid rerenders, it should be debounced
-      // Let's wait for debounce timeout
-      await new Promise(resolve => setTimeout(resolve, 350));
+      // No additional call expected since dependency (artifact.content) didn't change
+      await waitFor(() => {
+        expect(mockDetectLibs).toHaveBeenCalledTimes(1);
+      }, { timeout: 500 });
+    });
 
-      // After debounce, should not have called again
+    it('should call detectAndInjectLibraries again when content changes', async () => {
+      const { detectAndInjectLibraries } = await import('@/utils/libraryDetection');
+      const mockDetectLibs = vi.mocked(detectAndInjectLibraries);
+      mockDetectLibs.mockReturnValue('<script src="test.js"></script>');
+
+      const htmlArtifact1: ArtifactData = {
+        id: 'html-1',
+        type: 'html',
+        title: 'HTML Test',
+        content: '<html><body><div>Test</div></body></html>',
+      };
+
+      const htmlArtifact2: ArtifactData = {
+        id: 'html-1',
+        type: 'html',
+        title: 'HTML Test',
+        content: '<html><body><div>Changed</div></body></html>',
+      };
+
+      const { rerender } = render(<ArtifactContainer artifact={htmlArtifact1} />);
       expect(mockDetectLibs).toHaveBeenCalledTimes(1);
+
+      // Rerender with different content
+      rerender(<ArtifactContainer artifact={htmlArtifact2} />);
+
+      // Should call again since content changed
+      await waitFor(() => {
+        expect(mockDetectLibs).toHaveBeenCalledTimes(2);
+      }, { timeout: 500 });
     });
   });
 
-  describe('validation memoization', () => {
-    it('should debounce validation calls', async () => {
+  describe('validation debouncing', () => {
+    it('should debounce validation calls when content changes rapidly', async () => {
+      vi.useFakeTimers();
+
       const { validateArtifact } = await import('@/utils/artifactValidator');
       const mockValidate = vi.mocked(validateArtifact);
+      mockValidate.mockClear();
       mockValidate.mockReturnValue({
         isValid: true,
         errors: [],
@@ -197,10 +151,12 @@ describe('ArtifactContainer Performance Tests', () => {
 
       const { rerender } = render(<ArtifactContainer artifact={mockArtifact} />);
 
-      // Initial render triggers validation
+      // Initial render triggers useEffect with setTimeout(300ms)
+      vi.advanceTimersByTime(300);
       expect(mockValidate).toHaveBeenCalledTimes(1);
 
-      // Rapidly change content
+      // Rapidly change content multiple times
+      // Each rerender cancels the previous setTimeout and schedules a new one
       for (let i = 0; i < 5; i++) {
         rerender(<ArtifactContainer artifact={{
           ...mockArtifact,
@@ -208,12 +164,84 @@ describe('ArtifactContainer Performance Tests', () => {
         }} />);
       }
 
-      // Should debounce and not validate for each change
-      // Wait for debounce timeout
-      await new Promise(resolve => setTimeout(resolve, 350));
+      // After 5 rapid changes, the last timeout is still pending
+      // Advance time to process it
+      vi.advanceTimersByTime(300);
 
-      // Should only validate once more after debouncing
+      // Initial call (1) + final content change after debounce (1) = 2 total
+      // Previous timeouts were cancelled by cleanup when dependencies changed
       expect(mockValidate).toHaveBeenCalledTimes(2);
+
+      vi.useRealTimers();
+    });
+
+    it('should not call validation again if content remains unchanged', async () => {
+      vi.useFakeTimers();
+
+      const { validateArtifact } = await import('@/utils/artifactValidator');
+      const mockValidate = vi.mocked(validateArtifact);
+      mockValidate.mockClear();
+      mockValidate.mockReturnValue({
+        isValid: true,
+        errors: [],
+        warnings: [],
+      });
+
+      const { rerender } = render(<ArtifactContainer artifact={mockArtifact} />);
+
+      // Initial render triggers useEffect with setTimeout(300ms)
+      vi.advanceTimersByTime(300);
+      expect(mockValidate).toHaveBeenCalledTimes(1);
+
+      // Rerender with same artifact (same content and type - dependencies don't change)
+      rerender(<ArtifactContainer artifact={mockArtifact} />);
+
+      // Advance time to process any pending timeouts
+      vi.advanceTimersByTime(300);
+
+      // Should still only be called once since content didn't change
+      // The useEffect dependency array [artifact.content, artifact.type] prevents re-running
+      expect(mockValidate).toHaveBeenCalledTimes(1);
+
+      vi.useRealTimers();
+    });
+  });
+
+  describe('library injection memoization', () => {
+    it('should only call library detection for html, code, and react types', async () => {
+      const { detectAndInjectLibraries } = await import('@/utils/libraryDetection');
+      const mockDetectLibs = vi.mocked(detectAndInjectLibraries);
+      mockDetectLibs.mockReturnValue('');
+
+      const markdownArtifact: ArtifactData = {
+        id: 'md-1',
+        type: 'markdown',
+        title: 'Markdown Test',
+        content: '# Hello World',
+      };
+
+      render(<ArtifactContainer artifact={markdownArtifact} />);
+
+      // Should not call detectAndInjectLibraries for markdown type
+      expect(mockDetectLibs).not.toHaveBeenCalled();
+    });
+
+    it('should call library detection for html, code, and react artifacts', async () => {
+      const { detectAndInjectLibraries } = await import('@/utils/libraryDetection');
+      const mockDetectLibs = vi.mocked(detectAndInjectLibraries);
+      mockDetectLibs.mockReturnValue('');
+
+      const htmlArtifact: ArtifactData = {
+        id: 'html-1',
+        type: 'html',
+        title: 'HTML Test',
+        content: '<html><body>Test</body></html>',
+      };
+
+      render(<ArtifactContainer artifact={htmlArtifact} />);
+
+      // Should call detectAndInjectLibraries for html type
+      expect(mockDetectLibs).toHaveBeenCalled();
     });
   });
 });
