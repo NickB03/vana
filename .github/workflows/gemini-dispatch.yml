@@ -7,13 +7,19 @@ on:
   pull_request_review:
     types:
       - 'submitted'
-  pull_request:
-    types:
-      - 'opened'
-  issues:
-    types:
-      - 'opened'
-      - 'reopened'
+  # DISABLED: Automatic PR review on open - exceeding Gemini API quota
+  # To re-enable, uncomment the pull_request trigger below
+  # Manual review still works via: @gemini-cli /review
+  # pull_request:
+  #   types:
+  #     - 'opened'
+  # DISABLED: Automatic issue triage - exceeding Gemini API quota
+  # To re-enable, uncomment the issues trigger below
+  # Manual triage still works via: @gemini-cli /triage
+  # issues:
+  #   types:
+  #     - 'opened'
+  #     - 'reopened'
   issue_comment:
     types:
       - 'created'

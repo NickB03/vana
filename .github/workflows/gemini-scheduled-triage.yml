@@ -1,21 +1,23 @@
 name: '📋 Gemini Scheduled Issue Triage'
 
 on:
-  schedule:
-    - cron: '0 * * * *' # Runs every hour
-  pull_request:
-    branches:
-      - 'main'
-      - 'release/**/*'
-    paths:
-      - '.github/workflows/gemini-scheduled-triage.yml'
-  push:
-    branches:
-      - 'main'
-      - 'release/**/*'
-    paths:
-      - '.github/workflows/gemini-scheduled-triage.yml'
-  workflow_dispatch:
+  # DISABLED: Scheduled triage - exceeding Gemini API quota
+  # To re-enable, uncomment the schedule trigger below
+  # schedule:
+  #   - cron: '0 * * * *' # Runs every hour
+  # pull_request:
+  #   branches:
+  #     - 'main'
+  #     - 'release/**/*'
+  #   paths:
+  #     - '.github/workflows/gemini-scheduled-triage.yml'
+  # push:
+  #   branches:
+  #     - 'main'
+  #     - 'release/**/*'
+  #   paths:
+  #     - '.github/workflows/gemini-scheduled-triage.yml'
+  workflow_dispatch: # Keep manual trigger available
 
 concurrency:
   group: '${{ github.workflow }}'
