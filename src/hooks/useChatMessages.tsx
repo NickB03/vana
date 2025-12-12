@@ -195,6 +195,19 @@ export function useChatMessages(
     }
   }, [sessionId, fetchMessages]);
 
+  // Persist guest messages to localStorage after state updates (prevent setState-during-render warning)
+  // This effect runs AFTER render phase, not during it
+  useEffect(() => {
+    if (isGuest && guestSession && messages.length > 0) {
+      try {
+        guestSession.saveMessages(messages);
+        console.log(`[useChatMessages] Persisted ${messages.length} guest messages after render`);
+      } catch (error) {
+        console.error("Failed to persist guest messages after render:", error);
+      }
+    }
+  }, [messages, isGuest, guestSession]);
+
   // Listen for artifact render completion messages
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -271,22 +284,8 @@ export function useChatMessages(
         created_at: new Date().toISOString(),
       };
 
-      // Update local state and persist to localStorage
-      setMessages((prev) => {
-        const updatedMessages = [...prev, guestMessage];
-
-        // Persist to localStorage if guest session functions are available
-        if (guestSession) {
-          try {
-            guestSession.saveMessages(updatedMessages);
-            console.log(`[saveMessage] Saved ${updatedMessages.length} messages to guest session`);
-          } catch (error) {
-            console.error("Failed to save guest messages:", error);
-          }
-        }
-
-        return updatedMessages;
-      });
+      // Update local state - don't persist during render phase
+      setMessages((prev) => [...prev, guestMessage]);
 
       return guestMessage;
     }
@@ -1395,22 +1394,8 @@ export function useChatMessages(
 
   const deleteMessage = useCallback(async (messageId: string) => {
     if (!sessionId) {
-      // For guest users, delete from local state and persist
-      setMessages((prev) => {
-        const updatedMessages = prev.filter((msg) => msg.id !== messageId);
-
-        // Persist to localStorage if guest session functions are available
-        if (guestSession) {
-          try {
-            guestSession.saveMessages(updatedMessages);
-            console.log(`[deleteMessage] Saved ${updatedMessages.length} messages after deletion`);
-          } catch (error) {
-            console.error("Failed to save guest messages after deletion:", error);
-          }
-        }
-
-        return updatedMessages;
-      });
+      // For guest users, delete from local state only (persist via useEffect)
+      setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
       return;
     }
 
@@ -1432,24 +1417,12 @@ export function useChatMessages(
 
   const updateMessage = useCallback(async (messageId: string, content: string) => {
     if (!sessionId) {
-      // For guest users, update local state and persist
-      setMessages((prev) => {
-        const updatedMessages = prev.map((msg) =>
+      // For guest users, update local state only (persist via useEffect)
+      setMessages((prev) =>
+        prev.map((msg) =>
           msg.id === messageId ? { ...msg, content } : msg
-        );
-
-        // Persist to localStorage if guest session functions are available
-        if (guestSession) {
-          try {
-            guestSession.saveMessages(updatedMessages);
-            console.log(`[updateMessage] Saved ${updatedMessages.length} messages after update`);
-          } catch (error) {
-            console.error("Failed to save guest messages after update:", error);
-          }
-        }
-
-        return updatedMessages;
-      });
+        )
+      );
       return;
     }
 

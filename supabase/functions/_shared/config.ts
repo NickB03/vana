@@ -195,8 +195,8 @@ export const RATE_LIMITS = {
 export const VALIDATION_LIMITS = {
   /** Maximum messages per conversation to prevent memory issues */
   MAX_MESSAGES_PER_CONVERSATION: 100,
-  /** Maximum content length per message (characters) */
-  MAX_MESSAGE_CONTENT_LENGTH: 50000,
+  /** Maximum content length per message (characters) - increased from 50K to handle long code + conversation history */
+  MAX_MESSAGE_CONTENT_LENGTH: 100000,
   /** Maximum prompt length for image generation */
   MAX_PROMPT_LENGTH: 2000,
   /** Maximum image title length */

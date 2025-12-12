@@ -96,7 +96,7 @@ export async function validateInput(
         };
       }
 
-      if (typeof msg.content !== "string" || msg.content.length > 50000) {
+      if (typeof msg.content !== "string" || msg.content.length > 100000) {
         console.error(
           `[${requestId}] Message content too long:`,
           typeof msg.content,
@@ -106,6 +106,7 @@ export async function validateInput(
           ok: false,
           error: {
             error: "Message content too long",
+            details: `Maximum 100,000 characters allowed, received ${msg.content?.length || 0}`,
             requestId,
           },
         };
