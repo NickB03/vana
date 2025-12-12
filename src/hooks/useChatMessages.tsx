@@ -394,18 +394,22 @@ export function useChatMessages(
       // (50s) waiting for /generate-artifact (100s+ with Kimi K2).
       // ============================================================================
 
-      // Client-side artifact detection patterns
-      const artifactPatterns = [
-        /^Build a React artifact/i,           // Carousel prompts
-        /^Create a (.*) (app|game|component|dashboard|tracker|calculator)/i,
-        /^Make a (.*) (app|game|component|dashboard|tracker|calculator)/i,
-        /^Build a (.*) (app|game|component|dashboard|tracker|calculator)/i,
-        /^Generate a React/i,
-        /\b(todo|counter|timer|quiz|trivia|snake|frogger|tic-tac-toe|memory)\b.*\b(app|game|component)\b/i,
-      ];
+      // Client-side artifact detection DISABLED
+      // Artifacts are now ONLY generated when user explicitly clicks the artifact button.
+      // The pattern-based detection was causing false positives (e.g., weather queries
+      // being routed to artifact generation).
+      //
+      // To re-enable pattern-based detection in future, uncomment:
+      // const artifactPatterns = [
+      //   /^Build a React artifact/i,           // Carousel prompts
+      //   /^Create a (.*) (app|game|component|dashboard|tracker|calculator)/i,
+      //   /^Make a (.*) (app|game|component|dashboard|tracker|calculator)/i,
+      //   /^Build a (.*) (app|game|component|dashboard|tracker|calculator)/i,
+      //   /^Generate a React/i,
+      //   /\b(todo|counter|timer|quiz|trivia|snake|frogger|tic-tac-toe|memory)\b.*\b(app|game|component)\b/i,
+      // ];
 
-      const isArtifactRequest = forceArtifactMode ||
-        artifactPatterns.some(pattern => pattern.test(userMessage));
+      const isArtifactRequest = forceArtifactMode;
 
       if (isArtifactRequest) {
         console.log("🎨 [useChatMessages] Direct artifact routing - using SSE streaming from /generate-artifact");
