@@ -4,6 +4,7 @@ import { PromptInputControls } from "@/components/prompt-kit/prompt-input-contro
 import GalleryHoverCarousel from "@/components/ui/gallery-hover-carousel";
 import type { SuggestionItem } from "@/data/suggestions";
 import { CHAT_SPACING } from "@/utils/spacingConstants";
+import { TOUR_STEP_IDS } from "@/components/tour";
 
 /**
  * ChatLayout - Unified layout component for chat start screen
@@ -103,6 +104,7 @@ export const ChatLayout = React.memo(({
         {/* Prompt Input - max-w-5xl for consistency */}
         <div className="w-full max-w-5xl mx-auto mb-6 px-4">
           <PromptInput
+            id={TOUR_STEP_IDS.CHAT_INPUT}
             value={input}
             onValueChange={onInputChange}
             isLoading={isLoading}
@@ -135,7 +137,7 @@ export const ChatLayout = React.memo(({
         </div>
 
         {/* Suggestion Carousel - max-w-5xl to match prompt */}
-        <div className="w-full max-w-5xl mx-auto pb-4">
+        <div id={TOUR_STEP_IDS.SUGGESTIONS} className="w-full max-w-5xl mx-auto pb-4">
           {loadingSuggestions ? (
             <div
               className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-4"

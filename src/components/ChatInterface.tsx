@@ -42,6 +42,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { SystemMessage } from "@/components/ui/system-message";
 import { RateLimitPopup } from "@/components/RateLimitPopup";
 import { useNavigate } from "react-router-dom";
+import { TOUR_STEP_IDS } from "@/components/tour";
 
 interface ChatInterfaceProps {
   sessionId?: string;
@@ -767,6 +768,7 @@ export function ChatInterface({
           {/* Prompt Input - embedded within chat card */}
           <div className={combineSpacing("shrink-0 bg-transparent safe-mobile-input px-4 pb-4", SAFE_AREA_SPACING.bottom)}>
             <PromptInput
+              id={TOUR_STEP_IDS.CHAT_INPUT}
               value={input}
               onValueChange={setInput}
               isLoading={isLoading || isStreaming}

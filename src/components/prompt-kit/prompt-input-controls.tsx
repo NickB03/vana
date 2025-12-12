@@ -37,6 +37,7 @@ import { Plus, WandSparkles, ImagePlus, ArrowUp, Send, Square } from "lucide-rea
 import { cn } from "@/lib/utils";
 import { PromptInputAction } from "@/components/prompt-kit/prompt-input";
 import React from "react";
+import { TOUR_STEP_IDS } from "@/components/tour";
 
 export interface PromptInputControlsProps {
   // Image mode control
@@ -140,6 +141,7 @@ export function PromptInputControls({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
+                id={TOUR_STEP_IDS.IMAGE_MODE}
                 variant="ghost"
                 size="icon"
                 className={cn(
@@ -168,6 +170,7 @@ export function PromptInputControls({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
+                id={TOUR_STEP_IDS.ARTIFACT_MODE}
                 variant="ghost"
                 size="icon"
                 className={cn(

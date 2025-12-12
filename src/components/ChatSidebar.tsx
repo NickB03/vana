@@ -8,6 +8,7 @@ import { ChatSession } from "@/hooks/useChatSessions";
 import { ViggleLogo } from "@/components/ViggleLogo";
 import { SidebarItem } from "@/components/SidebarItem";
 import { UserProfileButton } from "@/components/UserProfileButton";
+import { TOUR_STEP_IDS } from "@/components/tour";
 interface ChatSidebarProps {
   sessions: ChatSession[];
   currentSessionId?: string;
@@ -60,7 +61,7 @@ export function ChatSidebar({
 
   const groupedSessions = groupChatsByPeriod(sessions);
 
-  return <Sidebar collapsible="icon">
+  return <Sidebar id={TOUR_STEP_IDS.SIDEBAR} collapsible="icon">
       <SidebarHeader className={cn(
         "group flex flex-row items-center py-2",
         collapsed ? "justify-center px-0" : "justify-between px-3 gap-2"

@@ -45,6 +45,7 @@ function usePromptInput() {
 }
 
 type PromptInputProps = {
+  id?: string
   isLoading?: boolean
   value?: string
   onValueChange?: (value: string) => void
@@ -55,6 +56,7 @@ type PromptInputProps = {
 }
 
 function PromptInput({
+  id,
   className,
   isLoading = false,
   maxHeight = 240,
@@ -84,6 +86,7 @@ function PromptInput({
         }}
       >
         <div
+          id={id}
           className={cn(
             "border-input bg-background cursor-text rounded-3xl border p-2 shadow-xs transition-all duration-200",
             className

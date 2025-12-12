@@ -22,6 +22,8 @@ import { ensureValidSession } from "@/utils/authHelpers";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import type { SuggestionItem } from "@/data/suggestions";
+import { TourProvider, TourAlertDialog } from "@/components/tour";
+import { OnboardingTour } from "@/components/OnboardingTour";
 
 
 /**
@@ -140,6 +142,7 @@ const Home = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const chatSendHandlerRef = useRef<((message?: string) => Promise<void>) | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showTourDialog, setShowTourDialog] = useState(false);
 
   // Guest session
   const guestSession = useGuestSession(isAuthenticated);
@@ -233,6 +236,25 @@ const Home = () => {
       setShowLimitDialog(true);
     }
   }, [guestSession.hasReachedLimit, isAuthenticated]);
+
+  // Check if user should see the onboarding tour
+  useEffect(() => {
+    // Only show tour prompt when app phase is stable
+    if (phase === "app" && !showChat) {
+      const tourKey = "vana-tour-vana-app-onboarding";
+      try {
+        const savedState = localStorage.getItem(tourKey);
+        const hasCompletedTour = savedState ? JSON.parse(savedState).completed : false;
+        if (!hasCompletedTour) {
+          // Delay showing dialog for smoother UX after transition
+          const timer = setTimeout(() => setShowTourDialog(true), 1500);
+          return () => clearTimeout(timer);
+        }
+      } catch {
+        // If localStorage fails, don't show tour
+      }
+    }
+  }, [phase, showChat]);
 
   // Auto-collapse sidebar when canvas opens
   useEffect(() => {
@@ -510,86 +532,98 @@ const Home = () => {
 
       {/* App interface - fixed overlay during transition, normal flow when complete */}
       {phase !== "landing" && (
-        <motion.div
-          className={phase === "app" ? "relative min-h-screen" : "fixed inset-0 z-50"}
-          style={{
-            pointerEvents: phase !== "landing" ? "auto" : "none",
+        <TourProvider
+          tourId="vana-app-onboarding"
+          onComplete={() => {
+            console.log("[Tour] User completed onboarding tour");
           }}
-          initial={transitions.app.fadeIn.initial}
-          animate={
-            isTransitioning
-              ? transitions.app.fadeIn.transitioning(progress)
-              : phase === "app"
-                ? transitions.app.fadeIn.complete
-                : transitions.app.fadeIn.initial
-          }
-          transition={{ duration: 0 }}
+          onSkip={(completedSteps) => {
+            console.log(`[Tour] User skipped after ${completedSteps} steps`);
+          }}
         >
-          <SidebarProvider
-            defaultOpen={true}
-            open={sidebarOpen}
-            onOpenChange={setSidebarOpen}
+          <OnboardingTour />
+          <TourAlertDialog isOpen={showTourDialog} setIsOpen={setShowTourDialog} />
+          <motion.div
+            className={phase === "app" ? "relative min-h-screen" : "fixed inset-0 z-50"}
+            style={{
+              pointerEvents: phase !== "landing" ? "auto" : "none",
+            }}
+            initial={transitions.app.fadeIn.initial}
+            animate={
+              isTransitioning
+                ? transitions.app.fadeIn.transitioning(progress)
+                : phase === "app"
+                  ? transitions.app.fadeIn.complete
+                  : transitions.app.fadeIn.initial
+            }
+            transition={{ duration: 0 }}
           >
-            <ChatSidebar
-              sessions={sessions}
-              currentSessionId={currentSessionId}
-              onSessionSelect={handleSessionSelect}
-              onNewChat={handleNewChat}
-              onDeleteSession={deleteSession}
-              isLoading={sessionsLoading}
-            />
+            <SidebarProvider
+              defaultOpen={true}
+              open={sidebarOpen}
+              onOpenChange={setSidebarOpen}
+            >
+              <ChatSidebar
+                sessions={sessions}
+                currentSessionId={currentSessionId}
+                onSessionSelect={handleSessionSelect}
+                onNewChat={handleNewChat}
+                onDeleteSession={deleteSession}
+                isLoading={sessionsLoading}
+              />
 
-            <SidebarInset className="relative bg-transparent">
-              <main className="flex h-[100dvh] flex-col overflow-hidden">
+              <SidebarInset className="relative bg-transparent">
+                <main className="flex h-[100dvh] flex-col overflow-hidden">
 
-                {/* Main Content */}
-                <div className="flex-1 overflow-hidden flex flex-col">
-                  {!showChat ? (
-                    <ChatLayout
-                      input={input}
-                      onInputChange={setInput}
-                      onSubmit={handleSubmit}
-                      isLoading={isLoading}
-                      suggestions={suggestions}
-                      loadingSuggestions={loadingSuggestions}
-                      loadingItemId={loadingSuggestionId}
-                      onSuggestionClick={handleSuggestionClick}
-                      imageMode={imageMode}
-                      onImageModeChange={setImageMode}
-                      artifactMode={artifactMode}
-                      onArtifactModeChange={setArtifactMode}
-                      sendIcon="send"
-                    />
-                  ) : (
-                    <ChatInterface
-                      sessionId={currentSessionId ?? guestSession.sessionId ?? undefined}
-                      initialPrompt={!isAuthenticated ? guestInitialPrompt : pendingAuthPrompt}
-                      initialImageMode={imageMode}
-                      initialArtifactMode={artifactMode}
-                      isCanvasOpen={isCanvasOpen}
-                      onCanvasToggle={handleCanvasToggle}
-                      onArtifactChange={handleArtifactChange}
-                      input={input}
-                      onInputChange={setInput}
-                      onSendMessage={handler => {
-                        chatSendHandlerRef.current = handler;
-                      }}
-                      onInitialPromptSent={() => {
-                        // Clear pending prompts only after they have been sent
-                        setGuestInitialPrompt(undefined);
-                        setPendingAuthPrompt(undefined);
-                      }}
-                      isGuest={!isAuthenticated}
-                      guestMessageCount={guestSession.messageCount}
-                      guestMaxMessages={guestSession.maxMessages}
-                      guestSession={guestSessionMemo}
-                    />
-                  )}
-                </div>
-              </main>
-            </SidebarInset>
-          </SidebarProvider>
-        </motion.div>
+                  {/* Main Content */}
+                  <div className="flex-1 overflow-hidden flex flex-col">
+                    {!showChat ? (
+                      <ChatLayout
+                        input={input}
+                        onInputChange={setInput}
+                        onSubmit={handleSubmit}
+                        isLoading={isLoading}
+                        suggestions={suggestions}
+                        loadingSuggestions={loadingSuggestions}
+                        loadingItemId={loadingSuggestionId}
+                        onSuggestionClick={handleSuggestionClick}
+                        imageMode={imageMode}
+                        onImageModeChange={setImageMode}
+                        artifactMode={artifactMode}
+                        onArtifactModeChange={setArtifactMode}
+                        sendIcon="send"
+                      />
+                    ) : (
+                      <ChatInterface
+                        sessionId={currentSessionId ?? guestSession.sessionId ?? undefined}
+                        initialPrompt={!isAuthenticated ? guestInitialPrompt : pendingAuthPrompt}
+                        initialImageMode={imageMode}
+                        initialArtifactMode={artifactMode}
+                        isCanvasOpen={isCanvasOpen}
+                        onCanvasToggle={handleCanvasToggle}
+                        onArtifactChange={handleArtifactChange}
+                        input={input}
+                        onInputChange={setInput}
+                        onSendMessage={handler => {
+                          chatSendHandlerRef.current = handler;
+                        }}
+                        onInitialPromptSent={() => {
+                          // Clear pending prompts only after they have been sent
+                          setGuestInitialPrompt(undefined);
+                          setPendingAuthPrompt(undefined);
+                        }}
+                        isGuest={!isAuthenticated}
+                        guestMessageCount={guestSession.messageCount}
+                        guestMaxMessages={guestSession.maxMessages}
+                        guestSession={guestSessionMemo}
+                      />
+                    )}
+                  </div>
+                </main>
+              </SidebarInset>
+            </SidebarProvider>
+          </motion.div>
+        </TourProvider>
       )}
 
       {/* Guest limit dialog */}

@@ -91,7 +91,13 @@ function useReducedMotion(): boolean {
 
 function getElementPosition(id: string) {
   const element = document.getElementById(id);
-  if (!element) return null;
+  if (!element) {
+    console.warn(
+      `[Tour] Target element "${id}" not found in DOM. ` +
+      `Ensure the element has id="${id}" and is rendered before starting the tour.`
+    );
+    return null;
+  }
   const rect = element.getBoundingClientRect();
   return {
     top: rect.top + window.scrollY,
@@ -178,13 +184,15 @@ export function TourProvider({
     try {
       const savedState = localStorage.getItem(storageKey);
       if (savedState) {
-        const { completed } = JSON.parse(savedState);
-        if (completed) {
+        const parsed = JSON.parse(savedState);
+        if (typeof parsed.completed === 'boolean' && parsed.completed) {
           setIsCompleted(true);
         }
       }
-    } catch {
-      // Ignore localStorage errors
+    } catch (error) {
+      console.warn(
+        `[Tour] Failed to load tour state from localStorage: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }, [storageKey]);
 
@@ -198,8 +206,14 @@ export function TourProvider({
           lastStep: currentStep,
         })
       );
-    } catch {
-      // Ignore localStorage errors
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        console.warn('[Tour] localStorage quota exceeded. Tour completion state will not persist.');
+      } else {
+        console.warn(
+          `[Tour] Failed to save tour state: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
+      }
     }
   }, [isCompleted, currentStep, storageKey]);
 
@@ -260,11 +274,21 @@ export function TourProvider({
 
   const startTour = useCallback(() => {
     if (isTourCompleted) {
+      console.warn('[Tour] Attempted to start completed tour. Call setIsTourCompleted(false) first to restart.');
       return;
     }
+
+    if (steps.length === 0) {
+      console.warn(
+        '[Tour] Cannot start tour: No steps defined. ' +
+        'Call setSteps() with tour step configuration before starting.'
+      );
+      return;
+    }
+
     setDirection("next");
     setCurrentStep(0);
-  }, [isTourCompleted]);
+  }, [isTourCompleted, steps.length]);
 
   // Keyboard navigation
   useEffect(() => {
