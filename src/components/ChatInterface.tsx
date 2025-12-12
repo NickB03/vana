@@ -164,12 +164,16 @@ export function ChatInterface({
         setStreamingMessage("");
         setIsStreaming(false);
         setIsEditingArtifact(false);
-        setStreamProgress({
+        // CRITICAL FIX: Preserve reasoning data when streaming completes!
+        // Only update stage/message, keep reasoningSteps/streamingReasoningText/reasoningStatus
+        // This prevents the "No reasoning data available" bug where reasoning is lost after generation
+        setStreamProgress((prevProgress) => ({
+          ...prevProgress,
           stage: "complete",
           message: "",
-          artifactDetected: false,
-          percentage: 100
-        });
+          percentage: 100,
+          // Preserved automatically: reasoningSteps, streamingReasoningText, reasoningStatus, toolExecution
+        }));
         completeStream();
       },
       currentArtifact && isEditingArtifact ? currentArtifact : undefined,
