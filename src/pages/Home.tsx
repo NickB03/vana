@@ -312,9 +312,13 @@ const Home = () => {
       }
 
       setIsLoading(true);
-      const sessionId = await createSession(input);
+      const promptToSend = input; // Capture before clearing
+      const sessionId = await createSession(promptToSend);
       if (sessionId) {
         setCurrentSessionId(sessionId);
+        // Set pending prompt for ChatInterface to auto-send
+        setPendingAuthPrompt(promptToSend);
+        setInput(""); // Clear input to prevent double-send
         setShowChat(true);
         // imageMode will be passed to ChatInterface via initialImageMode prop
       }
