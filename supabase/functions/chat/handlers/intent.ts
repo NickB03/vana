@@ -48,11 +48,17 @@ export async function detectUserIntent(options: IntentOptions): Promise<IntentRe
     };
   }
 
-  // INTENT DETECTION RE-ENABLED with calibrated thresholds
-  // Phase 1: Regex-based detection with improved accuracy
-  console.log('🔍 Starting intent detection for:', lastUserMessage.substring(0, 100));
+  // INTENT DETECTION DISABLED - Artifacts only via explicit user control
+  // The embedding-based detection was too aggressive, routing informational queries
+  // (like weather forecasts) to artifact generation at medium confidence.
+  // Now artifacts are ONLY generated when user clicks the artifact button.
+  //
+  // To re-enable in future: uncomment the blocks below and tune thresholds
+  // - Raise similarity_threshold from 0.3 to 0.5+ in intent-detector-embeddings.ts
+  // - Only route on HIGH confidence (remove medium confidence routing)
+  console.log('🔍 Intent detection DISABLED - artifacts require explicit user control');
 
-  // Check for image generation request
+  // Check for image generation request (still enabled - images are different UX)
   const isImageRequest = await shouldGenerateImage(lastUserMessage);
   if (isImageRequest) {
     console.log('🎯 INTENT: Image generation detected (high confidence)');
@@ -63,18 +69,18 @@ export async function detectUserIntent(options: IntentOptions): Promise<IntentRe
     };
   }
 
-  // Check for artifact generation request
-  const isArtifactRequest = await shouldGenerateArtifact(lastUserMessage);
-  if (isArtifactRequest) {
-    const artifactType = await getArtifactType(lastUserMessage);
-    console.log(`🎯 INTENT: Artifact generation detected (type: ${artifactType})`);
-    return {
-      type: 'artifact',
-      artifactType,
-      shouldSearch: false, // Artifacts don't need web search
-      reasoning: `High confidence ${artifactType} artifact request detected`
-    };
-  }
+  // DISABLED: Automatic artifact detection
+  // const isArtifactRequest = await shouldGenerateArtifact(lastUserMessage);
+  // if (isArtifactRequest) {
+  //   const artifactType = await getArtifactType(lastUserMessage);
+  //   console.log(`🎯 INTENT: Artifact generation detected (type: ${artifactType})`);
+  //   return {
+  //     type: 'artifact',
+  //     artifactType,
+  //     shouldSearch: false, // Artifacts don't need web search
+  //     reasoning: `High confidence ${artifactType} artifact request detected`
+  //   };
+  // }
 
   // Determine if we should perform web search
   // Web search is skipped for artifact/image generation
