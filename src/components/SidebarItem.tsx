@@ -22,15 +22,15 @@ export function SidebarItem({ icon, label, onClick, isActive, className, tooltip
       isActive={isActive}
       tooltip={collapsed ? tooltip || label : undefined}
       className={cn(
-        "flex items-center gap-3 px-3 py-2 transition-all",
+        "flex items-center gap-3 px-3 py-2 transition-all duration-200",
         collapsed ? "justify-center" : "justify-start",
         className
       )}
     >
-      <div className="flex items-center justify-center w-5 h-5 shrink-0">
+      <div className="flex items-center justify-center w-5 h-5 shrink-0 transition-all duration-200">
         {icon}
       </div>
-      {!collapsed && <span className="truncate text-sm">{label}</span>}
+      {!collapsed && <span className="truncate text-sm transition-opacity duration-200">{label}</span>}
     </SidebarMenuButton>
   );
 }
