@@ -22,15 +22,16 @@ import { UI_SELECTORS, TIMEOUTS } from './test-data';
  * Use the `mockedPage` fixture from base-test.ts or call setupMockedPage()
  * in your test's beforeEach hook before any navigation.
  *
- * Uses ?skipLanding=true to bypass the landing page animation entirely.
+ * Uses ?skipLanding=true to bypass the landing page animation and
+ * ?skipTour=true to prevent the onboarding tour dialog from appearing.
  * This is the most reliable approach for E2E tests as it doesn't depend
  * on scroll-based transitions that can be flaky in headless Chrome.
  */
 export async function navigateToApp(page: Page): Promise<void> {
-	console.log('[E2E Nav] Starting navigateToApp with skipLanding=true');
+	console.log('[E2E Nav] Starting navigateToApp with skipLanding=true and skipTour=true');
 
-	// Navigate with skipLanding param to bypass landing animation
-	await page.goto('/?skipLanding=true', { waitUntil: 'domcontentloaded' });
+	// Navigate with skipLanding and skipTour params to bypass landing animation and tour dialog
+	await page.goto('/?skipLanding=true&skipTour=true', { waitUntil: 'domcontentloaded' });
 	console.log('[E2E Nav] Page navigation complete');
 
 	// Wait briefly for React to hydrate

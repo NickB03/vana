@@ -243,6 +243,14 @@ const Home = () => {
     if (phase === "app" && !showChat) {
       const tourKey = `${TOUR_STORAGE_KEYS.TOUR_STATE_PREFIX}vana-app-onboarding`;
       try {
+        // Check for ?skipTour=true query param (for E2E tests)
+        const skipTour = new URLSearchParams(window.location.search).get('skipTour') === 'true';
+        if (skipTour) {
+          // Mark tour as completed to prevent it from showing
+          localStorage.setItem(tourKey, JSON.stringify({ completed: true }));
+          return;
+        }
+
         // Check if admin has enabled force tour mode
         const forceTourEnabled = localStorage.getItem(TOUR_STORAGE_KEYS.FORCE_TOUR) === 'true';
 
