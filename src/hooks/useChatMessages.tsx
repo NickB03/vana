@@ -366,10 +366,22 @@ export function useChatMessages(
         }
       }
 
+      // Helper function to sanitize image artifacts before sending to backend
+      // Prevents 400 errors when base64 image data exceeds 100k char limit
+      const sanitizeImageArtifacts = (content: string): string => {
+        // Match <artifact ...type="image"...>BASE64_DATA</artifact>
+        // Handles attributes in any order (type before or after title)
+        // Replace base64 data URLs with a placeholder, keep regular URLs
+        return content.replace(
+          /<artifact\s+([^>]*?)type="image"([^>]*)>(data:image\/[^<]+)<\/artifact>/g,
+          '<artifact $1type="image"$2>[Image generated - see above]</artifact>'
+        );
+      };
+
       const requestBody = {
         messages: messages
           .concat([{ role: "user", content: userMessage } as ChatMessage])
-          .map((m) => ({ role: m.role, content: m.content })),
+          .map((m) => ({ role: m.role, content: sanitizeImageArtifacts(m.content) })),
         sessionId: isAuthenticated ? sessionId : undefined,
         currentArtifact,
         isGuest: !isAuthenticated,

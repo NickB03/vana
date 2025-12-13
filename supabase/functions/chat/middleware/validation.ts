@@ -97,10 +97,21 @@ export async function validateInput(
       }
 
       if (typeof msg.content !== "string" || msg.content.length > 100000) {
+        // Enhanced logging to help debug oversized messages
+        const contentPreview = msg.content?.substring(0, 200) || '';
+        const hasImageArtifact = contentPreview.includes('<artifact type="image"');
+        const hasBase64Data = contentPreview.includes('data:image/');
+
         console.error(
           `[${requestId}] Message content too long:`,
-          typeof msg.content,
-          msg.content?.length
+          {
+            type: typeof msg.content,
+            length: msg.content?.length,
+            role: msg.role,
+            hasImageArtifact,
+            hasBase64Data,
+            preview: contentPreview
+          }
         );
         return {
           ok: false,
