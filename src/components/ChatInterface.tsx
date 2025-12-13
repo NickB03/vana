@@ -644,9 +644,9 @@ export function ChatInterface({
                       </div>
                     </div>
                   ) : (
-                    <div className="group flex w-full flex-col gap-2">
+                    <div className="group flex w-full flex-col gap-2 items-end">
                       {/* User message with subtle pill background (Claude-style) */}
-                      <div className="flex items-start gap-2.5 rounded-2xl bg-muted/60 px-3 py-2">
+                      <div className="flex items-start gap-2.5 rounded-2xl bg-muted/60 px-3 py-2 max-w-[85%] w-fit">
                         {/* User avatar: 32px circle (Claude-style) */}
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold text-sm">
                           U
