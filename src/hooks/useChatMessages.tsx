@@ -987,6 +987,18 @@ export function useChatMessages(
 
         console.log("✅ [useChatMessages] Artifact generated via stream, length:", finalArtifactData.artifactCode.length);
 
+        // CRITICAL FIX: Send final progress update with reasoning data BEFORE calling onDone()
+        // This ensures the frontend's streamProgress state has the complete reasoning data
+        // before the loading state is cleared. Without this, reasoning disappears from the UI.
+        onDelta("", {
+          stage: "complete",
+          message: "",
+          artifactDetected: true,
+          percentage: 100,
+          reasoningSteps: finalArtifactData.reasoningSteps || undefined,
+          streamingReasoningText: finalArtifactData.reasoning || undefined,
+        });
+
         // CRITICAL: Clear streaming state BEFORE saving to prevent duplicate keys
         setIsLoading(false);
         onDone();
