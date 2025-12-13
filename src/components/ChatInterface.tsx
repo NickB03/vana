@@ -206,6 +206,8 @@ export function ChatInterface({
     setLastMessageElapsedTime("");
     onArtifactChange?.(false);
     setMessageSentTracker(0); // Reset tracker
+    setImageMode(false);
+    setArtifactMode(false);
     // Note: initializedSessionRef is managed separately in the initialPrompt effect
   }, [sessionId, onArtifactChange]);
 

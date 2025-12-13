@@ -152,6 +152,9 @@ export function PromptInputControls({
                 )}
                 onClick={() => {
                   console.log("ImagePlus clicked, current imageMode:", imageMode);
+                  if (!imageMode) {
+                    onArtifactModeChange?.(false);
+                  }
                   onImageModeChange(!imageMode);
                   console.log("ImagePlus toggled to:", !imageMode);
                 }}
@@ -184,6 +187,9 @@ export function PromptInputControls({
                 onClick={() => {
                   if (onArtifactModeChange) {
                     console.log("WandSparkles clicked, current artifactMode:", artifactMode);
+                    if (!artifactMode) {
+                      onImageModeChange?.(false);
+                    }
                     onArtifactModeChange(!artifactMode);
                     console.log("WandSparkles toggled to:", !artifactMode);
                   } else if (onCreateClick) {

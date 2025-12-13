@@ -300,6 +300,8 @@ const Home = () => {
     setIsCanvasOpen(false);
     setHasArtifact(false);
     setAutoOpenCanvas(false);
+    setImageMode(false);
+    setArtifactMode(false);
   }, []);
 
   /**

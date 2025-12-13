@@ -118,6 +118,8 @@ const IndexContent = () => {
     setPendingInitialPrompt(undefined);
     setIsCanvasOpen(false);
     setHasArtifact(false);
+    setImageMode(false);
+    setArtifactMode(false);
     // Navigate to home page
     navigate("/");
   };
