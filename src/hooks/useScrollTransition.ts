@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { TOUR_STORAGE_KEYS } from "@/components/tour";
 
 export type TransitionPhase = "landing" | "transitioning" | "app";
 
@@ -30,14 +31,17 @@ const easeOutCubic = (t: number): number => {
  * - Timed animation: 800ms smooth animation decoupled from scroll position
  * - Easing: Cubic ease-out for natural motion feel
  * - One-way: Once transitioned, stays in app phase
+ * - Admin toggle: Can skip landing via localStorage setting
  *
  * @param enabled - Whether scroll detection is active
  * @returns Transition state and progress
  */
 export const useScrollTransition = (enabled: boolean = true): ScrollTransitionReturn => {
-  // Check for ?skipLanding=true query param (for E2E tests)
-  const shouldSkipLanding = typeof window !== 'undefined' &&
-    new URLSearchParams(window.location.search).get('skipLanding') === 'true';
+  // Check for ?skipLanding=true query param (for E2E tests) or admin landing page toggle
+  const shouldSkipLanding = typeof window !== 'undefined' && (
+    new URLSearchParams(window.location.search).get('skipLanding') === 'true' ||
+    localStorage.getItem(TOUR_STORAGE_KEYS.LANDING_PAGE_ENABLED) === 'false'
+  );
 
   const [state, setState] = useState({
     phase: (shouldSkipLanding ? "app" : "landing") as TransitionPhase,

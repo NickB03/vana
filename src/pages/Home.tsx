@@ -22,7 +22,7 @@ import { ensureValidSession } from "@/utils/authHelpers";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import type { SuggestionItem } from "@/data/suggestions";
-import { TourProvider, TourAlertDialog } from "@/components/tour";
+import { TourProvider, TourAlertDialog, TOUR_STORAGE_KEYS } from "@/components/tour";
 import { OnboardingTour } from "@/components/OnboardingTour";
 
 
@@ -241,17 +241,36 @@ const Home = () => {
   useEffect(() => {
     // Only show tour prompt when app phase is stable
     if (phase === "app" && !showChat) {
-      const tourKey = "vana-tour-vana-app-onboarding";
+      const tourKey = `${TOUR_STORAGE_KEYS.TOUR_STATE_PREFIX}vana-app-onboarding`;
       try {
+        // Check if admin has enabled force tour mode
+        const forceTourEnabled = localStorage.getItem(TOUR_STORAGE_KEYS.FORCE_TOUR) === 'true';
+
+        if (forceTourEnabled) {
+          // Clear tour completion state to force it to show
+          localStorage.removeItem(tourKey);
+          // Show the tour dialog
+          const timer = setTimeout(() => setShowTourDialog(true), 500);
+          return () => clearTimeout(timer);
+        }
+
+        // Normal behavior: only show tour for new users
         const savedState = localStorage.getItem(tourKey);
-        const hasCompletedTour = savedState ? JSON.parse(savedState).completed : false;
+        let hasCompletedTour = false;
+        if (savedState) {
+          try {
+            hasCompletedTour = JSON.parse(savedState).completed ?? false;
+          } catch {
+            // Malformed JSON - treat as incomplete tour
+          }
+        }
         if (!hasCompletedTour) {
           // Delay showing dialog for smoother UX after transition
-          const timer = setTimeout(() => setShowTourDialog(true), 1500);
+          const timer = setTimeout(() => setShowTourDialog(true), 500);
           return () => clearTimeout(timer);
         }
       } catch {
-        // If localStorage fails, don't show tour
+        // If localStorage access fails entirely, don't show tour
       }
     }
   }, [phase, showChat]);

@@ -137,7 +137,7 @@ export const ChatLayout = React.memo(({
         </div>
 
         {/* Suggestion Carousel - max-w-5xl to match prompt */}
-        <div id={TOUR_STEP_IDS.SUGGESTIONS} className="w-full max-w-5xl mx-auto pb-4">
+        <div id={TOUR_STEP_IDS.SUGGESTIONS} className="w-full max-w-5xl mx-auto py-2">
           {loadingSuggestions ? (
             <div
               className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-4"

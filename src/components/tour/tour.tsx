@@ -402,7 +402,7 @@ export function TourProvider({
             <motion.div
               {...overlayAnimation}
               transition={{ duration: reducedMotion ? 0.1 : 0.3 }}
-              className="fixed inset-0 z-50 overflow-hidden bg-black/50"
+              className="fixed inset-0 z-50 overflow-hidden bg-black/70"
               style={{
                 clipPath: `polygon(
                   0% 0%,
@@ -422,22 +422,50 @@ export function TourProvider({
             />
 
             {/* Spotlight ring around target element */}
-            <motion.div
-              {...spotlightAnimation}
-              transition={{ duration: reducedMotion ? 0.1 : 0.3 }}
-              style={{
-                position: "fixed",
-                top: elementPosition.top,
-                left: elementPosition.left,
-                width: steps[currentStep]?.width || elementPosition.width,
-                height: steps[currentStep]?.height || elementPosition.height,
-              }}
-              className={cn(
-                "z-[100] rounded-lg ring-2 ring-primary ring-offset-2 ring-offset-background",
-                className
-              )}
-              aria-hidden="true"
-            />
+            {(() => {
+              // Calculate viewport-safe dimensions to prevent ring-offset clipping
+              const ringOffset = 8; // ring-offset-2 = 0.5rem = 8px
+              const viewportWidth = window.innerWidth;
+              const viewportHeight = window.innerHeight;
+
+              const stepWidth = steps[currentStep]?.width || elementPosition.width;
+              const stepHeight = steps[currentStep]?.height || elementPosition.height;
+
+              // Check if element touches viewport edges
+              const touchesTop = elementPosition.top <= ringOffset;
+              const touchesBottom = elementPosition.top + stepHeight >= viewportHeight - ringOffset;
+              const touchesLeft = elementPosition.left <= ringOffset;
+              const touchesRight = elementPosition.left + stepWidth >= viewportWidth - ringOffset;
+
+              // Inset the spotlight to keep ring-offset visible within viewport
+              const adjustedTop = touchesTop ? elementPosition.top + ringOffset : elementPosition.top;
+              const adjustedLeft = touchesLeft ? elementPosition.left + ringOffset : elementPosition.left;
+              const adjustedWidth = stepWidth
+                - (touchesLeft ? ringOffset : 0)
+                - (touchesRight ? ringOffset : 0);
+              const adjustedHeight = stepHeight
+                - (touchesTop ? ringOffset : 0)
+                - (touchesBottom ? ringOffset : 0);
+
+              return (
+                <motion.div
+                  {...spotlightAnimation}
+                  transition={{ duration: reducedMotion ? 0.1 : 0.3 }}
+                  style={{
+                    position: "fixed",
+                    top: adjustedTop,
+                    left: adjustedLeft,
+                    width: adjustedWidth,
+                    height: adjustedHeight,
+                  }}
+                  className={cn(
+                    "z-[100] rounded-lg ring-2 ring-primary ring-offset-2 ring-offset-background",
+                    className
+                  )}
+                  aria-hidden="true"
+                />
+              );
+            })()}
 
             {/* Tour content tooltip */}
             <motion.div
@@ -465,6 +493,15 @@ export function TourProvider({
               }}
               className="bg-popover text-popover-foreground relative z-[100] rounded-lg border p-4 shadow-lg outline-none"
             >
+              {/* Close button - top left */}
+              <button
+                onClick={endTour}
+                className="absolute top-2 left-2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                aria-label="Close tour"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
               {/* Step counter - top right */}
               <span className="absolute top-3 right-4 text-sm text-muted-foreground tabular-nums">
                 {currentStep + 1} / {steps.length}
@@ -476,7 +513,7 @@ export function TourProvider({
                   key={`tour-content-${currentStep}`}
                   {...contentAnimation}
                   transition={{ duration: reducedMotion ? 0.1 : 0.25 }}
-                  className="overflow-hidden"
+                  className="overflow-hidden pt-4"
                 >
                   {steps[currentStep]?.content}
                 </motion.div>

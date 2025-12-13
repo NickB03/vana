@@ -55,6 +55,20 @@ const queryClient = new QueryClient({
 });
 
 /**
+ * RootRoute: Always renders Home which handles both landing and app experiences
+ *
+ * The Home component uses useScrollTransition hook which checks:
+ * - LANDING_PAGE_ENABLED localStorage setting (admin toggle)
+ * - ?skipLanding=true query param (for E2E tests)
+ *
+ * When landing is enabled → Shows landing content with scroll-triggered transition to app
+ * When landing is disabled → Skips directly to app interface with tour
+ */
+const RootRoute = () => {
+  return <AnimatedRoute><Home /></AnimatedRoute>;
+};
+
+/**
  * AnimatedRoutes: Wraps all routes with motion animations and AnimatePresence
  * - Manages page transition animations with fade + vertical slide effects
  * - Uses "wait" mode so the exiting page fully unmounts before the entering page renders
@@ -66,7 +80,7 @@ const AnimatedRoutes = () => {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<AnimatedRoute><Home /></AnimatedRoute>} />
+        <Route path="/" element={<RootRoute />} />
         {/* Main chat interface routes */}
         <Route path="/main" element={<AnimatedRoute><Home /></AnimatedRoute>} />
         <Route path="/chat" element={<AnimatedRoute><Home /></AnimatedRoute>} />

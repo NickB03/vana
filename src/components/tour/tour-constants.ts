@@ -13,3 +13,17 @@ export const TOUR_STEP_IDS = {
 } as const;
 
 export type TourStepId = (typeof TOUR_STEP_IDS)[keyof typeof TOUR_STEP_IDS];
+
+/**
+ * Tour Storage Keys
+ *
+ * Constants for localStorage keys used by the tour system.
+ */
+export const TOUR_STORAGE_KEYS = {
+  /** Admin setting to force tour on every visit (overrides completion state) */
+  FORCE_TOUR: 'vana-tour-force-mode',
+  /** Prefix for tour completion state storage */
+  TOUR_STATE_PREFIX: 'vana-tour-',
+  /** Admin setting to enable/disable landing page on first visit */
+  LANDING_PAGE_ENABLED: 'vana-landing-page-enabled',
+} as const;

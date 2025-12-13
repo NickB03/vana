@@ -14,28 +14,28 @@ export const suggestions: SuggestionItem[] = [
     title: "Retro Character Art",
     summary: "Pixel art image: Pikachu in banana costume on tropical beach with palm trees, 16-bit aesthetic, yellow/orange palette",
     prompt: "Generate an image. Context: Creating retro gaming fan art. Task: Pikachu character wearing a full banana costume. Setting: Sunny tropical beach with palm trees and coconuts in background. Style: 16-bit pixel art aesthetic. Colors: Bright yellow and orange dominant palette. Quality: Crisp pixel definition, nostalgic gaming feel.",
-    image: "https://images.unsplash.com/photo-1547891654-e66ed7ebb968?w=400&h=300&fit=crop"
+    image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&h=300&fit=crop"
   },
   {
     id: "img-gen-2",
     title: "Cyberpunk Cityscape",
     summary: "Futuristic city at sunset: neon skyscrapers, flying cars with light trails, holographic ads, rain-slicked streets",
     prompt: "Generate an image. Context: Concept art for cyberpunk game. Task: Create a breathtaking city scene. Time: Golden hour sunset. Elements: Neon-lit skyscrapers, flying cars leaving light trails, holographic billboards, rain-slicked streets reflecting lights. Colors: Purple and pink neon dominance. Composition: Cinematic wide angle. Mood: Dystopian but beautiful.",
-    image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&h=300&fit=crop"
+    image: "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=400&h=300&fit=crop"
   },
   {
     id: "img-gen-3",
     title: "Fantasy Warrior",
     summary: "Elven warrior in glowing silver armor with runes, enchanted forest with bioluminescent plants, ethereal atmosphere",
     prompt: "Generate an image. Context: Fantasy RPG character portrait. Task: Female elven warrior in mystical forest. Armor: Luminescent silver with ancient glowing runes. Environment: Enchanted forest with bioluminescent plants, magical fireflies, ethereal mist. Lighting: Dramatic rim lighting from behind. Style: Photorealistic fantasy art. Atmosphere: Magical and mysterious.",
-    image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&h=300&fit=crop"
+    image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop"
   },
   {
     id: "img-gen-4",
     title: "Sci-Fi Movie Poster",
     summary: "Movie poster 'Silicon Awakening': massive AI computer core with glowing circuits, human silhouettes, storm clouds",
     prompt: "Generate an image. Context: Promotional poster for AI thriller movie. Title: 'Silicon Awakening'. Main Element: Massive quantum computer core with glowing blue circuits. Foreground: Silhouettes of people looking up. Background: Ominous storm clouds. Typography: Bold, futuristic title treatment. Color Grading: Dark moody tones with electric blue accents. Style: Professional movie poster aesthetic.",
-    image: "https://images.unsplash.com/photo-1594908900066-3f47337549d8?w=400&h=300&fit=crop"
+    image: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400&h=300&fit=crop"
   },
   {
     id: "img-gen-5",
@@ -107,7 +107,7 @@ export const suggestions: SuggestionItem[] = [
     title: "Habit Tracker",
     summary: "React habit tracker: D3 GitHub-style heat map calendar, Recharts radial progress, streak counter with fire emoji, stats cards",
     prompt: "Build a React artifact. Context: Personal habit tracking. Task: Create a habit visualization dashboard. Libraries: D3 for heat map calendar, Recharts for other charts. Visualizations: 1) GitHub-style contribution heat map showing daily habit completion using D3 (365 days, darker=more habits completed), 2) Radial bar charts (Recharts) showing completion rate for each habit, 3) Bar chart showing weekly consistency trends. Features: Streak counter with fire emoji and animation when streak increases, habit checklist, completion celebration effects. Stats: Total completions, longest streak, current streak cards with animated count-ups. Styling: Motivational color scheme with Tailwind CSS.",
-    image: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=400&h=300&fit=crop"
+    image: "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&h=300&fit=crop"
   },
   {
     id: "data-viz-5",
@@ -122,34 +122,34 @@ export const suggestions: SuggestionItem[] = [
     title: "Frogger Game",
     summary: "React Frogger with HTML5 Canvas: arrow keys, traffic lanes, lily pads, collision detection, lives, progressive difficulty",
     prompt: "Build a React artifact game. Context: Classic arcade Frogger remake. Rendering: HTML5 Canvas for game graphics. Controls: Arrow keys for movement (up/down/left/right). Game Mechanics: Player frog must cross traffic lanes with cars moving at different speeds, then hop across water on lily pads to reach goal. Collision: Hit by car = lose life, fall in water = lose life. Lives: 3 hearts displayed, game over when all lost. Scoring: Points for forward progress, bonus for speed. Progression: Each level increases car speed. Visual Style: Retro pixel art aesthetic with simple geometric shapes. UI: Lives counter, score display, level indicator, game over modal with restart button using Radix UI Dialog. State: React useState for game state.",
-    image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&h=300&fit=crop"
+    image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=300&fit=crop"
   },
   {
     id: "game-2",
     title: "Snake Game",
     summary: "React Snake game: WASD/arrow controls, food collection grows snake, collision detection, high score tracking, neon aesthetic",
     prompt: "Build a React artifact game. Context: Classic Snake game. Rendering: HTML5 Canvas with 20x20 grid. Controls: WASD or arrow keys. Mechanics: Snake moves continuously, eating food (red square) grows body by one segment, collision with walls or self = game over. Scoring: 10 points per food, track high score in component state. Speed: Game speed increases every 5 foods eaten. Visual Design: Neon grid aesthetic with dark background, colorful gradient snake body (head=bright green fading to blue at tail), animated glow on food, particle effect when food eaten. UI: Score display, high score, pause button (spacebar). State: React useState for game state (no localStorage).",
-    image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&h=300&fit=crop"
+    image: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=400&h=300&fit=crop"
   },
   {
     id: "game-3",
     title: "Memory Match",
     summary: "React memory game: Framer Motion flip animations, emoji cards, difficulty levels, move counter, timer, win celebration",
     prompt: "Build a React artifact game. Context: Memory card matching game. Layout: 4x4 grid of cards (16 cards, 8 pairs). Content: Colorful emoji icons (🎨🎮🎵🎯🚀🌟💎🔥). Animations: Use Framer Motion for card flip effects (rotateY transform). Mechanics: Click to flip 2 cards, if match they stay revealed with celebration animation, if no match they flip back after 1 second delay. Difficulty: Radix UI Select to choose Easy (4x2 grid), Medium (4x4 grid), Hard (6x4 grid). Tracking: Move counter, elapsed timer. Win Condition: All pairs matched, show confetti celebration and stats (moves taken, time). Styling: Modern gradient card backs, smooth animations with Tailwind CSS.",
-    image: "https://images.unsplash.com/photo-1606503153255-59d8b8b82176?w=400&h=300&fit=crop"
+    image: "https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf?w=400&h=300&fit=crop"
   },
   {
     id: "game-4",
     title: "Trivia Quiz",
     summary: "React trivia game: 10 questions, multiple choice, visual feedback (green/red), timer, lifelines (50/50, skip), results screen",
     prompt: "Build a React artifact game. Context: Interactive trivia quiz. Questions: 10 multiple choice questions covering science, history, and entertainment. UI: Display question text, 4 answer buttons. Feedback: Correct answer turns green, wrong turns red, brief pause before next question. Scoring: Track correct answers, display percentage. Progress: Visual progress bar showing question number (1/10, 2/10, etc). Timer: 15 second countdown per question, auto-advance when time expires. Lifelines: 50/50 button (removes 2 wrong answers), Skip button (move to next question). Results: Final screen showing score, percentage, grade (A/B/C/D/F), share button. Styling: Game show aesthetic with Tailwind CSS, animated transitions.",
-    image: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=400&h=300&fit=crop"
+    image: "https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?w=400&h=300&fit=crop"
   },
   {
     id: "game-5",
     title: "Tic Tac Toe AI",
     summary: "React Tic Tac Toe: minimax AI opponent, difficulty selector, animated placement, win line highlight, multi-round scoring",
     prompt: "Build a React artifact game. Context: Tic-tac-toe with AI opponent. Board: 3x3 grid. Players: User chooses X or O, AI takes the other. AI Logic: Implement minimax algorithm for unbeatable AI on 'Impossible' difficulty. Difficulty: Radix UI Select with Easy (random moves), Medium (mix of smart/random), Impossible (minimax). Animations: Scale effect on piece placement using Framer Motion, winning line highlight animation. Win Detection: Check rows, columns, diagonals, detect draws. Scoring: Track wins/losses/draws across multiple rounds displayed in score cards. UI: Reset button, difficulty selector, celebration confetti on player win. Styling: Modern board with gradient cells, smooth animations with Tailwind CSS.",
-    image: "https://images.unsplash.com/photo-1611996575749-79a3a250f948?w=400&h=300&fit=crop"
+    image: "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=400&h=300&fit=crop"
   },
 ];

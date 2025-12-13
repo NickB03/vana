@@ -122,14 +122,14 @@ export default function GalleryHoverCarousel({
           </div>
         )}
 
-        <div className="w-full max-w-full relative">
-          {/* Navigation Buttons */}
-          <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 flex justify-between pointer-events-none z-10 px-1">
+        <div className="w-full max-w-full relative group/carousel">
+          {/* Navigation Buttons - visible on hover */}
+          <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 flex justify-between pointer-events-none z-10 px-1 opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300">
             <Button
               variant="outline"
               size="icon"
               onClick={handlePrev}
-              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full pointer-events-auto bg-background/30 backdrop-blur-sm hover:bg-background/50 border-white/30 opacity-70 hover:opacity-100 transition-opacity"
+              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full pointer-events-auto bg-background/30 backdrop-blur-sm hover:bg-background/50 border-white/30 hover:opacity-100 transition-opacity"
             >
               <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
@@ -137,7 +137,7 @@ export default function GalleryHoverCarousel({
               variant="outline"
               size="icon"
               onClick={handleNext}
-              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full pointer-events-auto bg-background/30 backdrop-blur-sm hover:bg-background/50 border-white/30 opacity-70 hover:opacity-100 transition-opacity"
+              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full pointer-events-auto bg-background/30 backdrop-blur-sm hover:bg-background/50 border-white/30 hover:opacity-100 transition-opacity"
             >
               <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
@@ -150,18 +150,18 @@ export default function GalleryHoverCarousel({
             }}
             className="relative w-full max-w-full"
           >
-            <CarouselContent className="-ml-2 md:-ml-4 py-3 sm:py-4">
+            <CarouselContent className="-ml-2 md:-ml-4 -mr-2 md:-mr-4 py-3 sm:py-4">
               {items.map((item) => {
                 const isLoading = loadingItemId === item.id;
                 return (
-                <CarouselItem key={item.id} className="pl-2 sm:pl-3 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5 2xl:basis-1/6">
+                <CarouselItem key={item.id} className="px-2 sm:px-3 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5 2xl:basis-1/6">
                   <div
                     onClick={() => !isLoading && onItemClick?.(item)}
                     className={`group block relative w-full h-[100px] sm:h-[110px] md:h-[120px] ${isLoading ? 'cursor-wait' : 'cursor-pointer'}`}
                   >
                     <Card className={`overflow-hidden rounded-3xl h-full w-full transition-all duration-300 hover:scale-105 ${isLoading ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
                       {/* Image */}
-                      <div className="relative h-full w-full transition-all duration-500 group-hover:h-1/2">
+                      <div className="relative h-full w-full transition-all duration-500 h-1/2">
                         <img
                           src={item.image}
                           alt={item.title}
@@ -182,11 +182,11 @@ export default function GalleryHoverCarousel({
                           </div>
                         )}
                         {/* Fade overlay at bottom */}
-                        <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                        <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-black/60 to-transparent opacity-100 transition-opacity duration-500" />
                       </div>
 
                       {/* Text Section */}
-                      <div className="absolute bottom-0 left-0 w-full px-2 sm:px-3 transition-all duration-500 group-hover:h-1/2 group-hover:flex flex-col justify-center bg-background/95 backdrop-blur-sm opacity-0 group-hover:opacity-100">
+                      <div className="absolute bottom-0 left-0 w-full h-1/2 px-2 sm:px-3 transition-all duration-500 flex flex-col justify-center bg-background/95 backdrop-blur-sm opacity-100 rounded-b-3xl">
                         <h3 className="text-xs font-medium sm:text-sm">{item.title}</h3>
                         <p className="text-muted-foreground text-[10px] sm:text-xs line-clamp-2">
                           {item.summary}

@@ -7,7 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { DollarSign, Activity, TrendingUp, AlertCircle, RefreshCw, Download } from "lucide-react";
+import { DollarSign, Activity, TrendingUp, AlertCircle, RefreshCw, Download, Eye, Home } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { TOUR_STORAGE_KEYS } from "@/components/tour";
 import { toast } from "@/hooks/use-toast";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { fadeInUp, staggerContainer, staggerItem } from "@/utils/animationConstants";
@@ -39,6 +42,73 @@ export default function AdminDashboard() {
   const [timeRange, setTimeRange] = useState(30);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [forceTour, setForceTour] = useState(() => {
+    try {
+      return localStorage.getItem(TOUR_STORAGE_KEYS.FORCE_TOUR) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const [landingPageEnabled, setLandingPageEnabled] = useState(() => {
+    try {
+      // Default to true for backwards compatibility
+      const stored = localStorage.getItem(TOUR_STORAGE_KEYS.LANDING_PAGE_ENABLED);
+      return stored === null ? true : stored === 'true';
+    } catch {
+      return true;
+    }
+  });
+
+  // Handle force tour toggle - update state only after successful localStorage save
+  const handleForceTourChange = (enabled: boolean) => {
+    try {
+      if (enabled) {
+        localStorage.setItem(TOUR_STORAGE_KEYS.FORCE_TOUR, 'true');
+      } else {
+        localStorage.removeItem(TOUR_STORAGE_KEYS.FORCE_TOUR);
+      }
+      setForceTour(enabled);
+      toast({
+        title: enabled ? "Force Tour Enabled" : "Force Tour Disabled",
+        description: enabled
+          ? "Onboarding tour will show on every visit"
+          : "Tour will only show for new users",
+      });
+    } catch (error) {
+      console.error('Failed to save force tour setting:', error);
+      toast({
+        title: "Failed to save setting",
+        description: "Could not update localStorage. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle landing page toggle - update state only after successful localStorage save
+  const handleLandingPageChange = (enabled: boolean) => {
+    try {
+      if (enabled) {
+        localStorage.setItem(TOUR_STORAGE_KEYS.LANDING_PAGE_ENABLED, 'true');
+      } else {
+        localStorage.setItem(TOUR_STORAGE_KEYS.LANDING_PAGE_ENABLED, 'false');
+      }
+      setLandingPageEnabled(enabled);
+      toast({
+        title: enabled ? "Landing Page Enabled" : "Landing Page Disabled",
+        description: enabled
+          ? "Users will see the landing page on first visit"
+          : "Users will go directly to the main app",
+      });
+    } catch (error) {
+      console.error('Failed to save landing page setting:', error);
+      toast({
+        title: "Failed to save setting",
+        description: "Could not update localStorage. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Check admin access
   useEffect(() => {
@@ -152,7 +222,33 @@ export default function AdminDashboard() {
             <h1 className="text-3xl font-bold">AI Usage Dashboard</h1>
             <p className="text-muted-foreground">Monitor Kimi K2 & Gemini API usage and costs</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-4">
+            {/* Landing Page Toggle */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-white/10 bg-black/20">
+              <Home className="w-4 h-4 text-muted-foreground" />
+              <Label htmlFor="landing-page" className="text-sm cursor-pointer">
+                Landing Page
+              </Label>
+              <Switch
+                id="landing-page"
+                checked={landingPageEnabled}
+                onCheckedChange={handleLandingPageChange}
+              />
+            </div>
+
+            {/* Force Tour Toggle */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-white/10 bg-black/20">
+              <Eye className="w-4 h-4 text-muted-foreground" />
+              <Label htmlFor="force-tour" className="text-sm cursor-pointer">
+                Force Tour
+              </Label>
+              <Switch
+                id="force-tour"
+                checked={forceTour}
+                onCheckedChange={handleForceTourChange}
+              />
+            </div>
+
             <Button
               variant={autoRefresh ? "default" : "outline"}
               onClick={() => setAutoRefresh(!autoRefresh)}
