@@ -539,6 +539,11 @@ export default function App() { ... }
 - `TAVILY_API_KEY` (web search integration)
 - `ALLOWED_ORIGINS` (CORS)
 
+**Tavily Web Search Configuration**:
+- `TAVILY_ALWAYS_SEARCH` - Force web search for ALL chat messages, bypassing smart intent detection (default: false)
+  - **WARNING**: Should only be `true` for testing purposes. In production, this increases latency (+2-4s per message) and API costs (1000x increase).
+  - See `supabase/functions/_shared/config.ts` TAVILY_CONFIG.ALWAYS_SEARCH_ENABLED for detailed pros/cons
+
 **GLM Thinking Mode**:
 - `USE_GLM_THINKING_FOR_CHAT` - Enable GLM-4.6 thinking mode for chat messages (default: true, disable with 'false')
 - `REASONING_STATUS_INTERVAL_MS` - Interval between reasoning status updates in milliseconds (default: 800)

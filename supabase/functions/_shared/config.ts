@@ -339,6 +339,9 @@ export const TAVILY_CONFIG = {
   /**
    * Always-Search Mode: Force web search for ALL chat responses (not artifacts/images)
    *
+   * WARNING: Set to false in production! When true, bypasses smart search intent detection
+   * and searches on EVERY message (increases latency and API costs).
+   *
    * PROS:
    * - Guaranteed current information in every response
    * - Reduces hallucination (grounded in real sources)

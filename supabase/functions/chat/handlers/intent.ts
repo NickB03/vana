@@ -87,6 +87,11 @@ export async function detectUserIntent(options: IntentOptions): Promise<IntentRe
   const shouldSearch = TAVILY_CONFIG.ALWAYS_SEARCH_ENABLED ||
     shouldPerformWebSearch(lastUserMessage);
 
+  // Warn if always-search mode is enabled (should be false in production)
+  if (TAVILY_CONFIG.ALWAYS_SEARCH_ENABLED) {
+    console.warn('[Smart Search] TAVILY_ALWAYS_SEARCH is enabled - all queries will trigger search (bypassing intent detection)');
+  }
+
   console.log('🎯 INTENT: Regular chat (no artifact/image intent detected)');
   // Default to regular chat
   return {
