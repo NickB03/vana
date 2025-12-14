@@ -8,11 +8,42 @@ import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { createHash } from "crypto";
 import fs from "fs";
 
-// Generate unique build hash for cache busting
-const buildHash = createHash('sha256')
-  .update(Date.now().toString() + Math.random().toString())
-  .digest('hex')
-  .substring(0, 8);
+// Generate deterministic build hash from git commit for reproducible builds
+// This ensures the same commit always produces the same bundle hashes
+const getGitCommitHash = (): string => {
+  try {
+    // Try to read git HEAD
+    const gitDir = path.resolve(__dirname, '.git');
+    const headPath = path.join(gitDir, 'HEAD');
+    const head = fs.readFileSync(headPath, 'utf8').trim();
+
+    if (head.startsWith('ref: ')) {
+      // HEAD points to a branch - resolve the ref
+      const refPath = path.join(gitDir, head.slice(5));
+      if (fs.existsSync(refPath)) {
+        return fs.readFileSync(refPath, 'utf8').trim().substring(0, 8);
+      }
+      // Fallback for packed refs
+      const packedRefs = path.join(gitDir, 'packed-refs');
+      if (fs.existsSync(packedRefs)) {
+        const packed = fs.readFileSync(packedRefs, 'utf8');
+        const match = packed.match(new RegExp(`([a-f0-9]+) ${head.slice(5)}`));
+        if (match) return match[1].substring(0, 8);
+      }
+    } else {
+      // Detached HEAD - use the commit hash directly
+      return head.substring(0, 8);
+    }
+  } catch (e) {
+    // Fallback to timestamp-based hash if git is unavailable (CI environments)
+    console.warn('Could not read git commit hash, using build timestamp');
+  }
+  // Deterministic fallback using package.json version
+  const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'));
+  return createHash('sha256').update(pkg.version).digest('hex').substring(0, 8);
+};
+
+const buildHash = getGitCommitHash();
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -60,6 +91,9 @@ export default defineConfig(({ mode }) => ({
         // Immediate service worker activation for faster updates
         clientsClaim: true,
         skipWaiting: true,
+        // Force cache invalidation - increment this to bust all caches
+        // Updated: 2024-12-14 to fix PR #289 deployment issue
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
