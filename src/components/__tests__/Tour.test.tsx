@@ -1131,3 +1131,130 @@ describe('Tour State Management', () => {
     });
   });
 });
+
+describe('Close button positioning', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    cleanup();
+    localStorage.clear();
+  });
+
+  it('should position close button in top-right corner with right-2 class', async () => {
+    render(
+      <TourProvider>
+        <TourConsumer />
+      </TourProvider>
+    );
+
+    // Wait for steps to load
+    await waitFor(() => {
+      expect(screen.getByTestId('tour-status')).toHaveTextContent('Total: 3');
+    });
+
+    // Start tour to display the close button
+    fireEvent.click(screen.getByRole('button', { name: /start tour/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('tour-status')).toHaveTextContent('Active: yes');
+    });
+
+    // Find the close button by its aria-label
+    const closeButton = screen.getByRole('button', { name: /close tour/i });
+    expect(closeButton).toBeInTheDocument();
+
+    // Test 1: Should have right-1 class for right positioning (adjusted for larger touch target)
+    expect(closeButton).toHaveClass('right-1');
+  });
+
+  it('should NOT have left-2 class on close button', async () => {
+    render(
+      <TourProvider>
+        <TourConsumer />
+      </TourProvider>
+    );
+
+    // Wait for steps to load
+    await waitFor(() => {
+      expect(screen.getByTestId('tour-status')).toHaveTextContent('Total: 3');
+    });
+
+    // Start tour
+    fireEvent.click(screen.getByRole('button', { name: /start tour/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('tour-status')).toHaveTextContent('Active: yes');
+    });
+
+    const closeButton = screen.getByRole('button', { name: /close tour/i });
+
+    // Test 2: Should NOT have left-2 class
+    expect(closeButton).not.toHaveClass('left-2');
+  });
+
+  it('should maintain step counter positioning in top-left with left-4 class', async () => {
+    render(
+      <TourProvider>
+        <TourConsumer />
+      </TourProvider>
+    );
+
+    // Wait for steps to load
+    await waitFor(() => {
+      expect(screen.getByTestId('tour-status')).toHaveTextContent('Total: 3');
+    });
+
+    // Start tour
+    fireEvent.click(screen.getByRole('button', { name: /start tour/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('tour-status')).toHaveTextContent('Active: yes');
+    });
+
+    // Find the step counter by its text content (e.g., "1 / 3")
+    const stepCounter = screen.getByText(/1 \/ 3/);
+    expect(stepCounter).toBeInTheDocument();
+
+    // Test 3: Step counter should be positioned on left with left-4 (swapped per issue #294)
+    expect(stepCounter).toHaveClass('left-4');
+  });
+
+  it('should have close button on right and step counter on left for proper UX', async () => {
+    render(
+      <TourProvider>
+        <TourConsumer />
+      </TourProvider>
+    );
+
+    // Wait for steps to load
+    await waitFor(() => {
+      expect(screen.getByTestId('tour-status')).toHaveTextContent('Total: 3');
+    });
+
+    // Start tour
+    fireEvent.click(screen.getByRole('button', { name: /start tour/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('tour-status')).toHaveTextContent('Active: yes');
+    });
+
+    const closeButton = screen.getByRole('button', { name: /close tour/i });
+    const stepCounter = screen.getByText(/1 \/ 3/);
+
+    // Close button should be on the right (uses right-1 for larger touch target)
+    expect(closeButton).toHaveClass('right-1');
+    // Step counter should be on the left (swapped per issue #294)
+    expect(stepCounter).toHaveClass('left-4');
+
+    // Both should have absolute positioning
+    expect(closeButton).toHaveClass('absolute');
+    expect(stepCounter).toHaveClass('absolute');
+
+    // Both should be at the top (close button uses top-1 for larger touch target)
+    expect(closeButton).toHaveClass('top-1');
+    expect(stepCounter).toHaveClass('top-3');
+  });
+});

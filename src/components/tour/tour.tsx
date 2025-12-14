@@ -56,8 +56,8 @@ interface TourProviderProps {
 // ============================================================================
 
 const PADDING = 16;
-const CONTENT_WIDTH = 380;
-const CONTENT_HEIGHT = 200;
+const CONTENT_WIDTH = 420;
+const CONTENT_HEIGHT = 220;
 const TOUR_STORAGE_KEY_PREFIX = "vana-tour-";
 
 // ============================================================================
@@ -270,6 +270,9 @@ export function TourProvider({
       onSkip(currentStep + 1);
     }
     setCurrentStep(-1);
+    // Mark tour as completed when user closes it (via X button or Escape)
+    // This prevents the TourAlertDialog from reappearing
+    setIsCompleted(true);
   }, [currentStep, steps.length, onSkip]);
 
   const startTour = useCallback(() => {
@@ -491,19 +494,19 @@ export function TourProvider({
                 position: "fixed",
                 width: calculateContentPosition(elementPosition, steps[currentStep]?.position).width,
               }}
-              className="bg-popover text-popover-foreground relative z-[100] rounded-lg border p-4 shadow-lg outline-none"
+              className="bg-popover text-popover-foreground relative z-[100] rounded-lg border p-5 shadow-lg outline-none"
             >
-              {/* Close button - top left */}
+              {/* Close button - top right (larger touch target for accessibility) */}
               <button
                 onClick={endTour}
-                className="absolute top-2 left-2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                className="absolute top-1 right-1 z-10 p-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                 aria-label="Close tour"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </button>
 
-              {/* Step counter - top right */}
-              <span className="absolute top-3 right-4 text-sm text-muted-foreground tabular-nums">
+              {/* Step counter - top left */}
+              <span className="absolute top-3 left-4 text-sm text-muted-foreground tabular-nums">
                 {currentStep + 1} / {steps.length}
               </span>
 
