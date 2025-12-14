@@ -13,7 +13,6 @@
 - [Endpoints](#endpoints)
   - [Chat](#post-chat)
   - [Generate Artifact](#post-generate-artifact)
-  - [Generate Reasoning](#post-generate-reasoning)
   - [Generate Artifact Fix](#post-generate-artifact-fix)
   - [Generate Image](#post-generate-image)
   - [Generate Title](#post-generate-title)
@@ -292,68 +291,6 @@ interface ArtifactResponse {
 | `code` | Code snippets | Functions, utilities |
 | `mermaid` | Mermaid diagrams | Flowcharts, architecture diagrams |
 | `markdown` | Markdown documents | Documentation, notes |
-
----
-
-### POST /generate-reasoning
-
-Generate fast reasoning content in parallel with artifact generation. This endpoint provides quick reasoning (2-4s) while the main artifact is being generated (30-60s).
-
-#### Request
-
-**Endpoint**: `POST /generate-reasoning`
-
-**Body**:
-```json
-{
-  "prompt": "Create a Todo list component with add/delete functionality",
-  "context": "User wants an interactive React component"
-}
-```
-
-**Parameters**:
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `prompt` | `string` | Yes | User's request for reasoning |
-| `context` | `string` | No | Additional context for better reasoning |
-
-#### Response
-
-```json
-{
-  "reasoning": {
-    "steps": [
-      {
-        "phase": "research",
-        "title": "Analyzing the user's request",
-        "icon": "search",
-        "items": [
-          "User wants a Todo list component",
-          "Requirements: add and delete functionality"
-        ]
-      },
-      {
-        "phase": "analysis",
-        "title": "Planning the implementation",
-        "icon": "lightbulb",
-        "items": [
-          "Using React useState for state management",
-          "Creating reusable component structure"
-        ]
-      }
-    ],
-    "summary": "Building a Todo list with React hooks"
-  }
-}
-```
-
-#### AI Model
-
-- **Model**: Gemini 2.5 Flash Lite (via OpenRouter)
-- **Provider**: OpenRouter
-- **Latency**: 2-4 seconds (runs in parallel with artifact generation)
-- **Purpose**: Provides immediate reasoning feedback while GLM-4.6 generates the artifact
 
 ---
 
@@ -729,9 +666,7 @@ if (remaining && parseInt(remaining) < 5) {
 
 ### 2025-11-28
 - Migrated artifact generation from Kimi K2 to GLM-4.6 (Z.ai API)
-- Added `/generate-reasoning` endpoint for fast parallel reasoning
 - GLM reasoning parser for structured reasoning output
-- Fixed CORS issues in generate-reasoning preflight handler
 
 ### 2025-11-27
 - Added smart context management with token-aware windowing

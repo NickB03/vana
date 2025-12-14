@@ -371,9 +371,11 @@ export function useChatMessages(
       const sanitizeImageArtifacts = (content: string): string => {
         // Match <artifact ...type="image"...>BASE64_DATA</artifact>
         // Handles attributes in any order (type before or after title)
+        // Handles both single and double quotes around "image"
+        // Uses [\s\S]*? to match multiline base64 data (non-greedy)
         // Replace base64 data URLs with a placeholder, keep regular URLs
         return content.replace(
-          /<artifact\s+([^>]*?)type="image"([^>]*)>(data:image\/[^<]+)<\/artifact>/g,
+          /<artifact\s+([^>]*?)type=["']image["']([^>]*?)>(data:image\/[\s\S]*?)<\/artifact>/gi,
           '<artifact $1type="image"$2>[Image generated - see above]</artifact>'
         );
       };
@@ -437,9 +439,9 @@ export function useChatMessages(
         // ============================================================================
         // GLM-NATIVE THINKING FLOW: Stream reasoning + content from single endpoint
         // ============================================================================
-        // Instead of calling /generate-reasoning and /generate-artifact in parallel,
-        // we call /generate-artifact with stream=true to get GLM's native thinking
-        // streamed in real-time, followed by the artifact content.
+        // GLM-4.6 streams reasoning_content first, then content - all from one endpoint.
+        // This replaced the previous parallel architecture (generate-reasoning + generate-artifact)
+        // with a simpler SSE stream from /generate-artifact that includes GLM's native thinking.
         //
         // SSE Events:
         // - reasoning_chunk: Live reasoning text as GLM thinks

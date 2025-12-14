@@ -147,7 +147,6 @@ supabase functions deploy <name> --project-ref <ref>  # Individual function
 |----------|----------|-------|
 | User sends chat message | `chat/` | Gemini Flash Lite |
 | User requests artifact | `generate-artifact/` | GLM-4.6 (Z.ai) |
-| Fast reasoning (parallel/fallback) | `generate-reasoning/` | Gemini Flash Lite |
 | Artifact has errors | `generate-artifact-fix/` | GLM-4.6 (Z.ai) |
 | First message in session | `generate-title/` | Gemini Flash Lite |
 | User requests image | `generate-image/` | Gemini Flash-Image |
@@ -270,7 +269,6 @@ Full schema: `supabase/migrations/`
 |----------|---------|
 | `chat/` | Main chat streaming with handlers/ and middleware/ |
 | `generate-artifact/` | Artifact generation with GLM-4.6 + SSE streaming + validation |
-| `generate-reasoning/` | Fast reasoning endpoint (2-4s) - fallback/parallel processing |
 | `bundle-artifact/` | Server-side npm bundling (Radix UI, framer-motion) |
 | `generate-artifact-fix/` | Error fixing with GLM-4.6 deep reasoning |
 | `generate-title/` | Session title generation |
@@ -537,7 +535,7 @@ export default function App() { ... }
 - `GLM_API_KEY` (artifact generation via Z.ai)
 - `GOOGLE_KEY_1` through `GOOGLE_KEY_10` (image generation)
 - `TAVILY_API_KEY` (web search integration)
-- `ALLOWED_ORIGINS` (CORS)
+- `ALLOWED_ORIGINS` (CORS whitelist, supports wildcards like `https://*.llm-chat-site.pages.dev`)
 
 **Tavily Web Search Configuration**:
 - `TAVILY_ALWAYS_SEARCH` - Force web search for ALL chat messages, bypassing smart intent detection (default: false)

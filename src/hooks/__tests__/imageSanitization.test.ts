@@ -10,9 +10,11 @@ import { describe, it, expect } from 'vitest';
 const sanitizeImageArtifacts = (content: string): string => {
   // Match <artifact ...type="image"...>BASE64_DATA</artifact>
   // Handles attributes in any order (type before or after title)
+  // Handles both single and double quotes around "image"
+  // Uses [\s\S]*? to match multiline base64 data (non-greedy)
   // Replace base64 data URLs with a placeholder, keep regular URLs
   return content.replace(
-    /<artifact\s+([^>]*?)type="image"([^>]*)>(data:image\/[^<]+)<\/artifact>/g,
+    /<artifact\s+([^>]*?)type=["']image["']([^>]*?)>(data:image\/[\s\S]*?)<\/artifact>/gi,
     '<artifact $1type="image"$2>[Image generated - see above]</artifact>'
   );
 };
@@ -146,5 +148,44 @@ describe('Image Artifact Sanitization', () => {
 
     const sanitized = sanitizeImageArtifacts(malformedContent);
     expect(sanitized).toBe(malformedContent); // No changes for malformed artifacts
+  });
+
+  it('should handle multiline base64 data with newlines and whitespace', () => {
+    // Simulate base64 data split across multiple lines (realistic scenario from API responses)
+    const multilineBase64 = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ
+AAAADUMBQVR42mNk+M9QDwAD
+hgGAWjR9awAAAABJRU5E
+rkJggg==`;
+    const content = `<artifact type="image" title="Multiline Image">${multilineBase64}</artifact>`;
+
+    const sanitized = sanitizeImageArtifacts(content);
+
+    expect(sanitized).toContain('[Image generated - see above]');
+    expect(sanitized).not.toContain('data:image/png');
+    expect(sanitized).not.toContain('iVBORw0KGgo');
+  });
+
+  it('should handle single quotes in type attribute', () => {
+    const base64Data = 'data:image/png;base64,ABC123==';
+    const content = `<artifact type='image' title="Test Image">${base64Data}</artifact>`;
+
+    const sanitized = sanitizeImageArtifacts(content);
+
+    expect(sanitized).not.toContain('data:image/');
+    expect(sanitized).toContain('[Image generated - see above]');
+  });
+
+  it('should be case-insensitive for type attribute', () => {
+    const base64Data = 'data:image/png;base64,ABC123==';
+    const contentUpperCase = `<artifact type="IMAGE" title="Test Image">${base64Data}</artifact>`;
+    const contentMixedCase = `<artifact type="Image" title="Test Image">${base64Data}</artifact>`;
+
+    const sanitizedUpper = sanitizeImageArtifacts(contentUpperCase);
+    const sanitizedMixed = sanitizeImageArtifacts(contentMixedCase);
+
+    expect(sanitizedUpper).not.toContain('data:image/');
+    expect(sanitizedMixed).not.toContain('data:image/');
+    expect(sanitizedUpper).toContain('[Image generated - see above]');
+    expect(sanitizedMixed).toContain('[Image generated - see above]');
   });
 });

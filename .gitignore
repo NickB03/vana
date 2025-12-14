@@ -142,3 +142,6 @@ Demos/*.mp4
 
 # GitHub App credentials
 gha-creds-*.json
+
+# Database backups (contain user data - never commit)
+backups/

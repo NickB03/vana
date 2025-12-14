@@ -60,9 +60,7 @@
 - ⏹️ **Stop Button**: Cancel artifact generation mid-stream
 
 **November 28, 2025 - GLM-4.6 Reasoning Display:**
-- 🧠 **Real-time Reasoning Streaming**: GLM-4.6 reasoning displays immediately via parallel requests
-- ⚡ **Fast Parallel Architecture**: `/generate-reasoning` (Gemini, 2-4s) runs alongside `/generate-artifact` (GLM, 30-60s) *(now deprecated in favor of SSE)*
-- 🔧 **CORS Fix**: Fixed 500 error in generate-reasoning preflight handler
+- 🧠 **Real-time Reasoning Streaming**: GLM-4.6 reasoning displays immediately via SSE streaming
 - 🐛 **Duplicate Key Fix**: Resolved React warning for duplicate message keys during streaming
 - 📦 **New GLM Client**: Added `glm-client.ts` with streaming support and `glm-reasoning-parser.ts`
 
@@ -264,7 +262,6 @@ graph TB
         L[chat - Gemini Flash Lite]
         LA[generate-artifact - GLM-4.6]
         LB[generate-artifact-fix - GLM-4.6]
-        LC[generate-reasoning - Gemini Flash]
         M[generate-title - Gemini Flash Lite]
         N[generate-image - Flash-Image]
         O[summarize-conversation - Gemini Flash Lite]
@@ -549,7 +546,6 @@ llm-chat-site/
 │   ├── functions/          # Edge Functions
 │   │   ├── chat/           # Main chat streaming (Gemini 2.5 Flash Lite via OpenRouter)
 │   │   ├── generate-artifact/ # Artifact generation (GLM-4.6 via Z.ai)
-│   │   ├── generate-reasoning/ # Fast parallel reasoning (Gemini Flash, 2-4s)
 │   │   ├── generate-artifact-fix/ # Artifact error fixing (GLM-4.6 via Z.ai)
 │   │   ├── generate-title/ # Auto-generate session titles (Gemini 2.5 Flash Lite via OpenRouter)
 │   │   ├── generate-image/ # AI image generation (Gemini Flash Image via OpenRouter)

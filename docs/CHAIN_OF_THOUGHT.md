@@ -40,8 +40,7 @@ Chain of Thought (CoT) reasoning is a transparent AI reasoning system that shows
 
 - ✅ **Frontend Components**: React components with full TypeScript support
 - ✅ **Backend Integration**: Edge Functions with streaming support
-- ✅ **GLM-4.6 Integration**: Parallel streaming with reasoning parser (Nov 2025)
-- ✅ **Fast Reasoning**: `/generate-reasoning` endpoint (2-4s via Gemini Flash)
+- ✅ **GLM-4.6 Integration**: SSE streaming with inline reasoning parser (Nov 2025)
 - ✅ **Data Validation**: Zod schemas with runtime validation
 - ✅ **Security**: XSS protection and input sanitization
 - ✅ **Testing**: 683 tests total across the project
@@ -63,7 +62,6 @@ graph TB
 
     subgraph "Edge Functions"
         C1[generate-artifact - GLM-4.6]
-        C2[generate-reasoning - Gemini Fast]
         D[Streaming SSE Events]
         E[reasoning Events]
     end
@@ -81,11 +79,8 @@ graph TB
     end
 
     A1 --> B
-    A2 --> B
     B --> C1
-    B --> C2
     C1 --> D
-    C2 --> D
     D --> E
     E --> I
     I --> J
@@ -262,29 +257,25 @@ sequenceDiagram
     participant U as User
     participant C as ChatInterface
     participant H as useChatMessages Hook
-    participant ER as generate-reasoning
     participant EA as generate-artifact
-    participant GF as Gemini Flash
     participant GLM as GLM-4.6
 
     U->>C: Send Request
     C->>H: streamChat()
+    H->>EA: POST /generate-artifact
+    EA->>GLM: Generate artifact with thinking mode
 
-    par Parallel Reasoning
-        H->>ER: POST /generate-reasoning
-        ER->>GF: Fast reasoning (2-4s)
-        GF-->>ER: Reasoning response
-        ER-->>H: SSE: reasoning data
-        H-->>C: Show reasoning immediately
-        C-->>U: Display reasoning steps
-    and Artifact Generation
-        H->>EA: POST /generate-artifact
-        EA->>GLM: Generate artifact (30-60s)
-        GLM-->>EA: Artifact + GLM reasoning
-        EA-->>H: SSE: artifact data
-        H-->>C: Complete response
-        C-->>U: Display artifact
+    loop SSE Streaming
+        GLM-->>EA: reasoning_content chunks
+        EA-->>H: SSE: reasoning events
+        H-->>C: Update reasoning display
+        C-->>U: Show thinking progress
     end
+
+    GLM-->>EA: content chunks (artifact code)
+    EA-->>H: SSE: artifact data
+    H-->>C: Complete response
+    C-->>U: Display artifact
 ```
 
 ### Event Structure
@@ -719,7 +710,7 @@ export function parseReasoningSteps(data: unknown): StructuredReasoning | null {
 
 ### Related Documentation
 
-- [API Reference](./API_REFERENCE.md) - Includes `/generate-reasoning` endpoint
+- [API Reference](./API_REFERENCE.md) - API documentation for all endpoints
 - [GLM Reasoning Integration](../supabase/functions/_shared/GLM_REASONING_INTEGRATION.md) - Parser guide
 - [Artifact System Documentation](./ARTIFACT_SYSTEM.md)
 - [Component Library](./COMPONENT_LIBRARY.md)
@@ -733,7 +724,6 @@ export function parseReasoningSteps(data: unknown): StructuredReasoning | null {
 - **Hook Integration**: `src/hooks/useChatMessages.tsx`
 - **GLM Client**: `supabase/functions/_shared/glm-client.ts`
 - **GLM Reasoning Parser**: `supabase/functions/_shared/glm-reasoning-parser.ts`
-- **Generate Reasoning**: `supabase/functions/generate-reasoning/index.ts`
 - **Tests**: `src/components/__tests__/ReasoningIndicator.test.tsx`
 
 ### External Resources

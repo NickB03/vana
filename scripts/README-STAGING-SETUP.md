@@ -43,7 +43,6 @@ The `setup-staging.sh` script performs a complete staging environment setup for 
 - `summarize-conversation` - Context summarization
 - `generate-image` - AI image generation
 - `bundle-artifact` - Server-side npm bundling
-- `generate-reasoning` - Fast parallel reasoning
 - `health` - System health monitoring
 - `intent-examples` - Intent detection examples
 - `admin-analytics` - Analytics dashboard data
