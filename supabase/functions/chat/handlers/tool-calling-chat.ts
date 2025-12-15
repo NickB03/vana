@@ -169,6 +169,86 @@ export async function handleToolCallingChat(
 
       try {
         // ========================================
+        // Content buffer for tool call filtering
+        // ========================================
+        // We buffer content to strip <tool_call>...</tool_call> XML before sending to client
+        // This prevents raw tool call XML from being shown to users
+        let contentBuffer = '';
+        let toolCallInProgress = false;
+
+        // Lookahead size to hold back potential partial tags at chunk boundaries
+        // Must be >= length of '<tool_call>' (11 chars)
+        const LOOKAHEAD_SIZE = 12;
+
+        /**
+         * Flush safe content to client
+         * Strips any partial or complete <tool_call> blocks before sending
+         *
+         * @param isFinalFlush - If true, flush everything (stream ended)
+         */
+        function flushSafeContent(isFinalFlush = false) {
+          if (!contentBuffer) return;
+
+          // Check if we're inside a tool call block
+          const toolCallStartIdx = contentBuffer.indexOf('<tool_call>');
+          const toolCallEndIdx = contentBuffer.indexOf('</tool_call>');
+
+          if (toolCallStartIdx !== -1) {
+            // Found start of tool call
+            if (toolCallEndIdx !== -1 && toolCallEndIdx > toolCallStartIdx) {
+              // Complete tool call block - strip it
+              const beforeToolCall = contentBuffer.substring(0, toolCallStartIdx);
+              const afterToolCall = contentBuffer.substring(toolCallEndIdx + '</tool_call>'.length);
+
+              // Send content before the tool call
+              if (beforeToolCall.trim()) {
+                sendContentChunk(beforeToolCall);
+              }
+
+              // Keep content after tool call for next flush
+              contentBuffer = afterToolCall;
+              toolCallInProgress = false;
+
+              // Recursively flush in case there are more tool calls
+              flushSafeContent(isFinalFlush);
+            } else {
+              // Incomplete tool call - send content before it, buffer the rest
+              const beforeToolCall = contentBuffer.substring(0, toolCallStartIdx);
+              if (beforeToolCall.trim()) {
+                sendContentChunk(beforeToolCall);
+              }
+              contentBuffer = contentBuffer.substring(toolCallStartIdx);
+              toolCallInProgress = true;
+            }
+          } else if (toolCallInProgress) {
+            // We're inside a tool call block, keep buffering
+            // Check if we found the end tag
+            if (toolCallEndIdx !== -1) {
+              // Found end tag - discard tool call content, keep the rest
+              contentBuffer = contentBuffer.substring(toolCallEndIdx + '</tool_call>'.length);
+              toolCallInProgress = false;
+              flushSafeContent(isFinalFlush);
+            }
+            // Otherwise keep buffering
+          } else {
+            // No complete tool call markers found
+            // Hold back a lookahead tail to catch partial tags split across chunks
+            // e.g., chunk ends with "<tool_ca" - we need to wait for more data
+            if (isFinalFlush) {
+              // Final flush - send everything
+              sendContentChunk(contentBuffer);
+              contentBuffer = '';
+            } else if (contentBuffer.length > LOOKAHEAD_SIZE) {
+              // Send content except lookahead tail (which might contain partial tag)
+              const safeToSend = contentBuffer.substring(0, contentBuffer.length - LOOKAHEAD_SIZE);
+              sendContentChunk(safeToSend);
+              contentBuffer = contentBuffer.substring(contentBuffer.length - LOOKAHEAD_SIZE);
+            }
+            // If buffer is smaller than lookahead, wait for more chunks
+          }
+        }
+
+        // ========================================
         // STEP 1: Call GLM with tools enabled
         // ========================================
         const glmResponse = await callGLMWithRetry(
@@ -229,9 +309,10 @@ export async function handleToolCallingChat(
             },
 
             onContentChunk: async (chunk: string) => {
-              // Forward content chunks to client
-              // Use OpenAI-compatible format
-              sendContentChunk(chunk);
+              // Buffer content and strip tool call XML before forwarding to client
+              // This prevents raw <tool_call>...</tool_call> XML from being shown to users
+              contentBuffer += chunk;
+              flushSafeContent();
             },
 
             onToolCallDetected: async (toolCall: ToolCall) => {
@@ -256,6 +337,13 @@ export async function handleToolCallingChat(
               console.log(
                 `${logPrefix} ✅ GLM stream complete: reasoning=${fullReasoning.length}chars, content=${fullContent.length}chars`
               );
+
+              // Final flush - send any remaining buffered content
+              // If tool call was in progress, discard it (incomplete XML)
+              if (contentBuffer && !toolCallInProgress) {
+                flushSafeContent(true); // isFinalFlush = true
+              }
+              contentBuffer = '';
 
               // Send reasoning_complete event
               if (fullReasoning.length > 0) {
