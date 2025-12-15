@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { SuggestionItem } from "@/data/suggestions";
 import { TourProvider, TourAlertDialog, TOUR_STORAGE_KEYS } from "@/components/tour";
 import { OnboardingTour } from "@/components/OnboardingTour";
+import { useAppSetting, APP_SETTING_KEYS } from "@/hooks/useAppSettings";
 
 
 /**
@@ -148,6 +149,10 @@ const Home = () => {
   const guestSession = useGuestSession(isAuthenticated);
   const [showLimitDialog, setShowLimitDialog] = useState(false);
 
+  // Global app settings (from database)
+  const { value: forceTourSetting, isLoading: forceTourLoading } = useAppSetting(APP_SETTING_KEYS.FORCE_TOUR);
+  const { value: landingPageSetting } = useAppSetting(APP_SETTING_KEYS.LANDING_PAGE_ENABLED);
+
   // Memoize guest session functions to prevent unnecessary re-renders
   const guestSessionMemo = useMemo(() => ({
     saveMessages: guestSession.saveMessages,
@@ -160,8 +165,13 @@ const Home = () => {
   const [loadingSuggestions, setLoadingSuggestions] = useState(true);
 
   // Scroll transition - triggers at the end of CTA section
+  // skipLanding is true when admin has DISABLED the landing page (enabled=false means skip)
   const ctaSectionRef = useRef<HTMLDivElement>(null);
-  const { phase, progress, setTriggerElement } = useScrollTransition(true);
+  const skipLandingPage = landingPageSetting?.enabled === false;
+  const { phase, progress, setTriggerElement } = useScrollTransition({
+    enabled: true,
+    skipLanding: skipLandingPage,
+  });
 
   // Detect reduced motion preference (lazy init to avoid flash)
   const [prefersReducedMotion] = useState(() =>
@@ -239,6 +249,9 @@ const Home = () => {
 
   // Check if user should see the onboarding tour
   useEffect(() => {
+    // Wait for settings to load before deciding on tour
+    if (forceTourLoading) return;
+
     // Only show tour prompt when app phase is stable
     if (phase === "app" && !showChat) {
       const tourKey = `${TOUR_STORAGE_KEYS.TOUR_STATE_PREFIX}vana-app-onboarding`;
@@ -251,8 +264,8 @@ const Home = () => {
           return;
         }
 
-        // Check if admin has enabled force tour mode
-        const forceTourEnabled = localStorage.getItem(TOUR_STORAGE_KEYS.FORCE_TOUR) === 'true';
+        // Check if admin has enabled force tour mode (from database - affects ALL users)
+        const forceTourEnabled = forceTourSetting?.enabled ?? false;
 
         if (forceTourEnabled) {
           // Clear tour completion state to force it to show
@@ -281,7 +294,7 @@ const Home = () => {
         // If localStorage access fails entirely, don't show tour
       }
     }
-  }, [phase, showChat]);
+  }, [phase, showChat, forceTourSetting, forceTourLoading]);
 
   // Auto-collapse sidebar when canvas opens
   useEffect(() => {

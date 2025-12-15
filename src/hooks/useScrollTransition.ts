@@ -1,7 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { TOUR_STORAGE_KEYS } from "@/components/tour";
 
 export type TransitionPhase = "landing" | "transitioning" | "app";
+
+interface ScrollTransitionOptions {
+  /** Whether scroll detection is active (default: true) */
+  enabled?: boolean;
+  /** Skip landing page and go directly to app (from database setting) */
+  skipLanding?: boolean;
+}
 
 interface ScrollTransitionReturn {
   phase: TransitionPhase;
@@ -31,16 +37,25 @@ const easeOutCubic = (t: number): number => {
  * - Timed animation: 800ms smooth animation decoupled from scroll position
  * - Easing: Cubic ease-out for natural motion feel
  * - One-way: Once transitioned, stays in app phase
- * - Admin toggle: Can skip landing via localStorage setting
+ * - Admin toggle: Can skip landing via database setting (affects ALL users)
  *
- * @param enabled - Whether scroll detection is active
+ * @param options - Configuration options or boolean for backward compatibility
  * @returns Transition state and progress
  */
-export const useScrollTransition = (enabled: boolean = true): ScrollTransitionReturn => {
-  // Check for ?skipLanding=true query param (for E2E tests) or admin landing page toggle
+export const useScrollTransition = (
+  options: ScrollTransitionOptions | boolean = true
+): ScrollTransitionReturn => {
+  // Handle backward-compatible boolean parameter
+  const opts: ScrollTransitionOptions = typeof options === 'boolean'
+    ? { enabled: options }
+    : options;
+
+  const { enabled = true, skipLanding: skipLandingFromSetting = false } = opts;
+
+  // Check for ?skipLanding=true query param (for E2E tests) or database setting
   const shouldSkipLanding = typeof window !== 'undefined' && (
     new URLSearchParams(window.location.search).get('skipLanding') === 'true' ||
-    localStorage.getItem(TOUR_STORAGE_KEYS.LANDING_PAGE_ENABLED) === 'false'
+    skipLandingFromSetting
   );
 
   const [state, setState] = useState({
@@ -55,6 +70,18 @@ export const useScrollTransition = (enabled: boolean = true): ScrollTransitionRe
   const hasTransitionedToApp = useRef(shouldSkipLanding); // One-way lock: once in app, stay in app
   const animationStartTime = useRef<number | null>(null); // Timestamp when animation started
   const animationRafId = useRef<number>(); // Separate RAF for animation loop
+
+  // Handle async setting load: if skipLanding becomes true after mount, skip to app
+  useEffect(() => {
+    if (skipLandingFromSetting && !hasTransitionedToApp.current) {
+      hasTransitionedToApp.current = true;
+      setState({
+        phase: "app",
+        progress: 1,
+        scrollY: 0,
+      });
+    }
+  }, [skipLandingFromSetting]);
 
   // Set the element that triggers the transition (e.g., BenefitsSection)
   const setTriggerElement = useCallback((element: HTMLElement | null) => {

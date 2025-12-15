@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          key: string
+          value: Json
+          description: string | null
+          updated_by: string | null
+          updated_at: string
+          created_at: string
+        }
+        Insert: {
+          key: string
+          value?: Json
+          description?: string | null
+          updated_by?: string | null
+          updated_at?: string
+          created_at?: string
+        }
+        Update: {
+          key?: string
+          value?: Json
+          description?: string | null
+          updated_by?: string | null
+          updated_at?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           content: string

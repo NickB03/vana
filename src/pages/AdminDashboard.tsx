@@ -10,7 +10,7 @@ import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import { DollarSign, Activity, TrendingUp, AlertCircle, RefreshCw, Download, Eye, Home } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { TOUR_STORAGE_KEYS } from "@/components/tour";
+import { useAppSettings, APP_SETTING_KEYS } from "@/hooks/useAppSettings";
 import { toast } from "@/hooks/use-toast";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { fadeInUp, staggerContainer, staggerItem } from "@/utils/animationConstants";
@@ -42,69 +42,47 @@ export default function AdminDashboard() {
   const [timeRange, setTimeRange] = useState(30);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [forceTour, setForceTour] = useState(() => {
-    try {
-      return localStorage.getItem(TOUR_STORAGE_KEYS.FORCE_TOUR) === 'true';
-    } catch {
-      return false;
-    }
-  });
 
-  const [landingPageEnabled, setLandingPageEnabled] = useState(() => {
-    try {
-      // Default to true for backwards compatibility
-      const stored = localStorage.getItem(TOUR_STORAGE_KEYS.LANDING_PAGE_ENABLED);
-      return stored === null ? true : stored === 'true';
-    } catch {
-      return true;
-    }
-  });
+  // Use database-backed settings instead of localStorage
+  const { settings, updateSetting, isLoading: settingsLoading } = useAppSettings();
+  const forceTour = settings?.force_tour?.enabled ?? false;
+  const landingPageEnabled = settings?.landing_page_enabled?.enabled ?? true;
 
-  // Handle force tour toggle - update state only after successful localStorage save
-  const handleForceTourChange = (enabled: boolean) => {
-    try {
-      if (enabled) {
-        localStorage.setItem(TOUR_STORAGE_KEYS.FORCE_TOUR, 'true');
-      } else {
-        localStorage.removeItem(TOUR_STORAGE_KEYS.FORCE_TOUR);
-      }
-      setForceTour(enabled);
+  // Handle force tour toggle - saves to database (affects ALL users globally)
+  const handleForceTourChange = async (enabled: boolean) => {
+    const success = await updateSetting(APP_SETTING_KEYS.FORCE_TOUR, { enabled });
+
+    if (success) {
       toast({
         title: enabled ? "Force Tour Enabled" : "Force Tour Disabled",
         description: enabled
-          ? "Onboarding tour will show on every visit"
+          ? "Onboarding tour will show for ALL users on every visit"
           : "Tour will only show for new users",
       });
-    } catch (error) {
-      console.error('Failed to save force tour setting:', error);
+    } else {
       toast({
         title: "Failed to save setting",
-        description: "Could not update localStorage. Please try again.",
+        description: "Could not update setting. Check admin permissions.",
         variant: "destructive",
       });
     }
   };
 
-  // Handle landing page toggle - update state only after successful localStorage save
-  const handleLandingPageChange = (enabled: boolean) => {
-    try {
-      if (enabled) {
-        localStorage.setItem(TOUR_STORAGE_KEYS.LANDING_PAGE_ENABLED, 'true');
-      } else {
-        localStorage.setItem(TOUR_STORAGE_KEYS.LANDING_PAGE_ENABLED, 'false');
-      }
-      setLandingPageEnabled(enabled);
+  // Handle landing page toggle - saves to database (affects ALL users globally)
+  const handleLandingPageChange = async (enabled: boolean) => {
+    const success = await updateSetting(APP_SETTING_KEYS.LANDING_PAGE_ENABLED, { enabled });
+
+    if (success) {
       toast({
         title: enabled ? "Landing Page Enabled" : "Landing Page Disabled",
         description: enabled
-          ? "Users will see the landing page on first visit"
-          : "Users will go directly to the main app",
+          ? "ALL users will see the landing page on first visit"
+          : "ALL users will go directly to the main app",
       });
-    } catch (error) {
-      console.error('Failed to save landing page setting:', error);
+    } else {
       toast({
         title: "Failed to save setting",
-        description: "Could not update localStorage. Please try again.",
+        description: "Could not update setting. Check admin permissions.",
         variant: "destructive",
       });
     }

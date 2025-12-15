@@ -1,4 +1,5 @@
 {
+  "lock": false,
   "tasks": {
     "test": "deno test --allow-env --allow-net --allow-read --coverage=coverage _shared/__tests__/",
     "test:watch": "deno test --allow-env --allow-net --allow-read --watch _shared/__tests__/",
