@@ -55,6 +55,59 @@ export function createStreamTransformer(
   // Content output buffer (for artifact transforms and final output)
   let contentBuffer = "";
 
+  // Tool call stripping state (prevents raw <tool_call> XML from reaching client)
+  let toolCallInProgress = false;
+
+  /**
+   * Strip <tool_call>...</tool_call> XML blocks from content
+   * This prevents raw tool call syntax from appearing in chat responses
+   *
+   * NOTE: With native function calling (OpenAI-compatible tools API), GLM should
+   * no longer emit XML tool calls in content. This function is retained as a
+   * safety fallback for edge cases or if the model unexpectedly reverts to XML format.
+   *
+   * @param content - The content to sanitize
+   * @param depth - Recursion depth (to prevent infinite loops on malformed XML)
+   */
+  function stripToolCallXml(content: string, depth = 0): string {
+    // Prevent infinite recursion on malformed XML (max 10 tool calls per chunk)
+    const MAX_RECURSION_DEPTH = 10;
+    if (depth > MAX_RECURSION_DEPTH) {
+      console.warn(`[${requestId}] ⚠️ Max recursion depth exceeded in stripToolCallXml - returning content as-is`);
+      return content;
+    }
+
+    // Check if we're inside a tool call block
+    const toolCallStartIdx = content.indexOf('<tool_call>');
+    const toolCallEndIdx = content.indexOf('</tool_call>');
+
+    if (toolCallStartIdx !== -1) {
+      if (toolCallEndIdx !== -1 && toolCallEndIdx > toolCallStartIdx) {
+        // Complete tool call block - strip it entirely
+        const beforeToolCall = content.substring(0, toolCallStartIdx);
+        const afterToolCall = content.substring(toolCallEndIdx + '</tool_call>'.length);
+        toolCallInProgress = false;
+        // Recursively strip in case there are multiple tool calls
+        return stripToolCallXml(beforeToolCall + afterToolCall, depth + 1);
+      } else {
+        // Incomplete tool call - return content before it, mark in progress
+        toolCallInProgress = true;
+        return content.substring(0, toolCallStartIdx);
+      }
+    } else if (toolCallInProgress) {
+      // We're inside a tool call block waiting for closing tag
+      if (toolCallEndIdx !== -1) {
+        // Found end tag - discard tool call content, return the rest
+        toolCallInProgress = false;
+        return stripToolCallXml(content.substring(toolCallEndIdx + '</tool_call>'.length), depth + 1);
+      }
+      // Still inside tool call, discard everything
+      return '';
+    }
+
+    return content;
+  }
+
   return new TransformStream({
     async start(controller) {
       // ========================================
@@ -288,24 +341,34 @@ export function createStreamTransformer(
       }
 
       // ========================================
-      // STEP 3: Output buffered content
+      // STEP 3: Output buffered content (with tool call stripping)
       // ========================================
       if (!insideArtifact) {
-        controller.enqueue(buffer);
+        // Strip any <tool_call> XML before sending to client
+        const sanitizedBuffer = stripToolCallXml(buffer);
+        if (sanitizedBuffer) {
+          controller.enqueue(sanitizedBuffer);
+        }
         buffer = "";
       } else if (buffer.length > 50000) {
         // Safety: if buffer gets too large, send it anyway
         console.warn("⚠️ Buffer overflow - sending untransformed artifact");
-        controller.enqueue(buffer);
+        const sanitizedBuffer = stripToolCallXml(buffer);
+        if (sanitizedBuffer) {
+          controller.enqueue(sanitizedBuffer);
+        }
         buffer = "";
         insideArtifact = false;
       }
     },
 
     async flush(controller) {
-      // Send any remaining buffered content
+      // Send any remaining buffered content (with tool call stripping)
       if (buffer) {
-        controller.enqueue(buffer);
+        const sanitizedBuffer = stripToolCallXml(buffer);
+        if (sanitizedBuffer) {
+          controller.enqueue(sanitizedBuffer);
+        }
       }
 
       // Emit final reasoning_complete if not already done

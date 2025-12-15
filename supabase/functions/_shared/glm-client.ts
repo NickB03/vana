@@ -16,7 +16,7 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { MODELS, RETRY_CONFIG, getSearchRecencyPhrase, getCurrentYear } from './config.ts';
+import { MODELS, RETRY_CONFIG, GLM_CONFIG, getSearchRecencyPhrase } from './config.ts';
 import { parseToolCall } from './glm-tool-parser.ts';
 
 // GLM API configuration
@@ -78,6 +78,7 @@ export interface CallGLMOptions {
   stream?: boolean; // Enable SSE streaming
   tools?: GLMToolDefinition[]; // Tool definitions for function calling
   toolResultContext?: string; // Injected tool results for continuation
+  timeoutMs?: number; // Request timeout in milliseconds (default: 60000 for non-streaming, 120000 for streaming)
 }
 
 export interface RetryResult {
@@ -93,30 +94,15 @@ export interface RetryResult {
  */
 export const GLM_SEARCH_TOOL: GLMToolDefinition = {
   name: "browser.search",
-  description: `Search the web for current, real-time information. USE THIS TOOL when:
-
-ALWAYS SEARCH FOR:
-- Recent events, news, or developments (anything ${getSearchRecencyPhrase()})
-- Real-time data: weather, stock prices, sports scores, cryptocurrency
-- Current status: "is [service] down?", "current price of X"
-- Latest versions, releases, or updates
-- Time-sensitive queries with words: "latest", "current", "recent", "now", "today", "${getCurrentYear()}"
-- Facts that may have changed ${getSearchRecencyPhrase()}
-
-NEVER SEARCH FOR:
-- General knowledge, definitions, or explanations
-- Historical events (before ${getCurrentYear() - 1})
-- How-to guides, tutorials, or code examples
-- Math, science, or logic problems
-- Creative writing or brainstorming
-
-When uncertain, err on the side of searching. Users prefer current information.`,
+  // SIMPLIFIED: Long multi-line descriptions inside XML tags caused GLM to truncate tool calls
+  // Keep description concise and single-line to ensure reliable tool call generation
+  description: `Search the web for current information (${getSearchRecencyPhrase()}). Use for: recent news, real-time data (weather, stocks, sports), current prices, latest versions. Do NOT use for: general knowledge, historical facts, how-to guides, math problems.`,
   parameters: {
     type: "object",
     properties: {
       query: {
         type: "string",
-        description: "A concise, optimized search query (not the full user message). Remove filler words. Include year for time-sensitive topics."
+        description: "Optimized search query with year for time-sensitive topics"
       }
     },
     required: ["query"]
@@ -167,19 +153,26 @@ ${toolDefinitions}
 
 ## Tool Usage Instructions
 
-When you need to use a tool, output a tool call in this exact XML format:
+When you need to use a tool, you MUST output a COMPLETE tool call with ALL tags:
 
 <tool_call>
-  <name>tool.name</name>
-  <arguments>
-    <arg_name>value</arg_name>
-  </arguments>
+<name>tool.name</name>
+<arguments>
+<arg_name>value</arg_name>
+</arguments>
 </tool_call>
 
-After calling a tool, WAIT for the tool result before continuing your response.
-The tool result will be provided in a subsequent message, and you should then complete your answer using the information provided.
+CRITICAL: You MUST include the closing </tool_call> tag. Without it, the tool will not execute.
 
-IMPORTANT: Only use tools when necessary to answer the user's question. Do not use tools for general conversation.`;
+Example of a COMPLETE browser.search tool call:
+<tool_call>
+<name>browser.search</name>
+<arguments>
+<query>your search query here</query>
+</arguments>
+</tool_call>
+
+After calling a tool, WAIT for the tool result before continuing your response.`;
 }
 
 /**
@@ -203,24 +196,22 @@ export async function callGLM(
     enableThinking = true, // Enable reasoning by default for artifact generation
     stream = false, // Streaming disabled by default for backward compatibility
     tools,
-    toolResultContext
+    toolResultContext,
+    timeoutMs
   } = options || {};
 
   if (!GLM_API_KEY) {
     throw new Error("GLM_API_KEY not configured");
   }
 
-  // Enhance system prompt with tool definitions if tools provided
-  let enhancedSystemPrompt = systemPrompt;
+  // NOTE: Native function calling is used - tools are passed in the request body, not the system prompt
   if (tools && tools.length > 0) {
-    const toolSection = buildToolSystemPromptSection(tools);
-    enhancedSystemPrompt = systemPrompt + "\n\n" + toolSection;
     console.log(`[${requestId}] 🔧 Tools enabled: ${tools.map(t => t.name).join(", ")}`);
   }
 
   // Build messages array
   const messages: GLMMessage[] = [
-    { role: "system", content: enhancedSystemPrompt },
+    { role: "system", content: systemPrompt },
     { role: "user", content: userPrompt }
   ];
 
@@ -235,13 +226,19 @@ export async function callGLM(
 
   console.log(`[${requestId}] 🤖 Routing to GLM-4.6 via Z.ai API (thinking: ${enableThinking}, stream: ${stream})`);
 
-  const response = await fetch(`${GLM_BASE_URL}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${GLM_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
+  // Create AbortController for timeout protection
+  // Streaming requests get longer timeout since they need to process full response
+  const defaultTimeout = stream ? GLM_CONFIG.STREAM_TIMEOUT_MS : GLM_CONFIG.REQUEST_TIMEOUT_MS;
+  const timeout = timeoutMs || defaultTimeout;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    console.warn(`[${requestId}] ⏱️ GLM request timeout after ${timeout}ms - aborting`);
+    controller.abort();
+  }, timeout);
+
+  try {
+    // Build request body
+    const requestBody: Record<string, unknown> = {
       // Extract model name from "provider/model-name" format
       model: MODELS.GLM_4_6.split('/').pop(),
       messages,
@@ -250,10 +247,37 @@ export async function callGLM(
       stream, // Enable SSE streaming when requested
       // GLM-specific: thinking mode for reasoning
       thinking: enableThinking ? { type: "enabled" } : { type: "disabled" }
-    })
-  });
+    };
 
-  return response;
+    // Add native function calling if tools provided
+    // GLM supports OpenAI-compatible tools format
+    if (tools && tools.length > 0) {
+      requestBody.tools = tools.map(tool => ({
+        type: "function",
+        function: {
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.parameters
+        }
+      }));
+      requestBody.tool_choice = "auto";
+      console.log(`[${requestId}] 🔧 Native function calling enabled with ${tools.length} tools`);
+    }
+
+    const response = await fetch(`${GLM_BASE_URL}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${GLM_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal
+    });
+
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 /**
@@ -621,6 +645,17 @@ export function parseStatusMarker(text: string): string | null {
 }
 
 /**
+ * Native tool call from GLM (OpenAI-compatible format)
+ */
+export interface NativeToolCall {
+  id: string;
+  function: {
+    name: string;
+    arguments: string; // JSON string
+  };
+}
+
+/**
  * Callback type for streaming GLM responses
  *
  * NOTE: Callbacks can be async - processGLMStream will await them.
@@ -633,10 +668,33 @@ export interface GLMStreamCallbacks {
   onComplete?: (fullReasoning: string, fullContent: string) => void | Promise<void>;
   onError?: (error: Error) => void | Promise<void>;
   onToolCallDetected?: (toolCall: ToolCall) => void | Promise<void>;
+  /** Called when native tool call is detected (OpenAI-compatible format) */
+  onNativeToolCall?: (toolCall: NativeToolCall) => void | Promise<void>;
 }
 
 // Re-export parseToolCall from glm-tool-parser for backward compatibility
 export { parseToolCall } from './glm-tool-parser.ts';
+
+/**
+ * Read with timeout - wraps reader.read() with a timeout promise
+ * Returns null if timeout occurs, signaling stream stall
+ */
+async function readWithTimeout(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  timeoutMs: number
+): Promise<ReadableStreamReadResult<Uint8Array> | null> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<null>((resolve) => {
+    timeoutId = setTimeout(() => resolve(null), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([reader.read(), timeoutPromise]);
+  } finally {
+    // Always clear timeout, even if reader.read() throws
+    clearTimeout(timeoutId);
+  }
+}
 
 /**
  * Process a streaming GLM response (SSE format)
@@ -647,13 +705,15 @@ export { parseToolCall } from './glm-tool-parser.ts';
  * @param response - Streaming Response from GLM API
  * @param callbacks - Callbacks for handling streaming chunks
  * @param requestId - Request ID for logging
+ * @param chunkTimeoutMs - Timeout between chunks (default: from GLM_CONFIG.CHUNK_TIMEOUT_MS) - if no data arrives within this time, stream is considered stalled
  * @returns Promise that resolves when stream completes
  */
 export async function processGLMStream(
   response: Response,
   callbacks: GLMStreamCallbacks,
-  requestId?: string
-): Promise<{ reasoning: string; content: string }> {
+  requestId?: string,
+  chunkTimeoutMs = GLM_CONFIG.CHUNK_TIMEOUT_MS
+): Promise<{ reasoning: string; content: string; finishReason?: string; nativeToolCalls?: NativeToolCall[] }> {
   const logPrefix = requestId ? `[${requestId}]` : "";
 
   if (!response.body) {
@@ -665,11 +725,29 @@ export async function processGLMStream(
   let buffer = "";
   let fullReasoning = "";
   let fullContent = "";
+  let finishReason: string | undefined;
+
+  // Native tool call accumulation (OpenAI-compatible streaming format)
+  // Tool calls come in chunks with: id, function.name, then incremental function.arguments
+  const toolCallAccumulators: Map<number, { id: string; name: string; arguments: string }> = new Map();
 
   try {
     // Labeled loop to allow breaking out of both loops when [DONE] is received
     readLoop: while (true) {
-      const { done, value } = await reader.read();
+      // Use timeout-protected read to prevent infinite hangs
+      const result = await readWithTimeout(reader, chunkTimeoutMs);
+
+      // Timeout occurred - stream stalled
+      if (result === null) {
+        const err = new Error(`Stream stalled - no data received in ${chunkTimeoutMs}ms`);
+        console.error(`${logPrefix} ⏱️ ${err.message}`);
+        await callbacks.onError?.(err);
+        // Cancel the reader to clean up resources
+        await reader.cancel();
+        throw err;
+      }
+
+      const { done, value } = result;
       if (done) break;
 
       buffer += decoder.decode(value, { stream: true });
@@ -696,6 +774,13 @@ export async function processGLMStream(
           try {
             const parsed = JSON.parse(jsonStr);
             const delta = parsed?.choices?.[0]?.delta;
+            const chunkFinishReason = parsed?.choices?.[0]?.finish_reason;
+
+            // Capture finish_reason when present (usually in final chunk)
+            if (chunkFinishReason) {
+              finishReason = chunkFinishReason;
+              console.log(`${logPrefix} 📊 Stream finish_reason: ${finishReason}`);
+            }
 
             if (delta) {
               // GLM streams reasoning_content first, then content
@@ -709,6 +794,36 @@ export async function processGLMStream(
                 fullContent += delta.content;
                 await callbacks.onContentChunk?.(delta.content);
               }
+
+              // Handle native tool_calls (OpenAI-compatible streaming format)
+              // Tool calls stream incrementally: first chunk has id + name, subsequent chunks have arguments
+              if (delta.tool_calls && Array.isArray(delta.tool_calls)) {
+                for (const toolCallDelta of delta.tool_calls) {
+                  const index = toolCallDelta.index ?? 0;
+
+                  // Get or create accumulator for this tool call
+                  if (!toolCallAccumulators.has(index)) {
+                    toolCallAccumulators.set(index, { id: '', name: '', arguments: '' });
+                  }
+                  const accumulator = toolCallAccumulators.get(index)!;
+
+                  // Accumulate id (usually in first chunk)
+                  if (toolCallDelta.id) {
+                    accumulator.id = toolCallDelta.id;
+                  }
+
+                  // Accumulate function name (usually in first chunk)
+                  if (toolCallDelta.function?.name) {
+                    accumulator.name = toolCallDelta.function.name;
+                    console.log(`${logPrefix} 🔧 Native tool call detected: ${accumulator.name}`);
+                  }
+
+                  // Accumulate function arguments (streams incrementally)
+                  if (toolCallDelta.function?.arguments) {
+                    accumulator.arguments += toolCallDelta.function.arguments;
+                  }
+                }
+              }
             }
           } catch (parseError) {
             // Non-JSON line, skip
@@ -718,92 +833,40 @@ export async function processGLMStream(
       }
     }
 
-    console.log(`${logPrefix} ✅ Stream processed: reasoning=${fullReasoning.length} chars, content=${fullContent.length} chars`);
+    // Convert accumulated tool calls to NativeToolCall array
+    const nativeToolCalls: NativeToolCall[] = [];
+    for (const [, accumulator] of toolCallAccumulators) {
+      if (accumulator.id && accumulator.name) {
+        const toolCall: NativeToolCall = {
+          id: accumulator.id,
+          function: {
+            name: accumulator.name,
+            arguments: accumulator.arguments
+          }
+        };
+        nativeToolCalls.push(toolCall);
+
+        // Invoke callback for each detected tool call
+        console.log(`${logPrefix} 🔧 Native tool call complete: ${toolCall.function.name}(${toolCall.function.arguments})`);
+        await callbacks.onNativeToolCall?.(toolCall);
+      }
+    }
+
+    console.log(`${logPrefix} ✅ Stream processed: reasoning=${fullReasoning.length} chars, content=${fullContent.length} chars, finish_reason=${finishReason || 'none'}, tool_calls=${nativeToolCalls.length}`);
     await callbacks.onComplete?.(fullReasoning, fullContent);
 
-    return { reasoning: fullReasoning, content: fullContent };
+    return {
+      reasoning: fullReasoning,
+      content: fullContent,
+      finishReason,
+      nativeToolCalls: nativeToolCalls.length > 0 ? nativeToolCalls : undefined
+    };
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
     console.error(`${logPrefix} ❌ Stream error:`, err);
     await callbacks.onError?.(err);
     throw err;
   }
-}
-
-/**
- * Process a streaming GLM response with tool call detection
- * Buffers content to detect <tool_call> tags and invokes callback when found
- *
- * This wraps processGLMStream with additional tool detection logic.
- * When a tool call is detected, the onToolCallDetected callback is invoked,
- * and the stream completes with toolCallDetected flag set.
- *
- * @param response - Streaming Response from GLM API
- * @param callbacks - Callbacks for handling streaming chunks and tool calls
- * @param requestId - Request ID for logging
- * @returns Promise with reasoning, content, and optional tool call
- *
- * @example
- * ```typescript
- * const result = await processGLMStreamWithToolDetection(response, {
- *   onReasoningChunk: (chunk) => console.log("Thinking:", chunk),
- *   onContentChunk: (chunk) => console.log("Response:", chunk),
- *   onToolCallDetected: async (toolCall) => {
- *     // Execute tool and call GLM again with results
- *     const toolResult = await executeTool(toolCall);
- *     // ... continue conversation
- *   }
- * }, requestId);
- * ```
- */
-export async function processGLMStreamWithToolDetection(
-  response: Response,
-  callbacks: GLMStreamCallbacks,
-  requestId?: string
-): Promise<{ reasoning: string; content: string; toolCall?: ToolCall }> {
-  const logPrefix = requestId ? `[${requestId}]` : "";
-
-  // Wrap callbacks to buffer content and detect tool calls
-  let contentBuffer = "";
-  let toolCallDetected = false;
-
-  const wrappedCallbacks: GLMStreamCallbacks = {
-    ...callbacks,
-    onContentChunk: async (chunk: string) => {
-      contentBuffer += chunk;
-
-      // Check for complete tool call in buffer
-      if (!toolCallDetected && contentBuffer.includes("</tool_call>")) {
-        const toolCall = parseToolCall(contentBuffer);
-        if (toolCall) {
-          toolCallDetected = true;
-          console.log(`${logPrefix} 🔧 Tool call detected: ${toolCall.name} with args:`, toolCall.arguments);
-          await callbacks.onToolCallDetected?.(toolCall);
-        }
-      }
-
-      // Pass through to original callback
-      await callbacks.onContentChunk?.(chunk);
-    }
-  };
-
-  // Process stream with wrapped callbacks
-  const result = await processGLMStream(response, wrappedCallbacks, requestId);
-
-  // Check for tool call one final time in complete content
-  let toolCall: ToolCall | undefined;
-  if (contentBuffer.includes("</tool_call>")) {
-    const parsed = parseToolCall(contentBuffer);
-    if (parsed) {
-      toolCall = parsed;
-      console.log(`${logPrefix} 🔧 Final tool call parsed: ${toolCall.name}`);
-    }
-  }
-
-  return {
-    ...result,
-    toolCall
-  };
 }
 
 /**

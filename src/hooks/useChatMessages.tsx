@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, useRef } from "react";
+import { flushSync } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getAuthErrorMessage } from "@/utils/authHelpers";
@@ -1013,20 +1014,32 @@ export function useChatMessages(
           streamingReasoningText: finalArtifactData.reasoning || undefined,
         });
 
-        // CRITICAL: Clear streaming state BEFORE saving to prevent duplicate keys
-        setIsLoading(false);
-        onDone();
+        // CRITICAL: Validate content before saving to prevent blank messages
+        if (!finalArtifactData.artifactCode || finalArtifactData.artifactCode.length === 0) {
+          console.error("[useChatMessages] Empty artifact code - not saving blank message");
+          setIsLoading(false);
+          onDone();
+          toast({
+            title: "Response Error",
+            description: "The AI generated an empty response. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
 
-        // Small delay to ensure streaming state is cleared before saving
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        // Save the assistant response with reasoning data
+        // Save the assistant response with reasoning data FIRST
         await saveMessage(
           "assistant",
           finalArtifactData.artifactCode,
           finalArtifactData.reasoning || undefined,
           finalArtifactData.reasoningSteps || undefined
         );
+
+        // THEN clear streaming state synchronously to prevent race condition
+        flushSync(() => {
+          setIsLoading(false);
+        });
+        onDone();
 
         return;
       }
@@ -1310,6 +1323,23 @@ export function useChatMessages(
             }
 
             // ========================================
+            // WARNING: Handle incomplete responses or interruptions
+            // ========================================
+            if (parsed.type === 'warning') {
+              const warningMessage = parsed.message as string;
+              console.warn('[StreamProgress] Warning from server:', warningMessage);
+
+              // Show toast notification so user knows response may be incomplete
+              toast({
+                title: "Response Warning",
+                description: warningMessage || "The response may be incomplete.",
+                variant: "default",
+              });
+
+              continue;
+            }
+
+            // ========================================
             // WEB SEARCH: Handle search results from Tavily API
             // ========================================
             if (parsed.type === 'web_search') {
@@ -1354,12 +1384,42 @@ export function useChatMessages(
         }
       }
 
+      // CRITICAL: Validate content before saving to prevent blank messages
+      // Safety net: Auto-retry once if response is empty
+      // (Legacy edge case - native function calling should prevent this)
+      if (!fullResponse || fullResponse.length === 0) {
+        const MAX_EMPTY_RETRIES = 1;
+        if (retryCount < MAX_EMPTY_RETRIES) {
+          console.warn(`[useChatMessages] Empty response - auto-retrying (attempt ${retryCount + 1}/${MAX_EMPTY_RETRIES + 1})`);
+          toast({
+            title: "Retrying...",
+            description: "Response was incomplete. Trying again automatically.",
+            variant: "default",
+          });
+          // Small delay before retry to avoid hammering the API
+          await new Promise(resolve => setTimeout(resolve, 500));
+          return streamChat(userMessage, onDelta, onDone, currentArtifact, forceImageMode, forceArtifactMode, retryCount + 1, abortSignal);
+        }
+
+        console.error("[useChatMessages] Empty chat response after retries - not saving blank message");
+        setIsLoading(false);
+        onDone();
+        toast({
+          title: "Response Error",
+          description: "The AI generated an empty response. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Save assistant message first, then signal completion
       // This prevents a race condition where streamingMessage is cleared before the saved message appears
       await saveMessage("assistant", fullResponse, undefined, reasoningSteps, searchResults);
 
-      // Small delay to ensure React state updates have propagated
-      await new Promise(resolve => setTimeout(resolve, 50));
+      // Clear streaming state synchronously to prevent race condition
+      flushSync(() => {
+        setIsLoading(false);
+      });
 
       onDone();
     } catch (error: unknown) {

@@ -405,6 +405,31 @@ export function getSearchRecencyPhrase(offset: number = 1): string {
 }
 
 /**
+ * GLM API timeout configuration
+ * Controls timeout limits for GLM API requests to prevent hanging connections
+ *
+ * Environment Variables:
+ * - GLM_REQUEST_TIMEOUT_MS: Non-streaming request timeout (default: 60000 / 60s)
+ * - GLM_STREAM_TIMEOUT_MS: Streaming request timeout (default: 120000 / 2min)
+ * - GLM_CHUNK_TIMEOUT_MS: Timeout between stream chunks (default: 30000 / 30s)
+ *
+ * @example
+ * ```bash
+ * # Increase timeout for complex artifact generation
+ * supabase secrets set GLM_REQUEST_TIMEOUT_MS=90000
+ * supabase secrets set GLM_STREAM_TIMEOUT_MS=180000
+ * ```
+ */
+export const GLM_CONFIG = {
+  /** Timeout for non-streaming GLM requests in milliseconds (default: 60s) */
+  REQUEST_TIMEOUT_MS: getEnvInt('GLM_REQUEST_TIMEOUT_MS', 60000, 1),
+  /** Timeout for streaming GLM requests in milliseconds (default: 2min) */
+  STREAM_TIMEOUT_MS: getEnvInt('GLM_STREAM_TIMEOUT_MS', 120000, 1),
+  /** Timeout between stream chunks in milliseconds (default: 30s) */
+  CHUNK_TIMEOUT_MS: getEnvInt('GLM_CHUNK_TIMEOUT_MS', 30000, 1),
+} as const;
+
+/**
  * Determine if a specific request should use GLM tool-calling
  * Based on feature flag AND rollout percentage
  * @param requestId - Used for deterministic rollout (same request = same decision)

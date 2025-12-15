@@ -5,7 +5,7 @@
  *
  * Flow:
  * 1. Send user message to GLM with tools enabled
- * 2. Stream GLM response, detecting <tool_call> tags in content
+ * 2. Stream GLM response, detecting native tool_calls in response
  * 3. If tool call detected: execute tool, inject results, continue GLM response
  * 4. Stream final response to client with SSE events for tool execution
  *
@@ -18,7 +18,7 @@
  *
  * Architecture:
  * - Uses GLM_SEARCH_TOOL from glm-client.ts for tool definitions
- * - Uses processGLMStreamWithToolDetection for tool call detection
+ * - Uses processGLMStream for native tool call detection
  * - Uses executeTool from tool-executor.ts for tool execution
  * - Uses callGLMWithToolResult for continuation with tool results
  * - Maintains OpenAI-compatible SSE format for frontend compatibility
@@ -26,11 +26,11 @@
 
 import {
   callGLMWithRetry,
-  processGLMStreamWithToolDetection,
+  processGLMStream,
   callGLMWithToolResult,
   GLM_SEARCH_TOOL,
-  type GLMStreamCallbacks,
   type ToolCall,
+  type NativeToolCall,
 } from '../../_shared/glm-client.ts';
 import {
   executeTool,
@@ -61,6 +61,27 @@ export interface ToolCallingChatParams {
   corsHeaders: Record<string, string>;
   /** Rate limit headers */
   rateLimitHeaders: Record<string, string>;
+}
+
+/**
+ * Helper function to parse tool call arguments from JSON string
+ *
+ * @param args - JSON string containing tool arguments
+ * @param logPrefix - Prefix for logging (e.g., "[request-id]")
+ * @returns Parsed arguments object, or empty object if parsing fails
+ */
+function parseToolArguments(
+  args: string,
+  logPrefix: string
+): Record<string, unknown> {
+  try {
+    return JSON.parse(args);
+  } catch {
+    console.warn(
+      `${logPrefix} ⚠️ Failed to parse tool call arguments: ${args}`
+    );
+    return {};
+  }
 }
 
 /**
@@ -168,88 +189,11 @@ export async function handleToolCallingChat(
       }
 
       try {
-        // ========================================
-        // Content buffer for tool call filtering
-        // ========================================
-        // We buffer content to strip <tool_call>...</tool_call> XML before sending to client
-        // This prevents raw tool call XML from being shown to users
-        let contentBuffer = '';
-        let toolCallInProgress = false;
-
-        // Lookahead size to hold back potential partial tags at chunk boundaries
-        // Must be >= length of '<tool_call>' (11 chars)
-        const LOOKAHEAD_SIZE = 12;
-
-        /**
-         * Flush safe content to client
-         * Strips any partial or complete <tool_call> blocks before sending
-         *
-         * @param isFinalFlush - If true, flush everything (stream ended)
-         */
-        function flushSafeContent(isFinalFlush = false) {
-          if (!contentBuffer) return;
-
-          // Check if we're inside a tool call block
-          const toolCallStartIdx = contentBuffer.indexOf('<tool_call>');
-          const toolCallEndIdx = contentBuffer.indexOf('</tool_call>');
-
-          if (toolCallStartIdx !== -1) {
-            // Found start of tool call
-            if (toolCallEndIdx !== -1 && toolCallEndIdx > toolCallStartIdx) {
-              // Complete tool call block - strip it
-              const beforeToolCall = contentBuffer.substring(0, toolCallStartIdx);
-              const afterToolCall = contentBuffer.substring(toolCallEndIdx + '</tool_call>'.length);
-
-              // Send content before the tool call
-              if (beforeToolCall.trim()) {
-                sendContentChunk(beforeToolCall);
-              }
-
-              // Keep content after tool call for next flush
-              contentBuffer = afterToolCall;
-              toolCallInProgress = false;
-
-              // Recursively flush in case there are more tool calls
-              flushSafeContent(isFinalFlush);
-            } else {
-              // Incomplete tool call - send content before it, buffer the rest
-              const beforeToolCall = contentBuffer.substring(0, toolCallStartIdx);
-              if (beforeToolCall.trim()) {
-                sendContentChunk(beforeToolCall);
-              }
-              contentBuffer = contentBuffer.substring(toolCallStartIdx);
-              toolCallInProgress = true;
-            }
-          } else if (toolCallInProgress) {
-            // We're inside a tool call block, keep buffering
-            // Check if we found the end tag
-            if (toolCallEndIdx !== -1) {
-              // Found end tag - discard tool call content, keep the rest
-              contentBuffer = contentBuffer.substring(toolCallEndIdx + '</tool_call>'.length);
-              toolCallInProgress = false;
-              flushSafeContent(isFinalFlush);
-            }
-            // Otherwise keep buffering
-          } else {
-            // No complete tool call markers found
-            // Hold back a lookahead tail to catch partial tags split across chunks
-            // e.g., chunk ends with "<tool_ca" - we need to wait for more data
-            if (isFinalFlush) {
-              // Final flush - send everything
-              sendContentChunk(contentBuffer);
-              contentBuffer = '';
-            } else if (contentBuffer.length > LOOKAHEAD_SIZE) {
-              // Send content except lookahead tail (which might contain partial tag)
-              const safeToSend = contentBuffer.substring(0, contentBuffer.length - LOOKAHEAD_SIZE);
-              sendContentChunk(safeToSend);
-              contentBuffer = contentBuffer.substring(contentBuffer.length - LOOKAHEAD_SIZE);
-            }
-            // If buffer is smaller than lookahead, wait for more chunks
-          }
-        }
+        // NOTE: With native function calling, GLM returns tool_calls in the response
+        // instead of XML in content. No content buffering/stripping needed.
 
         // ========================================
-        // STEP 1: Call GLM with tools enabled
+        // STEP 1: Call GLM with native function calling
         // ========================================
         const glmResponse = await callGLMWithRetry(
           finalSystemPrompt,
@@ -260,7 +204,7 @@ export async function handleToolCallingChat(
             isGuest,
             functionName: 'chat',
             stream: true,
-            enableThinking: true,
+            enableThinking: true, // Reasoning enabled for better tool selection
             tools: [GLM_SEARCH_TOOL],
             temperature: 0.7,
             max_tokens: 8000,
@@ -283,7 +227,7 @@ export async function handleToolCallingChat(
         }
 
         // ========================================
-        // STEP 2: Stream response with tool detection
+        // STEP 2: Stream response with NATIVE tool call detection
         // ========================================
         const toolContext: ToolContext = {
           requestId,
@@ -292,11 +236,12 @@ export async function handleToolCallingChat(
           functionName: 'chat',
         };
 
-        let toolCallDetected = false;
-        let detectedToolCall: ToolCall | undefined;
+        let nativeToolCallDetected = false;
+        let detectedNativeToolCall: NativeToolCall | undefined;
 
-        // Process stream with tool detection
-        const streamResult = await processGLMStreamWithToolDetection(
+        // Process stream with native tool call detection
+        // GLM now uses OpenAI-compatible tool_calls in response instead of XML
+        const streamResult = await processGLMStream(
           glmResponse,
           {
             onReasoningChunk: async (chunk: string) => {
@@ -309,26 +254,31 @@ export async function handleToolCallingChat(
             },
 
             onContentChunk: async (chunk: string) => {
-              // Buffer content and strip tool call XML before forwarding to client
-              // This prevents raw <tool_call>...</tool_call> XML from being shown to users
-              contentBuffer += chunk;
-              flushSafeContent();
+              // With native tool calling, content is clean (no XML to strip)
+              // Forward directly to client
+              sendContentChunk(chunk);
             },
 
-            onToolCallDetected: async (toolCall: ToolCall) => {
-              toolCallDetected = true;
-              detectedToolCall = toolCall;
+            onNativeToolCall: async (toolCall: NativeToolCall) => {
+              nativeToolCallDetected = true;
+              detectedNativeToolCall = toolCall;
+
+              // Parse arguments from JSON string
+              const parsedArgs = parseToolArguments(
+                toolCall.function.arguments,
+                logPrefix
+              );
 
               console.log(
-                `${logPrefix} 🔧 Tool call detected: ${toolCall.name} with args:`,
-                toolCall.arguments
+                `${logPrefix} 🔧 Native tool call detected: ${toolCall.function.name} with args:`,
+                parsedArgs
               );
 
               // Notify client that tool call started
               sendEvent({
                 type: 'tool_call_start',
-                toolName: toolCall.name,
-                arguments: toolCall.arguments,
+                toolName: toolCall.function.name,
+                arguments: parsedArgs,
                 timestamp: Date.now(),
               });
             },
@@ -337,13 +287,6 @@ export async function handleToolCallingChat(
               console.log(
                 `${logPrefix} ✅ GLM stream complete: reasoning=${fullReasoning.length}chars, content=${fullContent.length}chars`
               );
-
-              // Final flush - send any remaining buffered content
-              // If tool call was in progress, discard it (incomplete XML)
-              if (contentBuffer && !toolCallInProgress) {
-                flushSafeContent(true); // isFinalFlush = true
-              }
-              contentBuffer = '';
 
               // Send reasoning_complete event
               if (fullReasoning.length > 0) {
@@ -367,13 +310,39 @@ export async function handleToolCallingChat(
           requestId
         );
 
-        // ========================================
-        // STEP 3: Execute tool if detected
-        // ========================================
-        if (toolCallDetected && detectedToolCall) {
-          console.log(`${logPrefix} 🔧 Executing tool: ${detectedToolCall.name}`);
+        // Check if we got native tool calls from the stream result
+        if (streamResult.nativeToolCalls && streamResult.nativeToolCalls.length > 0 && !nativeToolCallDetected) {
+          // TODO: Support multiple tool calls in parallel (currently only first is processed)
+          if (streamResult.nativeToolCalls.length > 1) {
+            console.warn(`${logPrefix} ⚠️ Multiple tool calls detected (${streamResult.nativeToolCalls.length}), only processing first`);
+          }
+          // Tool calls were detected in stream processing
+          nativeToolCallDetected = true;
+          detectedNativeToolCall = streamResult.nativeToolCalls[0];
+        }
 
-          const toolResult = await executeTool(detectedToolCall, toolContext);
+        // NOTE: With native function calling, retry logic is no longer needed
+        // GLM properly completes tool calls via the API instead of XML in content
+
+        // ========================================
+        // STEP 3: Execute tool if detected (using native tool call)
+        // ========================================
+        if (nativeToolCallDetected && detectedNativeToolCall) {
+          // Convert NativeToolCall to ToolCall format for executeTool
+          const parsedArgs = parseToolArguments(
+            detectedNativeToolCall.function.arguments,
+            logPrefix
+          );
+
+          const toolCallForExecution: ToolCall = {
+            id: detectedNativeToolCall.id,
+            name: detectedNativeToolCall.function.name,
+            arguments: parsedArgs,
+          };
+
+          console.log(`${logPrefix} 🔧 Executing tool: ${toolCallForExecution.name}`);
+
+          const toolResult = await executeTool(toolCallForExecution, toolContext);
 
           console.log(
             `${logPrefix} 🔧 Tool execution ${toolResult.success ? 'succeeded' : 'failed'}: ${toolResult.latencyMs}ms`
@@ -394,7 +363,7 @@ export async function handleToolCallingChat(
           // ========================================
           if (toolResult.success) {
             const formattedResult = formatResultForGLM(
-              detectedToolCall,
+              toolCallForExecution,
               toolResult
             );
 
@@ -406,7 +375,7 @@ export async function handleToolCallingChat(
             const continuationResult = await callGLMWithToolResult(
               finalSystemPrompt,
               userPrompt,
-              detectedToolCall,
+              toolCallForExecution,
               toolResult.data?.formattedContext || 'Tool execution failed',
               {
                 onReasoningChunk: async (chunk: string) => {
