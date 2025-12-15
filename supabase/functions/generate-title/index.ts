@@ -18,10 +18,13 @@ serve(async (req) => {
   const startTime = Date.now();
   const logger = createLogger({ requestId, functionName: 'generate-title' });
 
+  // Declare outside try block so it's accessible in catch
+  let requestBody: { message?: string } | undefined;
+
   try {
     logger.request(req.method, '/generate-title');
 
-    const requestBody = await req.json();
+    requestBody = await req.json();
     const { message } = requestBody;
 
     logger.debug('request_received', {

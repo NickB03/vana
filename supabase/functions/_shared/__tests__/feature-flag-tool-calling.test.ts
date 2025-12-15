@@ -9,16 +9,16 @@ import { assertEquals } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import { shouldUseGLMToolCalling, FEATURE_FLAGS } from "../config.ts";
 
 // ============================================================================
-// SECTION 1: Feature Flag Disabled (Default)
+// SECTION 1: Feature Flag Enabled at 100% Rollout (Default)
 // ============================================================================
 
-Deno.test("shouldUseGLMToolCalling - returns false when feature flag is disabled", () => {
-  // By default, USE_GLM_TOOL_CALLING should be false (not set in env)
+Deno.test("shouldUseGLMToolCalling - returns true when feature flag is enabled (default)", () => {
+  // By default, USE_GLM_TOOL_CALLING is true and rollout is 100%
   const result = shouldUseGLMToolCalling("test-request-id-123");
-  assertEquals(result, false);
+  assertEquals(result, true);
 });
 
-Deno.test("shouldUseGLMToolCalling - returns false for any request ID when disabled", () => {
+Deno.test("shouldUseGLMToolCalling - returns true for any request ID when enabled at 100%", () => {
   const requestIds = [
     "req-001",
     "req-002",
@@ -28,23 +28,21 @@ Deno.test("shouldUseGLMToolCalling - returns false for any request ID when disab
   ];
 
   for (const requestId of requestIds) {
-    assertEquals(shouldUseGLMToolCalling(requestId), false);
+    assertEquals(shouldUseGLMToolCalling(requestId), true);
   }
 });
 
 // ============================================================================
-// SECTION 2: Rollout Percentage = 0 (Disabled Explicitly)
+// SECTION 2: Rollout Percentage = 100% (Default Configuration)
 // ============================================================================
 
-Deno.test("shouldUseGLMToolCalling - returns false when rollout is 0%", () => {
-  // Simulate GLM_TOOL_CALLING_ROLLOUT_PERCENT=0
-  // Note: This test assumes the function reads from FEATURE_FLAGS.GLM_TOOL_CALLING_ROLLOUT_PERCENT
-  // In production, this would be controlled by environment variable
+Deno.test("shouldUseGLMToolCalling - returns true when rollout is 100% (default)", () => {
+  // With default GLM_TOOL_CALLING_ROLLOUT_PERCENT=100 and USE_GLM_TOOL_CALLING=true
+  // All requests should use tool-calling
   const result = shouldUseGLMToolCalling("any-request-id");
 
-  // Should return false if feature is disabled OR rollout is 0%
-  // Since feature flag defaults to false, this will be false
-  assertEquals(result, false);
+  // Should return true since feature is enabled AND rollout is 100%
+  assertEquals(result, true);
 });
 
 // ============================================================================
@@ -71,9 +69,9 @@ Deno.test("shouldUseGLMToolCalling - hash produces different results for differe
   const result1 = shouldUseGLMToolCalling(requestId1);
   const result2 = shouldUseGLMToolCalling(requestId2);
 
-  // Note: Both will be false in default env, but hash calculation still runs
-  // If feature were enabled, different IDs could produce different results
-  // For now, both return false since feature flag is off
+  // Note: Both will be true in default env (100% rollout), but hash calculation still runs
+  // If rollout percentage were reduced (e.g., 50%), different IDs could produce different results
+  // For now, both return true since feature is enabled at 100% rollout
   assertEquals(typeof result1, "boolean");
   assertEquals(typeof result2, "boolean");
 });
@@ -85,9 +83,9 @@ Deno.test("shouldUseGLMToolCalling - hash produces different results for differe
 Deno.test("shouldUseGLMToolCalling - handles empty string request ID", () => {
   const result = shouldUseGLMToolCalling("");
 
-  // Should still return boolean (false when feature disabled)
+  // Should still return boolean (true when feature enabled at 100%)
   assertEquals(typeof result, "boolean");
-  assertEquals(result, false);
+  assertEquals(result, true);
 });
 
 Deno.test("shouldUseGLMToolCalling - handles UUID format request IDs", () => {
@@ -95,14 +93,14 @@ Deno.test("shouldUseGLMToolCalling - handles UUID format request IDs", () => {
   const result = shouldUseGLMToolCalling(uuid);
 
   assertEquals(typeof result, "boolean");
-  assertEquals(result, false); // Default: feature disabled
+  assertEquals(result, true); // Default: feature enabled at 100%
 });
 
 Deno.test("shouldUseGLMToolCalling - handles numeric string request IDs", () => {
   const result = shouldUseGLMToolCalling("123456789");
 
   assertEquals(typeof result, "boolean");
-  assertEquals(result, false);
+  assertEquals(result, true);
 });
 
 Deno.test("shouldUseGLMToolCalling - handles special characters in request ID", () => {
@@ -129,14 +127,14 @@ Deno.test("shouldUseGLMToolCalling - hash-based distribution concept", () => {
 
   const results = requestIds.map(id => shouldUseGLMToolCalling(id));
 
-  // All should be false when feature is disabled
+  // All should be true when feature is enabled at 100%
   const trueCount = results.filter(r => r === true).length;
   const falseCount = results.filter(r => r === false).length;
 
-  assertEquals(falseCount, 100); // All false when feature disabled
-  assertEquals(trueCount, 0);
+  assertEquals(trueCount, 100); // All true when feature enabled at 100%
+  assertEquals(falseCount, 0);
 
-  // Note: If USE_GLM_TOOL_CALLING=true and GLM_TOOL_CALLING_ROLLOUT_PERCENT=10,
+  // Note: If GLM_TOOL_CALLING_ROLLOUT_PERCENT=10,
   // we'd expect roughly 10% true, 90% false (with some variance due to hash)
 });
 
@@ -163,12 +161,11 @@ Deno.test("shouldUseGLMToolCalling - consistent hash buckets for A/B testing", (
 // ============================================================================
 
 Deno.test("shouldUseGLMToolCalling - respects USE_GLM_TOOL_CALLING flag", () => {
-  // When USE_GLM_TOOL_CALLING=false (default), should always return false
-  // regardless of rollout percentage or request ID
-  assertEquals(FEATURE_FLAGS.USE_GLM_TOOL_CALLING, false);
+  // When USE_GLM_TOOL_CALLING=true (default), should return true at 100% rollout
+  assertEquals(FEATURE_FLAGS.USE_GLM_TOOL_CALLING, true);
 
   const result = shouldUseGLMToolCalling("any-id");
-  assertEquals(result, false);
+  assertEquals(result, true);
 });
 
 Deno.test("FEATURE_FLAGS.USE_GLM_TOOL_CALLING - is boolean", () => {
@@ -245,12 +242,12 @@ Deno.test("shouldUseGLMToolCalling - executes quickly for hash computation", () 
   assertEquals(duration < 100, true);
 });
 
-Deno.test("shouldUseGLMToolCalling - returns immediately when feature disabled", () => {
-  // When feature flag is false, should short-circuit without hash calculation
+Deno.test("shouldUseGLMToolCalling - returns quickly when feature enabled", () => {
+  // When feature flag is true at 100%, should return immediately
   const result = shouldUseGLMToolCalling("test-id");
 
-  // Should return false immediately
-  assertEquals(result, false);
+  // Should return true since default is enabled at 100%
+  assertEquals(result, true);
 });
 
 // ============================================================================
@@ -275,11 +272,9 @@ Deno.test("Real-world pattern - Chat endpoint decides whether to use tool-callin
   }
 });
 
-Deno.test("Real-world pattern - Gradual rollout configuration", () => {
-  // Production scenario: Start with 10% rollout
-  // If GLM_TOOL_CALLING_ROLLOUT_PERCENT=10
-  // Then ~10% of requests would use new tool-calling approach
-  // Rest would use legacy regex-based detection
+Deno.test("Real-world pattern - Full rollout configuration", () => {
+  // Production scenario: Full 100% rollout (current default)
+  // All requests use the new tool-calling approach
 
   const testRequests = 100;
   const results = Array.from(
@@ -289,13 +284,11 @@ Deno.test("Real-world pattern - Gradual rollout configuration", () => {
 
   const enabledCount = results.filter(r => r === true).length;
 
-  // In default env (feature disabled), should be 0%
-  assertEquals(enabledCount, 0);
+  // Default configuration: Feature enabled at 100% rollout, so all requests should use tool-calling
+  assertEquals(enabledCount, 100);
 
-  // In production with feature enabled + 10% rollout:
+  // Note: To reduce rollout, set GLM_TOOL_CALLING_ROLLOUT_PERCENT=10
   // Expected: ~10 enabled (with some variance due to hash distribution)
-  // Acceptable range: 5-15 enabled out of 100
-  // But we can't test this without env var manipulation
 });
 
 Deno.test("Real-world pattern - Analytics tracking of rollout groups", () => {
@@ -311,9 +304,9 @@ Deno.test("Real-world pattern - Analytics tracking of rollout groups", () => {
     rolloutPercent: FEATURE_FLAGS.GLM_TOOL_CALLING_ROLLOUT_PERCENT,
   };
 
-  assertEquals(analyticsEvent.experimentGroup, "legacy"); // Default state
-  assertEquals(analyticsEvent.featureFlagEnabled, false);
-  assertEquals(analyticsEvent.rolloutPercent >= 0, true);
+  assertEquals(analyticsEvent.experimentGroup, "tool-calling"); // Now enabled by default
+  assertEquals(analyticsEvent.featureFlagEnabled, true);
+  assertEquals(analyticsEvent.rolloutPercent, 100);
 });
 
 // ============================================================================
@@ -340,14 +333,14 @@ Deno.test("Feature flag documentation - reminds of environment variables", () =>
   assertEquals(howToEnable.includes("USE_GLM_TOOL_CALLING"), true);
 });
 
-Deno.test("Feature flag prevents accidental full rollout", () => {
-  // Safety check: Default rollout percentage should be 0
-  // This prevents accidental 100% rollout if someone just enables the flag
-  // They must EXPLICITLY set both USE_GLM_TOOL_CALLING=true AND
-  // GLM_TOOL_CALLING_ROLLOUT_PERCENT=100
+Deno.test("Feature flag defaults to full rollout", () => {
+  // Default configuration: USE_GLM_TOOL_CALLING=true with 100% rollout
+  // This means all requests use GLM tool-calling by default
+  // To disable, set USE_GLM_TOOL_CALLING=false
+  // To do gradual rollout, set GLM_TOOL_CALLING_ROLLOUT_PERCENT=10 (or any %)
 
   const defaultPercent = FEATURE_FLAGS.GLM_TOOL_CALLING_ROLLOUT_PERCENT;
-  assertEquals(defaultPercent, 0);
+  assertEquals(defaultPercent, 100);
 });
 
 console.log("\n✅ All feature-flag-tool-calling tests completed!\n");

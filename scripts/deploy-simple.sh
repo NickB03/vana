@@ -1,14 +1,13 @@
 #!/bin/bash
-# Simple deployment script for personal project
-# Usage: ./scripts/deploy-simple.sh [staging|prod]
+# Simple deployment script for production
+# Usage: ./scripts/deploy-simple.sh prod
 
 set -e
 trap 'echo -e "${NC}"' EXIT ERR  # Reset terminal color on exit/error
 
 ENV=$1
 
-# Configuration (use environment variables with fallbacks)
-STAGING_REF="${STAGING_REF:-tkqubuaqzqjvrcnlipts}"
+# Configuration
 PROD_REF="${SUPABASE_PRODUCTION_REF:-vznhbocnuykdmjvujaka}"
 
 # Colors
@@ -18,48 +17,33 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 # Validate environment
-if [ "$ENV" != "staging" ] && [ "$ENV" != "prod" ]; then
-  echo "Usage: ./scripts/deploy-simple.sh [staging|prod]"
+if [ "$ENV" != "prod" ]; then
+  echo "Usage: ./scripts/deploy-simple.sh prod"
   echo ""
-  echo "Examples:"
-  echo "  ./scripts/deploy-simple.sh staging    # Deploy to staging"
-  echo "  ./scripts/deploy-simple.sh prod       # Deploy to production"
+  echo "This script deploys Edge Functions to production (vana-dev)."
+  echo "For local development, use: supabase start"
   exit 1
 fi
 
-# Validate staging ref is configured
-if [ "$ENV" = "staging" ] && [[ "$STAGING_REF" == *"YOUR-STAGING-REF"* ]]; then
-  echo -e "${RED}❌ Error: STAGING_REF not configured${NC}"
-  echo "Set environment variable: export STAGING_REF=<your-staging-ref>"
-  echo "Or edit this script and replace <YOUR-STAGING-REF>"
+PROJECT_REF=$PROD_REF
+echo -e "${RED}⚠️⚠️⚠️  DEPLOYING TO PRODUCTION  ⚠️⚠️⚠️${NC}"
+echo ""
+echo "Current branch: $(git branch --show-current)"
+echo "Last commit: $(git log -1 --oneline)"
+echo "Project ref: $PROD_REF"
+echo ""
+read -p "Type the production project ref to confirm: " confirm
+if [ "$confirm" != "$PROD_REF" ]; then
+  echo "Deployment cancelled (incorrect project ref)"
   exit 1
 fi
 
-# Set project ref based on environment
-if [ "$ENV" = "staging" ]; then
-  PROJECT_REF=$STAGING_REF
-  echo -e "${YELLOW}🚀 Deploying to STAGING...${NC}"
+# Create backup before production deploy
+echo ""
+if [ -f scripts/backup-db.sh ]; then
+  ./scripts/backup-db.sh production
 else
-  PROJECT_REF=$PROD_REF
-  echo -e "${RED}⚠️⚠️⚠️  DEPLOYING TO PRODUCTION  ⚠️⚠️⚠️${NC}"
-  echo ""
-  echo "Current branch: $(git branch --show-current)"
-  echo "Last commit: $(git log -1 --oneline)"
-  echo "Project ref: $PROD_REF"
-  echo ""
-  read -p "Type the production project ref to confirm: " confirm
-  if [ "$confirm" != "$PROD_REF" ]; then
-    echo "Deployment cancelled (incorrect project ref)"
-    exit 1
-  fi
-
-  # Create backup before production deploy
-  echo ""
-  if [ -f scripts/backup-db.sh ]; then
-    ./scripts/backup-db.sh production
-  else
-    echo -e "${YELLOW}⚠️  No backup script found (skipping backup)${NC}"
-  fi
+  echo -e "${YELLOW}⚠️  No backup script found (skipping backup)${NC}"
 fi
 
 # Run tests (optional - comment out if you want faster deploys)
@@ -86,15 +70,10 @@ fi
 # Success
 echo ""
 echo -e "${GREEN}================================================${NC}"
-echo -e "${GREEN}✅ Deployment to $ENV complete!${NC}"
+echo -e "${GREEN}✅ Deployment to production complete!${NC}"
 echo -e "${GREEN}================================================${NC}"
 echo ""
 echo "Next steps:"
-if [ "$ENV" = "staging" ]; then
-  echo "  1. Test staging: https://${PROJECT_REF}.supabase.co"
-  echo "  2. If tests pass, deploy to prod: ./scripts/deploy-simple.sh prod"
-else
-  echo "  1. Monitor production"
-  echo "  2. Check logs: supabase functions logs --project-ref $PROJECT_REF"
-fi
+echo "  1. Monitor production"
+echo "  2. Check logs: supabase functions logs --project-ref $PROJECT_REF"
 echo ""

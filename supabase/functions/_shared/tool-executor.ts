@@ -35,6 +35,7 @@ import {
 } from './tavily-client.ts';
 import type { ToolCall } from './glm-client.ts';
 import { sanitizeXmlValue } from './glm-tool-parser.ts';
+import { rewriteSearchQuery } from './query-rewriter.ts';
 
 /**
  * Context for tool execution
@@ -224,9 +225,29 @@ async function executeSearchTool(
 
   console.log(`[${requestId}] 🔍 Executing browser.search: "${query}"`);
 
+  // Query rewriting: Optimize the search query if beneficial
+  // rewriteSearchQuery handles the shouldRewriteQuery check internally
+  let searchQuery = query;
   try {
-    // Search with retry tracking
-    const { response, retryCount } = await searchTavilyWithRetryTracking(query, {
+    const rewriteResult = await rewriteSearchQuery(query, { requestId });
+    searchQuery = rewriteResult.rewrittenQuery;
+
+    if (rewriteResult.skipped) {
+      console.log(`[${requestId}] 📝 Query rewrite skipped: ${rewriteResult.skipReason}`);
+    } else if (searchQuery !== query) {
+      console.log(
+        `[${requestId}] 📝 Query optimized: "${query}" → "${searchQuery}" (${rewriteResult.latencyMs}ms)`
+      );
+    }
+  } catch (rewriteError) {
+    // Silently fall back to original query if rewriting fails
+    console.warn(`[${requestId}] Query rewrite failed, using original:`, rewriteError);
+    searchQuery = query;
+  }
+
+  try {
+    // Search with retry tracking (using optimized query)
+    const { response, retryCount } = await searchTavilyWithRetryTracking(searchQuery, {
       requestId,
       userId,
       isGuest,
@@ -252,7 +273,8 @@ async function executeSearchTool(
       functionName,
       userId,
       isGuest,
-      query,
+      query: searchQuery, // The actual query sent to Tavily (possibly rewritten)
+      originalQuery: searchQuery !== query ? query : undefined, // Include original if different
       resultCount: response.results.length,
       searchDepth: 'basic',
       latencyMs,
@@ -294,7 +316,8 @@ async function executeSearchTool(
       functionName,
       userId,
       isGuest,
-      query,
+      query: searchQuery, // The actual query sent to Tavily (possibly rewritten)
+      originalQuery: searchQuery !== query ? query : undefined, // Include original if different
       resultCount: 0,
       searchDepth: 'basic',
       latencyMs,

@@ -31,16 +31,22 @@ export const FEATURE_FLAGS = {
    * Enable GLM-4.6 native tool-calling for web search
    * When true, GLM decides when to search using its built-in browser.search tool
    * When false, uses legacy regex-based shouldPerformWebSearch()
-   * Set USE_GLM_TOOL_CALLING=true to enable
+   *
+   * Default: ENABLED (set USE_GLM_TOOL_CALLING=false to disable)
+   *
+   * This replaces the legacy regex-based search detection with LLM-driven
+   * tool-calling, matching the approach used by ChatGPT, Gemini, and Claude.
    */
-  USE_GLM_TOOL_CALLING: Deno.env.get('USE_GLM_TOOL_CALLING') === 'true',
+  USE_GLM_TOOL_CALLING: Deno.env.get('USE_GLM_TOOL_CALLING') !== 'false',
 
   /**
    * Percentage of requests to route to GLM tool-calling (0-100)
    * Allows gradual rollout: 10 = 10% of requests use tool-calling
    * Only applies when USE_GLM_TOOL_CALLING is true
+   *
+   * Default: 100 (full rollout)
    */
-  GLM_TOOL_CALLING_ROLLOUT_PERCENT: getEnvInt('GLM_TOOL_CALLING_ROLLOUT_PERCENT', 0, 0),
+  GLM_TOOL_CALLING_ROLLOUT_PERCENT: getEnvInt('GLM_TOOL_CALLING_ROLLOUT_PERCENT', 100, 0),
 } as const;
 
 /**
@@ -363,6 +369,40 @@ export const TAVILY_CONFIG = {
    */
   ALWAYS_SEARCH_ENABLED: Deno.env.get('TAVILY_ALWAYS_SEARCH') === 'true'
 } as const;
+
+/**
+ * Get the current year dynamically
+ * Used for search prompts and temporal context in system prompts
+ *
+ * @returns Current year as number
+ *
+ * @example
+ * ```typescript
+ * const year = getCurrentYear(); // 2025
+ * const searchInstruction = `Search for events since ${year}`;
+ * ```
+ */
+export function getCurrentYear(): number {
+  return new Date().getFullYear();
+}
+
+/**
+ * Get a relative phrasing for search recency ("since YYYY")
+ * This is more maintainable than hardcoding years in prompts
+ *
+ * @param offset - Number of years before current year (default: 1)
+ * @returns Formatted string like "since 2024"
+ *
+ * @example
+ * ```typescript
+ * getSearchRecencyPhrase() // "since 2024" (if current year is 2025)
+ * getSearchRecencyPhrase(0) // "since 2025"
+ * getSearchRecencyPhrase(2) // "since 2023"
+ * ```
+ */
+export function getSearchRecencyPhrase(offset: number = 1): string {
+  return `since ${getCurrentYear() - offset}`;
+}
 
 /**
  * Determine if a specific request should use GLM tool-calling

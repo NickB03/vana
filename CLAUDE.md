@@ -1,4 +1,4 @@
-<!-- CLAUDE.md v2.14 | Last updated: 2025-12-08 | Updated with Phase 4 bundles, monitoring section, and recent improvements -->
+<!-- CLAUDE.md v2.15 | Last updated: 2025-12-14 | Aligned with Anthropic best practices, updated metrics, added dev environment -->
 
 # CLAUDE.md
 
@@ -9,6 +9,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Vana** is a production AI-powered development assistant that transforms natural language into interactive code, React components, diagrams, and images in real-time. Built with React 18, TypeScript, Vite, Supabase (PostgreSQL + Edge Functions), and multiple AI models via OpenRouter and Google AI Studio.
 
 **Tech Stack**: React 18.3.1 + TypeScript 5.8.3 + Vite 5.4.19 + Tailwind CSS + shadcn/ui + Supabase + TanStack Query + Vitest
+
+## Developer Environment
+
+**Required versions** (check with `node -v`, `deno --version`, `supabase --version`):
+- **Node.js**: v20+ (LTS recommended)
+- **npm**: v10+ (comes with Node.js)
+- **Deno**: v1.40+ (for Edge Functions development)
+- **Supabase CLI**: v1.x
+- **Chrome**: Required for DevTools MCP browser testing
+
+**First-time setup**:
+```bash
+npm install                    # Install dependencies
+supabase start                 # Start local Supabase (Docker required)
+npm run dev                    # Start dev server on port 8080
+```
 
 ## Features
 
@@ -26,7 +42,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Run all tests | `npm run test` |
 | Run specific test | `npm run test -- path/to/file.test.ts` |
 | Check coverage | `npm run test:coverage` (55% threshold) |
-| Deploy staging | `./scripts/deploy-simple.sh staging` |
 | Deploy production | `./scripts/deploy-simple.sh prod` |
 | Model names | Always use `MODELS.*` from `_shared/config.ts` |
 | Artifact imports | NO `@/` imports — use npm packages or Tailwind |
@@ -107,7 +122,7 @@ npm run preview          # Preview production build
   ```
 - **Never run multiple dev servers** — kills performance and causes port confusion
 
-### Testing (840 tests, 36 files)
+### Testing (~1,900 tests, 85 files)
 ```bash
 npm run test                  # Run all tests
 npm run test -- --watch       # Watch mode
@@ -117,7 +132,7 @@ npm run test -- path/to/test  # Specific file
 
 ### Deployment
 ```bash
-./scripts/deploy-simple.sh staging|prod  # prod requires confirmation
+./scripts/deploy-simple.sh prod           # Deploys Edge Functions to production
 supabase functions deploy <name> --project-ref <ref>  # Individual function
 ```
 
@@ -288,39 +303,6 @@ Full schema: `supabase/migrations/`
 - **Utilities**: `storage-retry.ts`, `rate-limiter.ts`, `api-error-handler.ts`, `error-handler.ts`, `cdn-fallback.ts`
 - **Prompts**: `system-prompt-inline.ts`, `system-prompt.txt`
 - **Integrations**: `tavily-client.ts` (web search)
-
-## GLM-4.6 API Reference
-
-GLM-4.6 powers artifact generation via Z.ai. Key implementation details:
-
-**API Endpoint**: `https://api.z.ai/api/coding/paas/v4/chat/completions` (Coding Plan only)
-
-**Critical Streaming Behavior**: GLM streams `reasoning_content` FIRST, then `content`:
-```
-1. [reasoning_content chunks] → thinking process (displayed in UI)
-2. [content chunks] → actual artifact code
-3. [DONE]
-```
-
-**Request Parameters**:
-```json
-{
-  "model": "glm-4.6",
-  "thinking": { "type": "enabled" },  // Required for reasoning
-  "stream": true,
-  "temperature": 1.0,  // GLM-recommended default
-  "max_tokens": 8000
-}
-```
-
-**Error Handling**: 429 = rate limited (check Retry-After header), 503 = retry with backoff
-
-**SSE Streaming (Updated 2025-12-01)**: Artifact generation uses real-time SSE streaming:
-- **Event types**: `reasoning_chunk`, `reasoning_complete`, `content_chunk`, `artifact_complete`, `error`
-- **Frontend**: `useChatMessages.tsx` handles EventSource, `ReasoningDisplay.tsx` shows Claude-style ticker
-- **Key fix**: Artifact code no longer appears as raw text in chat during generation
-
-**Full Documentation**: `.claude/docs/GLM-4.6-CAPABILITIES.md`
 
 ## Model Configuration System
 
@@ -559,7 +541,7 @@ export default function App() { ... }
 ```
 src/
 ├── components/
-│   ├── ui/                    # 67 shadcn components
+│   ├── ui/                    # 63 shadcn components
 │   ├── prompt-kit/            # Chat UI primitives
 │   ├── ai-elements/           # AI-powered UI elements
 │   ├── demo/                  # Demo components
@@ -626,19 +608,8 @@ docker exec -i supabase_db_vznhbocnuykdmjvujaka psql -U postgres -c "DELETE FROM
 | TTI | < 3.5s |
 | CLS | < 0.1 |
 | Coverage | 74% current (55% min) |
-| Test execution | < 3s (840 tests) |
+| Test execution | < 3s (~1,900 tests) |
 | CI/CD runtime | < 5min |
-
-## Glossary
-
-| Term | Definition |
-|------|------------|
-| **Artifact** | Interactive component rendered in isolated iframe sandbox |
-| **Edge Function** | Serverless Deno function on Supabase |
-| **Golden Snapshot** | Test pattern comparing config against known-good baseline |
-| **RLS** | Row-Level Security — PostgreSQL per-user data access |
-| **SSE** | Server-Sent Events — streaming protocol for chat |
-| **OpenRouter** | API aggregator for multiple AI models |
 
 ## Additional Resources
 

@@ -13,6 +13,7 @@
 import { CORE_RESTRICTIONS, CORE_RESTRICTIONS_REMINDER } from './artifact-rules/core-restrictions.ts';
 import { BUNDLING_GUIDANCE, BUNDLING_COST_REMINDER } from './artifact-rules/bundling-guidance.ts';
 import { TYPE_SELECTION } from './artifact-rules/type-selection.ts';
+import { getCurrentYear, getSearchRecencyPhrase } from './config.ts';
 
 interface SystemPromptParams {
   fullArtifactContext?: string;
@@ -31,26 +32,33 @@ export const TOOL_CALLING_SECTION = `
 You have access to the following tools to help answer user questions:
 
 ## browser.search
-Search the web for current, real-time information. **You should use this tool when:**
-- Users ask about **recent events**, news, or developments
-- Users need **current data** (prices, weather, scores, statistics)
-- Users ask about **specific dates** in 2024, 2025, or later
-- Users use words like "latest", "current", "recent", "now", "today"
-- You're uncertain if your training data is up-to-date for the topic
-- Users explicitly ask you to search or look something up
+Search the web for current, real-time information.
 
-**To use this tool**, output the following XML format:
+**WHEN TO USE:**
+- Recent events, news, developments (${getSearchRecencyPhrase()}+)
+- Real-time data: weather, prices, scores, crypto
+- Current status: "is X down?", "price of Y"
+- Latest versions, releases, updates
+- Queries with "latest", "current", "recent", "now", "today", "${getCurrentYear()}"
+
+**WHEN NOT TO USE:**
+- General knowledge or definitions
+- Historical events (before ${getCurrentYear() - 1})
+- How-to guides, tutorials, code examples
+- Math, science, logic problems
+
+**HOW TO USE:**
 <tool_call>
   <name>browser.search</name>
   <arguments>
-    <query>your optimized search query here</query>
+    <query>concise search query here</query>
   </arguments>
 </tool_call>
 
 **Search Query Tips:**
-- Be specific and include relevant keywords
-- Include year (e.g., "2025") for time-sensitive queries
-- Use quotes for exact phrases when needed
+- Be concise (max 10 words)
+- Remove filler ("can you", "please")
+- Include year for time-sensitive topics (e.g., "AI news ${getCurrentYear()}")
 
 After using a tool, **wait** for the system to provide results. Results will appear as:
 <tool_result>
@@ -58,11 +66,21 @@ After using a tool, **wait** for the system to provide results. Results will app
   <name>browser.search</name>
   <status>success</status>
   <result>
-[Search results will appear here]
+[Search results with URLs]
   </result>
 </tool_result>
 
-Then continue your response using the search results. **Always cite your sources** when using search results.
+**AFTER RECEIVING RESULTS - CITATION REQUIREMENTS:**
+
+1. **Cite sources using inline markers**: [1], [2], [3] corresponding to the sources
+2. **At the end of your response**, list sources in this format:
+
+**Sources:**
+[1] [Source Title](URL)
+[2] [Another Source](URL)
+
+3. If results are insufficient, say so honestly
+4. **Never fabricate sources or URLs** - only cite what was actually returned
 
 **Important**: You DO have web search capabilities. Never tell users you can't access current information.
 `;
@@ -79,7 +97,7 @@ You have access to real-time web search through Tavily{{ALWAYS_SEARCH_MODE}}. Wh
 - **Recent events** (news, trends, developments since your knowledge cutoff)
 - **Current information** (weather, stock prices, sports scores, today's date-specific info)
 - **Latest data** (newest versions, recent releases, up-to-date statistics)
-- **Time-sensitive queries** (anything with "latest", "current", "today", "2025", "recent")
+- **Time-sensitive queries** (anything with "latest", "current", "today", "{{CURRENT_YEAR}}", "recent")
 
 The system will{{SEARCH_BEHAVIOR}} fetch web search results and inject them into your context. When search results are provided:
 
@@ -436,6 +454,7 @@ ${restOfPrompt}`.replace(/\{\{FULL_ARTIFACT_CONTEXT\}\}/g, fullArtifactContext);
   // Replace template placeholders
   return SYSTEM_PROMPT_TEMPLATE
     .replace(/\{\{CURRENT_DATE\}\}/g, currentDate)
+    .replace(/\{\{CURRENT_YEAR\}\}/g, String(getCurrentYear()))
     .replace(/\{\{FULL_ARTIFACT_CONTEXT\}\}/g, fullArtifactContext)
     .replace(/\{\{ALWAYS_SEARCH_MODE\}\}/g, alwaysSearchMode)
     .replace(/\{\{SEARCH_BEHAVIOR\}\}/g, searchBehavior)

@@ -571,6 +571,8 @@ export function calculateTavilyCost(searchDepth: 'basic' | 'advanced' = 'basic')
  * - model: For Tavily, uses format 'tavily-search-{basic|advanced}'
  * - input_tokens/output_tokens: Always 0 for search API (not token-based)
  * - estimated_cost: Cost per search request based on search depth
+ * - prompt_preview: Contains the actual search query sent to Tavily (may be rewritten)
+ *                   If originalQuery is provided and different, formats as "original → rewritten"
  *
  * @param logData - Usage data to log
  */
@@ -580,6 +582,7 @@ export async function logTavilyUsage(logData: {
   userId?: string;
   isGuest: boolean;
   query: string;
+  originalQuery?: string;
   resultCount: number;
   searchDepth: 'basic' | 'advanced';
   latencyMs: number;
@@ -594,6 +597,12 @@ export async function logTavilyUsage(logData: {
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+
+    // Format prompt_preview to show both original and rewritten query if applicable
+    let promptPreview = logData.query.substring(0, 200);
+    if (logData.originalQuery && logData.originalQuery !== logData.query) {
+      promptPreview = `${logData.originalQuery} → ${logData.query}`.substring(0, 200);
+    }
 
     const { error } = await supabase.from("ai_usage_logs").insert({
       request_id: logData.requestId,
@@ -610,7 +619,7 @@ export async function logTavilyUsage(logData: {
       estimated_cost: logData.estimatedCost,
       error_message: logData.errorMessage || null,
       retry_count: logData.retryCount,
-      prompt_preview: logData.query.substring(0, 200),
+      prompt_preview: promptPreview,
       response_length: logData.resultCount
     });
 

@@ -16,7 +16,7 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { MODELS, RETRY_CONFIG } from './config.ts';
+import { MODELS, RETRY_CONFIG, getSearchRecencyPhrase, getCurrentYear } from './config.ts';
 import { parseToolCall } from './glm-tool-parser.ts';
 
 // GLM API configuration
@@ -87,17 +87,36 @@ export interface RetryResult {
 
 /**
  * Default web search tool definition for GLM
- * Use when the AI needs current information, recent events, prices, news, etc.
+ *
+ * This is the primary tool for web search via Tavily API.
+ * The description is carefully crafted to guide the LLM on when to search.
  */
 export const GLM_SEARCH_TOOL: GLMToolDefinition = {
   name: "browser.search",
-  description: "Search the web for current information, recent events, prices, news, or any query requiring up-to-date data. Use when users ask about recent developments or real-time information.",
+  description: `Search the web for current, real-time information. USE THIS TOOL when:
+
+ALWAYS SEARCH FOR:
+- Recent events, news, or developments (anything ${getSearchRecencyPhrase()})
+- Real-time data: weather, stock prices, sports scores, cryptocurrency
+- Current status: "is [service] down?", "current price of X"
+- Latest versions, releases, or updates
+- Time-sensitive queries with words: "latest", "current", "recent", "now", "today", "${getCurrentYear()}"
+- Facts that may have changed ${getSearchRecencyPhrase()}
+
+NEVER SEARCH FOR:
+- General knowledge, definitions, or explanations
+- Historical events (before ${getCurrentYear() - 1})
+- How-to guides, tutorials, or code examples
+- Math, science, or logic problems
+- Creative writing or brainstorming
+
+When uncertain, err on the side of searching. Users prefer current information.`,
   parameters: {
     type: "object",
     properties: {
       query: {
         type: "string",
-        description: "The search query to find relevant information"
+        description: "A concise, optimized search query (not the full user message). Remove filler words. Include year for time-sensitive topics."
       }
     },
     required: ["query"]

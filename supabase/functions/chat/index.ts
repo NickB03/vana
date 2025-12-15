@@ -233,7 +233,13 @@ serve(async (req) => {
     // ========================================
     // STEP 6: Web Search (if needed)
     // ========================================
-    const searchResult = intent.shouldSearch
+    // Check if GLM tool-calling is enabled FIRST
+    // If so, skip regex-based search - GLM will decide when to search using browser.search tool
+    const useToolCalling = shouldUseGLMToolCalling(requestId);
+
+    // Only run regex-based search if NOT using GLM tool-calling
+    // When tool-calling is enabled, GLM handles search decisions autonomously
+    const searchResult = (intent.shouldSearch && !useToolCalling)
       ? await performWebSearch(
         lastUserContent,
         user?.id || null,
@@ -317,9 +323,7 @@ serve(async (req) => {
     // ========================================
     console.log("🎯 Intent detected: REGULAR CHAT");
 
-    // Check if this request should use GLM tool-calling
-    const useToolCalling = shouldUseGLMToolCalling(requestId);
-
+    // useToolCalling already checked in STEP 6 (before web search decision)
     if (useToolCalling) {
       console.log(`[${requestId}] 🔧 Using GLM tool-calling (feature flag enabled)`);
 

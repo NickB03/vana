@@ -190,19 +190,14 @@ If builds fail after adding the plugin:
 
 ### Environment Separation
 
-Configure different Sentry projects for different environments:
+Configure Sentry project for production:
 
 **Production** (`main` branch):
 ```bash
 SENTRY_PROJECT=vana-production
 ```
 
-**Staging** (preview branches):
-```bash
-SENTRY_PROJECT=vana-staging
-```
-
-This keeps production and staging errors separate in Sentry.
+Preview deployments also use the production Sentry project.
 
 ## Verification
 

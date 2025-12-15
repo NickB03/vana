@@ -2,20 +2,20 @@
 
 ## Overview
 
-This project uses a **single repository** with **environment-based deployments**. You don't need separate repos or branches for staging vs production.
+This project uses a **two-environment** deployment model:
+1. **Local Development** — Local Supabase via `supabase start`
+2. **Production** — vana-dev Supabase project + Cloudflare Pages
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         DEPLOYMENT FLOW                         │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│   Local Dev           Staging              Production           │
-│   ─────────           ───────              ──────────           │
-│   .env (local)   →    Cloudflare env   →   Cloudflare env      │
-│   localhost:8080      staging.domain       domain.com           │
-│   vana-dev*           vana-staging         vana-dev             │
-│                                                                 │
-│   * or supabase start for full local                            │
+│   Local Dev                              Production             │
+│   ─────────                              ──────────             │
+│   .env (local)                    →      Cloudflare env         │
+│   localhost:8080                         domain.com             │
+│   supabase start (local)                 vana-dev               │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -24,9 +24,9 @@ This project uses a **single repository** with **environment-based deployments**
 
 | Task | Command |
 |------|---------|
-| Deploy to staging | `./scripts/deploy-simple.sh staging` |
+| Start local Supabase | `supabase start` |
 | Deploy to production | `./scripts/deploy-simple.sh prod` |
-| Promote staging → prod | Merge PR to main, then deploy prod |
+| View production logs | `supabase functions logs --project-ref vznhbocnuykdmjvujaka` |
 
 ---
 
@@ -38,22 +38,23 @@ Create `.env` file (gitignored, never committed):
 
 ```bash
 # .env (for local development)
+VITE_SUPABASE_URL=http://127.0.0.1:54321
+VITE_SUPABASE_PUBLISHABLE_KEY=<local-anon-key-from-supabase-start>
+VITE_SUPABASE_PROJECT_ID=local
+```
+
+Or point to production for testing:
+
+```bash
+# .env (pointing to production)
 VITE_SUPABASE_URL=https://vznhbocnuykdmjvujaka.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=eyJ...your-anon-key...
 VITE_SUPABASE_PROJECT_ID=vznhbocnuykdmjvujaka
 ```
 
-### Staging (Cloudflare Pages)
+### Production (Cloudflare Pages)
 
 Set in Cloudflare Dashboard → Pages → your-project → Settings → Environment Variables:
-
-| Variable | Value | Environment |
-|----------|-------|-------------|
-| `VITE_SUPABASE_URL` | `https://tkqubuaqzqjvrcnlipts.supabase.co` | Preview |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | `eyJ...staging-anon-key...` | Preview |
-| `VITE_SUPABASE_PROJECT_ID` | `tkqubuaqzqjvrcnlipts` | Preview |
-
-### Production (Cloudflare Pages)
 
 | Variable | Value | Environment |
 |----------|-------|-------------|
@@ -71,53 +72,47 @@ Set in Cloudflare Dashboard → Pages → your-project → Settings → Environm
 2. Configure build settings:
    - **Production branch**: `main`
    - **Preview branches**: `*` (all other branches)
-3. Set environment variables for each environment
+3. Set environment variables for production
 
 **Result**:
 - Push to `main` → deploys to production
-- Push to any other branch → deploys to staging/preview
+- Push to any other branch → deploys to preview (still uses production Supabase)
 
 ### Option B: Manual with `wrangler`
 
 ```bash
-# Deploy to staging (preview)
-npx wrangler pages deploy dist --project-name=vana --branch=staging
-
 # Deploy to production
 npx wrangler pages deploy dist --project-name=vana --branch=main
+
+# Deploy preview for testing
+npx wrangler pages deploy dist --project-name=vana --branch=preview
 ```
 
 ---
 
 ## Recommended Workflow
 
-### 1. Develop on Feature Branch
+### 1. Develop Locally
 
 ```bash
-git checkout -b feat/my-feature
-# ... make changes ...
-npm run dev  # Test locally against vana-dev (or local supabase)
+# Start local Supabase
+supabase start
+
+# Start dev server
+npm run dev  # Test locally against local supabase
 ```
 
-### 2. Deploy to Staging for Testing
+### 2. Test Changes
 
 ```bash
-# Deploy Edge Functions to staging Supabase
-export STAGING_REF=tkqubuaqzqjvrcnlipts
-./scripts/deploy-simple.sh staging
+# Run tests
+npm run test
 
-# Push branch to trigger Cloudflare preview deployment
-git push origin feat/my-feature
-# Cloudflare auto-deploys to: feat-my-feature.vana.pages.dev
+# Build and verify
+npm run build
 ```
 
-### 3. Test on Staging
-
-- Visit preview URL from Cloudflare
-- Test all features against staging Supabase
-- Fix issues, push again (auto-redeploys)
-
-### 4. Promote to Production
+### 3. Deploy to Production
 
 ```bash
 # Create PR: feat/my-feature → main
@@ -133,44 +128,28 @@ git push origin feat/my-feature
 
 ## Environment Isolation
 
-| Component | Staging | Production |
-|-----------|---------|------------|
-| Supabase Project | `tkqubuaqzqjvrcnlipts` | `vznhbocnuykdmjvujaka` |
-| Database | Separate (staging) | Separate (prod) |
-| Edge Functions | Deployed separately | Deployed separately |
-| API Keys | Staging keys | Production keys |
-| Storage | Separate bucket | Separate bucket |
-| Frontend | Preview URL | Production URL |
+| Component | Local | Production |
+|-----------|-------|------------|
+| Supabase | `supabase start` | vana-dev (`vznhbocnuykdmjvujaka`) |
+| Database | Local PostgreSQL | Production PostgreSQL |
+| Edge Functions | Local (via `supabase functions serve`) | Deployed to vana-dev |
+| API Keys | Local defaults | Production secrets |
+| Frontend | localhost:8080 | Production URL |
 
-**Key Point**: Your local `.env` file is NEVER used in deployments. Cloudflare (or Vercel) uses its own environment variables.
+**Key Point**: Your local `.env` file is NEVER used in deployments. Cloudflare uses its own environment variables.
 
 ---
 
 ## FAQ
 
-### Q: Do I need to change my local `.env` to test staging?
-
-**No.** Your local `.env` is for local development only. To test staging:
-1. Deploy to staging Supabase: `./scripts/deploy-simple.sh staging`
-2. Push branch to trigger Cloudflare preview
-3. Visit the preview URL (uses staging Supabase via Cloudflare env vars)
-
-### Q: How do I test staging locally?
-
-Create a separate `.env.staging` file (also gitignored):
+### Q: How do I test Edge Functions locally?
 
 ```bash
-# .env.staging
-VITE_SUPABASE_URL=https://tkqubuaqzqjvrcnlipts.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=eyJ...staging-key...
-VITE_SUPABASE_PROJECT_ID=tkqubuaqzqjvrcnlipts
-```
+# Start local Supabase (includes Edge Functions runtime)
+supabase start
 
-Then run:
-```bash
-# Load staging env and run dev server
-cp .env.staging .env && npm run dev
-# Remember to restore: cp .env.backup .env
+# Or serve functions separately with hot reload
+supabase functions serve
 ```
 
 ### Q: What if I accidentally deploy broken code to production?
@@ -184,13 +163,17 @@ cp .env.staging .env && npm run dev
 2. **Rollback Frontend**: Cloudflare Pages has automatic rollbacks
    - Dashboard → Deployments → Click on previous deployment → "Rollback"
 
-### Q: Can staging and production share the same database?
+### Q: How do I test against production database locally?
 
-**No, and you shouldn't want to.** Staging should have:
-- Test data you can freely modify
-- Lower rate limits
-- Separate API keys
-- No risk of affecting real users
+Update your `.env` to point to production:
+
+```bash
+VITE_SUPABASE_URL=https://vznhbocnuykdmjvujaka.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<your-prod-anon-key>
+VITE_SUPABASE_PROJECT_ID=vznhbocnuykdmjvujaka
+```
+
+**Warning**: Be careful with writes — you're affecting real data!
 
 ---
 
@@ -198,8 +181,8 @@ cp .env.staging .env && npm run dev
 
 | Environment | Project | Reference ID |
 |-------------|---------|--------------|
+| Local | N/A (supabase start) | N/A |
 | Production | vana-dev | `vznhbocnuykdmjvujaka` |
-| Staging | vana-staging | `tkqubuaqzqjvrcnlipts` |
 
 ## Cloudflare Environment Variables
 
@@ -210,11 +193,4 @@ Copy these to your Cloudflare Pages settings:
 VITE_SUPABASE_URL=https://vznhbocnuykdmjvujaka.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=<your-prod-anon-key>
 VITE_SUPABASE_PROJECT_ID=vznhbocnuykdmjvujaka
-```
-
-### Preview Environment (Staging)
-```
-VITE_SUPABASE_URL=https://tkqubuaqzqjvrcnlipts.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=<your-staging-anon-key>
-VITE_SUPABASE_PROJECT_ID=tkqubuaqzqjvrcnlipts
 ```
