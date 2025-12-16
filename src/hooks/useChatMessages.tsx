@@ -1107,6 +1107,7 @@ export function useChatMessages(
       let artifactDetected = false;
       let artifactClosed = false;
       let reasoningSteps: StructuredReasoning | undefined; // Store reasoning data
+      let reasoningText: string | undefined; // Store raw reasoning text for fallback display
       let searchResults: WebSearchResults | undefined; // Store web search results
       let lastSequence = 0; // Track SSE event sequence
 
@@ -1228,11 +1229,16 @@ export function useChatMessages(
               if (parsed.reasoningSteps) {
                 reasoningSteps = parsed.reasoningSteps as StructuredReasoning;
               }
+              // FIX: Capture raw reasoning text for fallback display when no structured steps
+              if (parsed.reasoning) {
+                reasoningText = parsed.reasoning as string;
+              }
 
-              console.log(`[StreamProgress] Reasoning complete: ${reasoningSteps?.steps?.length || 0} steps`);
+              console.log(`[StreamProgress] Reasoning complete: ${reasoningSteps?.steps?.length || 0} steps, ${reasoningText?.length || 0} chars raw text`);
 
               const progress = updateProgress();
               progress.reasoningSteps = reasoningSteps;
+              progress.streamingReasoningText = reasoningText;
               onDelta('', progress);
 
               continue; // Skip to next event
@@ -1414,7 +1420,8 @@ export function useChatMessages(
 
       // Save assistant message first, then signal completion
       // This prevents a race condition where streamingMessage is cleared before the saved message appears
-      await saveMessage("assistant", fullResponse, undefined, reasoningSteps, searchResults);
+      // FIX: Pass reasoningText for fallback display when no structured steps are available
+      await saveMessage("assistant", fullResponse, reasoningText, reasoningSteps, searchResults);
 
       // Clear streaming state synchronously to prevent race condition
       flushSync(() => {
