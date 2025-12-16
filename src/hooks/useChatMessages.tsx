@@ -1012,6 +1012,7 @@ export function useChatMessages(
           percentage: 100,
           reasoningSteps: finalArtifactData.reasoningSteps || undefined,
           streamingReasoningText: finalArtifactData.reasoning || undefined,
+          reasoningStatus: lastSemanticStatus || phaseDisplayMessage, // Preserve for ticker display
         });
 
         // CRITICAL: Validate content before saving to prevent blank messages
@@ -1110,6 +1111,7 @@ export function useChatMessages(
       let reasoningText: string | undefined; // Store raw reasoning text for fallback display
       let searchResults: WebSearchResults | undefined; // Store web search results
       let lastSequence = 0; // Track SSE event sequence
+      let lastReasoningStatus: string | undefined; // Track last reasoning status for preservation
 
       // Stream timeout protection
       const CHAT_STREAM_TIMEOUT_MS = 120000; // 2 minutes max for chat streaming
@@ -1158,6 +1160,8 @@ export function useChatMessages(
           percentage: Math.min(99, Math.round(percentage)),
           reasoningSteps, // Include reasoning in progress updates
           searchResults, // Include search results in progress updates
+          reasoningStatus: lastReasoningStatus, // Preserve status for ticker display
+          streamingReasoningText: reasoningText, // Preserve raw text for fallback
         };
       };
 
@@ -1249,8 +1253,10 @@ export function useChatMessages(
               const status = parsed.content as string;
               console.log(`[StreamProgress] Reasoning status: "${status}"`);
 
+              // Store for preservation in updateProgress()
+              lastReasoningStatus = status;
+
               const progress = updateProgress();
-              progress.reasoningStatus = status;
               onDelta('', progress);
 
               continue;

@@ -16,7 +16,9 @@ export const ReasoningStepSchema = z.object({
 });
 
 export const StructuredReasoningSchema = z.object({
-  steps: z.array(ReasoningStepSchema).min(1).max(10),
+  // Allow empty steps array - backend may send empty steps for searches without reasoning
+  // hasStructuredContent check (validatedSteps && totalSections > 0) handles display logic
+  steps: z.array(ReasoningStepSchema).min(0).max(10),
   summary: z.string().max(1000).optional(),
 });
 

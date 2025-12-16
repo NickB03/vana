@@ -58,6 +58,19 @@ else
   fi
 fi
 
+# Push database migrations first
+echo -e "${YELLOW}📦 Pushing database migrations...${NC}"
+supabase link --project-ref "$PROJECT_REF" 2>/dev/null || true
+if supabase db push --linked; then
+  echo -e "${GREEN}✅ Migrations applied${NC}"
+else
+  echo -e "${RED}❌ Migration failed${NC}"
+  read -p "Continue with Edge Functions anyway? (yes/no): " confirm
+  if [ "$confirm" != "yes" ]; then
+    exit 1
+  fi
+fi
+
 # Deploy Edge Functions with timeout
 echo -e "${YELLOW}🔧 Deploying Edge Functions...${NC}"
 if timeout 300 supabase functions deploy --project-ref "$PROJECT_REF"; then

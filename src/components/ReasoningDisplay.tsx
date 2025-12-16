@@ -335,12 +335,14 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
     return text ? truncateText(text, 70) : "View reasoning";
   };
 
-  // Don't render if no data and not streaming
-  if (!isStreaming && !validatedSteps && !reasoning && !streamingReasoningText) {
+  // Don't render if no displayable content and not streaming
+  // validatedSteps might have empty steps array, so check totalSections > 0
+  const hasDisplayableSteps = validatedSteps && totalSections > 0;
+  if (!isStreaming && !hasDisplayableSteps && !reasoning && !streamingReasoningText) {
     return null;
   }
 
-  const hasStructuredContent = validatedSteps && totalSections > 0;
+  const hasStructuredContent = hasDisplayableSteps;
   const hasContent = hasStructuredContent || hasStreamingText || sanitizedReasoning;
   // STABILITY FIX: Always show the spinner when streaming, even if we have text.
   // This prevents the "different sized pill" jump when switching from "Thinking..." to text.

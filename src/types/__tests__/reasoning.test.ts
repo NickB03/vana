@@ -318,13 +318,15 @@ describe('StructuredReasoningSchema', () => {
   });
 
   describe('Invalid Reasoning', () => {
-    it('rejects empty steps array', () => {
+    it('accepts empty steps array (for web search without reasoning)', () => {
+      // Empty steps are now allowed - backend may send empty steps for searches
+      // The frontend's hasDisplayableSteps check handles display logic
       const emptySteps = {
         steps: [],
       };
 
       const result = StructuredReasoningSchema.safeParse(emptySteps);
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true);
     });
 
     it('rejects more than 10 steps', () => {
@@ -452,7 +454,8 @@ describe('parseReasoningSteps', () => {
   it('includes object keys in warning log (not raw data for brevity)', () => {
     const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const invalidData = { steps: [], extra: 'field' };
+    // Use invalid step structure (missing required fields) instead of empty array
+    const invalidData = { steps: [{ phase: 'invalid_phase' }], extra: 'field' };
     parseReasoningSteps(invalidData);
 
     expect(consoleSpy).toHaveBeenCalledWith(
@@ -466,7 +469,8 @@ describe('parseReasoningSteps', () => {
   it('includes Zod errors in log', () => {
     const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const invalidData = { steps: [] }; // Empty array violates min constraint
+    // Use invalid step structure (missing title and items) instead of empty array
+    const invalidData = { steps: [{ phase: 'research' }] };
     parseReasoningSteps(invalidData);
 
     expect(consoleSpy).toHaveBeenCalledWith(

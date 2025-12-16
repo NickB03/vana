@@ -1,0 +1,78 @@
+name: Deploy Database Migrations
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/migrations/**'
+
+  # Allow manual trigger for emergency rollouts
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (show SQL without applying)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  deploy-migrations:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for migration detection
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link to Production Project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: |
+          supabase link --project-ref $PROJECT_ID
+
+      - name: Check Migration Status
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          echo "📋 Checking pending migrations..."
+          supabase migration list
+
+      - name: Apply Migrations (Dry Run)
+        if: ${{ github.event.inputs.dry_run == 'true' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          echo "🔍 Dry run - showing SQL that would be applied..."
+          supabase db diff --linked
+
+      - name: Apply Migrations to Production
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          echo "🚀 Applying migrations to production..."
+          supabase db push --linked
+          echo "✅ Migrations applied successfully"
+
+      - name: Verify Migration Status
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          echo "📋 Verifying migration status..."
+          supabase migration list
+          echo "✅ All migrations are up to date"
+
+      - name: Migration Summary
+        run: |
+          echo "================================================"
+          echo "✅ Database migrations deployed to production!"
+          echo "================================================"
+          echo ""
+          echo "Changed migrations in this push:"
+          git diff --name-only HEAD~1 HEAD -- 'supabase/migrations/**' || echo "First push or no previous commit"

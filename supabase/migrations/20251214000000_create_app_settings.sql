@@ -1,5 +1,6 @@
 -- Create app_settings table for global admin-controlled settings
 -- These settings affect ALL users, not just the admin who sets them
+-- IDEMPOTENT: Safe to run multiple times
 
 CREATE TABLE IF NOT EXISTS app_settings (
   key TEXT PRIMARY KEY,
@@ -22,42 +23,56 @@ INSERT INTO app_settings (key, value, description) VALUES
   ('landing_page_enabled', '{"enabled": true}', 'When enabled, shows the landing page to users. When disabled, users go directly to the app')
 ON CONFLICT (key) DO NOTHING;
 
--- RLS Policies
+-- RLS Policies (IDEMPOTENT)
 
 -- Enable RLS
 ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
 
 -- Anyone can read settings (needed for the app to function)
-CREATE POLICY "Anyone can read app settings"
-  ON app_settings FOR SELECT
-  USING (true);
+DO $$
+BEGIN
+  DROP POLICY IF EXISTS "Anyone can read app settings" ON app_settings;
+  CREATE POLICY "Anyone can read app settings"
+    ON app_settings FOR SELECT
+    USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Only admins can update settings
--- Admin check: email = 'nick@vana.bot' OR user_metadata->>'role' = 'admin'
-CREATE POLICY "Only admins can update app settings"
-  ON app_settings FOR UPDATE
-  USING (
-    auth.uid() IS NOT NULL AND (
-      auth.jwt() ->> 'email' = 'nick@vana.bot' OR
-      (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+DO $$
+BEGIN
+  DROP POLICY IF EXISTS "Only admins can update app settings" ON app_settings;
+  CREATE POLICY "Only admins can update app settings"
+    ON app_settings FOR UPDATE
+    USING (
+      auth.uid() IS NOT NULL AND (
+        auth.jwt() ->> 'email' = 'nick@vana.bot' OR
+        (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+      )
     )
-  )
-  WITH CHECK (
-    auth.uid() IS NOT NULL AND (
-      auth.jwt() ->> 'email' = 'nick@vana.bot' OR
-      (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
-    )
-  );
+    WITH CHECK (
+      auth.uid() IS NOT NULL AND (
+        auth.jwt() ->> 'email' = 'nick@vana.bot' OR
+        (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+      )
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Only admins can insert new settings (in case we need to add more)
-CREATE POLICY "Only admins can insert app settings"
-  ON app_settings FOR INSERT
-  WITH CHECK (
-    auth.uid() IS NOT NULL AND (
-      auth.jwt() ->> 'email' = 'nick@vana.bot' OR
-      (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
-    )
-  );
+DO $$
+BEGIN
+  DROP POLICY IF EXISTS "Only admins can insert app settings" ON app_settings;
+  CREATE POLICY "Only admins can insert app settings"
+    ON app_settings FOR INSERT
+    WITH CHECK (
+      auth.uid() IS NOT NULL AND (
+        auth.jwt() ->> 'email' = 'nick@vana.bot' OR
+        (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+      )
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Create function to update settings with audit trail
 CREATE OR REPLACE FUNCTION update_app_setting(
