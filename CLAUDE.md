@@ -1,4 +1,4 @@
-<!-- CLAUDE.md v2.15 | Last updated: 2025-12-14 | Aligned with Anthropic best practices, updated metrics, added dev environment -->
+<!-- CLAUDE.md v2.16 | Last updated: 2025-12-16 | Added CI/CD migration workflows, schema drift troubleshooting -->
 
 # CLAUDE.md
 
@@ -135,6 +135,75 @@ npm run test -- path/to/test  # Specific file
 ./scripts/deploy-simple.sh prod           # Deploys Edge Functions to production
 supabase functions deploy <name> --project-ref <ref>  # Individual function
 ```
+
+### CI/CD Pipelines (Automated)
+
+**Workflows** (`.github/workflows/`):
+
+| Workflow | Trigger | What It Does |
+|----------|---------|--------------|
+| `deploy-migrations.yml` | Push to `main` with `supabase/migrations/**` changes | Applies database migrations to production |
+| `deploy-edge-functions.yml` | Push to `main` with `supabase/functions/**` changes | Runs migrations first, then deploys Edge Functions |
+
+**Flow Diagram**:
+```
+Push to main
+    │
+    ├── migrations/** changed?
+    │   └── Yes → deploy-migrations.yml
+    │             1. Checkout with full git history
+    │             2. Link to production Supabase
+    │             3. Run `supabase db push --linked`
+    │             4. Fail pipeline if migrations fail ⚠️
+    │
+    └── functions/** changed?
+        └── Yes → deploy-edge-functions.yml
+                  1. Checkout with full git history
+                  2. Link to production Supabase
+                  3. Run migrations first (fail-fast on error)
+                  4. Deploy all Edge Functions
+```
+
+**Key Safety Features**:
+- **Fail-fast on migration errors**: Workflows exit immediately if `supabase db push` fails (no silent failures)
+- **Migrations before functions**: Edge Functions always deploy against an up-to-date schema
+- **Full git history**: `fetch-depth: 0` ensures `git diff` commands work for change detection
+
+**Manual Deployment**:
+```bash
+# Local script (prompts for confirmation)
+./scripts/deploy-simple.sh prod
+
+# Manual workflow trigger (dry-run support)
+gh workflow run "Deploy Database Migrations" --field dry_run=true
+```
+
+### Migration Schema Drift
+
+**Symptoms**: CI/CD fails with `Remote migration versions not found in local migrations directory`
+
+**Cause**: Production database has migrations in its history that don't exist locally (manual changes, deleted files, or renamed migrations).
+
+**Fix**:
+```bash
+# 1. Check what's out of sync
+supabase migration list
+
+# 2. Option A: Mark remote migration as reverted (if it was applied manually)
+supabase migration repair --status reverted <timestamp>
+
+# 3. Option B: Pull current production schema
+supabase db pull
+
+# 4. Option C: Reset migration history (DANGEROUS - only for dev)
+# This marks all local migrations as applied without running them
+supabase db push --linked --include-all
+```
+
+**Prevention**:
+- Never apply migrations directly to production — always go through CI/CD
+- Keep migration files in sync with production history
+- Use `supabase migration list` to audit drift before deploying
 
 ## Architecture
 
@@ -573,6 +642,7 @@ supabase/
 | "Cannot find module" | tsconfig.json paths → Vitest aliases → `npm install` |
 | Edge Function timeout | Function size (<10MB) → Deno URLs → `--no-verify-jwt` → quotas |
 | Rate limiting errors | See "Local Dev Rate Limiting" below |
+| Migration CI/CD fails | See "Migration Schema Drift" above → `supabase migration list` → repair or pull |
 
 ### Local Dev Rate Limiting
 
