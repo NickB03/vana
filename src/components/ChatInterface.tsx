@@ -571,7 +571,18 @@ export function ChatInterface({
               // Only animate new messages (last message when not streaming)
               // This prevents performance issues with long chat histories
               const shouldAnimate = isLastMessage && !isStreaming;
-              const hasReasoning = Boolean(message.reasoning || message.reasoning_steps);
+              // FIX #329: Stricter check for displayable reasoning content
+              // Prevents blank ticker when reasoning_steps is empty array or reasoning is whitespace
+              // Type-safe check that properly narrows the type
+              const hasValidReasoningSteps = Boolean(
+                message.reasoning_steps &&
+                typeof message.reasoning_steps === 'object' &&
+                'steps' in message.reasoning_steps &&
+                Array.isArray((message.reasoning_steps as { steps?: unknown }).steps) &&
+                (message.reasoning_steps as { steps: unknown[] }).steps.length > 0
+              );
+              const hasValidReasoningText = Boolean(message.reasoning && message.reasoning.trim().length > 0);
+              const hasReasoning = hasValidReasoningSteps || hasValidReasoningText;
 
               const messageContent = (
                 <MessageComponent
@@ -593,9 +604,11 @@ export function ChatInterface({
 
                       {hasReasoning && (
                         <ReasoningErrorBoundary>
+                          {/* FIX: Provide streamingReasoningText as fallback for completed messages */}
                           <ReasoningDisplay
                             reasoning={message.reasoning}
                             reasoningSteps={message.reasoning_steps}
+                            streamingReasoningText={message.reasoning}
                             isStreaming={false}
                             artifactRendered={true}
                             parentElapsedTime={isLastMessage ? lastMessageElapsedTime : undefined}
