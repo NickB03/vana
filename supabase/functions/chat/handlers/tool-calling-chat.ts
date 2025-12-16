@@ -12,9 +12,10 @@
  * SSE Events Emitted:
  * - tool_call_start: When tool call is detected { type, toolName, arguments }
  * - tool_result: When tool execution completes { type, toolName, success, sourceCount? }
- * - reasoning_chunk: GLM reasoning content (from delta.reasoning_content)
+ * - reasoning_step: Structured reasoning step { type, step, stepIndex, currentThinking }
+ * - reasoning_status: Live thinking status for ticker { type, content }
  * - content_chunk: Regular content chunks (OpenAI-compatible format)
- * - reasoning_complete: Final reasoning summary
+ * - reasoning_complete: Final reasoning with structured steps { type, reasoning, reasoningSteps }
  *
  * Architecture:
  * - Uses GLM_SEARCH_TOOL from glm-client.ts for tool definitions
@@ -38,6 +39,12 @@ import {
   type ToolContext,
 } from '../../_shared/tool-executor.ts';
 import { getSystemInstruction } from '../../_shared/system-prompt-inline.ts';
+import {
+  parseReasoningIncrementally,
+  createIncrementalParseState,
+  type IncrementalParseState,
+} from '../../_shared/glm-reasoning-parser.ts';
+import { type ReasoningStep } from '../../_shared/reasoning-generator.ts';
 
 /**
  * Parameters for tool-calling chat handler
@@ -239,18 +246,58 @@ export async function handleToolCallingChat(
         let nativeToolCallDetected = false;
         let detectedNativeToolCall: NativeToolCall | undefined;
 
+        // Reasoning parsing state for structured steps
+        let fullReasoningAccumulated = '';
+        let reasoningParseState: IncrementalParseState = createIncrementalParseState();
+        let reasoningStepsSent = 0;
+        let lastStatusUpdate = 0;
+        const STATUS_UPDATE_INTERVAL_MS = 800; // Throttle status updates
+        const accumulatedSteps: ReasoningStep[] = [];
+
         // Process stream with native tool call detection
         // GLM now uses OpenAI-compatible tool_calls in response instead of XML
         const streamResult = await processGLMStream(
           glmResponse,
           {
             onReasoningChunk: async (chunk: string) => {
-              // Forward reasoning chunks to client
-              sendEvent({
-                type: 'reasoning_chunk',
-                content: chunk,
-                timestamp: Date.now(),
-              });
+              // Accumulate reasoning text for parsing
+              fullReasoningAccumulated += chunk;
+
+              // Parse incrementally to detect structured steps
+              const parseResult = parseReasoningIncrementally(
+                fullReasoningAccumulated,
+                reasoningParseState
+              );
+              reasoningParseState = parseResult.state;
+
+              // Emit new step if detected
+              if (parseResult.newStep) {
+                // Accumulate step for final reasoning_complete
+                accumulatedSteps.push(parseResult.newStep);
+
+                sendEvent({
+                  type: 'reasoning_step',
+                  step: parseResult.newStep,
+                  stepIndex: reasoningStepsSent,
+                  currentThinking: parseResult.currentThinking,
+                  timestamp: Date.now(),
+                });
+                reasoningStepsSent++;
+                console.log(
+                  `${logPrefix} 🧠 Sent reasoning step ${reasoningStepsSent}: "${parseResult.newStep.title}"`
+                );
+              }
+
+              // Emit status update for ticker (throttled)
+              const now = Date.now();
+              if (now - lastStatusUpdate > STATUS_UPDATE_INTERVAL_MS) {
+                sendEvent({
+                  type: 'reasoning_status',
+                  content: parseResult.currentThinking,
+                  timestamp: now,
+                });
+                lastStatusUpdate = now;
+              }
             },
 
             onContentChunk: async (chunk: string) => {
@@ -285,14 +332,27 @@ export async function handleToolCallingChat(
 
             onComplete: async (fullReasoning: string, fullContent: string) => {
               console.log(
-                `${logPrefix} ✅ GLM stream complete: reasoning=${fullReasoning.length}chars, content=${fullContent.length}chars`
+                `${logPrefix} ✅ GLM stream complete: reasoning=${fullReasoning.length}chars, content=${fullContent.length}chars, steps=${reasoningStepsSent}`
               );
 
-              // Send reasoning_complete event
-              if (fullReasoning.length > 0) {
+              // Skip reasoning_complete if tool call detected - continuation will send the complete event
+              if (nativeToolCallDetected) {
+                return;
+              }
+
+              // Build structured reasoning from accumulated steps
+              const structuredReasoning = {
+                steps: accumulatedSteps,
+                summary: fullReasoning.substring(0, 500),
+              };
+
+              // Send reasoning_complete event with structured steps
+              if (fullReasoning.length > 0 || reasoningStepsSent > 0) {
                 sendEvent({
                   type: 'reasoning_complete',
                   reasoning: fullReasoning.substring(0, 500),
+                  reasoningSteps: structuredReasoning,
+                  stepCount: reasoningStepsSent,
                   timestamp: Date.now(),
                 });
               }
@@ -371,19 +431,53 @@ export async function handleToolCallingChat(
               `${logPrefix} 🔧 Continuing GLM with tool result (${formattedResult.length} chars)`
             );
 
+            // Reset reasoning state for continuation
+            let continuationReasoningText = '';
+            let continuationParseState: IncrementalParseState = createIncrementalParseState();
+            let continuationStepsSent = 0;
+            let continuationLastStatusUpdate = 0;
+            const continuationSteps: ReasoningStep[] = [];
+
             // Call GLM again with tool results
-            const continuationResult = await callGLMWithToolResult(
+            await callGLMWithToolResult(
               finalSystemPrompt,
               userPrompt,
               toolCallForExecution,
               toolResult.data?.formattedContext || 'Tool execution failed',
               {
                 onReasoningChunk: async (chunk: string) => {
-                  sendEvent({
-                    type: 'reasoning_chunk',
-                    content: chunk,
-                    timestamp: Date.now(),
-                  });
+                  // Accumulate and parse reasoning for continuation
+                  continuationReasoningText += chunk;
+
+                  const parseResult = parseReasoningIncrementally(
+                    continuationReasoningText,
+                    continuationParseState
+                  );
+                  continuationParseState = parseResult.state;
+
+                  // Emit new step if detected
+                  if (parseResult.newStep) {
+                    continuationSteps.push(parseResult.newStep);
+                    sendEvent({
+                      type: 'reasoning_step',
+                      step: parseResult.newStep,
+                      stepIndex: reasoningStepsSent + continuationStepsSent,
+                      currentThinking: parseResult.currentThinking,
+                      timestamp: Date.now(),
+                    });
+                    continuationStepsSent++;
+                  }
+
+                  // Emit status update (throttled)
+                  const now = Date.now();
+                  if (now - continuationLastStatusUpdate > STATUS_UPDATE_INTERVAL_MS) {
+                    sendEvent({
+                      type: 'reasoning_status',
+                      content: parseResult.currentThinking,
+                      timestamp: now,
+                    });
+                    continuationLastStatusUpdate = now;
+                  }
                 },
 
                 onContentChunk: async (chunk: string) => {
@@ -392,13 +486,22 @@ export async function handleToolCallingChat(
 
                 onComplete: async (fullReasoning: string, fullContent: string) => {
                   console.log(
-                    `${logPrefix} ✅ GLM continuation complete: content=${fullContent.length}chars`
+                    `${logPrefix} ✅ GLM continuation complete: content=${fullContent.length}chars, steps=${continuationStepsSent}`
                   );
 
-                  if (fullReasoning.length > 0) {
+                  // Combine all steps from initial + continuation
+                  const allSteps = [...accumulatedSteps, ...continuationSteps];
+                  const structuredReasoning = {
+                    steps: allSteps,
+                    summary: fullReasoning.substring(0, 500),
+                  };
+
+                  if (fullReasoning.length > 0 || continuationStepsSent > 0) {
                     sendEvent({
                       type: 'reasoning_complete',
                       reasoning: fullReasoning.substring(0, 500),
+                      reasoningSteps: structuredReasoning,
+                      stepCount: reasoningStepsSent + continuationStepsSent,
                       timestamp: Date.now(),
                     });
                   }
