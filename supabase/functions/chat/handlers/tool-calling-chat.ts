@@ -496,7 +496,9 @@ export async function handleToolCallingChat(
                     summary: fullReasoning.substring(0, 500),
                   };
 
-                  if (fullReasoning.length > 0 || continuationStepsSent > 0) {
+                  // FIX: Also check for initial reasoning steps accumulated before tool call
+                  // Without this, reasoning_complete is never sent when continuation has no reasoning
+                  if (fullReasoning.length > 0 || continuationStepsSent > 0 || accumulatedSteps.length > 0) {
                     sendEvent({
                       type: 'reasoning_complete',
                       reasoning: fullReasoning.substring(0, 500),
@@ -539,6 +541,25 @@ export async function handleToolCallingChat(
             sendContentChunk(
               `\n\n(Note: Web search encountered an error, but I can still help based on my training data.)\n\n`
             );
+
+            // FIX: Send reasoning_complete for initial reasoning before tool failure
+            // Without this, reasoning from the initial phase is lost when tool execution fails
+            if (accumulatedSteps.length > 0 || fullReasoningAccumulated.length > 0) {
+              const structuredReasoning = {
+                steps: accumulatedSteps,
+                summary: fullReasoningAccumulated.substring(0, 500),
+              };
+              sendEvent({
+                type: 'reasoning_complete',
+                reasoning: fullReasoningAccumulated.substring(0, 500),
+                reasoningSteps: structuredReasoning,
+                stepCount: reasoningStepsSent,
+                timestamp: Date.now(),
+              });
+              console.log(
+                `${logPrefix} 🧠 Sent reasoning_complete for ${reasoningStepsSent} steps (tool failure path)`
+              );
+            }
           }
         }
 
