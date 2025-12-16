@@ -321,7 +321,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
     // This will be the AI-generated summary like "Created a counter button component"
     // or fall back to "Thought process" for generic/missing titles
     if (validatedSteps && lastStep) {
-      const title = lastStep.title;
+      const title = lastStep.title.trim(); // FIX: Trim whitespace to catch whitespace-only titles
       // Only use fallback for truly generic titles that don't describe what was created
       // Keep meaningful summaries like "Created a counter button component"
       if (title === 'Model reasoning' || title === 'AI reasoning complete' || !title) {
@@ -331,7 +331,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
     }
 
     // Fallback for non-structured reasoning
-    const text = reasoning || "";
+    const text = (reasoning || "").trim(); // FIX: Trim fallback text too
     return text ? truncateText(text, 70) : "View reasoning";
   };
 

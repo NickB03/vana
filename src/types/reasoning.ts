@@ -6,12 +6,36 @@ import * as Sentry from '@sentry/react';
  * Prevents crashes from malformed AI-generated data
  */
 
+/**
+ * Trim all whitespace including Unicode variants (zero-width spaces, NBSP, etc.)
+ * Common in AI-generated content where invisible characters may appear
+ */
+const trimAllWhitespace = (s: string): string =>
+  s.replace(/^[\s\u200B-\u200D\uFEFF\u00A0]+|[\s\u200B-\u200D\uFEFF\u00A0]+$/g, '');
+
 // Runtime validation schema for reasoning steps
 export const ReasoningStepSchema = z.object({
   phase: z.enum(['research', 'analysis', 'solution', 'custom']),
-  title: z.string().min(1).max(500),
+  // FIX: Validate trimmed length without mutating original data
+  // Uses refine() instead of transform() to preserve original data for debugging
+  title: z.string()
+    .refine(s => trimAllWhitespace(s).length > 0, {
+      message: "Title cannot be empty or whitespace-only"
+    })
+    .refine(s => trimAllWhitespace(s).length <= 500, {
+      message: "Title exceeds maximum length"
+    }),
   icon: z.enum(['search', 'lightbulb', 'target', 'sparkles']).optional(),
-  items: z.array(z.string().min(1).max(2000)).min(1).max(20),
+  // FIX: Validate trimmed items without mutation
+  items: z.array(
+    z.string()
+      .refine(s => trimAllWhitespace(s).length > 0, {
+        message: "Item cannot be empty or whitespace-only"
+      })
+      .refine(s => trimAllWhitespace(s).length <= 2000, {
+        message: "Item exceeds maximum length"
+      })
+  ).min(1).max(20),
   timestamp: z.number().optional(),
 });
 
