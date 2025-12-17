@@ -338,7 +338,14 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   // Don't render if no displayable content and not streaming
   // validatedSteps might have empty steps array, so check totalSections > 0
   const hasDisplayableSteps = validatedSteps && totalSections > 0;
-  if (!isStreaming && !hasDisplayableSteps && !reasoning && !streamingReasoningText) {
+  // CRITICAL FIX: Show ticker even after streaming completes if we have ANY reasoning data
+  // This includes:
+  // 1. finalElapsedTime (completed streams always have a timer captured when streaming ended)
+  // 2. parentElapsedTime (passed from parent for persistent display across renders)
+  // 3. Any form of reasoning content (steps, raw text, or fallback)
+  // This prevents the ticker from disappearing when streaming ends
+  const hasAnyReasoningData = hasDisplayableSteps || reasoning || streamingReasoningText || finalElapsedTime || parentElapsedTime;
+  if (!isStreaming && !hasAnyReasoningData) {
     return null;
   }
 
