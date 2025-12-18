@@ -72,13 +72,8 @@ After using a tool, **wait** for the system to provide results. Results will app
 
 **AFTER RECEIVING RESULTS - CITATION REQUIREMENTS:**
 
-1. **Cite sources using inline markers**: [1], [2], [3] corresponding to the sources
-2. **At the end of your response**, list sources in this format:
-
-**Sources:**
-[1] [Source Title](URL)
-[2] [Another Source](URL)
-
+1. **Cite sources using inline markers**: [1], [2], [3] corresponding to the search result order
+2. **Do NOT list sources at the end** - The UI automatically displays a citation badge from the markers
 3. If results are insufficient, say so honestly
 4. **Never fabricate sources or URLs** - only cite what was actually returned
 
