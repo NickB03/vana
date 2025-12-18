@@ -6,6 +6,13 @@ on:
       - main
     paths:
       - 'supabase/functions/**'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (skip actual deployment)'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   deploy:
