@@ -1,4 +1,4 @@
-import { memo, useState, useEffect } from "react";
+import { memo, useState, useEffect, useMemo } from "react";
 import { Markdown } from "@/components/ui/markdown";
 import { InlineImage } from "@/components/InlineImage";
 import { ArtifactCard } from "@/components/ArtifactCard";
@@ -6,9 +6,10 @@ import { parseArtifacts } from "@/utils/artifactParser";
 import { ArtifactData } from "@/components/ArtifactContainer";
 import { bundleArtifact, needsBundling } from "@/utils/artifactBundler";
 import { toast } from "sonner";
-import { WebSearchResults } from "@/components/WebSearchResults";
 import { WebSearchResults as WebSearchResultsType } from "@/types/webSearch";
 import { MessageErrorBoundary } from "@/components/MessageErrorBoundary";
+import { CitationSource, stripCitationMarkers } from "@/utils/citationParser";
+import { InlineCitation } from "@/components/ui/inline-citation";
 
 interface MessageWithArtifactsProps {
   content: string;
@@ -16,7 +17,35 @@ interface MessageWithArtifactsProps {
   sessionId: string;  // CRITICAL: Used for server-side bundling, not messageId
   onArtifactOpen: (artifact: ArtifactData) => void;
   searchResults?: WebSearchResultsType | null;
+  citationSources?: Map<number, CitationSource[]>;
   className?: string;
+}
+
+/**
+ * Converts web search results to citation sources map.
+ * Each search source becomes a citation numbered sequentially [1], [2], etc.
+ *
+ * @param searchResults - Web search results from Tavily API
+ * @returns Map of citation numbers to citation sources
+ */
+function webSearchToCitationSources(
+  searchResults: WebSearchResultsType | null | undefined
+): Map<number, CitationSource[]> {
+  if (!searchResults?.sources) return new Map();
+
+  const map = new Map<number, CitationSource[]>();
+  searchResults.sources.forEach((source, index) => {
+    const citationNumber = index + 1; // [1], [2], etc.
+    map.set(citationNumber, [{
+      citationNumber,
+      title: source.title,
+      url: source.url,
+      snippet: source.snippet,
+      favicon: source.favicon,
+      relevanceScore: source.relevanceScore,
+    }]);
+  });
+  return map;
 }
 
 /**
@@ -27,6 +56,7 @@ interface MessageWithArtifactsProps {
  * - Rendering clean content (text without artifact tags)
  * - Displaying inline images
  * - Showing artifact cards for interactive components
+ * - Inline citations from web search results
  *
  * Used by both saved messages and streaming messages to ensure
  * consistent rendering behavior.
@@ -37,11 +67,27 @@ export const MessageWithArtifacts = memo(({
   sessionId,
   onArtifactOpen,
   searchResults,
+  citationSources,
   className = ""
 }: MessageWithArtifactsProps) => {
   const [artifacts, setArtifacts] = useState<ArtifactData[]>([]);
   const [cleanContent, setCleanContent] = useState(content);
   const [bundlingStatus, setBundlingStatus] = useState<Record<string, 'idle' | 'bundling' | 'success' | 'error'>>({});
+
+  // Convert web search results to citation sources map
+  // Use provided citationSources if available, otherwise convert from searchResults
+  const citationSourcesMap = useMemo(() => {
+    return citationSources || webSearchToCitationSources(searchResults);
+  }, [citationSources, searchResults]);
+
+  // Process citations at MESSAGE level: strip markers and aggregate all sources
+  const { contentWithoutCitations, aggregatedSources } = useMemo(() => {
+    if (citationSourcesMap.size === 0) {
+      return { contentWithoutCitations: cleanContent, aggregatedSources: [] };
+    }
+    const { cleanContent: stripped, allSources } = stripCitationMarkers(cleanContent, citationSourcesMap);
+    return { contentWithoutCitations: stripped, aggregatedSources: allSources };
+  }, [cleanContent, citationSourcesMap]);
 
   // Parse artifacts asynchronously (now uses crypto hash for stable IDs)
   useEffect(() => {
@@ -240,8 +286,8 @@ export const MessageWithArtifacts = memo(({
 
   return (
     <MessageErrorBoundary messageContent={content}>
-      {/* Render message text without artifact tags */}
-      {/* Prose classes applied directly to Markdown component for proper typography */}
+      {/* Render message text without artifact tags or citation markers */}
+      {/* Citations are processed at MESSAGE level - one unified badge at the end */}
       <div
         className={`flex-1 transition-all duration-150 ${className}`}
       >
@@ -249,18 +295,16 @@ export const MessageWithArtifacts = memo(({
           id={messageId}
           className="prose prose-sm prose-p:mb-3 prose-p:leading-relaxed max-w-none dark:prose-invert text-foreground text-[15px] leading-relaxed"
         >
-          {cleanContent}
+          {contentWithoutCitations}
         </Markdown>
-      </div>
 
-      {/* Render web search results (if present) */}
-      {searchResults && (
-        <WebSearchResults
-          searchResults={searchResults}
-          isStreaming={false}
-          className="mt-3"
-        />
-      )}
+        {/* Unified citation badge with all sources (carousel) */}
+        {aggregatedSources.length > 0 && (
+          <div className="mt-3">
+            <InlineCitation sources={aggregatedSources} />
+          </div>
+        )}
+      </div>
 
       {/* Render inline images */}
       {imageArtifacts.map(artifact => (

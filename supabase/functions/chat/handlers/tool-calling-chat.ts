@@ -418,6 +418,27 @@ export async function handleToolCallingChat(
             timestamp: Date.now(),
           });
 
+          // Send full web search results to client for inline citations
+          // Maps Tavily response to WebSearchResults format expected by frontend
+          if (toolResult.success && toolResult.toolName === 'browser.search' && toolResult.data?.searchResults) {
+            const tavilyResults = toolResult.data.searchResults;
+            sendEvent({
+              type: 'web_search',
+              data: {
+                query: tavilyResults.query,
+                sources: tavilyResults.results.map((result: { title: string; url: string; content: string; score?: number }) => ({
+                  title: result.title,
+                  url: result.url,
+                  snippet: result.content, // Tavily uses 'content' for snippets
+                  relevanceScore: result.score,
+                })),
+                timestamp: Date.now(),
+                searchTime: toolResult.latencyMs,
+              },
+            });
+            console.log(`${logPrefix} 📤 Sent web_search event with ${tavilyResults.results.length} sources`);
+          }
+
           // ========================================
           // STEP 4: Continue GLM with tool results
           // ========================================

@@ -6,6 +6,7 @@ import { Copy, RotateCw, Pencil, Sparkles, ChevronDown, Clock, Maximize2 } from 
 import { cn } from "@/lib/utils";
 import { TextShimmer } from "@/components/prompt-kit/text-shimmer";
 import { SystemMessage } from "@/components/ui/system-message";
+import { InlineCitation, type CitationSource } from "@/components/ui/inline-citation";
 
 /**
  * UI/UX Showcase Page
@@ -29,11 +30,12 @@ export default function UIShowcase() {
 
         {/* Navigation Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-5">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
             <TabsTrigger value="message-hierarchy">Messages</TabsTrigger>
             <TabsTrigger value="action-buttons">Actions</TabsTrigger>
             <TabsTrigger value="placeholders">Input</TabsTrigger>
             <TabsTrigger value="reasoning">Reasoning</TabsTrigger>
+            <TabsTrigger value="citations">Citations</TabsTrigger>
             <TabsTrigger value="visual-polish">Polish</TabsTrigger>
           </TabsList>
 
@@ -423,11 +425,194 @@ export default function UIShowcase() {
             </Card>
           </TabsContent>
 
-          {/* 5. Visual Polish */}
+          {/* 5. Inline Citations */}
+          <TabsContent value="citations" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>5. Inline Citations</CardTitle>
+                <CardDescription>
+                  Hoverable citation badges with source preview carousel - inspired by AI SDK Elements
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                {/* Mock citation data */}
+                {(() => {
+                  const singleSource: CitationSource[] = [
+                    {
+                      citationNumber: 1,
+                      title: "The State of AI in 2025: Comprehensive Analysis",
+                      url: "https://techreview.com/ai-state-2025",
+                      snippet: "Artificial intelligence continues to reshape industries at an unprecedented pace. From healthcare diagnostics to autonomous systems, AI applications are becoming more sophisticated and accessible than ever before.",
+                      relevanceScore: 0.95,
+                    }
+                  ];
+
+                  const multipleSources: CitationSource[] = [
+                    {
+                      citationNumber: 1,
+                      title: "Breakthroughs in Machine Learning",
+                      url: "https://mlnews.org/breakthroughs",
+                      snippet: "An overview of the most significant machine learning breakthroughs in the past year. Researchers have made substantial progress in multimodal learning and efficient fine-tuning techniques.",
+                      relevanceScore: 0.92,
+                    },
+                    {
+                      citationNumber: 2,
+                      title: "Neural Network Architectures: A Deep Dive",
+                      url: "https://arxiv.org/papers/neural-architectures",
+                      snippet: "This comprehensive survey examines the evolution of neural network architectures, from early perceptrons to modern transformer-based models that power today's largest language models.",
+                      relevanceScore: 0.88,
+                    },
+                    {
+                      citationNumber: 3,
+                      title: "The Future of AGI Research",
+                      url: "https://deepmind.com/research/agi-roadmap",
+                      snippet: "DeepMind's latest research roadmap outlines key milestones toward artificial general intelligence, including advances in reasoning, planning, and world modeling capabilities.",
+                      relevanceScore: 0.85,
+                    },
+                    {
+                      citationNumber: 4,
+                      title: "AI Safety and Alignment Progress Report",
+                      url: "https://anthropic.com/research/safety-2025",
+                      snippet: "A detailed analysis of current AI safety research, covering constitutional AI, interpretability advances, and emerging techniques for ensuring AI systems remain beneficial and controllable.",
+                      relevanceScore: 0.90,
+                    },
+                    {
+                      citationNumber: 5,
+                      title: "Enterprise AI Adoption Trends",
+                      url: "https://gartner.com/ai-enterprise-trends",
+                      snippet: "Gartner's annual report reveals that 78% of enterprises have deployed AI in at least one business function, with customer service and data analytics leading adoption rates.",
+                      relevanceScore: 0.82,
+                    },
+                    {
+                      citationNumber: 6,
+                      title: "Open Source AI: Community Innovations",
+                      url: "https://huggingface.co/blog/open-source-ai",
+                      snippet: "The open source AI community has produced remarkable innovations, democratizing access to powerful models and enabling researchers worldwide to contribute to cutting-edge development.",
+                      relevanceScore: 0.79,
+                    },
+                  ];
+
+                  return (
+                    <>
+                      {/* Single Citation Example */}
+                      <div>
+                        <h3 className="text-sm font-semibold mb-1 text-green-500">Single Source Citation</h3>
+                        <p className="text-xs text-muted-foreground mb-3">Simple hover card without carousel navigation</p>
+                        <div className="rounded-2xl bg-black/50 backdrop-blur-sm p-6 border border-border/50">
+                          <div className="flex w-full flex-col gap-1.5">
+                            <div className="flex items-center gap-2">
+                              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                              </div>
+                              <span className="text-sm font-medium text-foreground">Vana</span>
+                            </div>
+                            <div className="text-[15px] text-foreground leading-relaxed">
+                              The AI industry is experiencing rapid transformation{" "}
+                              <InlineCitation sources={singleSource} />
+                              . New models are being released weekly, with significant improvements in reasoning and coding capabilities.
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Multiple Citations Example */}
+                      <div>
+                        <h3 className="text-sm font-semibold mb-1 text-blue-500">Multiple Sources (Grouped)</h3>
+                        <p className="text-xs text-muted-foreground mb-3">Carousel navigation with prev/next and page indicator</p>
+                        <div className="rounded-2xl bg-black/50 backdrop-blur-sm p-6 border border-border/50">
+                          <div className="flex w-full flex-col gap-1.5">
+                            <div className="flex items-center gap-2">
+                              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                              </div>
+                              <span className="text-sm font-medium text-foreground">Vana</span>
+                            </div>
+                            <div className="text-[15px] text-foreground leading-relaxed">
+                              According to recent studies, artificial intelligence has shown remarkable progress in natural language processing. The technology continues to evolve rapidly, with new breakthroughs being announced regularly{" "}
+                              <InlineCitation sources={multipleSources} />
+                              .
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Inline in Paragraph Example */}
+                      <div>
+                        <h3 className="text-sm font-semibold mb-1 text-purple-500">Multiple Inline Citations</h3>
+                        <p className="text-xs text-muted-foreground mb-3">Citations placed naturally within flowing text</p>
+                        <div className="rounded-2xl bg-black/50 backdrop-blur-sm p-6 border border-border/50">
+                          <div className="flex w-full flex-col gap-1.5">
+                            <div className="flex items-center gap-2">
+                              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                              </div>
+                              <span className="text-sm font-medium text-foreground">Vana</span>
+                            </div>
+                            <div className="text-[15px] text-foreground leading-relaxed space-y-3">
+                              <p>
+                                Machine learning research has accelerated dramatically{" "}
+                                <InlineCitation sources={multipleSources.slice(0, 2)} />
+                                , with transformer architectures becoming the dominant paradigm for both language and vision tasks.
+                              </p>
+                              <p>
+                                Safety research has also made significant strides{" "}
+                                <InlineCitation sources={[multipleSources[3]]} />
+                                , though experts emphasize the need for continued vigilance as capabilities increase.
+                              </p>
+                              <p>
+                                Meanwhile, enterprise adoption continues to grow{" "}
+                                <InlineCitation sources={multipleSources.slice(4, 6)} />
+                                , with organizations finding new applications across customer service, analytics, and content generation.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Styling Variants */}
+                      <div>
+                        <h3 className="text-sm font-semibold mb-1 text-orange-500">Badge Variations (Future)</h3>
+                        <p className="text-xs text-muted-foreground mb-3">Different visual treatments for citations</p>
+                        <div className="rounded-2xl bg-black/50 backdrop-blur-sm p-6 border border-border/50">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">Default:</span>
+                              <InlineCitation sources={singleSource} />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">With count:</span>
+                              <InlineCitation sources={multipleSources.slice(0, 3)} />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">Many sources:</span>
+                              <InlineCitation sources={multipleSources} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-sm">
+                  <strong className="text-blue-600 dark:text-blue-400">Implementation Notes:</strong>
+                  <ul className="mt-2 space-y-1 text-muted-foreground list-disc list-inside">
+                    <li>Uses HoverCard with 200ms open delay to prevent accidental triggers</li>
+                    <li>Carousel resets to first slide when hover re-opens</li>
+                    <li>Domain extracted from URL, favicon loaded via Google favicon service</li>
+                    <li>Snippet truncated to 200 chars with line-clamp-3 CSS</li>
+                    <li>Keyboard accessible: Tab to focus, Enter to open link</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* 6. Visual Polish */}
           <TabsContent value="visual-polish" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>5. Visual Polish & Micro-interactions</CardTitle>
+                <CardTitle>6. Visual Polish & Micro-interactions</CardTitle>
                 <CardDescription>
                   Enhanced shadows, guest banner urgency, and button feedback
                 </CardDescription>
