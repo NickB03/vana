@@ -81,6 +81,10 @@ export interface ToolExecutionResult {
     // Artifact generation fields
     /** Generated artifact code */
     artifactCode?: string;
+    /** Type of artifact generated */
+    artifactType?: string;
+    /** Title for the artifact */
+    artifactTitle?: string;
     /** Reasoning text from GLM */
     artifactReasoning?: string;
     // Image generation fields
@@ -90,6 +94,8 @@ export interface ToolExecutionResult {
     imageUrl?: string;
     /** Whether storage upload succeeded */
     storageSucceeded?: boolean;
+    /** Whether operating in degraded mode (storage failed) */
+    degradedMode?: boolean;
   };
   /** Error message (if failed) */
   error?: string;
@@ -475,11 +481,18 @@ async function executeArtifactTool(
       `[${requestId}] ✅ generate_artifact completed: ${result.artifactCode.length} chars in ${latencyMs}ms`
     );
 
+    // Generate a title from the prompt (first 50 chars or full prompt if shorter)
+    const generatedTitle = prompt.length > 50
+      ? prompt.substring(0, 47) + '...'
+      : prompt;
+
     return {
       success: true,
       toolName: 'generate_artifact',
       data: {
         artifactCode: result.artifactCode,
+        artifactType: type,
+        artifactTitle: generatedTitle,
         artifactReasoning: result.reasoning || undefined
       },
       latencyMs
@@ -569,7 +582,8 @@ async function executeImageTool(
       data: {
         imageData: result.imageData,
         imageUrl: result.imageUrl,
-        storageSucceeded: result.storageSucceeded
+        storageSucceeded: result.storageSucceeded,
+        degradedMode: !result.storageSucceeded
       },
       latencyMs
     };
@@ -658,14 +672,10 @@ Error: ${errorMsg}
     }
 
     case 'generate_artifact': {
-      // SECURITY: Sanitize each field BEFORE concatenation to prevent XML injection
-      // Defense-in-depth: artifact code could contain </result> or other XML-breaking patterns
-      const artifactCode = result.data?.artifactCode
-        ? sanitizeXmlValue(result.data.artifactCode)
-        : '';
-      const reasoning = result.data?.artifactReasoning
-        ? sanitizeXmlValue(result.data.artifactReasoning)
-        : '';
+      // NOTE: Content is sanitized once at line 709 (sanitizeXmlValue call)
+      // Do NOT sanitize here to avoid double-escaping (< → &lt; → &amp;lt;)
+      const artifactCode = result.data?.artifactCode || '';
+      const reasoning = result.data?.artifactReasoning || '';
 
       content = `Artifact generated successfully:\n\n${artifactCode}`;
       if (reasoning) {
@@ -675,11 +685,9 @@ Error: ${errorMsg}
     }
 
     case 'generate_image': {
-      // SECURITY: Sanitize URL before concatenation to prevent XML injection
-      // Image URLs from external APIs should not be trusted
-      const imageUrl = result.data?.imageUrl
-        ? sanitizeXmlValue(result.data.imageUrl)
-        : '';
+      // NOTE: Content is sanitized once at line 709 (sanitizeXmlValue call)
+      // Do NOT sanitize here to avoid double-escaping
+      const imageUrl = result.data?.imageUrl || '';
       const storageSucceeded = result.data?.storageSucceeded ?? false;
 
       content = `Image generated successfully!\n\nImage URL: ${imageUrl}\n\nStorage Status: ${storageSucceeded ? 'Successfully stored' : 'Using temporary base64 URL'}`;

@@ -22,7 +22,7 @@ import { extractUrlContent } from "./handlers/url-extract.ts";
 import { generateImage } from "./handlers/image.ts";
 import { generateArtifact } from "./handlers/artifact.ts";
 import { createStreamingResponse } from "./handlers/streaming.ts";
-import { handleToolCallingChat } from "./handlers/tool-calling-chat.ts";
+import { handleToolCallingChat, type ModeHint } from "./handlers/tool-calling-chat.ts";
 
 // Shared utilities
 import {
@@ -423,6 +423,13 @@ Treat this as an iterative improvement of the existing artifact.`;
         useToolCalling: true
       });
 
+      // Derive mode hint from frontend flags
+      const modeHint: ModeHint = forceImageMode
+        ? 'image'
+        : forceArtifactMode
+          ? 'artifact'
+          : 'auto';
+
       return handleToolCallingChat({
         messages: contextMessages,
         fullArtifactContext,
@@ -433,6 +440,8 @@ Treat this as an iterative improvement of the existing artifact.`;
         requestId,
         corsHeaders,
         rateLimitHeaders,
+        modeHint,
+        supabaseClient: supabase,
       });
     }
 

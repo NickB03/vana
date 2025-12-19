@@ -62,19 +62,20 @@ export interface ToolDefinition {
 }
 
 /**
- * GLM-compatible tool definition format.
- * Used when sending tools to the GLM API.
+ * GLM-compatible tool definition format (flat structure).
+ * Used when sending tools to the GLM API via glm-client.ts.
+ *
+ * NOTE: This uses the flat format expected by glm-client.ts, NOT the nested
+ * OpenAI format (type: 'function', function: {...}). The flat format matches
+ * how GLM_SEARCH_TOOL is defined in glm-client.ts.
  */
 export interface GLMToolDefinition {
-  type: 'function';
-  function: {
-    name: string;
-    description: string;
-    parameters: {
-      type: 'object';
-      properties: Record<string, ToolParameter>;
-      required: string[];
-    };
+  name: string;
+  description: string;
+  parameters: {
+    type: 'object';
+    properties: Record<string, ToolParameter>;
+    required: string[];
   };
 }
 
@@ -171,15 +172,12 @@ export const TOOL_CATALOG = {
  */
 export function getGLMToolDefinitions(): readonly GLMToolDefinition[] {
   return Object.values(TOOL_CATALOG).map((tool): GLMToolDefinition => ({
-    type: 'function',
-    function: {
-      name: tool.name,
-      description: tool.description,
-      parameters: {
-        type: 'object',
-        properties: tool.parameters,
-        required: tool.required,
-      },
+    name: tool.name,
+    description: tool.description,
+    parameters: {
+      type: 'object',
+      properties: tool.parameters,
+      required: tool.required,
     },
   }));
 }
