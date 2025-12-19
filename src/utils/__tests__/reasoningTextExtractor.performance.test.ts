@@ -10,10 +10,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { extractStatusText, createExtractionState } from "../reasoningTextExtractor";
 
-// Mock the AI Commentator to isolate the extractor
-vi.mock('../../_shared/ai-commentator.ts', () => ({
-  generateSemanticStatus: vi.fn(),
-}));
+// Note: ai-commentator.ts has been removed. ReasoningProvider is now used instead.
+// The extractStatusText function is a standalone utility that doesn't depend on the provider.
 
 describe("reasoningTextExtractor Performance Benchmarks", () => {
   let state: ReturnType<typeof createExtractionState>;

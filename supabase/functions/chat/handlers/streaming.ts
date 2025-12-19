@@ -23,6 +23,12 @@ import {
   createIncrementalParseState,
   type IncrementalParseState,
 } from "../../_shared/glm-reasoning-parser.ts";
+import {
+  createReasoningProvider,
+  type IReasoningProvider,
+  type ReasoningEvent,
+} from "../../_shared/reasoning-provider.ts";
+import { shouldUseReasoningProvider } from "../../_shared/config.ts";
 
 /**
  * Creates a transform stream that:
@@ -57,6 +63,11 @@ export function createStreamTransformer(
 
   // Tool call stripping state (prevents raw <tool_call> XML from reaching client)
   let toolCallInProgress = false;
+
+  // ReasoningProvider state (hybrid LLM+fallback for status generation)
+  let reasoningProvider: IReasoningProvider | null = null;
+  let storedController: TransformStreamDefaultController<string> | null = null;
+  const useReasoningProvider = shouldUseReasoningProvider(requestId);
 
   /**
    * Strip <tool_call>...</tool_call> XML blocks from content
@@ -110,6 +121,45 @@ export function createStreamTransformer(
 
   return new TransformStream({
     async start(controller) {
+      // Store controller for async ReasoningProvider callbacks
+      storedController = controller;
+
+      // Initialize ReasoningProvider if enabled
+      if (useReasoningProvider) {
+        const reasoningEventCallback = async (event: ReasoningEvent) => {
+          if (!storedController) return;
+
+          if (event.type === 'reasoning_status' || event.type === 'reasoning_heartbeat') {
+            const statusEvent = {
+              type: "reasoning_status",
+              content: event.message,
+              source: event.type === 'reasoning_heartbeat' ? 'heartbeat' : 'reasoning_provider',
+              phase: event.phase,
+              timestamp: Date.now(),
+            };
+            storedController.enqueue(`data: ${JSON.stringify(statusEvent)}\n\n`);
+          } else if (event.type === 'reasoning_final') {
+            // Final summary can be sent as a special status
+            const finalEvent = {
+              type: "reasoning_status",
+              content: event.message,
+              source: 'completion',
+              isFinal: true,
+              timestamp: Date.now(),
+            };
+            storedController.enqueue(`data: ${JSON.stringify(finalEvent)}\n\n`);
+          } else if (event.type === 'reasoning_error') {
+            console.warn(`[${requestId}] ⚠️ ReasoningProvider error: ${event.message}`);
+          }
+        };
+
+        reasoningProvider = createReasoningProvider(requestId, reasoningEventCallback);
+        await reasoningProvider.start();
+        console.log(`[${requestId}] 🎛️ Chat status provider: ReasoningProvider`);
+      } else {
+        console.log(`[${requestId}] 🎛️ Chat status provider: Direct parsing (legacy)`);
+      }
+
       // ========================================
       // PRE-STREAMED REASONING: Send if provided upfront (legacy fallback path)
       // ========================================
@@ -233,33 +283,56 @@ export function createStreamTransformer(
               if (delta.reasoning_content) {
                 fullReasoningContent += delta.reasoning_content;
 
-                // Parse incrementally for Claude-like progressive steps
-                const parseResult = parseReasoningIncrementally(fullReasoningContent, parseState);
-                parseState = parseResult.state;
+                if (reasoningProvider) {
+                  // Use ReasoningProvider for status generation (fire-and-forget)
+                  // Provider will emit events via callback → storedController
+                  reasoningProvider.processReasoningChunk(delta.reasoning_content);
 
-                // Emit new step if detected
-                if (parseResult.newStep) {
-                  const stepEvent = {
-                    type: "reasoning_step",
-                    step: parseResult.newStep,
-                    stepIndex: reasoningStepsSent,
-                    currentThinking: parseResult.currentThinking,
-                    timestamp: Date.now(),
-                  };
-                  controller.enqueue(`data: ${JSON.stringify(stepEvent)}\n\n`);
-                  reasoningStepsSent++;
-                }
+                  // Still parse incrementally for reasoning_step events
+                  const parseResult = parseReasoningIncrementally(fullReasoningContent, parseState);
+                  parseState = parseResult.state;
 
-                // Emit status update if enough time has passed
-                const now = Date.now();
-                if (now - lastStatusUpdate > STATUS_UPDATE_INTERVAL_MS) {
-                  const statusEvent = {
-                    type: "reasoning_status",
-                    content: parseResult.currentThinking,
-                    timestamp: now,
-                  };
-                  controller.enqueue(`data: ${JSON.stringify(statusEvent)}\n\n`);
-                  lastStatusUpdate = now;
+                  // Emit reasoning_step if detected (this is different from status)
+                  if (parseResult.newStep) {
+                    const stepEvent = {
+                      type: "reasoning_step",
+                      step: parseResult.newStep,
+                      stepIndex: reasoningStepsSent,
+                      currentThinking: parseResult.currentThinking,
+                      timestamp: Date.now(),
+                    };
+                    controller.enqueue(`data: ${JSON.stringify(stepEvent)}\n\n`);
+                    reasoningStepsSent++;
+                  }
+                } else {
+                  // Legacy path: direct parsing for status updates
+                  const parseResult = parseReasoningIncrementally(fullReasoningContent, parseState);
+                  parseState = parseResult.state;
+
+                  // Emit new step if detected
+                  if (parseResult.newStep) {
+                    const stepEvent = {
+                      type: "reasoning_step",
+                      step: parseResult.newStep,
+                      stepIndex: reasoningStepsSent,
+                      currentThinking: parseResult.currentThinking,
+                      timestamp: Date.now(),
+                    };
+                    controller.enqueue(`data: ${JSON.stringify(stepEvent)}\n\n`);
+                    reasoningStepsSent++;
+                  }
+
+                  // Emit status update if enough time has passed (legacy behavior)
+                  const now = Date.now();
+                  if (now - lastStatusUpdate > STATUS_UPDATE_INTERVAL_MS) {
+                    const statusEvent = {
+                      type: "reasoning_status",
+                      content: parseResult.currentThinking,
+                      timestamp: now,
+                    };
+                    controller.enqueue(`data: ${JSON.stringify(statusEvent)}\n\n`);
+                    lastStatusUpdate = now;
+                  }
                 }
 
                 // Don't forward reasoning_content - it's been processed
@@ -371,7 +444,19 @@ export function createStreamTransformer(
         }
       }
 
-      // Emit final reasoning_complete if not already done
+      // Finalize ReasoningProvider if active
+      if (reasoningProvider) {
+        try {
+          await reasoningProvider.finalize("chat response");
+        } catch (err) {
+          console.warn(`[${requestId}] ⚠️ ReasoningProvider finalize error:`, err);
+        } finally {
+          reasoningProvider.destroy();
+          reasoningProvider = null;
+        }
+      }
+
+      // Emit final reasoning_complete if not already done (legacy path or fallback)
       if (fullReasoningContent.length > 0 && !reasoningComplete) {
         const completeEvent = {
           type: "reasoning_complete",
@@ -382,6 +467,9 @@ export function createStreamTransformer(
         controller.enqueue(`data: ${JSON.stringify(completeEvent)}\n\n`);
         console.log(`[${requestId}] 🧠 GLM reasoning finalized: ${fullReasoningContent.length} chars`);
       }
+
+      // Clear stored controller reference
+      storedController = null;
     },
   });
 }

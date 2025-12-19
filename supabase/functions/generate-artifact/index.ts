@@ -6,7 +6,12 @@ import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-conf
 import { MODELS, RATE_LIMITS, FEATURE_FLAGS } from "../_shared/config.ts";
 import { validateArtifactCode, autoFixArtifactCode, preValidateAndFixGlmSyntax } from "../_shared/artifact-validator.ts";
 import { getSystemInstruction } from "../_shared/system-prompt-inline.ts";
-import { AICommentator } from "../_shared/ai-commentator.ts";
+import {
+  createReasoningProvider,
+  type IReasoningProvider,
+  type ReasoningEvent,
+  type ReasoningEventCallback,
+} from "../_shared/reasoning-provider.ts";
 
 // NOTE: Retry logic handled in glm-client.ts
 // callGLMWithRetryTracking() handles exponential backoff automatically
@@ -335,6 +340,9 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
 
       // Start streaming GLM response in background
       (async () => {
+        // Declare ReasoningProvider at outer scope for cleanup in catch block
+        let reasoningProvider: IReasoningProvider | null = null;
+
         try {
           // Call GLM with streaming enabled
           const glmResponse = await callGLM(
@@ -380,42 +388,60 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
           let lastEmittedStatus: string | null = null; // Track last emitted status to avoid duplicates
 
           // ============================================================================
-          // AI SIDECAR COMMENTATOR: Semantic status updates via GLM-4.5-Air
+          // AI SIDECAR: Semantic status updates via ReasoningProvider
           // ============================================================================
-          // The Commentator runs in parallel with the main GLM-4.6 stream, providing
-          // semantic status updates (e.g., "Designing authentication flow") that are
-          // more meaningful than the raw reasoning text or [STATUS: ...] markers.
+          // ReasoningProvider provides hybrid LLM + phase-based fallback:
+          //    - Circuit breaker pattern for LLM failures
+          //    - Typed events with full metadata
+          //    - Automatic phase detection and transitions
+          //    - Proper resource cleanup via destroy()
           //
-          // Key features:
-          // - Buffer management: Accumulates text until meaningful chunks are ready
-          // - Anti-flicker: Minimum 1.5s between status updates
-          // - Non-blocking: Runs async, doesn't delay the main stream
-          // - Graceful fallback: If commentator fails, we still have [STATUS:] markers
+          // Provides semantic status updates more meaningful than [STATUS:] markers.
           // ============================================================================
-          const commentator = new AICommentator(
-            async (status: string) => {
-              // Only emit if different from last [STATUS: ...] marker
-              if (status !== lastEmittedStatus) {
-                // CRITICAL: Send as "status_update" event - this is what the frontend
-              // expects for semantic status updates in the ticker pill.
-              // "thinking_update" is for raw chunk accumulation, not ticker display.
+          console.log(`[${requestId}] 🎛️ Status provider: ReasoningProvider`);
+
+          // ReasoningProvider event adapter: converts typed events to SSE format
+          const reasoningEventAdapter: ReasoningEventCallback = async (event: ReasoningEvent) => {
+            // Only emit if different from last [STATUS:] marker
+            if (event.message !== lastEmittedStatus) {
+              const source = event.type === 'reasoning_final' ? 'completion' :
+                             event.type === 'reasoning_heartbeat' ? 'heartbeat' : 'reasoning_provider';
+              const isFinal = event.type === 'reasoning_final';
+
               await sendEvent("status_update", {
-                  status,
-                  source: "commentator"
-                });
-                console.log(`[${requestId}] 🎯 AI Commentator: "${status}"`);
-                // Don't update lastEmittedStatus here - let [STATUS:] markers take precedence
-              }
-            },
-            requestId,
-            {
-              minBufferChars: 150,   // Wait for meaningful content
-              maxBufferChars: 500,   // Force flush for long reasoning
-              maxWaitMs: 3000,       // Max time between updates
-              minUpdateIntervalMs: 1500, // Anti-flicker cooldown
-              timeoutMs: 2000,       // Sidecar call timeout
+                status: event.message,
+                source,
+                ...(isFinal && { final: true }),
+                // Include metadata for debugging/analytics
+                phase: event.phase,
+                metadata: event.metadata,
+              });
+              console.log(`[${requestId}] 🎯 ReasoningProvider [${event.type}]: "${event.message}"`);
             }
-          );
+          };
+
+          // Create ReasoningProvider
+          reasoningProvider = createReasoningProvider(requestId, reasoningEventAdapter, {
+            config: {
+              minBufferChars: 150,
+              maxBufferChars: 500,
+              maxWaitMs: 3000,
+              minUpdateIntervalMs: 1500,
+              timeoutMs: 2000,
+            },
+          });
+          // Start the provider (emits initial status, starts heartbeat timer)
+          await reasoningProvider.start();
+
+          // Unified interface for pushing chunks
+          const pushChunk = async (chunk: string) => {
+            await reasoningProvider.processReasoningChunk(chunk);
+          };
+
+          // Unified interface for notifying content phase
+          const notifyContentPhase = async () => {
+            await reasoningProvider.setPhase('implementing');
+          };
 
           // Process GLM SSE stream with incremental step detection
           const { reasoning, content } = await processGLMStream(
@@ -426,17 +452,17 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
                 fullReasoning += chunk;
 
                 // ============================================================================
-                // DUAL STATUS SOURCES: [STATUS:] markers + AI Sidecar Commentator
+                // DUAL STATUS SOURCES: [STATUS:] markers + ReasoningProvider
                 // ============================================================================
                 // 1. [STATUS: ...] markers: Fast-path, parsed from GLM's raw reasoning
-                // 2. AI Commentator: Semantic understanding via GLM-4.5-Air (async)
+                // 2. ReasoningProvider: Hybrid LLM+fallback for semantic status updates
                 //
                 // The [STATUS:] markers take precedence when available (lower latency).
-                // The Commentator provides semantic updates when markers are absent.
+                // ReasoningProvider provides semantic updates when markers are absent.
                 // ============================================================================
 
-                // Feed chunk to AI Commentator (async, non-blocking)
-                commentator.push(chunk);
+                // Feed chunk to ReasoningProvider (async, non-blocking)
+                await pushChunk(chunk);
 
                 // STATUS MARKER DETECTION: Parse [STATUS: ...] markers from reasoning
                 // GLM emits [STATUS: action phrase] markers during thinking to indicate
@@ -474,14 +500,14 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
                 }
               },
               onContentChunk: async (chunk: string) => {
-                // Notify commentator that we're in content generation phase
+                // Notify sidecar that we're in content generation phase
                 // This triggers proactive heartbeat updates during code generation
-                commentator.notifyContentPhase();
+                await notifyContentPhase();
 
-                // Also feed content chunks to the commentator for semantic analysis
+                // Also feed content chunks to the sidecar for semantic analysis
                 // During code generation, the sidecar can analyze what's being built
                 // (e.g., "Writing React component", "Adding event handlers")
-                commentator.push(chunk);
+                await pushChunk(chunk);
 
                 await sendEvent("content_chunk", { chunk });
               },
@@ -545,17 +571,18 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
           // Parse reasoning to structured format
           const reasoningSteps = reasoning ? parseGLMReasoningToStructured(reasoning) : null;
 
-          // Generate final summary using AI Commentator (non-blocking, with fallback)
-          // This provides a meaningful ticker message like "Created a counter button component"
-          const finalSummary = await commentator.generateFinalSummary(artifactCode, prompt).catch(() => null);
+          // ============================================================================
+          // FINALIZATION: Generate summary and clean up ReasoningProvider
+          // ============================================================================
+          // ReasoningProvider handles final status emission internally via finalize()
+          // Extract artifact description from the prompt for the summary
+          const artifactDescription = artifactType === 'react'
+            ? 'React component'
+            : artifactType || 'artifact';
+          await reasoningProvider.finalize(`${artifactDescription} based on your request`);
 
-          // Send final status update with the AI-generated summary (or fallback)
-          const finalStatus = finalSummary || "Artifact complete";
-          await sendEvent("status_update", {
-            status: finalStatus,
-            source: "completion",
-            final: true,
-          });
+          // Note: finalSummary is set to simple fallback - the final event was already emitted via the adapter
+          const finalSummary = "Artifact complete";
 
           // If we have a final summary, update the last step's title in reasoningSteps
           // so the ticker shows the summary after streaming ends
@@ -599,12 +626,17 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
 
           console.log(`[${requestId}] ✅ Streaming artifact complete: ${artifactCode.length} chars in ${latencyMs}ms`);
 
-          // Flush any pending commentator calls (best-effort, with timeout)
-          await commentator.flush();
+          // Note: ReasoningProvider cleanup already happened in finalize()
 
           await writer.close();
         } catch (error) {
           console.error(`[${requestId}] Streaming error:`, error);
+
+          // Clean up status provider on error
+          if (reasoningProvider) {
+            reasoningProvider.destroy();
+          }
+
           try {
             await sendEvent("error", { error: error instanceof Error ? error.message : "Unknown streaming error", requestId });
             await writer.close();

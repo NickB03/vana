@@ -181,8 +181,11 @@ Implements business logic for specific features:
 ┌─────────────────────────────────────────────────────────────────┐
 │ handlers/streaming.ts                                            │
 │ • Creates SSE transform stream                                   │
-│ • Injects reasoning as first event                               │
-│ • Injects search results as second event                         │
+│ • ReasoningProvider integration (feature-flagged)                │
+│   - Hybrid LLM+fallback for semantic status updates             │
+│   - Circuit breaker: 3 failures → 30s cooldown                  │
+│ • Parses GLM reasoning_content for progressive steps            │
+│ • Injects search results as SSE event                            │
 │ • Transforms artifact code (fixes imports)                       │
 │ • Returns Response with transformed stream                       │
 └─────────────────────────────────────────────────────────────────┘
@@ -264,10 +267,13 @@ Errors are caught at each layer and returned with appropriate status codes:
    → OpenRouter called
 
 9. Stream Transformation
-   → Event 1: Reasoning (type: reasoning)
+   → Event 1: Pre-streamed reasoning (if available)
    → Event 2: Search Results (type: web_search)
+   → Events 3-N: reasoning_status (from ReasoningProvider, when enabled)
+   → Events 3-N: reasoning_step (progressive step detection)
    → Events 3-N: Chat content (OpenAI format)
-   → Event N+1: [DONE]
+   → Event N+1: reasoning_complete
+   → Event N+2: [DONE]
 
 10. Background Tasks
     → Cache updated (fire-and-forget)
@@ -293,3 +299,18 @@ Validation → Rate Limit → Auth → Intent → Streaming
 - API throttle + Guest/User rate limit (already parallel)
 - Intent detection + Reasoning generation (could be parallel)
 - Cache fetch + Context building (could be parallel)
+
+## Feature Flags
+
+### ReasoningProvider (Status Generation)
+The `USE_REASONING_PROVIDER` flag controls whether streaming.ts uses the hybrid ReasoningProvider for semantic status updates:
+
+- **Enabled**: GLM-4.5-Air generates semantic status messages from reasoning chunks
+- **Disabled**: Direct text extraction from parsed reasoning (legacy behavior)
+- **Rollout**: `REASONING_PROVIDER_ROLLOUT_PERCENT` controls gradual rollout
+
+```bash
+# Enable in environment
+USE_REASONING_PROVIDER=true
+REASONING_PROVIDER_ROLLOUT_PERCENT=100
+```

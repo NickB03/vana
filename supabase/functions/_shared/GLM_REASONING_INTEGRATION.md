@@ -384,10 +384,100 @@ try {
 
 **Solution**: The parser uses position-based inference as fallback. This is expected behavior.
 
+## Real-Time Status Generation
+
+For streaming contexts (SSE), use `ReasoningProvider` to convert GLM reasoning chunks into semantic status updates in real-time.
+
+### ReasoningProvider Overview
+
+The ReasoningProvider is a hybrid LLM+fallback system that generates status messages during streaming:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    ReasoningProvider                        │
+│  ┌──────────────┐    ┌─────────────────────────────────┐   │
+│  │ CircuitBreaker│───▶│ GLM-4.5-Air (Primary)            │   │
+│  │ 3 failures →  │    │ Generates semantic status from   │   │
+│  │ 30s cooldown  │    │ reasoning text chunks            │   │
+│  └──────────────┘    └─────────────────────────────────┘   │
+│         │                                                   │
+│         ▼ (when LLM unavailable)                           │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ Phase-Based Fallback                                 │   │
+│  │ analyzing → "Examining requirements..."              │   │
+│  │ planning  → "Designing the approach..."              │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Usage in Streaming Context
+
+```typescript
+import {
+  createReasoningProvider,
+  type IReasoningProvider,
+  type ReasoningEvent
+} from '../_shared/reasoning-provider.ts';
+import { shouldUseReasoningProvider } from '../_shared/config.ts';
+
+// Check feature flag
+if (shouldUseReasoningProvider(requestId)) {
+  // Create provider with callback
+  const provider = createReasoningProvider(requestId, async (event: ReasoningEvent) => {
+    // event.type: 'reasoning_status' | 'reasoning_final' | 'reasoning_heartbeat' | 'reasoning_error'
+    // event.message: The status message to display
+    // event.phase: Current thinking phase
+    controller.enqueue(`data: ${JSON.stringify({ type: event.type, message: event.message })}\n\n`);
+  });
+
+  await provider.start();
+
+  // As GLM streams reasoning_content...
+  for await (const chunk of glmStream) {
+    if (chunk.reasoning_content) {
+      // Fire-and-forget: provider buffers internally
+      provider.processReasoningChunk(chunk.reasoning_content);
+    }
+  }
+
+  // Finalize and cleanup
+  await provider.finalize("artifact description");
+  provider.destroy();
+}
+```
+
+### Feature Flag Control
+
+```bash
+# Enable ReasoningProvider (default: false)
+USE_REASONING_PROVIDER=true
+
+# Percentage rollout (default: 100 when enabled)
+REASONING_PROVIDER_ROLLOUT_PERCENT=50
+```
+
+### When to Use
+
+| Scenario | Use Parser | Use ReasoningProvider |
+|----------|------------|----------------------|
+| Non-streaming response | ✅ `parseGLMReasoningToStructured()` | ❌ |
+| Streaming with status updates | ❌ | ✅ |
+| Storing reasoning in DB | ✅ | ❌ |
+| Real-time UI ticker | ❌ | ✅ |
+
+### Files
+
+- **ReasoningProvider**: `supabase/functions/_shared/reasoning-provider.ts`
+- **Config/Flags**: `supabase/functions/_shared/config.ts`
+- **Integration Examples**:
+  - `supabase/functions/generate-artifact/index.ts`
+  - `supabase/functions/chat/handlers/streaming.ts`
+
 ## Related Documentation
 
 - **GLM Client**: `supabase/functions/_shared/glm-client.ts`
 - **Reasoning Generator**: `supabase/functions/_shared/reasoning-generator.ts`
+- **Reasoning Provider**: `supabase/functions/_shared/reasoning-provider.ts` (real-time status)
 - **Chain of Thought UI**: `src/components/ReasoningDisplay.tsx`
 - **Database Schema**: `supabase/migrations/` (reasoning column)
 
