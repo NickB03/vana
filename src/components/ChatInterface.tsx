@@ -199,6 +199,7 @@ export function ChatInterface({
 
   // Reset when session changes
   useEffect(() => {
+    cancelStream();
     setStreamingMessage("");
     setIsStreaming(false);
     setCurrentArtifact(null);
@@ -209,7 +210,7 @@ export function ChatInterface({
     setImageMode(false);
     setArtifactMode(false);
     // Note: initializedSessionRef is managed separately in the initialPrompt effect
-  }, [sessionId, onArtifactChange]);
+  }, [sessionId, cancelStream, onArtifactChange]);
 
   // Timer effect: Start timer when streaming begins, capture final time when streaming ends
   useEffect(() => {
