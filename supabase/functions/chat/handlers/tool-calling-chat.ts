@@ -18,7 +18,7 @@
  * - reasoning_complete: Final reasoning with structured steps { type, reasoning, reasoningSteps }
  *
  * Architecture:
- * - Uses GLM_SEARCH_TOOL from glm-client.ts for tool definitions
+ * - Uses getGLMToolDefinitions() from tool-definitions.ts for tool catalog
  * - Uses processGLMStream for native tool call detection
  * - Uses executeTool from tool-executor.ts for tool execution
  * - Uses callGLMWithToolResult for continuation with tool results
@@ -29,7 +29,6 @@ import {
   callGLMWithRetry,
   processGLMStream,
   callGLMWithToolResult,
-  GLM_SEARCH_TOOL,
   type ToolCall,
   type NativeToolCall,
 } from '../../_shared/glm-client.ts';
@@ -38,6 +37,10 @@ import {
   formatResultForGLM,
   type ToolContext,
 } from '../../_shared/tool-executor.ts';
+import {
+  getGLMToolDefinitions,
+} from '../../_shared/tool-definitions.ts';
+import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.75.1';
 import { getSystemInstruction } from '../../_shared/system-prompt-inline.ts';
 import {
   parseReasoningIncrementally,
@@ -50,6 +53,14 @@ import {
   type IReasoningProvider,
   type ReasoningEvent,
 } from '../../_shared/reasoning-provider.ts';
+
+/**
+ * Mode hint for biasing tool selection.
+ * - 'artifact': Bias towards artifact generation
+ * - 'image': Bias towards image generation
+ * - 'auto': Let model decide based on intent
+ */
+export type ModeHint = 'artifact' | 'image' | 'auto';
 
 /**
  * Parameters for tool-calling chat handler
@@ -73,6 +84,10 @@ export interface ToolCallingChatParams {
   corsHeaders: Record<string, string>;
   /** Rate limit headers */
   rateLimitHeaders: Record<string, string>;
+  /** Mode hint to bias tool selection (optional, defaults to 'auto') */
+  modeHint?: ModeHint;
+  /** Supabase client for storage operations (required for image generation) */
+  supabaseClient?: SupabaseClient;
 }
 
 /**
@@ -124,6 +139,34 @@ function parseToolArguments(
  * });
  * ```
  */
+/**
+ * Builds mode hint suffix for system prompt.
+ * Biases the model towards using specific tools based on user's mode selection.
+ */
+function buildModeHintPrompt(modeHint: ModeHint): string {
+  switch (modeHint) {
+    case 'artifact':
+      return `
+
+IMPORTANT: The user has explicitly selected ARTIFACT MODE. You SHOULD use the generate_artifact tool for this request unless it's clearly just a question or simple chat message. Create interactive React components, HTML, SVG, diagrams, or code as appropriate.`;
+
+    case 'image':
+      return `
+
+IMPORTANT: The user has explicitly selected IMAGE MODE. You SHOULD use the generate_image tool for this request unless it's clearly just a question or simple chat message. Generate images based on their description.`;
+
+    case 'auto':
+    default:
+      return `
+
+Analyze the user's request and use appropriate tools when needed:
+- If they want to create something visual, interactive, or code-based, use generate_artifact
+- If they want an image, photo, illustration, or artwork, use generate_image
+- If they need current information, news, or real-time data, use browser.search
+- For general questions, respond directly without using tools`;
+  }
+}
+
 export async function handleToolCallingChat(
   params: ToolCallingChatParams
 ): Promise<Response> {
@@ -137,11 +180,19 @@ export async function handleToolCallingChat(
     requestId,
     corsHeaders,
     rateLimitHeaders,
+    modeHint = 'auto',
+    supabaseClient,
   } = params;
 
   const logPrefix = `[${requestId}]`;
 
-  console.log(`${logPrefix} 🔧 Starting tool-calling chat with GLM-4.6`);
+  console.log(`${logPrefix} 🔧 Starting unified tool-calling chat with GLM-4.6 (modeHint=${modeHint})`);
+
+  // Get all tool definitions for unified handler
+  // Spread into mutable array to satisfy GLM client's type requirements
+  const allTools = [...getGLMToolDefinitions()];
+  const toolNames = allTools.map(t => t.name).join(', ');
+  console.log(`${logPrefix} 🔧 Tools available: ${toolNames}`);
 
   // Get system instruction with tool-calling enabled and artifact context
   const toolEnabledSystemPrompt = getSystemInstruction({
@@ -158,15 +209,14 @@ export async function handleToolCallingChat(
     finalSystemPrompt += `\n\nURL CONTENT:\n${urlExtractContext}`;
   }
 
+  // Add mode hint to bias tool selection
+  finalSystemPrompt += buildModeHintPrompt(modeHint);
+
   // Build user prompt from messages (combine all user messages)
   const userPrompt = messages
     .filter((m) => m.role === 'user')
     .map((m) => m.content)
     .join('\n\n');
-
-  console.log(
-    `${logPrefix} 🔧 Tool-calling enabled with tools: ${GLM_SEARCH_TOOL.name}`
-  );
 
   // ========================================
   // Create SSE stream for client
@@ -248,7 +298,7 @@ export async function handleToolCallingChat(
             functionName: 'chat',
             stream: true,
             enableThinking: true, // Reasoning enabled for better tool selection
-            tools: [GLM_SEARCH_TOOL],
+            tools: allTools,
             temperature: 0.7,
             max_tokens: 8000,
           }
@@ -277,6 +327,7 @@ export async function handleToolCallingChat(
           userId: userId || undefined,
           isGuest,
           functionName: 'chat',
+          supabaseClient, // Required for image generation storage
         };
 
         let nativeToolCallDetected = false;
@@ -451,25 +502,69 @@ export async function handleToolCallingChat(
             timestamp: Date.now(),
           });
 
-          // Send full web search results to client for inline citations
-          // Maps Tavily response to WebSearchResults format expected by frontend
-          if (toolResult.success && toolResult.toolName === 'browser.search' && toolResult.data?.searchResults) {
-            const tavilyResults = toolResult.data.searchResults;
-            sendEvent({
-              type: 'web_search',
-              data: {
-                query: tavilyResults.query,
-                sources: tavilyResults.results.map((result: { title: string; url: string; content: string; score?: number }) => ({
-                  title: result.title,
-                  url: result.url,
-                  snippet: result.content, // Tavily uses 'content' for snippets
-                  relevanceScore: result.score,
-                })),
-                timestamp: Date.now(),
-                searchTime: toolResult.latencyMs,
-              },
-            });
-            console.log(`${logPrefix} 📤 Sent web_search event with ${tavilyResults.results.length} sources`);
+          // Send tool-specific results to client
+          if (toolResult.success) {
+            switch (toolResult.toolName) {
+              case 'browser.search': {
+                // Maps Tavily response to WebSearchResults format expected by frontend
+                if (toolResult.data?.searchResults) {
+                  const tavilyResults = toolResult.data.searchResults;
+                  sendEvent({
+                    type: 'web_search',
+                    data: {
+                      query: tavilyResults.query,
+                      sources: tavilyResults.results.map((result: { title: string; url: string; content: string; score?: number }) => ({
+                        title: result.title,
+                        url: result.url,
+                        snippet: result.content,
+                        relevanceScore: result.score,
+                      })),
+                      timestamp: Date.now(),
+                      searchTime: toolResult.latencyMs,
+                    },
+                  });
+                  console.log(`${logPrefix} 📤 Sent web_search event with ${tavilyResults.results.length} sources`);
+                }
+                break;
+              }
+
+              case 'generate_artifact': {
+                // Send artifact result to client
+                if (toolResult.data?.artifactCode) {
+                  sendEvent({
+                    type: 'artifact_complete',
+                    artifactCode: toolResult.data.artifactCode,
+                    artifactType: toolResult.data.artifactType,
+                    artifactTitle: toolResult.data.artifactTitle,
+                    reasoning: toolResult.data.artifactReasoning,
+                    timestamp: Date.now(),
+                    latencyMs: toolResult.latencyMs,
+                  });
+                  console.log(`${logPrefix} 📤 Sent artifact_complete event (type=${toolResult.data.artifactType})`);
+                }
+                break;
+              }
+
+              case 'generate_image': {
+                // Send image result to client
+                if (toolResult.data?.imageUrl || toolResult.data?.imageData) {
+                  sendEvent({
+                    type: 'image_complete',
+                    imageUrl: toolResult.data.imageUrl,
+                    imageData: toolResult.data.imageData,
+                    storageSucceeded: toolResult.data.storageSucceeded,
+                    degradedMode: toolResult.data.degradedMode,
+                    timestamp: Date.now(),
+                    latencyMs: toolResult.latencyMs,
+                  });
+                  console.log(`${logPrefix} 📤 Sent image_complete event (storage=${toolResult.data.storageSucceeded})`);
+                }
+                break;
+              }
+
+              default:
+                console.log(`${logPrefix} ℹ️ No specific event for tool: ${toolResult.toolName}`);
+            }
           }
 
           // ========================================
@@ -575,7 +670,7 @@ export async function handleToolCallingChat(
                 functionName: 'chat',
                 stream: true,
                 enableThinking: true,
-                tools: [GLM_SEARCH_TOOL],
+                tools: allTools,
               }
             );
 
