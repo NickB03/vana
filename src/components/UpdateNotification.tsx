@@ -18,6 +18,7 @@ export function UpdateNotification() {
   useEffect(() => {
     if (!navigator.serviceWorker) return;
 
+    let interval: ReturnType<typeof setInterval> | undefined;
     let registration: ServiceWorkerRegistration | null = null;
 
     const handleUpdateFound = () => {
@@ -34,32 +35,35 @@ export function UpdateNotification() {
       });
     };
 
-    const setupServiceWorkerListener = async () => {
+    const setup = async () => {
       try {
         registration = await navigator.serviceWorker.getRegistration();
         if (registration) {
           registration.addEventListener('updatefound', handleUpdateFound);
-          
+
           // Check for updates every 30 seconds
-          const interval = setInterval(async () => {
+          interval = setInterval(async () => {
             try {
               await registration?.update();
             } catch (error) {
               console.error('Error checking for updates:', error);
             }
           }, 30000);
-
-          return () => {
-            clearInterval(interval);
-            registration?.removeEventListener('updatefound', handleUpdateFound);
-          };
         }
       } catch (error) {
         console.error('Service Worker setup error:', error);
       }
     };
 
-    setupServiceWorkerListener();
+    setup();
+
+    // Effect cleanup - properly cleans up interval and event listener
+    return () => {
+      if (interval) clearInterval(interval);
+      if (registration) {
+        registration.removeEventListener('updatefound', handleUpdateFound);
+      }
+    };
   }, []);
 
   const handleReload = () => {
