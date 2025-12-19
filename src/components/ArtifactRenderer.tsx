@@ -66,30 +66,7 @@ const BundledArtifactFrame = memo(({
 }: BundledArtifactFrameProps) => {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  // Track local loading state for skeleton display - independent from parent's isLoading
-  // This fixes the race condition where parent's state update lags behind our fetch completion
-  const [isFetching, setIsFetching] = useState(true);
   const fetchStartTimeRef = useRef<number>(Date.now());
-
-  // Skeleton timeout: Force-clear isFetching after 10s to prevent stuck skeletons
-  // This handles cases where the fetch hangs or fails silently without triggering catch block
-  useEffect(() => {
-    if (isFetching) {
-      const skeletonTimeout = setTimeout(() => {
-        const elapsed = Date.now() - fetchStartTimeRef.current;
-        console.warn(`[BundledArtifactFrame] Skeleton timeout fired after ${elapsed}ms - forcing clear`);
-        Sentry.addBreadcrumb({
-          category: 'artifact.loading',
-          message: 'Skeleton timeout fired - forcing clear',
-          level: 'warning',
-          data: { elapsed, bundleUrl },
-        });
-        setIsFetching(false);
-        onLoadingChange(false);
-      }, 10000); // 10s max skeleton time
-      return () => clearTimeout(skeletonTimeout);
-    }
-  }, [isFetching, bundleUrl, onLoadingChange]);
 
   useEffect(() => {
     let isMounted = true;
@@ -105,7 +82,6 @@ const BundledArtifactFrame = memo(({
           level: 'info',
           data: { bundleUrl },
         });
-        setIsFetching(true);
         onLoadingChange(true);
         setFetchError(null);
 
@@ -485,7 +461,6 @@ const BundledArtifactFrame = memo(({
             data: { elapsed, bundleUrl },
           });
           setBlobUrl(objectUrl);
-          setIsFetching(false);
           onLoadingChange(false);
         }
       } catch (error) {
@@ -500,7 +475,6 @@ const BundledArtifactFrame = memo(({
             data: { elapsed, bundleUrl, error: errorMessage },
           });
           setFetchError(errorMessage);
-          setIsFetching(false);
           onPreviewErrorChange(errorMessage);
           onLoadingChange(false);
           window.postMessage({ type: 'artifact-rendered-complete', success: false, error: errorMessage }, '*');
@@ -522,13 +496,12 @@ const BundledArtifactFrame = memo(({
   return (
     <div className="w-full h-full relative flex flex-col">
       <div className="flex-1 relative">
-        {/* Use local isFetching state for skeleton to avoid race conditions with parent state */}
-        {isFetching && !fetchError && (
+        {isLoading && !fetchError && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-20">
             <ArtifactSkeleton type="react" />
           </div>
         )}
-        {(previewError || fetchError) && !isFetching && (
+        {(previewError || fetchError) && !isLoading && (
           <div className="absolute top-2 left-2 right-2 bg-destructive/10 border border-destructive text-destructive text-xs p-3 rounded z-10 flex flex-col gap-2">
             <div className="flex items-start gap-2">
               <span className="font-semibold shrink-0">⚠️ Bundle Error:</span>
@@ -561,11 +534,11 @@ const BundledArtifactFrame = memo(({
             title={title}
             sandbox="allow-scripts allow-same-origin"
             onLoad={() => {
-              onLoadingChange(false);
-              // Ensure we signal completion when iframe loads (fallback for bundles that don't signal)
-              window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
-              // Signal to parent that artifact has finished rendering
-              window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
+            onLoadingChange(false);
+            // Ensure we signal completion when iframe loads (fallback for bundles that don't signal)
+            window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
+            // Signal to parent that artifact has finished rendering
+            window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
             }}
             onError={(e) => {
               console.error('[BundledArtifactFrame] iframe error:', e);
@@ -663,8 +636,6 @@ export const ArtifactRenderer = memo(({
   }, []);
 
   // Watchdog timer: Force completion if rendering takes too long (10s)
-  // Reduced from 15s to 10s to match BundledArtifactFrame skeleton timeout
-  // Allows 2-5s bundling + 1-3s network latency + 1-2s bundle fetch + buffer
   useEffect(() => {
     if (isLoading) {
       const watchdogStart = Date.now();
@@ -788,36 +759,9 @@ export const ArtifactRenderer = memo(({
       }
     };
 
-    // Fallback timeout for non-bundled artifacts (Babel-rendered)
-    // Bundled artifacts have their own 10s skeleton timeout in BundledArtifactFrame
-    // Note: We skip this timeout for bundled artifacts to avoid race conditions
-    const shouldSkipTimeout = artifact.type === "react" && artifact.bundleUrl;
-    if (shouldSkipTimeout) {
-      Sentry.addBreadcrumb({
-        category: 'artifact.loading',
-        message: 'Skipping 3s timeout for bundled artifact (uses BundledArtifactFrame timeout)',
-        level: 'info',
-        data: { hasBundleUrl: !!artifact.bundleUrl },
-      });
-    }
-    const loadTimeout = shouldSkipTimeout ? undefined : setTimeout(() => {
-      const elapsed = Date.now() - effectStartTime;
-      console.log(`[ArtifactRenderer] 3s load timeout fired after ${elapsed}ms`);
-      Sentry.addBreadcrumb({
-        category: 'artifact.loading',
-        message: '3s load timeout fired',
-        level: 'info',
-        data: { elapsed },
-      });
-      onLoadingChange(false);
-    }, 3000);
-
     window.addEventListener('message', handleIframeMessage);
     return () => {
       window.removeEventListener('message', handleIframeMessage);
-      if (loadTimeout) {
-        clearTimeout(loadTimeout);
-      }
     };
   }, [artifact.content, artifact.type, onLoadingChange, onPreviewErrorChange, onErrorCategoryChange, recoveryAttempts, handleArtifactError]);
 
@@ -951,11 +895,6 @@ ${artifact.content}
         )}
 
         <div className="flex-1 relative">
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-20">
-              <ArtifactSkeleton type={artifact.type} />
-            </div>
-          )}
           {previewError && !isLoading && currentError && (
             <div className="absolute top-2 left-2 right-2 z-10">
               <ArtifactErrorRecovery
@@ -1433,11 +1372,6 @@ ${artifact.content}
     return (
       <div className="w-full h-full relative flex flex-col">
         <div className="flex-1 relative">
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-20">
-              <ArtifactSkeleton type="react" />
-            </div>
-          )}
           {previewError && !isLoading && currentError && (
             <div className="absolute top-2 left-2 right-2 z-10">
               <ArtifactErrorRecovery

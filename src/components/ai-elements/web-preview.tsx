@@ -177,7 +177,7 @@ export const WebPreviewBody = ({
   const { url } = useWebPreview();
 
   return (
-    <div className="flex-1">
+    <div className="flex-1 relative">
       <iframe
         className={cn("size-full", className)}
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
@@ -185,7 +185,11 @@ export const WebPreviewBody = ({
         title="Preview"
         {...props}
       />
-      {loading}
+      {loading ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-10">
+          {loading}
+        </div>
+      ) : null}
     </div>
   );
 };
