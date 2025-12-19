@@ -162,6 +162,9 @@ export function useChatMessages(
     // Guests use local state only (messages are in-memory for their session)
     if (isGuest || !sessionId) return;
 
+    // Capture sessionId at call time to detect stale responses
+    const currentSessionId = sessionId;
+
     try {
       const { data, error } = await supabase
         .from("chat_messages")
@@ -170,6 +173,12 @@ export function useChatMessages(
         .order("created_at", { ascending: true });
 
       if (error) throw error;
+
+      // Guard: Only update if session hasn't changed during fetch
+      if (currentSessionId !== sessionId) {
+        console.log('[fetchMessages] Ignoring stale results for old session:', currentSessionId);
+        return;
+      }
 
       const typedData = (data || []).map(msg => ({
         ...msg,
@@ -1449,6 +1458,7 @@ export function useChatMessages(
 
       // Handle timeout errors specifically
       if (errorMessage.includes('Stream timeout')) {
+        setIsLoading(false);
         toast({
           title: "Request Timeout",
           description: errorMessage,
@@ -1474,9 +1484,13 @@ export function useChatMessages(
         await new Promise(resolve => setTimeout(resolve, delay));
 
         // Recursive retry with incremented count
+        // Don't clear isLoading - the nested call maintains the loading state
+        // When the final retry completes/fails, IT will clear isLoading
         return streamChat(userMessage, onDelta, onDone, currentArtifact, forceImageMode, forceArtifactMode, retryCount + 1, abortSignal);
       }
 
+      // Non-retryable error - clear loading and show error
+      setIsLoading(false);
       const authErrorMessage = getAuthErrorMessage(error);
       toast({
         title: "Error",
@@ -1486,8 +1500,6 @@ export function useChatMessages(
         variant: "destructive",
       });
       onDone();
-    } finally {
-      setIsLoading(false);
     }
   };
 
