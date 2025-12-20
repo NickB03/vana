@@ -51,6 +51,25 @@
 
 ### Recent Major Improvements
 
+**December 19, 2025 - Unified Tool-Calling Architecture (Issue #340):**
+- 🔧 **Unified Tool System**: Single `chat/` endpoint now handles artifacts, images, and web search via tool calling
+- 🛡️ **Security Infrastructure**: Prompt injection defense, fail-closed rate limiting, error sanitization
+- 📡 **New SSE Events**: `tool_call_start`, `tool_result`, `artifact_complete`, `image_complete`, `web_search`
+- ⚡ **Pure Business Logic**: Separated executors (`artifact-executor.ts`, `image-executor.ts`) from HTTP handling
+- 🔐 **Tool Rate Limiting**: Per-tool rate limits with circuit breaker pattern for graceful degradation
+- 📊 **Execution Tracking**: Resource exhaustion protection (max 3 tools/request), timing metrics
+
+**December 15, 2025 - Hybrid ReasoningProvider (Issue #339):**
+- 🧠 **LLM+Fallback Hybrid**: GLM-4.5-Air provides semantic status summaries with template fallback
+- 🔄 **Circuit Breaker**: 3 failures → 30s cooldown → auto-reset for resilient operation
+- ⏱️ **Anti-Flicker**: 1.5s cooldown between updates, 8s idle heartbeat
+- 📡 **Phase Detection**: analyzing → planning → implementing → styling → finalizing
+
+**December 14, 2025 - Inline Citation Badges (Issue #335):**
+- 📎 **Citation Badges**: Inline `[1]` badges with hover preview of source content
+- 🔗 **Source Attribution**: Web search results now show clickable source references
+- 🎨 **Improved UX**: Hover cards display title, snippet, and relevance score
+
 **December 1, 2025 - SSE Streaming for Artifact Generation:**
 - 🎯 **Native GLM Streaming**: Single SSE endpoint replaces parallel dual-endpoint approach
 - 🧠 **Claude-Style Reasoning Display**: Progressive ticker pill shows "Thinking..." → "Analyzing..." → status updates

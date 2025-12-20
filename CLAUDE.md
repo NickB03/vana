@@ -1,4 +1,4 @@
-<!-- CLAUDE.md v2.17 | Last updated: 2025-12-17 | Added .env.local not loading troubleshooting -->
+<!-- CLAUDE.md v2.18 | Last updated: 2025-12-19 | Added unified tool-calling architecture (Issue #340) -->
 
 # CLAUDE.md
 
@@ -122,7 +122,7 @@ npm run preview          # Preview production build
   ```
 - **Never run multiple dev servers** — kills performance and causes port confusion
 
-### Testing (~1,900 tests, 85 files)
+### Testing (~2,000 tests, 90+ files)
 ```bash
 npm run test                  # Run all tests
 npm run test -- --watch       # Watch mode
@@ -331,13 +331,14 @@ const newBoard = [...board, value];
 
 ### Database Schema
 
-**Key Tables**: `chat_sessions`, `chat_messages`, `guest_rate_limits`, `user_rate_limits`, `api_throttle`, `artifact_versions`, `ai_usage_logs`, `message_feedback`
+**Key Tables**: `chat_sessions`, `chat_messages`, `guest_rate_limits`, `user_rate_limits`, `user_tool_rate_limits`, `api_throttle`, `artifact_versions`, `ai_usage_logs`, `message_feedback`
 
 ```sql
 chat_sessions(id, user_id, title, first_message, conversation_summary, summary_checkpoint, last_summarized_at, created_at, updated_at)
 chat_messages(id, session_id, role, content, reasoning, reasoning_steps, search_results, token_count, artifact_ids, created_at)
 guest_rate_limits(id, identifier, request_count, window_start, last_request, first_request_at)
 user_rate_limits(id, user_id, request_count, window_start, last_request, created_at)
+user_tool_rate_limits(id, user_id, tool_name, request_count, window_start, last_request, created_at)  -- Issue #340 Phase 0
 api_throttle(id, api_name, request_count, window_start, last_request, created_at)
 artifact_versions(id, message_id, artifact_id, version_number, artifact_type, artifact_title, artifact_content, content_hash, created_at)
 ai_usage_logs(id, request_id, function_name, provider, model, user_id, is_guest, input_tokens, output_tokens, total_tokens, latency_ms, status_code, estimated_cost, error_message, retry_count, prompt_preview, response_length, created_at)
@@ -345,6 +346,9 @@ message_feedback(id, message_id, session_id, feedback_type, created_at)
 ```
 
 **Security**: All tables have RLS policies. SECURITY DEFINER functions use `SET search_path = public, pg_temp`.
+
+**RPC Functions**:
+- `check_tool_rate_limit(user_id, tool_name, max_requests, window_hours)` — Returns tool-specific rate limit status (Issue #340)
 
 Full schema: `supabase/migrations/`
 
@@ -367,12 +371,44 @@ Full schema: `supabase/migrations/`
 **Shared Utilities** (`_shared/`):
 - **Core**: `config.ts`, `cors-config.ts`, `logger.ts`, `validators.ts`
 - **AI/Models**: `openrouter-client.ts`, `glm-client.ts`, `model-router.ts`, `complexity-analyzer.ts`, `reasoning-generator.ts`, `glm-reasoning-parser.ts`, `reasoning-provider.ts`
+- **Unified Tool System** (Issue #340): `tool-definitions.ts`, `tool-executor.ts`, `artifact-executor.ts`, `image-executor.ts`
+- **Tool Security** (Phase 0): `tool-validator.ts`, `tool-rate-limiter.ts`, `tool-execution-tracker.ts`, `prompt-injection-defense.ts`, `safe-error-handler.ts`
 - **Context Management**: `context-selector.ts`, `context-ranker.ts`, `token-counter.ts`
 - **State/Quality**: `state-machine.ts`, `conversation-state.ts`, `response-quality.ts`
 - **Artifacts**: `artifact-validator.ts`, `artifact-rules/`, `prebuilt-bundles.ts`
 - **Utilities**: `storage-retry.ts`, `rate-limiter.ts`, `api-error-handler.ts`, `error-handler.ts`, `cdn-fallback.ts`
 - **Prompts**: `system-prompt-inline.ts`, `system-prompt.txt`
 - **Integrations**: `tavily-client.ts` (web search)
+
+### Unified Tool-Calling Architecture (Issue #340)
+
+The chat function uses a unified tool-calling system that enables AI to invoke tools (artifact generation, image generation, web search) through function calling. This architecture was implemented in phases:
+
+**Tool Catalog** (`tool-definitions.ts`):
+```typescript
+// Three canonical tools available to the AI
+const TOOL_CATALOG = {
+  generate_artifact: { handler: 'artifact', model: MODELS.GLM_4_6 },
+  generate_image: { handler: 'image', model: MODELS.GEMINI_FLASH_IMAGE },
+  'browser.search': { handler: 'search', streaming: false }
+};
+```
+
+**SSE Event Flow**:
+```
+User Message → GLM Tool Call → tool_call_start event
+                           → Executor runs (artifact/image/search)
+                           → tool_result event
+                           → artifact_complete / image_complete / web_search event
+                           → AI Response (streaming)
+```
+
+**Security Infrastructure** (Phase 0):
+- **Prompt Injection Defense**: Unicode normalization, SQL/HTML pattern detection, sandboxed validation
+- **Tool Validator**: Zod schemas, prototype pollution protection, param sanitization
+- **Tool Rate Limiter**: Fail-closed circuit breaker, per-tool limits, graceful degradation
+- **Execution Tracker**: Resource exhaustion protection (max 3 tools/request), timing metrics
+- **Safe Error Handler**: Error sanitization, no stack traces in production, PII filtering
 
 ## Model Configuration System
 

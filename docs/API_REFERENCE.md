@@ -1,6 +1,6 @@
 # API Reference - Vana Edge Functions
 
-**Last Updated**: 2025-11-28
+**Last Updated**: 2025-12-19
 **Base URL**: `https://vznhbocnuykdmjvujaka.supabase.co/functions/v1`
 
 ---
@@ -161,22 +161,49 @@ interface Message {
 
 **Event Types**:
 
-1. **Reasoning Event** (if `includeReasoning: true`):
+1. **Reasoning Status Event** (ReasoningProvider updates):
 ```
-event: reasoning
-data: {"steps":[{"phase":"research","title":"Understanding Request","content":"..."}]}
-```
-
-2. **Content Delta Event**:
-```
-event: delta
-data: {"content":"Hello"}
+data: {"type":"reasoning_status","content":"Analyzing your request...","source":"reasoning_provider","phase":"analyzing"}
 ```
 
-3. **Done Event**:
+2. **Reasoning Step Event** (structured thinking steps):
 ```
-event: done
-data: {"content":"Complete message","usage":{"tokens":150}}
+data: {"type":"reasoning_step","step":{"phase":"research","title":"Understanding Request","items":["..."]},"stepIndex":0}
+```
+
+3. **Tool Call Start Event** (Issue #340 unified tools):
+```
+data: {"type":"tool_call_start","toolName":"generate_artifact","arguments":{"artifact_type":"react","prompt":"..."}}
+```
+
+4. **Tool Result Event**:
+```
+data: {"type":"tool_result","toolName":"generate_artifact","success":true,"latencyMs":2450}
+```
+
+5. **Artifact Complete Event** (after tool execution):
+```
+data: {"type":"artifact_complete","artifact":{"type":"react","title":"Counter","content":"..."}}
+```
+
+6. **Image Complete Event**:
+```
+data: {"type":"image_complete","imageUrl":"https://...","title":"Generated Image"}
+```
+
+7. **Web Search Event**:
+```
+data: {"type":"web_search","data":{"query":"...","sources":[{"title":"...","url":"...","snippet":"..."}]}}
+```
+
+8. **Content Delta Event**:
+```
+data: {"choices":[{"delta":{"content":"Hello"}}]}
+```
+
+9. **Done Event**:
+```
+data: [DONE]
 ```
 
 **Example Stream**:
@@ -663,6 +690,22 @@ if (remaining && parseInt(remaining) < 5) {
 ---
 
 ## Changelog
+
+### 2025-12-19
+- **Issue #340**: Unified tool-calling architecture
+  - Added `tool_call_start`, `tool_result` SSE events
+  - New `artifact_complete`, `image_complete`, `web_search` events
+  - Tool security infrastructure (rate limiting, validation, prompt injection defense)
+  - Per-tool rate limits via `user_tool_rate_limits` table
+
+### 2025-12-15
+- **Issue #339**: Hybrid ReasoningProvider with LLM+fallback
+  - Added `reasoning_status` SSE events with phase detection
+  - Circuit breaker pattern for resilient operation
+
+### 2025-12-14
+- **Issue #335**: Inline citation badges for web search results
+  - Added source attribution in `web_search` events
 
 ### 2025-11-28
 - Migrated artifact generation from Kimi K2 to GLM-4.6 (Z.ai API)

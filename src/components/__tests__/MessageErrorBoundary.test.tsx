@@ -32,14 +32,12 @@ const SafeMessage = () => <div>Safe message content</div>;
 
 describe('MessageErrorBoundary', () => {
   // Suppress console.error in tests (we're testing error handling)
-  const originalError = console.error;
-  beforeEach(() => {
-    console.error = vi.fn();
-  });
+  // Note: setup.ts already mocks console.error and console.warn globally
 
   afterEach(() => {
-    console.error = originalError;
     cleanup();
+    // Restore all mocks to prevent memory leaks from accumulated spy instances
+    vi.clearAllMocks();
   });
 
   describe('Error Catching', () => {
@@ -66,7 +64,8 @@ describe('MessageErrorBoundary', () => {
     });
 
     it('logs error to console when error is caught', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      // console.error is already mocked in setup.ts, just use it directly
+      const mockConsoleError = console.error as any;
 
       render(
         <MessageErrorBoundary>
@@ -74,13 +73,11 @@ describe('MessageErrorBoundary', () => {
         </MessageErrorBoundary>
       );
 
-      expect(consoleSpy).toHaveBeenCalled();
-      const errorCalls = consoleSpy.mock.calls.filter(call =>
-        call[0].includes('[MessageErrorBoundary]')
+      expect(mockConsoleError).toHaveBeenCalled();
+      const errorCalls = mockConsoleError.mock.calls.filter((call: any[]) =>
+        String(call[0]).includes('[MessageErrorBoundary]')
       );
       expect(errorCalls.length).toBeGreaterThan(0);
-
-      consoleSpy.mockRestore();
     });
 
     it('handles errors with different error messages', () => {
@@ -332,6 +329,7 @@ describe('MessageErrorBoundary', () => {
   });
 
   describe('Development Mode Features', () => {
+    // Save original value ONCE at describe-block scope
     const originalEnv = import.meta.env.DEV;
 
     beforeEach(() => {
@@ -341,9 +339,11 @@ describe('MessageErrorBoundary', () => {
     });
 
     afterEach(() => {
-      // Restore original environment
+      // Restore original environment immediately after each test
       // @ts-expect-error - import.meta.env is readonly
       (import.meta.env as any).DEV = originalEnv;
+      // Also restore mocks to prevent accumulation
+      vi.clearAllMocks();
     });
 
     it('shows "View Details" button in development mode', () => {
@@ -359,7 +359,10 @@ describe('MessageErrorBoundary', () => {
 
     it('logs error details when "View Details" is clicked', async () => {
       const user = userEvent.setup();
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      // Mock console.log to track calls
+      const mockConsoleLog = vi.fn();
+      const originalLog = console.log;
+      console.log = mockConsoleLog;
       const messageContent = "Test message content";
 
       render(
@@ -371,19 +374,21 @@ describe('MessageErrorBoundary', () => {
       const viewDetailsButton = screen.getByRole('button', { name: /view details/i });
       await user.click(viewDetailsButton);
 
-      expect(consoleSpy).toHaveBeenCalled();
-      expect(consoleSpy.mock.calls.some(call =>
+      expect(mockConsoleLog).toHaveBeenCalled();
+      expect(mockConsoleLog.mock.calls.some(call =>
         String(call).includes('Error details')
       )).toBe(true);
-      expect(consoleSpy.mock.calls.some(call =>
+      expect(mockConsoleLog.mock.calls.some(call =>
         String(call).includes('Message content')
       )).toBe(true);
 
-      consoleSpy.mockRestore();
+      // Cleanup: restore console.log
+      console.log = originalLog;
     });
   });
 
   describe('Production Mode Features', () => {
+    // Save original value ONCE at describe-block scope
     const originalEnv = import.meta.env.DEV;
 
     beforeEach(() => {
@@ -393,9 +398,11 @@ describe('MessageErrorBoundary', () => {
     });
 
     afterEach(() => {
-      // Restore original environment
+      // Restore original environment immediately after each test
       // @ts-expect-error - import.meta.env is readonly
       (import.meta.env as any).DEV = originalEnv;
+      // Also restore mocks to prevent accumulation
+      vi.clearAllMocks();
     });
 
     it('hides "View Details" button in production mode', () => {
@@ -471,7 +478,8 @@ describe('MessageErrorBoundary', () => {
     });
 
     it('calls componentDidCatch after error', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      // console.error is already mocked in setup.ts, just use it directly
+      const mockConsoleError = console.error as any;
 
       render(
         <MessageErrorBoundary>
@@ -480,9 +488,7 @@ describe('MessageErrorBoundary', () => {
       );
 
       // componentDidCatch logs to console
-      expect(consoleSpy).toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
+      expect(mockConsoleError).toHaveBeenCalled();
     });
 
     it('stores error and errorInfo in state', () => {

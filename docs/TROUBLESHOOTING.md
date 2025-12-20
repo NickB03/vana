@@ -1,6 +1,6 @@
 # Troubleshooting Guide - Vana
 
-**Last Updated**: 2025-11-17
+**Last Updated**: 2025-12-19
 
 Comprehensive troubleshooting guide for common issues in Vana AI Development Assistant.
 
@@ -442,6 +442,34 @@ const [data, setData] = useState(initialValue);
    - localStorage usage
    - Syntax errors
 3. Regenerate with clearer requirements
+
+### "Tool rate limit exceeded"
+
+**Meaning**: You've hit per-tool rate limits (Issue #340 security)
+
+**Solutions**:
+1. Wait for rate limit window to reset (5 hours)
+2. Use authenticated account for higher limits
+3. Avoid rapid consecutive tool calls
+
+### "Prompt injection detected"
+
+**Meaning**: Input contains potentially malicious patterns (Issue #340 security)
+
+**Solutions**:
+1. Remove SQL-like syntax from prompts
+2. Avoid special characters that look like injection attempts
+3. Rephrase request in plain language
+
+### "Tool execution failed"
+
+**Meaning**: Artifact, image, or search tool failed during execution
+
+**Solutions**:
+1. Check if using valid artifact type (react, html, svg, code, mermaid, markdown)
+2. For images: ensure prompt is descriptive and under 2000 characters
+3. For web search: verify internet connection
+4. Check tool rate limits haven't been exceeded
 
 ---
 
