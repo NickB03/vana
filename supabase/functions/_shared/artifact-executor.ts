@@ -28,7 +28,6 @@ import {
   extractGLMTokenUsage,
   calculateGLMCost,
 } from './glm-client.ts';
-import { parseGLMReasoningToStructured } from './glm-reasoning-parser.ts';
 import {
   validateArtifactCode,
   autoFixArtifactCode,
@@ -451,8 +450,8 @@ export async function executeArtifactGeneration(
     );
   }
 
-  // Convert GLM reasoning to structured format
-  const reasoningSteps = glmReasoning ? parseGLMReasoningToStructured(glmReasoning) : null;
+  // Structured reasoning parsing removed - use [STATUS:] markers instead
+  const reasoningSteps = null;
 
   // Strip HTML document structure from React artifacts
   let artifactCode = stripHtmlDocumentStructure(rawArtifactCode, type, requestId);

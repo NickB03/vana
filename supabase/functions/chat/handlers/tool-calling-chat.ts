@@ -12,10 +12,8 @@
  * SSE Events Emitted:
  * - tool_call_start: When tool call is detected { type, toolName, arguments }
  * - tool_result: When tool execution completes { type, toolName, success, sourceCount? }
- * - reasoning_step: Structured reasoning step { type, step, stepIndex, currentThinking }
  * - reasoning_status: Live thinking status for ticker { type, content }
  * - content_chunk: Regular content chunks (OpenAI-compatible format)
- * - reasoning_complete: Final reasoning with structured steps { type, reasoning, reasoningSteps }
  *
  * Architecture:
  * - Uses getGLMToolDefinitions() from tool-definitions.ts for tool catalog
@@ -29,6 +27,7 @@ import {
   callGLMWithRetry,
   processGLMStream,
   callGLMWithToolResult,
+  parseStatusMarker,
   type ToolCall,
   type NativeToolCall,
 } from '../../_shared/glm-client.ts';
@@ -42,17 +41,6 @@ import {
 } from '../../_shared/tool-definitions.ts';
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.75.1';
 import { getSystemInstruction } from '../../_shared/system-prompt-inline.ts';
-import {
-  parseReasoningIncrementally,
-  createIncrementalParseState,
-  type IncrementalParseState,
-} from '../../_shared/glm-reasoning-parser.ts';
-import { type ReasoningStep } from '../../_shared/reasoning-generator.ts';
-import {
-  createReasoningProvider,
-  type IReasoningProvider,
-  type ReasoningEvent,
-} from '../../_shared/reasoning-provider.ts';
 
 /**
  * Mode hint for biasing tool selection.
@@ -251,35 +239,9 @@ export async function handleToolCallingChat(
       }
 
       // ========================================
-      // Initialize ReasoningProvider for semantic status updates
+      // Track last status marker for deduplication
       // ========================================
-      let reasoningProvider: IReasoningProvider | null = null;
-
-      const reasoningEventCallback = async (event: ReasoningEvent) => {
-        if (event.type === 'reasoning_status' || event.type === 'reasoning_heartbeat') {
-          sendEvent({
-            type: 'reasoning_status',
-            content: event.message,
-            source: event.type === 'reasoning_heartbeat' ? 'heartbeat' : 'reasoning_provider',
-            phase: event.phase,
-            timestamp: Date.now(),
-          });
-        } else if (event.type === 'reasoning_final') {
-          sendEvent({
-            type: 'reasoning_status',
-            content: event.message,
-            source: 'completion',
-            isFinal: true,
-            timestamp: Date.now(),
-          });
-        } else if (event.type === 'reasoning_error') {
-          console.warn(`${logPrefix} ⚠️ ReasoningProvider error: ${event.message}`);
-        }
-      };
-
-      reasoningProvider = createReasoningProvider(requestId, reasoningEventCallback);
-      await reasoningProvider.start();
-      console.log(`${logPrefix} 🎛️ Chat status provider: ReasoningProvider`);
+      let lastStatusMarker: string | null = null;
 
       try {
         // NOTE: With native function calling, GLM returns tool_calls in the response
@@ -333,12 +295,8 @@ export async function handleToolCallingChat(
         let nativeToolCallDetected = false;
         let detectedNativeToolCall: NativeToolCall | undefined;
 
-        // Reasoning parsing state for structured steps
+        // Accumulate reasoning text for status marker parsing
         let fullReasoningAccumulated = '';
-        let reasoningParseState: IncrementalParseState = createIncrementalParseState();
-        let reasoningStepsSent = 0;
-        // Note: Status update throttling is handled by ReasoningProvider internally
-        const accumulatedSteps: ReasoningStep[] = [];
 
         // Process stream with native tool call detection
         // GLM now uses OpenAI-compatible tool_calls in response instead of XML
@@ -346,42 +304,21 @@ export async function handleToolCallingChat(
           glmResponse,
           {
             onReasoningChunk: async (chunk: string) => {
-              // Accumulate reasoning text for parsing
+              // Accumulate reasoning text for status marker parsing
               fullReasoningAccumulated += chunk;
 
-              // Feed chunk to ReasoningProvider for semantic status generation
-              // Provider handles throttling and LLM-based message generation internally
-              if (reasoningProvider) {
-                reasoningProvider.processReasoningChunk(chunk);
-              }
-
-              // Parse incrementally to detect structured steps
-              const parseResult = parseReasoningIncrementally(
-                fullReasoningAccumulated,
-                reasoningParseState
-              );
-              reasoningParseState = parseResult.state;
-
-              // Emit new step if detected
-              if (parseResult.newStep) {
-                // Accumulate step for final reasoning_complete
-                accumulatedSteps.push(parseResult.newStep);
-
-                sendEvent({
-                  type: 'reasoning_step',
-                  step: parseResult.newStep,
-                  stepIndex: reasoningStepsSent,
-                  currentThinking: parseResult.currentThinking,
+              // Parse status markers from accumulated reasoning content
+              const statusMarker = parseStatusMarker(fullReasoningAccumulated);
+              if (statusMarker && statusMarker !== lastStatusMarker) {
+                const statusEvent = {
+                  type: 'reasoning_status',
+                  content: statusMarker,
+                  source: 'glm_marker',
                   timestamp: Date.now(),
-                });
-                reasoningStepsSent++;
-                console.log(
-                  `${logPrefix} 🧠 Sent reasoning step ${reasoningStepsSent}: "${parseResult.newStep.title}"`
-                );
+                };
+                sendEvent(statusEvent);
+                lastStatusMarker = statusMarker;
               }
-
-              // NOTE: Status updates are now handled by ReasoningProvider via callback
-              // No direct reasoning_status emission here - provider handles throttling
             },
 
             onContentChunk: async (chunk: string) => {
@@ -416,30 +353,8 @@ export async function handleToolCallingChat(
 
             onComplete: async (fullReasoning: string, fullContent: string) => {
               console.log(
-                `${logPrefix} ✅ GLM stream complete: reasoning=${fullReasoning.length}chars, content=${fullContent.length}chars, steps=${reasoningStepsSent}`
+                `${logPrefix} ✅ GLM stream complete: reasoning=${fullReasoning.length}chars, content=${fullContent.length}chars`
               );
-
-              // Skip reasoning_complete if tool call detected - continuation will send the complete event
-              if (nativeToolCallDetected) {
-                return;
-              }
-
-              // Build structured reasoning from accumulated steps
-              const structuredReasoning = {
-                steps: accumulatedSteps,
-                summary: fullReasoning.substring(0, 500),
-              };
-
-              // Send reasoning_complete event with structured steps
-              if (fullReasoning.length > 0 || reasoningStepsSent > 0) {
-                sendEvent({
-                  type: 'reasoning_complete',
-                  reasoning: fullReasoning.substring(0, 500),
-                  reasoningSteps: structuredReasoning,
-                  stepCount: reasoningStepsSent,
-                  timestamp: Date.now(),
-                });
-              }
             },
 
             onError: async (error: Error) => {
@@ -580,12 +495,8 @@ export async function handleToolCallingChat(
               `${logPrefix} 🔧 Continuing GLM with tool result (${formattedResult.length} chars)`
             );
 
-            // Reset reasoning state for continuation
+            // Track continuation reasoning for status markers
             let continuationReasoningText = '';
-            let continuationParseState: IncrementalParseState = createIncrementalParseState();
-            let continuationStepsSent = 0;
-            // Note: Status throttling handled by ReasoningProvider
-            const continuationSteps: ReasoningStep[] = [];
 
             // Call GLM again with tool results
             await callGLMWithToolResult(
@@ -595,34 +506,21 @@ export async function handleToolCallingChat(
               toolResult.data?.formattedContext || 'Tool execution failed',
               {
                 onReasoningChunk: async (chunk: string) => {
-                  // Accumulate and parse reasoning for continuation
+                  // Accumulate reasoning for status marker parsing
                   continuationReasoningText += chunk;
 
-                  // Feed chunk to ReasoningProvider for semantic status generation
-                  if (reasoningProvider) {
-                    reasoningProvider.processReasoningChunk(chunk);
-                  }
-
-                  const parseResult = parseReasoningIncrementally(
-                    continuationReasoningText,
-                    continuationParseState
-                  );
-                  continuationParseState = parseResult.state;
-
-                  // Emit new step if detected
-                  if (parseResult.newStep) {
-                    continuationSteps.push(parseResult.newStep);
-                    sendEvent({
-                      type: 'reasoning_step',
-                      step: parseResult.newStep,
-                      stepIndex: reasoningStepsSent + continuationStepsSent,
-                      currentThinking: parseResult.currentThinking,
+                  // Parse status markers from accumulated continuation reasoning
+                  const statusMarker = parseStatusMarker(continuationReasoningText);
+                  if (statusMarker && statusMarker !== lastStatusMarker) {
+                    const statusEvent = {
+                      type: 'reasoning_status',
+                      content: statusMarker,
+                      source: 'glm_marker',
                       timestamp: Date.now(),
-                    });
-                    continuationStepsSent++;
+                    };
+                    sendEvent(statusEvent);
+                    lastStatusMarker = statusMarker;
                   }
-
-                  // NOTE: Status updates handled by ReasoningProvider
                 },
 
                 onContentChunk: async (chunk: string) => {
@@ -631,27 +529,8 @@ export async function handleToolCallingChat(
 
                 onComplete: async (fullReasoning: string, fullContent: string) => {
                   console.log(
-                    `${logPrefix} ✅ GLM continuation complete: content=${fullContent.length}chars, steps=${continuationStepsSent}`
+                    `${logPrefix} ✅ GLM continuation complete: content=${fullContent.length}chars`
                   );
-
-                  // Combine all steps from initial + continuation
-                  const allSteps = [...accumulatedSteps, ...continuationSteps];
-                  const structuredReasoning = {
-                    steps: allSteps,
-                    summary: fullReasoning.substring(0, 500),
-                  };
-
-                  // FIX: Also check for initial reasoning steps accumulated before tool call
-                  // Without this, reasoning_complete is never sent when continuation has no reasoning
-                  if (fullReasoning.length > 0 || continuationStepsSent > 0 || accumulatedSteps.length > 0) {
-                    sendEvent({
-                      type: 'reasoning_complete',
-                      reasoning: fullReasoning.substring(0, 500),
-                      reasoningSteps: structuredReasoning,
-                      stepCount: reasoningStepsSent + continuationStepsSent,
-                      timestamp: Date.now(),
-                    });
-                  }
                 },
 
                 onError: async (error: Error) => {
@@ -686,43 +565,12 @@ export async function handleToolCallingChat(
             sendContentChunk(
               `\n\n(Note: Web search encountered an error, but I can still help based on my training data.)\n\n`
             );
-
-            // FIX: Send reasoning_complete for initial reasoning before tool failure
-            // Without this, reasoning from the initial phase is lost when tool execution fails
-            if (accumulatedSteps.length > 0 || fullReasoningAccumulated.length > 0) {
-              const structuredReasoning = {
-                steps: accumulatedSteps,
-                summary: fullReasoningAccumulated.substring(0, 500),
-              };
-              sendEvent({
-                type: 'reasoning_complete',
-                reasoning: fullReasoningAccumulated.substring(0, 500),
-                reasoningSteps: structuredReasoning,
-                stepCount: reasoningStepsSent,
-                timestamp: Date.now(),
-              });
-              console.log(
-                `${logPrefix} 🧠 Sent reasoning_complete for ${reasoningStepsSent} steps (tool failure path)`
-              );
-            }
           }
         }
 
         // ========================================
         // STEP 5: Finalize stream
         // ========================================
-
-        // Finalize ReasoningProvider for final summary
-        if (reasoningProvider) {
-          try {
-            await reasoningProvider.finalize('chat response');
-          } catch (err) {
-            console.warn(`${logPrefix} ⚠️ ReasoningProvider finalize error:`, err);
-          } finally {
-            reasoningProvider.destroy();
-            reasoningProvider = null;
-          }
-        }
 
         console.log(`${logPrefix} ✅ Tool-calling chat stream complete`);
 
@@ -734,14 +582,6 @@ export async function handleToolCallingChat(
           error instanceof Error ? error.message : String(error);
 
         console.error(`${logPrefix} ❌ Tool-calling chat error:`, errorMessage);
-
-        // Cleanup ReasoningProvider on error
-        if (reasoningProvider) {
-          try {
-            reasoningProvider.destroy();
-          } catch (_) { /* ignore cleanup errors */ }
-          reasoningProvider = null;
-        }
 
         sendEvent({
           type: 'error',

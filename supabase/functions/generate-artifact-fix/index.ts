@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { callGLMWithRetryTracking, extractTextAndReasoningFromGLM, extractGLMTokenUsage, calculateGLMCost, logGLMUsage, handleGLMError } from "../_shared/glm-client.ts";
-import { parseGLMReasoningToStructured } from "../_shared/glm-reasoning-parser.ts";
 import { getCorsHeaders } from "../_shared/cors-config.ts";
 import { MODELS, RATE_LIMITS } from "../_shared/config.ts";
 import { getRelevantPatterns, getTypeSpecificGuidance } from "../_shared/artifact-rules/error-patterns.ts";
@@ -269,8 +268,8 @@ Return ONLY the fixed code without any explanations or markdown formatting.`;
       throw new Error("No fixed code returned from AI");
     }
 
-    // Parse reasoning into structured format
-    const reasoningSteps = glmReasoning ? parseGLMReasoningToStructured(glmReasoning) : [];
+    // Structured reasoning parsing removed - use [STATUS:] markers instead
+    const reasoningSteps = null;
 
     // Clean up any markdown code blocks that might have been added
     const fixedCode = extractedCode.replace(/^```[\w]*\n/, '').replace(/\n```$/, '').trim();

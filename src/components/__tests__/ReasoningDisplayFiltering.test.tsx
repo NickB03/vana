@@ -24,7 +24,6 @@ describe('ReasoningDisplay Filtering Logic', () => {
         const result = render(
             <ReasoningDisplay
                 reasoning={null}
-                reasoningSteps={null}
                 streamingReasoningText={text}
                 isStreaming={true}
             />
@@ -67,7 +66,6 @@ describe('ReasoningDisplay Filtering Logic', () => {
         const { rerender } = render(
             <ReasoningDisplay
                 reasoning={null}
-                reasoningSteps={null}
                 streamingReasoningText="Thinking..."
                 isStreaming={true}
             />
@@ -82,7 +80,6 @@ describe('ReasoningDisplay Filtering Logic', () => {
         rerender(
             <ReasoningDisplay
                 reasoning={null}
-                reasoningSteps={null}
                 streamingReasoningText="const a = 1;\nconst b = 2;"
                 isStreaming={true}
             />
@@ -98,7 +95,6 @@ describe('ReasoningDisplay Filtering Logic', () => {
         const { rerender } = render(
             <ReasoningDisplay
                 reasoning={null}
-                reasoningSteps={null}
                 streamingReasoningText="Valid sentence here now." // 4 words
                 isStreaming={true}
             />
@@ -111,7 +107,6 @@ describe('ReasoningDisplay Filtering Logic', () => {
         rerender(
             <ReasoningDisplay
                 reasoning={null}
-                reasoningSteps={null}
                 streamingReasoningText="Valid sentence here now. Second valid sentence here now."
                 isStreaming={true}
             />
@@ -128,7 +123,6 @@ describe('ReasoningDisplay Filtering Logic', () => {
         rerender(
             <ReasoningDisplay
                 reasoning={null}
-                reasoningSteps={null}
                 streamingReasoningText="Valid sentence here now. Second valid sentence here now."
                 isStreaming={true}
             />
@@ -156,7 +150,6 @@ describe('ReasoningDisplay Filtering Logic', () => {
         rerender(
             <ReasoningDisplay
                 reasoning={null}
-                reasoningSteps={null}
                 streamingReasoningText="Building: I need to make sure\nNext line"
                 isStreaming={true}
             />
@@ -183,7 +176,6 @@ describe('ReasoningDisplay Filtering Logic', () => {
         rerender(
             <ReasoningDisplay
                 reasoning={null}
-                reasoningSteps={null}
                 streamingReasoningText="I will analyze the requirements."
                 isStreaming={true}
             />
@@ -200,7 +192,6 @@ describe('ReasoningDisplay Filtering Logic', () => {
         rerender(
             <ReasoningDisplay
                 reasoning={null}
-                reasoningSteps={null}
                 streamingReasoningText="I am checking the database."
                 isStreaming={true}
             />
@@ -216,7 +207,6 @@ describe('ReasoningDisplay Filtering Logic', () => {
         rerender(
             <ReasoningDisplay
                 reasoning={null}
-                reasoningSteps={null}
                 streamingReasoningText="Framer Motion is available via Babel."
                 isStreaming={true}
             />

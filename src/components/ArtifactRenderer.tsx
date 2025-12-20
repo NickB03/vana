@@ -711,18 +711,27 @@ export const ArtifactRenderer = memo(({
     }
   }, [onPreviewErrorChange, onErrorCategoryChange, mapErrorTypeToCategory, recoveryAttempts, onAIFix, handleUseFallback]);
 
-  // Listen for iframe messages
+  // Track when loading started for elapsed time logging
+  const loadingStartTimeRef = useRef<number>(Date.now());
+
+  // Effect 1: Start loading ONLY when artifact identity changes
+  // This is separate from the message listener to avoid race conditions where
+  // the effect re-runs (due to callback deps changing) and resets isLoading=true
+  // after the iframe has already signaled artifact-ready
   useEffect(() => {
-    const effectStartTime = Date.now();
+    loadingStartTimeRef.current = Date.now();
     onLoadingChange(true);
     onPreviewErrorChange(null);
     Sentry.addBreadcrumb({
       category: 'artifact.loading',
-      message: 'Iframe message listener mounted, loading started',
+      message: 'Artifact changed, loading started',
       level: 'info',
-      data: { artifactType: artifact.type },
+      data: { artifactId: artifact.id, artifactType: artifact.type },
     });
+  }, [artifact.id, onLoadingChange, onPreviewErrorChange]);
 
+  // Effect 2: Listen for iframe messages (safe to re-run without resetting loading)
+  useEffect(() => {
     const handleIframeMessage = (e: MessageEvent) => {
       // Security: Only accept messages from our iframes (blob URLs report 'null') or same origin
       // Prevents malicious iframes or websites from sending fake artifact signals
@@ -732,9 +741,8 @@ export const ArtifactRenderer = memo(({
         return;
       }
 
-
       if (e.data?.type === 'artifact-error') {
-        const elapsed = Date.now() - effectStartTime;
+        const elapsed = Date.now() - loadingStartTimeRef.current;
         Sentry.addBreadcrumb({
           category: 'artifact.loading',
           message: 'Artifact error received from iframe',
@@ -746,7 +754,7 @@ export const ArtifactRenderer = memo(({
         // Ensure we signal completion even on error if not already sent
         window.postMessage({ type: 'artifact-rendered-complete', success: false, error: e.data.message }, '*');
       } else if (e.data?.type === 'artifact-ready') {
-        const elapsed = Date.now() - effectStartTime;
+        const elapsed = Date.now() - loadingStartTimeRef.current;
         Sentry.addBreadcrumb({
           category: 'artifact.loading',
           message: 'Artifact ready signal received from iframe',
@@ -763,7 +771,7 @@ export const ArtifactRenderer = memo(({
     return () => {
       window.removeEventListener('message', handleIframeMessage);
     };
-  }, [artifact.content, artifact.type, onLoadingChange, onPreviewErrorChange, onErrorCategoryChange, recoveryAttempts, handleArtifactError]);
+  }, [onLoadingChange, handleArtifactError]);
 
   // Render mermaid diagrams
   useEffect(() => {

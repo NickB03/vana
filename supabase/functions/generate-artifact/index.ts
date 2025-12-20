@@ -1,17 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { callGLM, callGLMWithRetryTracking, extractTextFromGLM, extractTextAndReasoningFromGLM, extractGLMTokenUsage, calculateGLMCost, logGLMUsage, handleGLMError, processGLMStream, parseStatusMarker } from "../_shared/glm-client.ts";
-import { parseGLMReasoningToStructured, parseReasoningIncrementally, createIncrementalParseState, type IncrementalParseState } from "../_shared/glm-reasoning-parser.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 import { MODELS, RATE_LIMITS, FEATURE_FLAGS } from "../_shared/config.ts";
 import { validateArtifactCode, autoFixArtifactCode, preValidateAndFixGlmSyntax } from "../_shared/artifact-validator.ts";
 import { getSystemInstruction } from "../_shared/system-prompt-inline.ts";
-import {
-  createReasoningProvider,
-  type IReasoningProvider,
-  type ReasoningEvent,
-  type ReasoningEventCallback,
-} from "../_shared/reasoning-provider.ts";
 
 // NOTE: Retry logic handled in glm-client.ts
 // callGLMWithRetryTracking() handles exponential backoff automatically
@@ -341,60 +334,18 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
       // Start streaming GLM response in background
       (async () => {
         // Declare state variables at outer scope for cleanup and access
-        let reasoningProvider: IReasoningProvider | null = null;
-        let incrementalState: IncrementalParseState = createIncrementalParseState();
         let fullReasoning = "";
-        const accumulatedSteps: Array<{ phase: string; title: string; icon?: string; items: string[] }> = [];
         let lastEmittedStatus: string | null = null;
 
         try {
           // ============================================================================
-          // AI SIDECAR: Semantic status updates via ReasoningProvider
+          // STATUS MARKER SYSTEM: Parse [STATUS:] markers from GLM reasoning
           // ============================================================================
-          // ReasoningProvider provides hybrid LLM + phase-based fallback:
-          //    - Circuit breaker pattern for LLM failures
-          //    - Typed events with full metadata
-          //    - Automatic phase detection and transitions
-          //    - Proper resource cleanup via destroy()
-          //
-          // Provides semantic status updates more meaningful than [STATUS:] markers.
+          // GLM emits [STATUS: action phrase] markers during thinking to indicate
+          // current action. We detect these and emit status_update SSE events.
+          // This provides real-time progress updates during artifact generation.
           // ============================================================================
-          console.log(`[${requestId}] 🎛️ Status provider: ReasoningProvider`);
-
-          // ReasoningProvider event adapter: converts typed events to SSE format
-          const reasoningEventAdapter: ReasoningEventCallback = async (event: ReasoningEvent) => {
-            // Only emit if different from last [STATUS:] marker
-            if (event.message !== lastEmittedStatus) {
-              const source = event.type === 'reasoning_final' ? 'completion' :
-                event.type === 'reasoning_heartbeat' ? 'heartbeat' : 'reasoning_provider';
-              const isFinal = event.type === 'reasoning_final';
-
-              await sendEvent("status_update", {
-                status: event.message,
-                source,
-                ...(isFinal && { final: true }),
-                // Include metadata for debugging/analytics
-                phase: event.phase,
-                metadata: event.metadata,
-              });
-              console.log(`[${requestId}] 🎯 ReasoningProvider [${event.type}]: "${event.message}"`);
-            }
-          };
-
-          // Create ReasoningProvider
-          reasoningProvider = createReasoningProvider(requestId, reasoningEventAdapter, {
-            config: {
-              minBufferChars: 150,
-              maxBufferChars: 500,
-              maxWaitMs: 3000,
-              minUpdateIntervalMs: 1500,
-              timeoutMs: 2000,
-            },
-          });
-
-          // Start the provider (emits initial status, starts heartbeat timer)
-          // CRITICAL: Start BEFORE callGLM to keep connection alive during queueing
-          await reasoningProvider.start();
+          console.log(`[${requestId}] 🎛️ Status provider: [STATUS:] marker parsing`);
 
           // Call GLM with streaming enabled
           const glmResponse = await callGLM(
@@ -413,12 +364,6 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
             const errorText = await glmResponse.text();
             console.error(`[${requestId}] GLM streaming error (${glmResponse.status}):`, errorText.substring(0, 200));
             await sendEvent("error", { error: `GLM API error: ${glmResponse.status}`, requestId });
-
-            // Clean up status provider on error
-            if (reasoningProvider) {
-              reasoningProvider.destroy();
-            }
-
             await writer.close();
             return;
           }
@@ -432,16 +377,6 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
           // reasoning steps appearing progressively.
           // ============================================================================
 
-          // Unified interface for pushing chunks
-          const pushChunk = async (chunk: string) => {
-            await reasoningProvider.processReasoningChunk(chunk);
-          };
-
-          // Unified interface for notifying content phase
-          const notifyContentPhase = async () => {
-            await reasoningProvider.setPhase('implementing');
-          };
-
           // Process GLM SSE stream with incremental step detection
           const { reasoning, content } = await processGLMStream(
             glmResponse,
@@ -451,21 +386,11 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
                 fullReasoning += chunk;
 
                 // ============================================================================
-                // DUAL STATUS SOURCES: [STATUS:] markers + ReasoningProvider
-                // ============================================================================
-                // 1. [STATUS: ...] markers: Fast-path, parsed from GLM's raw reasoning
-                // 2. ReasoningProvider: Hybrid LLM+fallback for semantic status updates
-                //
-                // The [STATUS:] markers take precedence when available (lower latency).
-                // ReasoningProvider provides semantic updates when markers are absent.
-                // ============================================================================
-
-                // Feed chunk to ReasoningProvider (async, non-blocking)
-                await pushChunk(chunk);
-
                 // STATUS MARKER DETECTION: Parse [STATUS: ...] markers from reasoning
+                // ============================================================================
                 // GLM emits [STATUS: action phrase] markers during thinking to indicate
                 // current action. We detect these and emit status_update SSE events.
+                // ============================================================================
                 const currentStatus = parseStatusMarker(fullReasoning);
                 if (currentStatus && currentStatus !== lastEmittedStatus) {
                   // New status detected - emit it immediately
@@ -473,51 +398,17 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
                   console.log(`[${requestId}] 📊 Status marker: "${currentStatus}"`);
                   lastEmittedStatus = currentStatus;
                 }
-
-                // Incrementally parse for new steps
-                const result = parseReasoningIncrementally(fullReasoning, incrementalState);
-                incrementalState = result.state;
-
-                if (result.newStep) {
-                  // New complete step detected - emit it
-                  accumulatedSteps.push(result.newStep);
-                  await sendEvent("reasoning_step", {
-                    step: result.newStep,
-                    stepIndex: accumulatedSteps.length - 1,
-                    currentThinking: result.currentThinking,
-                  });
-                  console.log(`[${requestId}] 🧠 Emitted reasoning step ${accumulatedSteps.length}: "${result.newStep.title}"`);
-                } else {
-                  // No new step, but update current thinking indicator periodically
-                  // Only send updates every 200 chars to avoid flooding
-                  if (fullReasoning.length % 200 < chunk.length) {
-                    await sendEvent("thinking_update", {
-                      currentThinking: result.currentThinking,
-                      progress: Math.min(45, 5 + (fullReasoning.length / 100)),
-                    });
-                  }
-                }
               },
               onContentChunk: async (chunk: string) => {
-                // Notify sidecar that we're in content generation phase
-                // This triggers proactive heartbeat updates during code generation
-                await notifyContentPhase();
-
-                // Also feed content chunks to the sidecar for semantic analysis
-                // During code generation, the sidecar can analyze what's being built
-                // (e.g., "Writing React component", "Adding event handlers")
-                await pushChunk(chunk);
-
+                // Stream content chunks directly to client
                 await sendEvent("content_chunk", { chunk });
               },
               onComplete: async (fullReasoningText: string, _fullContent: string) => {
-                // Send final reasoning complete event with structured data
+                // Send final reasoning complete event
                 if (fullReasoningText) {
-                  const finalReasoningSteps = parseGLMReasoningToStructured(fullReasoningText);
                   await sendEvent("reasoning_complete", {
                     reasoning: fullReasoningText,
-                    reasoningSteps: finalReasoningSteps,
-                    stepCount: accumulatedSteps.length,
+                    reasoningSteps: null, // Structured parsing removed - use [STATUS:] markers instead
                   });
                 }
               },
@@ -567,27 +458,20 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
             }
           }
 
-          // Parse reasoning to structured format
-          const reasoningSteps = reasoning ? parseGLMReasoningToStructured(reasoning) : null;
+          // Structured reasoning parsing removed - use [STATUS:] markers instead
+          const reasoningSteps = null;
 
           // ============================================================================
-          // FINALIZATION: Generate summary and clean up ReasoningProvider
+          // FINALIZATION: Generate completion summary
           // ============================================================================
-          // ReasoningProvider handles final status emission internally via finalize()
-          // Extract artifact description from the prompt for the summary
           const artifactDescription = artifactType === 'react'
             ? 'React component'
             : artifactType || 'artifact';
-          await reasoningProvider.finalize(`${artifactDescription} based on your request`);
+          const finalSummary = `Completed ${artifactDescription} based on your request`;
 
-          // Note: finalSummary is set to simple fallback - the final event was already emitted via the adapter
-          const finalSummary = "Artifact complete";
-
-          // If we have a final summary, update the last step's title in reasoningSteps
-          // so the ticker shows the summary after streaming ends
-          if (finalSummary && reasoningSteps && reasoningSteps.steps.length > 0) {
-            reasoningSteps.steps[reasoningSteps.steps.length - 1].title = finalSummary;
-          }
+          // Emit final status update
+          await sendEvent("status_update", { status: finalSummary, final: true });
+          console.log(`[${requestId}] ✅ Final status: "${finalSummary}"`);
 
           // Send final completion event
           await sendEvent("artifact_complete", {
@@ -625,16 +509,9 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
 
           console.log(`[${requestId}] ✅ Streaming artifact complete: ${artifactCode.length} chars in ${latencyMs}ms`);
 
-          // Note: ReasoningProvider cleanup already happened in finalize()
-
           await writer.close();
         } catch (error) {
           console.error(`[${requestId}] Streaming error:`, error);
-
-          // Clean up status provider on error
-          if (reasoningProvider) {
-            reasoningProvider.destroy();
-          }
 
           try {
             await sendEvent("error", { error: error instanceof Error ? error.message : "Unknown streaming error", requestId });
@@ -683,8 +560,8 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
     const { text: rawArtifactCode, reasoning: glmReasoning } = extractTextAndReasoningFromGLM(data, requestId);
     let artifactCode = rawArtifactCode;
 
-    // Convert GLM reasoning to structured format for UI
-    const reasoningSteps = glmReasoning ? parseGLMReasoningToStructured(glmReasoning) : null;
+    // Structured reasoning parsing removed - use [STATUS:] markers instead
+    const reasoningSteps = null;
 
     // ============================================================================
     // POST-GENERATION CLEANUP: Strip HTML Document Structure from React Artifacts

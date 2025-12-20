@@ -31,28 +31,18 @@ describe("ReasoningDisplay GLM Integration", () => {
         expect(screen.getByText("I am currently refactoring the API endpoints to improve performance...")).toBeInTheDocument();
     });
 
-    it("prioritizes reasoningStatus over structured reasoning steps for the pill label", () => {
-        const mockSteps = {
-            steps: [
-                {
-                    phase: "analysis",
-                    title: "Step 1: Initial Analysis",
-                    items: ["Analyzing request"],
-                },
-            ],
-        };
-
+    it("shows reasoningStatus in pill and streamingReasoningText in expanded view", () => {
         render(
             <ReasoningDisplay
                 isStreaming={true}
                 reasoningStatus="Validating user input"
-                reasoningSteps={mockSteps}
+                streamingReasoningText="Step 1: Initial Analysis\nAnalyzing request"
             />
         );
 
         expect(screen.getByText("Validating user input")).toBeInTheDocument();
-        // Step title should also be present (in expanded view)
-        expect(screen.getByText("Step 1: Initial Analysis")).toBeInTheDocument();
+        // Raw reasoning text should be present (in expanded view)
+        expect(screen.getByText(/Step 1: Initial Analysis/)).toBeInTheDocument();
     });
 
     it("falls back to streamingReasoningText if reasoningStatus is missing", () => {
