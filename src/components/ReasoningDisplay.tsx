@@ -1,45 +1,26 @@
-import { memo, useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { memo, useState, useEffect, useRef, useMemo } from "react";
 import DOMPurify from "isomorphic-dompurify";
 import { cn } from "@/lib/utils";
-import {
-  StructuredReasoning,
-  parseReasoningSteps,
-} from "@/types/reasoning";
 import { ChevronDown, Clock, Search, Wrench } from "lucide-react";
 import { TextShimmer } from "@/components/prompt-kit/text-shimmer";
 import { useReasoningTimer } from "@/hooks/useReasoningTimer";
-import {
-  extractStatusText,
-  createExtractionState,
-  type ExtractionState,
-} from "@/utils/reasoningTextExtractor";
 import type { ToolExecution } from "@/hooks/useChatMessages";
 
 interface ReasoningDisplayProps {
-  // Support both old and new formats for backward compatibility
+  /** Raw reasoning text for display in expanded view */
   reasoning?: string | null;
-  reasoningSteps?: StructuredReasoning | unknown | null;
   /** Raw reasoning text being streamed from GLM (native thinking mode) */
   streamingReasoningText?: string | null;
-  /** Semantic status update from GLM-4.5-Air */
+  /** Semantic status update from GLM-4.5-Air (from [STATUS:] markers) */
   reasoningStatus?: string | null;
   isStreaming?: boolean;
   /** Whether the artifact has finished rendering (optional, defaults to true) */
   artifactRendered?: boolean;
-  /** Optional callback to stop the streaming process */
-  onStop?: () => void;
   /** Elapsed time passed from parent (for cross-component persistence) */
   parentElapsedTime?: string;
   /** Tool execution status for real-time display */
   toolExecution?: ToolExecution | null;
 }
-
-/**
- * Animation timing constants
- */
-const ANIMATION = {
-  CROSSFADE_DURATION_MS: 150,
-} as const;
 
 /**
  * Sanitize content to prevent XSS attacks
@@ -53,75 +34,36 @@ function sanitizeContent(content: string): string {
 }
 
 /**
- * Strip list prefix from item (bullets, numbers, etc.)
- */
-function stripListPrefix(item: string): string {
-  return item.replace(/^[-*•\d+.)]\s*/, '');
-}
-
-
-
-/**
- * ReasoningDisplay component - Claude-style ticker pill with "Thought process" expansion
+ * ReasoningDisplay component - Simplified ticker pill with "Thought process" expansion
  *
- * Key features based on Claude screenshots:
- * - During streaming: Shows live status updates ("Thinking..." → "Scrutinizing..." → "Interrogated...")
- * - After streaming (collapsed): Shows LAST status update + timer
- * - After streaming (expanded): Label changes to "Thought process", background lightens, shows FULL reasoning
+ * Key features:
+ * - During streaming: Shows live status updates from backend [STATUS:] markers
+ * - After streaming (collapsed): Shows "Thought process" + timer
+ * - After streaming (expanded): Shows raw reasoning text
  * - Timer persists and shows clock icon
  */
 export const ReasoningDisplay = memo(function ReasoningDisplay({
   reasoning,
-  reasoningSteps,
   streamingReasoningText,
   reasoningStatus,
   isStreaming,
   artifactRendered = true, // Default to true for backward compatibility
-  onStop,
   parentElapsedTime,
   toolExecution,
 }: ReasoningDisplayProps) {
   // Expand/collapse state
   const [isExpanded, setIsExpanded] = useState(false);
-  // Current section being displayed (0-indexed)
-  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
-  // Animation state for crossfade
-  const [isTransitioning, setIsTransitioning] = useState(false);
   // Store final elapsed time when streaming ends
   const [finalElapsedTime, setFinalElapsedTime] = useState<string>("");
 
-  // Track all active timeouts for proper cleanup
-  const timeoutRefs = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
   const wasStreamingRef = useRef(false);
 
-  // Timer for reasoning duration (Claude-style)
+  // Timer for reasoning duration
   const elapsedTime = useReasoningTimer(isStreaming ?? false);
   // Track the last valid elapsed time (before it resets to empty)
   const lastElapsedTimeRef = useRef<string>("");
-  // Track the previous step count to detect new steps arriving
-  const prevStepCountRef = useRef(0);
-  // State for the reasoning text extractor (throttling, last valid text, etc.)
-  const extractionStateRef = useRef<ExtractionState>(createExtractionState());
 
-  // Validate and parse reasoning steps
-  const validatedSteps = useMemo(() => {
-    return reasoningSteps ? parseReasoningSteps(reasoningSteps) : null;
-  }, [reasoningSteps]);
-
-  // Pre-sanitize all content to avoid redundant DOMPurify calls on each render
-  const sanitizedSteps = useMemo(() => {
-    if (!validatedSteps) return null;
-    return {
-      ...validatedSteps,
-      steps: validatedSteps.steps.map(step => ({
-        ...step,
-        title: sanitizeContent(step.title),
-        items: step.items.map(item => sanitizeContent(item)),
-      })),
-    };
-  }, [validatedSteps]);
-
-  // Memoize sanitized fallback reasoning
+  // Memoize sanitized reasoning text
   const sanitizedReasoning = useMemo(() => {
     return reasoning ? sanitizeContent(reasoning) : null;
   }, [reasoning]);
@@ -131,36 +73,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
     return streamingReasoningText ? sanitizeContent(streamingReasoningText) : null;
   }, [streamingReasoningText]);
 
-  // Check if we have GLM native streaming text (prioritize over structured reasoning)
-  const hasStreamingText = Boolean(streamingReasoningText && streamingReasoningText.length > 0);
-
-  const totalSections = validatedSteps?.steps.length ?? 0;
-
-  // Clear all timeouts - iterates through Set and clears each
-  const clearTimeouts = useCallback(() => {
-    timeoutRefs.current.forEach(id => clearTimeout(id));
-    timeoutRefs.current.clear();
-  }, []);
-
-  // Helper to create tracked timeouts
-  const createTrackedTimeout = useCallback((callback: () => void, delay: number) => {
-    const id = setTimeout(() => {
-      timeoutRefs.current.delete(id);
-      callback();
-    }, delay);
-    timeoutRefs.current.add(id);
-    return id;
-  }, []);
-
-  // Cleanup timeouts on unmount to prevent memory leaks
-  useEffect(() => {
-    return () => {
-      clearTimeouts();
-    };
-  }, [clearTimeouts]);
-
   // Continuously track the last non-empty elapsed time while streaming
-  // This is crucial because elapsedTime may become empty before we can capture it in the transition effect
   useEffect(() => {
     if (isStreaming && elapsedTime) {
       lastElapsedTimeRef.current = elapsedTime;
@@ -171,7 +84,6 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   useEffect(() => {
     if (!isStreaming && wasStreamingRef.current) {
       // Just stopped streaming - capture the final time
-      // Use lastElapsedTimeRef as fallback if elapsedTime is already empty
       const timeToCapture = elapsedTime || lastElapsedTimeRef.current;
       if (timeToCapture) {
         setFinalElapsedTime(timeToCapture);
@@ -180,81 +92,21 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
 
     if (isStreaming && !wasStreamingRef.current) {
       // Just started streaming - reset to initial state
-      setCurrentSectionIndex(0);
-      setIsTransitioning(false);
       setIsExpanded(false);
       setFinalElapsedTime("");
       lastElapsedTimeRef.current = "";
-      clearTimeouts();
-      prevStepCountRef.current = 0;
-      // Reset the extraction state for new streaming session
-      extractionStateRef.current = createExtractionState();
     }
 
     // Update ref AFTER all checks
     wasStreamingRef.current = isStreaming ?? false;
-  }, [isStreaming, elapsedTime, clearTimeouts]);
-
-  // Handle streaming end - show final state
-  useEffect(() => {
-    if (!isStreaming && validatedSteps && totalSections > 0) {
-      // Streaming ended - jump to final state immediately
-      clearTimeouts();
-      setCurrentSectionIndex(totalSections - 1);
-      setIsTransitioning(false);
-    }
-  }, [isStreaming, validatedSteps, totalSections, clearTimeouts]);
-
-  // Incremental step animation: Animate as new steps arrive from server
-  useEffect(() => {
-    // Skip if not streaming or no data
-    if (!isStreaming || !validatedSteps || totalSections === 0) {
-      prevStepCountRef.current = 0;
-      return;
-    }
-
-    // Check if a new step just arrived
-    if (totalSections > prevStepCountRef.current) {
-      // New step detected! Animate to show it
-      const newStepIndex = totalSections - 1;
-
-      // If this is the first step, show it immediately
-      if (prevStepCountRef.current === 0) {
-        setCurrentSectionIndex(0);
-        setIsTransitioning(false);
-      } else {
-        // Animate transition to new step with brief crossfade
-        setIsTransitioning(true);
-
-        createTrackedTimeout(() => {
-          setCurrentSectionIndex(newStepIndex);
-          setIsTransitioning(false);
-        }, ANIMATION.CROSSFADE_DURATION_MS);
-      }
-
-      // Update the step count tracker
-      prevStepCountRef.current = totalSections;
-    }
-  }, [isStreaming, validatedSteps, totalSections, createTrackedTimeout]);
-
-  // Get current and last sections
-  const currentSection = validatedSteps?.steps[currentSectionIndex];
-  const lastStep = validatedSteps?.steps[totalSections - 1];
-
-  /**
-   * Truncate text to max length with ellipsis
-   */
-  const truncateText = (text: string, maxLength: number): string => {
-    if (text.length <= maxLength) return text;
-    return `${text.slice(0, maxLength - 3)}...`;
-  };
+  }, [isStreaming, elapsedTime]);
 
   /**
    * Get the streaming status text from available sources
-   * Priority: tool execution > semantic status > structured steps > raw text extraction > fallback
+   * Priority: tool execution > semantic status (from [STATUS:] markers) > fallback
    */
   const getStreamingStatus = (): string => {
-    // 0. HIGHEST PRIORITY: Tool execution status (show when actively using tools)
+    // HIGHEST PRIORITY: Tool execution status (show when actively using tools)
     if (toolExecution && isStreaming) {
       const { toolName, success, sourceCount } = toolExecution;
 
@@ -270,90 +122,49 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
       return `Searching web...`;
     }
 
-    // 1. Prefer explicit semantic status from GLM-4.5-Air (AI Commentator)
+    // Prefer semantic status from backend [STATUS: ...] markers
     if (reasoningStatus) {
       return reasoningStatus;
     }
 
-    // 2. Prefer structured reasoning steps
-    if (validatedSteps && currentSection) {
-      return currentSection.title;
-    }
-
-    // 3. Extract status from GLM native streaming text
-    if (hasStreamingText && streamingReasoningText) {
-      const result = extractStatusText(
-        streamingReasoningText,
-        extractionStateRef.current
-      );
-      extractionStateRef.current = result.state;
-      return result.text;
-    }
-
-    // 4. Use last known text
-    return extractionStateRef.current.lastText;
+    // Generic fallback
+    return "Thinking...";
   };
 
   /**
    * Get the pill label text based on current state
-   * - During streaming: current status ("Thinking...", "Scrutinizing...", etc.)
+   * - During streaming: current status from getStreamingStatus()
    * - Waiting for render: "Rendering..." (after streaming completes but before artifact renders)
-   * - Collapsed after streaming: last status ("Interrogated feasibility gaps...")
-   * - Expanded after streaming: "Thought process" (Claude-style)
+   * - After streaming: "Thought process"
    */
   const getPillLabel = (): string => {
-    // Expanded after streaming: show "Thought process" (like Claude)
+    // Expanded after streaming: show "Thought process"
     if (isExpanded && !isStreaming && artifactRendered) {
       return "Thought process";
     }
 
-    // Streaming done but artifact not rendered: show "Rendering the generated artifact..."
+    // Streaming done but artifact not rendered
     if (!isStreaming && !artifactRendered) {
       return "Rendering the generated artifact...";
     }
 
-    // During streaming: show current step title
+    // During streaming: show current status
     if (isStreaming) {
       return getStreamingStatus();
     }
 
-    // After streaming (collapsed): show last step title
-    // This will be the AI-generated summary like "Created a counter button component"
-    // or fall back to "Thought process" for generic/missing titles
-    if (validatedSteps && lastStep) {
-      const title = lastStep.title.trim(); // FIX: Trim whitespace to catch whitespace-only titles
-      // Only use fallback for truly generic titles that don't describe what was created
-      // Keep meaningful summaries like "Created a counter button component"
-      if (title === 'Model reasoning' || title === 'AI reasoning complete' || !title) {
-        return 'Thought process';
-      }
-      return truncateText(title, 70);
-    }
-
-    // Fallback for non-structured reasoning
-    const text = (reasoning || "").trim(); // FIX: Trim fallback text too
-    return text ? truncateText(text, 70) : "View reasoning";
+    // After streaming (collapsed): show "Thought process"
+    return "Thought process";
   };
 
   // Don't render if no displayable content and not streaming
-  // validatedSteps might have empty steps array, so check totalSections > 0
-  const hasDisplayableSteps = validatedSteps && totalSections > 0;
-  // CRITICAL FIX: Show ticker even after streaming completes if we have ANY reasoning data
-  // This includes:
-  // 1. finalElapsedTime (completed streams always have a timer captured when streaming ended)
-  // 2. parentElapsedTime (passed from parent for persistent display across renders)
-  // 3. Any form of reasoning content (steps, raw text, or fallback)
-  // This prevents the ticker from disappearing when streaming ends
-  const hasAnyReasoningData = hasDisplayableSteps || reasoning || streamingReasoningText || finalElapsedTime || parentElapsedTime;
+  const hasAnyReasoningData = reasoning || streamingReasoningText || finalElapsedTime || parentElapsedTime;
   if (!isStreaming && !hasAnyReasoningData) {
     return null;
   }
 
-  const hasStructuredContent = hasDisplayableSteps;
-  const hasContent = hasStructuredContent || hasStreamingText || sanitizedReasoning;
-  // STABILITY FIX: Always show the spinner when streaming, even if we have text.
-  // This prevents the "different sized pill" jump when switching from "Thinking..." to text.
-  // PHASE 2: Also show spinner if streaming is complete but artifact hasn't rendered yet
+  const hasContent = sanitizedReasoning || sanitizedStreamingText;
+  // Show spinner when streaming OR when artifact hasn't rendered yet
   const showThinkingBar = isStreaming || (!isStreaming && !artifactRendered);
   const showShimmer = isStreaming || (!isStreaming && !artifactRendered);
   const showExpandButton = hasContent || isStreaming;
@@ -468,12 +279,10 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
         </div>
       </div>
 
-      {/* Expanded content - FULL reasoning (Claude-style) */}
+      {/* Expanded content - Raw reasoning text */}
       <div
         id="reasoning-expanded-content"
         className={cn(
-          // Animate max-height and opacity for expand/collapse
-          // Using GPU-accelerated opacity + max-height for smooth animation
           "overflow-hidden",
           "transition-[max-height,opacity,margin] duration-300 ease-out",
           isExpanded ? "max-h-[60vh] opacity-100 mt-2" : "max-h-0 opacity-0 mt-0"
@@ -483,41 +292,12 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
         <div className={cn(
           "pt-3 px-4 pb-4",
           "rounded-2xl",
-          "bg-muted/30",  // Lighter gray background (matches Claude)
+          "bg-muted/30",
           "border border-border/40",
           "max-h-[50vh] overflow-y-auto"
         )}>
-          {/* Structured reasoning steps - show FULL content */}
-          {hasStructuredContent && sanitizedSteps && (
-            <div className="space-y-4">
-              {sanitizedSteps.steps.map((step, stepIndex) => (
-                <div key={stepIndex} className="space-y-1">
-                  {/* Step Title - Bold heading */}
-                  <h4 className="text-sm font-semibold text-foreground/90">
-                    {step.title}
-                  </h4>
-
-                  {/* All items as bullet points */}
-                  {step.items.length > 0 && (
-                    <ul className="space-y-0.5 ml-0.5">
-                      {step.items.map((item, itemIndex) => (
-                        <li
-                          key={itemIndex}
-                          className="text-sm text-muted-foreground/90 leading-snug flex items-start gap-1.5"
-                        >
-                          <span className="text-muted-foreground/40 mt-[0.35em] select-none text-[8px]">●</span>
-                          <span className="flex-1">{stripListPrefix(item)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* GLM native streaming text (fallback) */}
-          {hasStreamingText && sanitizedStreamingText && !hasStructuredContent && (
+          {/* Display streaming text if available */}
+          {sanitizedStreamingText ? (
             <div
               className={cn(
                 "whitespace-pre-wrap text-sm text-muted-foreground",
@@ -529,17 +309,13 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
                 <span className="inline-block w-1.5 h-4 ml-0.5 bg-orange-500/60 animate-pulse" />
               )}
             </div>
-          )}
-
-          {/* Fallback for non-structured reasoning */}
-          {!hasStructuredContent && !hasStreamingText && sanitizedReasoning && (
+          ) : sanitizedReasoning ? (
+            /* Display fallback reasoning */
             <div className="whitespace-pre-wrap text-sm text-muted-foreground leading-relaxed">
               {sanitizedReasoning}
             </div>
-          )}
-
-          {/* No data fallback */}
-          {!hasStructuredContent && !hasStreamingText && !sanitizedReasoning && (
+          ) : (
+            /* No data fallback */
             <p className="text-sm text-muted-foreground">
               No reasoning data available.
             </p>

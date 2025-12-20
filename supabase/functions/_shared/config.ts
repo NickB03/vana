@@ -48,31 +48,6 @@ export const FEATURE_FLAGS = {
    */
   GLM_TOOL_CALLING_ROLLOUT_PERCENT: getEnvInt('GLM_TOOL_CALLING_ROLLOUT_PERCENT', 100, 0),
 
-  /**
-   * ReasoningProvider for artifact generation status updates
-   *
-   * NOTE: AICommentator has been removed. ReasoningProvider is now the only implementation.
-   * This flag is kept for backward compatibility but always returns true.
-   *
-   * The ReasoningProvider offers:
-   * - Circuit breaker pattern for LLM failures
-   * - Better resource cleanup (destroy() method)
-   * - Typed events with full metadata
-   * - Phase detection and automatic transitions
-   *
-   * @deprecated This flag will be removed in a future version. ReasoningProvider is now always used.
-   */
-  USE_REASONING_PROVIDER: true,
-
-  /**
-   * Percentage of requests to route to ReasoningProvider (0-100)
-   *
-   * NOTE: Since AICommentator has been removed, this always returns 100.
-   * This configuration is kept for backward compatibility but has no effect.
-   *
-   * @deprecated This flag will be removed in a future version.
-   */
-  REASONING_PROVIDER_ROLLOUT_PERCENT: 100,
 } as const;
 
 /**
@@ -481,22 +456,3 @@ export function shouldUseGLMToolCalling(requestId: string): boolean {
   return (hash % 100) < FEATURE_FLAGS.GLM_TOOL_CALLING_ROLLOUT_PERCENT;
 }
 
-/**
- * Check if ReasoningProvider should be used for a given request
- *
- * NOTE: AICommentator has been removed. This function now always returns true.
- * Kept for backward compatibility to avoid breaking existing code.
- *
- * @param requestId - Unique request identifier (unused, kept for API compatibility)
- * @returns true (always, since ReasoningProvider is now the only implementation)
- *
- * @deprecated This function will be removed in a future version. ReasoningProvider is now always used.
- *
- * @example
- * ```ts
- * const useProvider = shouldUseReasoningProvider(requestId); // always true
- * ```
- */
-export function shouldUseReasoningProvider(_requestId: string): boolean {
-  return true;
-}

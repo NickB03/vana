@@ -3,37 +3,26 @@
  * Transforms OpenRouter and GLM streaming responses and injects reasoning/search results
  *
  * SSE Event Format (Claude-like streaming):
- * - reasoning_step: Individual reasoning step (sent progressively)
  * - reasoning_status: Live phase-based status updates (for ticker display)
- * - reasoning_complete: Final reasoning summary 
+ * - reasoning_complete: Final reasoning summary
  * - web_search: Search results
  * - content chunks: LLM response text
  *
- * GLM-4.6 Integration (Phase 2):
+ * GLM-4.6 Integration:
  * - Parses SSE delta.reasoning_content from GLM thinking mode
- * - Uses parseReasoningIncrementally for progressive step detection
- * - Replaces legacy <think> tag detection with proper SSE parsing
+ * - Extracts [STATUS: ...] markers for live status updates
+ * - Accumulates reasoning content for final summary
  */
 
 import { transformArtifactCode } from "../artifact-transformer.ts";
-import type { StructuredReasoning, ReasoningStep } from "../../_shared/reasoning-generator.ts";
+import type { StructuredReasoning } from "../../_shared/reasoning-generator.ts";
 import type { SearchResult } from "./search.ts";
-import {
-  parseReasoningIncrementally,
-  createIncrementalParseState,
-  type IncrementalParseState,
-} from "../../_shared/glm-reasoning-parser.ts";
-import {
-  createReasoningProvider,
-  type IReasoningProvider,
-  type ReasoningEvent,
-} from "../../_shared/reasoning-provider.ts";
-import { shouldUseReasoningProvider } from "../../_shared/config.ts";
+import { parseStatusMarker } from "../../_shared/glm-client.ts";
 
 /**
  * Creates a transform stream that:
  * 1. Parses GLM SSE format to extract reasoning_content and content
- * 2. Uses parseReasoningIncrementally for progressive step detection (Claude-like)
+ * 2. Extracts [STATUS: ...] markers for live status updates
  * 3. Injects web search results as SSE event (if available)
  * 4. Transforms artifact code to fix invalid imports
  */
@@ -46,17 +35,11 @@ export function createStreamTransformer(
   let buffer = "";
   let sseBuffer = ""; // Buffer for accumulating SSE lines
   let insideArtifact = false;
-  let reasoningStepsSent = 0;
   let searchSent = false;
   let reasoningComplete = false;
 
   // GLM SSE parsing state
   let fullReasoningContent = ""; // Accumulated reasoning_content from GLM
-  let parseState: IncrementalParseState = createIncrementalParseState();
-  let lastStatusUpdate = 0;
-  const STATUS_UPDATE_INTERVAL_MS = parseInt(
-    Deno.env.get("REASONING_STATUS_INTERVAL_MS") || "800"
-  ); // Don't spam status updates
 
   // Content output buffer (for artifact transforms and final output)
   let contentBuffer = "";
@@ -64,10 +47,8 @@ export function createStreamTransformer(
   // Tool call stripping state (prevents raw <tool_call> XML from reaching client)
   let toolCallInProgress = false;
 
-  // ReasoningProvider state (hybrid LLM+fallback for status generation)
-  let reasoningProvider: IReasoningProvider | null = null;
-  let storedController: TransformStreamDefaultController<string> | null = null;
-  const useReasoningProvider = shouldUseReasoningProvider(requestId);
+  // Status marker tracking (for [STATUS: ...] extraction)
+  let lastStatusMarker: string | null = null;
 
   /**
    * Strip <tool_call>...</tool_call> XML blocks from content
@@ -121,99 +102,12 @@ export function createStreamTransformer(
 
   return new TransformStream({
     async start(controller) {
-      // Store controller for async ReasoningProvider callbacks
-      storedController = controller;
-
-      // Initialize ReasoningProvider if enabled
-      if (useReasoningProvider) {
-        const reasoningEventCallback = async (event: ReasoningEvent) => {
-          if (!storedController) return;
-
-          if (event.type === 'reasoning_status' || event.type === 'reasoning_heartbeat') {
-            const statusEvent = {
-              type: "reasoning_status",
-              content: event.message,
-              source: event.type === 'reasoning_heartbeat' ? 'heartbeat' : 'reasoning_provider',
-              phase: event.phase,
-              timestamp: Date.now(),
-            };
-            storedController.enqueue(`data: ${JSON.stringify(statusEvent)}\n\n`);
-          } else if (event.type === 'reasoning_final') {
-            // Final summary can be sent as a special status
-            const finalEvent = {
-              type: "reasoning_status",
-              content: event.message,
-              source: 'completion',
-              isFinal: true,
-              timestamp: Date.now(),
-            };
-            storedController.enqueue(`data: ${JSON.stringify(finalEvent)}\n\n`);
-          } else if (event.type === 'reasoning_error') {
-            console.warn(`[${requestId}] ⚠️ ReasoningProvider error: ${event.message}`);
-          }
-        };
-
-        reasoningProvider = createReasoningProvider(requestId, reasoningEventCallback);
-        await reasoningProvider.start();
-        console.log(`[${requestId}] 🎛️ Chat status provider: ReasoningProvider`);
-      } else {
-        console.log(`[${requestId}] 🎛️ Chat status provider: Direct parsing (legacy)`);
-      }
-
       // ========================================
-      // PRE-STREAMED REASONING: Send if provided upfront (legacy fallback path)
-      // ========================================
-      // This handles the case where reasoning was generated separately (e.g., Gemini fallback)
-      // When GLM thinking mode is enabled, reasoning comes via SSE stream instead
-      if (structuredReasoning && structuredReasoning.steps.length > 0) {
-        const steps = structuredReasoning.steps;
-
-        // Send each step as a separate event with progressive delays
-        for (let i = 0; i < steps.length; i++) {
-          const step = steps[i];
-          const stepEvent = {
-            type: "reasoning_step",
-            step: {
-              phase: step.phase,
-              title: step.title,
-              icon: step.icon,
-              items: step.items,
-            },
-            stepIndex: i,
-            currentThinking: step.title,
-            timestamp: Date.now(),
-          };
-
-          controller.enqueue(`data: ${JSON.stringify(stepEvent)}\n\n`);
-          reasoningStepsSent++;
-
-          if (i < steps.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 800));
-          }
-        }
-
-        const completeEvent = {
-          type: "reasoning_complete",
-          reasoning: structuredReasoning.summary || "",
-          reasoningSteps: structuredReasoning,
-          stepCount: steps.length,
-          timestamp: Date.now(),
-        };
-        controller.enqueue(`data: ${JSON.stringify(completeEvent)}\n\n`);
-        reasoningComplete = true;
-
-        console.log(
-          `[${requestId}] 🧠 Sent ${steps.length} reasoning steps progressively (pre-streamed)`
-        );
-      }
-
-      // ========================================
-      // WEB SEARCH: Send search results after reasoning
+      // WEB SEARCH: Send search results if available
       // ========================================
       if (searchResult.searchExecuted && searchResult.searchResultsData && !searchSent) {
         const searchEvent = {
           type: "web_search",
-          sequence: reasoningStepsSent + 1,
           timestamp: Date.now(),
           data: searchResult.searchResultsData,
         };
@@ -256,7 +150,6 @@ export function createStreamTransformer(
               const completeEvent = {
                 type: "reasoning_complete",
                 reasoning: fullReasoningContent.substring(0, 500),
-                stepCount: reasoningStepsSent,
                 timestamp: Date.now(),
               };
               controller.enqueue(`data: ${JSON.stringify(completeEvent)}\n\n`);
@@ -267,7 +160,6 @@ export function createStreamTransformer(
             // Clean up buffers to prevent memory leaks
             fullReasoningContent = "";
             contentBuffer = "";
-            parseState = createIncrementalParseState();
 
             // Forward the [DONE] marker
             controller.enqueue(`${line}\n\n`);
@@ -283,56 +175,17 @@ export function createStreamTransformer(
               if (delta.reasoning_content) {
                 fullReasoningContent += delta.reasoning_content;
 
-                if (reasoningProvider) {
-                  // Use ReasoningProvider for status generation (fire-and-forget)
-                  // Provider will emit events via callback → storedController
-                  reasoningProvider.processReasoningChunk(delta.reasoning_content);
-
-                  // Still parse incrementally for reasoning_step events
-                  const parseResult = parseReasoningIncrementally(fullReasoningContent, parseState);
-                  parseState = parseResult.state;
-
-                  // Emit reasoning_step if detected (this is different from status)
-                  if (parseResult.newStep) {
-                    const stepEvent = {
-                      type: "reasoning_step",
-                      step: parseResult.newStep,
-                      stepIndex: reasoningStepsSent,
-                      currentThinking: parseResult.currentThinking,
-                      timestamp: Date.now(),
-                    };
-                    controller.enqueue(`data: ${JSON.stringify(stepEvent)}\n\n`);
-                    reasoningStepsSent++;
-                  }
-                } else {
-                  // Legacy path: direct parsing for status updates
-                  const parseResult = parseReasoningIncrementally(fullReasoningContent, parseState);
-                  parseState = parseResult.state;
-
-                  // Emit new step if detected
-                  if (parseResult.newStep) {
-                    const stepEvent = {
-                      type: "reasoning_step",
-                      step: parseResult.newStep,
-                      stepIndex: reasoningStepsSent,
-                      currentThinking: parseResult.currentThinking,
-                      timestamp: Date.now(),
-                    };
-                    controller.enqueue(`data: ${JSON.stringify(stepEvent)}\n\n`);
-                    reasoningStepsSent++;
-                  }
-
-                  // Emit status update if enough time has passed (legacy behavior)
-                  const now = Date.now();
-                  if (now - lastStatusUpdate > STATUS_UPDATE_INTERVAL_MS) {
-                    const statusEvent = {
-                      type: "reasoning_status",
-                      content: parseResult.currentThinking,
-                      timestamp: now,
-                    };
-                    controller.enqueue(`data: ${JSON.stringify(statusEvent)}\n\n`);
-                    lastStatusUpdate = now;
-                  }
+                // Extract [STATUS: ...] marker from accumulated reasoning
+                const statusMarker = parseStatusMarker(fullReasoningContent);
+                if (statusMarker && statusMarker !== lastStatusMarker) {
+                  const statusEvent = {
+                    type: "reasoning_status",
+                    content: statusMarker,
+                    source: 'glm_marker',
+                    timestamp: Date.now(),
+                  };
+                  controller.enqueue(`data: ${JSON.stringify(statusEvent)}\n\n`);
+                  lastStatusMarker = statusMarker;
                 }
 
                 // Don't forward reasoning_content - it's been processed
@@ -444,32 +297,16 @@ export function createStreamTransformer(
         }
       }
 
-      // Finalize ReasoningProvider if active
-      if (reasoningProvider) {
-        try {
-          await reasoningProvider.finalize("chat response");
-        } catch (err) {
-          console.warn(`[${requestId}] ⚠️ ReasoningProvider finalize error:`, err);
-        } finally {
-          reasoningProvider.destroy();
-          reasoningProvider = null;
-        }
-      }
-
-      // Emit final reasoning_complete if not already done (legacy path or fallback)
+      // Emit final reasoning_complete if not already done
       if (fullReasoningContent.length > 0 && !reasoningComplete) {
         const completeEvent = {
           type: "reasoning_complete",
           reasoning: fullReasoningContent.substring(0, 500),
-          stepCount: reasoningStepsSent,
           timestamp: Date.now(),
         };
         controller.enqueue(`data: ${JSON.stringify(completeEvent)}\n\n`);
         console.log(`[${requestId}] 🧠 GLM reasoning finalized: ${fullReasoningContent.length} chars`);
       }
-
-      // Clear stored controller reference
-      storedController = null;
     },
   });
 }

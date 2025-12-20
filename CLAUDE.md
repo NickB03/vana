@@ -214,17 +214,13 @@ supabase db push --linked --include-all
 | Chat/Summaries/Titles | Gemini 2.5 Flash Lite | OpenRouter | Single key, unlimited |
 | Artifact Generation | GLM-4.6 | Z.ai API | Thinking mode enabled, streams reasoning |
 | Artifact Error Fixing | GLM-4.6 | Z.ai API | Deep reasoning for debugging |
-| Fast Reasoning (parallel) | Gemini 2.5 Flash Lite | OpenRouter | 2-4s, shows while artifact generates |
-| ReasoningProvider | GLM-4.5-Air | Z.ai API | Semantic status updates during streaming |
 | Image Generation | Gemini Flash-Image | Google AI Studio | 10-key rotation, 150 RPM |
 
-**ReasoningProvider System** (Status generation during streaming):
-- GLM-4.5-Air runs asynchronously alongside artifact/chat generation
-- Hybrid LLM+fallback: Uses LLM for semantic summaries, falls back to phase templates
-- Circuit breaker pattern: 3 failures → 30s cooldown → auto-reset
-- Phase detection: analyzing, planning, implementing, styling, finalizing
-- Anti-flicker cooldown (1.5s) and idle heartbeat (8s)
-- Integrated into `generate-artifact/` and `chat/handlers/streaming.ts`
+**Status Marker System** (Real-time progress updates):
+- GLM emits `[STATUS: action phrase]` markers during thinking (defined in `system-prompt.txt`)
+- Backend parses markers via `parseStatusMarker()` in `glm-client.ts`
+- Frontend displays status via `reasoning_status` SSE events
+- Simple, direct architecture: AI → marker → SSE → UI (no intermediary LLM calls)
 
 ### Edge Function Decision Tree
 
@@ -370,7 +366,7 @@ Full schema: `supabase/migrations/`
 
 **Shared Utilities** (`_shared/`):
 - **Core**: `config.ts`, `cors-config.ts`, `logger.ts`, `validators.ts`
-- **AI/Models**: `openrouter-client.ts`, `glm-client.ts`, `model-router.ts`, `complexity-analyzer.ts`, `reasoning-generator.ts`, `glm-reasoning-parser.ts`, `reasoning-provider.ts`
+- **AI/Models**: `openrouter-client.ts`, `glm-client.ts`, `model-router.ts`, `complexity-analyzer.ts`, `reasoning-generator.ts`
 - **Unified Tool System** (Issue #340): `tool-definitions.ts`, `tool-executor.ts`, `artifact-executor.ts`, `image-executor.ts`
 - **Tool Security** (Phase 0): `tool-validator.ts`, `tool-rate-limiter.ts`, `tool-execution-tracker.ts`, `prompt-injection-defense.ts`, `safe-error-handler.ts`
 - **Context Management**: `context-selector.ts`, `context-ranker.ts`, `token-counter.ts`
@@ -632,9 +628,7 @@ export default function App() { ... }
 
 **GLM Thinking Mode**:
 - `USE_GLM_THINKING_FOR_CHAT` - Enable GLM-4.6 thinking mode for chat messages (default: true, disable with 'false')
-- `REASONING_STATUS_INTERVAL_MS` - Interval between reasoning status updates in milliseconds (default: 800)
-- `USE_REASONING_PROVIDER` - **@deprecated** Always enabled. ReasoningProvider is now the only status generation system.
-- `REASONING_PROVIDER_ROLLOUT_PERCENT` - **@deprecated** Ignored. ReasoningProvider is used for 100% of requests.
+- Status updates use `[STATUS:]` markers parsed from GLM reasoning (see Status Marker System above)
 
 **Rate Limiting Configuration** (optional, overrides defaults):
 - `RATE_LIMIT_GUEST_MAX` (default: 20 requests per 5 hours)

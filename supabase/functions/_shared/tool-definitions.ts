@@ -40,8 +40,6 @@ export interface ToolExecutionMetadata {
   model: string;
   /** Whether the tool supports streaming responses */
   streaming: boolean;
-  /** Whether to use ReasoningProvider for status updates */
-  reasoningProvider: boolean;
 }
 
 /**
@@ -105,7 +103,6 @@ export const TOOL_CATALOG = {
       handler: 'artifact',
       model: MODELS.GLM_4_6,
       streaming: true,
-      reasoningProvider: true,
     },
   },
 
@@ -129,7 +126,6 @@ export const TOOL_CATALOG = {
       handler: 'image',
       model: MODELS.GEMINI_FLASH_IMAGE,
       streaming: false,
-      reasoningProvider: false,
     },
   },
 
@@ -148,7 +144,6 @@ export const TOOL_CATALOG = {
       handler: 'search',
       model: 'tavily',
       streaming: false,
-      reasoningProvider: false,
     },
   },
 } as const satisfies Record<string, ToolDefinition>;
