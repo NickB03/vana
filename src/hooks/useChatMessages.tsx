@@ -1045,7 +1045,12 @@ export function useChatMessages(
           finalArtifactData.reasoningSteps || undefined
         );
 
-        // THEN clear streaming state synchronously to prevent race condition
+        // HARDENING: Small safety delay to allow React Query/Supabase subscription
+        // to propagate the new message to the UI before we remove the loading indicator.
+        // This prevents the "blank screen" race condition where loading stops but message isn't rendered yet.
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        // THEN clear streaming state synchronously
         flushSync(() => {
           setIsLoading(false);
         });

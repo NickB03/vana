@@ -35,12 +35,6 @@ import {
   handleCorsPreflightRequest,
 } from "../_shared/cors-config.ts";
 import { getSystemInstruction } from "../_shared/system-prompt-inline.ts";
-// Legacy reasoning generator - DEPRECATED: GLM thinking mode now provides reasoning
-// Keeping type imports for backward compatibility with streaming handler
-import {
-  createFallbackReasoning,
-  type StructuredReasoning,
-} from "../_shared/reasoning-generator.ts";
 import { TAVILY_CONFIG, MODELS, shouldUseGLMToolCalling } from "../_shared/config.ts";
 import { selectContext, extractEntities } from "../_shared/context-selector.ts";
 import { calculateContextBudget } from "../_shared/token-counter.ts";
@@ -219,13 +213,6 @@ serve(async (req) => {
     // ========================================
     // STEP 5: Reasoning (handled by GLM thinking mode in streaming)
     // ========================================
-    // NOTE: Legacy Gemini reasoning generation removed in Phase 4.
-    // GLM's native thinking mode now provides reasoning_content via SSE stream,
-    // which is parsed by streaming.ts and sent as reasoning_step events.
-    const structuredReasoning: StructuredReasoning | null = null;
-
-    // For non-GLM fallback (OpenRouter), we still support pre-streamed reasoning
-    // but don't generate it here - the stream handler will pass null
     if (includeReasoning) {
       console.log(`[${requestId}] 🧠 Reasoning will come from GLM thinking mode (SSE stream)`);
     }
@@ -282,7 +269,7 @@ serve(async (req) => {
         lastUserContent,
         sessionId,
         authHeader,
-        structuredReasoning,
+        null, // structuredReasoning (deprecated)
         requestId
       );
 
@@ -304,7 +291,7 @@ serve(async (req) => {
         intent.artifactType,
         sessionId,
         authHeader,
-        structuredReasoning,
+        null, // structuredReasoning (deprecated)
         requestId
       );
 
@@ -682,7 +669,7 @@ Use this extracted content to understand the context and provide a helpful respo
     // Transform and stream the response with reasoning and search results
     return createStreamingResponse(
       response.body!,
-      structuredReasoning,
+      null, // structuredReasoning (deprecated)
       searchResult,
       corsHeaders,
       rateLimitHeaders,

@@ -340,53 +340,14 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
 
       // Start streaming GLM response in background
       (async () => {
-        // Declare ReasoningProvider at outer scope for cleanup in catch block
+        // Declare state variables at outer scope for cleanup and access
         let reasoningProvider: IReasoningProvider | null = null;
+        let incrementalState: IncrementalParseState = createIncrementalParseState();
+        let fullReasoning = "";
+        const accumulatedSteps: Array<{ phase: string; title: string; icon?: string; items: string[] }> = [];
+        let lastEmittedStatus: string | null = null;
 
         try {
-          // Call GLM with streaming enabled
-          const glmResponse = await callGLM(
-            ARTIFACT_SYSTEM_PROMPT,
-            userPrompt,
-            {
-              temperature: 1.0,
-              max_tokens: 16000,
-              requestId,
-              enableThinking: true,
-              stream: true, // Enable SSE streaming from GLM
-            }
-          );
-
-          if (!glmResponse.ok) {
-            const errorText = await glmResponse.text();
-            console.error(`[${requestId}] GLM streaming error (${glmResponse.status}):`, errorText.substring(0, 200));
-            await sendEvent("error", { error: `GLM API error: ${glmResponse.status}`, requestId });
-            await writer.close();
-            return;
-          }
-
-          // ============================================================================
-          // CLAUDE-LIKE STREAMING: Parse reasoning into steps instead of raw chunks
-          // ============================================================================
-          // Instead of streaming raw reasoning_content text (verbose, hard to read),
-          // we incrementally parse it into structured steps and emit them one-by-one.
-          // This provides a clean, Claude-like "Thinking..." experience with discrete
-          // reasoning steps appearing progressively.
-          //
-          // SSE Events (new format):
-          // - reasoning_step: { step: ReasoningStep, currentThinking: string }
-          // - status_update: { status: string } (from [STATUS: ...] markers)
-          // - thinking_update: { currentThinking: string, progress: number }
-          // - reasoning_complete: { reasoning: string, reasoningSteps: StructuredReasoning }
-          // - content_chunk: { chunk: string }
-          // - artifact_complete: { ... }
-          // ============================================================================
-
-          let incrementalState: IncrementalParseState = createIncrementalParseState();
-          let fullReasoning = "";
-          const accumulatedSteps: Array<{ phase: string; title: string; icon?: string; items: string[] }> = [];
-          let lastEmittedStatus: string | null = null; // Track last emitted status to avoid duplicates
-
           // ============================================================================
           // AI SIDECAR: Semantic status updates via ReasoningProvider
           // ============================================================================
@@ -405,7 +366,7 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
             // Only emit if different from last [STATUS:] marker
             if (event.message !== lastEmittedStatus) {
               const source = event.type === 'reasoning_final' ? 'completion' :
-                             event.type === 'reasoning_heartbeat' ? 'heartbeat' : 'reasoning_provider';
+                event.type === 'reasoning_heartbeat' ? 'heartbeat' : 'reasoning_provider';
               const isFinal = event.type === 'reasoning_final';
 
               await sendEvent("status_update", {
@@ -430,8 +391,46 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
               timeoutMs: 2000,
             },
           });
+
           // Start the provider (emits initial status, starts heartbeat timer)
+          // CRITICAL: Start BEFORE callGLM to keep connection alive during queueing
           await reasoningProvider.start();
+
+          // Call GLM with streaming enabled
+          const glmResponse = await callGLM(
+            ARTIFACT_SYSTEM_PROMPT,
+            userPrompt,
+            {
+              temperature: 1.0,
+              max_tokens: 16000,
+              requestId,
+              enableThinking: true,
+              stream: true, // Enable SSE streaming from GLM
+            }
+          );
+
+          if (!glmResponse.ok) {
+            const errorText = await glmResponse.text();
+            console.error(`[${requestId}] GLM streaming error (${glmResponse.status}):`, errorText.substring(0, 200));
+            await sendEvent("error", { error: `GLM API error: ${glmResponse.status}`, requestId });
+
+            // Clean up status provider on error
+            if (reasoningProvider) {
+              reasoningProvider.destroy();
+            }
+
+            await writer.close();
+            return;
+          }
+
+          // ============================================================================
+          // CLAUDE-LIKE STREAMING: Parse reasoning into steps instead of raw chunks
+          // ============================================================================
+          // Instead of streaming raw reasoning_content text (verbose, hard to read),
+          // we incrementally parse it into structured steps and emit them one-by-one.
+          // This provides a clean, Claude-like "Thinking..." experience with discrete
+          // reasoning steps appearing progressively.
+          // ============================================================================
 
           // Unified interface for pushing chunks
           const pushChunk = async (chunk: string) => {
