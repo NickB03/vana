@@ -385,10 +385,11 @@ export function useChatMessages(
         // Match <artifact ...type="image"...>BASE64_DATA</artifact>
         // Handles attributes in any order (type before or after title)
         // Handles both single and double quotes around "image"
-        // Uses [\s\S]*? to match multiline base64 data (non-greedy)
-        // Replace base64 data URLs with a placeholder, keep regular URLs
+        // BUG FIX: Added \s* to handle newlines/whitespace around the data URL
+        // (image artifacts are created with \n around the content at line 1456)
+        // Only replaces base64 data URLs, keeps regular storage URLs untouched
         return content.replace(
-          /<artifact\s+([^>]*?)type=["']image["']([^>]*?)>(data:image\/[\s\S]*?)<\/artifact>/gi,
+          /<artifact\s+([^>]*?)type=["']image["']([^>]*?)>\s*(data:image\/[^<]+)\s*<\/artifact>/gi,
           '<artifact $1type="image"$2>[Image generated - see above]</artifact>'
         );
       };
@@ -1182,7 +1183,11 @@ export function useChatMessages(
         };
       };
 
-      while (true) {
+      // BUG FIX (2025-12-21): Use labeled loop to properly exit when [DONE] is received
+      // Without the label, `break` only exits the inner buffer processing loop,
+      // causing the outer loop to call reader.read() again which can hang if
+      // the server hasn't fully closed the connection yet.
+      streamLoop: while (true) {
         // Check for timeout - use "last data received" to avoid timing out during active streaming
         const timeSinceLastData = Date.now() - lastDataReceivedTime;
         if (timeSinceLastData > CHAT_STREAM_TIMEOUT_MS) {
@@ -1207,7 +1212,7 @@ export function useChatMessages(
           if (!line.startsWith("data: ")) continue;
 
           const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
+          if (jsonStr === "[DONE]") break streamLoop; // CRITICAL: Exit BOTH loops
 
           try {
             const parsed = JSON.parse(jsonStr);
@@ -1388,6 +1393,95 @@ export function useChatMessages(
               continue; // Skip to next event
             }
 
+            // ========================================
+            // ARTIFACT COMPLETE: Handle artifact from tool-calling chat
+            // BUG FIX (2025-12-20): Tool-calling chat emits artifact_complete events
+            // but the chat stream parser was not handling them, causing blank responses.
+            // ========================================
+            if (parsed.type === 'artifact_complete') {
+              const artifactCode = parsed.artifactCode as string;
+              const artifactType = parsed.artifactType as string;
+              const artifactTitle = parsed.artifactTitle as string;
+              const artifactReasoning = parsed.reasoning as string | undefined;
+
+              console.log(`[StreamProgress] Received artifact_complete from tool-calling: type=${artifactType}, length=${artifactCode?.length || 0}`);
+
+              if (artifactCode) {
+                // Map artifact type to MIME type format expected by MessageWithArtifacts
+                const mimeType = artifactType === 'react'
+                  ? 'application/vnd.ant.react'
+                  : `application/vnd.ant.${artifactType}`;
+
+                // Escape special characters in title to prevent XML parsing issues
+                const safeTitle = (artifactTitle || 'Generated Artifact')
+                  .replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;');
+
+                // Wrap artifact in XML tags for MessageWithArtifacts parser
+                const artifactXml = `<artifact type="${mimeType}" title="${safeTitle}">\n${artifactCode}\n</artifact>`;
+
+                // Prepend artifact to response (artifact comes before GLM's continuation text)
+                fullResponse = artifactXml + (fullResponse ? '\n\n' + fullResponse : '');
+                artifactDetected = true;
+                artifactClosed = true;
+
+                // Store reasoning if provided
+                if (artifactReasoning && !reasoningText) {
+                  reasoningText = artifactReasoning;
+                }
+
+                const progress = updateProgress();
+                onDelta('', progress);
+              }
+
+              continue;
+            }
+
+            // ========================================
+            // IMAGE COMPLETE: Handle image from tool-calling chat
+            // BUG FIX (2025-12-20): Same issue as artifact_complete - events were ignored.
+            // ========================================
+            if (parsed.type === 'image_complete') {
+              const imageUrl = parsed.imageUrl as string;
+              const imageData = parsed.imageData as string;
+              const storageSucceeded = parsed.storageSucceeded as boolean;
+
+              console.log(`[StreamProgress] Received image_complete from tool-calling: storage=${storageSucceeded}`);
+
+              // Use storage URL if available, otherwise fall back to base64 data
+              const displayUrl = imageUrl || imageData;
+              if (displayUrl) {
+                // Wrap image in artifact XML tags for MessageWithArtifacts parser
+                const imageXml = `<artifact type="image" title="Generated Image">\n${displayUrl}\n</artifact>`;
+
+                // Prepend image to response
+                fullResponse = imageXml + (fullResponse ? '\n\n' + fullResponse : '');
+                artifactDetected = true;
+                artifactClosed = true;
+
+                console.log(`[StreamProgress] Image added to fullResponse, length=${fullResponse.length}`);
+
+                const progress = updateProgress();
+                onDelta('', progress);
+              } else {
+                // BUG FIX (2025-12-21): If image data is missing but event was received,
+                // still mark response as complete to prevent infinite retry loop
+                console.warn(`[StreamProgress] image_complete event received but no imageUrl or imageData`);
+
+                // Add placeholder to prevent empty response error
+                if (!fullResponse) {
+                  fullResponse = '<artifact type="image" title="Generated Image">\n[Image generation completed but image data unavailable]\n</artifact>';
+                }
+
+                const progress = updateProgress();
+                onDelta('', progress);
+              }
+
+              continue;
+            }
+
             // Support both Gemini and OpenAI formats
             // Gemini: candidates[0].content.parts[0].text
             // OpenAI (legacy): choices[0].delta.content
@@ -1444,7 +1538,31 @@ export function useChatMessages(
       // Save assistant message first, then signal completion
       // This prevents a race condition where streamingMessage is cleared before the saved message appears
       // FIX: Pass reasoningText for fallback display when no structured steps are available
-      await saveMessage("assistant", fullResponse, reasoningText, reasoningSteps, searchResults);
+      // BUG FIX (2025-12-21): Add timeout to prevent indefinite hang if Supabase is slow
+      const SAVE_MESSAGE_TIMEOUT_MS = 10000; // 10 second timeout
+      const savePromise = saveMessage("assistant", fullResponse, reasoningText, reasoningSteps, searchResults);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Message save timeout')), SAVE_MESSAGE_TIMEOUT_MS)
+      );
+
+      try {
+        await Promise.race([savePromise, timeoutPromise]);
+      } catch (saveError) {
+        // If save fails or times out, log but continue - don't let it block completion
+        console.error("[useChatMessages] Message save error (continuing anyway):", saveError);
+        // Optimistically add message to local state in case save failed
+        const tempMessage: ChatMessage = {
+          id: crypto.randomUUID(),
+          session_id: sessionId || 'guest',
+          role: 'assistant',
+          content: fullResponse,
+          reasoning: reasoningText || null,
+          reasoning_steps: reasoningSteps,
+          search_results: searchResults || null,
+          created_at: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, tempMessage]);
+      }
 
       // Clear streaming state synchronously to prevent race condition
       flushSync(() => {
