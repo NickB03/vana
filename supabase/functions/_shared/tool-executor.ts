@@ -606,6 +606,62 @@ async function executeImageTool(
 }
 
 /**
+ * Get the content string for a tool result to send back to GLM.
+ *
+ * RFC-001: Tool Result Format Refactor
+ *
+ * This function replaces the unused formatResultForGLM() function and fixes
+ * the bug where artifact/image tools fell back to "Tool execution failed".
+ *
+ * The returned content is plain text (not XML) and will be used in the
+ * OpenAI-compatible tool message format:
+ * ```json
+ * {
+ *   "role": "tool",
+ *   "tool_call_id": "call_abc123",
+ *   "content": "<returned by this function>"
+ * }
+ * ```
+ *
+ * @param result - The tool execution result
+ * @returns Content string suitable for GLM tool message
+ */
+export function getToolResultContent(result: ToolExecutionResult): string {
+  // Handle errors first
+  if (!result.success) {
+    return `Error: ${result.error || 'Unknown error occurred'}`;
+  }
+
+  switch (result.toolName) {
+    case 'browser.search':
+      return result.data?.formattedContext || 'No search results found';
+
+    case 'generate_artifact': {
+      const code = result.data?.artifactCode || '';
+      const reasoning = result.data?.artifactReasoning || '';
+      let content = `Artifact generated successfully:\n\n${code}`;
+      if (reasoning) {
+        content += `\n\nReasoning:\n${reasoning}`;
+      }
+      return content;
+    }
+
+    case 'generate_image': {
+      const url = result.data?.imageUrl || '';
+      const stored = result.data?.storageSucceeded;
+      return `Image generated successfully!\n\nImage URL: ${url}\n\nStorage Status: ${stored ? 'Successfully stored' : 'Using temporary base64 URL'}`;
+    }
+
+    default:
+      return result.data?.formattedContext || 'Tool completed successfully';
+  }
+}
+
+/**
+ * @deprecated Use getToolResultContent() instead. This function is retained
+ * for backward compatibility but its output is only used for logging.
+ * RFC-001: Tool Result Format Refactor
+ *
  * Format tool execution result for GLM's expected format
  *
  * GLM expects tool results in the following format:

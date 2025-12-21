@@ -207,6 +207,9 @@ export function useChatMessages(
 
   // Persist guest messages to localStorage after state updates (prevent setState-during-render warning)
   // This effect runs AFTER render phase, not during it
+  // NOTE: guestSession is NOT in dependencies to prevent infinite re-render loop
+  // (guestSession object reference changes on every parent render, causing effect re-run)
+  // We only care about messages and isGuest changes, not guestSession reference stability
   useEffect(() => {
     if (isGuest && guestSession && messages.length > 0) {
       try {
@@ -216,7 +219,7 @@ export function useChatMessages(
         console.error("Failed to persist guest messages after render:", error);
       }
     }
-  }, [messages, isGuest, guestSession]);
+  }, [messages, isGuest]);
 
   // Listen for artifact render completion messages
   useEffect(() => {

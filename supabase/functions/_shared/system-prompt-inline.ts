@@ -60,15 +60,7 @@ Search the web for current, real-time information.
 - Remove filler ("can you", "please")
 - Include year for time-sensitive topics (e.g., "AI news ${getCurrentYear()}")
 
-After using a tool, **wait** for the system to provide results. Results will appear as:
-<tool_result>
-  <tool_call_id>123</tool_call_id>
-  <name>browser.search</name>
-  <status>success</status>
-  <result>
-[Search results with URLs]
-  </result>
-</tool_result>
+After using a tool, **wait** for the system to provide results. The results will be injected as a tool message that you can reference directly in your response. Focus on synthesizing the information helpfully for the user.
 
 **AFTER RECEIVING RESULTS - CITATION REQUIREMENTS:**
 

@@ -77,7 +77,43 @@ export interface CallGLMOptions {
   enableThinking?: boolean;
   stream?: boolean; // Enable SSE streaming
   tools?: GLMToolDefinition[]; // Tool definitions for function calling
-  toolResultContext?: string; // Injected tool results for continuation
+  /**
+   * Tool result to inject for continuation after tool execution.
+   *
+   * RFC-001: Tool Result Format Refactor
+   * Changed from string (XML) to structured object (OpenAI-compatible).
+   *
+   * NOTE: Currently supports single tool result only.
+   * Multiple tool calls are logged with warning and only first is processed.
+   * See tool-calling-chat.ts for multi-tool handling.
+   *
+   * @see https://docs.z.ai/api-reference/llm/chat-completion for format spec
+   */
+  toolResultContext?: {
+    toolCallId: string;
+    toolName: string;
+    content: string;
+  };
+  /**
+   * The assistant's previous response with tool_calls (for continuations after tool execution).
+   *
+   * BUG FIX (2025-12-20): When continuing after a tool call, GLM needs the complete conversation
+   * flow including the assistant's tool_calls message. Without this, GLM has no context for
+   * the tool result and returns blank responses.
+   *
+   * Message flow must be:
+   * 1. system message
+   * 2. user message
+   * 3. assistant message with tool_calls ◄── THIS WAS MISSING
+   * 4. tool message with results
+   * 5. (GLM continues here)
+   *
+   * @see https://platform.openai.com/docs/guides/function-calling
+   */
+  previousAssistantMessage?: {
+    content: string | null;
+    tool_calls?: NativeToolCall[];
+  };
   timeoutMs?: number; // Request timeout in milliseconds (default: 60000 for non-streaming, 120000 for streaming)
 }
 
@@ -197,6 +233,7 @@ export async function callGLM(
     stream = false, // Streaming disabled by default for backward compatibility
     tools,
     toolResultContext,
+    previousAssistantMessage,
     timeoutMs
   } = options || {};
 
@@ -215,16 +252,59 @@ export async function callGLM(
     { role: "user", content: userPrompt }
   ];
 
+  // BUG FIX (2025-12-20): If continuing after a tool call, inject the assistant's tool_calls message
+  // This is critical for GLM to understand the context of the tool result.
+  // Without this, GLM has no reference for what tool was called and returns blank responses.
+  if (previousAssistantMessage) {
+    const assistantMessage: any = {
+      role: "assistant",
+      content: previousAssistantMessage.content || null
+    };
+
+    // Include tool_calls if they exist
+    // IMPORTANT: Must add type: "function" - GLM requires full OpenAI format
+    if (previousAssistantMessage.tool_calls && previousAssistantMessage.tool_calls.length > 0) {
+      assistantMessage.tool_calls = previousAssistantMessage.tool_calls.map(tc => ({
+        id: tc.id,
+        type: "function",  // Required by GLM - error 1214 "Tool type cannot be empty" without this
+        function: tc.function
+      }));
+      console.log(
+        `[${requestId}] 🔧 Assistant message with tool_calls injected: ${previousAssistantMessage.tool_calls.length} tool(s)`
+      );
+    }
+
+    messages.push(assistantMessage);
+  }
+
   // If tool result context is provided, inject it as a tool message
+  // RFC-001: Now using OpenAI-compatible format instead of XML
+  // BUG FIX: This now comes AFTER the assistant's tool_calls message (see above)
   if (toolResultContext) {
     messages.push({
       role: "tool",
-      content: toolResultContext
+      tool_call_id: toolResultContext.toolCallId,
+      // NOTE: 'name' field omitted - not part of OpenAI spec, though GLM accepts it
+      content: toolResultContext.content
     });
-    console.log(`[${requestId}] 🔧 Tool result context injected (${toolResultContext.length} chars)`);
+    console.log(
+      `[${requestId}] 🔧 Tool result injected: ${toolResultContext.toolName} ` +
+      `(call_id: ${toolResultContext.toolCallId}, ${toolResultContext.content.length} chars)`
+    );
   }
 
   console.log(`[${requestId}] 🤖 Routing to GLM-4.6 via Z.ai API (thinking: ${enableThinking}, stream: ${stream})`);
+
+  // DEBUG: Log message array structure for troubleshooting 400 errors
+  console.log(`[${requestId}] 📨 Messages array (${messages.length} messages):`,
+    JSON.stringify(messages.map(m => ({
+      role: m.role,
+      hasContent: !!m.content,
+      contentLength: typeof m.content === 'string' ? m.content.length : 0,
+      hasToolCalls: !!(m as any).tool_calls,
+      toolCallId: (m as any).tool_call_id
+    })), null, 2)
+  );
 
   // Create AbortController for timeout protection
   // Streaming requests get longer timeout since they need to process full response
@@ -873,12 +953,17 @@ export async function processGLMStream(
  * Continue GLM conversation after tool execution
  * Injects tool results and resumes streaming for final response
  *
+ * BUG FIX (2025-12-20): This function now requires previousAssistantToolCalls to properly
+ * reconstruct the conversation history. Without the assistant's original tool_calls message,
+ * GLM has no context for the tool result and returns blank responses.
+ *
  * @param originalSystemPrompt - Original system prompt (without tool definitions)
  * @param originalUserPrompt - Original user prompt
  * @param toolCall - The tool call that was executed
  * @param toolResult - The result from tool execution
  * @param callbacks - Callbacks for handling streaming chunks
  * @param options - Call options (temperature, requestId, etc.)
+ * @param previousAssistantToolCalls - The NativeToolCall array from the assistant's initial response (REQUIRED for fix)
  * @returns Promise with reasoning and final content
  *
  * @example
@@ -893,7 +978,8 @@ export async function processGLMStream(
  *   toolCall,
  *   toolResultText,
  *   { onContentChunk: (chunk) => streamToClient(chunk) },
- *   { requestId, stream: true, tools: [GLM_SEARCH_TOOL] }
+ *   { requestId, stream: true, tools: [GLM_SEARCH_TOOL] },
+ *   [{ id: "call_123", function: { name: "browser.search", arguments: "..." } }]  // From processGLMStream
  * );
  * ```
  */
@@ -903,25 +989,30 @@ export async function callGLMWithToolResult(
   toolCall: ToolCall,
   toolResult: string,
   callbacks: GLMStreamCallbacks,
-  options?: CallGLMOptions
+  options?: CallGLMOptions,
+  previousAssistantToolCalls?: NativeToolCall[]
 ): Promise<{ reasoning: string; content: string }> {
   const requestId = options?.requestId || crypto.randomUUID();
   const logPrefix = `[${requestId}]`;
 
-  // Format tool result as XML for context
-  const toolResultContext = `
-<tool_result>
-  <tool_call_id>${toolCall.id}</tool_call_id>
-  <name>${toolCall.name}</name>
-  <status>success</status>
-  <result>
-${toolResult}
-  </result>
-</tool_result>
+  // RFC-001: Use OpenAI-compatible structured format instead of XML
+  // The toolResult is plain text content from getToolResultContent()
+  const toolResultContext = {
+    toolCallId: toolCall.id || `fallback_${Date.now()}`,
+    toolName: toolCall.name || 'unknown_tool',
+    content: toolResult  // Plain text from caller
+  };
 
-Use the above tool result to answer the user's original question. Provide a complete, helpful response based on this information.`;
+  console.log(`${logPrefix} 🔧 Continuing with tool result: ${toolCall.name} (${toolResult.length} chars)`);
 
-  console.log(`${logPrefix} 🔧 Continuing with tool result (${toolResult.length} chars)`);
+  // BUG FIX (2025-12-20): Include the assistant's tool_calls in the continuation
+  // This provides GLM with the context it needs to synthesize a response
+  const previousAssistantMessage = previousAssistantToolCalls && previousAssistantToolCalls.length > 0
+    ? {
+      content: null,  // No content when calling tools
+      tool_calls: previousAssistantToolCalls
+    }
+    : undefined;
 
   // Call GLM with tool result context
   const response = await callGLMWithRetry(
@@ -931,11 +1022,15 @@ Use the above tool result to answer the user's original question. Provide a comp
       ...options,
       requestId,
       stream: true, // Always stream for tool continuations
-      toolResultContext
+      toolResultContext,
+      previousAssistantMessage  // BUG FIX: Pass the assistant's original tool_calls
     }
   );
 
   if (!response.ok) {
+    // DEBUG: Log error response body to understand what GLM is rejecting
+    const errorBody = await response.text();
+    console.error(`[${requestId}] ❌ GLM API error body:`, errorBody);
     throw new Error(`GLM API error: ${response.status} ${response.statusText}`);
   }
 

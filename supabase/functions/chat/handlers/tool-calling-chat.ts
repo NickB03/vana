@@ -33,7 +33,7 @@ import {
 } from '../../_shared/glm-client.ts';
 import {
   executeTool,
-  formatResultForGLM,
+  getToolResultContent,
   type ToolContext,
 } from '../../_shared/tool-executor.ts';
 import {
@@ -486,24 +486,28 @@ export async function handleToolCallingChat(
           // STEP 4: Continue GLM with tool results
           // ========================================
           if (toolResult.success) {
-            const formattedResult = formatResultForGLM(
-              toolCallForExecution,
-              toolResult
-            );
+            // RFC-001: Use getToolResultContent which handles ALL tool types correctly
+            // This fixes the bug where artifact/image tools fell back to "Tool execution failed"
+            const resultContent = getToolResultContent(toolResult);
 
             console.log(
-              `${logPrefix} 🔧 Continuing GLM with tool result (${formattedResult.length} chars)`
+              `${logPrefix} 🔧 Continuing GLM with tool result: ${toolResult.toolName} (${resultContent.length} chars)`
             );
 
             // Track continuation reasoning for status markers
             let continuationReasoningText = '';
+
+            // BUG FIX (2025-12-20): Pass the assistant's tool_calls to the continuation
+            // This ensures GLM has the proper conversation context and returns a real response
+            // instead of a blank response
+            const previousAssistantToolCalls = streamResult.nativeToolCalls || [];
 
             // Call GLM again with tool results
             await callGLMWithToolResult(
               finalSystemPrompt,
               userPrompt,
               toolCallForExecution,
-              toolResult.data?.formattedContext || 'Tool execution failed',
+              resultContent,  // FIX: Now works for all tool types!
               {
                 onReasoningChunk: async (chunk: string) => {
                   // Accumulate reasoning for status marker parsing
@@ -550,7 +554,8 @@ export async function handleToolCallingChat(
                 stream: true,
                 enableThinking: true,
                 tools: allTools,
-              }
+              },
+              previousAssistantToolCalls  // BUG FIX: Pass tool_calls for context!
             );
 
             console.log(
