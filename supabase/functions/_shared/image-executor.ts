@@ -55,7 +55,7 @@ const MAX_BASE64_SIZE = 10 * 1024 * 1024;
 /** API request timeout in milliseconds (45s) */
 const API_TIMEOUT_MS = 45000;
 
-/** Whitelist of allowed image MIME types */
+/** Whitelist of allowed image MIME types for base64 data URLs */
 const ALLOWED_IMAGE_TYPES = [
   'data:image/png;base64,',
   'data:image/jpeg;base64,',
@@ -63,6 +63,45 @@ const ALLOWED_IMAGE_TYPES = [
   'data:image/webp;base64,',
   'data:image/gif;base64,',
 ] as const;
+
+/**
+ * Check if a string is an HTTP/HTTPS URL
+ */
+function isHttpUrl(url: string): boolean {
+  return url.startsWith('http://') || url.startsWith('https://');
+}
+
+/**
+ * Fetch an image from a URL and convert to base64 data URL
+ * Used to convert storage URLs to the format required by OpenRouter
+ *
+ * @param imageUrl - HTTP/HTTPS URL of the image
+ * @param requestId - Request ID for logging
+ * @returns Base64 data URL (e.g., data:image/png;base64,...)
+ */
+async function fetchImageAsBase64(imageUrl: string, requestId: string): Promise<string> {
+  console.log(`[${requestId}] 📥 Fetching image from URL for edit mode...`);
+
+  const response = await fetch(imageUrl, {
+    signal: AbortSignal.timeout(10000), // 10 second timeout for image fetch
+  });
+
+  if (!response.ok) {
+    throw new ImageExecutionError(
+      `Failed to fetch base image: ${response.status} ${response.statusText}`,
+      ErrorCode.INVALID_INPUT,
+      requestId
+    );
+  }
+
+  const contentType = response.headers.get('content-type') || 'image/png';
+  const arrayBuffer = await response.arrayBuffer();
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+
+  console.log(`[${requestId}] ✅ Image fetched and converted to base64 (${Math.round(base64.length / 1024)}KB)`);
+
+  return `data:${contentType};base64,${base64}`;
+}
 
 // Fallback to FLASH key for local development where IMAGE key might not be set
 const OPENROUTER_GEMINI_IMAGE_KEY = Deno.env.get("OPENROUTER_GEMINI_IMAGE_KEY")
@@ -258,36 +297,42 @@ function validateParams(params: ImageExecutorParams, safeRequestId: string): voi
       );
     }
 
-    // SECURITY: Validate MIME type whitelist
-    const isValidType = ALLOWED_IMAGE_TYPES.some(type =>
+    // Check if it's an HTTP URL (storage URL) - will be converted to base64 later
+    const isUrlImage = isHttpUrl(baseImage);
+
+    // SECURITY: Validate MIME type whitelist for base64 data URLs
+    const isValidDataUrl = ALLOWED_IMAGE_TYPES.some(type =>
       baseImage.toLowerCase().startsWith(type)
     );
 
-    if (!isValidType) {
+    if (!isUrlImage && !isValidDataUrl) {
       throw new ImageExecutionError(
-        "Base image must be PNG, JPEG, WebP, or GIF format",
+        "Base image must be a valid image URL or PNG, JPEG, WebP, or GIF data URL",
         ErrorCode.INVALID_INPUT,
         safeRequestId
       );
     }
 
-    // SECURITY: Validate base64 size to prevent DoS
-    if (baseImage.length > MAX_BASE64_SIZE) {
-      throw new ImageExecutionError(
-        `Base image too large (max ${MAX_BASE64_SIZE / 1024 / 1024}MB)`,
-        ErrorCode.INVALID_INPUT,
-        safeRequestId
-      );
-    }
+    // Only validate size and structure for base64 data URLs, not HTTP URLs
+    if (!isUrlImage) {
+      // SECURITY: Validate base64 size to prevent DoS
+      if (baseImage.length > MAX_BASE64_SIZE) {
+        throw new ImageExecutionError(
+          `Base image too large (max ${MAX_BASE64_SIZE / 1024 / 1024}MB)`,
+          ErrorCode.INVALID_INPUT,
+          safeRequestId
+        );
+      }
 
-    // SECURITY: Validate base64 structure
-    const base64Part = baseImage.split(',')[1];
-    if (!base64Part || !/^[A-Za-z0-9+/=]+$/.test(base64Part.substring(0, 100))) {
-      throw new ImageExecutionError(
-        "Invalid base64 image data",
-        ErrorCode.INVALID_INPUT,
-        safeRequestId
-      );
+      // SECURITY: Validate base64 structure
+      const base64Part = baseImage.split(',')[1];
+      if (!base64Part || !/^[A-Za-z0-9+/=]+$/.test(base64Part.substring(0, 100))) {
+        throw new ImageExecutionError(
+          "Invalid base64 image data",
+          ErrorCode.INVALID_INPUT,
+          safeRequestId
+        );
+      }
     }
   }
 }
@@ -473,8 +518,25 @@ export async function executeImageGeneration(
       );
     }
 
+    // Convert HTTP URL to base64 if needed (for edit mode with storage URLs)
+    let processedBaseImage = baseImage;
+    if (mode === "edit" && baseImage && isHttpUrl(baseImage)) {
+      try {
+        processedBaseImage = await fetchImageAsBase64(baseImage, safeRequestId);
+      } catch (fetchError) {
+        console.error(`[${safeRequestId}] ❌ Failed to fetch base image:`, fetchError);
+        throw new ImageExecutionError(
+          fetchError instanceof ImageExecutionError
+            ? fetchError.message
+            : `Failed to fetch base image from URL: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`,
+          ErrorCode.INVALID_INPUT,
+          safeRequestId
+        );
+      }
+    }
+
     // Build OpenRouter message format
-    const messages = buildMessages(prompt, mode, baseImage);
+    const messages = buildMessages(prompt, mode, processedBaseImage);
 
     // Call OpenRouter Gemini Flash Image API with timeout
     console.log(`[${safeRequestId}] 🎨 Calling OpenRouter (${MODELS.GEMINI_FLASH_IMAGE})`);

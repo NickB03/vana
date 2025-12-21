@@ -8,6 +8,40 @@ const MAX_STORED_MESSAGES = 50; // Maximum messages to store in localStorage
 const SESSION_DURATION = 5 * 60 * 60 * 1000; // 5 hours (updated from 24)
 const WARNING_THRESHOLD = 0.75; // Show warning at 75% (15/20 messages)
 
+/**
+ * Sanitizes messages before localStorage storage by stripping base64 image data.
+ * Base64 images can be 1-2MB each, quickly exceeding the ~5MB localStorage limit.
+ * Replaces inline data URLs with a placeholder that preserves context.
+ *
+ * Pattern matches: <artifact type="image" title="...">data:image/...BASE64...</artifact>
+ * Also handles standalone data:image URLs not wrapped in artifact tags.
+ */
+function sanitizeMessagesForStorage(messages: ChatMessage[]): ChatMessage[] {
+  return messages.map(msg => {
+    if (typeof msg.content !== 'string') return msg;
+
+    // Pattern 1: <artifact type="image"...>data:image/...</artifact>
+    // Handles attributes in any order (type before or after title)
+    let sanitizedContent = msg.content.replace(
+      /<artifact\s+([^>]*?)type=["']image["']([^>]*?)>(data:image\/[^<]+)<\/artifact>/gi,
+      '<artifact $1type="image"$2>[Image data removed for storage - regenerate if needed]</artifact>'
+    );
+
+    // Pattern 2: Standalone data:image URLs (not in artifact tags)
+    // These can appear in messages when storage upload fails
+    sanitizedContent = sanitizedContent.replace(
+      /data:image\/[a-zA-Z]+;base64,[A-Za-z0-9+/=]{1000,}/g,
+      '[Image data removed for storage]'
+    );
+
+    // Only create new object if content changed (optimization)
+    if (sanitizedContent !== msg.content) {
+      return { ...msg, content: sanitizedContent };
+    }
+    return msg;
+  });
+}
+
 export interface GuestSession {
   id: string;
   messageCount: number;
@@ -69,22 +103,28 @@ export const useGuestSession = (isAuthenticated: boolean): GuestSessionReturn =>
 
   /**
    * Helper function to save messages to localStorage with error handling and size limits
+   * Sanitizes base64 image data before storage to prevent quota issues
    */
   const saveMessagesToStorage = useCallback((messages: ChatMessage[]): boolean => {
     try {
       // Limit the number of stored messages to prevent localStorage overflow
       const limitedMessages = messages.slice(-MAX_STORED_MESSAGES);
 
+      // CRITICAL: Sanitize base64 image data before storage
+      // Base64 images can be 1-2MB each, quickly exceeding the 5MB localStorage limit
+      // Storage URLs are preserved (they're small), only data URLs are replaced
+      const sanitizedMessages = sanitizeMessagesForStorage(limitedMessages);
+
       // Try to save to localStorage
-      localStorage.setItem(GUEST_MESSAGES_KEY, JSON.stringify(limitedMessages));
+      localStorage.setItem(GUEST_MESSAGES_KEY, JSON.stringify(sanitizedMessages));
       return true;
     } catch (error) {
       if (error instanceof DOMException) {
         if (error.name === "QuotaExceededError") {
           console.warn("localStorage quota exceeded while saving messages. Keeping only the most recent messages.");
-          // Try again with a smaller batch
+          // Try again with a smaller batch (already sanitized)
           try {
-            const reducedMessages = messages.slice(-Math.floor(MAX_STORED_MESSAGES / 2));
+            const reducedMessages = sanitizeMessagesForStorage(messages.slice(-Math.floor(MAX_STORED_MESSAGES / 2)));
             localStorage.setItem(GUEST_MESSAGES_KEY, JSON.stringify(reducedMessages));
             return true;
           } catch (fallbackError) {
