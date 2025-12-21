@@ -108,11 +108,25 @@ export const TOOL_CATALOG = {
 
   generate_image: {
     name: 'generate_image',
-    description: 'Generate images using AI based on text prompts. Use this tool when the user requests photos, illustrations, artwork, or visual designs.',
+    description: `Generate or edit images using AI. Supports two modes:
+- GENERATE: Create new images from text descriptions
+- EDIT: Modify existing images (remove objects, change colors, add elements, etc.)
+
+For EDIT mode: Set mode="edit" and include baseImage with the URL of the image to modify. The baseImage URL can be found in the previous assistant message that generated the image.`,
     parameters: {
       prompt: {
         type: 'string',
-        description: 'Detailed description of the image to generate. Be specific about style, colors, composition, and subject matter.',
+        description: 'For generate mode: Detailed description of the image to create. For edit mode: Description of the changes to make (e.g., "remove the chair", "make the sky more blue", "add a sunset in the background").',
+      },
+      mode: {
+        type: 'string',
+        description: 'Operation mode. Use "generate" for new images, "edit" when modifying a previously generated image.',
+        enum: ['generate', 'edit'],
+        default: 'generate',
+      },
+      baseImage: {
+        type: 'string',
+        description: 'Required for edit mode. The URL or base64 data of the image to modify. Find this in the previous image_complete event or assistant message.',
       },
       aspectRatio: {
         type: 'string',

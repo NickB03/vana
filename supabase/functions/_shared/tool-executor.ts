@@ -647,9 +647,28 @@ export function getToolResultContent(result: ToolExecutionResult): string {
     }
 
     case 'generate_image': {
+      // BUG FIX (2025-12-21): Do NOT include base64 data URLs in tool result
+      // When storage fails, imageUrl contains 2MB+ of base64 data which overwhelms GLM.
+      // The client already received the image via image_complete event.
       const url = result.data?.imageUrl || '';
       const stored = result.data?.storageSucceeded;
-      return `Image generated successfully!\n\nImage URL: ${url}\n\nStorage Status: ${stored ? 'Successfully stored' : 'Using temporary base64 URL'}`;
+
+      // Only include URL if it's a real storage URL (not base64)
+      const isBase64 = url.startsWith('data:');
+
+      if (stored && !isBase64) {
+        // Storage succeeded - include URL for potential edit operations
+        return `Image generated successfully!
+
+Image URL: ${url}
+
+IMPORTANT: If the user wants to modify this image later, use generate_image with mode="edit" and baseImage="${url}"`;
+      } else {
+        // Storage failed - edit mode won't work without a persistent URL
+        return `Image generated successfully! The image is displayed to the user.
+
+Note: This image was rendered directly (temporary). If the user wants to edit it, a new image will need to be generated instead since the original isn't stored.`;
+      }
     }
 
     default:
@@ -743,10 +762,18 @@ Error: ${errorMsg}
     case 'generate_image': {
       // NOTE: Content is sanitized once at line 709 (sanitizeXmlValue call)
       // Do NOT sanitize here to avoid double-escaping
+      // BUG FIX (2025-12-21): Do NOT include base64 data URLs (can be 2MB+)
       const imageUrl = result.data?.imageUrl || '';
       const storageSucceeded = result.data?.storageSucceeded ?? false;
 
-      content = `Image generated successfully!\n\nImage URL: ${imageUrl}\n\nStorage Status: ${storageSucceeded ? 'Successfully stored' : 'Using temporary base64 URL'}`;
+      // Only include URL if it's a real storage URL (not base64)
+      const isBase64 = imageUrl.startsWith('data:');
+
+      if (storageSucceeded && !isBase64) {
+        content = `Image generated successfully!\n\nImage URL: ${imageUrl}\n\nIMPORTANT: For edits, use mode="edit" and baseImage="${imageUrl}"`;
+      } else {
+        content = `Image generated successfully! (displayed directly to user - edit mode unavailable for temporary images)`;
+      }
       break;
     }
 

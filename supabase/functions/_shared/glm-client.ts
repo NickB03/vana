@@ -115,6 +115,25 @@ export interface CallGLMOptions {
     tool_calls?: NativeToolCall[];
   };
   timeoutMs?: number; // Request timeout in milliseconds (default: 60000 for non-streaming, 120000 for streaming)
+  /**
+   * Full conversation history for multi-turn context preservation.
+   *
+   * BUG FIX (2025-12-20): Tool-calling chat was filtering messages to user-only,
+   * losing assistant responses (including artifacts). This caused follow-up
+   * modification requests to fail with blank responses.
+   *
+   * When provided, this takes precedence over the single systemPrompt + userPrompt
+   * pattern. The first message should be a system message if system context is needed.
+   *
+   * @example
+   * conversationMessages: [
+   *   { role: 'system', content: 'You are a helpful assistant...' },
+   *   { role: 'user', content: 'Create a counter' },
+   *   { role: 'assistant', content: '<artifact>...counter code...</artifact>' },
+   *   { role: 'user', content: 'Add a reset button' }
+   * ]
+   */
+  conversationMessages?: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
 }
 
 export interface RetryResult {
@@ -234,7 +253,8 @@ export async function callGLM(
     tools,
     toolResultContext,
     previousAssistantMessage,
-    timeoutMs
+    timeoutMs,
+    conversationMessages
   } = options || {};
 
   if (!GLM_API_KEY) {
@@ -247,10 +267,31 @@ export async function callGLM(
   }
 
   // Build messages array
-  const messages: GLMMessage[] = [
-    { role: "system", content: systemPrompt },
-    { role: "user", content: userPrompt }
-  ];
+  // BUG FIX (2025-12-20): Support full conversation history for multi-turn context preservation
+  // When conversationMessages is provided, it takes precedence and includes the full conversation
+  // including assistant responses (with artifacts). This fixes blank responses on follow-up requests.
+  let messages: GLMMessage[];
+
+  if (conversationMessages && conversationMessages.length > 0) {
+    // Multi-turn conversation mode - use provided messages
+    // First message should be system if system context is needed
+    messages = conversationMessages.map(m => ({
+      role: m.role,
+      content: m.content
+    })) as GLMMessage[];
+
+    console.log(
+      `[${requestId}] 📝 Using conversation history: ${messages.length} messages ` +
+      `(${messages.filter(m => m.role === 'user').length} user, ` +
+      `${messages.filter(m => m.role === 'assistant').length} assistant)`
+    );
+  } else {
+    // Legacy single-turn mode - system + user prompt
+    messages = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt }
+    ];
+  }
 
   // BUG FIX (2025-12-20): If continuing after a tool call, inject the assistant's tool_calls message
   // This is critical for GLM to understand the context of the tool result.

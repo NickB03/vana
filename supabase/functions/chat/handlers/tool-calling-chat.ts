@@ -200,7 +200,20 @@ export async function handleToolCallingChat(
   // Add mode hint to bias tool selection
   finalSystemPrompt += buildModeHintPrompt(modeHint);
 
-  // Build user prompt from messages (combine all user messages)
+  // BUG FIX (2025-12-20): Build full conversation history instead of filtering to user-only
+  // The previous implementation discarded assistant messages (including artifacts),
+  // causing follow-up modification requests to fail with blank responses.
+  // Now we preserve the complete conversation for multi-turn context.
+  const conversationMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    { role: 'system', content: finalSystemPrompt },
+    ...messages.map(m => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content
+    }))
+  ];
+
+  // Keep userPrompt for backward compatibility with tool continuations
+  // (callGLMWithToolResult still uses it as fallback)
   const userPrompt = messages
     .filter((m) => m.role === 'user')
     .map((m) => m.content)
@@ -263,6 +276,8 @@ export async function handleToolCallingChat(
             tools: allTools,
             temperature: 0.7,
             max_tokens: 8000,
+            // BUG FIX: Pass full conversation history for multi-turn context
+            conversationMessages,
           }
         );
 
@@ -502,8 +517,12 @@ export async function handleToolCallingChat(
             // instead of a blank response
             const previousAssistantToolCalls = streamResult.nativeToolCalls || [];
 
-            // Call GLM again with tool results
-            await callGLMWithToolResult(
+            // BUG FIX (2025-12-21): Wrap GLM continuation in a timeout as safety measure
+            // If continuation hangs for 90s (beyond GLM's internal 60s chunk timeout),
+            // we still ensure the stream completes rather than hanging indefinitely.
+            const GLM_CONTINUATION_TIMEOUT_MS = 90000; // 90 seconds
+
+            const continuationPromise = callGLMWithToolResult(
               finalSystemPrompt,
               userPrompt,
               toolCallForExecution,
@@ -554,9 +573,23 @@ export async function handleToolCallingChat(
                 stream: true,
                 enableThinking: true,
                 tools: allTools,
+                // BUG FIX: Pass full conversation history for tool continuation context
+                conversationMessages,
               },
               previousAssistantToolCalls  // BUG FIX: Pass tool_calls for context!
             );
+
+            const timeoutPromise = new Promise<never>((_, reject) => {
+              setTimeout(() => reject(new Error('GLM continuation timeout')), GLM_CONTINUATION_TIMEOUT_MS);
+            });
+
+            try {
+              await Promise.race([continuationPromise, timeoutPromise]);
+            } catch (continuationError) {
+              // Log the error but continue to [DONE] - don't let continuation issues block stream completion
+              console.error(`${logPrefix} ❌ GLM continuation failed/timeout:`, continuationError);
+              sendContentChunk('\n\n(The response was interrupted. Please try again if incomplete.)');
+            }
 
             console.log(
               `${logPrefix} ✅ Tool-calling chat complete with continuation`
