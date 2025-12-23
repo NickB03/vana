@@ -27,10 +27,11 @@ import {
 import { MODELS } from "../_shared/config.ts";
 import { selectContext, extractEntities } from "../_shared/context-selector.ts";
 import { calculateContextBudget } from "../_shared/token-counter.ts";
-import {
-  validateArtifactRequest,
-  generateGuidanceFromValidation,
-} from "./artifact-validator.ts";
+// Artifact validation functions removed during cleanup
+// import {
+//   validateArtifactRequest,
+//   generateGuidanceFromValidation,
+// } from "../_shared/artifact-validator.ts";
 
 serve(async (req) => {
   const origin = req.headers.get("Origin");
@@ -276,16 +277,8 @@ serve(async (req) => {
         }
       }
 
-      // Validate artifact request for potential import issues
+      // Artifact validation removed during cleanup - functionality moved to tool-calling system
       let artifactGuidance = "";
-      if (lastUserMessage) {
-        const validation = validateArtifactRequest(lastUserMessage.content);
-        if (!validation.isValid) {
-          const validationGuidance = generateGuidanceFromValidation(validation);
-          artifactGuidance = validationGuidance;
-          console.log("Artifact validation warnings:", validation.warnings);
-        }
-      }
 
       // Add artifact editing context if provided
       let artifactContext = "";

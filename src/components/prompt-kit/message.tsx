@@ -3,7 +3,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-import { Markdown } from "./markdown"
+import { Markdown } from "@/components/ui/markdown"
 
 interface MessageProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode

@@ -37,7 +37,7 @@ Deno.test('countTokens - estimates tokens for longer text', () => {
 
 Deno.test('MODEL_BUDGETS - contains expected models', () => {
   assertExists(MODEL_BUDGETS[MODELS.GEMINI_FLASH]);
-  assertExists(MODEL_BUDGETS[MODELS.KIMI_K2]);
+  assertExists(MODEL_BUDGETS[MODELS.GLM_4_6]);
 });
 
 Deno.test('MODEL_BUDGETS - GEMINI_FLASH has correct configuration', () => {
@@ -48,11 +48,11 @@ Deno.test('MODEL_BUDGETS - GEMINI_FLASH has correct configuration', () => {
   assertEquals(budget.safetyMargin, 0.1);
 });
 
-Deno.test('MODEL_BUDGETS - KIMI_K2 has correct configuration', () => {
-  const budget = MODEL_BUDGETS[MODELS.KIMI_K2];
-  assertEquals(budget.model, MODELS.KIMI_K2);
+Deno.test('MODEL_BUDGETS - GLM_4_6 has correct configuration', () => {
+  const budget = MODEL_BUDGETS[MODELS.GLM_4_6];
+  assertEquals(budget.model, MODELS.GLM_4_6);
   assertEquals(budget.maxContextTokens, 128000);
-  assertEquals(budget.reservedForResponse, 8192);
+  assertEquals(budget.reservedForResponse, 8000);
   assertEquals(budget.safetyMargin, 0.15);
 });
 
@@ -62,10 +62,10 @@ Deno.test('calculateContextBudget - calculates available tokens for GEMINI_FLASH
   assertEquals(available, 111104);
 });
 
-Deno.test('calculateContextBudget - calculates available tokens for KIMI_K2', () => {
-  const available = calculateContextBudget(MODELS.KIMI_K2);
-  // 128000 - 8192 - (128000 * 0.15) = 128000 - 8192 - 19200 = 100608
-  assertEquals(available, 100608);
+Deno.test('calculateContextBudget - calculates available tokens for GLM_4_6', () => {
+  const available = calculateContextBudget(MODELS.GLM_4_6);
+  // 128000 - 8000 - (128000 * 0.15) = 128000 - 8000 - 19200 = 100800
+  assertEquals(available, 100800);
 });
 
 Deno.test('calculateContextBudget - throws error for unknown model', () => {

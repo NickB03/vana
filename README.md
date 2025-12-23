@@ -92,9 +92,9 @@
 - 🔄 **State Machine Architecture**: Conversation state tracking in `_shared/state-machine.ts`
 - ⚡ **692 Tests**: Expanded test coverage from 432 to 692 tests
 
-**November 17, 2025 - Kimi K2-Thinking Migration (Now Deprecated):**
-- 🚀 **Faster Artifact Generation**: Migrated to Kimi K2-Thinking with enhanced reasoning *(since migrated to GLM-4.6)*
-- ⚡ **Improved Reliability**: Eliminated timeout issues with new high-performance model
+**November 28, 2025 - GLM-4.6 Migration:**
+- 🚀 **Enhanced Artifact Generation**: Migrated to GLM-4.6 (Z.ai) with advanced reasoning capabilities
+- ⚡ **Improved Reliability**: Eliminated timeout issues with high-performance model
 - 🔄 **Enhanced UI**: Gemini-style sidebar auto-collapse with manual toggle control
 - 🎯 **Better Navigation**: Fixed artifact card Open button and image generation card behaviors
 
@@ -235,9 +235,8 @@ Experience Vana in action: [View Demo](#) *(Add your deployment URL)*
 | Service | Purpose |
 |---------|---------|
 | **Supabase** | PostgreSQL database, authentication, edge functions |
-| **OpenRouter** | Chat, titles, summaries, fast reasoning (Gemini 2.5 Flash Lite) - single API key |
+| **OpenRouter** | Chat, titles, summaries, fast reasoning (Gemini 2.5 Flash Lite), image generation (Gemini 2.5 Flash Image) - single API key for each service |
 | **Z.ai** | Artifact generation & fixing (GLM-4.6 with thinking mode) - single API key |
-| **Google AI Studio** | Image generation ONLY (Gemini 2.5 Flash Image) - uses 10-key rotation pool for high throughput |
 
 ### Key Libraries
 
@@ -282,15 +281,14 @@ graph TB
         LA[generate-artifact - GLM-4.6]
         LB[generate-artifact-fix - GLM-4.6]
         M[generate-title - Gemini Flash Lite]
-        N[generate-image - Flash-Image]
+        N[generate-image - Gemini Flash Image]
         O[summarize-conversation - Gemini Flash Lite]
         P[cache-manager]
     end
 
     subgraph "External Services"
-        Q[OpenRouter<br/>Gemini Flash Lite]
+        Q[OpenRouter<br/>Gemini Flash Lite & Flash Image]
         QA[Z.ai API<br/>GLM-4.6]
-        R[Google AI Studio<br/>Image Generation]
     end
 
     A --> B
@@ -307,13 +305,17 @@ graph TB
     B --> J
 
     J --> L
+    J --> LA
+    J --> LB
     J --> M
     J --> N
     J --> O
     J --> P
 
     L --> Q
-    N --> R
+    LA --> QA
+    LB --> QA
+    N --> Q
     L --> H
     M --> H
     O --> H
@@ -936,25 +938,12 @@ supabase functions deploy cache-manager
 5. **Set environment secrets**
 
 ```bash
-# OpenRouter API Key (for chat, titles, summaries, fast reasoning)
-supabase secrets set OPENROUTER_GEMINI_FLASH_KEY=sk-or-v1-...  # Gemini 2.5 Flash Lite
+# OpenRouter API Keys
+supabase secrets set OPENROUTER_GEMINI_FLASH_KEY=sk-or-v1-...  # Gemini 2.5 Flash Lite (chat, titles, summaries)
+supabase secrets set OPENROUTER_GEMINI_IMAGE_KEY=sk-or-v1-...  # Gemini 2.5 Flash Image (image generation)
 
 # Z.ai API Key (for artifact generation with GLM-4.6)
 supabase secrets set GLM_API_KEY=...  # GLM-4.6 via Z.ai
-
-# Google AI Studio Keys (IMAGE GENERATION ONLY - uses 10-key rotation pool)
-# All 10 keys dedicated to images - 150 RPM total (10 keys × 15 RPM each)
-# Each key MUST be from a different Google Cloud project for independent rate limits
-supabase secrets set GOOGLE_KEY_1=AIzaSy...   # Image key 1
-supabase secrets set GOOGLE_KEY_2=AIzaSy...   # Image key 2
-supabase secrets set GOOGLE_KEY_3=AIzaSy...   # Image key 3
-supabase secrets set GOOGLE_KEY_4=AIzaSy...   # Image key 4
-supabase secrets set GOOGLE_KEY_5=AIzaSy...   # Image key 5
-supabase secrets set GOOGLE_KEY_6=AIzaSy...   # Image key 6
-supabase secrets set GOOGLE_KEY_7=AIzaSy...   # Image key 7
-supabase secrets set GOOGLE_KEY_8=AIzaSy...   # Image key 8
-supabase secrets set GOOGLE_KEY_9=AIzaSy...   # Image key 9
-supabase secrets set GOOGLE_KEY_10=AIzaSy...  # Image key 10
 
 # Optional: Set production CORS origins (comma-separated)
 supabase secrets set ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
@@ -963,20 +952,18 @@ supabase secrets set ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdoma
 **Get API Keys:**
 - **OpenRouter:** [https://openrouter.ai/keys](https://openrouter.ai/keys)
 - **Z.ai (GLM):** [https://open.bigmodel.cn](https://open.bigmodel.cn)
-- **Google AI Studio:** [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
 
 **Current Architecture:**
 - **Chat/Summaries/Titles/Fast Reasoning**: OpenRouter Gemini 2.5 Flash Lite (single API key)
 - **Artifact Generation**: GLM-4.6 via Z.ai API (single API key, thinking mode enabled)
 - **Artifact Error Fixing**: GLM-4.6 via Z.ai API (deep reasoning for debugging)
-- **Images**: Google AI Studio Gemini Flash-Image (10-key rotation pool, 150 RPM total)
+- **Images**: OpenRouter Gemini 2.5 Flash Image (single API key)
 
-**Key Rotation Strategy:**
-- **OpenRouter services**: NO rotation - single API key for simplicity
-- **Z.ai (GLM-4.6)**: NO rotation - single API key for artifact generation
-- **Google AI Studio**: 10-key rotation ONLY for image generation to achieve 150 RPM throughput
+**Key Management:**
+- All services use single API keys for simplicity and reliability
+- No key rotation required - OpenRouter and Z.ai provide unlimited capacity
 
-This architecture provides better reliability and eliminates timeout issues for artifact generation.
+This architecture provides excellent reliability and eliminates timeout issues for artifact generation.
 
 **Security Configuration (Manual Steps):**
 1. Enable "Leaked Password Protection" in Supabase Dashboard → Authentication → Password Security

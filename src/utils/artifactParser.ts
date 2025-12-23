@@ -1,4 +1,4 @@
-import { ArtifactData, ArtifactType } from "@/components/Artifact";
+import { ArtifactData, ArtifactType } from "@/components/ArtifactContainer";
 
 // Generate stable artifact ID based on content and type
 // Returns a clean, URL-safe identifier using crypto hash

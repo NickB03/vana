@@ -1,4 +1,4 @@
-import { ArtifactType } from "@/components/Artifact";
+import { ArtifactType } from "@/components/ArtifactContainer";
 import { toast } from "sonner";
 
 // Sanitize filename by removing special characters

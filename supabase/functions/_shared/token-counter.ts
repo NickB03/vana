@@ -45,12 +45,6 @@ export const MODEL_BUDGETS: Record<string, TokenBudget> = {
     reservedForResponse: 4096,
     safetyMargin: 0.1 // 10% safety margin
   },
-  [MODELS.KIMI_K2]: {
-    model: MODELS.KIMI_K2,
-    maxContextTokens: 128000,
-    reservedForResponse: 8192,
-    safetyMargin: 0.15 // 15% safety margin (more conservative due to reasoning tokens)
-  },
   [MODELS.GLM_4_6]: {
     model: MODELS.GLM_4_6,
     maxContextTokens: 128000,

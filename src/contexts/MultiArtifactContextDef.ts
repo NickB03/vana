@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import { ArtifactData } from "@/components/Artifact";
+import { ArtifactData } from "@/components/ArtifactContainer";
 
 /**
  * State for a single artifact in the multi-artifact system

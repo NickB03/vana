@@ -20,10 +20,11 @@ Changing a model name can break production **even if the new model exists** beca
 ### 1. Golden Snapshot
 ```json
 {
-  "version": "2025-11-15",
+  "version": "2025-12-23",
   "models": {
     "GEMINI_FLASH": "google/gemini-2.5-flash-lite",
-    "KIMI_K2": "moonshotai/kimi-k2-thinking",
+    "GLM_4_6": "zhipu/glm-4.6",
+    "GLM_4_5_AIR": "zhipu/glm-4.5-air",
     "GEMINI_FLASH_IMAGE": "google/gemini-2.5-flash-image"
   }
 }

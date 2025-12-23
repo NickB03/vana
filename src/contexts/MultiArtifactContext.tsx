@@ -1,6 +1,6 @@
 import { useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { MultiArtifactContext, ArtifactState, MultiArtifactContextType } from "@/contexts/MultiArtifactContextDef";
-import { ArtifactData } from "@/components/Artifact";
+import { ArtifactData } from "@/components/ArtifactContainer";
 
 // Re-export types for backward compatibility
 export type { ArtifactState, MultiArtifactContextType };

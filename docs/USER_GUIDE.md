@@ -25,7 +25,7 @@
 
 ### What is Vana AI?
 
-Vana AI is an intelligent development assistant that transforms natural language into interactive code, components, and diagrams in real-time. Powered by advanced AI models including Kimi K2-Thinking and Gemini 2.5 Flash, Vana helps you:
+Vana AI is an intelligent development assistant that transforms natural language into interactive code, components, and diagrams in real-time. Powered by advanced AI models including GLM-4.6 (Z.ai) and Gemini 2.5 Flash, Vana helps you:
 
 - **Build Faster**: Generate complete applications from simple descriptions
 - **Learn More**: See exactly how AI thinks through problems
@@ -641,7 +641,7 @@ A: All data is encrypted in transit and at rest. We don't share your conversatio
 ### Technical Questions
 
 **Q: What AI models does Vana use?**
-A: Vana uses multiple models including Kimi K2-Thinking for complex reasoning and Gemini 2.5 Flash for fast responses.
+A: Vana uses multiple models including GLM-4.6 (Z.ai) for artifact generation with thinking mode and Gemini 2.5 Flash for fast chat responses.
 
 **Q: Can I integrate Vana AI with my existing tools?**
 A: Yes, Vana offers API access and integrations with popular development tools.

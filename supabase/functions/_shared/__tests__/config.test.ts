@@ -207,15 +207,15 @@ Deno.test("API_ENDPOINTS.OPENROUTER should have valid URLs", () => {
 
 Deno.test("MODELS should contain all required model configurations", () => {
   assertExists(MODELS.GEMINI_FLASH);
-  assertExists(MODELS.KIMI_K2);
+  assertExists(MODELS.GLM_4_6);
   assertExists(MODELS.GEMINI_FLASH_IMAGE);
 
   assertEquals(typeof MODELS.GEMINI_FLASH, "string");
-  assertEquals(typeof MODELS.KIMI_K2, "string");
+  assertEquals(typeof MODELS.GLM_4_6, "string");
   assertEquals(typeof MODELS.GEMINI_FLASH_IMAGE, "string");
 
   assert(MODELS.GEMINI_FLASH.length > 0);
-  assert(MODELS.KIMI_K2.length > 0);
+  assert(MODELS.GLM_4_6.length > 0);
   assert(MODELS.GEMINI_FLASH_IMAGE.length > 0);
 });
 

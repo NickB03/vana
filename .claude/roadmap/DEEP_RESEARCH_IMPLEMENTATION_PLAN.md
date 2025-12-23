@@ -1,5 +1,7 @@
-# Deep Research Feature Implementation Plan
-
+> **STATUS**: 📋 Planned
+> **Last Updated**: 2025-12-23
+> **Priority**: High
+> **Implementation**: Demo pages exist (DeepResearchDemo*.tsx) but no backend Edge Function
 > **Version**: 2.0 | **Created**: 2025-12-01 | **Updated**: 2025-12-01 | **Status**: Planning
 >
 > **Goal**: Implement a high-quality deep research experience similar to Gemini Deep Research, Claude's Extended Thinking, and ChatGPT's Deep Research mode.

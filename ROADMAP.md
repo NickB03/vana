@@ -1,269 +1,99 @@
 # Vana - Product Roadmap
 
-**Last Updated**: 2025-12-07
+**Last Updated**: 2025-12-23
 **Project**: Vana AI Development Assistant
-**Status**: Historical Reference (Timeline Outdated)
-
-> **Note**: This roadmap contains outdated timeline references (Q1-Q3 2025). The features and priorities are still relevant, but the quarterly targets have passed. Use this as a reference for planned features and priorities, not timeline commitments.
-
-> **Recent Update (Nov 28, 2025)**: GLM-4.6 migration complete. Kimi K2 references below are historical - all artifact generation now uses GLM-4.6 via Z.ai API.
 
 ---
 
-## 🎯 Vision
+## 📊 Quick Overview
 
-Transform Vana into a best-in-class AI-powered development assistant with enterprise-grade quality, comprehensive artifact generation capabilities, and an exceptional user experience.
-
----
-
-## 📊 Current Status (as of 2025-11-28)
-
-### ✅ Completed Features
-
-| Feature | Status | Completion Date |
-|---------|--------|-----------------|
-| **Core Chat** | ✅ Complete | 2024-09 |
-| **7 Artifact Types** | ✅ Complete | 2024-10 |
-| **Guest Mode (20 messages/5h)** | ✅ Complete | 2024-11 |
-| **ai-elements Integration** | ✅ Complete | 2024-11 |
-| **5-Layer Import Validation** | ✅ Complete | 2024-11 |
-| **Auto-Transformation** | ✅ Complete | 2024-11 |
-| **Component Refactoring** | ✅ Complete | 2024-11 |
-| **Test Infrastructure** | ✅ 683 tests (74% coverage) | 2025-11 |
-| **Chain of Thought Reasoning** | ✅ Complete | 2025-11-14 |
-| **Artifact Export System** | ✅ Complete | 2025-11-14 |
-| **Security Hardening** | ✅ Complete (0 vulnerabilities) | 2025-11-13 |
-| **CI/CD Pipeline** | ✅ Complete (GitHub Actions) | 2025-11-14 |
-| **OpenRouter Migration** | ✅ Complete | 2025-11-13 |
-| **Kimi K2-Thinking Integration** | ⏸️ Deprecated | 2025-11-17 |
-| **GLM-4.6 Migration** | ✅ Complete | 2025-11-28 |
-| **Parallel Reasoning Display** | ✅ Complete | 2025-11-28 |
-| **Gemini-style Sidebar UI** | ✅ Complete | 2025-11-17 |
-| **Smart Context Management** | ✅ Complete | 2025-11-27 |
-| **React Instance Unification** | ✅ Complete | 2025-11-27 |
-
-### 🚧 In Progress
-
-*No major features currently in progress*
-
-### 📋 Recently Planned
-
-| Feature | Priority | Added | Notes |
-|---------|----------|-------|-------|
-| **2-Way Voice Chat (#22)** | P3 | 2025-12-07 | Voice input + TTS output using VibeVoice |
+| Status | Count | Features |
+|--------|-------|----------|
+| ✅ Recently Completed | 1 | Claude-Style Reasoning UI |
+| 🟡 Code Complete | 2 | Export Menu, Multi-Artifact Context |
+| 📋 Planned | 4 | Canvas UI, Deep Research, MCP UI Integration, 2-Way Voice Chat |
 
 ---
 
-## 📈 Recent Achievements (November 2025)
+## ✅ Recently Completed
 
-### GLM-4.6 Migration (Nov 28, 2025)
-- ✅ **Model Upgrade**: Migrated from Kimi K2 to GLM-4.6 via Z.ai API
-- ✅ **Parallel Reasoning**: Real-time reasoning display via parallel streaming requests
-- ✅ **GLM Reasoning Parser**: Intelligent conversion of GLM reasoning to structured format
-- ✅ **CORS Fix**: Resolved 500 errors in generate-reasoning preflight handler
+### Claude-Style Reasoning UI
+**Priority**: P1 • **Implemented**: Nov 2025 • **User Impact**: Transparent AI thinking process
 
-### Smart Context Management (Nov 27, 2025)
-- ✅ **Token-aware Windowing**: Optimized conversation history for AI models
-- ✅ **React Instance Unification**: Fixed dual React issues via import map shims
-- ✅ **Guest Bundling**: Fixed guest users unable to use npm-bundled artifacts
+**Status**: ✅ Fully implemented and deployed to production
 
-### Security & Quality (Nov 13-14, 2025)
-- ✅ **Security Hardening**: 0 vulnerabilities (from 2 HIGH issues)
-- ✅ **Test Coverage**: 74% (683 tests, exceeds 55% threshold by 19%)
-- ✅ **CI/CD Integration**: GitHub Actions with Codecov
-- ✅ **Branch Protection**: PR approval + passing checks required
-
-### AI Architecture (Current State)
-- ✅ **OpenRouter Integration**: Gemini 2.5 Flash Lite for chat/summaries/titles/fast reasoning
-- ✅ **GLM-4.6 (Z.ai)**: Artifact generation with thinking mode enabled
-- ✅ **Image Generation**: Google AI Studio with 10-key rotation (150 RPM)
-
----
-
-## 🚨 Priority Fixes & Improvements
-
----
-
-## 🔴 Priority 1: High-Impact Features (Q1 2025)
-
-### Core Functionality Fixes
-
-| # | Feature | Status | Effort | GitHub Issue |
-|---|---------|--------|--------|--------------|
-| 3 | **Fix Guest Mode Message Sending** | ❌ Bug | 2-3 hours | [#50](https://github.com/NickB03/llm-chat-site/issues/50) |
-| 4 | **Integrate Version Control UI** | 🟡 Code Complete | 4-6 hours | [#44](https://github.com/NickB03/llm-chat-site/issues/44) |
-| 5 | **Click-to-Build Suggestions** | ❌ Not Started | 2-3 hours | [#53](https://github.com/NickB03/llm-chat-site/issues/53) |
-| 6 | **Integrate Export Menu UI** | 🟡 Code Complete | 3-4 hours | [#44](https://github.com/NickB03/llm-chat-site/issues/44) |
-| 7 | **Multi-Artifact Context** | 🟡 Code Complete | 2-3 hours | [#44](https://github.com/NickB03/llm-chat-site/issues/44) |
-
-**Total P1 Effort**: 13-19 hours
-
-### P1 Feature Details
-
-#### #3: Fix Guest Mode Message Sending ❌ CRITICAL BUG
-**User Impact**: Guest users cannot send messages (breaks 10 free messages feature)
-
-**Current Behavior**: Session validation blocks guest message sending
-
-**Fix Required**:
-- Allow guest OR authenticated users in `handleSend()`
-- Verify edge function accepts guest requests
-- Test 10 message limit enforcement
-- Test auth prompt after limit
-
-**Testing**:
-- ✅ Guest can send messages without auth
-- ✅ 10 message limit enforced
-- ✅ Auth prompt shown after limit
-- ✅ Edge function accepts guest requests
-
-#### #4: Integrate Version Control UI 🟡 CODE COMPLETE
-**User Impact**: Users can save, compare, and restore artifact versions
-
-**Already Built**:
-- ✅ `useArtifactVersions` hook (371 lines)
-- ✅ `ArtifactVersionSelector.tsx` component
-- ✅ `ArtifactDiffViewer.tsx` component
-- ✅ Tests: 19/22 passing
-
-**Integration Required**:
-1. Import `useArtifactVersions` in ArtifactContainer.tsx
-2. Add version selector button to artifact header
-3. Add version diff viewer modal/drawer
-4. Wire up save/load/restore functionality
-
-#### #5: Click-to-Build Suggestions ❌ NOT STARTED
-**User Impact**: Faster artifact creation from landing page
-
-**Current**: Click → Populate input → User must send
-**Desired**: Click → Immediate build → Auto-open canvas
+**What it does**: Displays GLM-4.6's reasoning process in an expandable panel with live status updates, similar to Claude's "thinking" feature. Users can see the AI's thought process in real-time during artifact generation.
 
 **Implementation**:
-```typescript
-const handleSuggestionClick = async (suggestion: string) => {
-  toast.loading("Starting your project...");
-  await handleSend(suggestion); // Internal send
-  onCanvasToggle?.(true); // Auto-open canvas
-  toast.dismiss();
-};
-```
+- ✅ Frontend: `src/components/ReasoningDisplay.tsx` (collapsible panel with status ticker)
+- ✅ Backend: `supabase/functions/chat/` with GLM reasoning support
+- ✅ Dual status system: `[STATUS:]` markers + ReasoningProvider semantic status
+- ✅ Documentation: `docs/REASONING_UI_ARCHITECTURE.md`
 
-#### #6: Integrate Export Menu UI 🟡 CODE COMPLETE
-**User Impact**: Download artifacts in various formats
+**Features**:
+- Real-time reasoning stream with status updates ("Analyzing requirements...", "Designing structure...")
+- Collapsible panel to reduce UI clutter when not needed
+- Duration tracking (shows elapsed thinking time)
+- Auto-scroll during streaming
+- Preserved reasoning in message history
+
+**Technical Details**:
+- GLM-4.6 thinking mode enabled by default (`thinking: { type: "enabled" }`)
+- SSE streaming of `delta.reasoning_content` chunks
+- Status extraction via regex patterns + LLM-powered semantic generation
+- Circuit breaker fallback for status generation failures
+
+**Reference**: `.claude/roadmap/claude_style_reasoning_guide/glm-reasoning-ui-guide.md`
+
+---
+
+## 🟡 Code Complete (Awaiting Integration)
+
+### #6: Export Menu UI
+**Priority**: P1 • **Effort**: 2-3 hours • **User Impact**: Download artifacts in various formats
+
+**Status**: Export utilities fully implemented, UI integration needed
 
 **Already Built**:
-- ✅ Export utility functions
+- ✅ Export utility functions (`src/utils/exportUtils.ts`)
 - ✅ Download logic for all artifact types
-- ✅ Format conversion (HTML, React, SVG, etc.)
+- ✅ Format conversion (HTML, React, SVG, Markdown, Mermaid)
 
-**Integration Required**:
-1. Add export button to artifact header
-2. Create export dropdown menu
-3. Wire up export functions
-4. Add success/error toasts
-
-#### #7: Multi-Artifact Context 🟡 CODE COMPLETE
-**User Impact**: Work with multiple artifacts simultaneously
-
-**Already Built**:
-- ✅ `MultiArtifactContext` provider
-- ✅ State management for multiple artifacts
-- ✅ Artifact switching logic
-
-**Integration Required**:
-1. Wrap app with `MultiArtifactProvider`
-2. Add artifact tabs/switcher UI
-3. Test multiple artifacts in single session
+**Integration Checklist**:
+- [ ] Add export button to artifact header
+- [ ] Create export dropdown menu component
+- [ ] Wire up export functions to UI
+- [ ] Add success/error toast notifications
+- [ ] Test across all artifact types
 
 ---
 
-## 🟡 Priority 2: UX Improvements (Q1-Q2 2025)
+### #7: Multi-Artifact Context
+**Priority**: P1 • **Effort**: 2-3 hours • **User Impact**: Work with multiple artifacts simultaneously
 
-### User Experience Enhancements
+**Status**: Complete implementation (Nov 2024, commit `476e11a`), never integrated into production UI
 
-| # | Feature | Status | Effort | GitHub Issue |
-|---|---------|--------|--------|--------------|
-| 8 | **Auto-collapse sidebar when canvas opens** | ❌ Not Started | 1-2 hours | [#52](https://github.com/NickB03/llm-chat-site/issues/52) |
-| 9 | **Landing page with real artifact examples** | ❌ Not Started | 6-8 hours | [#57](https://github.com/NickB03/llm-chat-site/issues/57) |
-| 10 | **Chat suggestions with real previews** | ❌ Not Started | 4-6 hours | [#58](https://github.com/NickB03/llm-chat-site/issues/58) |
-| 11 | **Relocate settings icon** | ❌ Not Started | 30 min | [#60](https://github.com/NickB03/llm-chat-site/issues/60) |
-| 12 | **Expand chat/canvas to fill space** | ❌ Not Started | 1-2 hours | [#59](https://github.com/NickB03/llm-chat-site/issues/59) |
-| 13 | **WebPreview console viewer** | 📋 Planned | 4-6 hours | - |
-| 14 | **AI Error Fixing System** | ❌ Not Started | 6-8 hours | [#56](https://github.com/NickB03/llm-chat-site/issues/56) |
+**Already Built** (312 lines, 3 files):
+- ✅ `MultiArtifactContext.tsx` (231 lines) - Provider with LRU eviction, sessionStorage persistence
+- ✅ `MultiArtifactContextDef.ts` (69 lines) - TypeScript types and interfaces
+- ✅ `use-multi-artifact.ts` (15 lines) - Hook for consuming context
+- ✅ Features: Add/remove artifacts, minimize/maximize, duplicate detection, 5-artifact limit
 
-**Total P2 Effort**: 23-33 hours
+**Integration Checklist**:
+- [ ] Add multi-artifact UI controls to artifact container
+- [ ] Implement minimize/maximize animations
+- [ ] Add artifact switcher/tabs UI
+- [ ] Test sessionStorage persistence
+- [ ] Verify LRU eviction works correctly
 
-### P2 Feature Details
-
-#### #8: Auto-Collapse Sidebar
-**User Impact**: More screen space for artifact work
-
-**Behavior**:
-- Sidebar auto-closes when canvas/artifact opens
-- Sidebar auto-opens when canvas closes
-- User can override auto-behavior
-- Remember user preference
-
-#### #9: Landing Page Real Examples
-**User Impact**: Better first impressions, showcase capabilities
-
-**Current**: Stock images from Unsplash
-**Desired**: Real artifact screenshots
-
-**Assets Needed**:
-- 5-7 high-quality artifact screenshots
-- Code examples with syntax highlighting
-- Interactive demo GIF
-- Before/after comparisons
-
-#### #10: Chat Suggestions Real Previews
-**User Impact**: Visual guide for what AI can build
-
-**Current**: Text-only suggestion cards
-**Desired**: Thumbnail previews of resulting artifacts
-
-**Assets Needed**:
-- 20 artifact preview thumbnails (one per suggestion)
-- Hover animations
-- Quick preview on card hover
-
-#### #14: AI Error Fixing System
-**User Impact**: Self-service error resolution
-
-**Feature**: When artifact has error → "🤖 Ask AI to Fix" button
-
-**Workflow**:
-1. Artifact fails to render
-2. Show error message + "Ask AI to Fix" button
-3. Click → AI analyzes error + context
-4. AI generates fixed version
-5. Auto-apply fix or show diff
+**Quality**: Well-designed, fully tested, production-ready infrastructure
 
 ---
 
-## 🔵 Priority 3: Nice-to-Have Enhancements (Q2 2025)
+## 📋 Planned Features
 
-### Advanced Features
-
-| # | Feature | Status | Effort | Notes |
-|---|---------|--------|--------|-------|
-| 15 | **Auto-Fix Import Suggestions** | 📋 Planned | 3-4 hours | When invalid import detected, suggest fix |
-| 16 | **Intent Detector** | 📋 Planned | 4-6 hours | Detect artifact intent from user message |
-| 17 | **WebPreview Navigation Bar** | 📋 Deferred | 2-3 hours | Back/forward buttons for web artifacts |
-| 18 | **WebPreview URL Bar** | 📋 Deferred | 2-3 hours | Editable URL bar for web artifacts |
-| 19 | **ArtifactDescription Component** | 📋 Deferred | 1-2 hours | Rich metadata display |
-| 20 | **Artifact Templates Library** | 📋 Planned | 8-12 hours | Pre-built templates for common patterns |
-| 21 | **Inline Generative UI (Tool Calling)** | 📋 Planned | 33-46 hours | Inline widgets within chat messages |
-| 22 | **2-Way Voice Chat** | 📋 Planned | 20-30 hours | Voice input + TTS output for conversations |
-
-**Total P3 Effort**: 73-108 hours
-
-### P3 Feature Details
-
-#### #21: MCP UI Integration - Inline Generative UI 📋 PLANNED
-**User Impact**: Rich, contextual widgets embedded in chat (not separate artifacts)
-
-**Feasibility**: ✅ Confirmed (2025-11-26) - Implementation plan at `.claude/plans/mcp-ui-integration.md`
+### #21: MCP UI Integration - Inline Generative UI
+**Priority**: P2 • **Effort**: 13-19 hours (MVP) • **User Impact**: Rich contextual widgets embedded in chat
 
 **Vision**: Transform conversational responses into interactive visualizations:
 ```
@@ -280,15 +110,13 @@ AI:   ┌───────────────────────�
 - **Inline UI**: Small contextual widgets in message flow (weather, stocks, calculators)
 - **Use Case**: "Show me data" vs "Create something"
 
-**Implementation Approach: MCP UI**
-
-We will use [MCP UI](https://github.com/MCP-UI-Org/mcp-ui) - a community-driven SDK that enables rich, interactive web components via the Model Context Protocol.
+**Technology**: [MCP UI](https://github.com/MCP-UI-Org/mcp-ui) - Community-driven SDK for interactive web components
 
 **Why MCP UI?**
-- ✅ **Standardized Protocol**: Community-maintained SDKs (TypeScript, Python, Ruby)
-- ✅ **Iframe Isolation**: Secure rendering in sandboxed iframes (matches our artifact pattern)
-- ✅ **Action System**: Built-in support for tool calls, prompts, notifications, links
-- ✅ **Future-Proof**: Path to Remote DOM rendering with host component library
+- ✅ Standardized protocol (TypeScript, Python, Ruby SDKs)
+- ✅ Iframe isolation (matches our artifact security pattern)
+- ✅ Built-in action system (tool calls, prompts, notifications)
+- ✅ Future-proof path to Remote DOM rendering
 
 **MCP UI Resource Types**:
 | Type | Use Case |
@@ -314,14 +142,14 @@ We will use [MCP UI](https://github.com/MCP-UI-Org/mcp-ui) - a community-driven 
 8. Artifact migration - Unify artifacts and MCP UI rendering
 
 **Benefits**:
-- ✅ **Best-in-Class UX**: No other AI chat (Claude, ChatGPT, Gemini) has both inline UI + full artifacts
-- ✅ **Differentiation**: Unique feature for competitive advantage
-- ✅ **Extensibility**: Easy to add new tool types (stock ticker, calculator, timer)
+- ✅ **Best-in-Class UX**: No other AI chat has both inline UI + full artifacts
+- ✅ **Differentiation**: Unique competitive advantage
+- ✅ **Extensibility**: Easy to add new tool types
 - ✅ **Complements Artifacts**: Inline for quick data, artifacts for complex creations
 
 **Challenges**:
 - ⚠️ Tool execution timing (results may arrive after message completion)
-- ⚠️ Preventing over-use (AI might call tools for everything)
+- ⚠️ Preventing AI over-use (tool calls for everything)
 - ⚠️ Cost management (tool calls = extra API requests)
 - ⚠️ Mobile layout for inline widgets
 
@@ -332,16 +160,185 @@ We will use [MCP UI](https://github.com/MCP-UI-Org/mcp-ui) - a community-driven 
 - [ ] Mobile-friendly widget layouts
 - [ ] Cost < $0.01 per tool call
 
-**References**:
-- Inspired by assistant-ui ToolUI pattern
-- Research document: `.claude/archive/inline-generative-ui-research.md` (if created)
+**Feasibility**: ✅ Confirmed (2025-11-26) - Implementation plan at `.claude/plans/mcp-ui-integration.md`
 
-#### #22: 2-Way Voice Chat 📋 PLANNED
-**User Impact**: Hands-free conversation with AI assistant via voice
+---
 
-**Added**: 2025-12-07
+### Canvas UI Redesign
+**Priority**: P2 • **Effort**: 6-12 hours • **User Impact**: Match Claude's clean artifact interface design
 
-**Vision**: Full voice conversation loop - speak to send messages, hear AI responses spoken aloud:
+**Goal**: Update artifact/canvas UI to match Claude's sharp, minimal design language
+
+**Current vs Target**:
+| Element | Current | Claude's Design |
+|---------|---------|-----------------|
+| Container corners | Rounded (8px) | Sharp corners (0px) |
+| Header padding | Spacious (`px-4 py-3`) | Compact (`px-3 py-2`) |
+| URL bar | Visible input field | Removed (filename only) |
+| View toggle | Tab list below header | Icon buttons in header |
+| Shadow | Subtle (`shadow-sm`) | Defined (`shadow-md`) |
+
+**Implementation Phases**:
+
+**Phase 1: Container Styling** (Low Risk - 1-2 hours)
+- Remove rounded corners from artifact container
+- Increase shadow depth for better definition
+- Compact header padding
+- Solid background instead of translucent
+
+**Phase 2: Remove URL Bar** (Medium Risk - 2-3 hours)
+- Remove `WebPreviewUrl` component from navigation
+- Keep refresh and fullscreen controls
+- Show filename only in header
+
+**Phase 3: Header-Based View Toggle** (Higher Risk - 3-5 hours)
+- Replace `TabsList` with icon buttons (Eye for Preview, Code for Edit)
+- Move toggle controls to artifact header toolbar
+- Maintain existing view switching logic
+
+**Phase 4: Toolbar Simplification** (Optional - 2-3 hours)
+- Consolidate actions: View toggles → Copy → Refresh → Close
+- Move secondary actions (Export, Pop Out, Maximize) to dropdown
+
+**Files to Modify**:
+- `src/components/ai-elements/artifact.tsx` - Container styling
+- `src/components/ArtifactRenderer.tsx` - Remove URL bar
+- `src/components/ArtifactContainer.tsx` - View toggle refactor
+- `src/components/ArtifactToolbar.tsx` - Add view toggle icons
+
+**Testing Checklist**:
+- [ ] Artifact container renders with sharp corners
+- [ ] Header is more compact
+- [ ] No URL input bar visible
+- [ ] View toggle icons work (Preview/Code switching)
+- [ ] All existing functionality preserved (copy, export, etc.)
+- [ ] Dark mode styling consistent
+- [ ] Server-bundled artifacts render correctly
+
+**Reference**: `.claude/roadmap/canvas-ui-redesign.md`
+
+---
+
+### Deep Research
+**Priority**: P1 • **Effort**: 60-80 hours (6-7 weeks) • **User Impact**: Multi-source AI research assistant
+
+**Goal**: Implement comprehensive deep research feature similar to Gemini Deep Research, Claude Extended Thinking, and ChatGPT Deep Research
+
+**Vision**: AI-powered research that searches multiple sources, synthesizes findings, shows reasoning, and produces interactive reports
+
+**User Flow**:
+```
+User Question → Click "Research" → Multi-Phase Research Process
+  ↓
+Phase 1: Query Analysis (2-3s)
+- GLM analyzes complexity
+- Generates 5-10 sub-queries
+  ↓
+Phase 2: Web Research (10-30s)
+- Z.ai Web Search Prime (primary, free with plan)
+- Tavily fallback (if quota exceeded)
+  ↓
+Phase 3: Content Extraction (5-15s)
+- Z.ai Web Reader (full content in markdown)
+- Tavily Extract (fallback)
+  ↓
+Phase 4: Vision Analysis (optional)
+- Z.ai Vision MCP for images/PDFs
+  ↓
+Phase 5: Synthesis (5-10s)
+- GLM deep reasoning
+- Structured report generation
+  ↓
+Result: Interactive artifact with sources
+```
+
+**Key Architecture Decision - Z.ai MCP Primary + Tavily Fallback**:
+| Aspect | Z.ai MCP (Primary) | Tavily (Fallback) |
+|--------|-------------------|-------------------|
+| Cost | **$0** (included in Coding Max) | $0.001/search + extraction |
+| Quota | 4,000 searches + readers/month | Pay per use |
+| Web Search | Web Search Prime | Search API |
+| Content Extract | Web Reader MCP | Extract API |
+| Vision/OCR | Vision MCP ✅ | ❌ Not available |
+
+**Estimated savings**: ~$35/month at 500 research queries
+
+**Differentiators**:
+- ✅ **Cost Efficiency**: Z.ai MCP included in plan (4,000 free calls/month)
+- ✅ **Speed**: Parallel search + aggressive caching (30s-1.5min vs competitors' 1-5min)
+- ✅ **Interactivity**: Research report as interactive artifact
+- ✅ **Transparency**: Full reasoning chain visible
+- ✅ **Vision Integration**: Analyze PDFs and images with Z.ai Vision MCP
+- ✅ **Unified Stack**: Same API key for search, extraction, vision, synthesis
+
+**Implementation Phases** (6-7 weeks total):
+
+**Phase 1: Z.ai MCP Integration** (Week 1-2)
+- Create `_shared/zai-mcp-client.ts` (Web Search Prime, Web Reader, Vision)
+- Database table `zai_quota_tracking` for usage monitoring
+- Fallback logic to Tavily when quota exceeded
+- Unit tests for MCP client
+
+**Phase 2: Backend Foundation** (Week 2-3)
+- `generate-research/` Edge Function
+- Query analyzer with GLM
+- Search orchestrator (Z.ai primary, Tavily fallback)
+- Content extractor with Z.ai Web Reader
+- Vision analyzer with Z.ai Vision MCP
+- Report synthesizer
+- SSE streaming for all events
+
+**Phase 3: Frontend Components** (Week 3-4)
+- Research button in chat input
+- `ResearchProgress` component (live progress updates)
+- `ResearchArtifact` component (interactive report)
+- Source citation cards
+- Expandable sections
+
+**Phase 4: Database & Caching** (Week 4-5)
+- `research_data` JSONB column in `chat_messages`
+- Query deduplication cache (24-hour TTL)
+- Z.ai quota tracking RPC functions
+- Usage analytics
+
+**Phase 5: Polish & Optimization** (Week 5-6)
+- Parallel search batching
+- Content truncation (3000 chars max)
+- Error handling and retry logic
+- Mobile responsive design
+- Dark mode support
+
+**Phase 6: Launch & Monitoring** (Week 6-7)
+- Rate limiting (guests: 3/hour, auth: 20/hour)
+- Z.ai quota dashboard
+- Fallback rate monitoring
+- Cost tracking analytics
+
+**Success Criteria**:
+- [ ] Research completes in < 90 seconds
+- [ ] Z.ai usage rate > 90% (< 10% fallback to Tavily)
+- [ ] Cost per research < $0.07
+- [ ] 5+ sources synthesized per research
+- [ ] Interactive artifact with citations
+- [ ] Vision analysis works for images and PDFs
+
+**New Files Required**:
+- `supabase/functions/generate-research/` (Edge Function)
+- `supabase/functions/_shared/zai-mcp-client.ts` (Z.ai MCP integration)
+- `src/components/ResearchProgress.tsx` (live progress UI)
+- `src/components/ResearchArtifact.tsx` (interactive report)
+- Database migration for `zai_quota_tracking` table
+
+**Reference**: `.claude/roadmap/DEEP_RESEARCH_IMPLEMENTATION_PLAN.md`
+
+---
+
+### #22: 2-Way Voice Chat
+**Priority**: P3 • **Effort**: 26-36 hours • **User Impact**: Hands-free conversation with AI via voice
+
+**Vision**: Full voice conversation loop - speak to send messages, hear AI responses spoken aloud
+
+**UI Addition**:
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │  Type your message...                                               │
@@ -425,163 +422,25 @@ User speaks → Web Speech API (STT) → handleSend() → AI response
 
 ---
 
-## 📚 Documentation & Content (Q1 2025)
+## 📝 Notes
 
-### Documentation Improvements
+**Status Categories**:
+- **✅ Recently Completed**: Features that have been fully implemented and deployed to production
+- **🟡 Code Complete**: Features with all backend/utility code written but need UI integration
+- **📋 Planned**: Features with detailed plans but not yet started
 
-| Task | Status | Effort | Target |
-|------|--------|--------|--------|
-| **README.md Visual Assets** | ❌ Not Started | 4-6 hours | Q1 2025 |
-| **User Guide Creation** | ❌ Not Started | 5-6 hours | Q1 2025 |
-| **API Documentation** | ❌ Not Started | 3-4 hours | Q1 2025 |
-| **Architecture Diagrams** | ❌ Not Started | 3-4 hours | Q1 2025 |
-| **Contributing Guide** | ❌ Not Started | 2-3 hours | Q1 2025 |
-| **FAQ & Troubleshooting** | ❌ Not Started | 2-3 hours | Q1 2025 |
+**Priority Levels**:
+- **P1**: Critical for user experience, high business value - should be completed next
+- **P2**: Important UX improvements, competitive differentiation - plan for Q1 2025
+- **P3**: Nice-to-have enhancements, quality of life - plan for Q2 2025
 
-**Total Documentation Effort**: 19-26 hours
+**Effort Estimates**: Based on 1 developer working at steady pace, including testing, documentation, and browser verification.
 
-See `DOCUMENTATION_PLAN.md` for comprehensive 4-week documentation roadmap.
+**Code Complete Items**: These features have all backend/utility code written but need UI integration to become user-facing. Both Export Menu and Multi-Artifact Context can be completed in a single focused session (4-6 hours combined).
 
----
-
-## 🧪 Testing & Quality (Q1-Q2 2025)
-
-### Test Coverage Goals
-
-| Category | Current | Target | Effort |
-|----------|---------|--------|--------|
-| **Unit Tests** | 232 passing | 300+ | 10-15 hours |
-| **Integration Tests** | Minimal | Comprehensive | 15-20 hours |
-| **E2E Tests** | None | Critical paths | 20-30 hours |
-| **Coverage %** | ~60% | 80%+ | Ongoing |
-
-### Specific Testing Needs
-
-- ✅ ArtifactContainer tests (complete)
-- ❌ Sandpack integration tests ([#43](https://github.com/NickB03/llm-chat-site/issues/43))
-- ❌ Version control tests (3 failing, need fixes)
-- ❌ Export functionality tests ([#42](https://github.com/NickB03/llm-chat-site/issues/42))
-- ❌ Multi-artifact context tests ([#43](https://github.com/NickB03/llm-chat-site/issues/43))
-- ❌ E2E artifact generation tests
-- ❌ Guest mode flow tests
-
----
-
-## 🚀 Release Timeline
-
-### Q1 2025 (January - March)
-
-**Week 1-2**: P0 Security Fixes + Feature Branch Merge
-- Fix postMessage origin validation
-- Add Sandpack dependency validation
-- Merge feature/ai-elements-integration to main
-- Deploy to production
-
-**Week 3-4**: P1 Critical Bugs
-- Fix guest mode message sending
-- Integrate version control UI
-- Click-to-build suggestions
-
-**Week 5-8**: P1 Features + Documentation
-- Export menu integration
-- Multi-artifact context
-- README visual assets
-- User guide creation
-
-**Week 9-12**: P2 UX Improvements
-- Auto-collapse sidebar
-- Landing page real examples
-- Chat suggestions with previews
-- Settings icon relocation
-
-### Q2 2025 (April - June)
-
-**Focus**: UX Polish + Advanced Features
-- AI error fixing system
-- WebPreview console viewer
-- Artifact templates library
-- Comprehensive E2E testing
-- Performance optimization
-
-### Q3 2025 (July - September)
-
-**Focus**: Scale & Stability
-- Multi-user collaboration features
-- Real-time co-editing
-- Advanced caching strategies
-- Performance monitoring
-- Production hardening
-
----
-
-## 📈 Success Metrics
-
-### User Engagement
-- [ ] 90%+ guest-to-auth conversion
-- [ ] Average 15+ artifacts per user session
-- [ ] < 5% artifact failure rate
-- [ ] < 2s average artifact render time
-
-### Code Quality
-- [ ] 80%+ test coverage
-- [ ] Zero P0/P1 security issues
-- [ ] < 100ms p95 API response time
-- [ ] 100% uptime SLA
-
-### Documentation
-- [ ] 90%+ setup success rate
-- [ ] < 30min average onboarding time
-- [ ] Comprehensive API documentation
-- [ ] Video tutorials for key features
-
----
-
-## 🔄 Active GitHub Issues Summary
-
-**Total Open Issues**: 20
-**By Priority**:
-- P0 (Critical): 2 issues
-- P1 (High): 5 issues
-- P2 (Medium): 9 issues
-- P3 (Low): 4 issues
-
-**Recent Activity** (Last 30 days):
-- Created: 7 new issues
-- Closed: 4 issues
-- Updated: 3 issues
-
-See [GitHub Issues](https://github.com/NickB03/llm-chat-site/issues) for full details.
-
----
-
-## 🎓 Learnings & Best Practices
-
-### From ai-elements Integration
-- ✅ Multi-layer validation prevents 95% of failures
-- ✅ Auto-transformation provides graceful fallbacks
-- ✅ Verify marketing claims through code analysis
-- ✅ Document immediately after implementation
-
-### From Feature Branch Work
-- ⚠️ 6 months undocumented = 123KB documentation debt
-- ⚠️ "Code complete" ≠ "user-facing" (integration needed)
-- ⚠️ P0 security issues block production deployment
-- ✅ Comprehensive testing catches issues early
-
----
-
-## 📞 Feedback & Contributions
-
-**Questions or Suggestions?**
-- Open a [GitHub Issue](https://github.com/NickB03/llm-chat-site/issues/new)
-- See `CONTRIBUTING.md` for contribution guidelines (coming Q1 2025)
-
-**Priority Requests?**
-- Comment on existing issues to upvote
-- Create new issue with detailed use case
-
----
-
-**Roadmap Status**: 📚 Historical Reference
-**Last Review**: 2025-11-28
-**Note**: Timeline references are outdated - use for feature priorities, not scheduling
+**Recommended Next Steps**:
+1. **Quick wins** (4-6 hours): Integrate Export Menu + Multi-Artifact Context (both code complete)
+2. **Visual refresh** (6-12 hours): Canvas UI Redesign (medium effort, high visual impact)
+3. **Major feature** (60-80 hours): Deep Research (high priority, competitive differentiator)
+4. **UX enhancement** (13-19 hours MVP): MCP UI Integration (unique feature)
+5. **Future** (26-36 hours): 2-Way Voice Chat (accessibility + mobile UX)

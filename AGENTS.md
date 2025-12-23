@@ -97,11 +97,11 @@ supabase functions deploy chat --project-ref <ref>
 The application uses **multiple AI models** optimized for different tasks:
 
 1. **Chat/Summaries/Titles**: Gemini 2.5 Flash Lite via OpenRouter (single API key, unlimited)
-2. **Artifact Generation**: Kimi K2-Thinking via OpenRouter (single API key, optimized for code)
-3. **Artifact Error Fixing**: Kimi K2-Thinking via OpenRouter (deep reasoning for debugging)
-4. **Image Generation**: Gemini Flash-Image via Google AI Studio (10-key rotation pool, 150 RPM)
+2. **Artifact Generation**: GLM-4.6 via Z.ai API (single API key, thinking mode enabled)
+3. **Artifact Error Fixing**: GLM-4.6 via Z.ai API (deep reasoning for debugging)
+4. **Image Generation**: Gemini 2.5 Flash Image via OpenRouter (single API key)
 
-**Key Insight**: Only image generation uses key rotation (10 keys for high throughput). Chat and artifacts use single OpenRouter keys for simplicity and unlimited capacity.
+**Key Insight**: All services use single API keys for simplicity and reliability. No key rotation required.
 
 ### Artifact System Architecture
 
@@ -218,25 +218,26 @@ Located in `supabase/functions/`:
    - Reasoning generation (chain of thought)
    - Rate limiting for guests
 
-2. **generate-artifact** - Artifact generation (Kimi K2-Thinking via OpenRouter)
+2. **generate-artifact** - Artifact generation (GLM-4.6 via Z.ai)
    - Optimized for fast, reliable code generation
+   - Thinking mode enabled for advanced reasoning
    - Pre/post-generation validation
    - Auto-transformation of common mistakes
    - Immutability enforcement
 
-3. **generate-artifact-fix** - Artifact error fixing (Kimi K2-Thinking)
+3. **generate-artifact-fix** - Artifact error fixing (GLM-4.6 via Z.ai)
    - Deep reasoning for debugging
    - Comprehensive error analysis
    - Automatic code corrections
 
-4. **generate-title** - Session title generation (Gemini Flash Lite)
+4. **generate-title** - Session title generation (Gemini Flash Lite via OpenRouter)
    - Auto-generates descriptive titles from first message
 
-5. **generate-image** - AI image generation (Gemini Flash-Image)
-   - 10-key rotation pool (150 RPM total)
-   - Round-robin key selection
+5. **generate-image** - AI image generation (Gemini Flash Image via OpenRouter)
+   - Single API key for simplicity
+   - High throughput via OpenRouter
 
-6. **summarize-conversation** - Context summarization (Gemini Flash Lite)
+6. **summarize-conversation** - Context summarization (Gemini Flash Lite via OpenRouter)
    - Intelligent conversation summarization for long chats
 
 **Shared Utilities** (`supabase/functions/_shared/`):
@@ -446,8 +447,8 @@ All AI model names are defined in `supabase/functions/_shared/config.ts`:
 export const MODELS = {
   /** Gemini 2.5 Flash Lite for chat/summaries/titles */
   GEMINI_FLASH: 'google/gemini-2.5-flash-lite',
-  /** Kimi K2-Thinking for artifact generation */
-  KIMI_K2: 'moonshotai/kimi-k2-thinking',
+  /** GLM-4.6 for artifact generation via Z.ai */
+  GLM_4_6: 'zhipu/glm-4.6',
   /** Gemini Flash Image for image generation */
   GEMINI_FLASH_IMAGE: 'google/gemini-2.5-flash-image'
 } as const;
@@ -661,15 +662,12 @@ VITE_ENABLE_ANALYTICS=false
 
 ### Edge Functions (Supabase Secrets)
 ```bash
-# OpenRouter (chat, artifacts, summaries, titles)
-supabase secrets set OPENROUTER_GEMINI_FLASH_KEY=sk-or-v1-...
-supabase secrets set OPENROUTER_KIMI_K2_KEY=sk-or-v1-...
-supabase secrets set OPENROUTER_K2T_KEY=sk-or-v1-...
+# OpenRouter (chat, summaries, titles, images)
+supabase secrets set OPENROUTER_GEMINI_FLASH_KEY=sk-or-v1-...  # Chat/summaries/titles
+supabase secrets set OPENROUTER_GEMINI_IMAGE_KEY=sk-or-v1-...  # Image generation
 
-# Google AI Studio (image generation - 10-key rotation)
-supabase secrets set GOOGLE_KEY_1=AIzaSy...
-supabase secrets set GOOGLE_KEY_2=AIzaSy...
-# ... GOOGLE_KEY_3 through GOOGLE_KEY_10
+# Z.ai API (artifact generation)
+supabase secrets set GLM_API_KEY=...  # GLM-4.6 via Z.ai
 
 # CORS configuration (production)
 supabase secrets set ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
@@ -706,8 +704,8 @@ src/
 supabase/
 ├── functions/
 │   ├── chat/                  # Main chat (Gemini Flash Lite)
-│   ├── generate-artifact/     # Artifact generation (Kimi K2)
-│   ├── generate-artifact-fix/ # Error fixing (Kimi K2)
+│   ├── generate-artifact/     # Artifact generation (GLM-4.6)
+│   ├── generate-artifact-fix/ # Error fixing (GLM-4.6)
 │   ├── generate-title/        # Title generation (Gemini)
 │   ├── generate-image/        # Image generation (Flash-Image)
 │   ├── summarize-conversation/ # Summarization (Gemini)
@@ -721,15 +719,16 @@ supabase/
 
 ## Key Architectural Decisions
 
-### Why Kimi K2-Thinking for Artifacts?
-- **Faster**: Eliminated timeout issues (previous model was too slow)
-- **More reliable**: Enhanced reasoning capabilities for complex code generation
+### Why GLM-4.6 for Artifacts?
+- **Faster**: Eliminated timeout issues with high-performance model
+- **More reliable**: Advanced thinking mode for complex code generation
 - **Better error fixing**: Deep reasoning for debugging and auto-correction
+- **Via Z.ai API**: Direct integration with thinking mode enabled
 
-### Why 10-Key Rotation for Images?
-- **High throughput**: 150 RPM total (10 keys × 15 RPM each)
-- **Independent rate limits**: Each key must be from different Google Cloud project
-- **Dedicated to images**: Chat and artifacts use single OpenRouter keys for simplicity
+### Why OpenRouter for Images?
+- **Simplicity**: Single API key management
+- **Reliability**: No key rotation complexity
+- **High throughput**: OpenRouter provides excellent performance
 
 ### Why No Radix UI in Artifacts?
 - **Babel standalone limitations**: Import maps not supported

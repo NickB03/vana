@@ -1,3 +1,11 @@
+> **STATUS**: ✅ Implemented
+> **Last Updated**: 2025-12-23
+> **Implementation Date**: 2025-11-15 (approx)
+> **Location**:
+> - Frontend: `src/components/ReasoningDisplay.tsx`
+> - Backend: `supabase/functions/chat/` with GLM reasoning support
+> - Documentation: `docs/REASONING_UI_ARCHITECTURE.md`
+
 # Implementing Claude-Style Reasoning UI with GLM 4.6 + Supabase Edge Functions
 
 A comprehensive implementation guide for building the "thinking ticker" pattern with your specific stack: GLM 4.6 API, Supabase Edge Functions, and React/Next.js frontend.

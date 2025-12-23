@@ -1,3 +1,8 @@
+> **STATUS**: 📋 Planned
+> **Last Updated**: 2025-12-23
+> **Priority**: Medium
+> **Implementation**: Not yet started
+
 # Canvas UI Redesign Plan
 
 **Goal**: Update the artifact/canvas UI to match Claude's canvas interface design

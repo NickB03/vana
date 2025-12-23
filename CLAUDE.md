@@ -46,6 +46,7 @@ npm run dev                    # Start dev server on port 8080
 | Model names | Always use `MODELS.*` from `_shared/config.ts` |
 | Artifact imports | NO `@/` imports — use npm packages or Tailwind |
 | Chrome MCP | `npx chrome-devtools-mcp start` / `/chrome-status` |
+| Validate critical files | `node scripts/validate-critical-files.cjs` |
 
 ## 🎯 MUST Rules (Non-Negotiable)
 
@@ -59,6 +60,13 @@ npm run dev                    # Start dev server on port 8080
 6. **CORS**: Never use wildcard `*` origins in production
 7. **Animation**: Only animate new messages, not entire chat history
 8. **Routes**: Add new routes ABOVE the `*` catch-all in App.tsx
+9. **Critical Files Protection**: **EXTREMELY CRITICAL** - NEVER redirect git command output to critical files
+   - ❌ `git show HEAD:index.html > index.html` → CORRUPTS FILE with error output
+   - ✅ `git show HEAD:index.html` then manually copy content
+   - **Pre-commit hook validates**: `index.html`, `package.json`, `vite.config.ts`, `tsconfig.json`
+   - **Why**: Failed git commands redirect errors (like "fatal: path 'index.html' does not exist") to the file, corrupting it
+   - **Protection**: Run `node scripts/validate-critical-files.cjs` before committing
+   - **Recovery**: `git checkout HEAD~1 -- index.html` (or last known good commit)
 
 ## ⚠️ Anti-Patterns
 
@@ -73,6 +81,7 @@ npm run dev                    # Start dev server on port 8080
 | Hardcode model names | Use `MODELS.*` | CI/CD fails |
 | Manual CORS headers | Use `corsHeaders` from cors-config.ts | Security |
 | Start new dev server on 8081+ | Kill 8080 and restart there | Port confusion, perf |
+| `git show ... > index.html` | `git show ...` then manual copy | Redirects errors to file, corrupting it |
 
 ## Chrome DevTools MCP Setup
 
@@ -223,7 +232,7 @@ supabase db push --linked --include-all
 | Chat/Summaries/Titles | Gemini 2.5 Flash Lite | OpenRouter | Single key, unlimited |
 | Artifact Generation | GLM-4.6 | Z.ai API | Thinking mode enabled, streams reasoning |
 | Artifact Error Fixing | GLM-4.6 | Z.ai API | Deep reasoning for debugging |
-| Image Generation | Gemini Flash-Image | Google AI Studio | 10-key rotation, 150 RPM |
+| Image Generation | Gemini 2.5 Flash Image | OpenRouter | Single key |
 
 **Dual Status Update System** (Real-time progress updates):
 
@@ -383,7 +392,7 @@ Full schema: `supabase/migrations/`
 | `bundle-artifact/` | Server-side npm bundling (Radix UI, framer-motion) |
 | `generate-artifact-fix/` | Error fixing with GLM-4.6 deep reasoning |
 | `generate-title/` | Session title generation |
-| `generate-image/` | AI image generation (10-key rotation) |
+| `generate-image/` | AI image generation (OpenRouter) |
 | `summarize-conversation/` | Context summarization |
 | `health/` | System health monitoring |
 | `admin-analytics/` | Admin analytics dashboard data |
@@ -439,7 +448,6 @@ User Message → GLM Tool Call → tool_call_start event
 export const MODELS = {
   GEMINI_FLASH: 'google/gemini-2.5-flash-lite',
   GLM_4_6: 'zhipu/glm-4.6',  // Artifact generation via Z.ai API
-  KIMI_K2: 'moonshotai/kimi-k2-thinking',  // @deprecated - use GLM_4_6
   GEMINI_FLASH_IMAGE: 'google/gemini-2.5-flash-image'
 } as const;
 ```
@@ -642,8 +650,8 @@ export default function App() { ... }
 
 **Edge Functions** (Supabase Secrets):
 - `OPENROUTER_GEMINI_FLASH_KEY` (chat, titles, summaries, fast reasoning)
+- `OPENROUTER_GEMINI_IMAGE_KEY` (image generation)
 - `GLM_API_KEY` (artifact generation via Z.ai)
-- `GOOGLE_KEY_1` through `GOOGLE_KEY_10` (image generation)
 - `TAVILY_API_KEY` (web search integration)
 - `ALLOWED_ORIGINS` (CORS whitelist, supports wildcards like `https://*.llm-chat-site.pages.dev`)
 
@@ -739,7 +747,7 @@ docker exec -i supabase_db_vznhbocnuykdmjvujaka psql -U postgres -c "DELETE FROM
 **Verify the problem**:
 ```bash
 # Check if API keys are loaded in the container
-docker exec supabase_edge_runtime_vznhbocnuykdmjvujaka printenv | grep -iE "OPENROUTER|GLM|GOOGLE_KEY"
+docker exec supabase_edge_runtime_vznhbocnuykdmjvujaka printenv | grep -iE "OPENROUTER|GLM|TAVILY"
 # If empty, env vars are NOT loaded
 ```
 

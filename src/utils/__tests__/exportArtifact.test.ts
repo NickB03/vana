@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { ArtifactType } from '@/components/Artifact';
+import type { ArtifactType } from '@/components/ArtifactContainer';
 import * as exportUtils from '../exportArtifact';
 
 describe('exportArtifact utilities', () => {

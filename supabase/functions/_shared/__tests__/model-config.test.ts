@@ -195,7 +195,7 @@ Deno.test("Model Config - No hardcoded model names in Edge Functions", async () 
     });
     console.log("\n💡 Solution: Import MODELS from '../_shared/config.ts' and use:");
     console.log("   • MODELS.GEMINI_FLASH");
-    console.log("   • MODELS.KIMI_K2");
+    console.log("   • MODELS.GLM_4_6");
     console.log("   • MODELS.GEMINI_FLASH_IMAGE\n");
 
     throw new Error(`Found ${violations.length} hardcoded model name(s)`);
@@ -253,7 +253,7 @@ Deno.test("Model Config - Snapshot file is valid and complete", async () => {
 Deno.test("Model Config - All required model keys exist", () => {
   console.log("\n🔍 Verifying required model keys...\n");
 
-  const requiredKeys = ["GEMINI_FLASH", "KIMI_K2", "GEMINI_FLASH_IMAGE"];
+  const requiredKeys = ["GEMINI_FLASH", "GLM_4_6", "GEMINI_FLASH_IMAGE"];
 
   for (const key of requiredKeys) {
     const value = MODELS[key as keyof typeof MODELS];

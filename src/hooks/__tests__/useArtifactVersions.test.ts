@@ -4,7 +4,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useArtifactVersions, ArtifactVersion } from "../useArtifactVersions";
 import { supabase } from "@/integrations/supabase/client";
-import { ArtifactData } from "@/components/Artifact";
+import { ArtifactData } from "@/components/ArtifactContainer";
 import React from "react";
 
 // Mock Supabase client

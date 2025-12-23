@@ -72,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Shared Validation Patterns**: Centralized validation utilities (`validation-patterns.ts`)
-- **Image Generation Rate Limiting**: Protected API quota on Google AI Studio endpoints
+- **Image Generation Rate Limiting**: Protected API quota on image generation endpoints
 - **Reserved Keyword Validator**: Auto-detection and fixing of strict mode violations
 
 ### Changed
@@ -104,7 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.0] - 2025-11-17
 
 ### Added
-- **Kimi K2-Thinking Integration**: Migrated artifact generation to new high-performance model
+- **Model Migration**: Migrated artifact generation to high-performance model (later replaced by GLM-4.6)
 - **Gemini-style Sidebar**: Auto-collapse sidebar with manual toggle control
 
 ### Changed
@@ -143,7 +143,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Migrated from direct Google AI Studio to OpenRouter for chat
-- Maintained Google AI Studio for image generation only (10-key rotation)
+- Consolidated image generation to OpenRouter for simplified key management
 
 ### Security
 - Fixed all HIGH and MEDIUM severity vulnerabilities

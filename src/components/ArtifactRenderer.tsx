@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Markdown } from "./prompt-kit/markdown";
+import { Markdown } from "@/components/ui/markdown";
 import { generateCompleteIframeStyles } from "@/utils/themeUtils";
 import { ArtifactSkeleton } from "@/components/ui/artifact-skeleton";
 import { WebPreview, WebPreviewBody, WebPreviewNavigation, WebPreviewUrl, WebPreviewNavigationButton } from '@/components/ai-elements/web-preview';

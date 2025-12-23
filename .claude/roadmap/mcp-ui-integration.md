@@ -1,3 +1,8 @@
+> **STATUS**: 📋 Planned
+> **Last Updated**: 2025-12-23
+> **Priority**: Low
+> **Implementation**: Not yet started - requires @mcp-ui/client package installation
+
 # MCP UI Integration Plan
 
 > **Goal**: Integrate MCP UI to render interactive widgets inline in chat messages

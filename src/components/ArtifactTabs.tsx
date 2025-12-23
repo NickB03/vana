@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { ArtifactData, ArtifactType } from "@/components/Artifact";
+import { ArtifactData, ArtifactType } from "@/components/ArtifactContainer";
 
 interface ArtifactTabsProps {
   artifacts: ArtifactData[];

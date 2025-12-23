@@ -19,17 +19,10 @@ const Signup = lazy(() => import("./pages/Signup"));
 const Landing = lazy(() => import("./pages/Landing"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-const LoadingDemo = lazy(() => import("./pages/LoadingDemo"));
-const LandingV2 = lazy(() => import("./pages/LandingV2"));
-const DemoMode = lazy(() => import("./pages/DemoMode"));
 const DemoModeV2 = lazy(() => import("./pages/DemoModeV2"));
 const DemoModeDashboard = lazy(() => import("./pages/DemoModeDashboard"));
 const DemoModeImageGeneration = lazy(() => import("./pages/DemoModeImageGeneration"));
 const UIShowcase = lazy(() => import("./pages/UIShowcase"));
-const FroggerHeroTest = lazy(() => import("./pages/FroggerHeroTest"));
-const TestSidebarStates = lazy(() => import("./pages/TestSidebarStates"));
-const FeatureTourDemo = lazy(() => import("./pages/FeatureTourDemo"));
-const JoyrideTourDemo = lazy(() => import("./pages/JoyrideTourDemo"));
 const ShadcnTourDemo = lazy(() => import("./pages/ShadcnTourDemo"));
 const DeepResearchComparison = lazy(() => import("./pages/DeepResearchComparison"));
 const DeepResearchDemoA = lazy(() => import("./pages/DeepResearchDemoA"));
@@ -92,17 +85,10 @@ const AnimatedRoutes = () => {
         <Route path="/signup" element={<AnimatedRoute><Signup /></AnimatedRoute>} />
         <Route path="/landing" element={<AnimatedRoute><Landing /></AnimatedRoute>} />
         <Route path="/admin" element={<AnimatedRoute><AdminDashboard /></AnimatedRoute>} />
-        <Route path="/loading-demo" element={<AnimatedRoute><LoadingDemo /></AnimatedRoute>} />
-        <Route path="/landing-v2" element={<AnimatedRoute><LandingV2 /></AnimatedRoute>} />
-        <Route path="/demo-frogger" element={<DemoMode />} />
         <Route path="/demo-frogger-v2" element={<DemoModeV2 />} />
         <Route path="/demo-dashboard" element={<DemoModeDashboard />} />
         <Route path="/demo-image-gen" element={<DemoModeImageGeneration />} />
         <Route path="/ui-showcase" element={<AnimatedRoute><UIShowcase /></AnimatedRoute>} />
-        <Route path="/frogger-hero-test" element={<AnimatedRoute><FroggerHeroTest /></AnimatedRoute>} />
-        <Route path="/test-sidebar-states" element={<AnimatedRoute><TestSidebarStates /></AnimatedRoute>} />
-        <Route path="/demo-feature-tour" element={<AnimatedRoute><FeatureTourDemo /></AnimatedRoute>} />
-        <Route path="/demo-joyride-tour" element={<AnimatedRoute><JoyrideTourDemo /></AnimatedRoute>} />
         <Route path="/demo-shadcn-tour" element={<AnimatedRoute><ShadcnTourDemo /></AnimatedRoute>} />
         <Route path="/deep-research" element={<AnimatedRoute><DeepResearchComparison /></AnimatedRoute>} />
         <Route path="/deep-research-demo-a" element={<AnimatedRoute><DeepResearchDemoA /></AnimatedRoute>} />

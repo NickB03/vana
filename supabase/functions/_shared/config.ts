@@ -149,7 +149,7 @@ export const RATE_LIMITS = {
     GEMINI_RPM: getEnvInt('RATE_LIMIT_API_THROTTLE_RPM', 15, 1),
     WINDOW_SECONDS: getEnvInt('RATE_LIMIT_API_THROTTLE_WINDOW', 60, 1)
   },
-  /** Artifact generation rate limits (more restrictive due to expensive Kimi K2 model) */
+  /** Artifact generation rate limits (more restrictive due to expensive GLM-4.6 model) */
   ARTIFACT: {
     /** API throttle for artifact generation (stricter than chat) */
     API_THROTTLE: {
@@ -268,12 +268,6 @@ export const MODELS = {
   GLM_4_6: 'zhipu/glm-4.6',
   /** GLM-4.5-Air for ultra-fast reasoning summarization (sidecar commentator) - via Z.ai API */
   GLM_4_5_AIR: 'zhipu/glm-4.5-air',
-  /**
-   * @deprecated Fully replaced by GLM_4_6 for artifact generation.
-   * Kept only for backward compatibility during transition.
-   * Will be removed in next major version.
-   */
-  KIMI_K2: 'moonshotai/kimi-k2-thinking',
   /** Gemini Flash Image for image generation */
   GEMINI_FLASH_IMAGE: 'google/gemini-2.5-flash-image'
 } as const;
