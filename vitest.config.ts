@@ -12,25 +12,11 @@ export default defineConfig({
     ],
     testTimeout: 5000, // Increased from default 1000ms for async operations
     teardownTimeout: 10000, // Allow 10s for cleanup
-    // Use forks for memory isolation (threads share memory limit with main process)
-    // Forks get their own memory space and respect NODE_OPTIONS
-    pool: 'forks',
-    poolOptions: {
-      threads: {
-        // Reduce to single-thread mode for memory isolation during large test runs
-        maxThreads: 1,
-        minThreads: 1,
-        isolate: true,
-        singleThread: true
-      },
-      forks: {
-        // Reduce to 1 fork for memory isolation
-        // Each fork consumes ~1.5-2GB; single fork prevents OOM
-        maxForks: 1,
-        isolate: true,
-        singleFork: true
-      }
-    }
+    // Use threads to avoid fork-based memory spikes during large test suites
+    pool: 'threads',
+    maxWorkers: 1,
+    fileParallelism: false,
+    isolate: true
   },
   coverage: {
     // Use istanbul instead of v8 to prevent OOM during CI coverage generation
