@@ -165,7 +165,6 @@ const serviceClient = createClient(
 - `generate-artifact/index.ts` - Writes artifact versions, rate limiting
 - `generate-image/index.ts` - Rate limiting, session validation
 - `bundle-artifact/index.ts` - Guest session bundling
-- `intent-examples/index.ts` - Administrative operations
 - All `_shared/` utilities - Rate limiting, logging, storage
 
 **Why service_role policies are CRITICAL**:

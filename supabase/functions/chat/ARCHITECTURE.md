@@ -59,50 +59,18 @@
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ 5. Intent Detection (handlers/intent.ts)                         │
-│    • Check force modes (forceArtifactMode, forceImageMode)       │
-│    • Detect intent (chat, artifact, image, web_search)           │
-│    • Determine if web search is needed                           │
+│ 5. URL Content Extraction (handlers/url-extract.ts)              │
+│    • Extract linked page content (if URLs detected)              │
+│    • Provide context to tool-calling                             │
 └──────────────────────┬──────────────────────────────────────────┘
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ 6. Reasoning Generation (optional)                               │
-│    • Generate structured reasoning (max 3 steps, 8s timeout)     │
-│    • Use fallback on error                                       │
-└──────────────────────┬──────────────────────────────────────────┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ 7. Web Search (handlers/search.ts, if needed)                    │
-│    • Execute Tavily search with retry                            │
-│    • Format results for context injection                        │
-│    • Log usage (fire-and-forget)                                 │
-└──────────────────────┬──────────────────────────────────────────┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ 8. Route by Intent                                               │
-│                                                                   │
-│  ┌───────────────┐  ┌────────────────┐  ┌────────────────────┐  │
-│  │ IMAGE         │  │ ARTIFACT       │  │ CHAT               │  │
-│  │ (handlers/    │  │ (handlers/     │  │ (Regular           │  │
-│  │  image.ts)    │  │  artifact.ts)  │  │  Streaming)        │  │
-│  │               │  │                │  │                    │  │
-│  │ ↓             │  │ ↓              │  │ ↓                  │  │
-│  │ generate-     │  │ generate-      │  │ Cache Manager      │  │
-│  │ image         │  │ artifact       │  │ ↓                  │  │
-│  │ function      │  │ function       │  │ Build Context      │  │
-│  │               │  │                │  │ ↓                  │  │
-│  │               │  │                │  │ OpenRouter         │  │
-│  │               │  │                │  │ (Gemini Flash)     │  │
-│  │               │  │                │  │ ↓                  │  │
-│  │               │  │                │  │ Transform Stream   │  │
-│  │               │  │                │  │ (handlers/         │  │
-│  │               │  │                │  │  streaming.ts)     │  │
-│  └───────────────┘  └────────────────┘  └────────────────────┘  │
-│                                                                   │
-│  All paths inject reasoning and search results via SSE           │
+│ 6. Tool-Calling Chat (handlers/tool-calling-chat.ts)             │
+│    • Apply toolChoice override (generate_artifact/image)         │
+│    • GLM decides tool calls (artifact/image/search)              │
+│    • Tool executor runs + returns results                        │
+│    • Stream SSE content + tool events to client                  │
 └──────────────────────┬──────────────────────────────────────────┘
                        │
                        ▼
@@ -148,46 +116,17 @@ Implements business logic for specific features:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ handlers/intent.ts                                               │
-│ • Detects user intent (chat, artifact, image, search)           │
-│ • Respects force modes (user override)                           │
-│ • Returns IntentResult                                           │
+│ handlers/tool-calling-chat.ts                                    │
+│ • GLM native tool-calling orchestration                          │
+│ • Executes tools + handles continuations                         │
+│ • Streams SSE content + tool lifecycle events                    │
+│ • Returns Response with streamed tool output                     │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
-│ handlers/search.ts                                               │
-│ • Performs Tavily web search                                     │
-│ • Formats results for context injection                          │
-│ • Logs usage for analytics                                       │
-│ • Returns SearchResult                                           │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│ handlers/image.ts                                                │
-│ • Delegates to generate-image function                           │
-│ • Formats SSE response                                           │
-│ • Injects reasoning                                              │
-│ • Returns ImageResponse                                          │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│ handlers/artifact.ts                                             │
-│ • Delegates to generate-artifact function                        │
-│ • Formats SSE response                                           │
-│ • Injects reasoning                                              │
-│ • Returns ArtifactResponse                                       │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│ handlers/streaming.ts                                            │
-│ • Creates SSE transform stream                                   │
-│ • ReasoningProvider integration (feature-flagged)                │
-│   - Hybrid LLM+fallback for semantic status updates             │
-│   - Circuit breaker: 3 failures → 30s cooldown                  │
-│ • Parses GLM reasoning_content for progressive steps            │
-│ • Injects search results as SSE event                            │
-│ • Transforms artifact code (fixes imports)                       │
-│ • Returns Response with transformed stream                       │
+│ handlers/url-extract.ts                                          │
+│ • Extracts content from URLs in user messages                    │
+│ • Returns extracted context + metadata                           │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -247,28 +186,20 @@ Errors are caught at each layer and returned with appropriate status codes:
    → JWT valid
    → Session ownership verified
 
-5. Intent Detection
-   → Intent: chat
-   → shouldSearch: true (temporal keywords detected)
+5. Tool-Calling Orchestration
+   → toolChoice: auto
+   → GLM decides tool calls
 
-6. Reasoning Generation
-   → 3 steps generated
-   → Cached for SSE injection
+6. URL Extraction (if URLs detected)
+   → Extracted content appended to context
 
-7. Web Search
-   → Tavily search executed
+7. Tool Execution
+   → browser.search executed
    → 5 results returned
-   → Context formatted
 
-8. Chat Streaming
-   → Cache fetched
-   → System instruction built
-   → Search context injected
-   → OpenRouter called
-
-9. Stream Transformation
-   → Event 1: Pre-streamed reasoning (if available)
-   → Event 2: Search Results (type: web_search)
+8. Streaming Response
+   → Event 1: tool_call_start
+   → Event 2: tool_result
    → Events 3-N: reasoning_status (from ReasoningProvider, when enabled)
    → Events 3-N: reasoning_step (progressive step detection)
    → Events 3-N: Chat content (OpenAI format)
@@ -286,24 +217,21 @@ Errors are caught at each layer and returned with appropriate status codes:
 - Validation: <1ms
 - Rate Limiting: 5-10ms (database query)
 - Authentication: 10-20ms (JWT verification + database query)
-- Intent Detection: 50-100ms (embedding similarity search)
-- Reasoning Generation: 1000-2000ms (LLM call, optional)
-- Web Search: 500-1500ms (Tavily API, conditional)
-- Chat Streaming: 2000-5000ms (OpenRouter, streaming)
+- Tool-Calling Inference: 2000-5000ms (GLM streaming)
+- Tool Execution: variable (search/image/artifact)
 
 ### Critical Path (No Reasoning, No Search)
-Validation → Rate Limit → Auth → Intent → Streaming
+Validation → Rate Limit → Auth → Tool-Calling Stream
 = ~50ms + streaming time
 
 ### Parallelization Opportunities
 - API throttle + Guest/User rate limit (already parallel)
-- Intent detection + Reasoning generation (could be parallel)
 - Cache fetch + Context building (could be parallel)
 
 ## Feature Flags
 
 ### ReasoningProvider (Status Generation)
-The `USE_REASONING_PROVIDER` flag controls whether streaming.ts uses the hybrid ReasoningProvider for semantic status updates:
+The `USE_REASONING_PROVIDER` flag controls whether tool-calling uses the hybrid ReasoningProvider for semantic status updates:
 
 - **Enabled**: GLM-4.5-Air generates semantic status messages from reasoning chunks
 - **Disabled**: Direct text extraction from parsed reasoning (legacy behavior)

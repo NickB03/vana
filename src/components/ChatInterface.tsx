@@ -134,14 +134,12 @@ export function ChatInterface({
     setIsStreaming(true);
     setStreamingMessage("");
 
-    // Capture mode states and reset them after sending
-    const shouldGenerateImage = imageMode;
-    const shouldGenerateArtifact = artifactMode;
-    console.log("🎯 [ChatInterface.handleSend] Captured modes:", {
+    const toolChoice =
+      imageMode ? "generate_image" : artifactMode ? "generate_artifact" : "auto";
+    console.log("🎯 [ChatInterface.handleSend] Tool choice:", {
       imageMode,
       artifactMode,
-      shouldGenerateImage,
-      shouldGenerateArtifact
+      toolChoice,
     });
     // NOTE: setImageMode/setArtifactMode moved to useEffect below to prevent render phase updates
 
@@ -178,8 +176,7 @@ export function ChatInterface({
         completeStream();
       },
       currentArtifact && isEditingArtifact ? currentArtifact : undefined,
-      shouldGenerateImage,
-      shouldGenerateArtifact,
+      toolChoice,
       0, // retryCount
       abortController.signal
     );
@@ -453,20 +450,6 @@ export function ChatInterface({
       return;
     }
 
-    // Detect if this was an artifact request (for direct routing)
-    // Check if failed response had artifact content OR user prompt matches artifact patterns
-    const artifactPatterns = [
-      /^Build a React artifact/i,
-      /^Create a (.*) (app|game|component|dashboard|tracker|calculator)/i,
-      /^Make a (.*) (app|game|component|dashboard|tracker|calculator)/i,
-      /^Build a (.*) (app|game|component|dashboard|tracker|calculator)/i,
-      /^Generate a React/i,
-      /\b(todo|counter|timer|quiz|trivia|snake|frogger|tic-tac-toe|memory)\b.*\b(app|game|component)\b/i,
-    ];
-    const wasArtifactRequest =
-      failedMessage.content.includes('<artifact') ||
-      artifactPatterns.some(pattern => pattern.test(userMessage.content));
-
     try {
       // Delete the assistant message
       await deleteMessage(messageId);
@@ -498,8 +481,7 @@ export function ChatInterface({
           completeStream();
         },
         currentArtifact && isEditingArtifact ? currentArtifact : undefined,
-        false, // forceImageMode
-        wasArtifactRequest,  // forceArtifactMode - route to /generate-artifact if this was an artifact request
+        "auto",
         0, // retryCount
         abortController.signal
       );
@@ -608,7 +590,6 @@ export function ChatInterface({
                           {/* FIX: Provide streamingReasoningText as fallback for completed messages */}
                           <ReasoningDisplay
                             reasoning={message.reasoning}
-                            reasoningSteps={message.reasoning_steps}
                             streamingReasoningText={message.reasoning}
                             isStreaming={false}
                             artifactRendered={true}
@@ -748,7 +729,6 @@ export function ChatInterface({
                   {/* Always show reasoning during streaming, even if no data yet */}
                   <ReasoningErrorBoundary fallback={<ThinkingIndicator status="Loading reasoning..." />}>
                     <ReasoningDisplay
-                      reasoningSteps={streamProgress.reasoningSteps}
                       streamingReasoningText={streamProgress.streamingReasoningText}
                       reasoningStatus={streamProgress.reasoningStatus}
                       isStreaming={true}

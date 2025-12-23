@@ -1,6 +1,6 @@
 # API Reference - Vana Edge Functions
 
-**Last Updated**: 2025-12-19
+**Last Updated**: 2025-12-22
 **Base URL**: `https://vznhbocnuykdmjvujaka.supabase.co/functions/v1`
 
 ---
@@ -12,12 +12,16 @@
 - [Error Handling](#error-handling)
 - [Endpoints](#endpoints)
   - [Chat](#post-chat)
+    - [Dual SSE Status Update System](#dual-sse-status-update-system)
   - [Generate Artifact](#post-generate-artifact)
   - [Generate Artifact Fix](#post-generate-artifact-fix)
   - [Generate Image](#post-generate-image)
   - [Generate Title](#post-generate-title)
   - [Summarize Conversation](#post-summarize-conversation)
   - [Admin Analytics](#get-admin-analytics)
+- [Code Examples](#code-examples)
+- [Best Practices](#best-practices)
+- [Changelog](#changelog)
 
 ---
 
@@ -129,8 +133,7 @@ Content-Type: application/json
   "sessionId": "uuid-string",
   "isGuest": false,
   "currentArtifact": null,
-  "forceImageMode": false,
-  "forceArtifactMode": false,
+  "toolChoice": "auto",
   "includeReasoning": true
 }
 ```
@@ -143,8 +146,7 @@ Content-Type: application/json
 | `sessionId` | `string` | Yes | Unique session identifier |
 | `isGuest` | `boolean` | No | Whether user is a guest (default: `false`) |
 | `currentArtifact` | `object \| null` | No | Existing artifact for context |
-| `forceImageMode` | `boolean` | No | Force image generation mode |
-| `forceArtifactMode` | `boolean` | No | Force artifact generation mode |
+| `toolChoice` | `"auto" \| "generate_artifact" \| "generate_image"` | No | Force a specific tool call (default: `"auto"`) |
 | `includeReasoning` | `boolean` | No | Include Chain of Thought reasoning (default: `true`) |
 
 **Message Schema**:
@@ -159,77 +161,269 @@ interface Message {
 
 **Content-Type**: `text/event-stream` (Server-Sent Events)
 
+#### Dual SSE Status Update System
+
+The chat API uses **TWO parallel status update mechanisms** for redundancy and backward compatibility:
+
+1. **Legacy System**: `status_update` events (parsed from `[STATUS:]` markers in GLM reasoning)
+2. **Modern System**: `reasoning_status` events (LLM-generated semantic summaries via ReasoningProvider)
+
+Both systems run simultaneously to provide resilient status updates during AI processing.
+
+##### Status Update Events Comparison
+
+| Feature | `status_update` (Legacy) | `reasoning_status` (Modern) |
+|---------|--------------------------|------------------------------|
+| **Source** | Regex parsing of `[STATUS:]` markers | LLM semantic analysis (GLM-4.5-Air) |
+| **Fallback** | None (AI-dependent) | Circuit breaker → phase templates |
+| **Metadata** | None | Extensive (phase, provider, timestamps) |
+| **Reliability** | Depends on AI emitting markers | Protected by circuit breaker |
+| **Frequency** | Sparse (marker-dependent) | Frequent (intelligent buffering) |
+| **Format** | `{ type, status }` | `{ type, status, phase, metadata }` |
+
 **Event Types**:
 
-1. **Reasoning Status Event** (ReasoningProvider updates):
+1. **Status Update Event** (Legacy - marker-based):
+```json
+{
+  "type": "status_update",
+  "status": "Analyzing user requirements..."
+}
 ```
-data: {"type":"reasoning_status","content":"Analyzing your request...","source":"reasoning_provider","phase":"analyzing"}
+- **Source**: Parsed from `[STATUS:]` markers in GLM-4.6 reasoning output
+- **Frequency**: Only when GLM emits explicit `[STATUS:]` markers
+- **Reliability**: Depends on AI model consistently emitting markers
+- **Use Case**: Backward compatibility, simple status display
+
+2. **Reasoning Status Event** (Modern - LLM-powered):
+```json
+{
+  "type": "reasoning_status",
+  "status": "Designing component structure...",
+  "phase": "planning",
+  "metadata": {
+    "requestId": "req_123",
+    "timestamp": "2025-12-22T10:30:00Z",
+    "source": "llm",
+    "provider": "z.ai",
+    "model": "glm-4.5-air",
+    "circuitBreakerOpen": false
+  }
+}
+```
+- **Source**: ReasoningProvider with GLM-4.5-Air semantic summarization
+- **Frequency**: Periodic updates during reasoning (respects `minUpdateIntervalMs`)
+- **Reliability**: Circuit breaker fallback to phase templates on LLM failure
+- **Phases**: `analyzing`, `planning`, `implementing`, `refining`, `completing`
+- **Metadata Fields**:
+  - `requestId`: Unique identifier for request correlation
+  - `timestamp`: ISO 8601 timestamp
+  - `source`: `llm` (LLM-generated) or `template` (fallback)
+  - `provider`: AI provider used (e.g., `z.ai`)
+  - `model`: Specific model used for status generation
+  - `circuitBreakerOpen`: Circuit breaker state for monitoring
+
+**Status Update Flow**:
+```
+Chat Request → GLM-4.6 Reasoning Stream
+    ↓
+[Parallel Processing]
+    ├─→ Parse [STATUS:] markers → status_update events
+    └─→ ReasoningProvider → reasoning_status events
 ```
 
-2. **Reasoning Step Event** (structured thinking steps):
-```
-data: {"type":"reasoning_step","step":{"phase":"research","title":"Understanding Request","items":["..."]},"stepIndex":0}
-```
-
-3. **Tool Call Start Event** (Issue #340 unified tools):
-```
-data: {"type":"tool_call_start","toolName":"generate_artifact","arguments":{"artifact_type":"react","prompt":"..."}}
-```
-
-4. **Tool Result Event**:
-```
-data: {"type":"tool_result","toolName":"generate_artifact","success":true,"latencyMs":2450}
+3. **Reasoning Step Event** (structured thinking steps):
+```json
+{
+  "type": "reasoning_step",
+  "step": {
+    "phase": "research",
+    "title": "Understanding Request",
+    "items": ["Identify key requirements", "Review context"]
+  },
+  "stepIndex": 0
+}
 ```
 
-5. **Artifact Complete Event** (after tool execution):
-```
-data: {"type":"artifact_complete","artifact":{"type":"react","title":"Counter","content":"..."}}
-```
-
-6. **Image Complete Event**:
-```
-data: {"type":"image_complete","imageUrl":"https://...","title":"Generated Image"}
-```
-
-7. **Web Search Event**:
-```
-data: {"type":"web_search","data":{"query":"...","sources":[{"title":"...","url":"...","snippet":"..."}]}}
+4. **Tool Call Start Event** (Issue #340 unified tools):
+```json
+{
+  "type": "tool_call_start",
+  "toolName": "generate_artifact",
+  "arguments": {
+    "artifact_type": "react",
+    "prompt": "Create a counter component"
+  }
+}
 ```
 
-8. **Content Delta Event**:
-```
-data: {"choices":[{"delta":{"content":"Hello"}}]}
+5. **Tool Result Event**:
+```json
+{
+  "type": "tool_result",
+  "toolName": "generate_artifact",
+  "success": true,
+  "latencyMs": 2450
+}
 ```
 
-9. **Done Event**:
+6. **Artifact Complete Event** (after tool execution):
+```json
+{
+  "type": "artifact_complete",
+  "artifact": {
+    "type": "react",
+    "title": "Counter",
+    "content": "export default function Counter() { ... }"
+  }
+}
+```
+
+7. **Image Complete Event**:
+```json
+{
+  "type": "image_complete",
+  "imageUrl": "https://...",
+  "title": "Generated Image"
+}
+```
+
+8. **Web Search Event**:
+```json
+{
+  "type": "web_search",
+  "data": {
+    "query": "React hooks best practices",
+    "sources": [
+      {
+        "title": "React Documentation",
+        "url": "https://react.dev/hooks",
+        "snippet": "Hooks let you use state and other React features..."
+      }
+    ]
+  }
+}
+```
+
+9. **Content Delta Event**:
+```json
+{
+  "choices": [
+    {
+      "delta": {
+        "content": "Hello"
+      }
+    }
+  ]
+}
+```
+
+10. **Done Event**:
 ```
 data: [DONE]
 ```
 
-**Example Stream**:
+**Example Stream Consumption**:
 ```javascript
-// Client-side implementation
-const eventSource = new EventSource('/chat', {
+// Client-side implementation using fetch + ReadableStream
+const response = await fetch('/chat', {
   method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  },
   body: JSON.stringify(requestData)
 });
 
-eventSource.addEventListener('reasoning', (event) => {
-  const reasoning = JSON.parse(event.data);
-  // Display reasoning steps
-});
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
 
-eventSource.addEventListener('delta', (event) => {
-  const delta = JSON.parse(event.data);
-  // Append to message
-});
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
 
-eventSource.addEventListener('done', (event) => {
-  const final = JSON.parse(event.data);
-  // Complete message
-  eventSource.close();
-});
+  const chunk = decoder.decode(value);
+  const lines = chunk.split('\n');
+
+  for (const line of lines) {
+    if (!line.startsWith('data: ')) continue;
+
+    const data = line.slice(6);
+    if (data === '[DONE]') {
+      console.log('Stream complete');
+      break;
+    }
+
+    try {
+      const event = JSON.parse(data);
+
+      switch (event.type) {
+        // Legacy status updates (marker-based)
+        case 'status_update':
+          console.log('[Legacy Status]:', event.status);
+          updateStatusUI(event.status);
+          break;
+
+        // Modern status updates (LLM-powered)
+        case 'reasoning_status':
+          console.log('[Modern Status]:', {
+            status: event.status,
+            phase: event.phase,
+            source: event.metadata.source,
+            circuitBreaker: event.metadata.circuitBreakerOpen
+          });
+          updateStatusUI(event.status, event.phase);
+          break;
+
+        case 'reasoning_step':
+          displayReasoningStep(event.step, event.stepIndex);
+          break;
+
+        case 'tool_call_start':
+          console.log(`[Tool] Starting ${event.toolName}...`);
+          showToolProgress(event.toolName);
+          break;
+
+        case 'tool_result':
+          console.log(`[Tool] ${event.toolName} completed in ${event.latencyMs}ms`);
+          break;
+
+        case 'artifact_complete':
+          displayArtifact(event.artifact);
+          break;
+
+        case 'image_complete':
+          displayImage(event.imageUrl, event.title);
+          break;
+
+        case 'web_search':
+          displaySearchResults(event.data.sources);
+          break;
+
+        default:
+          // Content delta (OpenRouter format)
+          if (event.choices?.[0]?.delta?.content) {
+            appendToMessage(event.choices[0].delta.content);
+          }
+      }
+    } catch (error) {
+      console.error('Failed to parse SSE event:', error);
+    }
+  }
+}
 ```
+
+**Recommended Approach**: Listen for **both** `status_update` and `reasoning_status` events:
+- Use `reasoning_status` as primary (rich metadata, reliable fallback)
+- Use `status_update` as backup (simpler, but AI-dependent)
+- Prefer the most recent status update from either source
+
+**Architecture Details**: For implementation details of the dual status system, see:
+- **CLAUDE.md** → "Status Marker System" section (legacy marker-based parsing)
+- **CLAUDE.md** → "Unified Tool-Calling Architecture" section (Issue #340)
+- **docs/REASONING_UI_ARCHITECTURE.md** → ReasoningProvider implementation details
+- **supabase/functions/_shared/glm-client.ts** → `parseStatusMarker()` function
+- **supabase/functions/chat/handlers/reasoning-provider.ts** → LLM-powered status generation
 
 #### AI Model
 
@@ -680,6 +874,9 @@ if (remaining && parseInt(remaining) < 5) {
 - Always close the EventSource connection when done
 - Implement timeout handling for long-running requests
 - Handle connection errors gracefully
+- Listen for both `status_update` and `reasoning_status` events for maximum reliability
+- Monitor `circuitBreakerOpen` flag in `reasoning_status` metadata to detect system degradation
+- Gracefully fall back to simple status display if LLM status generation fails
 
 ### 4. Security
 
@@ -690,6 +887,14 @@ if (remaining && parseInt(remaining) < 5) {
 ---
 
 ## Changelog
+
+### 2025-12-22
+- **Dual SSE Event System Documentation**
+  - Comprehensive documentation of parallel status update mechanisms
+  - `status_update` events (legacy marker-based parsing)
+  - `reasoning_status` events (modern LLM-powered semantic summaries)
+  - Detailed comparison table and usage recommendations
+  - Updated example code showing both event types
 
 ### 2025-12-19
 - **Issue #340**: Unified tool-calling architecture
@@ -702,6 +907,7 @@ if (remaining && parseInt(remaining) < 5) {
 - **Issue #339**: Hybrid ReasoningProvider with LLM+fallback
   - Added `reasoning_status` SSE events with phase detection
   - Circuit breaker pattern for resilient operation
+  - GLM-4.5-Air model for semantic status summarization
 
 ### 2025-12-14
 - **Issue #335**: Inline citation badges for web search results

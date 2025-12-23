@@ -50,8 +50,8 @@ export class ResourceExhaustionError extends Error {
 
 export const DEFAULT_EXECUTION_LIMITS: ExecutionLimits = {
   maxToolCallsPerRequest: 3,      // Max tools per request
-  maxTotalExecutionMs: 90000,     // 90s total request timeout
-  maxSingleToolMs: 60000,         // 60s per tool (artifact can be slow)
+  maxTotalExecutionMs: 200000,    // 200s total request timeout (allows GLM thinking mode)
+  maxSingleToolMs: 180000,        // 180s per tool (GLM with reasoning can take ~168s)
 };
 
 // =============================================================================

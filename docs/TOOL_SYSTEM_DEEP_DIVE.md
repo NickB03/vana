@@ -31,19 +31,9 @@ flowchart TB
     AUTHN --> VERIFY{verifySessionOwnership}
 
     VERIFY -->|Not Owner| ERR403[403 Forbidden]
-    VERIFY -->|Owner| INTENT[detectUserIntent]
-
-    INTENT --> SEARCH{Web Search<br/>Needed?}
-    SEARCH -->|Yes| TAVILY[performWebSearch]
-    SEARCH -->|No| HANDLER
-    TAVILY --> HANDLER
-
-    HANDLER{Route to Handler}
-    HANDLER -->|Tools Enabled| TOOL_CHAT[handleToolCallingChat]
-    HANDLER -->|Legacy| STREAM[createStreamingResponse]
+    VERIFY -->|Owner| TOOL_CHAT[handleToolCallingChat]
 
     TOOL_CHAT --> SSE[SSE Stream Response]
-    STREAM --> SSE
 
     style ERR400 fill:#ffcdd2
     style ERR403 fill:#ffcdd2
@@ -51,7 +41,6 @@ flowchart TB
     style ERR429_A fill:#ffe0b2
     style ERR503 fill:#ffcdd2
     style TOOL_CHAT fill:#c8e6c9
-    style STREAM fill:#c8e6c9
 ```
 
 ---

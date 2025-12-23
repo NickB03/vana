@@ -471,7 +471,7 @@ REASONING_PROVIDER_ROLLOUT_PERCENT=50
 - **Config/Flags**: `supabase/functions/_shared/config.ts`
 - **Integration Examples**:
   - `supabase/functions/generate-artifact/index.ts`
-  - `supabase/functions/chat/handlers/streaming.ts`
+  - `supabase/functions/chat/handlers/tool-calling-chat.ts`
 
 ## Related Documentation
 

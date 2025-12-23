@@ -1,23 +1,29 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, beforeAll } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useChatMessages } from '../useChatMessages';
-import { supabase } from '@/integrations/supabase/client';
+// Mock Supabase client integration
+const mockSupabaseChain = {
+  select: vi.fn().mockReturnThis(),
+  eq: vi.fn().mockReturnThis(),
+  order: vi.fn().mockReturnValue({ data: [], error: null }),
+  insert: vi.fn().mockReturnThis(),
+  single: vi.fn().mockReturnValue({ data: {}, error: null }),
+};
 
-// Mock Supabase
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
-    from: vi.fn(),
+    from: vi.fn(() => mockSupabaseChain),
     auth: {
-      getSession: vi.fn(),
+      getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
     },
   },
 }));
 
 // Mock useToast hook
+const mockToast = vi.fn();
 vi.mock('@/hooks/use-toast', () => ({
   useToast: () => ({
-    toast: vi.fn(),
+    toast: mockToast,
   }),
 }));
 
@@ -41,6 +47,14 @@ vi.mock('@/types/reasoning', () => ({
 
 describe('useChatMessages', () => {
   const mockSessionId = 'test-session-id';
+  let useChatMessages: any;
+
+  beforeAll(async () => {
+    // Dynamic import to ensure mocks are applied before module loading
+    // This prevents eager loading of heavy dependencies (Sentry, etc.) that cause OOM
+    const mod = await import('../useChatMessages');
+    useChatMessages = mod.useChatMessages;
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -368,6 +382,29 @@ describe('useChatMessages', () => {
 
       expect(savedMessage?.content).toBe(longContent);
       expect(savedMessage?.content.length).toBe(10000);
+    });
+  });
+
+  describe('artifact render timeout', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.runOnlyPendingTimers();
+      vi.useRealTimers();
+    });
+
+    it('marks artifact as rendered after timeout when idle', () => {
+      const { result } = renderHook(() => useChatMessages(undefined));
+
+      expect(result.current.artifactRenderStatus).toBe('pending');
+
+      act(() => {
+        vi.advanceTimersByTime(10000);
+      });
+
+      expect(result.current.artifactRenderStatus).toBe('rendered');
     });
   });
 });

@@ -10,7 +10,7 @@
  * - OpenRouter fallback path (when GLM is unavailable)
  *
  * The `generateStructuredReasoning` function is no longer called from chat/index.ts.
- * Reasoning is now handled by streaming.ts parsing GLM's SSE format.
+ * Reasoning is now handled by tool-calling stream parsing in `handlers/tool-calling-chat.ts`.
  *
  * Architecture:
  * - Uses OpenRouter Gemini Flash for fast, cost-effective reasoning generation

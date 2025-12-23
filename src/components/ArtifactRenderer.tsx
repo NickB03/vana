@@ -440,7 +440,7 @@ const BundledArtifactFrame = memo(({
             // Replace the module script with a babel script
             htmlContent = htmlContent.replace(
               /<script type="module">[\s\S]*?<\/script>/,
-              `<script type="text/babel" data-presets="react">${wrappedContent}</script>`
+              `<script type="text/babel" data-presets="env,react">${wrappedContent}</script>`
             );
 
             console.log('[BundledArtifactFrame] Converted to Babel script with dynamic imports');
@@ -1274,7 +1274,7 @@ ${artifact.content}
 </head>
 <body>
   <div id="root"></div>
-  <script type="text/babel" data-type="module" data-presets="react">
+  <script type="text/babel" data-type="module" data-presets="env,react">
     const { useState, useEffect, useReducer, useRef, useMemo, useCallback } = React;
 
     const LucideIcons = window.LucideReact || window.lucideReact || {};

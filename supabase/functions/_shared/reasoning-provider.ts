@@ -2,7 +2,7 @@
  * Reasoning Provider - Hybrid LLM + Phase-Based Status Generation
  *
  * Provides real-time reasoning updates during artifact generation by combining:
- * - Primary: LLM-based semantic status messages (GLM-4.5-air)
+ * - Primary: LLM-based semantic status messages (GLM-4.5-Air)
  * - Fallback: Phase-based template messages
  * - Circuit breaker pattern for LLM failures
  * - Anti-flicker and idle heartbeat mechanisms
@@ -20,6 +20,9 @@
  * provider.destroy();
  * ```
  */
+
+import { PromptInjectionDefense } from './prompt-injection-defense.ts';
+import { MODELS } from './config.ts';
 
 // ============================================================================
 // Core Types
@@ -93,21 +96,21 @@ export interface ReasoningConfig {
   /**
    * Minimum characters to buffer before calling LLM
    * Prevents excessive API calls for small chunks
-   * @default 150
+   * @default 200
    */
   minBufferChars: number;
 
   /**
    * Maximum characters to buffer before forcing LLM call
    * Prevents stale updates during long reasoning blocks
-   * @default 500
+   * @default 800
    */
   maxBufferChars: number;
 
   /**
    * Maximum time to wait before forcing LLM call (ms)
    * Ensures updates even with slow reasoning streams
-   * @default 3000
+   * @default 4000
    */
   maxWaitMs: number;
 
@@ -116,14 +119,14 @@ export interface ReasoningConfig {
   /**
    * Minimum interval between status updates (ms)
    * Anti-flicker mechanism for smooth UI
-   * @default 1500
+   * @default 1200
    */
   minUpdateIntervalMs: number;
 
   /**
    * Maximum concurrent LLM calls in flight
    * Prevents request queue buildup
-   * @default 3
+   * @default 5
    */
   maxPendingCalls: number;
 
@@ -132,7 +135,7 @@ export interface ReasoningConfig {
   /**
    * LLM request timeout (ms)
    * Fail fast and fall back to phase messages
-   * @default 2000
+   * @default 5000
    */
   timeoutMs: number;
 
@@ -169,15 +172,15 @@ export type ReasoningConfigPartial = Partial<ReasoningConfig>;
  * Default configuration values
  */
 export const DEFAULT_REASONING_CONFIG: ReasoningConfig = {
-  minBufferChars: 150,
-  maxBufferChars: 500,
-  maxWaitMs: 3000,
-  minUpdateIntervalMs: 1500,
-  maxPendingCalls: 3,
-  timeoutMs: 2000,
-  idleHeartbeatMs: 8000,
-  circuitBreakerThreshold: 3,
-  circuitBreakerResetMs: 30000,
+  minBufferChars: 200,        // Reduced API call frequency (was 150)
+  maxBufferChars: 800,        // Fewer flushes during long reasoning (was 500)
+  maxWaitMs: 4000,            // More patient before forcing flush (was 3000)
+  minUpdateIntervalMs: 1200,  // Faster UI updates (was 1500)
+  maxPendingCalls: 5,         // More headroom for concurrent calls (was 3)
+  timeoutMs: 5000,            // Less aggressive timeout (was 2000)
+  idleHeartbeatMs: 8000,      // Keep as-is
+  circuitBreakerThreshold: 3, // Keep as-is
+  circuitBreakerResetMs: 30000, // Keep as-is
 };
 
 // ============================================================================
@@ -420,7 +423,7 @@ export interface LLMStatusResponse {
   /** Provider name (e.g., 'z.ai') */
   provider: string;
 
-  /** Model name (e.g., 'glm-4.5-air') */
+  /** Model name (e.g., 'glm-4.5-air', extracted from MODELS constant) */
   model: string;
 
   /** Response latency in milliseconds */
@@ -475,7 +478,7 @@ export function isLLMError(error: unknown): error is LLMError {
 // ============================================================================
 
 /**
- * GLM-4.5-air client for ultra-fast status generation
+ * GLM-4.5-Air client for ultra-fast status generation
  *
  * Uses Z.ai Coding API endpoint for GLM models. Designed for speed:
  * - Small, focused prompts
@@ -486,8 +489,9 @@ export class GLMClient implements ILLMClient {
   private readonly apiKey: string;
   // Z.ai Coding API endpoint (see https://docs.z.ai/devpack/tool/others)
   private readonly baseUrl = 'https://api.z.ai/api/coding/paas/v4/chat/completions';
-  // Using GLM-4.5-air for fast status generation (lightweight variant optimized for speed)
-  private readonly model = 'glm-4.5-air';
+  // Using GLM-4.5-Air for fast status generation (lightweight variant optimized for speed)
+  // Extract model name from "zhipu/glm-4.5-air" format (consistent with glm-client.ts)
+  private readonly model = MODELS.GLM_4_5_AIR.split('/').pop()!;
   private readonly timeoutMs: number;
 
   constructor(apiKey: string, timeoutMs: number = 2000) {
@@ -502,10 +506,15 @@ export class GLMClient implements ILLMClient {
   ): Promise<string> {
     const startTime = Date.now();
 
+    // SECURITY: Sanitize reasoning text to prevent prompt injection
+    const sanitizedReasoning = PromptInjectionDefense.sanitizeArtifactContext(
+      reasoningText.slice(0, 500)
+    );
+
     const prompt = `You are a UI status generator. Given this AI reasoning text, write a SHORT status message (5-10 words) describing what the AI is currently doing.
 
 Phase: ${phase}
-Reasoning: ${reasoningText.slice(0, 500)}
+Reasoning: ${sanitizedReasoning}
 
 Requirements:
 - Use present continuous tense ("Analyzing...", "Building...", "Designing...")
@@ -558,6 +567,16 @@ Status:`;
         throw error;
       }
 
+      // SECURITY: Validate output for suspicious patterns
+      const { suspicious } = PromptInjectionDefense.detectSuspiciousPatterns(message);
+      if (suspicious) {
+        console.warn(`[ReasoningProvider:${requestId}] Suspicious status output detected: "${message}"`);
+        const error = new Error('Invalid status output - using fallback') as LLMError;
+        error.code = 'INVALID_RESPONSE';
+        error.provider = 'z.ai';
+        throw error;
+      }
+
       const latencyMs = Date.now() - startTime;
       console.log(`[ReasoningProvider:${requestId}] GLM status generated in ${latencyMs}ms: "${message}"`);
 
@@ -591,10 +610,15 @@ Status:`;
   ): Promise<string> {
     const startTime = Date.now();
 
+    // SECURITY: Sanitize context before injection
+    const sanitizedHistory = PromptInjectionDefense.sanitizeArtifactContext(
+      reasoningHistory.slice(-1000)
+    );
+
     const prompt = `You are a UI status generator. Write a brief completion message (8-15 words) summarizing what was created.
 
 Artifact: ${artifactDescription}
-Context: ${reasoningHistory.slice(-1000)}
+Context: ${sanitizedHistory}
 
 Requirements:
 - Past tense ("Created...", "Built...", "Designed...")
@@ -917,7 +941,7 @@ export class ReasoningProvider implements IReasoningProvider {
         timestamp: new Date().toISOString(),
         source,
         provider: source === 'llm' ? 'z.ai' : undefined,
-        model: source === 'llm' ? 'glm-4.5-air' : undefined,
+        model: source === 'llm' ? MODELS.GLM_4_5_AIR.split('/').pop() : undefined,
       },
     });
 
@@ -1037,7 +1061,7 @@ export class ReasoningProvider implements IReasoningProvider {
         timestamp: new Date().toISOString(),
         source,
         provider: source === 'llm' ? 'z.ai' : undefined,
-        model: source === 'llm' ? 'glm-4.5-air' : undefined,
+        model: source === 'llm' ? MODELS.GLM_4_5_AIR.split('/').pop() : undefined,
         circuitBreakerOpen: this.state.circuitBreaker.isOpen,
       },
     });
@@ -1086,7 +1110,8 @@ export class ReasoningProvider implements IReasoningProvider {
       if (this.state.destroyed) return;
 
       const idleTime = Date.now() - this.state.lastChunkTime;
-      if (idleTime >= this.config.idleHeartbeatMs) {
+      // FIX: Don't emit heartbeat while LLM calls are pending (prevents flicker)
+      if (idleTime >= this.config.idleHeartbeatMs && this.state.pendingCalls === 0) {
         // Emit heartbeat
         await this.emitEvent({
           type: 'reasoning_heartbeat',

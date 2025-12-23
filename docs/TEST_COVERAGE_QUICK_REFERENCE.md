@@ -94,7 +94,6 @@ Coverage Breakdown:
 **Test Files**:
 - `/supabase/functions/_shared/__tests__/tavily-client.test.ts` (457 lines, 20+ tests)
 - `/supabase/functions/_shared/__tests__/config.test.ts` (Config validation)
-- `/supabase/functions/chat/__tests__/intent-detector.test.ts` (Intent detection)
 
 **What's Tested**:
 - API client functionality ✅
@@ -102,7 +101,6 @@ Coverage Breakdown:
 - Result formatting ✅
 - Large result sets ✅
 - Error handling ✅
-- Intent detection ✅
 
 **Minor Gap**:
 - TAVILY_ALWAYS_SEARCH flag not explicitly tested (low risk - safeguard in place)
@@ -202,7 +200,7 @@ supabase/functions/
 │     └─ [Various API tests]
 ├─ chat/
 │  └─ __tests__/
-│     └─ intent-detector.test.ts ✅
+│     └─ [No intent-detector tests]
 └─ [MISSING: Schema migration tests]
 ```
 

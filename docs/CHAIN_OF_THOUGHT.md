@@ -304,7 +304,7 @@ const { streamChat } = useChatMessages(sessionId);
 // Stream with reasoning enabled
 await streamChat(userMessage, {
   includeReasoning: true,        // Enable Chain of Thought
-  forceArtifactMode: false,       // Auto-detect artifacts
+  toolChoice: "auto",             // Force tool: "generate_artifact" or "generate_image"
 });
 ```
 

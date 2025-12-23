@@ -172,6 +172,7 @@ export const WebPreviewBody = ({
   className,
   loading,
   src,
+  title = "Preview",
   ...props
 }: WebPreviewBodyProps) => {
   const { url } = useWebPreview();
@@ -180,9 +181,10 @@ export const WebPreviewBody = ({
     <div className="flex-1 relative">
       <iframe
         className={cn("size-full", className)}
+        data-testid="artifact-iframe"
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
         src={(src ?? url) || undefined}
-        title="Preview"
+        title={title}
         {...props}
       />
       {loading ? (

@@ -1,4 +1,4 @@
-<!-- CLAUDE.md v2.18 | Last updated: 2025-12-19 | Added unified tool-calling architecture (Issue #340) -->
+<!-- CLAUDE.md v2.20 | Last updated: 2025-12-22 | Fixed Sentry documentation - clarified backend NOT implemented (issues #380-382) -->
 
 # CLAUDE.md
 
@@ -87,11 +87,20 @@ alias chrome-mcp="npx chrome-devtools-mcp"
 
 **Slash commands**: `/chrome-status`, `/chrome-restart`, `/kill-chromedev`
 
-**Screenshots** (file-based to avoid MCP serialization bug):
-```bash
-# Take a screenshot with Chrome MCP (recommended)
+**Screenshots** (ALWAYS use filePath - enforced by hook):
+```typescript
+// ✅ CORRECT - File-based (prevents 400 errors)
 await browser.screenshot({ filePath: ".screenshots/name.png", format: "png" })
+
+// ❌ WRONG - Base64 (blocked by hook, causes 400 errors)
+await browser.screenshot({ format: "png" })  // Returns base64, exceeds payload limits
 ```
+
+**Why**: Chrome MCP has two critical bugs when returning screenshots as base64:
+1. **MIME type mismatch**: PNG screenshots labeled as `image/jpeg` → API validation fails
+2. **Payload size limits**: Base64-encoded screenshots exceed message size limits → 400 errors
+
+**Protection**: `.claude/hooks/chrome-screenshot-fix.py` automatically converts ALL screenshot calls to file-based format (logged to stderr).
 
 **Browser Verification Pattern** (run after EVERY change):
 ```typescript
@@ -216,11 +225,28 @@ supabase db push --linked --include-all
 | Artifact Error Fixing | GLM-4.6 | Z.ai API | Deep reasoning for debugging |
 | Image Generation | Gemini Flash-Image | Google AI Studio | 10-key rotation, 150 RPM |
 
-**Status Marker System** (Real-time progress updates):
-- GLM emits `[STATUS: action phrase]` markers during thinking (defined in `system-prompt.txt`)
-- Backend parses markers via `parseStatusMarker()` in `glm-client.ts`
-- Frontend displays status via `reasoning_status` SSE events
-- Simple, direct architecture: AI → marker → SSE → UI (no intermediary LLM calls)
+**Dual Status Update System** (Real-time progress updates):
+
+The system uses TWO parallel mechanisms for status updates:
+
+1. **[STATUS:] Markers (Legacy, retained for backward compatibility)**:
+   - GLM-4.6 emits `[STATUS: action phrase]` markers during thinking (defined in `system-prompt.txt`)
+   - Backend parses via `parseStatusMarker()` in `glm-client.ts` (lines 761-773)
+   - Emitted as `status_update` SSE events
+   - Direct architecture: GLM-4.6 reasoning → regex parse → SSE → UI
+
+2. **ReasoningProvider (New, LLM-powered semantic status)**:
+   - Buffers GLM-4.6 reasoning chunks during streaming
+   - Calls GLM-4.5-Air to generate semantic, contextual status messages
+   - Emitted as `reasoning_status` SSE events
+   - Hybrid architecture: GLM-4.6 reasoning → buffer → GLM-4.5-Air call → SSE → UI
+   - Includes circuit breaker (falls back to phase templates on LLM failure)
+
+**Why both?**: The marker system provides instant, deterministic updates while ReasoningProvider generates more natural, contextual messages. Both run simultaneously for redundancy and improved UX quality.
+
+**Feature Flag**: Set `USE_REASONING_PROVIDER=false` in `supabase/.env.local` to disable semantic status generation (disables ReasoningProvider, keeps marker system active).
+
+**Implementation**: See `supabase/functions/chat/handlers/tool-calling-chat.ts` (lines 464-475) where both systems process reasoning chunks in parallel.
 
 ### Edge Function Decision Tree
 
@@ -362,7 +388,6 @@ Full schema: `supabase/migrations/`
 | `health/` | System health monitoring |
 | `admin-analytics/` | Admin analytics dashboard data |
 | `cache-manager/` | Cache management utilities |
-| `intent-examples/` | Intent detection examples |
 
 **Shared Utilities** (`_shared/`):
 - **Core**: `config.ts`, `cors-config.ts`, `logger.ts`, `validators.ts`
@@ -498,9 +523,10 @@ if (isFeatureEnabled('RATE_LIMIT_WARNINGS')) {
 ## Monitoring & Observability
 
 - **Sentry Integration**: Error tracking and performance monitoring
-  - Frontend: Automatic error capture, source maps for debugging
-  - Edge Functions: Structured error logging with context
-  - Setup: See `docs/SENTRY_INTEGRATION.md` for configuration
+  - Frontend: ✅ **Implemented** - Automatic error capture, source maps for debugging
+  - Edge Functions: ❌ **NOT IMPLEMENTED** - Only console logging (see [#380](https://github.com/NickB03/llm-chat-site/issues/380), [#381](https://github.com/NickB03/llm-chat-site/issues/381), [#382](https://github.com/NickB03/llm-chat-site/issues/382))
+  - Setup: See `docs/SENTRY_INTEGRATION.md` for frontend configuration
+  - **Missing**: ReasoningProvider errors, SafeErrorHandler errors, prompt injection detection
 - **AI Usage Tracking**: Comprehensive logging via `ai_usage_logs` table
 - **Rate Limit Analytics**: Real-time monitoring of API usage patterns
 
@@ -628,7 +654,8 @@ export default function App() { ... }
 
 **GLM Thinking Mode**:
 - `USE_GLM_THINKING_FOR_CHAT` - Enable GLM-4.6 thinking mode for chat messages (default: true, disable with 'false')
-- Status updates use `[STATUS:]` markers parsed from GLM reasoning (see Status Marker System above)
+- `USE_REASONING_PROVIDER` - Enable ReasoningProvider for semantic status generation (default: true, disable with 'false')
+- Status updates use BOTH `[STATUS:]` markers (legacy) and ReasoningProvider (semantic) - see Dual Status Update System above
 
 **Rate Limiting Configuration** (optional, overrides defaults):
 - `RATE_LIMIT_GUEST_MAX` (default: 20 requests per 5 hours)

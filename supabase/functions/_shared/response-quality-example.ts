@@ -152,10 +152,10 @@ export function getQualityActionPlan(
 }
 
 /**
- * Example: Integration into streaming response handler
+ * Example: Integration into tool-calling response handler
  *
  * This shows how you might integrate quality validation into the
- * chat function's streaming handler (handlers/streaming.ts).
+ * chat function's tool-calling handler (handlers/tool-calling-chat.ts).
  */
 export async function exampleStreamingIntegration(params: {
   generatedResponse: string;

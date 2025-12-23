@@ -3,6 +3,7 @@ project_id = "vznhbocnuykdmjvujaka"
 [functions.chat]
 verify_jwt = false
 
+
 [functions.generate-artifact]
 verify_jwt = false
 
@@ -26,9 +27,6 @@ verify_jwt = false
 
 [functions.health]
 verify_jwt = false
-
-[functions.intent-examples]
-verify_jwt = true
 
 [functions.admin-analytics]
 verify_jwt = true

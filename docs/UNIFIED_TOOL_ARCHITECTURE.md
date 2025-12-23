@@ -34,7 +34,6 @@ graph TB
 
         subgraph "Handlers"
             TCH[tool-calling-chat.ts]
-            STR[streaming.ts]
         end
 
         subgraph "Middleware"
@@ -613,7 +612,6 @@ flowchart LR
 | `_shared/prompt-injection-defense.ts` | Input sanitization |
 | `_shared/safe-error-handler.ts` | Error sanitization |
 | `chat/handlers/tool-calling-chat.ts` | Main orchestration handler |
-| `chat/handlers/streaming.ts` | SSE stream handling |
 
 ---
 

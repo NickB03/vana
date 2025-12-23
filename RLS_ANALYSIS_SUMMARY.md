@@ -31,7 +31,6 @@ All functions that use `SUPABASE_SERVICE_ROLE_KEY`:
 - `generate-image/` - Image generation
 - `generate-title/` - Session titles
 - `summarize-conversation/` - Context management
-- `intent-examples/` - Admin operations
 
 ---
 

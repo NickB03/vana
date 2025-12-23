@@ -23,6 +23,29 @@ interface ReasoningDisplayProps {
 }
 
 /**
+ * Format duration in human-readable form
+ *
+ * @param seconds - Duration in seconds to format
+ * @returns Formatted string like "45s", "2m 15s", or "3m"
+ *
+ * @remarks
+ * Currently unused but prepared for future enhancement:
+ * - Display reasoning duration in expanded view header
+ * - Show tool execution timing in status messages
+ *
+ * @example
+ * formatDuration(45)    // "45s"
+ * formatDuration(135)   // "2m 15s"
+ * formatDuration(180)   // "3m"
+ */
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+}
+
+/**
  * Sanitize content to prevent XSS attacks
  */
 function sanitizeContent(content: string): string {
@@ -57,6 +80,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   const [finalElapsedTime, setFinalElapsedTime] = useState<string>("");
 
   const wasStreamingRef = useRef(false);
+  const expandedContentRef = useRef<HTMLDivElement>(null);
 
   // Timer for reasoning duration
   const elapsedTime = useReasoningTimer(isStreaming ?? false);
@@ -101,12 +125,26 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
     wasStreamingRef.current = isStreaming ?? false;
   }, [isStreaming, elapsedTime]);
 
+  // Auto-scroll to bottom when streaming
+  useEffect(() => {
+    if (isStreaming && isExpanded && expandedContentRef.current) {
+      expandedContentRef.current.scrollTop = expandedContentRef.current.scrollHeight;
+    }
+  }, [sanitizedStreamingText, isStreaming, isExpanded]);
+
   /**
    * Get the streaming status text from available sources
-   * Priority: tool execution > semantic status (from [STATUS:] markers) > fallback
+   * Priority: semantic status > tool execution > fallback
+   * FIX (2025-12-21): Semantic status takes precedence; tool messages are tool-specific
    */
   const getStreamingStatus = (): string => {
-    // HIGHEST PRIORITY: Tool execution status (show when actively using tools)
+    // HIGHEST PRIORITY: Semantic status from backend [STATUS: ...] markers
+    // This gives the most context-aware, human-readable status
+    if (reasoningStatus && reasoningStatus !== "Thinking...") {
+      return reasoningStatus;
+    }
+
+    // SECOND PRIORITY: Tool execution status (only for actual tool use)
     if (toolExecution && isStreaming) {
       const { toolName, success, sourceCount } = toolExecution;
 
@@ -118,13 +156,17 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
         return success ? `${toolName} completed` : `${toolName} failed`;
       }
 
-      // Otherwise show in-progress status
-      return `Searching web...`;
-    }
-
-    // Prefer semantic status from backend [STATUS: ...] markers
-    if (reasoningStatus) {
-      return reasoningStatus;
+      // FIX (2025-12-21): Show tool-specific in-progress status, not hardcoded "Searching web..."
+      switch (toolName) {
+        case 'browser.search':
+          return 'Searching web...';
+        case 'generate_artifact':
+          return 'Generating artifact...';
+        case 'generate_image':
+          return 'Generating image...';
+        default:
+          return `Using ${toolName}...`;
+      }
     }
 
     // Generic fallback
@@ -289,13 +331,16 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
         )}
         aria-hidden={!isExpanded}
       >
-        <div className={cn(
-          "pt-3 px-4 pb-4",
-          "rounded-2xl",
-          "bg-muted/30",
-          "border border-border/40",
-          "max-h-[50vh] overflow-y-auto"
-        )}>
+        <div
+          ref={expandedContentRef}
+          className={cn(
+            "pt-3 px-4 pb-4",
+            "rounded-2xl",
+            "bg-muted/30",
+            "border border-border/40",
+            "max-h-[50vh] overflow-y-auto"
+          )}
+        >
           {/* Display streaming text if available */}
           {sanitizedStreamingText ? (
             <div

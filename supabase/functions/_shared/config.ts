@@ -26,29 +26,38 @@ export const FEATURE_FLAGS = {
    * WARNING: Never enable this in production!
    */
   RATE_LIMIT_DISABLED: Deno.env.get('RATE_LIMIT_DISABLED') === 'true',
-
-  /**
-   * Enable GLM-4.6 native tool-calling for web search
-   * When true, GLM decides when to search using its built-in browser.search tool
-   * When false, uses legacy regex-based shouldPerformWebSearch()
-   *
-   * Default: ENABLED (set USE_GLM_TOOL_CALLING=false to disable)
-   *
-   * This replaces the legacy regex-based search detection with LLM-driven
-   * tool-calling, matching the approach used by ChatGPT, Gemini, and Claude.
-   */
-  USE_GLM_TOOL_CALLING: Deno.env.get('USE_GLM_TOOL_CALLING') !== 'false',
-
-  /**
-   * Percentage of requests to route to GLM tool-calling (0-100)
-   * Allows gradual rollout: 10 = 10% of requests use tool-calling
-   * Only applies when USE_GLM_TOOL_CALLING is true
-   *
-   * Default: 100 (full rollout)
-   */
-  GLM_TOOL_CALLING_ROLLOUT_PERCENT: getEnvInt('GLM_TOOL_CALLING_ROLLOUT_PERCENT', 100, 0),
-
 } as const;
+
+// =============================================================================
+// ReasoningProvider Feature Flag
+// =============================================================================
+
+/**
+ * Enable ReasoningProvider for semantic status generation during artifact creation.
+ * When enabled, uses GLM-4.5-Air to summarize reasoning into human-friendly status messages.
+ * When disabled, status updates are disabled entirely (shows "Thinking..." only).
+ *
+ * Set via environment variable: USE_REASONING_PROVIDER=true
+ * Default: true (enabled)
+ *
+ * ## Rollback Procedure
+ *
+ * **Option 1: Disable status updates (immediate)**
+ * ```bash
+ * supabase secrets set USE_REASONING_PROVIDER=false
+ * ```
+ * ⚠️ This disables status updates entirely, NOT restore the old [STATUS:] marker system.
+ *
+ * **Option 2: Full rollback (requires deployment)**
+ * ```bash
+ * git revert <commit-hash>  # Revert the ReasoningProvider activation commit
+ * ./scripts/deploy-simple.sh prod
+ * ```
+ * This restores the full [STATUS:] marker parsing system.
+ *
+ * @see .claude/plans/reasoning-provider-activation.md for implementation details
+ */
+export const USE_REASONING_PROVIDER = Deno.env.get('USE_REASONING_PROVIDER') !== 'false';
 
 /**
  * Safely parse an integer from environment variable with validation
@@ -429,30 +438,3 @@ export const GLM_CONFIG = {
   /** Timeout between stream chunks in milliseconds (default: 30s) */
   CHUNK_TIMEOUT_MS: getEnvInt('GLM_CHUNK_TIMEOUT_MS', 30000, 1),
 } as const;
-
-/**
- * Determine if a specific request should use GLM tool-calling
- * Based on feature flag AND rollout percentage
- * @param requestId - Used for deterministic rollout (same request = same decision)
- * @returns true if this request should use GLM native tool-calling
- *
- * @example
- * ```ts
- * // Full rollout
- * const useToolCalling = shouldUseGLMToolCalling(requestId); // true when USE_GLM_TOOL_CALLING=true
- *
- * // Gradual rollout (10% of requests)
- * // GLM_TOOL_CALLING_ROLLOUT_PERCENT=10
- * const useToolCalling = shouldUseGLMToolCalling(requestId); // true for ~10% of requestIds
- * ```
- */
-export function shouldUseGLMToolCalling(requestId: string): boolean {
-  if (!FEATURE_FLAGS.USE_GLM_TOOL_CALLING) return false;
-  if (FEATURE_FLAGS.GLM_TOOL_CALLING_ROLLOUT_PERCENT >= 100) return true;
-  if (FEATURE_FLAGS.GLM_TOOL_CALLING_ROLLOUT_PERCENT <= 0) return false;
-
-  // Deterministic rollout based on requestId hash
-  const hash = requestId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return (hash % 100) < FEATURE_FLAGS.GLM_TOOL_CALLING_ROLLOUT_PERCENT;
-}
-

@@ -58,3 +58,28 @@ Object.defineProperty(window, 'matchMedia', {
 // Vitest 4.x issue with the pool runner. It doesn't affect test results - all tests
 // pass successfully. The error occurs during worker cleanup, not during test execution.
 // See: https://github.com/vitest-dev/vitest/issues/3077
+
+// Global mocks for heavy dependencies to prevent OOM in tests
+// These are applied before any test file runs
+vi.mock('@sentry/react', () => ({
+  captureMessage: vi.fn(),
+  captureException: vi.fn(),
+  addBreadcrumb: vi.fn(),
+  init: vi.fn(),
+}));
+
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: vi.fn(() => ({
+    from: vi.fn(() => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      insert: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: {}, error: null }),
+    })),
+    auth: {
+      getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
+    },
+  })),
+}));

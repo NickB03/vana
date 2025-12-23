@@ -120,9 +120,10 @@ describe('ArtifactContainer', () => {
       render(<ArtifactContainer artifact={htmlArtifact} />);
 
       // Should render iframe
-      const iframe = screen.getByTitle('HTML Test');
+      const iframe = screen.getByTestId('artifact-iframe');
       expect(iframe).toBeInTheDocument();
       expect(iframe.tagName).toBe('IFRAME');
+      expect(iframe).toHaveAttribute('title', 'HTML Test');
     });
 
     it('applies sandbox attributes to iframe', () => {
@@ -135,7 +136,8 @@ describe('ArtifactContainer', () => {
 
       render(<ArtifactContainer artifact={htmlArtifact} />);
 
-      const iframe = screen.getByTitle('HTML Test') as HTMLIFrameElement;
+      const iframe = screen.getByTestId('artifact-iframe') as HTMLIFrameElement;
+      expect(iframe).toHaveAttribute('title', 'HTML Test');
       expect(iframe.getAttribute('sandbox')).toBe('allow-scripts allow-same-origin allow-downloads allow-popups');
     });
   });
@@ -153,7 +155,9 @@ describe('ArtifactContainer', () => {
 
       // Should use iframe, not Sandpack
       expect(screen.queryByTestId('sandpack-renderer')).not.toBeInTheDocument();
-      expect(screen.getByTitle('Simple React')).toBeInTheDocument();
+      const iframe = screen.getByTestId('artifact-iframe');
+      expect(iframe).toBeInTheDocument();
+      expect(iframe).toHaveAttribute('title', 'Simple React');
     });
 
     it('renders React with Sandpack when npm imports detected', async () => {
@@ -391,7 +395,8 @@ describe('ArtifactContainer', () => {
 
       render(<ArtifactContainer artifact={htmlArtifact} />);
 
-      const iframe = screen.getByTitle('Security Test') as HTMLIFrameElement;
+      const iframe = screen.getByTestId('artifact-iframe') as HTMLIFrameElement;
+      expect(iframe).toHaveAttribute('title', 'Security Test');
       const sandbox = iframe.getAttribute('sandbox');
 
       // Verify sandbox attribute exists and contains expected values
@@ -410,7 +415,8 @@ describe('ArtifactContainer', () => {
 
       render(<ArtifactContainer artifact={xssArtifact} />);
 
-      const iframe = screen.getByTitle('XSS Test') as HTMLIFrameElement;
+      const iframe = screen.getByTestId('artifact-iframe') as HTMLIFrameElement;
+      expect(iframe).toHaveAttribute('title', 'XSS Test');
 
       // Scripts are allowed but sandboxed - verify sandbox prevents escaping
       expect(iframe.getAttribute('sandbox')).toBeTruthy();
@@ -427,7 +433,8 @@ describe('ArtifactContainer', () => {
 
       render(<ArtifactContainer artifact={inlineEventArtifact} />);
 
-      const iframe = screen.getByTitle('Inline Event Test') as HTMLIFrameElement;
+      const iframe = screen.getByTestId('artifact-iframe') as HTMLIFrameElement;
+      expect(iframe).toHaveAttribute('title', 'Inline Event Test');
 
       // Verify content is sandboxed
       expect(iframe.getAttribute('sandbox')).toBeTruthy();
@@ -443,7 +450,8 @@ describe('ArtifactContainer', () => {
 
       render(<ArtifactContainer artifact={exfilArtifact} />);
 
-      const iframe = screen.getByTitle('Exfil Test') as HTMLIFrameElement;
+      const iframe = screen.getByTestId('artifact-iframe') as HTMLIFrameElement;
+      expect(iframe).toHaveAttribute('title', 'Exfil Test');
 
       // Sandbox should prevent unauthorized network requests
       const sandbox = iframe.getAttribute('sandbox');
@@ -495,7 +503,8 @@ describe('ArtifactContainer', () => {
 
       render(<ArtifactContainer artifact={navArtifact} />);
 
-      const iframe = screen.getByTitle('Navigation Test') as HTMLIFrameElement;
+      const iframe = screen.getByTestId('artifact-iframe') as HTMLIFrameElement;
+      expect(iframe).toHaveAttribute('title', 'Navigation Test');
 
       // Sandbox should prevent navigation
       expect(iframe.getAttribute('sandbox')).toBeTruthy();
@@ -511,7 +520,8 @@ describe('ArtifactContainer', () => {
 
       render(<ArtifactContainer artifact={postMessageArtifact} />);
 
-      const iframe = screen.getByTitle('PostMessage Test') as HTMLIFrameElement;
+      const iframe = screen.getByTestId('artifact-iframe') as HTMLIFrameElement;
+      expect(iframe).toHaveAttribute('title', 'PostMessage Test');
 
       // Sandboxing should isolate the iframe
       expect(iframe.getAttribute('sandbox')).toContain('allow-same-origin');
@@ -655,8 +665,9 @@ describe('ArtifactContainer', () => {
       expect(renderTime).toBeLessThan(1000);
 
       // Verify iframe is rendered
-      const iframe = screen.getByTitle('Large HTML');
+      const iframe = screen.getByTestId('artifact-iframe');
       expect(iframe).toBeInTheDocument();
+      expect(iframe).toHaveAttribute('title', 'Large HTML');
     });
 
     it('handles massive React components without performance degradation', () => {

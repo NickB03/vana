@@ -77,6 +77,7 @@ export interface CallGLMOptions {
   enableThinking?: boolean;
   stream?: boolean; // Enable SSE streaming
   tools?: GLMToolDefinition[]; // Tool definitions for function calling
+  toolChoice?: "auto" | "generate_artifact" | "generate_image";
   /**
    * Tool result to inject for continuation after tool execution.
    *
@@ -251,6 +252,7 @@ export async function callGLM(
     enableThinking = true, // Enable reasoning by default for artifact generation
     stream = false, // Streaming disabled by default for backward compatibility
     tools,
+    toolChoice = "auto",
     toolResultContext,
     previousAssistantMessage,
     timeoutMs,
@@ -381,7 +383,12 @@ export async function callGLM(
           parameters: tool.parameters
         }
       }));
-      requestBody.tool_choice = "auto";
+      requestBody.tool_choice = toolChoice === "auto"
+        ? "auto"
+        : {
+          type: "function",
+          function: { name: toolChoice }
+        };
       console.log(`[${requestId}] 🔧 Native function calling enabled with ${tools.length} tools`);
     }
 

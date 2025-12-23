@@ -20,8 +20,7 @@ export interface ValidationResult {
       content: string;
     };
     isGuest: boolean;
-    forceImageMode?: boolean;
-    forceArtifactMode?: boolean;
+    toolChoice: "auto" | "generate_artifact" | "generate_image";
     includeReasoning: boolean;
   };
   error?: ValidationError;
@@ -41,8 +40,7 @@ export async function validateInput(
       sessionId,
       currentArtifact,
       isGuest,
-      forceImageMode,
-      forceArtifactMode,
+      toolChoice = "auto",
       includeReasoning = false,
     } = requestBody;
 
@@ -135,6 +133,21 @@ export async function validateInput(
       }
     }
 
+    const allowedToolChoices = ["auto", "generate_artifact", "generate_image"];
+    if (
+      typeof toolChoice !== "string" ||
+      !allowedToolChoices.includes(toolChoice)
+    ) {
+      console.error(`[${requestId}] Invalid toolChoice:`, toolChoice);
+      return {
+        ok: false,
+        error: {
+          error: "Invalid toolChoice value",
+          requestId,
+        },
+      };
+    }
+
     return {
       ok: true,
       data: {
@@ -142,8 +155,7 @@ export async function validateInput(
         sessionId,
         currentArtifact,
         isGuest: isGuest || false,
-        forceImageMode,
-        forceArtifactMode,
+        toolChoice,
         includeReasoning,
       },
     };

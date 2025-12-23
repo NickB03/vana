@@ -385,6 +385,11 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
                 // Accumulate full reasoning text
                 fullReasoning += chunk;
 
+                // FIX (2025-12-21): Stream reasoning chunks to frontend for live display
+                // Without this, the reasoning dropdown shows "No reasoning data available"
+                // during streaming because streamingReasoningText is never populated
+                await sendEvent("reasoning_chunk", { chunk });
+
                 // ============================================================================
                 // STATUS MARKER DETECTION: Parse [STATUS: ...] markers from reasoning
                 // ============================================================================
@@ -406,10 +411,21 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
               onComplete: async (fullReasoningText: string, _fullContent: string) => {
                 // Send final reasoning complete event
                 if (fullReasoningText) {
+                  // FIX (2025-12-21): Strip artifact tags from reasoning text
+                  // GLM's reasoning includes artifact code discussion, which causes
+                  // the reasoning dropdown to show </artifact> tags and code instead
+                  // of the actual thinking process
+                  const cleanedReasoning = fullReasoningText
+                    .replace(/<artifact[^>]*>[\s\S]*?<\/artifact>/gi, '[artifact code]')
+                    .replace(/<\/?artifact[^>]*>/gi, '') // Remove any unclosed tags
+                    .trim();
+
                   await sendEvent("reasoning_complete", {
-                    reasoning: fullReasoningText,
+                    reasoning: cleanedReasoning,
                     reasoningSteps: null, // Structured parsing removed - use [STATUS:] markers instead
                   });
+
+                  console.log(`[${requestId}] 🧠 Reasoning sent (cleaned: ${fullReasoningText.length} → ${cleanedReasoning.length} chars)`);
                 }
               },
               onError: async (error: Error) => {

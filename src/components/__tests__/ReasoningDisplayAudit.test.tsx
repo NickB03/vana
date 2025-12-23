@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, act, cleanup } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 import { ReasoningDisplay } from '../ReasoningDisplay';
 
 // Mock DOMPurify
@@ -12,18 +12,17 @@ vi.mock('isomorphic-dompurify', () => ({
 /**
  * ReasoningDisplay Audit Tests
  *
- * UPDATED: These tests reflect the phase-based ticker system implemented in
- * reasoningTextExtractor.ts. The component now shows stable, semantic messages
- * (e.g., "Thinking...", "Analyzing the request...", "Planning the implementation...")
- * instead of raw sentence extraction to prevent UI flickering.
+ * UPDATED (2025-12-21): These tests reflect the new backend-driven status system.
+ * Client-side phase detection has been removed in favor of semantic status messages
+ * from the ReasoningProvider (GLM-4.5-Air).
  *
- * Phase progression:
- * 1. starting → "Thinking..." (initial state)
- * 2. analyzing → "Analyzing the request..." (50+ chars with analyze keywords)
- * 3. planning → "Planning the implementation..." (200+ chars with plan keywords)
- * 4. implementing → "Building the solution..." (400+ chars with implement keywords)
- * 5. styling → "Applying styling..." (600+ chars with style keywords)
- * 6. finalizing → "Finalizing the solution..." (800+ chars with final keywords)
+ * The component now:
+ * 1. Displays "Thinking..." as the default when no backend status is available
+ * 2. Displays the `reasoningStatus` prop directly when provided by the backend
+ * 3. No longer performs client-side keyword/regex-based phase detection
+ *
+ * Status messages are now generated server-side using GLM-4.5-Air for semantic
+ * summarization, providing more contextually appropriate and human-friendly messages.
  */
 describe('ReasoningDisplay Audit', () => {
     beforeEach(() => {
@@ -36,13 +35,14 @@ describe('ReasoningDisplay Audit', () => {
         vi.useRealTimers();
     });
 
-    const renderStreaming = (text: string) => {
+    const renderStreaming = (text: string, reasoningStatus?: string) => {
         const { rerender, container } = render(
             <ReasoningDisplay
                 reasoning={null}
                 reasoningSteps={null}
                 streamingReasoningText={text}
                 isStreaming={true}
+                reasoningStatus={reasoningStatus}
             />
         );
         return { rerender, container };
@@ -65,7 +65,7 @@ describe('ReasoningDisplay Audit', () => {
         expectDisplayed("Thinking...");
     };
 
-    describe('Phase-Based Status Display', () => {
+    describe('Default Status Display (No Backend Status)', () => {
         it('displays "Thinking..." for initial short text', () => {
             renderStreaming('Short text here.');
             expectThinking();
@@ -81,83 +81,87 @@ describe('ReasoningDisplay Audit', () => {
             expectThinking();
         });
 
-        it('displays "Analyzing the request..." when analyze keywords appear with sufficient text', () => {
+        it('displays "Thinking..." regardless of keywords when no backend status', () => {
+            // Client-side phase detection has been removed
+            // Component shows "Thinking..." until backend provides status
             const text = 'I understand the user wants to create a button component. Let me think about what they need and how to approach this request.';
             renderStreaming(text);
-            expectDisplayed('Analyzing the request...');
+            expectThinking();
         });
 
-        it('advances to analyzing phase first when both analyze and plan keywords present', () => {
-            // Phase detection advances one phase at a time from starting
-            // Even with planning keywords present, it first enters analyzing phase
-            // because analyzing comes before planning in the phase order
+        it('displays "Thinking..." for any text without backend status', () => {
             const text = 'I understand what the user needs. Now I will design the component structure and plan the architecture. The approach should include a main component with proper layout and state management.'.repeat(2);
             renderStreaming(text);
-            // First matching phase from starting is analyzing (has "understand" keyword)
-            expectDisplayed('Analyzing the request...');
+            expectThinking();
         });
 
-        it('shows first matching phase on initial render', () => {
-            // Phase progression is sequential and happens one step at a time
-            // On initial render with long text containing many keywords,
-            // the extractor progresses from starting → first matching phase
-            const text = 'I understand what the user is looking for. '.repeat(3);  // 129+ chars
+        it('displays "Thinking..." for long text without backend status', () => {
+            const text = 'I understand what the user is looking for. '.repeat(3);
             renderStreaming(text);
-
-            // With 50+ chars and "understand" keyword, moves from starting → analyzing
-            expectDisplayed('Analyzing the request...');
+            expectThinking();
         });
 
-        it('stays in analyzing phase when only analyze requirements met', () => {
-            // Only analyzing phase requirements: 50+ chars with analyze keywords
+        it('displays "Thinking..." for text with analyze keywords', () => {
             const text = 'I understand what the user is looking for and asking about. Let me analyze their request to determine the best approach here.';
             renderStreaming(text);
-            expectDisplayed('Analyzing the request...');
+            expectThinking();
         });
 
         it('maintains stable output for very long text without crashing', () => {
-            // Very long text should not cause any errors
             const longText = 'I understand and need to implement this solution with proper code. '.repeat(20);
             renderStreaming(longText);
-            // Should render something, not crash
             expect(document.body.textContent).toBeTruthy();
         });
     });
 
-    describe('Code Detection', () => {
-        it('detects code blocks and shows "Writing code..."', () => {
-            renderStreaming('const a = 1;\n');
-            act(() => { vi.advanceTimersByTime(2500); });
-            expectDisplayed('Writing code...');
+    describe('Backend-Driven Status Display', () => {
+        it('displays backend status when provided', () => {
+            renderStreaming('Some reasoning text...', 'Analyzing user requirements...');
+            expectDisplayed('Analyzing user requirements...');
         });
 
-        it('detects imports', () => {
-            renderStreaming('import React from "react";\n');
-            act(() => { vi.advanceTimersByTime(2500); });
-            expectDisplayed('Writing code...');
+        it('displays semantic status messages from backend', () => {
+            renderStreaming('Building component...', 'Designing component architecture...');
+            expectDisplayed('Designing component architecture...');
         });
 
-        it('detects JSON-like data', () => {
-            renderStreaming('{ "key": "value" }\n');
-            act(() => { vi.advanceTimersByTime(2500); });
-            expectDisplayed('Writing code...');
+        it('displays code-writing status from backend', () => {
+            renderStreaming('const a = 1;\n', 'Writing React component code...');
+            expectDisplayed('Writing React component code...');
         });
 
-        it('detects single line code without newline', () => {
-            renderStreaming('const a = 1;');
-            act(() => { vi.advanceTimersByTime(2500); });
-            expectDisplayed('Writing code...');
+        it('displays finalizing status from backend', () => {
+            renderStreaming('Final touches...', 'Adding final polish...');
+            expectDisplayed('Adding final polish...');
         });
     });
 
-    describe('Throttling & Stability', () => {
-        it('maintains stable phase display during streaming', () => {
+    describe('Code Content Display (Without Phase Detection)', () => {
+        it('displays "Thinking..." for code blocks without backend status', () => {
+            renderStreaming('const a = 1;\n');
+            expectThinking();
+        });
+
+        it('displays "Thinking..." for imports without backend status', () => {
+            renderStreaming('import React from "react";\n');
+            expectThinking();
+        });
+
+        it('displays "Thinking..." for JSON-like data without backend status', () => {
+            renderStreaming('{ "key": "value" }\n');
+            expectThinking();
+        });
+
+        it('displays "Thinking..." for single line code without backend status', () => {
+            renderStreaming('const a = 1;');
+            expectThinking();
+        });
+    });
+
+    describe('Streaming Stability', () => {
+        it('maintains stable display during streaming', () => {
             const { rerender } = renderStreaming('Initial thinking text here.');
             expectThinking();
-
-            act(() => {
-                vi.advanceTimersByTime(100);
-            });
 
             rerender(
                 <ReasoningDisplay
@@ -168,56 +172,49 @@ describe('ReasoningDisplay Audit', () => {
                 />
             );
 
-            // Should still show same phase due to throttling
             expectThinking();
         });
 
-        it('progresses phases as text accumulates', () => {
-            const { rerender } = renderStreaming('Short.');
-            expectThinking();
-
-            // Add enough text to trigger analyzing phase
-            const analyzeText = 'I understand what the user is looking for and asking about. Let me analyze their request to determine the best approach.';
-
-            act(() => {
-                vi.advanceTimersByTime(2000);
-            });
+        it('updates when backend status changes', () => {
+            const { rerender } = renderStreaming('Short.', 'Analyzing...');
+            expectDisplayed('Analyzing...');
 
             rerender(
                 <ReasoningDisplay
                     reasoning={null}
                     reasoningSteps={null}
-                    streamingReasoningText={analyzeText}
+                    streamingReasoningText="Longer text with implementation details..."
                     isStreaming={true}
+                    reasoningStatus="Building the solution..."
                 />
             );
 
-            expectDisplayed('Analyzing the request...');
+            expectDisplayed('Building the solution...');
         });
     });
 
     describe('Filtering Logic (Still Applied)', () => {
-        it('filters numbered lists (shows phase message instead)', () => {
+        it('filters numbered lists (shows default status)', () => {
             renderStreaming('1. This is a numbered list item that is long enough.');
             expectThinking();
         });
 
-        it('filters short bullets (shows phase message instead)', () => {
+        it('filters short bullets (shows default status)', () => {
             renderStreaming('- This is a short bullet point.');
             expectThinking();
         });
 
-        it('filters lines ending in colon (shows phase message instead)', () => {
+        it('filters lines ending in colon (shows default status)', () => {
             renderStreaming('This is a header line that ends in a colon:');
             expectThinking();
         });
 
-        it('filters negative instructions (shows phase message instead)', () => {
+        it('filters negative instructions (shows default status)', () => {
             renderStreaming('Do not generate bad code in this response.');
             expectThinking();
         });
 
-        it('filters "no" instructions (shows phase message instead)', () => {
+        it('filters "no" instructions (shows default status)', () => {
             renderStreaming('No markdown should be included in the output.');
             expectThinking();
         });

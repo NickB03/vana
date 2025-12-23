@@ -39,8 +39,19 @@ import {
 import {
   getGLMToolDefinitions,
 } from '../../_shared/tool-definitions.ts';
+import { ToolParameterValidator } from '../../_shared/tool-validator.ts';
+import { ToolRateLimiter } from '../../_shared/tool-rate-limiter.ts';
+import { ToolExecutionTracker } from '../../_shared/tool-execution-tracker.ts';
+import { PromptInjectionDefense } from '../../_shared/prompt-injection-defense.ts';
+import { SafeErrorHandler } from '../../_shared/safe-error-handler.ts';
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.75.1';
 import { getSystemInstruction } from '../../_shared/system-prompt-inline.ts';
+import {
+  createReasoningProvider,
+  createNoOpReasoningProvider,
+  type IReasoningProvider
+} from '../../_shared/reasoning-provider.ts';
+import { FEATURE_FLAGS, USE_REASONING_PROVIDER } from '../../_shared/config.ts';
 
 /**
  * Mode hint for biasing tool selection.
@@ -49,6 +60,7 @@ import { getSystemInstruction } from '../../_shared/system-prompt-inline.ts';
  * - 'auto': Let model decide based on intent
  */
 export type ModeHint = 'artifact' | 'image' | 'auto';
+export type ToolChoice = 'auto' | 'generate_artifact' | 'generate_image';
 
 /**
  * Parameters for tool-calling chat handler
@@ -74,8 +86,14 @@ export interface ToolCallingChatParams {
   rateLimitHeaders: Record<string, string>;
   /** Mode hint to bias tool selection (optional, defaults to 'auto') */
   modeHint?: ModeHint;
+  /** Tool choice to force a specific tool call (optional, defaults to 'auto') */
+  toolChoice?: ToolChoice;
   /** Supabase client for storage operations (required for image generation) */
   supabaseClient?: SupabaseClient;
+  /** Supabase service client for tool rate limiting */
+  serviceClient: SupabaseClient;
+  /** Client IP for tool-specific guest rate limiting */
+  clientIp: string;
 }
 
 /**
@@ -169,12 +187,18 @@ export async function handleToolCallingChat(
     corsHeaders,
     rateLimitHeaders,
     modeHint = 'auto',
+    toolChoice = 'auto',
     supabaseClient,
+    serviceClient,
+    clientIp,
   } = params;
 
   const logPrefix = `[${requestId}]`;
 
-  console.log(`${logPrefix} 🔧 Starting unified tool-calling chat with GLM-4.6 (modeHint=${modeHint})`);
+  console.log(
+    `${logPrefix} 🔧 Starting unified tool-calling chat with GLM-4.6 ` +
+    `(modeHint=${modeHint}, toolChoice=${toolChoice})`
+  );
 
   // Get all tool definitions for unified handler
   // Spread into mutable array to satisfy GLM client's type requirements
@@ -182,35 +206,52 @@ export async function handleToolCallingChat(
   const toolNames = allTools.map(t => t.name).join(', ');
   console.log(`${logPrefix} 🔧 Tools available: ${toolNames}`);
 
-  // Get system instruction with tool-calling enabled and artifact context
+  // SECURITY: Sanitize user-controlled prompt injections
+  const sanitizedModeHint = PromptInjectionDefense.sanitizeModeHint(modeHint);
+  const sanitizedArtifactContext = PromptInjectionDefense.sanitizeArtifactContext(fullArtifactContext);
+
+  // Get system instruction with tool-calling enabled and sanitized artifact context
   const toolEnabledSystemPrompt = getSystemInstruction({
     useToolCalling: true,
-    fullArtifactContext,
+    fullArtifactContext: sanitizedArtifactContext,
   });
 
   // Combine with search/URL context if provided
-  let finalSystemPrompt = toolEnabledSystemPrompt;
+  let baseSystemPrompt = toolEnabledSystemPrompt;
   if (searchContext) {
-    finalSystemPrompt += `\n\nREAL-TIME WEB SEARCH RESULTS:\n${searchContext}`;
+    baseSystemPrompt += `\n\nREAL-TIME WEB SEARCH RESULTS:\n${searchContext}`;
   }
   if (urlExtractContext) {
-    finalSystemPrompt += `\n\nURL CONTENT:\n${urlExtractContext}`;
+    baseSystemPrompt += `\n\nURL CONTENT:\n${urlExtractContext}`;
   }
 
-  // Add mode hint to bias tool selection
-  finalSystemPrompt += buildModeHintPrompt(modeHint);
+  const resolveModeHint = (currentToolChoice: ToolChoice): ModeHint => {
+    if (currentToolChoice === 'generate_artifact') return 'artifact';
+    if (currentToolChoice === 'generate_image') return 'image';
+    return sanitizedModeHint;
+  };
 
-  // BUG FIX (2025-12-20): Build full conversation history instead of filtering to user-only
-  // The previous implementation discarded assistant messages (including artifacts),
-  // causing follow-up modification requests to fail with blank responses.
-  // Now we preserve the complete conversation for multi-turn context.
-  const conversationMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
-    { role: 'system', content: finalSystemPrompt },
-    ...messages.map(m => ({
-      role: m.role as 'user' | 'assistant',
-      content: m.content
-    }))
-  ];
+  const buildConversationMessages = (systemPrompt: string) => ([
+    { role: 'system', content: systemPrompt },
+    ...messages
+      .filter(m => {
+        // Keep all user messages
+        if (m.role === 'user') return true;
+        // Filter out blank/empty assistant messages (prevent malformed sequences)
+        if (m.role === 'assistant') {
+          const hasContent = m.content && m.content.trim().length > 0;
+          if (!hasContent) {
+            console.warn(`Filtering blank assistant message from conversation history`, { requestId });
+          }
+          return hasContent;
+        }
+        return true;
+      })
+      .map(m => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content
+      }))
+  ]);
 
   // Keep userPrompt for backward compatibility with tool continuations
   // (callGLMWithToolResult still uses it as fallback)
@@ -251,54 +292,96 @@ export async function handleToolCallingChat(
         });
       }
 
-      // ========================================
-      // Track last status marker for deduplication
-      // ========================================
-      let lastStatusMarker: string | null = null;
+      // Initialize ReasoningProvider for semantic status generation
+      let reasoningProvider: IReasoningProvider;
 
-      try {
-        // NOTE: With native function calling, GLM returns tool_calls in the response
-        // instead of XML in content. No content buffering/stripping needed.
-
-        // ========================================
-        // STEP 1: Call GLM with native function calling
-        // ========================================
-        const glmResponse = await callGLMWithRetry(
-          finalSystemPrompt,
-          userPrompt,
-          {
-            requestId,
-            userId: userId || undefined,
-            isGuest,
-            functionName: 'chat',
-            stream: true,
-            enableThinking: true, // Reasoning enabled for better tool selection
-            tools: allTools,
-            temperature: 0.7,
-            max_tokens: 8000,
-            // BUG FIX: Pass full conversation history for multi-turn context
-            conversationMessages,
-          }
-        );
-
-        if (!glmResponse.ok) {
-          const errorText = await glmResponse.text();
-          console.error(`${logPrefix} ❌ GLM API error:`, glmResponse.status, errorText);
-
+      if (USE_REASONING_PROVIDER) {
+        reasoningProvider = createReasoningProvider(requestId, async (event) => {
+          // Emit reasoning status via SSE
           sendEvent({
-            type: 'error',
-            error: 'Failed to connect to AI service',
-            requestId,
+            type: event.type,
+            content: event.message,
+            phase: event.phase,
+            source: event.metadata.source,
+            timestamp: event.metadata.timestamp,
+          });
+        });
+        await reasoningProvider.start();
+        console.log(`${logPrefix} ReasoningProvider started`);
+      } else {
+        reasoningProvider = createNoOpReasoningProvider();
+      }
+
+      const toolRateLimiter = FEATURE_FLAGS.RATE_LIMIT_DISABLED
+        ? null
+        : new ToolRateLimiter(serviceClient);
+
+      const executionTracker = new ToolExecutionTracker(requestId);
+
+      const buildSystemPrompt = (currentToolChoice: ToolChoice, fallbackNote?: string) => {
+        const sessionModeHint = resolveModeHint(currentToolChoice);
+        let systemPrompt = baseSystemPrompt + buildModeHintPrompt(sessionModeHint);
+        if (fallbackNote) {
+          systemPrompt += `\n\n${fallbackNote}`;
+        }
+        return systemPrompt;
+      };
+
+      const executeToolWithSecurity = async (
+        toolCallForExecution: ToolCall,
+        toolContext: ToolContext
+      ) => {
+        const startTime = Date.now();
+
+        try {
+          const validatedArgs = ToolParameterValidator.validate(
+            toolCallForExecution.name,
+            toolCallForExecution.arguments
+          );
+
+          if (toolRateLimiter) {
+            await toolRateLimiter.checkToolRateLimit(toolCallForExecution.name, {
+              isGuest,
+              userId: userId || undefined,
+              clientIp,
+              requestId,
+            });
+          }
+
+          const sanitizedToolCall: ToolCall = {
+            ...toolCallForExecution,
+            arguments: validatedArgs as Record<string, unknown>,
+          };
+
+          return await executionTracker.trackExecution(
+            sanitizedToolCall.name,
+            () => executeTool(sanitizedToolCall, toolContext)
+          );
+        } catch (error) {
+          const { response } = SafeErrorHandler.toSafeResponse(error, requestId, {
+            toolName: toolCallForExecution.name,
           });
 
-          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-          controller.close();
-          return;
+          return {
+            success: false,
+            toolName: toolCallForExecution.name,
+            error: response.error.message,
+            latencyMs: Date.now() - startTime,
+          };
         }
+      };
 
-        // ========================================
-        // STEP 2: Stream response with NATIVE tool call detection
-        // ========================================
+      try {
+        const sendSafeError = (error: unknown, context?: Record<string, unknown>) => {
+          const { response } = SafeErrorHandler.toSafeResponse(error, requestId, context);
+          sendEvent({
+            type: 'error',
+            error: response.error.message,
+            requestId,
+            retryable: response.error.retryable,
+          });
+        };
+
         const toolContext: ToolContext = {
           requestId,
           userId: userId || undefined,
@@ -307,308 +390,397 @@ export async function handleToolCallingChat(
           supabaseClient, // Required for image generation storage
         };
 
-        let nativeToolCallDetected = false;
-        let detectedNativeToolCall: NativeToolCall | undefined;
+        const FALLBACK_NOTE =
+          'The requested tool failed. Respond directly and avoid calling tools unless absolutely necessary.';
 
-        // Accumulate reasoning text for status marker parsing
-        let fullReasoningAccumulated = '';
+        const runToolCallingPass = async (
+          currentToolChoice: ToolChoice,
+          allowAutoFallback: boolean,
+          fallbackNote?: string
+        ): Promise<void> => {
+          // NOTE: With native function calling, GLM returns tool_calls in the response
+          // instead of XML in content. No content buffering/stripping needed.
+          const systemPrompt = buildSystemPrompt(currentToolChoice, fallbackNote);
+          const conversationMessages = buildConversationMessages(systemPrompt);
 
-        // Process stream with native tool call detection
-        // GLM now uses OpenAI-compatible tool_calls in response instead of XML
-        const streamResult = await processGLMStream(
-          glmResponse,
-          {
-            onReasoningChunk: async (chunk: string) => {
-              // Accumulate reasoning text for status marker parsing
-              fullReasoningAccumulated += chunk;
-
-              // Parse status markers from accumulated reasoning content
-              const statusMarker = parseStatusMarker(fullReasoningAccumulated);
-              if (statusMarker && statusMarker !== lastStatusMarker) {
-                const statusEvent = {
-                  type: 'reasoning_status',
-                  content: statusMarker,
-                  source: 'glm_marker',
-                  timestamp: Date.now(),
-                };
-                sendEvent(statusEvent);
-                lastStatusMarker = statusMarker;
-              }
-            },
-
-            onContentChunk: async (chunk: string) => {
-              // With native tool calling, content is clean (no XML to strip)
-              // Forward directly to client
-              sendContentChunk(chunk);
-            },
-
-            onNativeToolCall: async (toolCall: NativeToolCall) => {
-              nativeToolCallDetected = true;
-              detectedNativeToolCall = toolCall;
-
-              // Parse arguments from JSON string
-              const parsedArgs = parseToolArguments(
-                toolCall.function.arguments,
-                logPrefix
-              );
-
-              console.log(
-                `${logPrefix} 🔧 Native tool call detected: ${toolCall.function.name} with args:`,
-                parsedArgs
-              );
-
-              // Notify client that tool call started
-              sendEvent({
-                type: 'tool_call_start',
-                toolName: toolCall.function.name,
-                arguments: parsedArgs,
-                timestamp: Date.now(),
-              });
-            },
-
-            onComplete: async (fullReasoning: string, fullContent: string) => {
-              console.log(
-                `${logPrefix} ✅ GLM stream complete: reasoning=${fullReasoning.length}chars, content=${fullContent.length}chars`
-              );
-            },
-
-            onError: async (error: Error) => {
-              console.error(`${logPrefix} ❌ Stream error:`, error);
-              sendEvent({
-                type: 'error',
-                error: error.message,
-                requestId,
-              });
-            },
-          },
-          requestId
-        );
-
-        // Check if we got native tool calls from the stream result
-        if (streamResult.nativeToolCalls && streamResult.nativeToolCalls.length > 0 && !nativeToolCallDetected) {
-          // TODO: Support multiple tool calls in parallel (currently only first is processed)
-          if (streamResult.nativeToolCalls.length > 1) {
-            console.warn(`${logPrefix} ⚠️ Multiple tool calls detected (${streamResult.nativeToolCalls.length}), only processing first`);
-          }
-          // Tool calls were detected in stream processing
-          nativeToolCallDetected = true;
-          detectedNativeToolCall = streamResult.nativeToolCalls[0];
-        }
-
-        // NOTE: With native function calling, retry logic is no longer needed
-        // GLM properly completes tool calls via the API instead of XML in content
-
-        // ========================================
-        // STEP 3: Execute tool if detected (using native tool call)
-        // ========================================
-        if (nativeToolCallDetected && detectedNativeToolCall) {
-          // Convert NativeToolCall to ToolCall format for executeTool
-          const parsedArgs = parseToolArguments(
-            detectedNativeToolCall.function.arguments,
-            logPrefix
-          );
-
-          const toolCallForExecution: ToolCall = {
-            id: detectedNativeToolCall.id,
-            name: detectedNativeToolCall.function.name,
-            arguments: parsedArgs,
-          };
-
-          console.log(`${logPrefix} 🔧 Executing tool: ${toolCallForExecution.name}`);
-
-          const toolResult = await executeTool(toolCallForExecution, toolContext);
-
-          console.log(
-            `${logPrefix} 🔧 Tool execution ${toolResult.success ? 'succeeded' : 'failed'}: ${toolResult.latencyMs}ms`
-          );
-
-          // Notify client of tool result
-          sendEvent({
-            type: 'tool_result',
-            toolName: toolResult.toolName,
-            success: toolResult.success,
-            sourceCount: toolResult.data?.sourceCount,
-            latencyMs: toolResult.latencyMs,
-            timestamp: Date.now(),
-          });
-
-          // Send tool-specific results to client
-          if (toolResult.success) {
-            switch (toolResult.toolName) {
-              case 'browser.search': {
-                // Maps Tavily response to WebSearchResults format expected by frontend
-                if (toolResult.data?.searchResults) {
-                  const tavilyResults = toolResult.data.searchResults;
-                  sendEvent({
-                    type: 'web_search',
-                    data: {
-                      query: tavilyResults.query,
-                      sources: tavilyResults.results.map((result: { title: string; url: string; content: string; score?: number }) => ({
-                        title: result.title,
-                        url: result.url,
-                        snippet: result.content,
-                        relevanceScore: result.score,
-                      })),
-                      timestamp: Date.now(),
-                      searchTime: toolResult.latencyMs,
-                    },
-                  });
-                  console.log(`${logPrefix} 📤 Sent web_search event with ${tavilyResults.results.length} sources`);
-                }
-                break;
-              }
-
-              case 'generate_artifact': {
-                // Send artifact result to client
-                if (toolResult.data?.artifactCode) {
-                  sendEvent({
-                    type: 'artifact_complete',
-                    artifactCode: toolResult.data.artifactCode,
-                    artifactType: toolResult.data.artifactType,
-                    artifactTitle: toolResult.data.artifactTitle,
-                    reasoning: toolResult.data.artifactReasoning,
-                    timestamp: Date.now(),
-                    latencyMs: toolResult.latencyMs,
-                  });
-                  console.log(`${logPrefix} 📤 Sent artifact_complete event (type=${toolResult.data.artifactType})`);
-                }
-                break;
-              }
-
-              case 'generate_image': {
-                // Send image result to client
-                if (toolResult.data?.imageUrl || toolResult.data?.imageData) {
-                  sendEvent({
-                    type: 'image_complete',
-                    imageUrl: toolResult.data.imageUrl,
-                    imageData: toolResult.data.imageData,
-                    storageSucceeded: toolResult.data.storageSucceeded,
-                    degradedMode: toolResult.data.degradedMode,
-                    timestamp: Date.now(),
-                    latencyMs: toolResult.latencyMs,
-                  });
-                  console.log(`${logPrefix} 📤 Sent image_complete event (storage=${toolResult.data.storageSucceeded})`);
-                }
-                break;
-              }
-
-              default:
-                console.log(`${logPrefix} ℹ️ No specific event for tool: ${toolResult.toolName}`);
+          // ========================================
+          // STEP 1: Call GLM with native function calling
+          // ========================================
+          const glmResponse = await callGLMWithRetry(
+            systemPrompt,
+            userPrompt,
+            {
+              requestId,
+              userId: userId || undefined,
+              isGuest,
+              functionName: 'chat',
+              stream: true,
+              enableThinking: true, // Reasoning enabled for better tool selection
+              tools: allTools,
+              toolChoice: currentToolChoice,
+              temperature: 0.7,
+              max_tokens: 8000,
+              // BUG FIX: Pass full conversation history for multi-turn context
+              conversationMessages,
             }
+          );
+
+          if (!glmResponse.ok) {
+            const errorText = await glmResponse.text();
+            console.error(`${logPrefix} ❌ GLM API error:`, glmResponse.status, errorText);
+            sendSafeError(new Error('GLM API error'), {
+              status: glmResponse.status,
+              errorText,
+            });
+            return;
           }
 
           // ========================================
-          // STEP 4: Continue GLM with tool results
+          // STEP 2: Stream response with NATIVE tool call detection
           // ========================================
-          if (toolResult.success) {
-            // RFC-001: Use getToolResultContent which handles ALL tool types correctly
-            // This fixes the bug where artifact/image tools fell back to "Tool execution failed"
-            const resultContent = getToolResultContent(toolResult);
+          let nativeToolCallDetected = false;
+          let detectedNativeToolCall: NativeToolCall | undefined;
+
+          // Accumulate reasoning text for context
+          let fullReasoningAccumulated = '';
+          let lastStatusMarker = '';
+
+          // Process stream with native tool call detection
+          // GLM now uses OpenAI-compatible tool_calls in response instead of XML
+          const streamResult = await processGLMStream(
+            glmResponse,
+            {
+              onReasoningChunk: async (chunk: string) => {
+                // Accumulate reasoning text for context
+                fullReasoningAccumulated += chunk;
+
+                // FIX (2025-12-22): Forward reasoning chunks to frontend for live display
+                sendEvent({
+                  type: 'reasoning_chunk',
+                  chunk: chunk,
+                });
+
+                // Parse [STATUS:] markers and emit status updates
+                const statusMarker = parseStatusMarker(fullReasoningAccumulated);
+                if (statusMarker && statusMarker !== lastStatusMarker) {
+                  lastStatusMarker = statusMarker;
+                  sendEvent({
+                    type: 'status_update',
+                    status: statusMarker,
+                  });
+                  console.log(`${logPrefix} 📊 Status marker: "${statusMarker}"`);
+                }
+
+                // Process through ReasoningProvider for semantic status generation
+                await reasoningProvider.processReasoningChunk(chunk);
+              },
+
+              onContentChunk: async (chunk: string) => {
+                // With native tool calling, content is clean (no XML to strip)
+                // Forward directly to client
+                sendContentChunk(chunk);
+              },
+
+              onNativeToolCall: async (toolCall: NativeToolCall) => {
+                nativeToolCallDetected = true;
+                detectedNativeToolCall = toolCall;
+
+                // Parse arguments from JSON string
+                const parsedArgs = parseToolArguments(
+                  toolCall.function.arguments,
+                  logPrefix
+                );
+
+                console.log(
+                  `${logPrefix} 🔧 Native tool call detected: ${toolCall.function.name} with args:`,
+                  parsedArgs
+                );
+
+                // Notify client that tool call started
+                sendEvent({
+                  type: 'tool_call_start',
+                  toolName: toolCall.function.name,
+                  arguments: parsedArgs,
+                  timestamp: Date.now(),
+                });
+              },
+
+              onComplete: async (fullReasoning: string, fullContent: string) => {
+                console.log(
+                  `${logPrefix} ✅ GLM stream complete: reasoning=${fullReasoning.length}chars, content=${fullContent.length}chars`
+                );
+              },
+
+              onError: async (error: Error) => {
+                console.error(`${logPrefix} ❌ Stream error:`, error);
+                sendSafeError(error, { stage: 'glm-stream' });
+              },
+            },
+            requestId
+          );
+
+          // Check if we got native tool calls from the stream result
+          if (streamResult.nativeToolCalls && streamResult.nativeToolCalls.length > 0 && !nativeToolCallDetected) {
+            // TODO: Support multiple tool calls in parallel (currently only first is processed)
+            if (streamResult.nativeToolCalls.length > 1) {
+              console.warn(`${logPrefix} ⚠️ Multiple tool calls detected (${streamResult.nativeToolCalls.length}), only processing first`);
+            }
+            // Tool calls were detected in stream processing
+            nativeToolCallDetected = true;
+            detectedNativeToolCall = streamResult.nativeToolCalls[0];
+          }
+
+          // NOTE: With native function calling, retry logic is no longer needed
+          // GLM properly completes tool calls via the API instead of XML in content
+
+          // ========================================
+          // STEP 3: Execute tool if detected (using native tool call)
+          // ========================================
+          if (nativeToolCallDetected && detectedNativeToolCall) {
+            // Convert NativeToolCall to ToolCall format for executeTool
+            const parsedArgs = parseToolArguments(
+              detectedNativeToolCall.function.arguments,
+              logPrefix
+            );
+
+            const toolCallForExecution: ToolCall = {
+              id: detectedNativeToolCall.id,
+              name: detectedNativeToolCall.function.name,
+              arguments: parsedArgs,
+            };
+
+            console.log(`${logPrefix} 🔧 Executing tool: ${toolCallForExecution.name}`);
+
+            const toolResult = await executeToolWithSecurity(toolCallForExecution, toolContext);
 
             console.log(
-              `${logPrefix} 🔧 Continuing GLM with tool result: ${toolResult.toolName} (${resultContent.length} chars)`
+              `${logPrefix} 🔧 Tool execution ${toolResult.success ? 'succeeded' : 'failed'}: ${toolResult.latencyMs}ms`
             );
 
-            // Track continuation reasoning for status markers
-            let continuationReasoningText = '';
-
-            // BUG FIX (2025-12-20): Pass the assistant's tool_calls to the continuation
-            // This ensures GLM has the proper conversation context and returns a real response
-            // instead of a blank response
-            const previousAssistantToolCalls = streamResult.nativeToolCalls || [];
-
-            // BUG FIX (2025-12-21): Wrap GLM continuation in a timeout as safety measure
-            // If continuation hangs for 90s (beyond GLM's internal 60s chunk timeout),
-            // we still ensure the stream completes rather than hanging indefinitely.
-            const GLM_CONTINUATION_TIMEOUT_MS = 90000; // 90 seconds
-
-            const continuationPromise = callGLMWithToolResult(
-              finalSystemPrompt,
-              userPrompt,
-              toolCallForExecution,
-              resultContent,  // FIX: Now works for all tool types!
-              {
-                onReasoningChunk: async (chunk: string) => {
-                  // Accumulate reasoning for status marker parsing
-                  continuationReasoningText += chunk;
-
-                  // Parse status markers from accumulated continuation reasoning
-                  const statusMarker = parseStatusMarker(continuationReasoningText);
-                  if (statusMarker && statusMarker !== lastStatusMarker) {
-                    const statusEvent = {
-                      type: 'reasoning_status',
-                      content: statusMarker,
-                      source: 'glm_marker',
-                      timestamp: Date.now(),
-                    };
-                    sendEvent(statusEvent);
-                    lastStatusMarker = statusMarker;
-                  }
-                },
-
-                onContentChunk: async (chunk: string) => {
-                  sendContentChunk(chunk);
-                },
-
-                onComplete: async (fullReasoning: string, fullContent: string) => {
-                  console.log(
-                    `${logPrefix} ✅ GLM continuation complete: content=${fullContent.length}chars`
-                  );
-                },
-
-                onError: async (error: Error) => {
-                  console.error(`${logPrefix} ❌ Continuation error:`, error);
-                  sendEvent({
-                    type: 'error',
-                    error: error.message,
-                    requestId,
-                  });
-                },
-              },
-              {
-                requestId,
-                userId: userId || undefined,
-                isGuest,
-                functionName: 'chat',
-                stream: true,
-                enableThinking: true,
-                tools: allTools,
-                // BUG FIX: Pass full conversation history for tool continuation context
-                conversationMessages,
-              },
-              previousAssistantToolCalls  // BUG FIX: Pass tool_calls for context!
-            );
-
-            const timeoutPromise = new Promise<never>((_, reject) => {
-              setTimeout(() => reject(new Error('GLM continuation timeout')), GLM_CONTINUATION_TIMEOUT_MS);
+            // Notify client of tool result
+            sendEvent({
+              type: 'tool_result',
+              toolName: toolResult.toolName,
+              success: toolResult.success,
+              sourceCount: toolResult.data?.sourceCount,
+              latencyMs: toolResult.latencyMs,
+              timestamp: Date.now(),
             });
 
-            try {
-              await Promise.race([continuationPromise, timeoutPromise]);
-            } catch (continuationError) {
-              // Log the error but continue to [DONE] - don't let continuation issues block stream completion
-              console.error(`${logPrefix} ❌ GLM continuation failed/timeout:`, continuationError);
-              sendContentChunk('\n\n(The response was interrupted. Please try again if incomplete.)');
+            // Send tool-specific results to client
+            if (toolResult.success) {
+              switch (toolResult.toolName) {
+                case 'browser.search': {
+                  // Maps Tavily response to WebSearchResults format expected by frontend
+                  if (toolResult.data?.searchResults) {
+                    const tavilyResults = toolResult.data.searchResults;
+                    sendEvent({
+                      type: 'web_search',
+                      data: {
+                        query: tavilyResults.query,
+                        sources: tavilyResults.results.map((result: { title: string; url: string; content: string; score?: number }) => ({
+                          title: result.title,
+                          url: result.url,
+                          snippet: result.content,
+                          relevanceScore: result.score,
+                        })),
+                        timestamp: Date.now(),
+                        searchTime: toolResult.latencyMs,
+                      },
+                    });
+                    console.log(`${logPrefix} 📤 Sent web_search event with ${tavilyResults.results.length} sources`);
+                  }
+                  break;
+                }
+
+                case 'generate_artifact': {
+                  // Send artifact result to client
+                  if (toolResult.data?.artifactCode) {
+                    sendEvent({
+                      type: 'artifact_complete',
+                      artifactCode: toolResult.data.artifactCode,
+                      artifactType: toolResult.data.artifactType,
+                      artifactTitle: toolResult.data.artifactTitle,
+                      reasoning: toolResult.data.artifactReasoning,
+                      timestamp: Date.now(),
+                      latencyMs: toolResult.latencyMs,
+                    });
+                    console.log(`${logPrefix} 📤 Sent artifact_complete event (type=${toolResult.data.artifactType})`);
+
+                    // FIX (2025-12-22): Send accumulated reasoning to frontend for display
+                    if (fullReasoningAccumulated) {
+                      sendEvent({
+                        type: 'reasoning_complete',
+                        reasoning: fullReasoningAccumulated,
+                        reasoningSteps: null, // Structured steps not used with [STATUS:] markers
+                      });
+                      console.log(`${logPrefix} 📤 Sent reasoning_complete event (${fullReasoningAccumulated.length} chars)`);
+                    }
+                  }
+                  break;
+                }
+
+                case 'generate_image': {
+                  // Send image result to client
+                  if (toolResult.data?.imageUrl || toolResult.data?.imageData) {
+                    sendEvent({
+                      type: 'image_complete',
+                      imageUrl: toolResult.data.imageUrl,
+                      imageData: toolResult.data.imageData,
+                      storageSucceeded: toolResult.data.storageSucceeded,
+                      degradedMode: toolResult.data.degradedMode,
+                      timestamp: Date.now(),
+                      latencyMs: toolResult.latencyMs,
+                    });
+                    console.log(`${logPrefix} 📤 Sent image_complete event (storage=${toolResult.data.storageSucceeded})`);
+                  }
+                  break;
+                }
+
+                default:
+                  console.log(`${logPrefix} ℹ️ No specific event for tool: ${toolResult.toolName}`);
+              }
             }
 
-            console.log(
-              `${logPrefix} ✅ Tool-calling chat complete with continuation`
-            );
-          } else {
-            // Tool execution failed - inform user but continue
-            console.warn(
-              `${logPrefix} ⚠️ Tool execution failed: ${toolResult.error}`
-            );
+            // ========================================
+            // STEP 4: Continue GLM with tool results
+            // ========================================
+            if (toolResult.success) {
+              // RFC-001: Use getToolResultContent which handles ALL tool types correctly
+              // This fixes the bug where artifact/image tools fell back to "Tool execution failed"
+              const resultContent = getToolResultContent(toolResult);
 
-            sendContentChunk(
-              `\n\n(Note: Web search encountered an error, but I can still help based on my training data.)\n\n`
-            );
+              console.log(
+                `${logPrefix} 🔧 Continuing GLM with tool result: ${toolResult.toolName} (${resultContent.length} chars)`
+              );
+
+              // Track continuation reasoning for context
+              let continuationReasoningText = '';
+              let lastContinuationStatusMarker = '';
+
+              // BUG FIX (2025-12-20): Pass the assistant's tool_calls to the continuation
+              // This ensures GLM has the proper conversation context and returns a real response
+              // instead of a blank response
+              const previousAssistantToolCalls = streamResult.nativeToolCalls || [];
+
+              // BUG FIX (2025-12-21): Wrap GLM continuation in a timeout as safety measure
+              // If continuation hangs for 90s (beyond GLM's internal 60s chunk timeout),
+              // we still ensure the stream completes rather than hanging indefinitely.
+              const GLM_CONTINUATION_TIMEOUT_MS = 90000; // 90 seconds
+
+              const continuationPromise = callGLMWithToolResult(
+                systemPrompt,
+                userPrompt,
+                toolCallForExecution,
+                resultContent,  // FIX: Now works for all tool types!
+                {
+                  onReasoningChunk: async (chunk: string) => {
+                    // Accumulate reasoning for context
+                    continuationReasoningText += chunk;
+
+                    // FIX (2025-12-22): Forward continuation reasoning chunks to frontend
+                    sendEvent({
+                      type: 'reasoning_chunk',
+                      chunk: chunk,
+                    });
+
+                    // Parse [STATUS:] markers and emit status updates
+                    const statusMarker = parseStatusMarker(continuationReasoningText);
+                    if (statusMarker && statusMarker !== lastContinuationStatusMarker) {
+                      lastContinuationStatusMarker = statusMarker;
+                      sendEvent({
+                        type: 'status_update',
+                        status: statusMarker,
+                      });
+                      console.log(`${logPrefix} 📊 Continuation status marker: "${statusMarker}"`);
+                    }
+
+                    // Process through ReasoningProvider for semantic status generation
+                    await reasoningProvider.processReasoningChunk(chunk);
+                  },
+
+                  onContentChunk: async (chunk: string) => {
+                    sendContentChunk(chunk);
+                  },
+
+                  onComplete: async (fullReasoning: string, fullContent: string) => {
+                    console.log(
+                      `${logPrefix} ✅ GLM continuation complete: content=${fullContent.length}chars`
+                    );
+                  },
+
+                  onError: async (error: Error) => {
+                    console.error(`${logPrefix} ❌ Continuation error:`, error);
+                    sendSafeError(error, { stage: 'glm-continuation' });
+                  },
+                },
+                {
+                  requestId,
+                  userId: userId || undefined,
+                  isGuest,
+                  functionName: 'chat',
+                  stream: true,
+                  enableThinking: true,
+                  tools: allTools,
+                  toolChoice: currentToolChoice,
+                  // BUG FIX: Pass full conversation history for tool continuation context
+                  conversationMessages,
+                },
+                previousAssistantToolCalls  // BUG FIX: Pass tool_calls for context!
+              );
+
+              const timeoutPromise = new Promise<never>((_, reject) => {
+                setTimeout(() => reject(new Error('GLM continuation timeout')), GLM_CONTINUATION_TIMEOUT_MS);
+              });
+
+              try {
+                await Promise.race([continuationPromise, timeoutPromise]);
+              } catch (continuationError) {
+                // Log the error but continue to [DONE] - don't let continuation issues block stream completion
+                console.error(`${logPrefix} ❌ GLM continuation failed/timeout:`, continuationError);
+                sendContentChunk('\n\n(The response was interrupted. Please try again if incomplete.)');
+              }
+
+              console.log(
+                `${logPrefix} ✅ Tool-calling chat complete with continuation`
+              );
+            } else {
+              // Tool execution failed - inform user but continue
+              console.warn(
+                `${logPrefix} ⚠️ Tool execution failed: ${toolResult.error}`
+              );
+
+              if (allowAutoFallback && currentToolChoice !== 'auto') {
+                sendEvent({
+                  type: 'warning',
+                  message: 'Tool execution failed. Falling back to auto mode.',
+                  timestamp: Date.now(),
+                });
+                await runToolCallingPass('auto', false, FALLBACK_NOTE);
+                return;
+              }
+
+              sendContentChunk(
+                `\n\n(Note: The requested tool failed, but I can still help.)\n\n`
+              );
+            }
           }
-        }
+        };
+
+        await runToolCallingPass(toolChoice, true);
 
         // ========================================
         // STEP 5: Finalize stream
         // ========================================
+
+        // Cleanup ReasoningProvider
+        if (reasoningProvider) {
+          await reasoningProvider.finalize('response');
+          reasoningProvider.destroy();
+          console.log(`${logPrefix} ReasoningProvider finalized`);
+        }
+
+        executionTracker.destroy();
 
         console.log(`${logPrefix} ✅ Tool-calling chat stream complete`);
 
@@ -621,11 +793,23 @@ export async function handleToolCallingChat(
 
         console.error(`${logPrefix} ❌ Tool-calling chat error:`, errorMessage);
 
+        // Cleanup ReasoningProvider on error
+        if (reasoningProvider) {
+          reasoningProvider.destroy();
+          console.log(`${logPrefix} ReasoningProvider destroyed (error path)`);
+        }
+
+        executionTracker.destroy();
+
+        const { response } = SafeErrorHandler.toSafeResponse(error, requestId, {
+          stage: 'tool-calling-chat',
+        });
+
         sendEvent({
           type: 'error',
-          error: 'An error occurred during processing',
-          details: errorMessage,
+          error: response.error.message,
           requestId,
+          retryable: response.error.retryable,
         });
 
         controller.enqueue(encoder.encode('data: [DONE]\n\n'));

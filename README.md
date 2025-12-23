@@ -571,7 +571,6 @@ llm-chat-site/
 │   │   ├── summarize-conversation/ # Context summarization (Gemini 2.5 Flash Lite via OpenRouter)
 │   │   ├── cache-manager/  # Redis cache management
 │   │   ├── admin-analytics/ # Usage analytics dashboard
-│   │   └── intent-examples/ # Intent detection setup
 │   ├── migrations/         # Database migrations
 │   └── config.toml         # Supabase configuration
 ├── public/                 # Static assets
