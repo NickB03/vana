@@ -55,14 +55,18 @@ for (const [filename, rules] of Object.entries(CRITICAL_FILES)) {
 
   // Check minimum length
   if (content.length < rules.minLength) {
-    console.error(`❌ CRITICAL: ${filename} is too small (${content.length} bytes, expected >${rules.minLength})`);
-    console.error(`   This usually means the file was corrupted or truncated`);
+    console.error(
+      `❌ CRITICAL: ${filename} is too small (${content.length} bytes, expected >${rules.minLength})`
+    );
+    console.error('   This usually means the file was corrupted or truncated');
     hasErrors = true;
     continue;
   }
 
   // Check for required content
-  const missingContent = rules.mustContain.filter(pattern => !content.includes(pattern));
+  const missingContent = rules.mustContain.filter(
+    (pattern) => !content.includes(pattern)
+  );
   if (missingContent.length > 0) {
     console.error(`❌ CRITICAL: ${filename} is missing required content:`);
     console.error(`   Missing: ${missingContent.join(', ')}`);
@@ -72,11 +76,13 @@ for (const [filename, rules] of Object.entries(CRITICAL_FILES)) {
   }
 
   // Check for error patterns (git command output)
-  const foundErrors = rules.mustNotContain.filter(pattern => content.toLowerCase().includes(pattern.toLowerCase()));
+  const foundErrors = rules.mustNotContain.filter((pattern) =>
+    content.toLowerCase().includes(pattern.toLowerCase())
+  );
   if (foundErrors.length > 0) {
     console.error(`❌ CRITICAL: ${filename} contains error output:`);
     console.error(`   Found: ${foundErrors.join(', ')}`);
-    console.error(`   This file may have been corrupted by a failed git command`);
+    console.error('   This file may have been corrupted by a failed git command');
     console.error(`   First 200 chars: ${content.substring(0, 200)}`);
     hasErrors = true;
     continue;
