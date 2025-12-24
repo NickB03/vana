@@ -400,11 +400,10 @@ Full schema: `supabase/migrations/`
 
 **Shared Utilities** (`_shared/`):
 - **Core**: `config.ts`, `cors-config.ts`, `logger.ts`, `validators.ts`
-- **AI/Models**: `openrouter-client.ts`, `glm-client.ts`, `model-router.ts`, `complexity-analyzer.ts`, `reasoning-generator.ts`
+- **AI/Models**: `openrouter-client.ts`, `glm-client.ts`, `reasoning-generator.ts`
 - **Unified Tool System** (Issue #340): `tool-definitions.ts`, `tool-executor.ts`, `artifact-executor.ts`, `image-executor.ts`
 - **Tool Security** (Phase 0): `tool-validator.ts`, `tool-rate-limiter.ts`, `tool-execution-tracker.ts`, `prompt-injection-defense.ts`, `safe-error-handler.ts`
 - **Context Management**: `context-selector.ts`, `context-ranker.ts`, `token-counter.ts`
-- **State/Quality**: `state-machine.ts`, `conversation-state.ts`, `response-quality.ts`
 - **Artifacts**: `artifact-validator.ts`, `artifact-rules/`, `prebuilt-bundles.ts`
 - **Utilities**: `storage-retry.ts`, `rate-limiter.ts`, `api-error-handler.ts`, `error-handler.ts`, `cdn-fallback.ts`
 - **Prompts**: `system-prompt-inline.ts`, `system-prompt.txt`

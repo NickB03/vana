@@ -18,6 +18,8 @@ dist-ssr
 .env.production
 .env.backup
 .env.local
+*.env.local.backup
+*.env.*.backup
 
 # Editor directories and files
 .vscode/*
@@ -109,6 +111,10 @@ scripts/archive/
 .claude/imagelog.md
 .claude/chatlog.md
 .claude/*log.md
+
+# Code review reports (temporary analysis artifacts)
+.claude/reports/
+*.coverage-report.txt
 
 # Test coverage and results
 coverage/

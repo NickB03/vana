@@ -104,7 +104,7 @@ Deno.test("getToolResultContent - image success with storage", () => {
 
   const content = getToolResultContent(result);
   assertEquals(content.includes('https://example.com/img.png'), true);
-  assertEquals(content.includes('Successfully stored'), true);
+  assertEquals(content.includes('mode="edit"'), true);
   assertEquals(content.includes('Image generated successfully'), true);
 });
 
@@ -120,7 +120,8 @@ Deno.test("getToolResultContent - image success without storage", () => {
   };
 
   const content = getToolResultContent(result);
-  assertEquals(content.includes('temporary base64 URL'), true);
+  assertEquals(content.includes('rendered directly (temporary)'), true);
+  assertEquals(content.includes('Image generated successfully'), true);
 });
 
 // ============================================================================
