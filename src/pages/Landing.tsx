@@ -2,7 +2,7 @@ import { Hero } from "@/components/landing/Hero";
 import { ShowcaseSection } from "@/components/landing/ShowcaseSection";
 import { BenefitsSection } from "@/components/landing/BenefitsSection";
 import { CTASection } from "@/components/landing/CTASection";
-import { GradientBackground } from "@/components/ui/bg-gredient";
+import { GradientBackground } from "@/components/ui/bg-gradient";
 import { useRef, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
