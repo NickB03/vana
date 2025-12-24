@@ -9,7 +9,7 @@ The artifact version control system is fully implemented at the database and hoo
 - ✅ Database schema with RLS policies
 - ✅ React hook (`useArtifactVersions`)
 - ✅ UI components (`ArtifactVersionSelector`, `ArtifactDiffViewer`)
-- ❌ UI integration (components not imported in `Artifact.tsx` or `ChatInterface.tsx`)
+- ❌ UI integration (components not imported in `ArtifactContainer.tsx` or `ChatInterface.tsx`)
 - ❌ User-accessible features
 
 This documentation describes the technical implementation. See `docs/archive/WEEK_3-4_HANDOFF.md` for planned integration work.

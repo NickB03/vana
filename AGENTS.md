@@ -574,12 +574,12 @@ export default function Dashboard() {
 
 ### Adding a New Artifact Type
 
-1. **Update type definition** in `src/components/Artifact.tsx`:
+1. **Update type definition** in `src/components/ArtifactContainer.tsx`:
 ```typescript
 export type ArtifactType = "code" | "html" | "react" | "svg" | "mermaid" | "markdown" | "image" | "your-new-type";
 ```
 
-2. **Add renderer logic** in `Artifact` component:
+2. **Add renderer logic** in `ArtifactRenderer` component:
 ```typescript
 if (artifact.type === "your-new-type") {
   return <YourCustomRenderer content={artifact.content} />;
@@ -680,7 +680,8 @@ src/
 ├── components/
 │   ├── ui/                    # shadcn/ui components (69 files)
 │   ├── prompt-kit/            # Custom chat UI primitives
-│   ├── Artifact.tsx           # Main artifact renderer
+│   ├── ArtifactContainer.tsx  # Main artifact wrapper with state management
+│   ├── ArtifactRenderer.tsx   # Artifact rendering logic
 │   ├── ArtifactCard.tsx       # Artifact preview cards
 │   ├── ChatInterface.tsx      # Main chat UI with resizable panels
 │   └── ChatSidebar.tsx        # Session list sidebar

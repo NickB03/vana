@@ -1091,7 +1091,7 @@ export function exportAsFile(content: string, filename: string, mimeType: string
 
 - **Export Utilities**: `src/utils/exportArtifact.ts`
 - **ExportMenu Component**: `src/components/ExportMenu.tsx`
-- **Artifact Types**: `src/components/Artifact.tsx`
+- **Artifact Types**: `src/components/ArtifactContainer.tsx`
 - **Tests**: `src/utils/__tests__/exportArtifact.test.ts`
 
 ### External Libraries

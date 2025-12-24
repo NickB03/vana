@@ -140,7 +140,7 @@ npm run preview          # Preview production build
   ```
 - **Never run multiple dev servers** — kills performance and causes port confusion
 
-### Testing (~2,000 tests, 90+ files)
+### Testing (1,048 tests, 90+ files)
 ```bash
 npm run test                  # Run all tests
 npm run test -- --watch       # Watch mode
@@ -682,8 +682,8 @@ src/
 │   ├── ai-elements/           # AI-powered UI elements
 │   ├── demo/                  # Demo components
 │   ├── kibo-ui/               # Custom UI components
-│   ├── Artifact.tsx           # Deprecated re-export wrapper
-│   ├── ArtifactContainer.tsx  # Main artifact renderer (canonical)
+│   ├── ArtifactContainer.tsx  # Main artifact wrapper (state, validation, editing)
+│   ├── ArtifactRenderer.tsx   # Artifact rendering logic
 │   └── ChatInterface.tsx      # Main chat UI
 ├── hooks/                     # Data fetching hooks
 ├── utils/                     # Utilities + __tests__/
@@ -778,7 +778,7 @@ alias supabase-functions='docker stop supabase_edge_runtime_vznhbocnuykdmjvujaka
 | TTI | < 3.5s |
 | CLS | < 0.1 |
 | Coverage | 74% current (55% min) |
-| Test execution | < 3s (~1,900 tests) |
+| Test execution | < 3s (1,048 tests) |
 | CI/CD runtime | < 5min |
 
 ## Additional Resources

@@ -90,7 +90,7 @@
 - 🛡️ **CSP Security**: Updated Content Security Policy for Tailwind CDN and data: URL shims
 - 📊 **Response Quality Tracking**: New `response_quality_logs` and `message_feedback` tables
 - 🔄 **State Machine Architecture**: Conversation state tracking in `_shared/state-machine.ts`
-- ⚡ **692 Tests**: Expanded test coverage from 432 to 692 tests
+- ⚡ **1,048 Tests**: Comprehensive test coverage across 90+ test files
 
 **November 28, 2025 - GLM-4.6 Migration:**
 - 🚀 **Enhanced Artifact Generation**: Migrated to GLM-4.6 (Z.ai) with advanced reasoning capabilities
@@ -122,7 +122,7 @@
 - 🚀 **Automated CI/CD Pipeline**: GitHub Actions workflow (lint → test → coverage → build)
 - 📊 **Coverage Tracking**: Codecov integration with automatic PR comments and trend analysis
 - 🛡️ **Branch Protection**: GitHub ruleset requiring PR approval and passing checks
-- ✅ **Testing Expansion**: 692 tests (coverage: 68% → 74%), exportArtifact.ts: 23% → 98%
+- ✅ **Testing Expansion**: 1,048 tests (coverage: 74%), exportArtifact.ts: 23% → 98%
 - 🔒 **Security Testing**: 9 XSS attack scenarios validated, performance benchmarks added
 - 📚 **Comprehensive Docs**: 5 detailed guides (setup, CI/CD, coverage, quickstart)
 
@@ -279,7 +279,8 @@ graph TB
     subgraph "Edge Functions"
         L[chat - Gemini Flash Lite]
         LA[generate-artifact - GLM-4.6]
-        LB[generate-artifact-fix - GLM-4.6]
+        LB[bundle-artifact]
+        LC[generate-artifact-fix - GLM-4.6]
         M[generate-title - Gemini Flash Lite]
         N[generate-image - Gemini Flash Image]
         O[summarize-conversation - Gemini Flash Lite]
@@ -307,6 +308,7 @@ graph TB
     J --> L
     J --> LA
     J --> LB
+    J --> LC
     J --> M
     J --> N
     J --> O
@@ -314,7 +316,7 @@ graph TB
 
     L --> Q
     LA --> QA
-    LB --> QA
+    LC --> QA
     N --> Q
     L --> H
     M --> H
@@ -510,7 +512,7 @@ npm run build:dev        # Development build with sourcemaps
 npm run preview          # Preview production build
 
 # Testing
-npm run test             # Run tests (432 passing)
+npm run test             # Run tests (1,048 passing)
 npm run test:ui          # Run tests with UI
 npm run test:coverage    # Generate coverage report (74.21%)
 
@@ -519,7 +521,7 @@ npm run lint             # Run ESLint (0 errors, 94 warnings)
 
 # CI/CD (runs automatically on PRs)
 # - Lint validation
-# - Full test suite (432 tests)
+# - Full test suite (1,048 tests)
 # - Coverage upload to Codecov
 # - Production build verification
 ```
@@ -535,15 +537,21 @@ llm-chat-site/
 │   │   ├── ui/             # shadcn/ui components (69 files)
 │   │   ├── prompt-kit/     # Custom chat UI primitives
 │   │   ├── landing/        # Landing page components
-│   │   ├── Artifact.tsx    # Artifact renderer (main component)
+│   │   ├── ArtifactContainer.tsx # Main artifact wrapper with state management
+│   │   ├── ArtifactRenderer.tsx  # Artifact rendering logic
 │   │   ├── ArtifactCard.tsx # Artifact preview cards
 │   │   ├── ChatInterface.tsx # Main chat interface
 │   │   ├── ChatSidebar.tsx  # Session list sidebar
+│   │   └── ...
+│   ├── contexts/           # React Context providers
+│   │   ├── MultiArtifactContext.tsx     # Multi-artifact state management
+│   │   ├── MultiArtifactContextDef.ts   # Type definitions
 │   │   └── ...
 │   ├── hooks/              # Custom React hooks
 │   │   ├── useChatMessages.tsx  # Chat message CRUD & streaming
 │   │   ├── useChatSessions.tsx  # Session management
 │   │   ├── useGoogleAuth.ts     # Google OAuth integration
+│   │   ├── use-multi-artifact.ts # Multi-artifact context hook
 │   │   └── ...
 │   ├── pages/              # Route pages
 │   │   ├── Index.tsx       # Main chat page
@@ -588,8 +596,11 @@ llm-chat-site/
 
 | File | Purpose |
 |------|---------|
-| `src/components/Artifact.tsx` | Renders all artifact types (React, HTML, SVG, Mermaid, etc.) |
+| `src/components/ArtifactContainer.tsx` | Main artifact wrapper (state, validation, editing) |
+| `src/components/ArtifactRenderer.tsx` | Renders all artifact types (React, HTML, SVG, Mermaid, etc.) |
 | `src/components/ChatInterface.tsx` | Main chat UI with resizable panels |
+| `src/contexts/MultiArtifactContext.tsx` | Multi-artifact state management provider (312 lines) |
+| `src/hooks/use-multi-artifact.ts` | Hook for accessing multi-artifact context |
 | `src/hooks/useChatMessages.tsx` | Manages chat messages and streaming |
 | `src/utils/artifactParser.ts` | Extracts artifacts from AI responses |
 | `supabase/functions/chat/index.ts` | Main chat API endpoint |
@@ -644,6 +655,136 @@ React artifacts cannot use local project imports like `@/components/ui/*`. The s
 This comprehensive approach reduces artifact failures by ~95% and provides helpful error messages when issues occur.
 
 **For Developers**: See `.claude/artifact-import-restrictions.md` for complete import guidelines.
+
+### Multi-Artifact Context System
+
+**NEW: Concurrent Artifact Management (November 2024)**
+
+The Multi-Artifact Context system enables users to work with multiple artifacts simultaneously, providing a workspace-like experience for comparing and managing different generated components.
+
+#### Features
+
+- **Concurrent Artifacts**: Support for up to 5 artifacts open simultaneously
+- **LRU Eviction**: Automatic cleanup of least-recently-used artifacts when limit is reached
+- **Session Persistence**: Artifact state automatically saved to `sessionStorage` and restored on page refresh
+- **Duplicate Detection**: Prevents duplicate artifacts with automatic timestamp updates
+- **Active Artifact Tracking**: Maintains focus state for the currently selected artifact
+- **Minimize/Restore**: Toggle artifact visibility without removing them from the workspace
+
+#### Architecture
+
+**React Context API Implementation:**
+
+The system uses React Context to provide centralized state management for artifacts across the application:
+
+```typescript
+// Core interfaces
+interface ArtifactState {
+  artifact: ArtifactData;          // The artifact data
+  messageId?: string;              // Source message ID
+  isMinimized?: boolean;           // Visibility state
+  position?: number;               // Display order
+  addedAt: number;                 // LRU timestamp
+}
+
+interface MultiArtifactContextType {
+  artifacts: Map<string, ArtifactState>;
+  activeArtifactId: string | null;
+  maxArtifacts: number;            // Default: 5
+  addArtifact: (artifact, messageId?) => void;
+  removeArtifact: (artifactId) => void;
+  setActiveArtifact: (artifactId) => void;
+  minimizeArtifact: (artifactId) => void;
+  clearAll: () => void;
+  getArtifact: (artifactId) => ArtifactState | undefined;
+  hasArtifact: (artifactId) => boolean;
+}
+```
+
+**Key Components:**
+
+| File | Purpose |
+|------|---------|
+| `src/contexts/MultiArtifactContext.tsx` | Provider implementation with state logic (312 lines) |
+| `src/contexts/MultiArtifactContextDef.ts` | Type definitions and context creation |
+| `src/hooks/use-multi-artifact.ts` | Convenience hook for consuming the context |
+
+#### Implementation Details
+
+**LRU Eviction Strategy:**
+
+When the 6th artifact is added, the system automatically removes the least-recently-used artifact based on the `addedAt` timestamp. This ensures optimal performance while maintaining the most relevant artifacts.
+
+```typescript
+// Automatic LRU eviction when max artifacts reached
+if (artifacts.size >= 5) {
+  const oldestId = findLeastRecentlyUsed(artifacts);
+  removeArtifact(oldestId);
+}
+```
+
+**Session Persistence:**
+
+All artifact state is automatically synchronized with `sessionStorage` for seamless page refresh recovery:
+
+```typescript
+// State automatically persisted on changes
+sessionStorage.setItem('multi-artifact-state', JSON.stringify({
+  artifacts: Object.fromEntries(artifactMap),
+  activeArtifactId
+}));
+```
+
+**Duplicate Prevention:**
+
+When adding an artifact that already exists, the system updates its timestamp instead of creating a duplicate, ensuring clean artifact management.
+
+#### Usage Example
+
+```typescript
+import { useMultiArtifact } from '@/hooks/use-multi-artifact';
+
+function ArtifactManager() {
+  const {
+    artifacts,
+    activeArtifactId,
+    addArtifact,
+    setActiveArtifact,
+    minimizeArtifact,
+    clearAll
+  } = useMultiArtifact();
+
+  // Add artifact when AI generates one
+  const handleArtifactGenerated = (artifact: ArtifactData, messageId: string) => {
+    addArtifact(artifact, messageId);
+  };
+
+  // Switch between artifacts
+  const handleSelectArtifact = (id: string) => {
+    setActiveArtifact(id);
+  };
+
+  return (
+    <div>
+      <ArtifactTabs
+        artifacts={artifacts}
+        activeId={activeArtifactId}
+        onSelect={handleSelectArtifact}
+      />
+      <ArtifactCanvas artifactId={activeArtifactId} />
+    </div>
+  );
+}
+```
+
+#### User-Facing Benefits
+
+- **Compare Components**: Open multiple React components side-by-side for comparison
+- **Reference Previous Work**: Keep earlier iterations accessible while generating new versions
+- **Multi-tasking**: Switch between different artifacts without losing context
+- **Automatic Cleanup**: No manual management needed - oldest artifacts automatically removed
+- **Session Recovery**: Resume work exactly where you left off after page refresh
+- **Workspace Organization**: Minimize artifacts you want to keep but aren't actively using
 
 ### Session Management
 
@@ -782,13 +923,13 @@ export function parseArtifacts(content: string): {
 
 ### Adding New Artifact Types
 
-1. **Update the type definition** in `src/components/Artifact.tsx`:
+1. **Update the type definition** in `src/components/ArtifactContainer.tsx`:
 
 ```typescript
 export type ArtifactType = "code" | "html" | "react" | "svg" | "mermaid" | "markdown" | "image" | "your-new-type";
 ```
 
-2. **Add renderer logic** in the `Artifact` component:
+2. **Add renderer logic** in the `ArtifactRenderer` component:
 
 ```typescript
 if (artifact.type === "your-new-type") {
@@ -813,7 +954,7 @@ The project uses Vitest for frontend testing with comprehensive coverage:
 
 **Current Metrics:**
 ```
-Tests:     692 passing (692 total)
+Tests:     1,048 passing (1,048 total)
 Runtime:   ~10s
 Coverage:  74.21% statements (exceeds 55% threshold by 19%)
 ```
@@ -929,6 +1070,9 @@ supabase link --project-ref your-project-ref
 
 # Deploy all functions
 supabase functions deploy chat
+supabase functions deploy generate-artifact
+supabase functions deploy generate-artifact-fix
+supabase functions deploy bundle-artifact
 supabase functions deploy generate-title
 supabase functions deploy generate-image
 supabase functions deploy summarize-conversation

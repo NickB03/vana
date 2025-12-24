@@ -79,7 +79,7 @@ Add new routes **ABOVE** the `*` catch-all in `App.tsx`, otherwise they will be 
 ## Testing
 
 ```bash
-npm run test              # Run all tests (692 tests)
+npm run test              # Run all tests (1,048 tests)
 npm run test:coverage     # Coverage report (55% threshold, current: 74%)
 ```
 

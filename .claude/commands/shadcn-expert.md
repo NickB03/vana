@@ -15,7 +15,7 @@ Invoke the shadcn/ui expert agent for advanced UI development: $ARGUMENTS
 - Focus: Component selection, performance optimization, accessibility
 - Available components: @src/components/ui/ (69+ shadcn/ui components)
 - Chat interface: @src/components/ChatInterface.tsx
-- Artifact system: @src/components/Artifact.tsx
+- Artifact system: @src/components/ArtifactContainer.tsx, @src/components/ArtifactRenderer.tsx
 
 ## Task
 

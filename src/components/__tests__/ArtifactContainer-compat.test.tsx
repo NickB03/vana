@@ -13,9 +13,9 @@ vi.mock('@/integrations/supabase/client', () => ({
 }));
 
 /**
- * Artifact.tsx is a backward compatibility wrapper that re-exports ArtifactContainer.
+ * This file tests the ArtifactContainer component directly (imported as "Artifact" for backwards compatibility).
  * The comprehensive testing is done in ArtifactContainer.test.tsx.
- * These tests verify the re-export works correctly.
+ * These tests verify the component exports work correctly.
  */
 describe('Artifact (backward compatibility wrapper)', () => {
   beforeAll(() => {
