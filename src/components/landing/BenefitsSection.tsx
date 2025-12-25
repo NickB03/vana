@@ -5,10 +5,10 @@ import { SECTION_SPACING, combineSpacing } from "@/utils/spacingConstants";
 import { TYPOGRAPHY } from "@/utils/typographyConstants";
 import { cn } from "@/lib/utils";
 import {
-  StreamingCodeIllustration,
-  InteractiveArtifactsIllustration,
-  SecurityIllustration,
-} from "./BenefitIllustrations";
+  MultiModelGraphic,
+  StackGraphic,
+  EnterpriseGraphic,
+} from "./NewBenefitIllustrations";
 import { useEffect, useRef, useState } from "react";
 
 export const BenefitsSection = () => {
@@ -78,7 +78,7 @@ export const BenefitsSection = () => {
             </div>
             <div className="order-first lg:order-last">
               {shouldMountIllustrations ? (
-                <StreamingCodeIllustration />
+                <MultiModelGraphic />
               ) : (
                 <div className="aspect-video bg-muted/20 animate-pulse rounded-lg" />
               )}
@@ -91,7 +91,7 @@ export const BenefitsSection = () => {
             {...fadeInUp}
           >
             {shouldMountIllustrations ? (
-              <InteractiveArtifactsIllustration />
+              <StackGraphic />
             ) : (
               <div className="aspect-video bg-muted/20 animate-pulse rounded-lg" />
             )}
@@ -144,7 +144,7 @@ export const BenefitsSection = () => {
             </div>
             <div className="order-first lg:order-last">
               {shouldMountIllustrations ? (
-                <SecurityIllustration />
+                <EnterpriseGraphic />
               ) : (
                 <div className="aspect-video bg-muted/20 animate-pulse rounded-lg" />
               )}
