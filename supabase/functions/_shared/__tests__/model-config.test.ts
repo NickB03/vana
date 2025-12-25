@@ -128,7 +128,7 @@ Deno.test("Model Config - No hardcoded model names in Edge Functions", async () 
   ]);
 
   const filesToScan = [
-    "../reasoning-generator.ts",
+    "../reasoning-types.ts",
     "../openrouter-client.ts",
     "../../chat/index.ts",
     "../../generate-artifact/index.ts",

@@ -36,7 +36,7 @@ import {
 import { getSystemInstruction } from './system-prompt-inline.ts';
 import { MODELS, ARTIFACT_TYPES, type ArtifactType } from './config.ts';
 import { ErrorCode } from './error-handler.ts';
-import type { StructuredReasoning } from './reasoning-generator.ts';
+import type { StructuredReasoning } from './reasoning-types.ts';
 
 // ============================================================================
 // SECURITY CONSTANTS
