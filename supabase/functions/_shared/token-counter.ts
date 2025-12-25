@@ -185,13 +185,14 @@ export function getModelBudget(model: string): TokenBudget | undefined {
 }
 
 // ============================================================================
-// BACKWARD COMPATIBILITY LAYER
+// TYPE DEFINITIONS
 // ============================================================================
-// These functions maintain compatibility with existing code (context-selector.ts)
-// that uses the old token counting interface.
 
 /**
- * Message interface for backward compatibility
+ * Message interface for token counting with optional reasoning steps
+ *
+ * Used by tests and utilities that need to count tokens for messages
+ * that may include both content and reasoning_steps.
  */
 export interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -199,41 +200,3 @@ export interface Message {
   reasoning_steps?: string | null;
 }
 
-/**
- * Estimates token count for a single message (backward compatible)
- *
- * @deprecated Use countTokens() for new code
- * @param message - The message to count tokens for
- * @returns Estimated token count
- */
-export function countMessageTokens(message: Message): number {
-  const contentTokens = countTokens(message.content);
-  const reasoningTokens = message.reasoning_steps
-    ? countTokens(message.reasoning_steps)
-    : 0;
-
-  // Add overhead for role and formatting (~10 tokens per message)
-  return contentTokens + reasoningTokens + 10;
-}
-
-/**
- * Estimates total token count for an array of messages (backward compatible)
- *
- * @deprecated Use getMessageTokenCounts() for new code
- * @param messages - Array of messages to count
- * @returns Total estimated token count
- */
-export function countTotalTokens(messages: Message[]): number {
-  return messages.reduce((total, msg) => total + countMessageTokens(msg), 0);
-}
-
-/**
- * Estimates token count for a text string (backward compatible)
- *
- * @deprecated Use countTokens() for new code
- * @param text - The text to count tokens for
- * @returns Estimated token count
- */
-export function countTextTokens(text: string): number {
-  return countTokens(text);
-}

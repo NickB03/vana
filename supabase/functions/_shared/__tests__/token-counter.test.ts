@@ -9,8 +9,6 @@ import {
   getMessageTokenCounts,
   getModelBudget,
   MODEL_BUDGETS,
-  countMessageTokens,
-  countTotalTokens,
   type TokenBudget,
   type Message,
 } from '../token-counter.ts';
@@ -107,36 +105,56 @@ Deno.test('getModelBudget - returns undefined for invalid model', () => {
   assertEquals(budget, undefined);
 });
 
-// Backward compatibility tests
-Deno.test('countMessageTokens - estimates tokens for message with content', () => {
+// Token counting tests (using inline logic from deprecated countMessageTokens)
+Deno.test('estimates tokens for message with content only', () => {
   const message: Message = {
     role: 'user',
     content: 'Hello world',
   };
-  const tokens = countMessageTokens(message);
+  // Inline the logic from deprecated countMessageTokens()
+  const contentTokens = countTokens(message.content);
+  const reasoningTokens = message.reasoning_steps
+    ? countTokens(message.reasoning_steps)
+    : 0;
+  const tokens = contentTokens + reasoningTokens + 10;
+
   // "Hello world" = 2 words * 1.3 = 2.6 -> ceil = 3, plus 10 overhead = 13
   assertEquals(tokens, 13);
 });
 
-Deno.test('countMessageTokens - includes reasoning_steps', () => {
+Deno.test('estimates tokens for message including reasoning_steps', () => {
   const message: Message = {
     role: 'assistant',
     content: 'Hello',
     reasoning_steps: 'Let me think',
   };
-  const tokens = countMessageTokens(message);
+  // Inline the logic from deprecated countMessageTokens()
+  const contentTokens = countTokens(message.content);
+  const reasoningTokens = message.reasoning_steps
+    ? countTokens(message.reasoning_steps)
+    : 0;
+  const tokens = contentTokens + reasoningTokens + 10;
+
   // "Hello" = 1 word * 1.3 = 1.3 -> ceil = 2
   // "Let me think" = 3 words * 1.3 = 3.9 -> ceil = 4
   // Total = 2 + 4 + 10 = 16
   assertEquals(tokens, 16);
 });
 
-Deno.test('countTotalTokens - sums tokens for multiple messages', () => {
+Deno.test('sums tokens for multiple messages', () => {
   const messages: Message[] = [
     { role: 'user', content: 'Hello' },
     { role: 'assistant', content: 'Hi there' },
   ];
-  const total = countTotalTokens(messages);
+  // Inline the logic from deprecated countTotalTokens()
+  const total = messages.reduce((sum, msg) => {
+    const contentTokens = countTokens(msg.content);
+    const reasoningTokens = msg.reasoning_steps
+      ? countTokens(msg.reasoning_steps)
+      : 0;
+    return sum + contentTokens + reasoningTokens + 10;
+  }, 0);
+
   // Message 1: 1 word * 1.3 = 1.3 -> ceil = 2, plus 10 = 12
   // Message 2: 2 words * 1.3 = 2.6 -> ceil = 3, plus 10 = 13
   // Total = 12 + 13 = 25
