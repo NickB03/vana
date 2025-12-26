@@ -155,26 +155,18 @@ export const MultiModelGraphic = () => {
 
                 {/* Data Packets flowing down */}
                 {[0, 1, 2].map((i) => (
-                    <motion.circle
+                    <circle
                         key={`packet-${i}`}
                         r="3"
                         fill="white"
                         filter="url(#neon-glow)"
-                        initial={{ offsetDistance: "0%" }}
-                        animate={isVisible ? { offsetDistance: "100%" } : {}}
-                        transition={{
-                            duration: 2,
-                            repeat: isVisible ? Infinity : 0,
-                            ease: "linear",
-                            delay: 1.5 + i * 0.7
-                        }}
                     >
                         <animateMotion
                             dur="2s"
                             repeatCount="indefinite"
                             path={`M ${100 + i * 100} 80 C ${100 + i * 100} 150, 200 150, 200 200`}
                         />
-                    </motion.circle>
+                    </circle>
                 ))}
             </svg>
         </div>

@@ -134,8 +134,10 @@ export function ChatInterface({
     setIsStreaming(true);
     setStreamingMessage("");
 
-    const toolChoice =
-      imageMode ? "generate_image" : artifactMode ? "generate_artifact" : "auto";
+    // IMPORTANT: Only force tool choice for explicit image generation mode
+    // For artifacts, use "auto" and let GLM decide based on the prompt
+    // This prevents tool execution failures when prompts don't match tool expectations
+    const toolChoice = imageMode ? "generate_image" : "auto";
     console.log("🎯 [ChatInterface.handleSend] Tool choice:", {
       imageMode,
       artifactMode,

@@ -54,6 +54,17 @@ import {
 import { FEATURE_FLAGS, USE_REASONING_PROVIDER } from '../../_shared/config.ts';
 
 /**
+ * Helper function to log detailed debug information for premade card failures
+ * Only logs when DEBUG_PREMADE_CARDS=true
+ */
+function logPremadeDebug(requestId: string, message: string, data?: Record<string, unknown>) {
+  if (FEATURE_FLAGS.DEBUG_PREMADE_CARDS) {
+    const logData = data ? ` ${JSON.stringify(data, null, 2)}` : '';
+    console.log(`[PREMADE-DEBUG][${requestId}] ${message}${logData}`);
+  }
+}
+
+/**
  * Mode hint for biasing tool selection.
  * - 'artifact': Bias towards artifact generation
  * - 'image': Bias towards image generation
@@ -268,12 +279,32 @@ export async function handleToolCallingChat(
       const encoder = new TextEncoder();
 
       /**
+       * Track stream state to prevent double-close errors
+       */
+      let streamClosed = false;
+
+      /**
        * Send SSE event to client
        * Follows OpenAI-compatible SSE format
+       * Includes guard to prevent enqueueing after stream closure
        */
       function sendEvent(data: unknown) {
-        const json = JSON.stringify(data);
-        controller.enqueue(encoder.encode(`data: ${json}\n\n`));
+        if (streamClosed) {
+          console.warn(`[${requestId}] Attempted to send event after stream closed:`, JSON.stringify(data).substring(0, 100));
+          return;
+        }
+
+        try {
+          const json = JSON.stringify(data);
+          controller.enqueue(encoder.encode(`data: ${json}\n\n`));
+        } catch (error) {
+          if (error instanceof TypeError && error.message.includes('cannot close or enqueue')) {
+            console.warn(`[${requestId}] Stream already closed, marking as closed and ignoring event`);
+            streamClosed = true;
+          } else {
+            throw error;
+          }
+        }
       }
 
       /**
@@ -334,17 +365,39 @@ export async function handleToolCallingChat(
         const startTime = Date.now();
 
         try {
+          // Enhanced logging for premade card debugging - validation phase
+          logPremadeDebug(requestId, 'Validating tool parameters', {
+            toolName: toolCallForExecution.name,
+            argumentKeys: Object.keys(toolCallForExecution.arguments),
+            arguments: toolCallForExecution.arguments,
+          });
+
           const validatedArgs = ToolParameterValidator.validate(
             toolCallForExecution.name,
             toolCallForExecution.arguments
           );
 
+          logPremadeDebug(requestId, 'Tool parameter validation passed', {
+            toolName: toolCallForExecution.name,
+            validatedArgKeys: Object.keys(validatedArgs),
+          });
+
           if (toolRateLimiter) {
+            logPremadeDebug(requestId, 'Checking tool rate limit', {
+              toolName: toolCallForExecution.name,
+              isGuest,
+              hasUserId: !!userId,
+            });
+
             await toolRateLimiter.checkToolRateLimit(toolCallForExecution.name, {
               isGuest,
               userId: userId || undefined,
               clientIp,
               requestId,
+            });
+
+            logPremadeDebug(requestId, 'Tool rate limit check passed', {
+              toolName: toolCallForExecution.name,
             });
           }
 
@@ -353,11 +406,27 @@ export async function handleToolCallingChat(
             arguments: validatedArgs as Record<string, unknown>,
           };
 
+          logPremadeDebug(requestId, 'Executing tool via executionTracker', {
+            toolName: sanitizedToolCall.name,
+          });
+
           return await executionTracker.trackExecution(
             sanitizedToolCall.name,
             () => executeTool(sanitizedToolCall, toolContext)
           );
         } catch (error) {
+          const latencyMs = Date.now() - startTime;
+          const errorMessage = error instanceof Error ? error.message : String(error);
+
+          // Enhanced logging for premade card debugging - error path
+          logPremadeDebug(requestId, 'Tool execution error in security wrapper', {
+            toolName: toolCallForExecution.name,
+            error: errorMessage,
+            errorType: error instanceof Error ? error.constructor.name : typeof error,
+            latencyMs,
+            stack: error instanceof Error ? error.stack : undefined,
+          });
+
           const { response } = SafeErrorHandler.toSafeResponse(error, requestId, {
             toolName: toolCallForExecution.name,
           });
@@ -366,7 +435,7 @@ export async function handleToolCallingChat(
             success: false,
             toolName: toolCallForExecution.name,
             error: response.error.message,
-            latencyMs: Date.now() - startTime,
+            latencyMs,
           };
         }
       };
@@ -551,7 +620,29 @@ export async function handleToolCallingChat(
 
             console.log(`${logPrefix} 🔧 Executing tool: ${toolCallForExecution.name}`);
 
+            // Enhanced logging for premade card debugging
+            logPremadeDebug(requestId, 'Tool execution started', {
+              toolName: toolCallForExecution.name,
+              toolCallId: toolCallForExecution.id,
+              arguments: toolCallForExecution.arguments,
+              context: {
+                userId: toolContext.userId,
+                isGuest: toolContext.isGuest,
+                functionName: toolContext.functionName,
+                hasSupabaseClient: !!toolContext.supabaseClient,
+              },
+            });
+
             const toolResult = await executeToolWithSecurity(toolCallForExecution, toolContext);
+
+            // Enhanced logging for premade card debugging
+            logPremadeDebug(requestId, 'Tool execution completed', {
+              toolName: toolResult.toolName,
+              success: toolResult.success,
+              latencyMs: toolResult.latencyMs,
+              error: toolResult.error,
+              dataKeys: toolResult.data ? Object.keys(toolResult.data) : [],
+            });
 
             console.log(
               `${logPrefix} 🔧 Tool execution ${toolResult.success ? 'succeeded' : 'failed'}: ${toolResult.latencyMs}ms`
@@ -750,6 +841,17 @@ export async function handleToolCallingChat(
                 `${logPrefix} ⚠️ Tool execution failed: ${toolResult.error}`
               );
 
+              // Enhanced logging for premade card debugging
+              logPremadeDebug(requestId, 'Tool execution failure details', {
+                toolName: toolResult.toolName,
+                error: toolResult.error,
+                latencyMs: toolResult.latencyMs,
+                retryCount: toolResult.retryCount,
+                willAutoFallback: allowAutoFallback && currentToolChoice !== 'auto',
+                currentToolChoice,
+                allowAutoFallback,
+              });
+
               if (allowAutoFallback && currentToolChoice !== 'auto') {
                 sendEvent({
                   type: 'warning',
@@ -786,6 +888,7 @@ export async function handleToolCallingChat(
 
         // Send [DONE] marker (OpenAI-compatible)
         controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        streamClosed = true;
         controller.close();
       } catch (error) {
         const errorMessage =
@@ -813,6 +916,7 @@ export async function handleToolCallingChat(
         });
 
         controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        streamClosed = true;
         controller.close();
       }
     },

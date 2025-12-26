@@ -26,6 +26,13 @@ export const FEATURE_FLAGS = {
    * WARNING: Never enable this in production!
    */
   RATE_LIMIT_DISABLED: Deno.env.get('RATE_LIMIT_DISABLED') === 'true',
+
+  /**
+   * Enable enhanced debug logging for premade card artifact generation.
+   * Set DEBUG_PREMADE_CARDS=true to log detailed execution traces.
+   * Useful for troubleshooting why premade cards fail to generate artifacts.
+   */
+  DEBUG_PREMADE_CARDS: Deno.env.get('DEBUG_PREMADE_CARDS') === 'true',
 } as const;
 
 // =============================================================================
