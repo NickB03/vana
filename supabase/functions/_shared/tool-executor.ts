@@ -475,6 +475,12 @@ async function executeArtifactTool(
       enableThinking: true // Enable reasoning for better artifacts
     });
 
+    // 🔒 Defense-in-depth: Verify validation status before sending to user
+    if (!result.validation.valid) {
+      console.error(`[${requestId}] ❌ Artifact validation failed:`, result.validation);
+      throw new Error(`Generated artifact failed validation: ${result.validation.issueCount} issues`);
+    }
+
     const latencyMs = Date.now() - startTime;
 
     console.log(

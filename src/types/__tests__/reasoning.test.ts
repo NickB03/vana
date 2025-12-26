@@ -671,6 +671,132 @@ describe('validateReasoningSteps', () => {
       // Should not throw
       validateReasoningSteps(htmlEntities);
     });
+
+    // Test Group 1: Event Handler Tests (Issue #401)
+    describe('Event Handlers', () => {
+      it('rejects onfocus event handler in title', () => {
+        const xss = {
+          steps: [
+            {
+              phase: 'research',
+              title: '<div onfocus=alert(1)>',
+              items: ['test'],
+            },
+          ],
+        };
+
+        expect(() => validateReasoningSteps(xss)).toThrow(/XSS/i);
+      });
+
+      it('rejects onmouseover event handler in items', () => {
+        const xss = {
+          steps: [
+            {
+              phase: 'research',
+              title: 'Test',
+              items: ['<span onmouseover=alert(1)>'],
+            },
+          ],
+        };
+
+        expect(() => validateReasoningSteps(xss)).toThrow(/XSS/i);
+      });
+
+      it('rejects onmouseout event handler', () => {
+        const xss = {
+          steps: [
+            {
+              phase: 'research',
+              title: '<p onmouseout=alert(1)>',
+              items: ['test'],
+            },
+          ],
+        };
+
+        expect(() => validateReasoningSteps(xss)).toThrow(/XSS/i);
+      });
+    });
+
+    // Test Group 2: Protocol and Embedding Tests (Issue #401)
+    describe('Protocols & Embedding', () => {
+      it('rejects data:text/html protocol', () => {
+        const xss = {
+          steps: [
+            {
+              phase: 'research',
+              title: 'Click <a href="data:text/html,<script>alert(1)</script>">here</a>',
+              items: ['test'],
+            },
+          ],
+        };
+
+        expect(() => validateReasoningSteps(xss)).toThrow(/XSS/i);
+      });
+
+      it('rejects <embed> tag', () => {
+        const xss = {
+          steps: [
+            {
+              phase: 'research',
+              title: '<embed src="http://evil.com/xss.swf">',
+              items: ['test'],
+            },
+          ],
+        };
+
+        expect(() => validateReasoningSteps(xss)).toThrow(/XSS/i);
+      });
+
+      it('rejects <object> tag', () => {
+        const xss = {
+          steps: [
+            {
+              phase: 'research',
+              title: '<object data="javascript:alert(1)">',
+              items: ['test'],
+            },
+          ],
+        };
+
+        expect(() => validateReasoningSteps(xss)).toThrow(/XSS/i);
+      });
+    });
+
+    // Test Group 3: Comprehensive Attack Vector Matrix (Issue #401)
+    describe('Comprehensive Attack Vector Matrix', () => {
+      it('blocks all 14 known XSS attack patterns', () => {
+        const attackPatterns = [
+          '<script>alert(1)</script>',
+          '<iframe src="javascript:alert(1)">',
+          '<a href="javascript:alert(1)">',
+          '<img onerror=alert(1)>',
+          '<img onload=alert(1)>',
+          '<div onclick=alert(1)>',
+          '<svg onload=alert(1)>',
+          '<embed src="xss.swf">',
+          '<object data="xss">',
+          '<div onfocus=alert(1)>',
+          '<span onmouseover=alert(1)>',
+          '<p onmouseout=alert(1)>',
+          '<a href="data:text/html,<script>alert(1)</script>">',
+          '<img src=x onerror=alert(1)>',
+        ];
+
+        attackPatterns.forEach((pattern, i) => {
+          const xss = {
+            steps: [
+              {
+                phase: 'research',
+                title: pattern,
+                items: ['test'],
+              },
+            ],
+          };
+
+          expect(() => validateReasoningSteps(xss), `Pattern ${i + 1} (${pattern}) should be blocked`).toThrow(/XSS/i);
+        });
+      });
+    });
   });
 
   describe('Length Validation', () => {
@@ -906,5 +1032,139 @@ describe('Type Safety', () => {
 
     const result = ReasoningStepSchema.safeParse(invalidStep);
     expect(result.success).toBe(false);
+  });
+});
+
+describe('ReDoS Resistance', () => {
+  it('resists ReDoS with massive attribute spam (above length limit)', () => {
+    const start = Date.now();
+    const attack = {
+      steps: [{
+        phase: 'research',
+        title: '<img ' + 'x='.repeat(10000) + 'onerror=alert(1)>',
+        items: ['test'],
+      }],
+    };
+
+    // Should reject (too long) and complete quickly
+    expect(() => validateReasoningSteps(attack)).toThrow();
+    const elapsed = Date.now() - start;
+    expect(elapsed).toBeLessThan(100);
+  });
+
+  it('resists ReDoS with moderate attribute spam (under length limit)', () => {
+    const start = Date.now();
+    const attack = {
+      steps: [{
+        phase: 'research',
+        title: '<img ' + 'x='.repeat(80) + 'onerror=alert(1)>',
+        items: ['test'],
+      }],
+    };
+
+    // Should reject (XSS pattern) and complete quickly
+    expect(() => validateReasoningSteps(attack)).toThrow(/potential.*XSS/i);
+    const elapsed = Date.now() - start;
+    expect(elapsed).toBeLessThan(50);
+  });
+
+  it('resists ReDoS with SVG onload pattern', () => {
+    const start = Date.now();
+    const attack = {
+      steps: [{
+        phase: 'analysis',
+        title: 'Normal title',
+        items: ['<svg ' + 'x='.repeat(80) + 'onload=alert(1)>'],
+      }],
+    };
+
+    expect(() => validateReasoningSteps(attack)).toThrow();
+    expect(Date.now() - start).toBeLessThan(50);
+  });
+
+  it('validates multiple steps with potential ReDoS patterns efficiently', () => {
+    const start = Date.now();
+    const attack = {
+      steps: Array(5).fill(null).map(() => ({
+        phase: 'research',
+        title: '<img ' + 'x='.repeat(50) + 'onerror=alert(1)>',
+        items: ['<svg ' + 'y='.repeat(50) + 'onload=alert(1)>'],
+      })),
+    };
+
+    expect(() => validateReasoningSteps(attack)).toThrow();
+    expect(Date.now() - start).toBeLessThan(100);
+  });
+});
+
+describe('Performance Benchmarks', () => {
+  // Reset rate-limiting state before each test
+  beforeEach(() => {
+    _resetParserLogState();
+  });
+
+  it('validates large valid step in <50ms', () => {
+    const start = Date.now();
+    const largeStep = {
+      steps: [{
+        phase: 'research',
+        title: 'A'.repeat(500), // Max title length
+        items: Array(20).fill(null).map(() => 'B'.repeat(1400)), // Max items & length
+      }],
+    };
+
+    const result = parseReasoningSteps(largeStep);
+    expect(result).not.toBeNull();
+    expect(result?.steps).toHaveLength(1);
+    expect(result?.steps[0].items).toHaveLength(20);
+
+    const elapsed = Date.now() - start;
+    expect(elapsed).toBeLessThan(50);
+  });
+
+  it('validates maximum reasoning structure in <200ms', () => {
+    const start = Date.now();
+    const maxReasoning = {
+      steps: Array(10).fill(null).map((_, i) => ({
+        phase: 'research',
+        title: `Step ${i + 1}: ${'A'.repeat(480)}`,
+        items: Array(20).fill(null).map((_, j) => `Item ${j + 1}: ${'B'.repeat(1380)}`),
+      })),
+      summary: 'C'.repeat(1000), // Max summary length
+    };
+
+    const result = parseReasoningSteps(maxReasoning);
+    expect(result).not.toBeNull();
+    expect(result?.steps).toHaveLength(10);
+    expect(result?.summary).toBe('C'.repeat(1000));
+
+    const elapsed = Date.now() - start;
+    expect(elapsed).toBeLessThan(200);
+  });
+
+  it('scales linearly with number of steps (O(n) performance)', () => {
+    const timings: number[] = [];
+
+    for (const stepCount of [1, 3, 5, 10]) {
+      const start = Date.now();
+      const reasoning = {
+        steps: Array(stepCount).fill(null).map((_, i) => ({
+          phase: 'research',
+          title: `Test step ${i + 1}`,
+          items: Array(10).fill(null).map((_, j) => `Test item ${j + 1}`),
+        })),
+      };
+
+      const result = parseReasoningSteps(reasoning);
+      expect(result).not.toBeNull();
+      expect(result?.steps).toHaveLength(stepCount);
+
+      timings.push(Date.now() - start);
+    }
+
+    // Verify roughly linear scaling (10 steps shouldn't take >15x longer than 1 step)
+    // Use Math.max to avoid division by zero if timing is 0ms
+    const ratio = timings[3] / Math.max(timings[0], 1);
+    expect(ratio).toBeLessThan(15); // Allow for overhead, but verify not exponential
   });
 });

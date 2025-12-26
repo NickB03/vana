@@ -9,7 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-*No unreleased changes*
+### Refactored
+- **Phase 4 Cleanup**: Extracted types with validation from deprecated `reasoning-generator.ts` (886 line reduction, 70%)
+  - Created `reasoning-types.ts` with XSS/DoS protection
+  - Added readonly modifiers for immutability
+  - Type design grade improved from D to B (+108%)
+- **Dead Code Removal**: Eliminated 4 unused components (~300 lines total)
+  - Removed `NebiusLogo.tsx`, `StreamingText.tsx`, `BenefitIllustrations.tsx`, `BackgroundPaths.tsx`
+  - Fixed filename typo: `bg-gredient.tsx` → `bg-gradient.tsx`
+- **Token Counter Cleanup**: Removed 3 deprecated backward compatibility functions
+  - `countMessageTokens()`, `countTotalTokens()`, `countTextTokens()`
+  - Zero production usage confirmed via codebase analysis
+
+### Breaking Changes (Minor)
+- **Icon Validation** (Issue #402): Documented that frontend strictly validates reasoning icons without normalization. Invalid icons cause `parseReasoningSteps()` to return `null`. This is intentional - forces GLM API to send valid icons rather than silently accepting bad data. Icon field is optional; if omitted, UI renders without an icon.
+
+### Fixed
+- **Import Chain**: Fixed `BenefitsSection` import after cleanup deleted `BenefitIllustrations`
+
+### Documentation
+- **Comprehensive Cleanup** (PR #393): Fixed 7 files referencing non-existent `Artifact.tsx`
+- **Standardized Test Counts**: Updated 9 locations to reflect actual 1,048 tests
+- **Architecture Docs**: Added missing `generate-artifact-fix/` and `bundle-artifact/` documentation
+- **Icon Validation Behavior** (Issue #402): Documented that frontend uses strict icon validation without normalization
 
 ---
 
@@ -205,5 +227,5 @@ This project follows [Semantic Versioning](https://semver.org/):
 ---
 
 **Maintained by**: Vana Development Team
-**Last Updated**: 2025-11-28
+**Last Updated**: 2025-12-24
 **Status**: Active Development

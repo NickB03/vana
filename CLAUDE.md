@@ -1,4 +1,4 @@
-<!-- CLAUDE.md v2.20 | Last updated: 2025-12-22 | Fixed Sentry documentation - clarified backend NOT implemented (issues #380-382) -->
+<!-- CLAUDE.md v2.21 | Last updated: 2025-12-24 | Removed deprecated reasoning-generator.ts reference after Phase 4 cleanup -->
 
 # CLAUDE.md
 
@@ -400,7 +400,7 @@ Full schema: `supabase/migrations/`
 
 **Shared Utilities** (`_shared/`):
 - **Core**: `config.ts`, `cors-config.ts`, `logger.ts`, `validators.ts`
-- **AI/Models**: `openrouter-client.ts`, `glm-client.ts`, `reasoning-generator.ts`
+- **AI/Models**: `openrouter-client.ts`, `glm-client.ts`
 - **Unified Tool System** (Issue #340): `tool-definitions.ts`, `tool-executor.ts`, `artifact-executor.ts`, `image-executor.ts`
 - **Tool Security** (Phase 0): `tool-validator.ts`, `tool-rate-limiter.ts`, `tool-execution-tracker.ts`, `prompt-injection-defense.ts`, `safe-error-handler.ts`
 - **Context Management**: `context-selector.ts`, `context-ranker.ts`, `token-counter.ts`

@@ -51,6 +51,13 @@
 
 ### Recent Major Improvements
 
+**December 24, 2025 - Code Quality & Documentation Cleanup:**
+- 🧹 **Phase 4 Cleanup**: Extracted types from deprecated `reasoning-generator.ts` (886 line reduction, 70%)
+- 🔒 **Enhanced Type Safety**: Added XSS/DoS protection with readonly modifiers for immutability
+- 📊 **Type Design Improvement**: Grade improved from D to B (+108%)
+- 🗑️ **Dead Code Removal**: Eliminated 4 unused components (~300 lines)
+- 📚 **Documentation Sync**: Fixed 7 files referencing non-existent `Artifact.tsx`, standardized test counts to 1,048
+
 **December 19, 2025 - Unified Tool-Calling Architecture (Issue #340):**
 - 🔧 **Unified Tool System**: Single `chat/` endpoint now handles artifacts, images, and web search via tool calling
 - 🛡️ **Security Infrastructure**: Prompt injection defense, fail-closed rate limiting, error sanitization

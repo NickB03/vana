@@ -13,6 +13,29 @@ import * as Sentry from '@sentry/react';
 const trimAllWhitespace = (s: string): string =>
   s.replace(/^[\s\u200B-\u200D\uFEFF\u00A0]+|[\s\u200B-\u200D\uFEFF\u00A0]+$/g, '');
 
+/**
+ * Icon validation for reasoning steps
+ *
+ * @remarks
+ * Icons must be one of: 'search', 'lightbulb', 'target', 'sparkles'.
+ * Invalid icons cause validation errors (no graceful fallback).
+ *
+ * **Frontend Validation Behavior**: The frontend uses strict Zod validation (line 48)
+ * without normalization. Invalid icons are rejected, causing `parseReasoningSteps()`
+ * to return `null` for the entire reasoning object. This is intentional - it forces
+ * the GLM API to send valid icons instead of silently accepting bad data.
+ *
+ * Icon is optional; if omitted, `getIconComponent()` returns `null` and the UI
+ * renders without an icon.
+ *
+ * **Note**: The backend has a `normalizeReasoningIcon()` helper that provides graceful
+ * fallback, but frontend validation deliberately does not use normalization to
+ * enforce strict API contracts.
+ *
+ * @see DEFAULT_PHASE_ICONS in supabase/functions/_shared/reasoning-types.ts for default icon mapping per phase
+ * @see getIconComponent() in src/components/prompt-kit/chain-of-thought-utils.tsx for UI rendering
+ */
+
 // Runtime validation schema for reasoning steps
 export const ReasoningStepSchema = z.object({
   phase: z.enum(['research', 'analysis', 'solution', 'custom']),
@@ -131,8 +154,8 @@ export function parseReasoningSteps(data: unknown): StructuredReasoning | null {
  * Validate structured reasoning on the client side
  * Throws error if validation fails (for strict validation)
  *
- * Note: This validates the full StructuredReasoning object (with steps array and optional summary),
- * matching the backend's validateReasoningSteps signature in reasoning-generator.ts
+ * Note: This validates the full StructuredReasoning object (with steps array and optional summary).
+ * Frontend is the sole validation layer - backend types are structural only (no runtime validation).
  */
 export function validateReasoningSteps(reasoning: unknown): asserts reasoning is StructuredReasoning {
   if (!reasoning || typeof reasoning !== 'object') {

@@ -516,7 +516,15 @@ export async function executeArtifactGeneration(
       }
     }
   } else if (!validation.valid) {
-    console.warn(`[${requestId}] ⚠️  Validation issues detected (cannot auto-fix):`, validation.issues);
+    const errorMsg = `Validation failed: ${validation.issues.map(i => i.message).join(', ')}`;
+    console.error(`[${requestId}] ❌ ${errorMsg}`);
+
+    // 🔒 CRITICAL: Fail-closed - do NOT send invalid artifacts to users
+    throw new ArtifactExecutionError(
+      errorMsg,
+      ErrorCode.INVALID_INPUT,
+      requestId
+    );
   } else {
     console.log(`[${requestId}] ✅ Artifact code validated successfully (no issues)`);
   }

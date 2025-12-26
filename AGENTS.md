@@ -242,10 +242,11 @@ Located in `supabase/functions/`:
 
 **Shared Utilities** (`supabase/functions/_shared/`):
 - `openrouter-client.ts` - OpenRouter API client with retry logic
+- `glm-client.ts` - GLM API client with streaming support
+- `reasoning-types.ts` - Type definitions for structured reasoning (Phase 4 cleanup)
 - `artifact-validator.ts` - Validation and auto-fix utilities
 - `cors-config.ts` - Environment-based CORS validation
 - `system-prompt-inline.ts` - Externalized system prompts (52% bundle reduction)
-- `reasoning-generator.ts` - Structured reasoning generation
 
 ## Critical Artifact Restrictions
 
