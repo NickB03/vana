@@ -34,9 +34,20 @@ import {
   preValidateAndFixGlmSyntax,
 } from './artifact-validator.ts';
 import { getSystemInstruction } from './system-prompt-inline.ts';
-import { MODELS, ARTIFACT_TYPES, type ArtifactType } from './config.ts';
+import { MODELS, ARTIFACT_TYPES, type ArtifactType, FEATURE_FLAGS } from './config.ts';
 import { ErrorCode } from './error-handler.ts';
 import type { StructuredReasoning } from './reasoning-types.ts';
+
+/**
+ * Helper function to log detailed debug information for premade card failures
+ * Only logs when DEBUG_PREMADE_CARDS=true
+ */
+function logPremadeDebug(requestId: string, message: string, data?: Record<string, unknown>) {
+  if (FEATURE_FLAGS.DEBUG_PREMADE_CARDS) {
+    const logData = data ? ` ${JSON.stringify(data, null, 2)}` : '';
+    console.log(`[PREMADE-DEBUG][${requestId}] ${message}${logData}`);
+  }
+}
 
 // ============================================================================
 // SECURITY CONSTANTS
@@ -367,6 +378,12 @@ export async function executeArtifactGeneration(
 
   console.log(`[${requestId}] 🎨 Executing artifact generation: type=${type}, thinking=${enableThinking}`);
 
+  logPremadeDebug(requestId, 'executeArtifactGeneration started', {
+    type,
+    promptLength: prompt.length,
+    enableThinking,
+  });
+
   // Get system prompt
   const systemPrompt = getSystemInstruction({
     currentDate: new Date().toLocaleDateString(),
@@ -375,24 +392,53 @@ export async function executeArtifactGeneration(
   // Construct user prompt based on artifact type
   const userPrompt = constructUserPrompt(prompt, type);
 
+  logPremadeDebug(requestId, 'Prompts constructed', {
+    systemPromptLength: systemPrompt.length,
+    userPromptLength: userPrompt.length,
+    userPromptPreview: userPrompt.substring(0, 200),
+  });
+
   // Call GLM-4.6 with retry logic
   console.log(`[${requestId}] 🤖 Calling GLM-4.6 via Z.ai API`);
   let response;
   let retryCount;
 
   try {
+    logPremadeDebug(requestId, 'Calling callGLMWithRetryTracking', {
+      temperature: 1.0,
+      max_tokens: 16000,
+      enableThinking,
+      timeoutMs: 120000,
+    });
+
     const result = await callGLMWithRetryTracking(systemPrompt, userPrompt, {
       temperature: 1.0, // GLM recommends 1.0 for general evaluations
       max_tokens: 16000, // Doubled from 8000 to handle complex artifacts
       requestId,
       enableThinking, // Enable reasoning for better artifact generation
+      timeoutMs: 120000, // 2min timeout for complex artifacts (default 60s was too short for Radix UI + animations)
     });
 
     response = result.response;
     retryCount = result.retryCount;
+
+    logPremadeDebug(requestId, 'GLM API call succeeded', {
+      responseStatus: response.status,
+      responseOk: response.ok,
+      retryCount,
+    });
   } catch (error) {
     const err = toError(error);
-    console.error(`[${requestId}] ❌ GLM API call failed:`, sanitizeErrorMessage(err.message));
+    const sanitizedMsg = sanitizeErrorMessage(err.message);
+
+    console.error(`[${requestId}] ❌ GLM API call failed:`, sanitizedMsg);
+
+    logPremadeDebug(requestId, 'GLM API call failed', {
+      error: sanitizedMsg,
+      errorType: err.constructor.name,
+      stack: err.stack,
+    });
+
     throw new ArtifactExecutionError(
       'Failed to call GLM API',
       ErrorCode.AI_ERROR,
@@ -403,9 +449,16 @@ export async function executeArtifactGeneration(
 
   // Check response status
   if (!response.ok) {
-    console.error(`[${requestId}] ❌ GLM API returned error status: ${response.status}`);
+    const errorMsg = `GLM API returned error status: ${response.status}`;
+    console.error(`[${requestId}] ❌ ${errorMsg}`);
+
+    logPremadeDebug(requestId, 'GLM API non-OK response', {
+      status: response.status,
+      statusText: response.statusText,
+    });
+
     throw new ArtifactExecutionError(
-      sanitizeErrorMessage(`GLM API error: ${response.status}`),
+      sanitizeErrorMessage(errorMsg),
       ErrorCode.AI_ERROR,
       requestId
     );
@@ -414,10 +467,26 @@ export async function executeArtifactGeneration(
   // Parse response
   let data;
   try {
+    logPremadeDebug(requestId, 'Parsing GLM response JSON', {});
+
     data = await response.json();
+
+    logPremadeDebug(requestId, 'GLM response parsed successfully', {
+      hasChoices: !!data?.choices,
+      choicesLength: data?.choices?.length || 0,
+      hasUsage: !!data?.usage,
+    });
   } catch (error) {
     const err = toError(error);
-    console.error(`[${requestId}] ❌ Failed to parse GLM response:`, sanitizeErrorMessage(err.message));
+    const sanitizedMsg = sanitizeErrorMessage(err.message);
+
+    console.error(`[${requestId}] ❌ Failed to parse GLM response:`, sanitizedMsg);
+
+    logPremadeDebug(requestId, 'Failed to parse GLM response JSON', {
+      error: sanitizedMsg,
+      errorType: err.constructor.name,
+    });
+
     throw new ArtifactExecutionError(
       'Failed to parse GLM response JSON',
       ErrorCode.AI_ERROR,
@@ -436,13 +505,29 @@ export async function executeArtifactGeneration(
   }
 
   // Extract text and reasoning from response
+  logPremadeDebug(requestId, 'Extracting text and reasoning from GLM response', {});
+
   const { text: rawArtifactCode, reasoning: glmReasoning } = extractTextAndReasoningFromGLM(
     data,
     requestId
   );
 
+  logPremadeDebug(requestId, 'Extracted artifact code and reasoning', {
+    rawArtifactCodeLength: rawArtifactCode?.length || 0,
+    hasRawArtifactCode: !!rawArtifactCode,
+    rawArtifactCodePreview: rawArtifactCode?.substring(0, 200),
+    glmReasoningLength: glmReasoning?.length || 0,
+    hasGlmReasoning: !!glmReasoning,
+  });
+
   if (!rawArtifactCode || rawArtifactCode.trim().length === 0) {
     console.error(`[${requestId}] ❌ Empty artifact code returned from API`);
+
+    logPremadeDebug(requestId, 'Empty artifact code from GLM', {
+      rawArtifactCode,
+      dataChoices: data?.choices,
+    });
+
     throw new ArtifactExecutionError(
       'GLM returned empty artifact code',
       ErrorCode.AI_ERROR,
@@ -475,8 +560,20 @@ export async function executeArtifactGeneration(
   // - Reserved keywords (eval, arguments, etc.)
   // - Invalid imports (@/components/ui/*)
   // - Immutability violations (array mutations)
+  logPremadeDebug(requestId, 'Validating artifact code', {
+    artifactCodeLength: artifactCode.length,
+    type,
+  });
+
   const validation = validateArtifactCode(artifactCode, type);
   let autoFixed = false;
+
+  logPremadeDebug(requestId, 'Validation result', {
+    valid: validation.valid,
+    canAutoFix: validation.canAutoFix,
+    issueCount: validation.issues.length,
+    issues: validation.issues,
+  });
 
   if (!validation.valid && validation.canAutoFix) {
     console.log(`[${requestId}] ⚠️  Validation issues detected, attempting auto-fix...`);
@@ -527,6 +624,14 @@ export async function executeArtifactGeneration(
     );
   } else {
     console.log(`[${requestId}] ✅ Artifact code validated successfully (no issues)`);
+
+    // Even when validation passes, run autoFixArtifactCode to handle TypeScript stripping
+    // GLM sometimes generates TypeScript annotations that pass validation but fail in Babel
+    const { fixed, changes } = autoFixArtifactCode(artifactCode);
+    if (changes.length > 0) {
+      console.log(`[${requestId}] 🔧 Applied ${changes.length} pre-processing fix(es):`, changes);
+      artifactCode = fixed;
+    }
   }
 
   // Extract token usage for cost tracking

@@ -210,6 +210,57 @@ export function autoFixArtifactCode(code: string): { fixed: string; changes: str
     }
   }
 
+  // Fix: Strip TypeScript syntax that Babel Standalone can't handle
+  // GLM sometimes generates TypeScript annotations even when asked for JavaScript
+  // These need to be stripped before client-side Babel transpilation
+  let tsStripped = false;
+
+  // Strip generic type parameters from function calls: useState<Type>() → useState()
+  // Handles: useState<Task[]>, useRef<HTMLDivElement>, etc.
+  if (/<[A-Z][^>]*>(?=\s*\()/.test(fixed)) {
+    fixed = fixed.replace(/<[A-Z][A-Za-z\[\]|&\s,<>]*>(?=\s*\()/g, '');
+    tsStripped = true;
+  }
+
+  // Strip type annotations from variable declarations: const x: Type = → const x =
+  // Handles: const [state, setState]: [Type, Function] = useState()
+  if (/:\s*[A-Z][A-Za-z\[\]|&<>,\s'"]*(?=\s*[=;,)\]])/.test(fixed)) {
+    fixed = fixed.replace(/:\s*[A-Z][A-Za-z\[\]|&<>,\s'"]*(?=\s*[=;,)\]])/g, '');
+    tsStripped = true;
+  }
+
+  // Strip type annotations from function parameters: (x: Type) → (x)
+  // Handles: (e: React.MouseEvent) → (e), (item: Task, index: number) → (item, index)
+  if (/\(\s*\w+\s*:\s*[A-Za-z][A-Za-z0-9\[\]|&<>,.\s]*/.test(fixed)) {
+    fixed = fixed.replace(/(\w+)\s*:\s*[A-Za-z][A-Za-z0-9\[\]|&<>,.\s]*(?=[,)])/g, '$1');
+    tsStripped = true;
+  }
+
+  // Strip type assertions: value as Type → value
+  // IMPORTANT: Use \b word boundary to match complete identifiers only
+  // Without \b, the regex backtracks and matches partial identifiers like "Dialo" from "Dialog"
+  // The negative lookahead prevents matching "as X from" (import patterns)
+  if (/\s+as\s+[A-Z][A-Za-z0-9\[\]|&<>,]*\b(?!\s+from)/.test(fixed)) {
+    fixed = fixed.replace(/\s+as\s+[A-Z][A-Za-z0-9\[\]|&<>,]*\b(?!\s+from)/g, '');
+    tsStripped = true;
+  }
+
+  // Strip interface declarations: interface X {...} → (remove entirely)
+  if (/^interface\s+\w+\s*\{[\s\S]*?\n\}/gm.test(fixed)) {
+    fixed = fixed.replace(/^interface\s+\w+\s*\{[\s\S]*?\n\}/gm, '');
+    tsStripped = true;
+  }
+
+  // Strip type alias declarations: type X = ... → (remove entirely)
+  if (/^type\s+\w+\s*=\s*[^;]+;/gm.test(fixed)) {
+    fixed = fixed.replace(/^type\s+\w+\s*=\s*[^;]+;/gm, '');
+    tsStripped = true;
+  }
+
+  if (tsStripped) {
+    changes.push('Stripped TypeScript syntax for browser compatibility');
+  }
+
   return { fixed, changes };
 }
 
@@ -301,12 +352,20 @@ function detectMutationPatterns(code: string): ValidationIssue[] {
 
       if (pattern.test(cleanedLine)) {
         // Special case: Allow mutations on variables that are clearly copies
-        // e.g., newBoard[i] = 'X' is fine if newBoard was created from [...board]
-        // This is a heuristic based on naming convention (new*, copy*, updated*)
-        const isCopyMutation = /\b(new|copy|updated|cloned)\w*\[/.test(cleanedLine);
-        if (isCopyMutation && message.includes('Direct array assignment')) {
-          // Skip - this is likely an intentional immutable pattern
-          continue;
+        // e.g., newBoard[i] = 'X' or newTasks.splice() is fine if created from [...original]
+        // This is a heuristic based on naming convention (new*, copy*, updated*, cloned*)
+        const copyVarPattern = /\b(new|copy|updated|cloned)[A-Z]\w*/;
+        const copyVarMatch = cleanedLine.match(copyVarPattern);
+
+        if (copyVarMatch) {
+          const copyVarName = copyVarMatch[0];
+          // Check if this line is mutating the copy variable
+          // Patterns: copyVar[i] = ..., copyVar.splice(...), copyVar.push(...), etc.
+          const isMutatingCopy = new RegExp(`\\b${copyVarName}\\s*[\\.\\[]`).test(cleanedLine);
+          if (isMutatingCopy) {
+            // Skip - this is an intentional immutable pattern (mutating a copy)
+            continue;
+          }
         }
 
         issues.push({
@@ -331,9 +390,10 @@ export function validateImmutability(code: string): MutationValidation {
   const patterns = issues.map(issue => issue.message);
 
   // Check if auto-fix is possible
-  // Currently, we can auto-fix direct array assignments
+  // We can auto-fix: direct array assignments and .sort() mutations
   const canAutoFix = issues.some(issue =>
-    issue.message.includes('Direct array assignment')
+    issue.message.includes('Direct array assignment') ||
+    issue.message.includes('Array.sort()')
   );
 
   let fixedCode: string | undefined;
@@ -395,10 +455,27 @@ function autoFixMutations(code: string): { fixedCode: string; fixCount: number }
     return { fixedCode: code, fixCount: 0 };
   }
 
-  // For simple cases (single mutation per array), apply the fix
-  const lines = code.split('\n');
-  const fixedLines: string[] = [];
   let fixCount = 0;
+  let workingCode = code;
+
+  // Fix .sort() mutations: array.sort(...) → [...array].sort(...)
+  // This is a safe inline transformation that doesn't create new variable declarations
+  // Pattern: word.sort( where word is not preceded by [...
+  const sortPattern = /(?<!\[\.\.\.)\b(\w+)\.sort\(/g;
+  workingCode = workingCode.replace(sortPattern, (match, arrayName) => {
+    // Skip if array name starts with 'new' or 'copy' (already a copy)
+    if (arrayName.startsWith('new') || arrayName.startsWith('copy') ||
+        arrayName.startsWith('updated') || arrayName.startsWith('cloned') ||
+        arrayName.startsWith('sorted')) {
+      return match;
+    }
+    fixCount++;
+    return `[...${arrayName}].sort(`;
+  });
+
+  // For simple cases (single mutation per array), apply additional fixes
+  const lines = workingCode.split('\n');
+  const fixedLines: string[] = [];
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];

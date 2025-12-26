@@ -42,6 +42,18 @@ import { rewriteSearchQuery } from './query-rewriter.ts';
 import { executeArtifactGeneration, isValidArtifactType, type GeneratableArtifactType } from './artifact-executor.ts';
 import { executeImageGeneration, isValidImageMode, type ImageMode } from './image-executor.ts';
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
+import { FEATURE_FLAGS } from './config.ts';
+
+/**
+ * Helper function to log detailed debug information for premade card failures
+ * Only logs when DEBUG_PREMADE_CARDS=true
+ */
+function logPremadeDebug(requestId: string, message: string, data?: Record<string, unknown>) {
+  if (FEATURE_FLAGS.DEBUG_PREMADE_CARDS) {
+    const logData = data ? ` ${JSON.stringify(data, null, 2)}` : '';
+    console.log(`[PREMADE-DEBUG][${requestId}] ${message}${logData}`);
+  }
+}
 
 /**
  * Context for tool execution
@@ -164,17 +176,32 @@ export async function executeTool(
     `[${requestId}] 🔧 Executing tool: ${toolCall.name} (id: ${toolCall.id})`
   );
 
+  // Enhanced logging for premade card debugging
+  logPremadeDebug(requestId, 'executeTool entry', {
+    toolName: toolCall.name,
+    toolCallId: toolCall.id,
+    argumentKeys: Object.keys(toolCall.arguments),
+    arguments: toolCall.arguments,
+    contextKeys: Object.keys(context),
+  });
+
   // Validate tool is supported
   if (!isSupportedTool(toolCall.name)) {
     const latencyMs = Date.now() - startTime;
-    console.error(
-      `[${requestId}] ❌ Unsupported tool: ${toolCall.name}. Supported: ${SUPPORTED_TOOLS.join(', ')}`
-    );
+    const errorMsg = `Unsupported tool: ${toolCall.name}. Supported: ${SUPPORTED_TOOLS.join(', ')}`;
+
+    console.error(`[${requestId}] ❌ ${errorMsg}`);
+
+    logPremadeDebug(requestId, 'Tool validation failed - unsupported tool', {
+      toolName: toolCall.name,
+      supportedTools: SUPPORTED_TOOLS,
+      error: errorMsg,
+    });
 
     return {
       success: false,
       toolName: toolCall.name,
-      error: `Unsupported tool: ${toolCall.name}. Supported tools: ${SUPPORTED_TOOLS.join(', ')}`,
+      error: errorMsg,
       latencyMs
     };
   }
@@ -200,11 +227,26 @@ export async function executeTool(
         const typeArg = toolCall.arguments.type;
         const prompt = toolCall.arguments.prompt as string;
 
+        logPremadeDebug(requestId, 'generate_artifact parameter extraction', {
+          typeArg,
+          typeArgType: typeof typeArg,
+          hasPrompt: !!prompt,
+          promptType: typeof prompt,
+          promptLength: typeof prompt === 'string' ? prompt.length : 0,
+        });
+
         if (!typeArg || typeof typeArg !== 'string') {
+          const errorMsg = 'Invalid or missing "type" parameter for generate_artifact';
+          logPremadeDebug(requestId, 'generate_artifact validation failed - missing type', {
+            typeArg,
+            typeArgType: typeof typeArg,
+            error: errorMsg,
+          });
+
           return {
             success: false,
             toolName: toolCall.name,
-            error: 'Invalid or missing "type" parameter for generate_artifact',
+            error: errorMsg,
             latencyMs: Date.now() - startTime
           };
         }
@@ -212,22 +254,41 @@ export async function executeTool(
         // SECURITY: Whitelist validation for artifact type
         // Defense-in-depth: Don't trust external input even from AI model
         if (!isValidArtifactType(typeArg)) {
+          const errorMsg = `Invalid artifact type: "${typeArg}". Valid types: react, html, svg, code, mermaid, markdown`;
+          logPremadeDebug(requestId, 'generate_artifact validation failed - invalid type', {
+            typeArg,
+            validTypes: ['react', 'html', 'svg', 'code', 'mermaid', 'markdown'],
+            error: errorMsg,
+          });
+
           return {
             success: false,
             toolName: toolCall.name,
-            error: `Invalid artifact type: "${typeArg}". Valid types: react, html, svg, code, mermaid, markdown`,
+            error: errorMsg,
             latencyMs: Date.now() - startTime
           };
         }
 
         if (!prompt || typeof prompt !== 'string') {
+          const errorMsg = 'Invalid or missing "prompt" parameter for generate_artifact';
+          logPremadeDebug(requestId, 'generate_artifact validation failed - missing prompt', {
+            hasPrompt: !!prompt,
+            promptType: typeof prompt,
+            error: errorMsg,
+          });
+
           return {
             success: false,
             toolName: toolCall.name,
-            error: 'Invalid or missing "prompt" parameter for generate_artifact',
+            error: errorMsg,
             latencyMs: Date.now() - startTime
           };
         }
+
+        logPremadeDebug(requestId, 'generate_artifact parameters validated, calling executeArtifactTool', {
+          type: typeArg,
+          promptLength: prompt.length,
+        });
 
         return await executeArtifactTool(typeArg, prompt, context);
       }
@@ -467,7 +528,18 @@ async function executeArtifactTool(
 
   console.log(`[${requestId}] 🎨 Executing generate_artifact: type=${type}`);
 
+  logPremadeDebug(requestId, 'executeArtifactTool started', {
+    type,
+    promptLength: prompt.length,
+    promptPreview: prompt.substring(0, 100),
+  });
+
   try {
+    logPremadeDebug(requestId, 'Calling executeArtifactGeneration', {
+      type,
+      enableThinking: true,
+    });
+
     const result = await executeArtifactGeneration({
       type,
       prompt,
@@ -475,9 +547,23 @@ async function executeArtifactTool(
       enableThinking: true // Enable reasoning for better artifacts
     });
 
+    logPremadeDebug(requestId, 'executeArtifactGeneration returned', {
+      artifactCodeLength: result.artifactCode.length,
+      hasReasoning: !!result.reasoning,
+      reasoningLength: result.reasoning?.length || 0,
+      validation: result.validation,
+      tokenUsage: result.tokenUsage,
+    });
+
     // 🔒 Defense-in-depth: Verify validation status before sending to user
     if (!result.validation.valid) {
       console.error(`[${requestId}] ❌ Artifact validation failed:`, result.validation);
+
+      logPremadeDebug(requestId, 'Artifact validation failed', {
+        validation: result.validation,
+        artifactCodePreview: result.artifactCode.substring(0, 200),
+      });
+
       throw new Error(`Generated artifact failed validation: ${result.validation.issueCount} issues`);
     }
 
@@ -491,6 +577,13 @@ async function executeArtifactTool(
     const generatedTitle = prompt.length > 50
       ? prompt.substring(0, 47) + '...'
       : prompt;
+
+    logPremadeDebug(requestId, 'executeArtifactTool success', {
+      artifactCodeLength: result.artifactCode.length,
+      artifactType: type,
+      generatedTitle,
+      latencyMs,
+    });
 
     return {
       success: true,
@@ -511,6 +604,13 @@ async function executeArtifactTool(
       `[${requestId}] ❌ generate_artifact failed after ${latencyMs}ms:`,
       errorMessage
     );
+
+    logPremadeDebug(requestId, 'executeArtifactTool error', {
+      error: errorMessage,
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
+      latencyMs,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
 
     return {
       success: false,
