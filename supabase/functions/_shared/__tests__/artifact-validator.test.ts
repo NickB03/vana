@@ -920,3 +920,154 @@ export default function App() {
   assertEquals(result.fixed.trim(), validCode.trim());
   assertEquals(result.isValid, true);
 });
+
+// ============================================================================
+// TypeScript Type Assertion Stripping Tests (Regression for Issue #407)
+// ============================================================================
+
+Deno.test("autoFixArtifactCode - preserves namespace imports (import * as)", () => {
+  const code = `import * as Dialog from '@radix-ui/react-dialog';\n\nexport default function App() { return <Dialog.Root />; }`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // CRITICAL: Must NOT corrupt namespace imports
+  assertEquals(fixed.includes('import * as Dialog from'), true);
+  assertEquals(fixed.includes('import * from'), false); // Bug check: corrupted import
+  // Should NOT report TypeScript stripping for valid namespace import
+  assertEquals(changes.some(c => c.includes('TypeScript syntax')), false);
+});
+
+Deno.test("autoFixArtifactCode - preserves multiple namespace imports", () => {
+  const code = `
+import * as Dialog from '@radix-ui/react-dialog';
+import * as Popover from '@radix-ui/react-popover';
+import * as Icons from 'lucide-react';
+
+export default function App() {
+  return (
+    <Dialog.Root>
+      <Popover.Root>
+        <Icons.Star />
+      </Popover.Root>
+    </Dialog.Root>
+  );
+}`;
+  const { fixed } = autoFixArtifactCode(code);
+
+  // All namespace imports must be preserved exactly
+  assertEquals(fixed.includes('import * as Dialog from'), true);
+  assertEquals(fixed.includes('import * as Popover from'), true);
+  assertEquals(fixed.includes('import * as Icons from'), true);
+  // Check for corruption
+  assertEquals(fixed.includes('import * from'), false);
+});
+
+Deno.test("autoFixArtifactCode - preserves export namespace re-exports", () => {
+  const code = `export * as utils from './utils';\n\nexport default function App() { return <div />; }`;
+  const { fixed } = autoFixArtifactCode(code);
+
+  // Must preserve export namespace syntax
+  assertEquals(fixed.includes('export * as utils from'), true);
+  assertEquals(fixed.includes('export * from'), false); // Bug check
+});
+
+Deno.test("autoFixArtifactCode - strips type assertions correctly", () => {
+  const code = `
+export default function App() {
+  const x = value as string;
+  const y = (obj as SomeType).property;
+  const z = items.map(item => item as Item);
+  return <div>{x}</div>;
+}`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Type assertions should be stripped
+  assertEquals(fixed.includes('as string'), false);
+  assertEquals(fixed.includes('as SomeType'), false);
+  assertEquals(fixed.includes('as Item'), false);
+  assertEquals(changes.some(c => c.includes('TypeScript syntax')), true);
+
+  // Valid code structure preserved
+  assertEquals(fixed.includes('const x = value'), true);
+  assertEquals(fixed.includes('const y = (obj).property'), true);
+});
+
+Deno.test("autoFixArtifactCode - strips type assertions with complex types", () => {
+  const code = `
+export default function App() {
+  const data = response as Array<User>;
+  const map = obj as Map<string, number>;
+  const tuple = value as [string, number];
+  return <div />;
+}`;
+  const { fixed } = autoFixArtifactCode(code);
+
+  // Complex type assertions should be stripped
+  assertEquals(fixed.includes('as Array<User>'), false);
+  assertEquals(fixed.includes('as Map<string, number>'), false);
+  assertEquals(fixed.includes('as [string, number]'), false);
+
+  // Variable declarations preserved
+  assertEquals(fixed.includes('const data = response'), true);
+  assertEquals(fixed.includes('const map = obj'), true);
+  assertEquals(fixed.includes('const tuple = value'), true);
+});
+
+Deno.test("autoFixArtifactCode - handles mixed namespace imports and type assertions", () => {
+  const code = `
+import * as Dialog from '@radix-ui/react-dialog';
+import * as Popover from '@radix-ui/react-popover';
+
+export default function App() {
+  const element = ref.current as HTMLDivElement;
+  const data = response as UserData;
+
+  return (
+    <Dialog.Root>
+      <Popover.Trigger>{element}</Popover.Trigger>
+    </Dialog.Root>
+  );
+}`;
+  const { fixed } = autoFixArtifactCode(code);
+
+  // Namespace imports preserved
+  assertEquals(fixed.includes('import * as Dialog from'), true);
+  assertEquals(fixed.includes('import * as Popover from'), true);
+
+  // Type assertions stripped
+  assertEquals(fixed.includes('as HTMLDivElement'), false);
+  assertEquals(fixed.includes('as UserData'), false);
+
+  // No corruption
+  assertEquals(fixed.includes('import * from'), false);
+});
+
+Deno.test("autoFixArtifactCode - handles edge case: type assertion at end of import line", () => {
+  // Edge case: import followed by unrelated type assertion on next line
+  const code = `
+import * as Dialog from '@radix-ui/react-dialog';
+const x = value as Type;
+
+export default function App() { return <Dialog.Root />; }`;
+  const { fixed } = autoFixArtifactCode(code);
+
+  // Import preserved
+  assertEquals(fixed.includes('import * as Dialog from'), true);
+
+  // Type assertion stripped
+  assertEquals(fixed.includes('as Type'), false);
+  assertEquals(fixed.includes('const x = value'), true);
+});
+
+Deno.test("autoFixArtifactCode - regression test for actual bug scenario", () => {
+  // This is the EXACT scenario from the bug report
+  const code = `import * as Dialog from '@radix-ui/react-dialog';\n\nexport default function App() { return <Dialog.Root />; }`;
+  const { fixed } = autoFixArtifactCode(code);
+
+  // CRITICAL: This was the bug - import became "import * from '@radix-ui/react-dialog'"
+  // The regex /\s+as\s+[A-Z][A-Za-z0-9\[\]|&<>,]*/ matched " as Dialog" and removed it
+  assertEquals(fixed, code); // Should be unchanged (no TS syntax to strip)
+
+  // Verify the import is still valid
+  assertEquals(fixed.includes('import * as Dialog from \'@radix-ui/react-dialog\''), true);
+  assertEquals(fixed.includes('import * from'), false);
+});

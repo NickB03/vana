@@ -237,11 +237,15 @@ export function autoFixArtifactCode(code: string): { fixed: string; changes: str
   }
 
   // Strip type assertions: value as Type → value
-  // IMPORTANT: Use \b word boundary to match complete identifiers only
-  // Without \b, the regex backtracks and matches partial identifiers like "Dialo" from "Dialog"
-  // The negative lookahead prevents matching "as X from" (import patterns)
-  if (/\s+as\s+[A-Z][A-Za-z0-9\[\]|&<>,]*\b(?!\s+from)/.test(fixed)) {
-    fixed = fixed.replace(/\s+as\s+[A-Z][A-Za-z0-9\[\]|&<>,]*\b(?!\s+from)/g, '');
+  // IMPORTANT: Use negative lookbehind to avoid matching namespace imports
+  // (?<!\*) prevents matching "* as Dialog" (namespace import)
+  // The negative lookahead (?!\s*from) prevents matching "as X from" (import patterns)
+  // Matches:
+  //   - Simple types: as string, as SomeType
+  //   - Generic types: as Array<User>, as Map<string, number>
+  //   - Tuple types: as [string, number]
+  if (/(?<!\*)\s+as\s+(?:[A-Za-z_][\w]*(?:<[^>]+>)?(?:\[[^\]]*\])?|(?:\[[^\]]+\]))(?!\s*from)/.test(fixed)) {
+    fixed = fixed.replace(/(?<!\*)\s+as\s+(?:[A-Za-z_][\w]*(?:<[^>]+>)?(?:\[[^\]]*\])?|(?:\[[^\]]+\]))(?!\s*from)/g, '');
     tsStripped = true;
   }
 
