@@ -1,4 +1,4 @@
-<!-- CLAUDE.md v2.22 | Last updated: 2025-12-26 | Fixed UI component count, clarified feature flags, added Chrome MCP guide -->
+<!-- CLAUDE.md v2.23 | Last updated: 2025-12-27 | Fixed Edge Functions env file location (supabase/functions/.env) -->
 
 # CLAUDE.md
 
@@ -725,13 +725,13 @@ supabase/
 | Edge Function timeout | Function size (<10MB) → Deno URLs → `--no-verify-jwt` → quotas |
 | Rate limiting errors | See "Local Dev Rate Limiting" below |
 | Migration CI/CD fails | See "Migration Schema Drift" above → `supabase migration list` → repair or pull |
-| Edge function "not configured" | `.env.local` not loaded → See "Edge Functions .env.local Not Loading" below |
+| Edge function "not configured" | Env file in wrong location → See "Edge Functions Environment Setup" below |
 
 ### Local Dev Rate Limiting
 
-**Important**: When modifying `supabase/.env.local`, the Docker-based edge runtime does NOT automatically reload environment variables.
+**Important**: When modifying `supabase/functions/.env`, the Docker-based edge runtime does NOT automatically reload environment variables.
 
-**Symptoms**: Rate limit exceeded errors despite having high limits in `.env.local` (e.g., `RATE_LIMIT_ARTIFACT_GUEST_MAX=500`)
+**Symptoms**: Rate limit exceeded errors despite having high limits in `.env` (e.g., `RATE_LIMIT_ARTIFACT_GUEST_MAX=500`)
 
 **Fix**: Restart the edge runtime to pick up new env vars:
 ```bash
@@ -742,7 +742,7 @@ docker restart supabase_edge_runtime_vznhbocnuykdmjvujaka
 
 **Verify env vars are loaded**:
 ```bash
-docker inspect supabase_edge_runtime_vznhbocnuykdmjvujaka | grep -E "RATE_LIMIT"
+docker exec supabase_edge_runtime_vznhbocnuykdmjvujaka printenv | grep -iE "RATE_LIMIT"
 ```
 
 **Reset rate limit counters** (if needed):
@@ -752,37 +752,30 @@ docker exec -i supabase_db_vznhbocnuykdmjvujaka psql -U postgres -c "DELETE FROM
 
 **Note**: Chat and artifact endpoints share the same `guest_rate_limits` table but use different max values. If env vars aren't loaded, artifact requests fail after just 5 combined requests (production default) instead of 500 (local dev).
 
-### Edge Functions .env.local Not Loading
+### Edge Functions Environment Setup
 
-**Symptoms**: Edge functions fail with "not configured" errors (e.g., image generation fails). API keys in `supabase/.env.local` are not being read by the edge runtime container.
+**Correct file location**: `supabase/functions/.env` (auto-loaded by `supabase start`)
 
-**Cause**: `supabase start` sometimes fails to load `.env.local` into the Docker edge runtime container. The integrated edge runtime expects auto-discovery but path resolution can fail.
+| File | Purpose | Auto-loaded? |
+|------|---------|--------------|
+| `supabase/functions/.env` | Edge Functions secrets | ✅ Yes |
+| `supabase/.env.local` | Legacy/backup location | ❌ No (requires `--env-file`) |
+| `.env` (project root) | Frontend Vite vars (`VITE_*`) | N/A |
 
-**Verify the problem**:
+**Symptoms**: Edge functions fail with "not configured" errors (e.g., image generation fails).
+
+**Verify env vars are loaded**:
 ```bash
-# Check if API keys are loaded in the container
 docker exec supabase_edge_runtime_vznhbocnuykdmjvujaka printenv | grep -iE "OPENROUTER|GLM|TAVILY"
-# If empty, env vars are NOT loaded
 ```
 
-**Fix**: Use `supabase functions serve` with explicit `--env-file` flag instead of the integrated edge runtime:
-```bash
-# 1. Stop the integrated edge runtime (keep other services running)
-docker stop supabase_edge_runtime_vznhbocnuykdmjvujaka
+**Fix** (if env vars missing):
+1. Ensure secrets are in `supabase/functions/.env` (not `supabase/.env.local`)
+2. Restart Supabase: `supabase stop && supabase start`
 
-# 2. Start functions serve with explicit env file
-supabase functions serve --env-file supabase/.env.local
-```
+**Template**: Copy from `supabase/.env.local.template` to `supabase/functions/.env` and fill in API keys.
 
-**Convenience alias** (add to shell profile):
-```bash
-alias supabase-functions='docker stop supabase_edge_runtime_vznhbocnuykdmjvujaka 2>/dev/null; supabase functions serve --env-file supabase/.env.local'
-```
-
-**Why this happens**: The integrated edge runtime in `supabase start` uses Docker volume mounts and automatic env file discovery. Path resolution issues can cause `.env.local` to not be found, especially if:
-- Working directory changed during Supabase startup
-- Multiple Supabase projects on the system
-- Previous `.env.local` location cached incorrectly
+**Security**: `supabase/functions/.env` is in `.gitignore` — never commit secrets.
 
 ## Performance Targets
 
