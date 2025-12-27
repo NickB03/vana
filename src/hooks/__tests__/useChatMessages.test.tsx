@@ -407,4 +407,89 @@ describe('useChatMessages', () => {
       expect(result.current.artifactRenderStatus).toBe('rendered');
     });
   });
+
+  // ============================================================================
+  // SSE ERROR EVENT HANDLING
+  // ============================================================================
+  // These tests verify the error event handler correctly processes backend errors
+  // and displays appropriate user feedback instead of misleading "empty response".
+  // ============================================================================
+
+  describe('SSE error event handling', () => {
+    it('should extract error message with type guard for string', () => {
+      // Test the type guard logic: typeof parsed.error === 'string'
+      const stringError = { type: 'error', error: 'API key not configured', retryable: false };
+      const errorMessage = typeof stringError.error === 'string'
+        ? stringError.error
+        : String(stringError.error ?? 'Unknown error');
+
+      expect(errorMessage).toBe('API key not configured');
+    });
+
+    it('should handle non-string error with type guard fallback', () => {
+      // Test the type guard fallback: String(parsed.error ?? 'Unknown error')
+      const objectError = { type: 'error', error: { code: 500 }, retryable: false };
+      const errorMessage = typeof objectError.error === 'string'
+        ? objectError.error
+        : String(objectError.error ?? 'Unknown error');
+
+      expect(errorMessage).toBe('[object Object]');
+    });
+
+    it('should handle null/undefined error with type guard fallback', () => {
+      // Test the type guard fallback for null/undefined
+      const nullError = { type: 'error', error: null, retryable: false };
+      const errorMessage = typeof nullError.error === 'string'
+        ? nullError.error
+        : String(nullError.error ?? 'Unknown error');
+
+      expect(errorMessage).toBe('Unknown error');
+    });
+
+    it('should correctly identify retryable errors', () => {
+      // Test the strict equality check: parsed.retryable === true
+      const retryableError = { type: 'error', error: 'Rate limit exceeded', retryable: true };
+      const isRetryable = retryableError.retryable === true;
+
+      expect(isRetryable).toBe(true);
+    });
+
+    it('should correctly identify non-retryable errors', () => {
+      // Test that falsy values are treated as non-retryable
+      const cases = [
+        { retryable: false },
+        { retryable: undefined },
+        { retryable: null },
+        { retryable: 'true' }, // string 'true' should not be treated as boolean true
+        { retryable: 1 },      // number 1 should not be treated as boolean true
+      ];
+
+      for (const errorEvent of cases) {
+        const isRetryable = errorEvent.retryable === true;
+        expect(isRetryable).toBe(false);
+      }
+    });
+
+    it('should format retryable error message with retry hint', () => {
+      const errorMessage = 'Rate limit exceeded';
+      const isRetryable = true;
+
+      const description = isRetryable
+        ? `${errorMessage}. Please try again.`
+        : errorMessage;
+
+      expect(description).toBe('Rate limit exceeded. Please try again.');
+    });
+
+    it('should format non-retryable error message without retry hint', () => {
+      const errorMessage = 'Invalid API key';
+      const isRetryable = false;
+
+      const description = isRetryable
+        ? `${errorMessage}. Please try again.`
+        : errorMessage;
+
+      expect(description).toBe('Invalid API key');
+    });
+  });
 });

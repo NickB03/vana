@@ -686,6 +686,35 @@ export function useChatMessages(
             }
 
             // ========================================
+            // ERROR: Handle error events from backend
+            // Without this handler, backend errors are silently ignored and users
+            // see misleading "empty response" messages instead of actual errors.
+            // ========================================
+            if (parsed.type === 'error') {
+              // Type guards for defensive programming - backend may send malformed data
+              const errorMessage = typeof parsed.error === 'string'
+                ? parsed.error
+                : String(parsed.error ?? 'Unknown error');
+              const isRetryable = parsed.retryable === true;
+
+              console.error('[StreamProgress] Error from server:', errorMessage, { retryable: isRetryable });
+
+              // Show destructive toast with actual error message
+              // Include retry hint for retryable errors (e.g., rate limits, timeouts)
+              toast({
+                title: "Chat Error",
+                description: isRetryable
+                  ? `${errorMessage}. Please try again.`
+                  : errorMessage,
+                variant: "destructive",
+              });
+
+              // Throw to stop processing - this prevents the misleading "empty response"
+              // error from appearing after the stream ends with no content
+              throw new Error(errorMessage);
+            }
+
+            // ========================================
             // WEB SEARCH: Handle search results from Tavily API
             // ========================================
             if (parsed.type === 'web_search') {
