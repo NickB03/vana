@@ -349,79 +349,133 @@ const BundledArtifactFrame = memo(({
         }
 
         // CRITICAL FIX: The bundle contains raw JSX which browsers can't parse natively.
-        // We need to convert the <script type="module"> to <script type="text/babel">
-        // and inject Babel Standalone for runtime transpilation.
+        // We use Sucrase for fast transpilation, with Babel as fallback.
 
         // Check if bundle has JSX (component tags like <Component or <div)
         const hasJsx = /<(?:[A-Z][a-zA-Z]*|[a-z]+)[\s>/]/.test(htmlContent) &&
           htmlContent.includes('<script type="module">');
 
         if (hasJsx) {
-          console.log('[BundledArtifactFrame] Detected JSX in bundle - adding Babel transpilation');
+          console.log('[BundledArtifactFrame] Detected JSX in bundle - attempting Sucrase transpilation');
 
-          // Inject Babel Standalone if not present
-          if (!htmlContent.includes('babel')) {
-            const babelScript = `<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>\n`;
-            htmlContent = htmlContent.replace('</head>', babelScript + '</head>');
-          }
-
-          // Convert module script to babel script
-          // First, extract the module content
+          // Extract the module content
           const moduleMatch = htmlContent.match(/<script type="module">([\s\S]*?)<\/script>/);
           if (moduleMatch) {
             let moduleContent = moduleMatch[1];
+            const transpileStart = performance.now();
 
-            // Extract imports from the module content (they need special handling for Babel)
-            // NOTE: Server template indents imports with spaces, so we use ^\s* to match leading whitespace
-            const importStatements: string[] = [];
-            moduleContent = moduleContent.replace(
-              /^\s*import\s+(?:[\w*{}\s,]+\s+from\s+)?['"][^'"]+['"];?\s*$/gm,
-              (match) => {
-                // Trim the captured match since it may have leading/trailing whitespace
-                importStatements.push(match.trim());
-                return ''; // Remove from main content
+            // Try Sucrase transpilation first
+            let sucraseSucceeded = false;
+            try {
+              const transpileResult = transpileCode(moduleContent, {
+                filename: 'bundle-module.tsx',
+              });
+
+              if (transpileResult.success) {
+                const elapsed = performance.now() - transpileStart;
+                console.log(`[BundledArtifactFrame] Sucrase transpiled bundle in ${elapsed.toFixed(2)}ms`);
+
+                Sentry.addBreadcrumb({
+                  category: 'artifact.bundled-transpile',
+                  message: 'Sucrase transpilation successful for bundled artifact',
+                  level: 'info',
+                  data: { elapsed, sucraseElapsed: transpileResult.elapsed },
+                });
+
+                // Replace the module script with transpiled code (keep as type="module")
+                htmlContent = htmlContent.replace(
+                  /<script type="module">[\s\S]*?<\/script>/,
+                  `<script type="module">${transpileResult.code}</script>`
+                );
+                sucraseSucceeded = true;
+              } else {
+                console.warn('[BundledArtifactFrame] Sucrase transpilation failed, falling back to Babel:', transpileResult.error);
+                Sentry.captureException(new Error(`Bundled artifact Sucrase transpilation failed: ${transpileResult.error}`), {
+                  tags: {
+                    component: 'BundledArtifactFrame',
+                    transpiler: 'sucrase',
+                    fallback: 'babel',
+                  },
+                  extra: {
+                    error: transpileResult.error,
+                    details: transpileResult.details,
+                    line: transpileResult.line,
+                    column: transpileResult.column,
+                  },
+                });
               }
-            );
+            } catch (sucraseError) {
+              console.warn('[BundledArtifactFrame] Sucrase exception, falling back to Babel:', sucraseError);
+              Sentry.captureException(sucraseError, {
+                tags: {
+                  component: 'BundledArtifactFrame',
+                  action: 'transpile',
+                  errorType: 'exception',
+                },
+              });
+            }
 
-            // For Babel, we need to use dynamic imports since static imports don't work in text/babel
-            // Convert: import * as Select from 'url' -> const Select = await import('url')
-            const dynamicImports = importStatements.map(imp => {
-              // Handle: import * as Name from 'url'
-              const namespaceMatch = imp.match(/import\s*\*\s*as\s+(\w+)\s+from\s+['"]([^'"]+)['"]/);
-              if (namespaceMatch) {
-                return `const ${namespaceMatch[1]} = await import('${namespaceMatch[2]}');`;
+            // If Sucrase failed, fall back to Babel
+            if (!sucraseSucceeded) {
+              console.log('[BundledArtifactFrame] Using Babel fallback for JSX transpilation');
+
+              // Inject Babel Standalone if not present
+              if (!htmlContent.includes('babel')) {
+                const babelScript = `<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>\n`;
+                htmlContent = htmlContent.replace('</head>', babelScript + '</head>');
               }
-              // Handle: import { a, b } from 'url'
-              const namedMatch = imp.match(/import\s*\{([^}]+)\}\s*from\s+['"]([^'"]+)['"]/);
-              if (namedMatch) {
-                const names = namedMatch[1].split(',').map(n => n.trim());
-                return `const { ${names.join(', ')} } = await import('${namedMatch[2]}');`;
-              }
-              // Handle: import Name from 'url'
-              const defaultMatch = imp.match(/import\s+(\w+)\s+from\s+['"]([^'"]+)['"]/);
-              if (defaultMatch) {
-                return `const { default: ${defaultMatch[1]} } = await import('${defaultMatch[2]}');`;
-              }
-              // Log warning for debugging when import cannot be converted
-              console.warn('[BundledArtifactFrame] Could not convert import statement:', imp);
-              return '// Could not convert: ' + imp;
-            }).join('\n');
 
-            // Wrap in async IIFE for dynamic imports
-            // NOTE: UMD React/ReactDOM are already loaded and set window.React/window.ReactDOM
-            // The import map shims redirect 'react' and 'react-dom' to window globals
-            // esm.sh packages with ?external=react,react-dom will use the import map
+              // Extract imports from the module content (they need special handling for Babel)
+              // NOTE: Server template indents imports with spaces, so we use ^\s* to match leading whitespace
+              const importStatements: string[] = [];
+              moduleContent = moduleContent.replace(
+                /^\s*import\s+(?:[\w*{}\s,]+\s+from\s+)?['"][^'"]+['"];?\s*$/gm,
+                (match) => {
+                  // Trim the captured match since it may have leading/trailing whitespace
+                  importStatements.push(match.trim());
+                  return ''; // Remove from main content
+                }
+              );
 
-            // FIX: Check if dynamic imports already include react-shim (which exports hooks)
-            // If so, skip adding duplicate hook declarations to avoid "already declared" error
-            const hasReactShimImport = dynamicImports.includes("'react-shim'") ||
-                                       dynamicImports.includes("'react'");
+              // For Babel, we need to use dynamic imports since static imports don't work in text/babel
+              // Convert: import * as Select from 'url' -> const Select = await import('url')
+              const dynamicImports = importStatements.map(imp => {
+                // Handle: import * as Name from 'url'
+                const namespaceMatch = imp.match(/import\s*\*\s*as\s+(\w+)\s+from\s+['"]([^'"]+)['"]/);
+                if (namespaceMatch) {
+                  return `const ${namespaceMatch[1]} = await import('${namespaceMatch[2]}');`;
+                }
+                // Handle: import { a, b } from 'url'
+                const namedMatch = imp.match(/import\s*\{([^}]+)\}\s*from\s+['"]([^'"]+)['"]/);
+                if (namedMatch) {
+                  const names = namedMatch[1].split(',').map(n => n.trim());
+                  return `const { ${names.join(', ')} } = await import('${namedMatch[2]}');`;
+                }
+                // Handle: import Name from 'url'
+                const defaultMatch = imp.match(/import\s+(\w+)\s+from\s+['"]([^'"]+)['"]/);
+                if (defaultMatch) {
+                  return `const { default: ${defaultMatch[1]} } = await import('${defaultMatch[2]}');`;
+                }
+                // Log warning for debugging when import cannot be converted
+                console.warn('[BundledArtifactFrame] Could not convert import statement:', imp);
+                return '// Could not convert: ' + imp;
+              }).join('\n');
 
-            const reactHooksDeclaration = hasReactShimImport
-              ? '// React hooks imported via react-shim above'
-              : 'const { useState, useEffect, useCallback, useMemo, useRef, useContext, useReducer, useLayoutEffect, createContext, createElement, Fragment, memo, forwardRef } = window.React;';
+              // Wrap in async IIFE for dynamic imports
+              // NOTE: UMD React/ReactDOM are already loaded and set window.React/window.ReactDOM
+              // The import map shims redirect 'react' and 'react-dom' to window globals
+              // esm.sh packages with ?external=react,react-dom will use the import map
 
-            const wrappedContent = `
+              // FIX: Check if dynamic imports already include react-shim (which exports hooks)
+              // If so, skip adding duplicate hook declarations to avoid "already declared" error
+              const hasReactShimImport = dynamicImports.includes("'react-shim'") ||
+                                         dynamicImports.includes("'react'");
+
+              const reactHooksDeclaration = hasReactShimImport
+                ? '// React hooks imported via react-shim above'
+                : 'const { useState, useEffect, useCallback, useMemo, useRef, useContext, useReducer, useLayoutEffect, createContext, createElement, Fragment, memo, forwardRef } = window.React;';
+
+              const wrappedContent = `
 (async () => {
   // Verify UMD React is available (loaded by <script> tags before this runs)
   if (!window.React || !window.ReactDOM) {
@@ -440,13 +494,24 @@ const BundledArtifactFrame = memo(({
   ${moduleContent}
 })();`;
 
-            // Replace the module script with a babel script
-            htmlContent = htmlContent.replace(
-              /<script type="module">[\s\S]*?<\/script>/,
-              `<script type="text/babel" data-presets="env,react,typescript">${wrappedContent}</script>`
-            );
+              // Replace the module script with a babel script
+              // NOTE: 'env' preset intentionally excluded - it converts ES6 imports to CommonJS require()
+              // which fails in browsers. Target: Chrome 80+, Firefox 75+, Safari 14+, Edge 80+.
+              htmlContent = htmlContent.replace(
+                /<script type="module">[\s\S]*?<\/script>/,
+                `<script type="text/babel" data-presets="react,typescript">${wrappedContent}</script>`
+              );
 
-            console.log('[BundledArtifactFrame] Converted to Babel script with dynamic imports');
+              const babelElapsed = performance.now() - transpileStart;
+              console.log(`[BundledArtifactFrame] Babel fallback conversion completed in ${babelElapsed.toFixed(2)}ms`);
+
+              Sentry.addBreadcrumb({
+                category: 'artifact.bundled-transpile',
+                message: 'Babel fallback conversion completed for bundled artifact',
+                level: 'info',
+                data: { elapsed: babelElapsed, reason: 'sucrase-failed' },
+              });
+            }
           }
         }
 
@@ -1444,7 +1509,9 @@ ${artifact.content}
 </head>
 <body>
   <div id="root"></div>
-  <script type="text/babel" data-type="module" data-presets="env,react,typescript">
+  <!-- NOTE: 'env' preset intentionally excluded - it converts ES6 imports to CommonJS require()
+       which fails in browsers. Target: Chrome 80+, Firefox 75+, Safari 14+, Edge 80+. -->
+  <script type="text/babel" data-type="module" data-presets="react,typescript">
     const { useState, useEffect, useReducer, useRef, useMemo, useCallback } = React;
 
     const LucideIcons = window.LucideReact || window.lucideReact || {};
@@ -1672,11 +1739,27 @@ ${artifact.content}
           }
         );
 
+        Sentry.addBreadcrumb({
+          category: 'artifact.transpile',
+          message: 'Using Babel fallback for simple artifact',
+          level: 'info',
+          data: {
+            reason: 'sucrase-failed',
+            error: transpileResult.error,
+            componentName,
+          },
+        });
         reactPreviewContent = generateBabelTemplate(processedCode, componentName);
       }
     } else {
       // Feature flag disabled, use Babel (legacy path)
       console.log('[ArtifactRenderer] Using Babel (SUCRASE_TRANSPILER flag disabled)');
+      Sentry.addBreadcrumb({
+        category: 'artifact.transpile',
+        message: 'Using Babel (feature flag disabled)',
+        level: 'info',
+        data: { componentName },
+      });
       reactPreviewContent = generateBabelTemplate(processedCode, componentName);
     }
 

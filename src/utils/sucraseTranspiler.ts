@@ -52,6 +52,22 @@ export function transpileCode(
 
     const elapsed = performance.now() - start;
 
+    // Log success with timing for debugging
+    console.log(`[sucraseTranspiler] Transpilation successful in ${elapsed.toFixed(2)}ms (${code.length} chars)`);
+
+    // Add Sentry breadcrumb for success path traceability
+    Sentry.addBreadcrumb({
+      category: 'transpiler.sucrase',
+      message: 'Sucrase transpilation successful',
+      level: 'info',
+      data: {
+        elapsed,
+        codeLength: code.length,
+        outputLength: result.code.length,
+        filename: options?.filename,
+      },
+    });
+
     return {
       success: true,
       code: result.code,
@@ -63,6 +79,23 @@ export function transpileCode(
     // Parse Sucrase error format for line/column info
     const errorMessage = error instanceof Error ? error.message : String(error);
     const lineMatch = errorMessage.match(/\((\d+):(\d+)\)/);
+
+    // Log failure with error details for debugging
+    console.warn(`[sucraseTranspiler] Transpilation failed after ${elapsed.toFixed(2)}ms: ${errorMessage}`);
+
+    // Add Sentry breadcrumb for failure path traceability
+    Sentry.addBreadcrumb({
+      category: 'transpiler.sucrase',
+      message: 'Sucrase transpilation failed',
+      level: 'warning',
+      data: {
+        elapsed,
+        codeLength: code.length,
+        error: errorMessage,
+        line: lineMatch ? parseInt(lineMatch[1], 10) : undefined,
+        column: lineMatch ? parseInt(lineMatch[2], 10) : undefined,
+      },
+    });
 
     // Report to Sentry for monitoring
     Sentry.captureException(error, {

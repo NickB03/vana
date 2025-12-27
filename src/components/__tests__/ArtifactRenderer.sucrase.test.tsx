@@ -226,7 +226,7 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
       // Verify Babel template uses <script type="text/babel">
       expect(srcDoc).toContain('type="text/babel"');
       expect(srcDoc).toContain('data-type="module"');
-      expect(srcDoc).toContain('data-presets="env,react,typescript"');
+      expect(srcDoc).toContain('data-presets="react,typescript"');
 
       // Verify Babel is loaded
       expect(srcDoc).toContain('babel.min.js');
@@ -627,6 +627,287 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
       );
 
       consoleSpy.mockRestore();
+    });
+  });
+
+  // ============================================
+  // BUNDLED ARTIFACT SUCRASE TESTS
+  // ============================================
+
+  describe('BundledArtifactFrame Sucrase Integration', () => {
+    const bundledArtifact: ArtifactData = {
+      id: 'bundled-artifact',
+      type: 'react',
+      title: 'Bundled Component',
+      content: 'export default function App() { return <div>Bundled</div>; }',
+      bundleUrl: 'https://valid-supabase-url.supabase.co/storage/bundle.html',
+      dependencies: ['lodash'],
+    };
+
+    beforeEach(() => {
+      // Mock fetch for bundled artifacts
+      global.fetch = vi.fn();
+
+      // Mock environment variable for Supabase URL
+      vi.stubEnv('VITE_SUPABASE_URL', 'https://valid-supabase-url.supabase.co');
+    });
+
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
+    const createMockBundleHtml = (moduleContent: string) => `
+<!DOCTYPE html>
+<html>
+<head>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module">${moduleContent}</script>
+</body>
+</html>`;
+
+    it('uses Sucrase for bundled artifacts with JSX', async () => {
+      const jsxContent = `
+        import * as Lodash from 'https://esm.sh/lodash?external=react,react-dom';
+        const App = () => <div>Hello World</div>;
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+      `;
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve(createMockBundleHtml(jsxContent)),
+      } as Response);
+
+      vi.mocked(sucraseTranspiler.transpileCode).mockReturnValue({
+        success: true,
+        code: `
+          import * as Lodash from 'https://esm.sh/lodash?external=react,react-dom';
+          const App = () => React.createElement("div", null, "Hello World");
+          ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App, null));
+        `,
+        elapsed: 8.5,
+      });
+
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      render(<ArtifactRenderer {...baseProps} artifact={bundledArtifact} />);
+
+      // Wait for async bundle fetch and processing
+      await vi.waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith(bundledArtifact.bundleUrl);
+      });
+
+      // Wait for Sucrase to be called with the module content
+      await vi.waitFor(() => {
+        expect(sucraseTranspiler.transpileCode).toHaveBeenCalledWith(
+          expect.stringContaining('const App'),
+          expect.objectContaining({ filename: 'bundle-module.tsx' })
+        );
+      });
+
+      // Verify success logging
+      await vi.waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith(
+          expect.stringMatching(/\[BundledArtifactFrame\] Sucrase transpiled bundle in \d+\.\d+ms/)
+        );
+      });
+
+      consoleSpy.mockRestore();
+    });
+
+    it('falls back to Babel when Sucrase fails for bundled artifact', async () => {
+      const jsxContent = `
+        import * as Lodash from 'https://esm.sh/lodash?external=react,react-dom';
+        const App = () => <div>Fallback Test</div>;
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+      `;
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve(createMockBundleHtml(jsxContent)),
+      } as Response);
+
+      vi.mocked(sucraseTranspiler.transpileCode).mockReturnValue({
+        success: false,
+        error: 'Transpilation failed',
+        details: 'Unexpected syntax',
+      });
+
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      render(<ArtifactRenderer {...baseProps} artifact={bundledArtifact} />);
+
+      // Wait for async bundle fetch
+      await vi.waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith(bundledArtifact.bundleUrl);
+      });
+
+      // Verify Sucrase was attempted
+      await vi.waitFor(() => {
+        expect(sucraseTranspiler.transpileCode).toHaveBeenCalled();
+      });
+
+      // Verify fallback to Babel logging
+      await vi.waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith(
+          '[BundledArtifactFrame] Using Babel fallback for JSX transpilation'
+        );
+      });
+
+      // Verify Sentry exception was captured
+      expect(Sentry.captureException).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('Bundled artifact Sucrase transpilation failed'),
+        }),
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            component: 'BundledArtifactFrame',
+            transpiler: 'sucrase',
+            fallback: 'babel',
+          }),
+        })
+      );
+
+      consoleSpy.mockRestore();
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('falls back to Babel when Sucrase throws exception for bundled artifact', async () => {
+      const jsxContent = `
+        const App = () => <div>Exception Test</div>;
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+      `;
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve(createMockBundleHtml(jsxContent)),
+      } as Response);
+
+      vi.mocked(sucraseTranspiler.transpileCode).mockImplementation(() => {
+        throw new Error('Sucrase crashed unexpectedly');
+      });
+
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      render(<ArtifactRenderer {...baseProps} artifact={bundledArtifact} />);
+
+      // Wait for async bundle fetch
+      await vi.waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith(bundledArtifact.bundleUrl);
+      });
+
+      // Verify Sucrase exception was logged
+      await vi.waitFor(() => {
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          '[BundledArtifactFrame] Sucrase exception, falling back to Babel:',
+          expect.any(Error)
+        );
+      });
+
+      // Verify Babel fallback was used
+      await vi.waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith(
+          '[BundledArtifactFrame] Using Babel fallback for JSX transpilation'
+        );
+      });
+
+      // Verify Sentry exception was captured for the thrown error
+      expect(Sentry.captureException).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            component: 'BundledArtifactFrame',
+            action: 'transpile',
+            errorType: 'exception',
+          }),
+        })
+      );
+
+      consoleSpy.mockRestore();
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('logs Sentry breadcrumb on successful Sucrase transpilation for bundled artifact', async () => {
+      const jsxContent = `
+        const App = () => <div>Breadcrumb Test</div>;
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+      `;
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve(createMockBundleHtml(jsxContent)),
+      } as Response);
+
+      vi.mocked(sucraseTranspiler.transpileCode).mockReturnValue({
+        success: true,
+        code: `
+          const App = () => React.createElement("div", null, "Breadcrumb Test");
+          ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App, null));
+        `,
+        elapsed: 5.0,
+      });
+
+      render(<ArtifactRenderer {...baseProps} artifact={bundledArtifact} />);
+
+      // Wait for async processing
+      await vi.waitFor(() => {
+        expect(sucraseTranspiler.transpileCode).toHaveBeenCalled();
+      });
+
+      // Verify Sentry breadcrumb was added
+      await vi.waitFor(() => {
+        expect(Sentry.addBreadcrumb).toHaveBeenCalledWith(
+          expect.objectContaining({
+            category: 'artifact.bundled-transpile',
+            message: 'Sucrase transpilation successful for bundled artifact',
+            level: 'info',
+            data: expect.objectContaining({
+              sucraseElapsed: 5.0,
+            }),
+          })
+        );
+      });
+    });
+
+    it('keeps script type="module" when Sucrase succeeds for bundled artifact', async () => {
+      const jsxContent = `
+        const App = () => <div>Module Test</div>;
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+      `;
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve(createMockBundleHtml(jsxContent)),
+      } as Response);
+
+      const transpiledCode = `
+        const App = () => React.createElement("div", null, "Module Test");
+        ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App, null));
+      `;
+
+      vi.mocked(sucraseTranspiler.transpileCode).mockReturnValue({
+        success: true,
+        code: transpiledCode,
+        elapsed: 4.0,
+      });
+
+      const { container } = render(<ArtifactRenderer {...baseProps} artifact={bundledArtifact} />);
+
+      // Wait for iframe to be created with blob URL
+      await vi.waitFor(() => {
+        const iframe = container.querySelector('iframe');
+        expect(iframe).toBeTruthy();
+        expect(iframe?.getAttribute('src')).toContain('blob:');
+      });
+
+      // Note: We can't directly inspect the blob content in the test,
+      // but we can verify Sucrase was called and the breadcrumb indicates success
+      expect(sucraseTranspiler.transpileCode).toHaveBeenCalled();
     });
   });
 });

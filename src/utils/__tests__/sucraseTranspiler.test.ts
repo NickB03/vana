@@ -5,6 +5,7 @@ import * as Sentry from '@sentry/react';
 // Mock Sentry to avoid actual error reporting during tests
 vi.mock('@sentry/react', () => ({
   captureException: vi.fn(),
+  addBreadcrumb: vi.fn(),
 }));
 
 describe('sucraseTranspiler', () => {
