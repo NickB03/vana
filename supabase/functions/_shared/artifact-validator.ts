@@ -155,16 +155,14 @@ function detectProblematicPatterns(code: string): ValidationIssue[] {
 /**
  * Strip TypeScript syntax and transpile JSX using Sucrase
  *
- * IMPORTANT: This function MODIFIES code in two ways:
- * 1. Strips TypeScript type annotations (interfaces, type aliases, etc.)
- * 2. Transpiles JSX to React.createElement() calls (required for Sucrase parsing)
+ * IMPORTANT: This function applies two transforms:
+ * 1. 'typescript' transform: Strips type annotations only if TypeScript syntax is detected
+ * 2. 'jsx' transform: Transpiles JSX to React.createElement() calls (ALWAYS applied -
+ *    technically required for Sucrase to parse JSX, but outputs transpiled JSX even
+ *    for pure JS input)
  *
- * Sucrase provides AST-based transformation that is more reliable than regex patterns.
- * Falls back to the original code if Sucrase fails (e.g., syntax errors).
- *
- * @returns {stripped: true} if TypeScript syntax was detected and removed
- *          (JSX may also be transpiled even if no TypeScript was present)
- * @returns {error} if Sucrase failed to parse the code
+ * Returns {stripped: true} only if TypeScript syntax was actually removed.
+ * The code may be modified (JSX transpiled) even when stripped=false.
  */
 function stripTypeScriptWithSucrase(code: string): { code: string; stripped: boolean; error?: string } {
   try {

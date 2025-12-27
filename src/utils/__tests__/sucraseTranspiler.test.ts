@@ -566,6 +566,46 @@ describe('sucraseTranspiler', () => {
   });
 
   // ============================================
+  // SENTRY CONTEXT VALIDATION TESTS (Issue #8)
+  // ============================================
+
+  describe('transpileCode - Sentry Context Validation', () => {
+    it('reports comprehensive context to Sentry on error', () => {
+      const code = 'const broken = <unclosed>';
+      transpileCode(code);
+
+      expect(Sentry.captureException).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            component: 'sucraseTranspiler',
+            action: 'transpile',
+          }),
+          extra: expect.objectContaining({
+            codeLength: code.length,
+            elapsed: expect.any(Number),
+          }),
+        })
+      );
+
+      expect(Sentry.addBreadcrumb).toHaveBeenCalledWith(
+        expect.objectContaining({
+          category: 'transpiler.sucrase',
+          message: 'Sucrase transpilation failed',
+          level: 'warning',
+          data: expect.objectContaining({
+            error: expect.stringMatching(/unclosed|Unexpected token/),
+            codeLength: code.length,
+            elapsed: expect.any(Number),
+            line: expect.any(Number),
+            column: expect.any(Number),
+          }),
+        })
+      );
+    });
+  });
+
+  // ============================================
   // INTEGRATION TESTS
   // ============================================
 

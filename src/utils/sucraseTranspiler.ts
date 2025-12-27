@@ -127,7 +127,21 @@ export function isSucraseAvailable(): boolean {
   try {
     const result = transpileCode('const x: number = 1;');
     return result.success;
-  } catch {
+  } catch (error) {
+    console.warn('[sucraseTranspiler] Availability check failed:', error);
+
+    Sentry.captureException(error, {
+      level: 'warning',
+      tags: {
+        component: 'sucraseTranspiler',
+        action: 'availability-check',
+      },
+      extra: {
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+      },
+    });
+
     return false;
   }
 }

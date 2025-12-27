@@ -636,8 +636,11 @@ export async function executeArtifactGeneration(
       artifactCode = fixed;
       autoFixed = true;
 
-      // Re-validate after fixes and UPDATE the validation object
-      // This ensures the returned validation reflects the actual final state
+      // CRITICAL FIX: Re-validate after fixes and UPDATE the validation variable
+      // BUG: Previously used `const validation` which prevented updating the validation
+      // object after auto-fix, causing validation.valid to report pre-fix state instead
+      // of actual post-fix state. Changed to `let validation` in Phase 5 (line 600).
+      // This ensures the returned validation reflects the artifact's actual final state.
       const revalidation = validateArtifactCode(artifactCode, type);
       if (!revalidation.valid) {
         // Check if remaining issues are only immutability warnings
@@ -649,12 +652,28 @@ export async function executeArtifactGeneration(
           console.warn(`[${requestId}] ⚠️  Critical issues remain after auto-fix:`, criticalIssues);
           validation = revalidation; // Update to reflect critical failures
         } else {
+          const warningCount = revalidation.issues.length;
           console.log(`[${requestId}] ⚠️  Only immutability warnings remain (non-blocking for complex algorithms)`);
           // Mark as valid since only immutability warnings remain
           // These don't prevent artifacts from rendering - they just show warnings in React strict mode
           // Override valid=false because only non-blocking immutability warnings remain (e.g., minimax algorithms).
           // Auto-fix may skip complex mutation patterns, but artifacts still render correctly.
-          validation = { ...revalidation, valid: true };
+          validation = {
+            ...revalidation,
+            valid: true,
+            overridden: true,
+            overrideReason: 'only-immutability-warnings',
+          };
+
+          // Log validation override with comprehensive context
+          console.warn(`[${requestId}] 🔧 Validation override: ${warningCount} warnings marked as non-blocking`, {
+            component: 'artifact-executor',
+            action: 'validation-override',
+            requestId,
+            warningCount,
+            warnings: revalidation.issues.map(i => i.message),
+            type,
+          });
         }
       } else {
         console.log(`[${requestId}] ✅ All issues resolved after auto-fix`);
@@ -668,9 +687,25 @@ export async function executeArtifactGeneration(
       const criticalIssues = filterCriticalIssues(validation.issues);
 
       if (criticalIssues.length === 0) {
+        const warningCount = validation.issues.length;
         console.log(`[${requestId}] ✅ Only immutability warnings present (non-blocking for complex algorithms)`);
         // Mark as valid since only immutability warnings exist
-        validation = { ...validation, valid: true };
+        validation = {
+          ...validation,
+          valid: true,
+          overridden: true,
+          overrideReason: 'only-immutability-warnings-no-autofix',
+        };
+
+        // Log validation override with comprehensive context
+        console.warn(`[${requestId}] 🔧 Validation override (no auto-fix): ${warningCount} warnings marked as non-blocking`, {
+          component: 'artifact-executor',
+          action: 'validation-override',
+          requestId,
+          warningCount,
+          warnings: validation.issues.map(i => i.message),
+          type,
+        });
       } else {
         console.warn(`[${requestId}] ⚠️  Critical issues remain unfixed:`, criticalIssues);
         // Keep validation.valid = false for critical issues

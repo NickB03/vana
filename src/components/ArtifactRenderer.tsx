@@ -495,8 +495,11 @@ const BundledArtifactFrame = memo(({
 })();`;
 
               // Replace the module script with a babel script
-              // NOTE: 'env' preset intentionally excluded - it converts ES6 imports to CommonJS require()
-              // which fails in browsers. Target: Chrome 80+, Firefox 75+, Safari 14+, Edge 80+.
+              // CRITICAL: 'env' preset intentionally excluded (Phase 5 fix)
+              // WHY: Babel's 'env' preset converts ES6 `import` to CommonJS `require()`, which
+              // causes "require is not defined" runtime errors in browsers (CommonJS isn't available)
+              // INSTEAD: Use only `react,typescript` presets - modern browsers support ES6 natively
+              // Browser targets: Chrome 80+, Firefox 75+, Safari 14+, Edge 80+ (all support ES6 modules)
               htmlContent = htmlContent.replace(
                 /<script type="module">[\s\S]*?<\/script>/,
                 `<script type="text/babel" data-presets="react,typescript">${wrappedContent}</script>`
@@ -622,8 +625,6 @@ const BundledArtifactFrame = memo(({
             sandbox="allow-scripts allow-same-origin"
             onLoad={() => {
             onLoadingChange(false);
-            // Ensure we signal completion when iframe loads (fallback for bundles that don't signal)
-            window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
             // Signal to parent that artifact has finished rendering
             window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
             }}
@@ -641,6 +642,112 @@ const BundledArtifactFrame = memo(({
 });
 
 BundledArtifactFrame.displayName = 'BundledArtifactFrame';
+
+/**
+ * Template Constants - Shared between Sucrase and Babel artifact templates
+ * Issue #12 (PR #410): Extracted from duplicate code in generateSucraseTemplate and generateBabelTemplate
+ */
+
+// React Import Map (shims for ES modules to use UMD React)
+const REACT_IMPORT_MAP = {
+  imports: {
+    "react": "data:text/javascript,const R=window.React;export default R;export const{useState,useEffect,useRef,useMemo,useCallback,useContext,createContext,createElement,Fragment,memo,forwardRef,useReducer,useLayoutEffect,useImperativeHandle,useDebugValue,useDeferredValue,useTransition,useId,useSyncExternalStore,useInsertionEffect,lazy,Suspense,startTransition,Children,cloneElement,isValidElement,createRef,Component,PureComponent,StrictMode}=R;",
+    "react-dom": "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync,findDOMNode,unmountComponentAtNode,render,hydrate}=D;",
+    "react-dom/client": "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync}=D;",
+    "react/jsx-runtime": "data:text/javascript,const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};",
+    "react/jsx-dev-runtime": "data:text/javascript,const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};",
+    "@radix-ui/react-dialog": "https://esm.sh/@radix-ui/react-dialog@1.0.5?external=react,react-dom",
+    "@radix-ui/react-dropdown-menu": "https://esm.sh/@radix-ui/react-dropdown-menu@2.0.6?external=react,react-dom",
+    "@radix-ui/react-popover": "https://esm.sh/@radix-ui/react-popover@1.0.7?external=react,react-dom",
+    "@radix-ui/react-tabs": "https://esm.sh/@radix-ui/react-tabs@1.0.4?external=react,react-dom",
+    "@radix-ui/react-select": "https://esm.sh/@radix-ui/react-select@2.0.0?external=react,react-dom",
+    "@radix-ui/react-slider": "https://esm.sh/@radix-ui/react-slider@1.1.2?external=react,react-dom",
+    "@radix-ui/react-switch": "https://esm.sh/@radix-ui/react-switch@1.0.3?external=react,react-dom",
+    "@radix-ui/react-tooltip": "https://esm.sh/@radix-ui/react-tooltip@1.0.7?external=react,react-dom",
+    "lucide-react": "https://esm.sh/lucide-react@0.263.1?external=react,react-dom"
+  }
+} as const;
+
+const IMPORT_MAP_JSON = JSON.stringify(REACT_IMPORT_MAP, null, 2);
+
+// Library setup script - exposes UMD libraries as globals
+const LIBRARY_SETUP_SCRIPT = `
+    const { useState, useEffect, useReducer, useRef, useMemo, useCallback } = React;
+
+    const LucideIcons = window.LucideReact || window.lucideReact || {};
+    const {
+      Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
+      ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
+      Plus, Minus, Edit, Trash, Save, Download, Upload,
+      Search, Filter, Settings, User, Menu, MoreVertical,
+      Trophy, Star, Heart, Flag, Target, Award,
+      PlayCircle, PauseCircle, SkipForward, SkipBack,
+      AlertCircle, CheckCircle, XCircle, Info, HelpCircle,
+      Loader, Clock, Calendar, Mail, Phone,
+      Grid, List, Layout, Sidebar, Maximize, Minimize,
+      Copy, Eye, EyeOff, Lock, Unlock, Share, Link
+    } = LucideIcons;
+
+    Object.keys(LucideIcons).forEach(iconName => {
+      if (typeof window[iconName] === 'undefined') {
+        window[iconName] = LucideIcons[iconName];
+      }
+    });
+
+    const Recharts = window.Recharts || {};
+    const {
+      BarChart, LineChart, PieChart, AreaChart, ScatterChart,
+      Bar, Line, Pie, Area, Scatter, XAxis, YAxis, CartesianGrid,
+      Tooltip, Legend, ResponsiveContainer
+    } = Recharts;
+
+    const FramerMotion = window.Motion || {};
+    const { motion, AnimatePresence } = FramerMotion;
+
+    Object.keys(FramerMotion).forEach(exportName => {
+      if (typeof window[exportName] === 'undefined') {
+        window[exportName] = FramerMotion[exportName];
+      }
+    });
+
+    // Radix UI Select components (imported dynamically from ESM CDN)
+    let RadixUISelect = {};
+    let Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectPortal, SelectViewport, SelectGroup, SelectLabel, SelectSeparator, SelectIcon, SelectItemText, SelectItemIndicator, SelectScrollUpButton, SelectScrollDownButton;
+    try {
+      RadixUISelect = await import('@radix-ui/react-select');
+      Select = RadixUISelect.Root;
+      SelectTrigger = RadixUISelect.Trigger;
+      SelectValue = RadixUISelect.Value;
+      SelectContent = RadixUISelect.Content;
+      SelectItem = RadixUISelect.Item;
+      SelectPortal = RadixUISelect.Portal;
+      SelectViewport = RadixUISelect.Viewport;
+      SelectGroup = RadixUISelect.Group;
+      SelectLabel = RadixUISelect.Label;
+      SelectSeparator = RadixUISelect.Separator;
+      SelectIcon = RadixUISelect.Icon;
+      SelectItemText = RadixUISelect.ItemText;
+      SelectItemIndicator = RadixUISelect.ItemIndicator;
+      SelectScrollUpButton = RadixUISelect.ScrollUpButton;
+      SelectScrollDownButton = RadixUISelect.ScrollDownButton;
+      console.log('[Artifact] Radix UI Select loaded successfully');
+    } catch (e) {
+      console.warn('[Artifact] Radix UI Select not available:', e.message);
+    }
+`;
+
+// Error handling script - report errors to parent window
+const ERROR_HANDLING_SCRIPT = `
+    window.addEventListener('error', (e) => {
+      window.parent.postMessage({
+        type: 'artifact-error',
+        message: e.message
+      }, '*');
+    });
+    window.addEventListener('load', () => {
+      window.parent.postMessage({ type: 'artifact-ready' }, '*');
+    });
+`;
 
 interface ArtifactRendererProps {
   artifact: ArtifactData;
@@ -1310,24 +1417,7 @@ ${artifact.content}
     window.reactDOM = window.ReactDOM;
   </script>
   <script type="importmap">
-    {
-      "imports": {
-        "react": "data:text/javascript,const R=window.React;export default R;export const{useState,useEffect,useRef,useMemo,useCallback,useContext,createContext,createElement,Fragment,memo,forwardRef,useReducer,useLayoutEffect,useImperativeHandle,useDebugValue,useDeferredValue,useTransition,useId,useSyncExternalStore,useInsertionEffect,lazy,Suspense,startTransition,Children,cloneElement,isValidElement,createRef,Component,PureComponent,StrictMode}=R;",
-        "react-dom": "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync,findDOMNode,unmountComponentAtNode,render,hydrate}=D;",
-        "react-dom/client": "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync}=D;",
-        "react/jsx-runtime": "data:text/javascript,const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};",
-        "react/jsx-dev-runtime": "data:text/javascript,const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};",
-        "@radix-ui/react-dialog": "https://esm.sh/@radix-ui/react-dialog@1.0.5?external=react,react-dom",
-        "@radix-ui/react-dropdown-menu": "https://esm.sh/@radix-ui/react-dropdown-menu@2.0.6?external=react,react-dom",
-        "@radix-ui/react-popover": "https://esm.sh/@radix-ui/react-popover@1.0.7?external=react,react-dom",
-        "@radix-ui/react-tabs": "https://esm.sh/@radix-ui/react-tabs@1.0.4?external=react,react-dom",
-        "@radix-ui/react-select": "https://esm.sh/@radix-ui/react-select@2.0.0?external=react,react-dom",
-        "@radix-ui/react-slider": "https://esm.sh/@radix-ui/react-slider@1.1.2?external=react,react-dom",
-        "@radix-ui/react-switch": "https://esm.sh/@radix-ui/react-switch@1.0.3?external=react,react-dom",
-        "@radix-ui/react-tooltip": "https://esm.sh/@radix-ui/react-tooltip@1.0.7?external=react,react-dom",
-        "lucide-react": "https://esm.sh/lucide-react@0.263.1?external=react,react-dom"
-      }
-    }
+    ${IMPORT_MAP_JSON}
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
@@ -1346,68 +1436,7 @@ ${artifact.content}
 <body>
   <div id="root"></div>
   <script type="module">
-    const { useState, useEffect, useReducer, useRef, useMemo, useCallback } = React;
-
-    const LucideIcons = window.LucideReact || window.lucideReact || {};
-    const {
-      Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
-      ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
-      Plus, Minus, Edit, Trash, Save, Download, Upload,
-      Search, Filter, Settings, User, Menu, MoreVertical,
-      Trophy, Star, Heart, Flag, Target, Award,
-      PlayCircle, PauseCircle, SkipForward, SkipBack,
-      AlertCircle, CheckCircle, XCircle, Info, HelpCircle,
-      Loader, Clock, Calendar, Mail, Phone,
-      Grid, List, Layout, Sidebar, Maximize, Minimize,
-      Copy, Eye, EyeOff, Lock, Unlock, Share, Link
-    } = LucideIcons;
-
-    Object.keys(LucideIcons).forEach(iconName => {
-      if (typeof window[iconName] === 'undefined') {
-        window[iconName] = LucideIcons[iconName];
-      }
-    });
-
-    const Recharts = window.Recharts || {};
-    const {
-      BarChart, LineChart, PieChart, AreaChart, ScatterChart,
-      Bar, Line, Pie, Area, Scatter, XAxis, YAxis, CartesianGrid,
-      Tooltip, Legend, ResponsiveContainer
-    } = Recharts;
-
-    const FramerMotion = window.Motion || {};
-    const { motion, AnimatePresence } = FramerMotion;
-
-    Object.keys(FramerMotion).forEach(exportName => {
-      if (typeof window[exportName] === 'undefined') {
-        window[exportName] = FramerMotion[exportName];
-      }
-    });
-
-    // Radix UI Select components (imported dynamically from ESM CDN)
-    let RadixUISelect = {};
-    let Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectPortal, SelectViewport, SelectGroup, SelectLabel, SelectSeparator, SelectIcon, SelectItemText, SelectItemIndicator, SelectScrollUpButton, SelectScrollDownButton;
-    try {
-      RadixUISelect = await import('@radix-ui/react-select');
-      Select = RadixUISelect.Root;
-      SelectTrigger = RadixUISelect.Trigger;
-      SelectValue = RadixUISelect.Value;
-      SelectContent = RadixUISelect.Content;
-      SelectItem = RadixUISelect.Item;
-      SelectPortal = RadixUISelect.Portal;
-      SelectViewport = RadixUISelect.Viewport;
-      SelectGroup = RadixUISelect.Group;
-      SelectLabel = RadixUISelect.Label;
-      SelectSeparator = RadixUISelect.Separator;
-      SelectIcon = RadixUISelect.Icon;
-      SelectItemText = RadixUISelect.ItemText;
-      SelectItemIndicator = RadixUISelect.ItemIndicator;
-      SelectScrollUpButton = RadixUISelect.ScrollUpButton;
-      SelectScrollDownButton = RadixUISelect.ScrollDownButton;
-      console.log('[Artifact] Radix UI Select loaded successfully');
-    } catch (e) {
-      console.warn('[Artifact] Radix UI Select not available:', e.message);
-    }
+${LIBRARY_SETUP_SCRIPT}
 
     ${transpiledCode}
 
@@ -1433,15 +1462,7 @@ ${artifact.content}
     }
   </script>
   <script>
-    window.addEventListener('error', (e) => {
-      window.parent.postMessage({
-        type: 'artifact-error',
-        message: e.message
-      }, '*');
-    });
-    window.addEventListener('load', () => {
-      window.parent.postMessage({ type: 'artifact-ready' }, '*');
-    });
+${ERROR_HANDLING_SCRIPT}
   </script>
 </body>
 </html>`;
@@ -1474,24 +1495,7 @@ ${artifact.content}
     window.reactDOM = window.ReactDOM;
   </script>
   <script type="importmap">
-    {
-      "imports": {
-        "react": "data:text/javascript,const R=window.React;export default R;export const{useState,useEffect,useRef,useMemo,useCallback,useContext,createContext,createElement,Fragment,memo,forwardRef,useReducer,useLayoutEffect,useImperativeHandle,useDebugValue,useDeferredValue,useTransition,useId,useSyncExternalStore,useInsertionEffect,lazy,Suspense,startTransition,Children,cloneElement,isValidElement,createRef,Component,PureComponent,StrictMode}=R;",
-        "react-dom": "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync,findDOMNode,unmountComponentAtNode,render,hydrate}=D;",
-        "react-dom/client": "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync}=D;",
-        "react/jsx-runtime": "data:text/javascript,const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};",
-        "react/jsx-dev-runtime": "data:text/javascript,const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};",
-        "@radix-ui/react-dialog": "https://esm.sh/@radix-ui/react-dialog@1.0.5?external=react,react-dom",
-        "@radix-ui/react-dropdown-menu": "https://esm.sh/@radix-ui/react-dropdown-menu@2.0.6?external=react,react-dom",
-        "@radix-ui/react-popover": "https://esm.sh/@radix-ui/react-popover@1.0.7?external=react,react-dom",
-        "@radix-ui/react-tabs": "https://esm.sh/@radix-ui/react-tabs@1.0.4?external=react,react-dom",
-        "@radix-ui/react-select": "https://esm.sh/@radix-ui/react-select@2.0.0?external=react,react-dom",
-        "@radix-ui/react-slider": "https://esm.sh/@radix-ui/react-slider@1.1.2?external=react,react-dom",
-        "@radix-ui/react-switch": "https://esm.sh/@radix-ui/react-switch@1.0.3?external=react,react-dom",
-        "@radix-ui/react-tooltip": "https://esm.sh/@radix-ui/react-tooltip@1.0.7?external=react,react-dom",
-        "lucide-react": "https://esm.sh/lucide-react@0.263.1?external=react,react-dom"
-      }
-    }
+    ${IMPORT_MAP_JSON}
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
@@ -1509,71 +1513,13 @@ ${artifact.content}
 </head>
 <body>
   <div id="root"></div>
-  <!-- NOTE: 'env' preset intentionally excluded - it converts ES6 imports to CommonJS require()
-       which fails in browsers. Target: Chrome 80+, Firefox 75+, Safari 14+, Edge 80+. -->
+  <!-- CRITICAL: 'env' preset intentionally excluded (Phase 5 fix)
+       WHY: Babel's 'env' preset converts ES6 import to CommonJS require(), which
+       causes "require is not defined" runtime errors in browsers (CommonJS isn't available)
+       INSTEAD: Use only react,typescript presets - modern browsers support ES6 natively
+       Browser targets: Chrome 80+, Firefox 75+, Safari 14+, Edge 80+ (all support ES6 modules) -->
   <script type="text/babel" data-type="module" data-presets="react,typescript">
-    const { useState, useEffect, useReducer, useRef, useMemo, useCallback } = React;
-
-    const LucideIcons = window.LucideReact || window.lucideReact || {};
-    const {
-      Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
-      ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
-      Plus, Minus, Edit, Trash, Save, Download, Upload,
-      Search, Filter, Settings, User, Menu, MoreVertical,
-      Trophy, Star, Heart, Flag, Target, Award,
-      PlayCircle, PauseCircle, SkipForward, SkipBack,
-      AlertCircle, CheckCircle, XCircle, Info, HelpCircle,
-      Loader, Clock, Calendar, Mail, Phone,
-      Grid, List, Layout, Sidebar, Maximize, Minimize,
-      Copy, Eye, EyeOff, Lock, Unlock, Share, Link
-    } = LucideIcons;
-
-    Object.keys(LucideIcons).forEach(iconName => {
-      if (typeof window[iconName] === 'undefined') {
-        window[iconName] = LucideIcons[iconName];
-      }
-    });
-
-    const Recharts = window.Recharts || {};
-    const {
-      BarChart, LineChart, PieChart, AreaChart, ScatterChart,
-      Bar, Line, Pie, Area, Scatter, XAxis, YAxis, CartesianGrid,
-      Tooltip, Legend, ResponsiveContainer
-    } = Recharts;
-
-    const FramerMotion = window.Motion || {};
-    const { motion, AnimatePresence } = FramerMotion;
-
-    Object.keys(FramerMotion).forEach(exportName => {
-      if (typeof window[exportName] === 'undefined') {
-        window[exportName] = FramerMotion[exportName];
-      }
-    });
-
-    // Radix UI Select components (imported dynamically from ESM CDN)
-    let RadixUISelect = {};
-    let Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectPortal, SelectViewport, SelectGroup, SelectLabel, SelectSeparator, SelectIcon, SelectItemText, SelectItemIndicator, SelectScrollUpButton, SelectScrollDownButton;
-    try {
-      RadixUISelect = await import('@radix-ui/react-select');
-      Select = RadixUISelect.Root;
-      SelectTrigger = RadixUISelect.Trigger;
-      SelectValue = RadixUISelect.Value;
-      SelectContent = RadixUISelect.Content;
-      SelectItem = RadixUISelect.Item;
-      SelectPortal = RadixUISelect.Portal;
-      SelectViewport = RadixUISelect.Viewport;
-      SelectGroup = RadixUISelect.Group;
-      SelectLabel = RadixUISelect.Label;
-      SelectSeparator = RadixUISelect.Separator;
-      SelectIcon = RadixUISelect.Icon;
-      SelectItemText = RadixUISelect.ItemText;
-      SelectItemIndicator = RadixUISelect.ItemIndicator;
-      SelectScrollUpButton = RadixUISelect.ScrollUpButton;
-      SelectScrollDownButton = RadixUISelect.ScrollDownButton;
-      console.log('[Artifact] Radix UI Select loaded successfully');
-    } catch (e) {
-      console.warn('[Artifact] Radix UI Select not available:', e.message);
-    }
+${LIBRARY_SETUP_SCRIPT}
 
     ${processedCode}
 
@@ -1599,15 +1545,7 @@ ${artifact.content}
     }
   </script>
   <script>
-    window.addEventListener('error', (e) => {
-      window.parent.postMessage({
-        type: 'artifact-error',
-        message: e.message
-      }, '*');
-    });
-    window.addEventListener('load', () => {
-      window.parent.postMessage({ type: 'artifact-ready' }, '*');
-    });
+${ERROR_HANDLING_SCRIPT}
   </script>
 </body>
 </html>`;
@@ -1674,29 +1612,56 @@ ${artifact.content}
         // Convert exception to error result for consistent handling
         // This catches cases where the Sucrase library itself fails to load
         console.error('[ArtifactRenderer] Sucrase exception caught:', error);
+
+        // Classify error severity
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
+        const isCriticalError = errorMessage.includes('Cannot find module') ||
+                                errorMessage.includes('ENOENT') ||
+                                errorStack?.includes('ReferenceError');
+
+        // Add comprehensive Sentry context
         Sentry.captureException(error, {
           tags: {
             component: 'ArtifactRenderer',
             action: 'transpile',
             errorType: 'exception',
+            severity: isCriticalError ? 'critical' : 'recoverable',
           },
           extra: {
             componentName,
+            errorMessage,
+            errorStack,
+            codeLength: processedCode.length,
+            artifactType: artifact.type,
           },
         });
 
-        // Show user-friendly toast notification
-        toast.warning(
-          'Transpiler unavailable, using compatibility mode',
-          {
-            description: 'The fast transpiler encountered an error. Your component will still work using the fallback renderer.',
-          }
-        );
+        // Different handling for critical vs recoverable errors
+        if (isCriticalError) {
+          toast.error('Transpiler failed to load', {
+            description: 'This may require a page refresh or indicate a configuration issue.',
+            duration: Infinity, // Don't auto-dismiss
+            action: {
+              label: 'Refresh Page',
+              onClick: () => window.location.reload()
+            },
+          });
+        } else {
+          // Show user-friendly toast notification for recoverable errors
+          toast.warning(
+            'Transpiler unavailable, using compatibility mode',
+            {
+              description: 'The fast transpiler encountered an error. Your component will still work using the fallback renderer.',
+              duration: 10000, // 10 seconds
+            }
+          );
+        }
 
         transpileResult = {
           success: false,
-          error: error instanceof Error ? error.message : 'Transpilation exception',
-          details: error instanceof Error ? error.stack : undefined,
+          error: errorMessage,
+          details: errorStack,
         };
       }
 

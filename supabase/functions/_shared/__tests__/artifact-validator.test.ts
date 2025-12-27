@@ -1498,6 +1498,47 @@ export default function App() {
   assertEquals(fixed.includes('const name = "Alice"'), true);
 });
 
+// ============================================================================
+// Server-Side Double-Failure Path Tests (Issue #6)
+// ============================================================================
+
+Deno.test("autoFixArtifactCode - handles catastrophic TypeScript that both Sucrase and regex reject", () => {
+  const code = `
+export default function App() {
+  const x: <<<>>>>> = 1;  // Catastrophically broken
+  return <div>{x}</div>;
+}`;
+
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Should not crash - return string with error logged
+  assertEquals(typeof fixed, 'string');
+  assertEquals(fixed.length > 0, true);
+  // Should fall back to regex when Sucrase fails
+  assertEquals(changes.some(c => c.includes('fell back to regex') || c.includes('fallback')), true);
+});
+
+// ============================================================================
+// Import Resolution Edge Case Tests (Issue #7)
+// ============================================================================
+
+Deno.test("autoFixArtifactCode - handles namespace import and type assertion on same line", () => {
+  // This test verifies that the regex doesn't corrupt valid namespace imports
+  // NOTE: Sucrase may remove unused imports during transpilation, which is expected behavior
+  const code = `import * as Dialog from '@radix-ui/react-dialog'; const x = value as Type; export default () => <Dialog.Root><div /></Dialog.Root>;`;
+  const { fixed } = autoFixArtifactCode(code);
+
+  // Type assertion should be stripped (no " as Type" in output)
+  assertEquals(fixed.includes(' as Type'), false);
+
+  // CRITICAL: No corruption - "import * from" without namespace identifier is invalid syntax
+  // This would indicate the regex incorrectly matched and removed "as Dialog"
+  assertEquals(fixed.includes('import * from'), false);
+
+  // Verify the component is using Dialog (so import won't be removed as unused)
+  assertEquals(fixed.includes('Dialog'), true);
+});
+
 Deno.test("autoFixArtifactCode - Sucrase handles function parameter types", () => {
   const code = `
 export default function App() {

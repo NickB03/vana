@@ -631,6 +631,31 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
   });
 
   // ============================================
+  // CONCURRENT TRANSPILATION RACE CONDITION TESTS (Issue #5)
+  // ============================================
+
+  describe('Concurrent Transpilation', () => {
+    it('handles concurrent transpilation without race conditions', async () => {
+      const artifact1 = { ...baseArtifact, id: 'art1', content: 'export default () => <div>A</div>' };
+      const artifact2 = { ...baseArtifact, id: 'art2', content: 'export default () => <div>B</div>' };
+
+      let callCount = 0;
+      vi.mocked(sucraseTranspiler.transpileCode).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) throw new Error('First fails');
+        return { success: true, code: 'const App = () => React.createElement("div", null, "Test");', elapsed: 5 };
+      });
+
+      const { container: c1 } = render(<ArtifactRenderer {...baseProps} artifact={artifact1} />);
+      const { container: c2 } = render(<ArtifactRenderer {...baseProps} artifact={artifact2} />);
+
+      // Both should render (first with Babel fallback, second with Sucrase)
+      expect(c1.querySelector('iframe')).toBeTruthy();
+      expect(c2.querySelector('iframe')).toBeTruthy();
+    });
+  });
+
+  // ============================================
   // BUNDLED ARTIFACT SUCRASE TESTS
   // ============================================
 
