@@ -16,6 +16,7 @@ import { lazy } from "react";
 import { classifyError, shouldAttemptRecovery, getFallbackRenderer, ArtifactError } from "@/utils/artifactErrorRecovery";
 import { ArtifactErrorRecovery } from "./ArtifactErrorRecovery";
 import { transpileCode } from '@/utils/sucraseTranspiler';
+import * as sucraseTranspiler from '@/utils/sucraseTranspiler';
 import { isFeatureEnabled } from '@/lib/featureFlags';
 
 // Lazy load Sandpack component for code splitting
@@ -470,15 +471,34 @@ const BundledArtifactFrame = memo(({
         if (isMounted) {
           const elapsed = Date.now() - fetchStartTimeRef.current;
           const errorMessage = error instanceof Error ? error.message : 'Failed to load bundle';
-          Sentry.addBreadcrumb({
-            category: 'artifact.loading',
-            message: 'Bundle fetch failed',
-            level: 'error',
-            data: { elapsed, bundleUrl, error: errorMessage },
+
+          // Capture exception, not just breadcrumb
+          Sentry.captureException(error, {
+            tags: {
+              component: 'BundledArtifactFrame',
+              action: 'fetch-bundle',
+            },
+            extra: {
+              elapsed,
+              bundleUrl,
+              errorMessage,
+              dependencies,
+            },
           });
+
           setFetchError(errorMessage);
           onPreviewErrorChange(errorMessage);
           onLoadingChange(false);
+
+          // Show prominent error toast
+          toast.error('Failed to load artifact bundle', {
+            description: errorMessage,
+            action: {
+              label: 'Retry',
+              onClick: () => window.location.reload(),
+            },
+          });
+
           window.postMessage({ type: 'artifact-rendered-complete', success: false, error: errorMessage }, '*');
         }
       }
@@ -643,19 +663,42 @@ export const ArtifactRenderer = memo(({
       const watchdogStart = Date.now();
       const timer = setTimeout(() => {
         const elapsed = Date.now() - watchdogStart;
-        console.warn(`[ArtifactRenderer] Watchdog timer fired after ${elapsed}ms - forcing completion`);
-        Sentry.addBreadcrumb({
-          category: 'artifact.loading',
-          message: 'Watchdog timer fired - forcing completion',
-          level: 'warning',
-          data: { elapsed, isLoading: true },
+
+        // Treat watchdog timeout as a failure
+        const timeoutError = new Error(`Artifact loading timeout after ${elapsed}ms`);
+
+        Sentry.captureException(timeoutError, {
+          tags: {
+            component: 'ArtifactRenderer',
+            action: 'watchdog-timeout',
+          },
+          extra: {
+            elapsed,
+            artifactId: artifact.id,
+            artifactType: artifact.type,
+            bundleUrl: artifact.bundleUrl,
+          },
         });
+
+        // Set error state instead of pretending success
+        onPreviewErrorChange('Artifact failed to load within 10 seconds. The component may have errors or be stuck in an infinite loop.');
         onLoadingChange(false);
-        window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
+
+        // Signal failure, not success
+        window.postMessage({
+          type: 'artifact-rendered-complete',
+          success: false,
+          error: 'Loading timeout'
+        }, '*');
+
+        // Show user-facing error
+        toast.error('Artifact loading timeout', {
+          description: 'The component took too long to render. Try refreshing or requesting a fix from AI.',
+        });
       }, 10000);
       return () => clearTimeout(timer);
     }
-  }, [isLoading, onLoadingChange]);
+  }, [isLoading, onLoadingChange, onPreviewErrorChange, artifact]);
 
   // Map error type to error category for parent component
   const mapErrorTypeToCategory = useCallback((type: string): 'syntax' | 'runtime' | 'import' | 'unknown' => {
@@ -1553,10 +1596,42 @@ ${artifact.content}
     let reactPreviewContent: string;
 
     if (isFeatureEnabled('SUCRASE_TRANSPILER')) {
-      // Try Sucrase transpilation first
-      const transpileResult = transpileCode(processedCode, {
-        filename: `${componentName}.tsx`,
-      });
+      // Try Sucrase transpilation first (with exception handling for library failures)
+      let transpileResult: sucraseTranspiler.TranspileResult | sucraseTranspiler.TranspileError;
+
+      try {
+        transpileResult = transpileCode(processedCode, {
+          filename: `${componentName}.tsx`,
+        });
+      } catch (error) {
+        // Convert exception to error result for consistent handling
+        // This catches cases where the Sucrase library itself fails to load
+        console.error('[ArtifactRenderer] Sucrase exception caught:', error);
+        Sentry.captureException(error, {
+          tags: {
+            component: 'ArtifactRenderer',
+            action: 'transpile',
+            errorType: 'exception',
+          },
+          extra: {
+            componentName,
+          },
+        });
+
+        // Show user-friendly toast notification
+        toast.warning(
+          'Transpiler unavailable, using compatibility mode',
+          {
+            description: 'The fast transpiler encountered an error. Your component will still work using the fallback renderer.',
+          }
+        );
+
+        transpileResult = {
+          success: false,
+          error: error instanceof Error ? error.message : 'Transpilation exception',
+          details: error instanceof Error ? error.stack : undefined,
+        };
+      }
 
       if (transpileResult.success) {
         console.log(`[ArtifactRenderer] Sucrase transpiled in ${transpileResult.elapsed.toFixed(2)}ms`);
@@ -1570,12 +1645,33 @@ ${artifact.content}
       } else {
         // Fallback to Babel on transpilation error
         console.warn('[ArtifactRenderer] Sucrase transpilation failed, falling back to Babel:', transpileResult.error);
-        Sentry.addBreadcrumb({
-          category: 'artifact.transpile',
-          message: 'Sucrase transpilation failed, using Babel fallback',
-          level: 'warning',
-          data: { error: transpileResult.error, details: transpileResult.details },
+
+        // Capture exception for Sentry dashboard visibility
+        Sentry.captureException(new Error(`Sucrase transpilation failed: ${transpileResult.error}`), {
+          tags: {
+            component: 'ArtifactRenderer',
+            transpiler: 'sucrase',
+            fallback: 'babel',
+          },
+          extra: {
+            error: transpileResult.error,
+            details: transpileResult.details,
+            line: transpileResult.line,
+            column: transpileResult.column,
+            codeLength: processedCode.length,
+            componentName,
+          },
         });
+
+        // Notify user that degraded mode is active
+        toast.warning(
+          'Artifact transpilation fell back to compatibility mode. Please report this issue if the artifact has errors.',
+          {
+            description: `Error: ${transpileResult.error}`,
+            duration: 10000,
+          }
+        );
+
         reactPreviewContent = generateBabelTemplate(processedCode, componentName);
       }
     } else {

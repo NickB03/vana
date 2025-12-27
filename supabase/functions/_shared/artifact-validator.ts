@@ -153,20 +153,27 @@ function detectProblematicPatterns(code: string): ValidationIssue[] {
 }
 
 /**
- * Strip TypeScript syntax using Sucrase instead of fragile regex
+ * Strip TypeScript syntax and transpile JSX using Sucrase
+ *
+ * IMPORTANT: This function MODIFIES code in two ways:
+ * 1. Strips TypeScript type annotations (interfaces, type aliases, etc.)
+ * 2. Transpiles JSX to React.createElement() calls (required for Sucrase parsing)
  *
  * Sucrase provides AST-based transformation that is more reliable than regex patterns.
  * Falls back to the original code if Sucrase fails (e.g., syntax errors).
  *
- * @param code - The code to strip TypeScript syntax from
- * @returns Object with stripped code and success flag
+ * @returns {stripped: true} if TypeScript syntax was detected and removed
+ *          (JSX may also be transpiled even if no TypeScript was present)
+ * @returns {error} if Sucrase failed to parse the code
  */
-function stripTypeScriptWithSucrase(code: string): { code: string; stripped: boolean } {
+function stripTypeScriptWithSucrase(code: string): { code: string; stripped: boolean; error?: string } {
   try {
-    // Note: We include 'jsx' transform because Sucrase cannot PARSE JSX without it.
-    // This means JSX will be transpiled to React.createElement(), which is fine -
-    // the output is valid JavaScript that browsers can execute directly.
-    // jsxPragma/jsxFragmentPragma ensure the standard React global approach.
+    // NOTE: We include 'jsx' transform for two reasons:
+    // 1. Sucrase requires it to PARSE JSX syntax (technical limitation)
+    // 2. Server-side validation doesn't need to preserve JSX - transpiling to
+    //    React.createElement() is acceptable since we only validate the logic,
+    //    not the exact syntax representation
+    // Client-side rendering will separately transpile JSX with proper pragmas.
     const result = transform(code, {
       transforms: ['typescript', 'jsx'],   // Strip types + transpile JSX (required for parsing)
       disableESTransforms: true,           // Don't transpile ES features (keep modern syntax)
@@ -180,8 +187,21 @@ function stripTypeScriptWithSucrase(code: string): { code: string; stripped: boo
 
     return { code: result.code, stripped: actuallyStripped };
   } catch (error) {
-    console.warn('[artifact-validator] Sucrase TS strip failed, using regex fallback:', error);
-    return { code, stripped: false };
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    // Log error with full context
+    console.error('[artifact-validator] Sucrase TS strip failed - artifact may have syntax errors:', {
+      error: errorMessage,
+      codePreview: code.substring(0, 200),
+      codeLength: code.length,
+    });
+
+    // Return error info for upstream handling
+    return {
+      code,
+      stripped: false,
+      error: errorMessage,
+    };
   }
 }
 
@@ -196,6 +216,11 @@ export function autoFixArtifactCode(code: string): { fixed: string; changes: str
   // This is important because Sucrase works best on complete, unmodified code
   // Strategy: Try Sucrase first (AST-based, more reliable), fall back to regex
   const sucraseResult = stripTypeScriptWithSucrase(code);
+
+  if (sucraseResult.error) {
+    console.warn('[artifact-validator] Using regex TypeScript stripping due to Sucrase error:', sucraseResult.error);
+    changes.push(`TypeScript stripping fell back to regex due to: ${sucraseResult.error}`);
+  }
 
   if (sucraseResult.stripped) {
     // Sucrase succeeded - use its output and continue with other fixes

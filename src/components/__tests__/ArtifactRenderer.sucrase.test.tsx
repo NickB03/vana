@@ -5,6 +5,7 @@ import { ArtifactData } from '../ArtifactContainer';
 import * as featureFlags from '@/lib/featureFlags';
 import * as sucraseTranspiler from '@/utils/sucraseTranspiler';
 import * as Sentry from '@sentry/react';
+import { toast } from 'sonner';
 
 // Mock dependencies
 vi.mock('@/lib/featureFlags', async () => {
@@ -26,6 +27,14 @@ vi.mock('@/utils/sucraseTranspiler', async () => {
 vi.mock('@sentry/react', () => ({
   captureException: vi.fn(),
   addBreadcrumb: vi.fn(),
+}));
+
+vi.mock('sonner', () => ({
+  toast: {
+    warning: vi.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
+  },
 }));
 
 vi.mock('@/integrations/supabase/client', () => ({
@@ -143,12 +152,17 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
       // Verify transpileCode was called
       expect(sucraseTranspiler.transpileCode).toHaveBeenCalled();
 
-      // Verify Sentry breadcrumb logged fallback
-      expect(Sentry.addBreadcrumb).toHaveBeenCalledWith(
+      // Verify Sentry captureException was called (captures errors to dashboard)
+      expect(Sentry.captureException).toHaveBeenCalledWith(
         expect.objectContaining({
-          category: 'artifact.transpile',
-          message: 'Sucrase transpilation failed, using Babel fallback',
-          level: 'warning',
+          message: expect.stringContaining('Sucrase transpilation failed'),
+        }),
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            component: 'ArtifactRenderer',
+            transpiler: 'sucrase',
+            fallback: 'babel',
+          }),
         })
       );
 
@@ -446,12 +460,13 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
 
       render(<ArtifactRenderer {...baseProps} />);
 
-      expect(Sentry.addBreadcrumb).toHaveBeenCalledWith(
+      // Verify Sentry captureException was called with error details
+      expect(Sentry.captureException).toHaveBeenCalledWith(
         expect.objectContaining({
-          category: 'artifact.transpile',
-          message: 'Sucrase transpilation failed, using Babel fallback',
-          level: 'warning',
-          data: expect.objectContaining({
+          message: expect.stringContaining('Sucrase transpilation failed'),
+        }),
+        expect.objectContaining({
+          extra: expect.objectContaining({
             error: 'Syntax error',
             details: 'Unexpected token at line 5',
           }),
@@ -473,6 +488,78 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
       // Should fall back to Babel
       const calls = vi.mocked(sucraseTranspiler.transpileCode).mock.calls;
       expect(calls.length).toBe(1);
+    });
+  });
+
+  // ============================================
+  // EXCEPTION HANDLING TESTS
+  // ============================================
+
+  describe('Exception Handling', () => {
+    it('falls back to Babel when transpileCode throws exception', () => {
+      const reactArtifact: ArtifactData = {
+        ...baseArtifact,
+        type: 'react',
+        content: 'export default function App() { return <div>Hello</div>; }',
+      };
+
+      // Simulate Sucrase library failure (not a graceful error return)
+      vi.mocked(sucraseTranspiler.transpileCode).mockImplementation(() => {
+        throw new Error('Sucrase module failed to load');
+      });
+
+      // Should NOT crash - should fall back to Babel
+      expect(() => {
+        render(<ArtifactRenderer {...baseProps} artifact={reactArtifact} />);
+      }).not.toThrow();
+
+      // Verify Babel template is used (contains @babel/standalone)
+      const iframe = screen.getByTitle(reactArtifact.title);
+      const srcDoc = iframe.getAttribute('srcdoc');
+      expect(srcDoc).toContain('@babel/standalone');
+    });
+
+    it('reports exception to Sentry when Sucrase throws', () => {
+      const reactArtifact: ArtifactData = {
+        ...baseArtifact,
+        type: 'react',
+        content: 'export default function App() { return <div>Hello</div>; }',
+      };
+
+      const sucraseError = new Error('Unexpected Sucrase crash');
+      vi.mocked(sucraseTranspiler.transpileCode).mockImplementation(() => {
+        throw sucraseError;
+      });
+
+      render(<ArtifactRenderer {...baseProps} artifact={reactArtifact} />);
+
+      // Should capture the exception (not just log a breadcrumb)
+      expect(Sentry.captureException).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('Sucrase'),
+        }),
+        expect.any(Object)
+      );
+    });
+
+    it('shows error toast when Sucrase throws exception', () => {
+      const reactArtifact: ArtifactData = {
+        ...baseArtifact,
+        type: 'react',
+        content: 'export default function App() { return <div>Hello</div>; }',
+      };
+
+      vi.mocked(sucraseTranspiler.transpileCode).mockImplementation(() => {
+        throw new Error('Sucrase library unavailable');
+      });
+
+      render(<ArtifactRenderer {...baseProps} artifact={reactArtifact} />);
+
+      // User should see warning toast
+      expect(toast.warning).toHaveBeenCalledWith(
+        expect.stringContaining('compatibility mode'),
+        expect.any(Object)
+      );
     });
   });
 
