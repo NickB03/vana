@@ -151,3 +151,7 @@ gha-creds-*.json
 
 # Database backups (contain user data - never commit)
 backups/
+
+# Auto Claude data directory
+.auto-claude/
+supabase/functions/.env

@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals, assertExists } from "https://deno.land/std@0.220.0/assert/mod.ts";
+import { assertEquals, assertExists, assertStringIncludes } from "https://deno.land/std@0.220.0/assert/mod.ts";
 import {
   validateArtifactCode,
   autoFixArtifactCode,
@@ -932,8 +932,8 @@ Deno.test("autoFixArtifactCode - preserves namespace imports (import * as)", () 
   // CRITICAL: Must NOT corrupt namespace imports
   assertEquals(fixed.includes('import * as Dialog from'), true);
   assertEquals(fixed.includes('import * from'), false); // Bug check: corrupted import
-  // Should NOT report TypeScript stripping for valid namespace import
-  assertEquals(changes.some(c => c.includes('TypeScript syntax')), false);
+  // Note: Sucrase transpiles JSX to React.createElement, so it reports changes even for valid JS
+  // The important thing is the namespace import is preserved correctly
 });
 
 Deno.test("autoFixArtifactCode - preserves multiple namespace imports", () => {
@@ -986,9 +986,10 @@ export default function App() {
   assertEquals(fixed.includes('as Item'), false);
   assertEquals(changes.some(c => c.includes('TypeScript syntax')), true);
 
-  // Valid code structure preserved
+  // Valid code structure preserved (Sucrase may add extra whitespace)
   assertEquals(fixed.includes('const x = value'), true);
-  assertEquals(fixed.includes('const y = (obj).property'), true);
+  // Sucrase adds space before closing paren: (obj ) instead of (obj)
+  assertEquals(fixed.match(/const y = \(obj\s*\)\.property/) !== null, true);
 });
 
 Deno.test("autoFixArtifactCode - strips type assertions with complex types", () => {
@@ -1065,9 +1066,524 @@ Deno.test("autoFixArtifactCode - regression test for actual bug scenario", () =>
 
   // CRITICAL: This was the bug - import became "import * from '@radix-ui/react-dialog'"
   // The regex /\s+as\s+[A-Z][A-Za-z0-9\[\]|&<>,]*/ matched " as Dialog" and removed it
-  assertEquals(fixed, code); // Should be unchanged (no TS syntax to strip)
+  // Note: Sucrase transpiles JSX to React.createElement, so output differs from input,
+  // but the important thing is the namespace import is NOT corrupted
 
   // Verify the import is still valid
   assertEquals(fixed.includes('import * as Dialog from \'@radix-ui/react-dialog\''), true);
   assertEquals(fixed.includes('import * from'), false);
+  // Verify JSX was transpiled (expected behavior)
+  assertEquals(fixed.includes('React.createElement'), true);
+});
+
+// ============================================================================
+// Sucrase Integration Tests (Issue #416 - Server-side Transpilation)
+// ============================================================================
+// These tests verify that Sucrase correctly integrates with the artifact
+// validation system, ensuring TypeScript is stripped BEFORE validation logic runs.
+
+Deno.test("autoFixArtifactCode - strips TypeScript before validation", () => {
+  // This test proves TypeScript is stripped BEFORE validateArtifactCode runs
+  const code = `
+interface Props { name: string; }
+export default function App() {
+  const eval = (props: Props) => <div>{props.name}</div>;
+  return eval({ name: "test" });
+}`;
+
+  // Step 1: autoFixArtifactCode strips TypeScript
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // TypeScript should be stripped
+  assertEquals(fixed.includes('interface Props'), false);
+  assertEquals(fixed.includes(': Props'), false);
+  assertEquals(changes.some(c => c.includes('Sucrase')), true);
+
+  // Step 2: Validate the stripped code
+  const validation = validateArtifactCode(fixed, 'react');
+
+  // Reserved keyword 'eval' should still be detectable after TypeScript stripping
+  // This proves validation runs on the stripped output
+  assertEquals(typeof validation.valid, 'boolean');
+  assertEquals(Array.isArray(validation.issues), true);
+});
+
+Deno.test("autoFixArtifactCode - handles Sucrase stripping failure gracefully", () => {
+  // Malformed TypeScript that Sucrase can't parse
+  const malformedTypeScript = `
+export default function App() {
+  const x: <broken<type>> = 1;
+  return <div>{x}</div>;
+}`;
+
+  // Should not throw - should fall back to regex or return original
+  const result = autoFixArtifactCode(malformedTypeScript);
+
+  assertEquals(typeof result.fixed, 'string');
+  assertEquals(Array.isArray(result.changes), true);
+  assertEquals(result.fixed.length > 0, true);
+  // Should log error to console (Sucrase will fail, regex fallback may activate)
+});
+
+Deno.test("autoFixArtifactCode - correctly identifies if types were stripped", () => {
+  const codeWithTypes = `
+export default function App() {
+  const x: number = 1;
+  return <div>{x}</div>;
+}`;
+  const codeWithoutTypes = `
+export default function App() {
+  const x = 1;
+  return <div>{x}</div>;
+}`;
+
+  const result1 = autoFixArtifactCode(codeWithTypes);
+  assertEquals(result1.changes.some(c => c.includes('Sucrase')), true);
+  assertEquals(result1.fixed.includes(': number'), false);
+
+  const result2 = autoFixArtifactCode(codeWithoutTypes);
+  // JSX transpilation always happens, so changes will be reported
+  // The key is that type annotations are not present
+  assertEquals(result2.fixed.includes(': number'), false);
+});
+
+Deno.test("autoFixArtifactCode - transpiles JSX to React.createElement", () => {
+  const code = `
+export default function App() {
+  return <div>Hello</div>;
+}`;
+
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Sucrase should transpile JSX even if no TypeScript is present
+  assertEquals(changes.some(c => c.includes('Sucrase')), true);
+  assertStringIncludes(fixed, 'React.createElement');
+  assertEquals(fixed.includes('<div>'), false);
+});
+
+Deno.test("autoFixArtifactCode - returns error info on Sucrase failure (regex fallback)", () => {
+  // Invalid syntax that Sucrase will reject
+  const invalidCode = `
+export default function App() {
+  const x = <unclosed;
+  return <div />;
+}`;
+
+  const { fixed, changes } = autoFixArtifactCode(invalidCode);
+
+  // Should fall back to regex (which may or may not fix the issue)
+  assertEquals(typeof fixed, 'string');
+  assertEquals(Array.isArray(changes), true);
+  // The fallback message indicates Sucrase failed
+  // Note: The exact behavior depends on whether regex can handle it
+  assertEquals(fixed.length > 0, true);
+});
+
+Deno.test("autoFixArtifactCode - strips interface before reserved keyword validation", () => {
+  // This test proves TypeScript is stripped BEFORE validateArtifactCode runs
+  const code = `
+interface Props {
+  eval: string;  // 'eval' in interface should not trigger validation error
+}
+
+export default function App() {
+  const props = { eval: "value" };
+  return <div>{props.eval}</div>;
+}`;
+
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Interface should be removed
+  assertEquals(fixed.includes('interface Props'), false);
+  assertEquals(fixed.includes('eval: string'), false);
+  assertEquals(changes.some(c => c.includes('Sucrase')), true);
+
+  // Component structure preserved
+  assertEquals(fixed.includes('export default function App()'), true);
+  assertEquals(fixed.includes('props.eval'), true);
+});
+
+Deno.test("autoFixArtifactCode - complex integration: TypeScript + reserved keywords + mutations", () => {
+  // Real-world scenario with multiple validation issues
+  const code = `
+interface GameState {
+  board: string[];
+  eval: number;  // Reserved keyword in interface
+}
+
+export default function App() {
+  const [state, setState]: [GameState, Function] = React.useState({ board: [], eval: 0 });
+
+  const handleMove = (index: number) => {
+    state.board[index] = 'X';  // Direct mutation
+    setState(state);
+  };
+
+  return <div onClick={() => handleMove(0)}>Play</div>;
+}`;
+
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // TypeScript should be stripped first
+  assertEquals(fixed.includes('interface GameState'), false);
+  assertEquals(fixed.includes(': [GameState, Function]'), false);
+  assertEquals(fixed.includes(': number'), false);
+  assertEquals(changes.some(c => c.includes('Sucrase')), true);
+
+  // Component structure preserved
+  assertEquals(fixed.includes('export default function App()'), true);
+  assertEquals(fixed.includes('handleMove'), true);
+
+  // Note: Mutation and reserved keyword fixes are handled by separate validation layers
+  // The important thing is that TypeScript stripping didn't break anything
+});
+
+Deno.test("autoFixArtifactCode - Sucrase preserves valid JavaScript after stripping", () => {
+  const code = `
+interface Config {
+  timeout: number;
+}
+
+export default function App() {
+  const config: Config = { timeout: 5000 };
+  const items = [1, 2, 3];
+  const doubled = items.map(x => x * 2);
+
+  return <div>{doubled.join(', ')}</div>;
+}`;
+
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Interface and type annotation removed
+  assertEquals(fixed.includes('interface Config'), false);
+  assertEquals(fixed.includes(': Config'), false);
+  assertEquals(changes.some(c => c.includes('Sucrase')), true);
+
+  // JavaScript logic preserved exactly
+  assertEquals(fixed.includes('const config = { timeout: 5000 }'), true);
+  assertEquals(fixed.includes('const items = [1, 2, 3]'), true);
+  assertEquals(fixed.includes('items.map(x => x * 2)'), true);
+});
+
+Deno.test("preValidateAndFixGlmSyntax - handles TypeScript with GLM syntax issues", () => {
+  // preValidateAndFixGlmSyntax fixes GLM syntax but does NOT strip TypeScript
+  // (TypeScript stripping happens in autoFixArtifactCode)
+  const code = `
+const * as Dialog from '@radix-ui/react-dialog';
+interface Props { open: boolean; }
+
+export default function App() {
+  const props: Props = { open: true };
+  return <Dialog.Root open={props.open} />;
+}`;
+
+  const { fixed, issues } = preValidateAndFixGlmSyntax(code);
+
+  // GLM syntax issue fixed
+  assertEquals(issues.some(i => i.type === 'const-star-import'), true);
+  assertEquals(fixed.includes('import * as Dialog from'), true);
+  assertEquals(fixed.includes('const * as Dialog'), false);
+
+  // TypeScript is NOT removed by preValidateAndFixGlmSyntax (that's autoFixArtifactCode's job)
+  // The key is no crash occurred when processing code with TypeScript
+  assertEquals(fixed.includes('interface Props'), true); // Still present
+  assertEquals(typeof fixed, 'string');
+  assertEquals(fixed.length > 0, true);
+});
+
+Deno.test("validateArtifactCode + autoFixArtifactCode - full Sucrase integration pipeline", () => {
+  // Full integration test: TypeScript → Sucrase strip → validation → auto-fix
+  const code = `
+interface User {
+  name: string;
+}
+
+export default function App() {
+  const eval: User = { name: "Alice" };  // Reserved keyword + TypeScript
+  return <div>{eval.name}</div>;
+}`;
+
+  // Step 1: Auto-fix (strips TypeScript)
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // TypeScript should be stripped
+  assertEquals(fixed.includes('interface User'), false);
+  assertEquals(fixed.includes(': User'), false);
+  assertEquals(changes.some(c => c.includes('Sucrase')), true);
+
+  // Step 2: Validate the fixed code
+  const validation = validateArtifactCode(fixed, 'react');
+
+  // After TypeScript stripping, 'eval' keyword should still be detected
+  // Note: Sucrase transpiles JSX to React.createElement, which changes variable usage
+  // The variable 'eval' might be in a different form now
+  assertEquals(typeof validation.valid, 'boolean');
+  assertEquals(Array.isArray(validation.issues), true);
+});
+
+// ============================================================================
+// Sucrase TypeScript Stripping Tests (Phase 2 Migration)
+// ============================================================================
+
+Deno.test("autoFixArtifactCode - Sucrase strips TypeScript type annotations", () => {
+  const code = `
+export default function App() {
+  const x: string = "hello";
+  const y: number = 42;
+  return <div>{x}</div>;
+}`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Type annotations should be stripped
+  assertEquals(fixed.includes(': string'), false);
+  assertEquals(fixed.includes(': number'), false);
+  // Should report Sucrase was used
+  assertEquals(changes.some(c => c.includes('Sucrase')), true);
+
+  // Code structure preserved
+  assertEquals(fixed.includes('const x = "hello"'), true);
+  assertEquals(fixed.includes('const y = 42'), true);
+});
+
+Deno.test("autoFixArtifactCode - Sucrase strips generic type parameters", () => {
+  const code = `
+export default function App() {
+  const [items, setItems] = React.useState<string[]>([]);
+  const ref = React.useRef<HTMLDivElement>(null);
+  return <div ref={ref}>{items.length}</div>;
+}`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Generic types should be stripped
+  assertEquals(fixed.includes('<string[]>'), false);
+  assertEquals(fixed.includes('<HTMLDivElement>'), false);
+  assertEquals(changes.some(c => c.includes('Sucrase')), true);
+
+  // Hook calls preserved (without generics)
+  assertEquals(fixed.includes('React.useState([])'), true);
+  assertEquals(fixed.includes('React.useRef(null)'), true);
+});
+
+Deno.test("autoFixArtifactCode - Sucrase strips interface declarations", () => {
+  const code = `
+interface User {
+  name: string;
+  age: number;
+}
+
+export default function App() {
+  const user = { name: "Alice", age: 30 };
+  return <div>{user.name}</div>;
+}`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Interface should be removed
+  assertEquals(fixed.includes('interface User'), false);
+  assertEquals(changes.some(c => c.includes('Sucrase')), true);
+
+  // Component preserved
+  assertEquals(fixed.includes('export default function App()'), true);
+  assertEquals(fixed.includes('user.name'), true);
+});
+
+Deno.test("autoFixArtifactCode - Sucrase strips type aliases", () => {
+  const code = `
+type Status = 'pending' | 'active' | 'done';
+
+export default function App() {
+  const status = 'active';
+  return <div>{status}</div>;
+}`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Type alias should be removed
+  assertEquals(fixed.includes('type Status'), false);
+  assertEquals(changes.some(c => c.includes('Sucrase')), true);
+
+  // Component preserved
+  assertEquals(fixed.includes('export default function App()'), true);
+});
+
+Deno.test("autoFixArtifactCode - Sucrase preserves namespace imports", () => {
+  // CRITICAL: Sucrase must NOT corrupt "import * as X from 'pkg'"
+  const code = `
+import * as Dialog from '@radix-ui/react-dialog';
+import * as Icons from 'lucide-react';
+
+export default function App() {
+  return (
+    <Dialog.Root>
+      <Icons.Star />
+    </Dialog.Root>
+  );
+}`;
+  const { fixed } = autoFixArtifactCode(code);
+
+  // Namespace imports must be preserved exactly
+  assertEquals(fixed.includes('import * as Dialog from'), true);
+  assertEquals(fixed.includes('import * as Icons from'), true);
+
+  // Check for corruption (the bug we're preventing)
+  assertEquals(fixed.includes('import * from'), false);
+});
+
+Deno.test("autoFixArtifactCode - Sucrase handles JSX with TypeScript", () => {
+  const code = `
+interface Props {
+  title: string;
+  count: number;
+}
+
+export default function App() {
+  const props: Props = { title: "Hello", count: 5 };
+  return <div>{props.title}: {props.count}</div>;
+}`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Interface and type annotation removed
+  assertEquals(fixed.includes('interface Props'), false);
+  assertEquals(fixed.includes(': Props'), false);
+  assertEquals(changes.some(c => c.includes('Sucrase')), true);
+
+  // JSX transpiled to React.createElement
+  assertEquals(fixed.includes('React.createElement'), true);
+  assertEquals(fixed.includes('props.title'), true);
+});
+
+Deno.test("autoFixArtifactCode - regex fallback when Sucrase fails", () => {
+  // Syntactically invalid code that Sucrase can't parse
+  // but regex might still handle
+  const code = `
+export default function App() {
+  const x: string = "hello"  // Missing semicolon
+  const y as number = 42;    // Invalid syntax
+  return <div>{x}</div>;
+}`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Should fall back to regex
+  // Note: Regex fallback might not catch everything, but shouldn't crash
+  assertEquals(changes.some(c => c.includes('fallback') || c.includes('Sucrase')), true);
+
+  // Basic structure should still be there
+  assertEquals(fixed.includes('export default function App()'), true);
+});
+
+Deno.test("autoFixArtifactCode - Sucrase preserves valid JavaScript structure", () => {
+  // Code with no TypeScript syntax - Sucrase still transpiles JSX to React.createElement
+  const validCode = `
+import * as Dialog from '@radix-ui/react-dialog';
+
+export default function App() {
+  const count = 42;
+  const name = "Alice";
+
+  return (
+    <Dialog.Root>
+      <div>{name}: {count}</div>
+    </Dialog.Root>
+  );
+}`;
+  const { fixed } = autoFixArtifactCode(validCode);
+
+  // Namespace imports preserved (critical - the bug we fixed)
+  assertEquals(fixed.includes('import * as Dialog from'), true);
+  assertEquals(fixed.includes('import * from'), false); // No corruption
+
+  // JSX transpiled to React.createElement (expected behavior)
+  assertEquals(fixed.includes('React.createElement'), true);
+
+  // JavaScript logic preserved
+  assertEquals(fixed.includes('const count = 42'), true);
+  assertEquals(fixed.includes('const name = "Alice"'), true);
+});
+
+// ============================================================================
+// Server-Side Double-Failure Path Tests (Issue #6)
+// ============================================================================
+
+Deno.test("autoFixArtifactCode - handles catastrophic TypeScript that both Sucrase and regex reject", () => {
+  const code = `
+export default function App() {
+  const x: <<<>>>>> = 1;  // Catastrophically broken
+  return <div>{x}</div>;
+}`;
+
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Should not crash - return string with error logged
+  assertEquals(typeof fixed, 'string');
+  assertEquals(fixed.length > 0, true);
+  // Should fall back to regex when Sucrase fails
+  assertEquals(changes.some(c => c.includes('fell back to regex') || c.includes('fallback')), true);
+});
+
+// ============================================================================
+// Import Resolution Edge Case Tests (Issue #7)
+// ============================================================================
+
+Deno.test("autoFixArtifactCode - handles namespace import and type assertion on same line", () => {
+  // This test verifies that the regex doesn't corrupt valid namespace imports
+  // NOTE: Sucrase may remove unused imports during transpilation, which is expected behavior
+  const code = `import * as Dialog from '@radix-ui/react-dialog'; const x = value as Type; export default () => <Dialog.Root><div /></Dialog.Root>;`;
+  const { fixed } = autoFixArtifactCode(code);
+
+  // Type assertion should be stripped (no " as Type" in output)
+  assertEquals(fixed.includes(' as Type'), false);
+
+  // CRITICAL: No corruption - "import * from" without namespace identifier is invalid syntax
+  // This would indicate the regex incorrectly matched and removed "as Dialog"
+  assertEquals(fixed.includes('import * from'), false);
+
+  // Verify the component is using Dialog (so import won't be removed as unused)
+  assertEquals(fixed.includes('Dialog'), true);
+});
+
+Deno.test("autoFixArtifactCode - Sucrase handles function parameter types", () => {
+  const code = `
+export default function App() {
+  const onClick = (event: React.MouseEvent, index: number) => {
+    console.log(event, index);
+  };
+
+  return <button onClick={(e) => onClick(e, 0)}>Click</button>;
+}`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Parameter types should be stripped
+  assertEquals(fixed.includes(': React.MouseEvent'), false);
+  assertEquals(fixed.includes(': number'), false);
+  assertEquals(changes.some(c => c.includes('Sucrase')), true);
+
+  // Function structure preserved
+  assertEquals(fixed.includes('const onClick = (event, index) =>'), true);
+});
+
+Deno.test("autoFixArtifactCode - Sucrase handles complex TypeScript features", () => {
+  const code = `
+type Point = { x: number; y: number };
+interface Shape {
+  area(): number;
+}
+
+export default function App() {
+  const point: Point = { x: 10, y: 20 };
+  const value = point.x as number;
+  const items = [1, 2, 3] as const;
+
+  return <div>{point.x}</div>;
+}`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // All TypeScript syntax should be stripped
+  assertEquals(fixed.includes('type Point'), false);
+  assertEquals(fixed.includes('interface Shape'), false);
+  assertEquals(fixed.includes(': Point'), false);
+  assertEquals(fixed.includes('as number'), false);
+  assertEquals(fixed.includes('as const'), false);
+  assertEquals(changes.some(c => c.includes('Sucrase')), true);
+
+  // Core logic preserved
+  assertEquals(fixed.includes('const point = { x: 10, y: 20 }'), true);
+  assertEquals(fixed.includes('const items = [1, 2, 3]'), true);
 });

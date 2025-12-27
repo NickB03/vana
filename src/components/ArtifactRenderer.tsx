@@ -15,6 +15,9 @@ import { detectNpmImports } from '@/utils/npmDetection';
 import { lazy } from "react";
 import { classifyError, shouldAttemptRecovery, getFallbackRenderer, ArtifactError } from "@/utils/artifactErrorRecovery";
 import { ArtifactErrorRecovery } from "./ArtifactErrorRecovery";
+import { transpileCode } from '@/utils/sucraseTranspiler';
+import * as sucraseTranspiler from '@/utils/sucraseTranspiler';
+import { isFeatureEnabled } from '@/lib/featureFlags';
 
 // Lazy load Sandpack component for code splitting
 const SandpackArtifactRenderer = lazy(() =>
@@ -346,79 +349,133 @@ const BundledArtifactFrame = memo(({
         }
 
         // CRITICAL FIX: The bundle contains raw JSX which browsers can't parse natively.
-        // We need to convert the <script type="module"> to <script type="text/babel">
-        // and inject Babel Standalone for runtime transpilation.
+        // We use Sucrase for fast transpilation, with Babel as fallback.
 
         // Check if bundle has JSX (component tags like <Component or <div)
         const hasJsx = /<(?:[A-Z][a-zA-Z]*|[a-z]+)[\s>/]/.test(htmlContent) &&
           htmlContent.includes('<script type="module">');
 
         if (hasJsx) {
-          console.log('[BundledArtifactFrame] Detected JSX in bundle - adding Babel transpilation');
+          console.log('[BundledArtifactFrame] Detected JSX in bundle - attempting Sucrase transpilation');
 
-          // Inject Babel Standalone if not present
-          if (!htmlContent.includes('babel')) {
-            const babelScript = `<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>\n`;
-            htmlContent = htmlContent.replace('</head>', babelScript + '</head>');
-          }
-
-          // Convert module script to babel script
-          // First, extract the module content
+          // Extract the module content
           const moduleMatch = htmlContent.match(/<script type="module">([\s\S]*?)<\/script>/);
           if (moduleMatch) {
             let moduleContent = moduleMatch[1];
+            const transpileStart = performance.now();
 
-            // Extract imports from the module content (they need special handling for Babel)
-            // NOTE: Server template indents imports with spaces, so we use ^\s* to match leading whitespace
-            const importStatements: string[] = [];
-            moduleContent = moduleContent.replace(
-              /^\s*import\s+(?:[\w*{}\s,]+\s+from\s+)?['"][^'"]+['"];?\s*$/gm,
-              (match) => {
-                // Trim the captured match since it may have leading/trailing whitespace
-                importStatements.push(match.trim());
-                return ''; // Remove from main content
+            // Try Sucrase transpilation first
+            let sucraseSucceeded = false;
+            try {
+              const transpileResult = transpileCode(moduleContent, {
+                filename: 'bundle-module.tsx',
+              });
+
+              if (transpileResult.success) {
+                const elapsed = performance.now() - transpileStart;
+                console.log(`[BundledArtifactFrame] Sucrase transpiled bundle in ${elapsed.toFixed(2)}ms`);
+
+                Sentry.addBreadcrumb({
+                  category: 'artifact.bundled-transpile',
+                  message: 'Sucrase transpilation successful for bundled artifact',
+                  level: 'info',
+                  data: { elapsed, sucraseElapsed: transpileResult.elapsed },
+                });
+
+                // Replace the module script with transpiled code (keep as type="module")
+                htmlContent = htmlContent.replace(
+                  /<script type="module">[\s\S]*?<\/script>/,
+                  `<script type="module">${transpileResult.code}</script>`
+                );
+                sucraseSucceeded = true;
+              } else {
+                console.warn('[BundledArtifactFrame] Sucrase transpilation failed, falling back to Babel:', transpileResult.error);
+                Sentry.captureException(new Error(`Bundled artifact Sucrase transpilation failed: ${transpileResult.error}`), {
+                  tags: {
+                    component: 'BundledArtifactFrame',
+                    transpiler: 'sucrase',
+                    fallback: 'babel',
+                  },
+                  extra: {
+                    error: transpileResult.error,
+                    details: transpileResult.details,
+                    line: transpileResult.line,
+                    column: transpileResult.column,
+                  },
+                });
               }
-            );
+            } catch (sucraseError) {
+              console.warn('[BundledArtifactFrame] Sucrase exception, falling back to Babel:', sucraseError);
+              Sentry.captureException(sucraseError, {
+                tags: {
+                  component: 'BundledArtifactFrame',
+                  action: 'transpile',
+                  errorType: 'exception',
+                },
+              });
+            }
 
-            // For Babel, we need to use dynamic imports since static imports don't work in text/babel
-            // Convert: import * as Select from 'url' -> const Select = await import('url')
-            const dynamicImports = importStatements.map(imp => {
-              // Handle: import * as Name from 'url'
-              const namespaceMatch = imp.match(/import\s*\*\s*as\s+(\w+)\s+from\s+['"]([^'"]+)['"]/);
-              if (namespaceMatch) {
-                return `const ${namespaceMatch[1]} = await import('${namespaceMatch[2]}');`;
+            // If Sucrase failed, fall back to Babel
+            if (!sucraseSucceeded) {
+              console.log('[BundledArtifactFrame] Using Babel fallback for JSX transpilation');
+
+              // Inject Babel Standalone if not present
+              if (!htmlContent.includes('babel')) {
+                const babelScript = `<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>\n`;
+                htmlContent = htmlContent.replace('</head>', babelScript + '</head>');
               }
-              // Handle: import { a, b } from 'url'
-              const namedMatch = imp.match(/import\s*\{([^}]+)\}\s*from\s+['"]([^'"]+)['"]/);
-              if (namedMatch) {
-                const names = namedMatch[1].split(',').map(n => n.trim());
-                return `const { ${names.join(', ')} } = await import('${namedMatch[2]}');`;
-              }
-              // Handle: import Name from 'url'
-              const defaultMatch = imp.match(/import\s+(\w+)\s+from\s+['"]([^'"]+)['"]/);
-              if (defaultMatch) {
-                return `const { default: ${defaultMatch[1]} } = await import('${defaultMatch[2]}');`;
-              }
-              // Log warning for debugging when import cannot be converted
-              console.warn('[BundledArtifactFrame] Could not convert import statement:', imp);
-              return '// Could not convert: ' + imp;
-            }).join('\n');
 
-            // Wrap in async IIFE for dynamic imports
-            // NOTE: UMD React/ReactDOM are already loaded and set window.React/window.ReactDOM
-            // The import map shims redirect 'react' and 'react-dom' to window globals
-            // esm.sh packages with ?external=react,react-dom will use the import map
+              // Extract imports from the module content (they need special handling for Babel)
+              // NOTE: Server template indents imports with spaces, so we use ^\s* to match leading whitespace
+              const importStatements: string[] = [];
+              moduleContent = moduleContent.replace(
+                /^\s*import\s+(?:[\w*{}\s,]+\s+from\s+)?['"][^'"]+['"];?\s*$/gm,
+                (match) => {
+                  // Trim the captured match since it may have leading/trailing whitespace
+                  importStatements.push(match.trim());
+                  return ''; // Remove from main content
+                }
+              );
 
-            // FIX: Check if dynamic imports already include react-shim (which exports hooks)
-            // If so, skip adding duplicate hook declarations to avoid "already declared" error
-            const hasReactShimImport = dynamicImports.includes("'react-shim'") ||
-                                       dynamicImports.includes("'react'");
+              // For Babel, we need to use dynamic imports since static imports don't work in text/babel
+              // Convert: import * as Select from 'url' -> const Select = await import('url')
+              const dynamicImports = importStatements.map(imp => {
+                // Handle: import * as Name from 'url'
+                const namespaceMatch = imp.match(/import\s*\*\s*as\s+(\w+)\s+from\s+['"]([^'"]+)['"]/);
+                if (namespaceMatch) {
+                  return `const ${namespaceMatch[1]} = await import('${namespaceMatch[2]}');`;
+                }
+                // Handle: import { a, b } from 'url'
+                const namedMatch = imp.match(/import\s*\{([^}]+)\}\s*from\s+['"]([^'"]+)['"]/);
+                if (namedMatch) {
+                  const names = namedMatch[1].split(',').map(n => n.trim());
+                  return `const { ${names.join(', ')} } = await import('${namedMatch[2]}');`;
+                }
+                // Handle: import Name from 'url'
+                const defaultMatch = imp.match(/import\s+(\w+)\s+from\s+['"]([^'"]+)['"]/);
+                if (defaultMatch) {
+                  return `const { default: ${defaultMatch[1]} } = await import('${defaultMatch[2]}');`;
+                }
+                // Log warning for debugging when import cannot be converted
+                console.warn('[BundledArtifactFrame] Could not convert import statement:', imp);
+                return '// Could not convert: ' + imp;
+              }).join('\n');
 
-            const reactHooksDeclaration = hasReactShimImport
-              ? '// React hooks imported via react-shim above'
-              : 'const { useState, useEffect, useCallback, useMemo, useRef, useContext, useReducer, useLayoutEffect, createContext, createElement, Fragment, memo, forwardRef } = window.React;';
+              // Wrap in async IIFE for dynamic imports
+              // NOTE: UMD React/ReactDOM are already loaded and set window.React/window.ReactDOM
+              // The import map shims redirect 'react' and 'react-dom' to window globals
+              // esm.sh packages with ?external=react,react-dom will use the import map
 
-            const wrappedContent = `
+              // FIX: Check if dynamic imports already include react-shim (which exports hooks)
+              // If so, skip adding duplicate hook declarations to avoid "already declared" error
+              const hasReactShimImport = dynamicImports.includes("'react-shim'") ||
+                                         dynamicImports.includes("'react'");
+
+              const reactHooksDeclaration = hasReactShimImport
+                ? '// React hooks imported via react-shim above'
+                : 'const { useState, useEffect, useCallback, useMemo, useRef, useContext, useReducer, useLayoutEffect, createContext, createElement, Fragment, memo, forwardRef } = window.React;';
+
+              const wrappedContent = `
 (async () => {
   // Verify UMD React is available (loaded by <script> tags before this runs)
   if (!window.React || !window.ReactDOM) {
@@ -437,13 +494,27 @@ const BundledArtifactFrame = memo(({
   ${moduleContent}
 })();`;
 
-            // Replace the module script with a babel script
-            htmlContent = htmlContent.replace(
-              /<script type="module">[\s\S]*?<\/script>/,
-              `<script type="text/babel" data-presets="env,react,typescript">${wrappedContent}</script>`
-            );
+              // Replace the module script with a babel script
+              // CRITICAL: 'env' preset intentionally excluded (Phase 5 fix)
+              // WHY: Babel's 'env' preset converts ES6 `import` to CommonJS `require()`, which
+              // causes "require is not defined" runtime errors in browsers (CommonJS isn't available)
+              // INSTEAD: Use only `react,typescript` presets - modern browsers support ES6 natively
+              // Browser targets: Chrome 80+, Firefox 75+, Safari 14+, Edge 80+ (all support ES6 modules)
+              htmlContent = htmlContent.replace(
+                /<script type="module">[\s\S]*?<\/script>/,
+                `<script type="text/babel" data-presets="react,typescript">${wrappedContent}</script>`
+              );
 
-            console.log('[BundledArtifactFrame] Converted to Babel script with dynamic imports');
+              const babelElapsed = performance.now() - transpileStart;
+              console.log(`[BundledArtifactFrame] Babel fallback conversion completed in ${babelElapsed.toFixed(2)}ms`);
+
+              Sentry.addBreadcrumb({
+                category: 'artifact.bundled-transpile',
+                message: 'Babel fallback conversion completed for bundled artifact',
+                level: 'info',
+                data: { elapsed: babelElapsed, reason: 'sucrase-failed' },
+              });
+            }
           }
         }
 
@@ -468,15 +539,34 @@ const BundledArtifactFrame = memo(({
         if (isMounted) {
           const elapsed = Date.now() - fetchStartTimeRef.current;
           const errorMessage = error instanceof Error ? error.message : 'Failed to load bundle';
-          Sentry.addBreadcrumb({
-            category: 'artifact.loading',
-            message: 'Bundle fetch failed',
-            level: 'error',
-            data: { elapsed, bundleUrl, error: errorMessage },
+
+          // Capture exception, not just breadcrumb
+          Sentry.captureException(error, {
+            tags: {
+              component: 'BundledArtifactFrame',
+              action: 'fetch-bundle',
+            },
+            extra: {
+              elapsed,
+              bundleUrl,
+              errorMessage,
+              dependencies,
+            },
           });
+
           setFetchError(errorMessage);
           onPreviewErrorChange(errorMessage);
           onLoadingChange(false);
+
+          // Show prominent error toast
+          toast.error('Failed to load artifact bundle', {
+            description: errorMessage,
+            action: {
+              label: 'Retry',
+              onClick: () => window.location.reload(),
+            },
+          });
+
           window.postMessage({ type: 'artifact-rendered-complete', success: false, error: errorMessage }, '*');
         }
       }
@@ -535,8 +625,6 @@ const BundledArtifactFrame = memo(({
             sandbox="allow-scripts allow-same-origin"
             onLoad={() => {
             onLoadingChange(false);
-            // Ensure we signal completion when iframe loads (fallback for bundles that don't signal)
-            window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
             // Signal to parent that artifact has finished rendering
             window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
             }}
@@ -554,6 +642,112 @@ const BundledArtifactFrame = memo(({
 });
 
 BundledArtifactFrame.displayName = 'BundledArtifactFrame';
+
+/**
+ * Template Constants - Shared between Sucrase and Babel artifact templates
+ * Issue #12 (PR #410): Extracted from duplicate code in generateSucraseTemplate and generateBabelTemplate
+ */
+
+// React Import Map (shims for ES modules to use UMD React)
+const REACT_IMPORT_MAP = {
+  imports: {
+    "react": "data:text/javascript,const R=window.React;export default R;export const{useState,useEffect,useRef,useMemo,useCallback,useContext,createContext,createElement,Fragment,memo,forwardRef,useReducer,useLayoutEffect,useImperativeHandle,useDebugValue,useDeferredValue,useTransition,useId,useSyncExternalStore,useInsertionEffect,lazy,Suspense,startTransition,Children,cloneElement,isValidElement,createRef,Component,PureComponent,StrictMode}=R;",
+    "react-dom": "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync,findDOMNode,unmountComponentAtNode,render,hydrate}=D;",
+    "react-dom/client": "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync}=D;",
+    "react/jsx-runtime": "data:text/javascript,const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};",
+    "react/jsx-dev-runtime": "data:text/javascript,const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};",
+    "@radix-ui/react-dialog": "https://esm.sh/@radix-ui/react-dialog@1.0.5?external=react,react-dom",
+    "@radix-ui/react-dropdown-menu": "https://esm.sh/@radix-ui/react-dropdown-menu@2.0.6?external=react,react-dom",
+    "@radix-ui/react-popover": "https://esm.sh/@radix-ui/react-popover@1.0.7?external=react,react-dom",
+    "@radix-ui/react-tabs": "https://esm.sh/@radix-ui/react-tabs@1.0.4?external=react,react-dom",
+    "@radix-ui/react-select": "https://esm.sh/@radix-ui/react-select@2.0.0?external=react,react-dom",
+    "@radix-ui/react-slider": "https://esm.sh/@radix-ui/react-slider@1.1.2?external=react,react-dom",
+    "@radix-ui/react-switch": "https://esm.sh/@radix-ui/react-switch@1.0.3?external=react,react-dom",
+    "@radix-ui/react-tooltip": "https://esm.sh/@radix-ui/react-tooltip@1.0.7?external=react,react-dom",
+    "lucide-react": "https://esm.sh/lucide-react@0.263.1?external=react,react-dom"
+  }
+} as const;
+
+const IMPORT_MAP_JSON = JSON.stringify(REACT_IMPORT_MAP, null, 2);
+
+// Library setup script - exposes UMD libraries as globals
+const LIBRARY_SETUP_SCRIPT = `
+    const { useState, useEffect, useReducer, useRef, useMemo, useCallback } = React;
+
+    const LucideIcons = window.LucideReact || window.lucideReact || {};
+    const {
+      Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
+      ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
+      Plus, Minus, Edit, Trash, Save, Download, Upload,
+      Search, Filter, Settings, User, Menu, MoreVertical,
+      Trophy, Star, Heart, Flag, Target, Award,
+      PlayCircle, PauseCircle, SkipForward, SkipBack,
+      AlertCircle, CheckCircle, XCircle, Info, HelpCircle,
+      Loader, Clock, Calendar, Mail, Phone,
+      Grid, List, Layout, Sidebar, Maximize, Minimize,
+      Copy, Eye, EyeOff, Lock, Unlock, Share, Link
+    } = LucideIcons;
+
+    Object.keys(LucideIcons).forEach(iconName => {
+      if (typeof window[iconName] === 'undefined') {
+        window[iconName] = LucideIcons[iconName];
+      }
+    });
+
+    const Recharts = window.Recharts || {};
+    const {
+      BarChart, LineChart, PieChart, AreaChart, ScatterChart,
+      Bar, Line, Pie, Area, Scatter, XAxis, YAxis, CartesianGrid,
+      Tooltip, Legend, ResponsiveContainer
+    } = Recharts;
+
+    const FramerMotion = window.Motion || {};
+    const { motion, AnimatePresence } = FramerMotion;
+
+    Object.keys(FramerMotion).forEach(exportName => {
+      if (typeof window[exportName] === 'undefined') {
+        window[exportName] = FramerMotion[exportName];
+      }
+    });
+
+    // Radix UI Select components (imported dynamically from ESM CDN)
+    let RadixUISelect = {};
+    let Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectPortal, SelectViewport, SelectGroup, SelectLabel, SelectSeparator, SelectIcon, SelectItemText, SelectItemIndicator, SelectScrollUpButton, SelectScrollDownButton;
+    try {
+      RadixUISelect = await import('@radix-ui/react-select');
+      Select = RadixUISelect.Root;
+      SelectTrigger = RadixUISelect.Trigger;
+      SelectValue = RadixUISelect.Value;
+      SelectContent = RadixUISelect.Content;
+      SelectItem = RadixUISelect.Item;
+      SelectPortal = RadixUISelect.Portal;
+      SelectViewport = RadixUISelect.Viewport;
+      SelectGroup = RadixUISelect.Group;
+      SelectLabel = RadixUISelect.Label;
+      SelectSeparator = RadixUISelect.Separator;
+      SelectIcon = RadixUISelect.Icon;
+      SelectItemText = RadixUISelect.ItemText;
+      SelectItemIndicator = RadixUISelect.ItemIndicator;
+      SelectScrollUpButton = RadixUISelect.ScrollUpButton;
+      SelectScrollDownButton = RadixUISelect.ScrollDownButton;
+      console.log('[Artifact] Radix UI Select loaded successfully');
+    } catch (e) {
+      console.warn('[Artifact] Radix UI Select not available:', e.message);
+    }
+`;
+
+// Error handling script - report errors to parent window
+const ERROR_HANDLING_SCRIPT = `
+    window.addEventListener('error', (e) => {
+      window.parent.postMessage({
+        type: 'artifact-error',
+        message: e.message
+      }, '*');
+    });
+    window.addEventListener('load', () => {
+      window.parent.postMessage({ type: 'artifact-ready' }, '*');
+    });
+`;
 
 interface ArtifactRendererProps {
   artifact: ArtifactData;
@@ -641,19 +835,42 @@ export const ArtifactRenderer = memo(({
       const watchdogStart = Date.now();
       const timer = setTimeout(() => {
         const elapsed = Date.now() - watchdogStart;
-        console.warn(`[ArtifactRenderer] Watchdog timer fired after ${elapsed}ms - forcing completion`);
-        Sentry.addBreadcrumb({
-          category: 'artifact.loading',
-          message: 'Watchdog timer fired - forcing completion',
-          level: 'warning',
-          data: { elapsed, isLoading: true },
+
+        // Treat watchdog timeout as a failure
+        const timeoutError = new Error(`Artifact loading timeout after ${elapsed}ms`);
+
+        Sentry.captureException(timeoutError, {
+          tags: {
+            component: 'ArtifactRenderer',
+            action: 'watchdog-timeout',
+          },
+          extra: {
+            elapsed,
+            artifactId: artifact.id,
+            artifactType: artifact.type,
+            bundleUrl: artifact.bundleUrl,
+          },
         });
+
+        // Set error state instead of pretending success
+        onPreviewErrorChange('Artifact failed to load within 10 seconds. The component may have errors or be stuck in an infinite loop.');
         onLoadingChange(false);
-        window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
+
+        // Signal failure, not success
+        window.postMessage({
+          type: 'artifact-rendered-complete',
+          success: false,
+          error: 'Loading timeout'
+        }, '*');
+
+        // Show user-facing error
+        toast.error('Artifact loading timeout', {
+          description: 'The component took too long to render. Try refreshing or requesting a fix from AI.',
+        });
       }, 10000);
       return () => clearTimeout(timer);
     }
-  }, [isLoading, onLoadingChange]);
+  }, [isLoading, onLoadingChange, onPreviewErrorChange, artifact]);
 
   // Map error type to error category for parent component
   const mapErrorTypeToCategory = useCallback((type: string): 'syntax' | 'runtime' | 'import' | 'unknown' => {
@@ -1172,7 +1389,168 @@ ${artifact.content}
       );
     }
 
-    // PRIORITY 3: Client-side Babel rendering for simple React (no npm imports)
+    // PRIORITY 3: Client-side transpilation for simple React (no npm imports)
+
+    /**
+     * Generate HTML template with Sucrase (pre-transpiled code)
+     * - NO Babel script tag needed
+     * - Uses <script type="module"> for transpiled code
+     * - Faster loading and execution
+     */
+    const generateSucraseTemplate = (transpiledCode: string, componentName: string) => {
+      return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script>
+    if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+      console.error('React or ReactDOM failed to load');
+      window.parent.postMessage({
+        type: 'artifact-error',
+        message: 'React libraries failed to load. Please refresh the page.'
+      }, '*');
+    }
+    window.react = window.React;
+    window.reactDOM = window.ReactDOM;
+  </script>
+  <script type="importmap">
+    ${IMPORT_MAP_JSON}
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
+  <script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/recharts@2.5.0/umd/Recharts.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/framer-motion@11.11.11/dist/framer-motion.js"></script>
+  ${injectedCDNs}
+  ${generateCompleteIframeStyles()}
+  <style>
+    #root {
+      width: 100%;
+      min-height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module">
+${LIBRARY_SETUP_SCRIPT}
+
+    ${transpiledCode}
+
+    try {
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      const Component = ${componentName};
+
+      if (typeof Component === 'undefined') {
+        throw new Error('Component "${componentName}" is not defined. Make sure you have "export default ${componentName}" in your code.');
+      }
+
+      root.render(React.createElement(Component, null));
+
+      // Signal to parent that artifact has finished rendering
+      window.parent.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
+    } catch (error) {
+      window.parent.postMessage({
+        type: 'artifact-error',
+        message: error.message || 'Failed to render component'
+      }, '*');
+      window.parent.postMessage({ type: 'artifact-rendered-complete', success: false, error: error.message }, '*');
+      console.error('Render error:', error);
+    }
+  </script>
+  <script>
+${ERROR_HANDLING_SCRIPT}
+  </script>
+</body>
+</html>`;
+    };
+
+    /**
+     * Generate HTML template with Babel (runtime transpilation)
+     * - Includes Babel script tag
+     * - Uses <script type="text/babel"> for source code
+     * - Slower but more compatible (legacy)
+     */
+    const generateBabelTemplate = (processedCode: string, componentName: string) => {
+      return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script>
+    if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+      console.error('React or ReactDOM failed to load');
+      window.parent.postMessage({
+        type: 'artifact-error',
+        message: 'React libraries failed to load. Please refresh the page.'
+      }, '*');
+    }
+    window.react = window.React;
+    window.reactDOM = window.ReactDOM;
+  </script>
+  <script type="importmap">
+    ${IMPORT_MAP_JSON}
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
+  <script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/recharts@2.5.0/umd/Recharts.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/framer-motion@11.11.11/dist/framer-motion.js"></script>
+  ${injectedCDNs}
+  ${generateCompleteIframeStyles()}
+  <style>
+    #root {
+      width: 100%;
+      min-height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <!-- CRITICAL: 'env' preset intentionally excluded (Phase 5 fix)
+       WHY: Babel's 'env' preset converts ES6 import to CommonJS require(), which
+       causes "require is not defined" runtime errors in browsers (CommonJS isn't available)
+       INSTEAD: Use only react,typescript presets - modern browsers support ES6 natively
+       Browser targets: Chrome 80+, Firefox 75+, Safari 14+, Edge 80+ (all support ES6 modules) -->
+  <script type="text/babel" data-type="module" data-presets="react,typescript">
+${LIBRARY_SETUP_SCRIPT}
+
+    ${processedCode}
+
+    try {
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      const Component = ${componentName};
+
+      if (typeof Component === 'undefined') {
+        throw new Error('Component "${componentName}" is not defined. Make sure you have "export default ${componentName}" in your code.');
+      }
+
+      root.render(<Component />);
+
+      // Signal to parent that artifact has finished rendering
+      window.parent.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
+    } catch (error) {
+      window.parent.postMessage({
+        type: 'artifact-error',
+        message: error.message || 'Failed to render component'
+      }, '*');
+      window.parent.postMessage({ type: 'artifact-rendered-complete', success: false, error: error.message }, '*');
+      console.error('Render error:', error);
+    }
+  </script>
+  <script>
+${ERROR_HANDLING_SCRIPT}
+  </script>
+</body>
+</html>`;
+    };
+
     const processedCode = artifact.content
       .replace(/^```[\w]*\n?/gm, '')
       .replace(/^```\n?$/gm, '')
@@ -1219,163 +1597,136 @@ ${artifact.content}
       || exportDefaultMatch?.[1]
       || 'App';
 
-    const reactPreviewContent = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script>
-    if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
-      console.error('React or ReactDOM failed to load');
-      window.parent.postMessage({
-        type: 'artifact-error',
-        message: 'React libraries failed to load. Please refresh the page.'
-      }, '*');
-    }
-    window.react = window.React;
-    window.reactDOM = window.ReactDOM;
-  </script>
-  <script type="importmap">
-    {
-      "imports": {
-        "react": "data:text/javascript,const R=window.React;export default R;export const{useState,useEffect,useRef,useMemo,useCallback,useContext,createContext,createElement,Fragment,memo,forwardRef,useReducer,useLayoutEffect,useImperativeHandle,useDebugValue,useDeferredValue,useTransition,useId,useSyncExternalStore,useInsertionEffect,lazy,Suspense,startTransition,Children,cloneElement,isValidElement,createRef,Component,PureComponent,StrictMode}=R;",
-        "react-dom": "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync,findDOMNode,unmountComponentAtNode,render,hydrate}=D;",
-        "react-dom/client": "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync}=D;",
-        "react/jsx-runtime": "data:text/javascript,const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};",
-        "react/jsx-dev-runtime": "data:text/javascript,const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};",
-        "@radix-ui/react-dialog": "https://esm.sh/@radix-ui/react-dialog@1.0.5?external=react,react-dom",
-        "@radix-ui/react-dropdown-menu": "https://esm.sh/@radix-ui/react-dropdown-menu@2.0.6?external=react,react-dom",
-        "@radix-ui/react-popover": "https://esm.sh/@radix-ui/react-popover@1.0.7?external=react,react-dom",
-        "@radix-ui/react-tabs": "https://esm.sh/@radix-ui/react-tabs@1.0.4?external=react,react-dom",
-        "@radix-ui/react-select": "https://esm.sh/@radix-ui/react-select@2.0.0?external=react,react-dom",
-        "@radix-ui/react-slider": "https://esm.sh/@radix-ui/react-slider@1.1.2?external=react,react-dom",
-        "@radix-ui/react-switch": "https://esm.sh/@radix-ui/react-switch@1.0.3?external=react,react-dom",
-        "@radix-ui/react-tooltip": "https://esm.sh/@radix-ui/react-tooltip@1.0.7?external=react,react-dom",
-        "lucide-react": "https://esm.sh/lucide-react@0.263.1?external=react,react-dom"
-      }
-    }
-  </script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
-  <script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/recharts@2.5.0/umd/Recharts.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/framer-motion@11.11.11/dist/framer-motion.js"></script>
-  ${injectedCDNs}
-  ${generateCompleteIframeStyles()}
-  <style>
-    #root {
-      width: 100%;
-      min-height: 100vh;
-    }
-  </style>
-</head>
-<body>
-  <div id="root"></div>
-  <script type="text/babel" data-type="module" data-presets="env,react,typescript">
-    const { useState, useEffect, useReducer, useRef, useMemo, useCallback } = React;
+    // Determine which template to use based on feature flag and transpilation success
+    let reactPreviewContent: string;
 
-    const LucideIcons = window.LucideReact || window.lucideReact || {};
-    const {
-      Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
-      ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
-      Plus, Minus, Edit, Trash, Save, Download, Upload,
-      Search, Filter, Settings, User, Menu, MoreVertical,
-      Trophy, Star, Heart, Flag, Target, Award,
-      PlayCircle, PauseCircle, SkipForward, SkipBack,
-      AlertCircle, CheckCircle, XCircle, Info, HelpCircle,
-      Loader, Clock, Calendar, Mail, Phone,
-      Grid, List, Layout, Sidebar, Maximize, Minimize,
-      Copy, Eye, EyeOff, Lock, Unlock, Share, Link
-    } = LucideIcons;
+    if (isFeatureEnabled('SUCRASE_TRANSPILER')) {
+      // Try Sucrase transpilation first (with exception handling for library failures)
+      let transpileResult: sucraseTranspiler.TranspileResult | sucraseTranspiler.TranspileError;
 
-    Object.keys(LucideIcons).forEach(iconName => {
-      if (typeof window[iconName] === 'undefined') {
-        window[iconName] = LucideIcons[iconName];
-      }
-    });
+      try {
+        transpileResult = transpileCode(processedCode, {
+          filename: `${componentName}.tsx`,
+        });
+      } catch (error) {
+        // Convert exception to error result for consistent handling
+        // This catches cases where the Sucrase library itself fails to load
+        console.error('[ArtifactRenderer] Sucrase exception caught:', error);
 
-    const Recharts = window.Recharts || {};
-    const {
-      BarChart, LineChart, PieChart, AreaChart, ScatterChart,
-      Bar, Line, Pie, Area, Scatter, XAxis, YAxis, CartesianGrid,
-      Tooltip, Legend, ResponsiveContainer
-    } = Recharts;
+        // Classify error severity
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
+        const isCriticalError = errorMessage.includes('Cannot find module') ||
+                                errorMessage.includes('ENOENT') ||
+                                errorStack?.includes('ReferenceError');
 
-    const FramerMotion = window.Motion || {};
-    const { motion, AnimatePresence } = FramerMotion;
+        // Add comprehensive Sentry context
+        Sentry.captureException(error, {
+          tags: {
+            component: 'ArtifactRenderer',
+            action: 'transpile',
+            errorType: 'exception',
+            severity: isCriticalError ? 'critical' : 'recoverable',
+          },
+          extra: {
+            componentName,
+            errorMessage,
+            errorStack,
+            codeLength: processedCode.length,
+            artifactType: artifact.type,
+          },
+        });
 
-    Object.keys(FramerMotion).forEach(exportName => {
-      if (typeof window[exportName] === 'undefined') {
-        window[exportName] = FramerMotion[exportName];
-      }
-    });
+        // Different handling for critical vs recoverable errors
+        if (isCriticalError) {
+          toast.error('Transpiler failed to load', {
+            description: 'This may require a page refresh or indicate a configuration issue.',
+            duration: Infinity, // Don't auto-dismiss
+            action: {
+              label: 'Refresh Page',
+              onClick: () => window.location.reload()
+            },
+          });
+        } else {
+          // Show user-friendly toast notification for recoverable errors
+          toast.warning(
+            'Transpiler unavailable, using compatibility mode',
+            {
+              description: 'The fast transpiler encountered an error. Your component will still work using the fallback renderer.',
+              duration: 10000, // 10 seconds
+            }
+          );
+        }
 
-    // Radix UI Select components (imported dynamically from ESM CDN)
-    // These are provided for artifacts that use "const { Select, ... } = RadixUISelect" pattern
-    // Wrapped in try-catch so artifacts without Radix UI still work if import fails
-    let RadixUISelect = {};
-    let Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectPortal, SelectViewport, SelectGroup, SelectLabel, SelectSeparator, SelectIcon, SelectItemText, SelectItemIndicator, SelectScrollUpButton, SelectScrollDownButton;
-    try {
-      RadixUISelect = await import('@radix-ui/react-select');
-      Select = RadixUISelect.Root;
-      SelectTrigger = RadixUISelect.Trigger;
-      SelectValue = RadixUISelect.Value;
-      SelectContent = RadixUISelect.Content;
-      SelectItem = RadixUISelect.Item;
-      SelectPortal = RadixUISelect.Portal;
-      SelectViewport = RadixUISelect.Viewport;
-      SelectGroup = RadixUISelect.Group;
-      SelectLabel = RadixUISelect.Label;
-      SelectSeparator = RadixUISelect.Separator;
-      SelectIcon = RadixUISelect.Icon;
-      SelectItemText = RadixUISelect.ItemText;
-      SelectItemIndicator = RadixUISelect.ItemIndicator;
-      SelectScrollUpButton = RadixUISelect.ScrollUpButton;
-      SelectScrollDownButton = RadixUISelect.ScrollDownButton;
-      console.log('[Artifact] Radix UI Select loaded successfully');
-    } catch (e) {
-      console.warn('[Artifact] Radix UI Select not available:', e.message);
-    }
-
-    ${processedCode}
-
-    try {
-      const root = ReactDOM.createRoot(document.getElementById('root'));
-      const Component = ${componentName};
-
-      if (typeof Component === 'undefined') {
-        throw new Error('Component "${componentName}" is not defined. Make sure you have "export default ${componentName}" in your code.');
+        transpileResult = {
+          success: false,
+          error: errorMessage,
+          details: errorStack,
+        };
       }
 
-      root.render(<Component />);
+      if (transpileResult.success) {
+        console.log(`[ArtifactRenderer] Sucrase transpiled in ${transpileResult.elapsed.toFixed(2)}ms`);
+        Sentry.addBreadcrumb({
+          category: 'artifact.transpile',
+          message: 'Sucrase transpilation successful',
+          level: 'info',
+          data: { elapsed: transpileResult.elapsed, componentName },
+        });
+        reactPreviewContent = generateSucraseTemplate(transpileResult.code, componentName);
+      } else {
+        // Fallback to Babel on transpilation error
+        console.warn('[ArtifactRenderer] Sucrase transpilation failed, falling back to Babel:', transpileResult.error);
 
-      // Signal to parent that artifact has finished rendering
-      window.parent.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
-    } catch (error) {
-      window.parent.postMessage({
-        type: 'artifact-error',
-        message: error.message || 'Failed to render component'
-      }, '*');
-      window.parent.postMessage({ type: 'artifact-rendered-complete', success: false, error: error.message }, '*');
-      console.error('Render error:', error);
+        // Capture exception for Sentry dashboard visibility
+        Sentry.captureException(new Error(`Sucrase transpilation failed: ${transpileResult.error}`), {
+          tags: {
+            component: 'ArtifactRenderer',
+            transpiler: 'sucrase',
+            fallback: 'babel',
+          },
+          extra: {
+            error: transpileResult.error,
+            details: transpileResult.details,
+            line: transpileResult.line,
+            column: transpileResult.column,
+            codeLength: processedCode.length,
+            componentName,
+          },
+        });
+
+        // Notify user that degraded mode is active
+        toast.warning(
+          'Artifact transpilation fell back to compatibility mode. Please report this issue if the artifact has errors.',
+          {
+            description: `Error: ${transpileResult.error}`,
+            duration: 10000,
+          }
+        );
+
+        Sentry.addBreadcrumb({
+          category: 'artifact.transpile',
+          message: 'Using Babel fallback for simple artifact',
+          level: 'info',
+          data: {
+            reason: 'sucrase-failed',
+            error: transpileResult.error,
+            componentName,
+          },
+        });
+        reactPreviewContent = generateBabelTemplate(processedCode, componentName);
+      }
+    } else {
+      // Feature flag disabled, use Babel (legacy path)
+      console.log('[ArtifactRenderer] Using Babel (SUCRASE_TRANSPILER flag disabled)');
+      Sentry.addBreadcrumb({
+        category: 'artifact.transpile',
+        message: 'Using Babel (feature flag disabled)',
+        level: 'info',
+        data: { componentName },
+      });
+      reactPreviewContent = generateBabelTemplate(processedCode, componentName);
     }
-  </script>
-  <script>
-    window.addEventListener('error', (e) => {
-      window.parent.postMessage({
-        type: 'artifact-error',
-        message: e.message
-      }, '*');
-    });
-    window.addEventListener('load', () => {
-      window.parent.postMessage({ type: 'artifact-ready' }, '*');
-    });
-  </script>
-</body>
-</html>`;
 
     return (
       <div className="w-full h-full relative flex flex-col">
