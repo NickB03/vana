@@ -25,6 +25,15 @@ export const FEATURE_FLAGS = {
    * to provide visual depth cues.
    */
   CANVAS_SHADOW_DEPTH: false,
+
+  /**
+   * Sucrase Transpiler
+   * Use Sucrase for artifact transpilation instead of Babel Standalone.
+   * Sucrase is faster and more lightweight, but Babel provides better compatibility.
+   * - true: Use Sucrase (default for demo site)
+   * - false: Use Babel Standalone (legacy)
+   */
+  SUCRASE_TRANSPILER: true,
 } as const;
 
 /**

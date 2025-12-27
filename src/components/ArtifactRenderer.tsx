@@ -15,6 +15,8 @@ import { detectNpmImports } from '@/utils/npmDetection';
 import { lazy } from "react";
 import { classifyError, shouldAttemptRecovery, getFallbackRenderer, ArtifactError } from "@/utils/artifactErrorRecovery";
 import { ArtifactErrorRecovery } from "./ArtifactErrorRecovery";
+import { transpileCode } from '@/utils/sucraseTranspiler';
+import { isFeatureEnabled } from '@/lib/featureFlags';
 
 // Lazy load Sandpack component for code splitting
 const SandpackArtifactRenderer = lazy(() =>
@@ -1172,54 +1174,179 @@ ${artifact.content}
       );
     }
 
-    // PRIORITY 3: Client-side Babel rendering for simple React (no npm imports)
-    const processedCode = artifact.content
-      .replace(/^```[\w]*\n?/gm, '')
-      .replace(/^```\n?$/gm, '')
-      // FIX: Fix unquoted package names in imports (GLM bug: "from React;" -> "from 'react';")
-      .replace(/from\s+React\s*;/g, "from 'react';")
-      .replace(/from\s+ReactDOM\s*;/g, "from 'react-dom';")
-      .replace(/^import\s+.*?from\s+['"]react['"];?\s*$/gm, '')
-      .replace(/^import\s+.*?from\s+['"]react-dom['"];?\s*$/gm, '')
-      .replace(/^import\s+React.*$/gm, '')
-      .replace(/^import\s+.*?from\s+['"]lucide-react['"];?\s*$/gm, '')
-      .replace(/^import\s+\{[^}]*\}\s+from\s+['"]lucide-react['"];?\s*$/gm, '')
-      .replace(/^import\s+.*?from\s+['"]recharts['"];?\s*$/gm, '')
-      .replace(/^import\s+.*?from\s+['"]framer-motion['"];?\s*$/gm, '')
-      .replace(/^const\s*\{[^}]*(?:useState|useEffect|useReducer|useRef|useMemo|useCallback|useContext|useLayoutEffect)[^}]*\}\s*=\s*React;?\s*$/gm, '')
-      // Strip Framer Motion destructuring (iframe template already declares these)
-      .replace(/^const\s*\{\s*motion\s*,\s*AnimatePresence\s*\}\s*=\s*Motion;?\s*$/gm, '')
-      .replace(/^const\s*\{[^}]*(?:motion|AnimatePresence)[^}]*\}\s*=\s*(?:Motion|FramerMotion|window\.Motion);?\s*$/gm, '')
-      // Strip Recharts destructuring (iframe template already declares these)
-      .replace(/^const\s*\{[^}]*(?:BarChart|LineChart|PieChart|AreaChart|ResponsiveContainer)[^}]*\}\s*=\s*(?:Recharts|window\.Recharts);?\s*$/gm, '')
-      // Strip Lucide icons destructuring (iframe template already declares these)
-      .replace(/^const\s*\{[^}]*\}\s*=\s*(?:LucideIcons|window\.LucideReact|LucideReact);?\s*$/gm, '')
-      // Strip malformed "const * as X from 'package'" syntax (GLM bug - generates invalid JS)
-      .replace(/^const\s*\*\s*as\s+\w+\s+from\s+['"][^'"]+['"];?\s*$/gm, '')
-      // Strip Radix UI destructuring - the iframe template now provides RadixUISelect via dynamic import
-      .replace(/^const\s*\{[^}]*\}\s*=\s*RadixUISelect;?\s*$/gm, '')
-      // NOTE: Keep Radix UI imports - they resolve via import map in the iframe template
-      // Stripping them causes "X is not defined" errors since the variable is never declared
-      .replace(/^export\s+default\s+/gm, '')
-      .trim();
+    // PRIORITY 3: Client-side transpilation for simple React (no npm imports)
 
-    // Extract component name with priority:
-    // 1. export default function ComponentName
-    // 2. function ComponentName (standalone function declaration)
-    // 3. const ComponentName = ( or const ComponentName = function (arrow/function expression)
-    // 4. export default ComponentName (at end, references existing component)
-    const exportDefaultFunctionMatch = artifact.content.match(/export\s+default\s+function\s+(\w+)/);
-    const functionMatch = artifact.content.match(/^function\s+([A-Z]\w*)\s*\(/m); // Function starting with capital letter
-    const constComponentMatch = artifact.content.match(/const\s+([A-Z]\w*)\s*=\s*(?:\([^)]*\)\s*=>|\(\s*\)\s*=>|function)/);
-    const exportDefaultMatch = artifact.content.match(/export\s+default\s+([A-Z]\w*)\s*;?\s*$/m);
+    /**
+     * Generate HTML template with Sucrase (pre-transpiled code)
+     * - NO Babel script tag needed
+     * - Uses <script type="module"> for transpiled code
+     * - Faster loading and execution
+     */
+    const generateSucraseTemplate = (transpiledCode: string, componentName: string) => {
+      return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script>
+    if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+      console.error('React or ReactDOM failed to load');
+      window.parent.postMessage({
+        type: 'artifact-error',
+        message: 'React libraries failed to load. Please refresh the page.'
+      }, '*');
+    }
+    window.react = window.React;
+    window.reactDOM = window.ReactDOM;
+  </script>
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "data:text/javascript,const R=window.React;export default R;export const{useState,useEffect,useRef,useMemo,useCallback,useContext,createContext,createElement,Fragment,memo,forwardRef,useReducer,useLayoutEffect,useImperativeHandle,useDebugValue,useDeferredValue,useTransition,useId,useSyncExternalStore,useInsertionEffect,lazy,Suspense,startTransition,Children,cloneElement,isValidElement,createRef,Component,PureComponent,StrictMode}=R;",
+        "react-dom": "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync,findDOMNode,unmountComponentAtNode,render,hydrate}=D;",
+        "react-dom/client": "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync}=D;",
+        "react/jsx-runtime": "data:text/javascript,const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};",
+        "react/jsx-dev-runtime": "data:text/javascript,const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};",
+        "@radix-ui/react-dialog": "https://esm.sh/@radix-ui/react-dialog@1.0.5?external=react,react-dom",
+        "@radix-ui/react-dropdown-menu": "https://esm.sh/@radix-ui/react-dropdown-menu@2.0.6?external=react,react-dom",
+        "@radix-ui/react-popover": "https://esm.sh/@radix-ui/react-popover@1.0.7?external=react,react-dom",
+        "@radix-ui/react-tabs": "https://esm.sh/@radix-ui/react-tabs@1.0.4?external=react,react-dom",
+        "@radix-ui/react-select": "https://esm.sh/@radix-ui/react-select@2.0.0?external=react,react-dom",
+        "@radix-ui/react-slider": "https://esm.sh/@radix-ui/react-slider@1.1.2?external=react,react-dom",
+        "@radix-ui/react-switch": "https://esm.sh/@radix-ui/react-switch@1.0.3?external=react,react-dom",
+        "@radix-ui/react-tooltip": "https://esm.sh/@radix-ui/react-tooltip@1.0.7?external=react,react-dom",
+        "lucide-react": "https://esm.sh/lucide-react@0.263.1?external=react,react-dom"
+      }
+    }
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
+  <script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/recharts@2.5.0/umd/Recharts.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/framer-motion@11.11.11/dist/framer-motion.js"></script>
+  ${injectedCDNs}
+  ${generateCompleteIframeStyles()}
+  <style>
+    #root {
+      width: 100%;
+      min-height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module">
+    const { useState, useEffect, useReducer, useRef, useMemo, useCallback } = React;
 
-    const componentName = exportDefaultFunctionMatch?.[1]
-      || functionMatch?.[1]
-      || constComponentMatch?.[1]
-      || exportDefaultMatch?.[1]
-      || 'App';
+    const LucideIcons = window.LucideReact || window.lucideReact || {};
+    const {
+      Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
+      ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
+      Plus, Minus, Edit, Trash, Save, Download, Upload,
+      Search, Filter, Settings, User, Menu, MoreVertical,
+      Trophy, Star, Heart, Flag, Target, Award,
+      PlayCircle, PauseCircle, SkipForward, SkipBack,
+      AlertCircle, CheckCircle, XCircle, Info, HelpCircle,
+      Loader, Clock, Calendar, Mail, Phone,
+      Grid, List, Layout, Sidebar, Maximize, Minimize,
+      Copy, Eye, EyeOff, Lock, Unlock, Share, Link
+    } = LucideIcons;
 
-    const reactPreviewContent = `<!DOCTYPE html>
+    Object.keys(LucideIcons).forEach(iconName => {
+      if (typeof window[iconName] === 'undefined') {
+        window[iconName] = LucideIcons[iconName];
+      }
+    });
+
+    const Recharts = window.Recharts || {};
+    const {
+      BarChart, LineChart, PieChart, AreaChart, ScatterChart,
+      Bar, Line, Pie, Area, Scatter, XAxis, YAxis, CartesianGrid,
+      Tooltip, Legend, ResponsiveContainer
+    } = Recharts;
+
+    const FramerMotion = window.Motion || {};
+    const { motion, AnimatePresence } = FramerMotion;
+
+    Object.keys(FramerMotion).forEach(exportName => {
+      if (typeof window[exportName] === 'undefined') {
+        window[exportName] = FramerMotion[exportName];
+      }
+    });
+
+    // Radix UI Select components (imported dynamically from ESM CDN)
+    let RadixUISelect = {};
+    let Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectPortal, SelectViewport, SelectGroup, SelectLabel, SelectSeparator, SelectIcon, SelectItemText, SelectItemIndicator, SelectScrollUpButton, SelectScrollDownButton;
+    try {
+      RadixUISelect = await import('@radix-ui/react-select');
+      Select = RadixUISelect.Root;
+      SelectTrigger = RadixUISelect.Trigger;
+      SelectValue = RadixUISelect.Value;
+      SelectContent = RadixUISelect.Content;
+      SelectItem = RadixUISelect.Item;
+      SelectPortal = RadixUISelect.Portal;
+      SelectViewport = RadixUISelect.Viewport;
+      SelectGroup = RadixUISelect.Group;
+      SelectLabel = RadixUISelect.Label;
+      SelectSeparator = RadixUISelect.Separator;
+      SelectIcon = RadixUISelect.Icon;
+      SelectItemText = RadixUISelect.ItemText;
+      SelectItemIndicator = RadixUISelect.ItemIndicator;
+      SelectScrollUpButton = RadixUISelect.ScrollUpButton;
+      SelectScrollDownButton = RadixUISelect.ScrollDownButton;
+      console.log('[Artifact] Radix UI Select loaded successfully');
+    } catch (e) {
+      console.warn('[Artifact] Radix UI Select not available:', e.message);
+    }
+
+    ${transpiledCode}
+
+    try {
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      const Component = ${componentName};
+
+      if (typeof Component === 'undefined') {
+        throw new Error('Component "${componentName}" is not defined. Make sure you have "export default ${componentName}" in your code.');
+      }
+
+      root.render(React.createElement(Component, null));
+
+      // Signal to parent that artifact has finished rendering
+      window.parent.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
+    } catch (error) {
+      window.parent.postMessage({
+        type: 'artifact-error',
+        message: error.message || 'Failed to render component'
+      }, '*');
+      window.parent.postMessage({ type: 'artifact-rendered-complete', success: false, error: error.message }, '*');
+      console.error('Render error:', error);
+    }
+  </script>
+  <script>
+    window.addEventListener('error', (e) => {
+      window.parent.postMessage({
+        type: 'artifact-error',
+        message: e.message
+      }, '*');
+    });
+    window.addEventListener('load', () => {
+      window.parent.postMessage({ type: 'artifact-ready' }, '*');
+    });
+  </script>
+</body>
+</html>`;
+    };
+
+    /**
+     * Generate HTML template with Babel (runtime transpilation)
+     * - Includes Babel script tag
+     * - Uses <script type="text/babel"> for source code
+     * - Slower but more compatible (legacy)
+     */
+    const generateBabelTemplate = (processedCode: string, componentName: string) => {
+      return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1314,8 +1441,6 @@ ${artifact.content}
     });
 
     // Radix UI Select components (imported dynamically from ESM CDN)
-    // These are provided for artifacts that use "const { Select, ... } = RadixUISelect" pattern
-    // Wrapped in try-catch so artifacts without Radix UI still work if import fails
     let RadixUISelect = {};
     let Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectPortal, SelectViewport, SelectGroup, SelectLabel, SelectSeparator, SelectIcon, SelectItemText, SelectItemIndicator, SelectScrollUpButton, SelectScrollDownButton;
     try {
@@ -1376,6 +1501,88 @@ ${artifact.content}
   </script>
 </body>
 </html>`;
+    };
+
+    const processedCode = artifact.content
+      .replace(/^```[\w]*\n?/gm, '')
+      .replace(/^```\n?$/gm, '')
+      // FIX: Fix unquoted package names in imports (GLM bug: "from React;" -> "from 'react';")
+      .replace(/from\s+React\s*;/g, "from 'react';")
+      .replace(/from\s+ReactDOM\s*;/g, "from 'react-dom';")
+      .replace(/^import\s+.*?from\s+['"]react['"];?\s*$/gm, '')
+      .replace(/^import\s+.*?from\s+['"]react-dom['"];?\s*$/gm, '')
+      .replace(/^import\s+React.*$/gm, '')
+      .replace(/^import\s+.*?from\s+['"]lucide-react['"];?\s*$/gm, '')
+      .replace(/^import\s+\{[^}]*\}\s+from\s+['"]lucide-react['"];?\s*$/gm, '')
+      .replace(/^import\s+.*?from\s+['"]recharts['"];?\s*$/gm, '')
+      .replace(/^import\s+.*?from\s+['"]framer-motion['"];?\s*$/gm, '')
+      .replace(/^const\s*\{[^}]*(?:useState|useEffect|useReducer|useRef|useMemo|useCallback|useContext|useLayoutEffect)[^}]*\}\s*=\s*React;?\s*$/gm, '')
+      // Strip Framer Motion destructuring (iframe template already declares these)
+      .replace(/^const\s*\{\s*motion\s*,\s*AnimatePresence\s*\}\s*=\s*Motion;?\s*$/gm, '')
+      .replace(/^const\s*\{[^}]*(?:motion|AnimatePresence)[^}]*\}\s*=\s*(?:Motion|FramerMotion|window\.Motion);?\s*$/gm, '')
+      // Strip Recharts destructuring (iframe template already declares these)
+      .replace(/^const\s*\{[^}]*(?:BarChart|LineChart|PieChart|AreaChart|ResponsiveContainer)[^}]*\}\s*=\s*(?:Recharts|window\.Recharts);?\s*$/gm, '')
+      // Strip Lucide icons destructuring (iframe template already declares these)
+      .replace(/^const\s*\{[^}]*\}\s*=\s*(?:LucideIcons|window\.LucideReact|LucideReact);?\s*$/gm, '')
+      // Strip malformed "const * as X from 'package'" syntax (GLM bug - generates invalid JS)
+      .replace(/^const\s*\*\s*as\s+\w+\s+from\s+['"][^'"]+['"];?\s*$/gm, '')
+      // Strip Radix UI destructuring - the iframe template now provides RadixUISelect via dynamic import
+      .replace(/^const\s*\{[^}]*\}\s*=\s*RadixUISelect;?\s*$/gm, '')
+      // NOTE: Keep Radix UI imports - they resolve via import map in the iframe template
+      // Stripping them causes "X is not defined" errors since the variable is never declared
+      .replace(/^export\s+default\s+/gm, '')
+      .trim();
+
+    // Extract component name with priority:
+    // 1. export default function ComponentName
+    // 2. function ComponentName (standalone function declaration)
+    // 3. const ComponentName = ( or const ComponentName = function (arrow/function expression)
+    // 4. export default ComponentName (at end, references existing component)
+    const exportDefaultFunctionMatch = artifact.content.match(/export\s+default\s+function\s+(\w+)/);
+    const functionMatch = artifact.content.match(/^function\s+([A-Z]\w*)\s*\(/m); // Function starting with capital letter
+    const constComponentMatch = artifact.content.match(/const\s+([A-Z]\w*)\s*=\s*(?:\([^)]*\)\s*=>|\(\s*\)\s*=>|function)/);
+    const exportDefaultMatch = artifact.content.match(/export\s+default\s+([A-Z]\w*)\s*;?\s*$/m);
+
+    const componentName = exportDefaultFunctionMatch?.[1]
+      || functionMatch?.[1]
+      || constComponentMatch?.[1]
+      || exportDefaultMatch?.[1]
+      || 'App';
+
+    // Determine which template to use based on feature flag and transpilation success
+    let reactPreviewContent: string;
+
+    if (isFeatureEnabled('SUCRASE_TRANSPILER')) {
+      // Try Sucrase transpilation first
+      const transpileResult = transpileCode(processedCode, {
+        filename: `${componentName}.tsx`,
+      });
+
+      if (transpileResult.success) {
+        console.log(`[ArtifactRenderer] Sucrase transpiled in ${transpileResult.elapsed.toFixed(2)}ms`);
+        Sentry.addBreadcrumb({
+          category: 'artifact.transpile',
+          message: 'Sucrase transpilation successful',
+          level: 'info',
+          data: { elapsed: transpileResult.elapsed, componentName },
+        });
+        reactPreviewContent = generateSucraseTemplate(transpileResult.code, componentName);
+      } else {
+        // Fallback to Babel on transpilation error
+        console.warn('[ArtifactRenderer] Sucrase transpilation failed, falling back to Babel:', transpileResult.error);
+        Sentry.addBreadcrumb({
+          category: 'artifact.transpile',
+          message: 'Sucrase transpilation failed, using Babel fallback',
+          level: 'warning',
+          data: { error: transpileResult.error, details: transpileResult.details },
+        });
+        reactPreviewContent = generateBabelTemplate(processedCode, componentName);
+      }
+    } else {
+      // Feature flag disabled, use Babel (legacy path)
+      console.log('[ArtifactRenderer] Using Babel (SUCRASE_TRANSPILER flag disabled)');
+      reactPreviewContent = generateBabelTemplate(processedCode, componentName);
+    }
 
     return (
       <div className="w-full h-full relative flex flex-col">
