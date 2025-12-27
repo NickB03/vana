@@ -34,6 +34,16 @@ export const FEATURE_FLAGS = {
    * - false: Use Babel Standalone (legacy)
    */
   SUCRASE_TRANSPILER: true,
+
+  /**
+   * Landing Page Enabled
+   * When enabled, shows the landing page with scroll-to-app transition on first visit.
+   * When disabled, skips landing page and goes directly to the main app.
+   *
+   * Note: This provides the immediate default value to prevent flash during load.
+   * Admin can override via database setting in /admin dashboard.
+   */
+  LANDING_PAGE_ENABLED: false,
 } as const;
 
 /**

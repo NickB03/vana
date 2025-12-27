@@ -25,6 +25,7 @@ import type { SuggestionItem } from "@/data/suggestions";
 import { TourProvider, TourAlertDialog, TOUR_STORAGE_KEYS } from "@/components/tour";
 import { OnboardingTour } from "@/components/OnboardingTour";
 import { useAppSetting, APP_SETTING_KEYS } from "@/hooks/useAppSettings";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 
 
 /**
@@ -151,7 +152,7 @@ const Home = () => {
 
   // Global app settings (from database)
   const { value: forceTourSetting, isLoading: forceTourLoading } = useAppSetting(APP_SETTING_KEYS.FORCE_TOUR);
-  const { value: landingPageSetting } = useAppSetting(APP_SETTING_KEYS.LANDING_PAGE_ENABLED);
+  const { value: landingPageSetting, isLoading: landingSettingLoading } = useAppSetting(APP_SETTING_KEYS.LANDING_PAGE_ENABLED);
 
   // Memoize guest session functions to prevent unnecessary re-renders
   const guestSessionMemo = useMemo(() => ({
@@ -165,9 +166,12 @@ const Home = () => {
   const [loadingSuggestions, setLoadingSuggestions] = useState(true);
 
   // Scroll transition - triggers at the end of CTA section
-  // skipLanding is true when admin has DISABLED the landing page (enabled=false means skip)
+  // Use feature flag for immediate default (prevents flash), allow database override
   const ctaSectionRef = useRef<HTMLDivElement>(null);
-  const skipLandingPage = landingPageSetting?.enabled === false;
+  const landingPageEnabled = landingSettingLoading
+    ? FEATURE_FLAGS.LANDING_PAGE_ENABLED  // Fast default while loading (prevents flash)
+    : (landingPageSetting?.enabled ?? FEATURE_FLAGS.LANDING_PAGE_ENABLED);  // Database override or fallback
+  const skipLandingPage = !landingPageEnabled;
   const { phase, progress, setTriggerElement } = useScrollTransition({
     enabled: true,
     skipLanding: skipLandingPage,
