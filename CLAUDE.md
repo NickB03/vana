@@ -313,8 +313,15 @@ const { prebuilt, remaining, stats } = getPrebuiltBundles(dependencies);
 > **📌 Canonical Reference**: This section is the single source of truth for artifact restrictions.
 
 **Rendering Methods**:
-- **Babel Standalone** (instant) — No npm imports, uses UMD globals (window.React)
+- **Sucrase** (instant, default) — Client-side transpilation, 20x faster than Babel, ~100KB bundle
+- **Babel Standalone** (instant, fallback) — Used when Sucrase fails, ~700KB bundle
 - **Server Bundling** (2-5s) — Has npm imports, uses `bundle-artifact/` Edge Function
+
+**Transpiler Configuration** (Phase 4 complete 2025-12-27):
+- **Client-side**: `src/utils/sucraseTranspiler.ts` - Sucrase transpiles JSX/TypeScript to JavaScript
+- **Server-side**: `artifact-validator.ts` - Sucrase strips TypeScript before validation
+- **Feature flag**: `SUCRASE_TRANSPILER` in `src/lib/featureFlags.ts` (enabled by default)
+- **Fallback**: Babel Standalone activates if Sucrase throws an error
 
 **Supported types**: `code` | `html` | `react` | `svg` | `mermaid` | `markdown` | `image`
 

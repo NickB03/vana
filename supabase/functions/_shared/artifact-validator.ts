@@ -5,6 +5,8 @@
  * in the browser. This acts as a safety net for AI-generated code.
  */
 
+import { transform } from "npm:sucrase@3.35.0";
+
 interface ValidationIssue {
   severity: 'error' | 'warning';
   message: string;
@@ -151,29 +153,128 @@ function detectProblematicPatterns(code: string): ValidationIssue[] {
 }
 
 /**
+ * Strip TypeScript syntax using Sucrase instead of fragile regex
+ *
+ * Sucrase provides AST-based transformation that is more reliable than regex patterns.
+ * Falls back to the original code if Sucrase fails (e.g., syntax errors).
+ *
+ * @param code - The code to strip TypeScript syntax from
+ * @returns Object with stripped code and success flag
+ */
+function stripTypeScriptWithSucrase(code: string): { code: string; stripped: boolean } {
+  try {
+    // Note: We include 'jsx' transform because Sucrase cannot PARSE JSX without it.
+    // This means JSX will be transpiled to React.createElement(), which is fine -
+    // the output is valid JavaScript that browsers can execute directly.
+    // jsxPragma/jsxFragmentPragma ensure the standard React global approach.
+    const result = transform(code, {
+      transforms: ['typescript', 'jsx'],   // Strip types + transpile JSX (required for parsing)
+      disableESTransforms: true,           // Don't transpile ES features (keep modern syntax)
+      jsxPragma: 'React.createElement',    // Standard React createElement call
+      jsxFragmentPragma: 'React.Fragment', // Standard React Fragment
+    });
+
+    // Check if Sucrase actually modified the code (stripped TypeScript syntax)
+    // If output is identical to input, no TypeScript syntax was present
+    const actuallyStripped = result.code !== code;
+
+    return { code: result.code, stripped: actuallyStripped };
+  } catch (error) {
+    console.warn('[artifact-validator] Sucrase TS strip failed, using regex fallback:', error);
+    return { code, stripped: false };
+  }
+}
+
+/**
  * Attempts to auto-fix common issues in artifact code
  */
 export function autoFixArtifactCode(code: string): { fixed: string; changes: string[] } {
   let fixed = code;
   const changes: string[] = [];
 
+  // PHASE 1: Strip TypeScript syntax FIRST (before other fixes)
+  // This is important because Sucrase works best on complete, unmodified code
+  // Strategy: Try Sucrase first (AST-based, more reliable), fall back to regex
+  const sucraseResult = stripTypeScriptWithSucrase(code);
+
+  if (sucraseResult.stripped) {
+    // Sucrase succeeded - use its output and continue with other fixes
+    fixed = sucraseResult.code;
+    changes.push('Stripped TypeScript syntax using Sucrase (AST-based)');
+  } else if (/:\s*[A-Za-z]|<[A-Z][^<>]*>|interface\s+\w+|type\s+\w+\s*=|\s+as\s+[A-Za-z]/.test(code)) {
+    // Sucrase failed but code has TypeScript syntax - fall back to regex patterns
+    // Detects: type annotations (: Type or : string), generics (<Type>), interfaces, type aliases, type assertions (as Type)
+    let regexStripped = false;
+
+    // Strip generic type parameters from function calls: useState<Type>() → useState()
+    // Handles: useState<Task[]>, useRef<HTMLDivElement>, etc.
+    if (/<[A-Z][^>]*>(?=\s*\()/.test(fixed)) {
+      fixed = fixed.replace(/<[A-Z][A-Za-z\[\]|&\s,<>]*>(?=\s*\()/g, '');
+      regexStripped = true;
+    }
+
+    // Strip type annotations from variable declarations: const x: Type = → const x =
+    // Handles: const [state, setState]: [Type, Function] = useState()
+    if (/:\s*[A-Z][A-Za-z\[\]|&<>,\s'"]*(?=\s*[=;,)\]])/.test(fixed)) {
+      fixed = fixed.replace(/:\s*[A-Z][A-Za-z\[\]|&<>,\s'"]*(?=\s*[=;,)\]])/g, '');
+      regexStripped = true;
+    }
+
+    // Strip type annotations from function parameters: (x: Type) → (x)
+    // Handles: (e: React.MouseEvent) → (e), (item: Task, index: number) → (item, index)
+    if (/\(\s*\w+\s*:\s*[A-Za-z][A-Za-z0-9\[\]|&<>,.\s]*/.test(fixed)) {
+      fixed = fixed.replace(/(\w+)\s*:\s*[A-Za-z][A-Za-z0-9\[\]|&<>,.\s]*(?=[,)])/g, '$1');
+      regexStripped = true;
+    }
+
+    // Strip type assertions: value as Type → value
+    // IMPORTANT: Use negative lookbehind to avoid matching namespace imports
+    // (?<!\*) prevents matching "* as Dialog" (namespace import)
+    // The negative lookahead (?!\s*from) prevents matching "as X from" (import patterns)
+    // Matches:
+    //   - Simple types: as string, as SomeType
+    //   - Generic types: as Array<User>, as Map<string, number>
+    //   - Tuple types: as [string, number]
+    if (/(?<!\*)\s+as\s+(?:[A-Za-z_][\w]*(?:<[^>]+>)?(?:\[[^\]]*\])?|(?:\[[^\]]+\]))(?!\s*from)/.test(fixed)) {
+      fixed = fixed.replace(/(?<!\*)\s+as\s+(?:[A-Za-z_][\w]*(?:<[^>]+>)?(?:\[[^\]]*\])?|(?:\[[^\]]+\]))(?!\s*from)/g, '');
+      regexStripped = true;
+    }
+
+    // Strip interface declarations: interface X {...} → (remove entirely)
+    if (/^interface\s+\w+\s*\{[\s\S]*?\n\}/gm.test(fixed)) {
+      fixed = fixed.replace(/^interface\s+\w+\s*\{[\s\S]*?\n\}/gm, '');
+      regexStripped = true;
+    }
+
+    // Strip type alias declarations: type X = ... → (remove entirely)
+    if (/^type\s+\w+\s*=\s*[^;]+;/gm.test(fixed)) {
+      fixed = fixed.replace(/^type\s+\w+\s*=\s*[^;]+;/gm, '');
+      regexStripped = true;
+    }
+
+    if (regexStripped) {
+      changes.push('Stripped TypeScript syntax using regex fallback');
+    }
+  }
+
+  // PHASE 2: Fix GLM-specific syntax bugs (after TypeScript stripping)
   // Fix: Replace 'eval' with 'score' in variable declarations
   const evalPattern = /\b(const|let|var)\s+eval\s*=/g;
-  if (evalPattern.test(code)) {
+  if (evalPattern.test(fixed)) {
     fixed = fixed.replace(evalPattern, '$1 score =');
     changes.push("Replaced variable name 'eval' with 'score'");
   }
 
   // Fix: Replace 'arguments' with 'args' in variable declarations
   const argsPattern = /\b(const|let|var)\s+arguments\s*=/g;
-  if (argsPattern.test(code)) {
+  if (argsPattern.test(fixed)) {
     fixed = fixed.replace(argsPattern, '$1 args =');
     changes.push("Replaced variable name 'arguments' with 'args'");
   }
 
   // Fix: Remove unnecessary React imports
   const reactImportPattern = /import\s+React\s+from\s+['"]react['"];?\s*\n/gi;
-  if (reactImportPattern.test(code)) {
+  if (reactImportPattern.test(fixed)) {
     fixed = fixed.replace(reactImportPattern, '');
     changes.push("Removed unnecessary React import (React is global)");
   }
@@ -208,61 +309,6 @@ export function autoFixArtifactCode(code: string): { fixed: string; changes: str
     if (fixedCount > 0) {
       changes.push(`Fixed ${fixedCount} immutability violation(s)`);
     }
-  }
-
-  // Fix: Strip TypeScript syntax that Babel Standalone can't handle
-  // GLM sometimes generates TypeScript annotations even when asked for JavaScript
-  // These need to be stripped before client-side Babel transpilation
-  let tsStripped = false;
-
-  // Strip generic type parameters from function calls: useState<Type>() → useState()
-  // Handles: useState<Task[]>, useRef<HTMLDivElement>, etc.
-  if (/<[A-Z][^>]*>(?=\s*\()/.test(fixed)) {
-    fixed = fixed.replace(/<[A-Z][A-Za-z\[\]|&\s,<>]*>(?=\s*\()/g, '');
-    tsStripped = true;
-  }
-
-  // Strip type annotations from variable declarations: const x: Type = → const x =
-  // Handles: const [state, setState]: [Type, Function] = useState()
-  if (/:\s*[A-Z][A-Za-z\[\]|&<>,\s'"]*(?=\s*[=;,)\]])/.test(fixed)) {
-    fixed = fixed.replace(/:\s*[A-Z][A-Za-z\[\]|&<>,\s'"]*(?=\s*[=;,)\]])/g, '');
-    tsStripped = true;
-  }
-
-  // Strip type annotations from function parameters: (x: Type) → (x)
-  // Handles: (e: React.MouseEvent) → (e), (item: Task, index: number) → (item, index)
-  if (/\(\s*\w+\s*:\s*[A-Za-z][A-Za-z0-9\[\]|&<>,.\s]*/.test(fixed)) {
-    fixed = fixed.replace(/(\w+)\s*:\s*[A-Za-z][A-Za-z0-9\[\]|&<>,.\s]*(?=[,)])/g, '$1');
-    tsStripped = true;
-  }
-
-  // Strip type assertions: value as Type → value
-  // IMPORTANT: Use negative lookbehind to avoid matching namespace imports
-  // (?<!\*) prevents matching "* as Dialog" (namespace import)
-  // The negative lookahead (?!\s*from) prevents matching "as X from" (import patterns)
-  // Matches:
-  //   - Simple types: as string, as SomeType
-  //   - Generic types: as Array<User>, as Map<string, number>
-  //   - Tuple types: as [string, number]
-  if (/(?<!\*)\s+as\s+(?:[A-Za-z_][\w]*(?:<[^>]+>)?(?:\[[^\]]*\])?|(?:\[[^\]]+\]))(?!\s*from)/.test(fixed)) {
-    fixed = fixed.replace(/(?<!\*)\s+as\s+(?:[A-Za-z_][\w]*(?:<[^>]+>)?(?:\[[^\]]*\])?|(?:\[[^\]]+\]))(?!\s*from)/g, '');
-    tsStripped = true;
-  }
-
-  // Strip interface declarations: interface X {...} → (remove entirely)
-  if (/^interface\s+\w+\s*\{[\s\S]*?\n\}/gm.test(fixed)) {
-    fixed = fixed.replace(/^interface\s+\w+\s*\{[\s\S]*?\n\}/gm, '');
-    tsStripped = true;
-  }
-
-  // Strip type alias declarations: type X = ... → (remove entirely)
-  if (/^type\s+\w+\s*=\s*[^;]+;/gm.test(fixed)) {
-    fixed = fixed.replace(/^type\s+\w+\s*=\s*[^;]+;/gm, '');
-    tsStripped = true;
-  }
-
-  if (tsStripped) {
-    changes.push('Stripped TypeScript syntax for browser compatibility');
   }
 
   return { fixed, changes };
