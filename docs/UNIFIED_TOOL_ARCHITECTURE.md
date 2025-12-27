@@ -179,7 +179,7 @@ sequenceDiagram
 
     rect rgb(243, 229, 245)
         Note over TC,GLM: GLM Continuation
-        TC->>GLM: callGLMWithToolResult()<br/>+ <tool_result> XML
+        TC->>GLM: callGLMWithToolResult()<br/>+ tool message (OpenAI format)
 
         loop Continuation Stream
             GLM-->>TC: content chunks
@@ -450,7 +450,7 @@ flowchart TB
     IER --> FORMAT
     SER --> FORMAT
 
-    FORMAT --> INJECT[Inject as tool_result XML]
+    FORMAT --> INJECT[Inject as tool message]
     INJECT --> CONTINUE[callGLMWithToolResult]
 
     style DENY fill:#f44336,color:#fff
@@ -580,15 +580,15 @@ flowchart LR
         "]
     end
 
-    subgraph "Tool Result Injection"
-        RES["<tool_result> XML"]
-        RES --> XML["
-        <tool_result>
-          <tool_call_id>call_abc123</tool_call_id>
-          <name>browser.search</name>
-          <status>success</status>
-          <result>...</result>
-        </tool_result>
+    subgraph "Tool Result Injection (OpenAI-compatible)"
+        RES["Tool Result Message"]
+        RES --> JSON["
+        {
+          role: 'tool',
+          tool_call_id: 'call_abc123',
+          content: 'Artifact generated successfully.
+            Type: react, Title: Interactive Dashboard'
+        }
         "]
     end
 

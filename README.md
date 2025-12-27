@@ -210,7 +210,7 @@
 
 ### Live Preview
 
-Experience Vana in action: [View Demo](#) *(Add your deployment URL)*
+Experience Vana in action: [View Demo](https://llm-chat-site.pages.dev)
 
 ### Key Use Cases
 
@@ -458,9 +458,12 @@ graph LR
 
 Before you begin, ensure you have the following installed:
 
-- **Node.js** (v18 or higher) - [Install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-- **npm** (comes with Node.js)
+- **Node.js** v20+ (LTS recommended) - [Install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **npm** v10+ (comes with Node.js)
 - **Git** - [Download](https://git-scm.com/downloads)
+- **Deno** v1.40+ (for Edge Functions development) - [Install](https://deno.land/#installation)
+- **Supabase CLI** v1.x - [Install](https://supabase.com/docs/guides/cli)
+- **Chrome** (required for DevTools MCP browser testing)
 
 ### Installation
 
@@ -1184,7 +1187,7 @@ Target metrics for production:
 
 ## 🤝 Contributing
 
-We welcome contributions! Please follow these guidelines:
+We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) and [Security Policy](SECURITY.md) before getting started.
 
 ### Development Workflow
 

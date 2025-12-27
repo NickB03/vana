@@ -175,7 +175,7 @@ data: [DONE]\n\n
 
 ### Layer 2: Supabase Edge Function (Transformation Layer)
 
-**Location**: `supabase/functions/chat-stream/index.ts`
+**Location**: `supabase/functions/chat/handlers/tool-calling-chat.ts`
 
 **Purpose**: Transform raw GLM stream into UI-friendly events with extracted status updates
 
@@ -186,7 +186,7 @@ data: [DONE]\n\n
 4. **Event Emitter**: Transforms GLM deltas into custom SSE events
 
 **Environment Variables**:
-- `ZAI_API_KEY`: Authentication token for Z.ai API
+- `GLM_API_KEY`: Authentication token for Z.ai API
 
 ### Layer 3: React Frontend (Presentation Layer)
 
@@ -420,7 +420,7 @@ The `extractStatus()` function analyzes reasoning content in real-time to extrac
 
 ### Implementation
 
-**Location**: `supabase/functions/chat-stream/index.ts` (lines 19-37)
+**Location**: `supabase/functions/chat/handlers/tool-calling-chat.ts`
 
 ```typescript
 function extractStatus(text: string): string | null {
@@ -585,7 +585,7 @@ if (status && status !== lastStatusEmitted && status.length > 15) {
 
 ### Edge Function Architecture
 
-**File**: `supabase/functions/chat-stream/index.ts`
+**File**: `supabase/functions/chat/handlers/tool-calling-chat.ts`
 
 **Responsibilities**:
 1. Validate incoming requests
@@ -617,7 +617,7 @@ if (!messages || !Array.isArray(messages)) {
 
 **Validation Rules**:
 - `messages` must be present and an array
-- API key (`ZAI_API_KEY`) must be configured in environment
+- API key (`GLM_API_KEY`) must be configured in environment
 
 ### Stream Transformation Pipeline
 
@@ -1227,7 +1227,7 @@ function formatDuration(seconds: number): string {
                              ↓
 ┌──────────────────────────────────────────────────────────────────┐
 │ 3. FETCH REQUEST                                                 │
-│    POST /functions/v1/chat-stream                                │
+│    POST /functions/v1/chat                                       │
 │    Body: { messages, enableThinking: true }                      │
 │    Headers: Authorization, Content-Type                          │
 └────────────────────────────┬─────────────────────────────────────┘
@@ -1525,10 +1525,10 @@ for (const line of lines) {
 #### 3. Missing API Key
 
 ```typescript
-const apiKey = Deno.env.get('ZAI_API_KEY');
+const apiKey = Deno.env.get('GLM_API_KEY');
 if (!apiKey) {
   return new Response(
-    JSON.stringify({ error: 'ZAI_API_KEY not configured' }),
+    JSON.stringify({ error: 'GLM_API_KEY not configured' }),
     { status: 500, headers: corsHeaders }
   );
 }
@@ -1810,7 +1810,7 @@ interface StreamState {
 
 **Backend (Supabase Edge Function)**:
 ```env
-ZAI_API_KEY=your_api_key_here
+GLM_API_KEY=your_api_key_here
 ```
 
 **Frontend (React App)**:
@@ -1826,7 +1826,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 **GLM 4.6 Chat Completion (with thinking)**:
 ```bash
 curl -X POST https://api.z.ai/api/paas/v4/chat/completions \
-  -H "Authorization: Bearer $ZAI_API_KEY" \
+  -H "Authorization: Bearer $GLM_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "glm-4.6",
@@ -1841,7 +1841,7 @@ curl -X POST https://api.z.ai/api/paas/v4/chat/completions \
 
 **Edge Function Request**:
 ```bash
-curl -X POST https://your-project.supabase.co/functions/v1/chat-stream \
+curl -X POST https://your-project.supabase.co/functions/v1/chat \
   -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1898,9 +1898,9 @@ curl -X POST https://your-project.supabase.co/functions/v1/chat-stream \
 ### E. Deployment Checklist
 
 **Backend**:
-- [ ] Set `ZAI_API_KEY` in Supabase secrets
+- [ ] Set `GLM_API_KEY` in Supabase secrets
 - [ ] Configure CORS allowed origins (production URLs)
-- [ ] Deploy Edge Function: `supabase functions deploy chat-stream`
+- [ ] Deploy Edge Function: `supabase functions deploy chat`
 - [ ] Test with production API endpoint
 - [ ] Monitor error logs for first 24 hours
 
@@ -1980,7 +1980,7 @@ A: Status extraction patterns are English-centric. Add equivalent regex patterns
 A: Yes, but reasoning is unique per conversation. Cache at the message level, not reasoning patterns. Consider storing in database for user history.
 
 **Q: How do I test this locally?**
-A: Use `supabase start` to run Edge Functions locally. Set `ZAI_API_KEY` in `supabase/.env.local`. Frontend should point to `http://localhost:54321/functions/v1/chat-stream`.
+A: Use `supabase start` to run Edge Functions locally. Set `GLM_API_KEY` in `supabase/.env.local`. Frontend should point to `http://localhost:54321/functions/v1/chat`.
 
 ---
 

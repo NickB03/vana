@@ -89,6 +89,15 @@ Reusable UI components built with the design system:
 
 [View Components Documentation →](./COMPONENTS.md)
 
+## File Locations
+
+All design system constants are in `src/utils/`:
+- `src/utils/typographyConstants.ts` - Font sizes, line heights, weights
+- `src/utils/spacingConstants.ts` - Spacing scale values
+- `src/utils/animationConstants.ts` - Animation durations and easings
+- `src/utils/interactionConstants.ts` - Hover, focus, and active states
+- `src/utils/colorConstants.ts` - Color palette definitions
+
 ## Quick Start Guide
 
 ### Installation

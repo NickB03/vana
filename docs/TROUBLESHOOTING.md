@@ -1,6 +1,6 @@
 # Troubleshooting Guide - Vana
 
-**Last Updated**: 2025-12-19
+**Last Updated**: 2025-12-26
 
 Comprehensive troubleshooting guide for common issues in Vana AI Development Assistant.
 
@@ -15,6 +15,8 @@ Comprehensive troubleshooting guide for common issues in Vana AI Development Ass
   - [Artifact Generation Issues](#artifact-generation-issues)
   - [Image Generation Failures](#image-generation-failures)
   - [Rate Limit Errors](#rate-limit-errors)
+  - [Tool Rate Limit Errors](#tool-rate-limit-errors)
+  - [Security Validation Errors](#security-validation-errors)
   - [UI/Display Issues](#uidisplay-issues)
 - [Error Messages](#error-messages)
 - [Performance Issues](#performance-issues)
@@ -206,6 +208,8 @@ Sometimes cached data causes issues:
 **Root Cause**:
 Artifacts run in isolated sandbox and cannot access local project imports.
 
+> **Reference**: See `.claude/artifact-import-restrictions.md` for detailed import rules and allowed packages.
+
 **Solution**:
 
 1. **Regenerate with correct imports**:
@@ -339,6 +343,111 @@ const [data, setData] = useState(initialValue);
      .then(r => r.json())
      .then(data => console.log(data));
    ```
+
+---
+
+### Tool Rate Limit Errors
+
+#### Issue: "Tool rate limit exceeded" error
+
+**Symptoms**:
+- Error message: "Tool rate limit exceeded"
+- Artifact generation fails after a few attempts
+- Image generation fails
+- Web search fails
+- 429 HTTP status code with tool-specific message
+
+**Understanding Tool Rate Limits**:
+
+The system implements per-tool rate limits (Issue #340) as a security measure to prevent abuse:
+
+| Tool | Guest Limit | Authenticated Limit |
+|------|-------------|---------------------|
+| `generate_artifact` | 5/5h | 50/5h |
+| `generate_image` | 2/5h | 25/5h |
+| `browser.search` | 20/5h | 100/5h |
+
+**Note**: Tool rate limits are separate from overall chat rate limits. You can hit a tool limit while still having chat capacity available.
+
+**Solutions**:
+
+1. **Wait for rate limit to reset**:
+   - Tool rate limit windows are 5 hours from first tool use
+   - Each tool has its own independent window
+
+2. **Sign up for higher limits**:
+   - Authenticated users get 10x more tool capacity
+   - Create a free account to unlock higher limits
+
+3. **Optimize tool usage**:
+   - Use "Edit Artifact" instead of regenerating entirely
+   - Batch multiple small requests into one comprehensive request
+   - Avoid rapid consecutive tool calls
+
+4. **Check which tool hit the limit**:
+   - Error message includes the specific tool name
+   - Switch to a different tool if possible (e.g., code block instead of artifact)
+
+**Rate Limit Implementation Details**:
+- Tracked in `user_tool_rate_limits` database table
+- Uses fail-closed circuit breaker for safety
+- Rate limiter includes graceful degradation on database errors
+
+---
+
+### Security Validation Errors
+
+#### Issue: "Request blocked by security validation" error
+
+**Symptoms**:
+- Error message: "Request blocked by security validation"
+- Message won't send
+- Prompt appears normal but is rejected
+- "Prompt injection detected" warning
+
+**Why This Happens**:
+
+The prompt injection defense system (Issue #340 Phase 0) uses 5-layer protection:
+
+1. **Unicode Normalization**: Detects hidden characters and homograph attacks
+2. **SQL Pattern Detection**: Blocks SQL injection-like syntax
+3. **HTML/Script Injection**: Filters script tags and event handlers
+4. **Prompt Manipulation**: Detects attempts to override system instructions
+5. **Sandboxed Validation**: Secondary validation in isolated context
+
+**Common Triggers** (usually false positives):
+
+| Pattern | Why It Triggers | Solution |
+|---------|-----------------|----------|
+| `DROP TABLE`, `SELECT *` | SQL injection patterns | Wrap code in markdown code blocks |
+| `<script>`, `onclick=` | HTML injection patterns | Use code blocks for HTML examples |
+| `ignore previous instructions` | Prompt manipulation | Rephrase without meta-instructions |
+| Unusual Unicode characters | Homograph attack detection | Use standard ASCII characters |
+
+**Solutions**:
+
+1. **Rephrase your request**:
+   - Use different wording that doesn't match injection patterns
+   - Avoid using code-like syntax in natural language requests
+
+2. **Use code blocks**:
+   - Wrap any code examples in triple backticks
+   - This signals to the system that it's intentional code, not an attack
+   ```
+   ```sql
+   SELECT * FROM users
+   ```
+   ```
+
+3. **Simplify the request**:
+   - Break complex requests into smaller, clearer parts
+   - Remove unnecessary technical details from the prompt
+
+4. **Avoid meta-instructions**:
+   - Don't include phrases like "ignore", "override", "forget previous"
+   - These trigger prompt manipulation detection
+
+**Note**: This is a security feature, not a bug. False positives are rare but can occur with highly technical queries. The system errs on the side of caution to protect against real attacks.
 
 ---
 
@@ -663,6 +772,6 @@ navigator.serviceWorker.getRegistrations()
 
 ---
 
-**Last Updated**: 2025-11-17
+**Last Updated**: 2025-12-26
 
 Found a bug? Please report it at: https://github.com/NickB03/llm-chat-site/issues

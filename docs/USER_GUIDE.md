@@ -1,7 +1,8 @@
 # Vana AI - Complete User Guide
 
-**Created**: 2025-11-21  
-**Version**: 2.0  
+**Created**: 2025-11-21
+**Last Updated**: 2025-12-26
+**Version**: 2.1
 **Audience**: End Users, Developers, and Teams
 
 ---
@@ -11,6 +12,7 @@
 - [Getting Started](#-getting-started)
 - [Core Features](#-core-features)
 - [Chat Interface](#-chat-interface)
+- [Web Search Integration](#-web-search-integration)
 - [Artifact System](#-artifact-system)
 - [Chain of Thought Reasoning](#-chain-of-thought-reasoning)
 - [Export & Sharing](#-export--sharing)
@@ -25,12 +27,18 @@
 
 ### What is Vana AI?
 
-Vana AI is an intelligent development assistant that transforms natural language into interactive code, components, and diagrams in real-time. Powered by advanced AI models including GLM-4.6 (Z.ai) and Gemini 2.5 Flash, Vana helps you:
+Vana AI is an intelligent development assistant that transforms natural language into interactive code, components, and diagrams in real-time. Powered by advanced AI models, Vana helps you:
 
 - **Build Faster**: Generate complete applications from simple descriptions
 - **Learn More**: See exactly how AI thinks through problems
-- **Export Easily**: Take your creations anywhere with comprehensive export options
+- **Search the Web**: Get real-time information with integrated web search
 - **Collaborate**: Share artifacts and version history with your team
+
+**AI Models in Use**:
+- **Chat**: Gemini 2.5 Flash Lite (OpenRouter) - Fast, conversational responses
+- **Artifacts**: GLM-4.6 (Z.ai) - Deep reasoning with thinking mode for code generation
+- **Images**: Gemini 2.5 Flash Image (OpenRouter) - AI image generation
+- **Web Search**: Tavily API - Real-time web information retrieval
 
 ### Quick Start
 
@@ -170,6 +178,61 @@ Your conversation history is organized automatically:
 - Voice-to-text conversion
 - Language detection
 - Real-time transcription
+
+---
+
+## 🔍 Web Search Integration
+
+### Real-Time Information Retrieval
+
+Vana can search the web for real-time information when needed, powered by the Tavily API:
+
+- **Automatic Detection**: The AI determines when web search is needed based on your query
+- **Inline Citations**: Sources appear as clickable badges in responses
+- **Source Preview**: Hover over citations to see source details
+- **Real-Time Data**: Get current information beyond the AI's training cutoff
+
+### When Web Search is Used
+
+The AI automatically searches the web when your question:
+- Asks about current events or recent news
+- Requires up-to-date statistics or data
+- References recent releases, updates, or announcements
+- Needs verification of time-sensitive information
+
+### Understanding Search Results
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Your question: "What are the latest React 19 features?"    │
+├─────────────────────────────────────────────────────────────┤
+│ 🔍 Searching the web...                                     │
+│                                                             │
+│ React 19 introduces several new features:                   │
+│                                                             │
+│ - **Actions**: Simplify async state management [1]          │
+│ - **Server Components**: Enhanced server-side rendering [2] │
+│ - **Use Hook**: New primitive for promises [1]              │
+│                                                             │
+│ Sources:                                                    │
+│ [1] react.dev - React 19 Release Notes                      │
+│ [2] vercel.com - Server Components Guide                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Tips for Web Search Queries
+
+**Be Specific About Time**:
+```
+❌ "What is React?"
+✅ "What new features were added in React 19?"
+```
+
+**Ask About Current Events**:
+```
+❌ "How does JavaScript work?"
+✅ "What JavaScript runtime updates were announced at the latest Node.js conference?"
+```
 
 ---
 
@@ -353,6 +416,8 @@ Vana AI shows you exactly how it thinks through problems. This transparency help
 ---
 
 ## 📤 Export & Sharing
+
+> **Coming Soon**: Full export functionality is currently under development. Basic copy-to-clipboard and source download are available now. Advanced export formats and sharing features described below are planned for future releases.
 
 ### Export Options
 
@@ -680,32 +745,16 @@ A: Vana AI is web-based but works great on mobile browsers. A native app is in d
 
 ### Documentation
 - [API Reference](./API_REFERENCE.md)
-- [Component Library](./COMPONENT_LIBRARY.md)
-- [Integration Guide](./INTEGRATION_GUIDE.md)
-- [Security Best Practices](./SECURITY.md)
-
-### Tutorials
-- [Getting Started with React](./TUTORIALS/REACT_BASICS.md)
-- [Building Dashboards](./TUTORIALS/DASHBOARDS.md)
-- [Form Validation](./TUTORIALS/FORMS.md)
-- [Data Visualization](./TUTORIALS/CHARTS.md)
-
-### Community
-- [Discord Server](https://discord.gg/vana)
-- [GitHub Discussions](https://github.com/vana-ai/discussions)
-- [Stack Overflow](https://stackoverflow.com/questions/tagged/vana-ai)
-- [Reddit Community](https://reddit.com/r/vanaai)
+- [Security Best Practices](../SECURITY.md)
 
 ### Support
-- [Help Center](https://help.vana.ai)
 - [Contact Support](mailto:support@vana.ai)
-- [Status Page](https://status.vana.ai)
 - [Changelog](./CHANGELOG.md)
 
 ---
 
-**Last Updated**: 2025-11-21  
-**Version**: 2.0  
-**Next Review**: 2025-12-21
+**Last Updated**: 2025-12-26
+**Version**: 2.1
+**Next Review**: 2026-01-26
 
-Need help? Contact us at [support@vana.ai](mailto:support@vana.ai) or visit our [help center](https://help.vana.ai).
+Need help? Contact us at [support@vana.ai](mailto:support@vana.ai).

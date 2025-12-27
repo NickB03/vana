@@ -1,4 +1,4 @@
-<!-- CLAUDE.md v2.21 | Last updated: 2025-12-24 | Removed deprecated reasoning-generator.ts reference after Phase 4 cleanup -->
+<!-- CLAUDE.md v2.22 | Last updated: 2025-12-26 | Fixed UI component count, clarified feature flags, added Chrome MCP guide -->
 
 # CLAUDE.md
 
@@ -502,13 +502,12 @@ const results = await searchWeb({
 
 ## Feature Flags
 
+Feature flags are split between frontend and Edge Functions:
+
+### Frontend Flags
+
 **Location**: `src/lib/featureFlags.ts`
 
-Centralized configuration for enabling/disabling features across the application:
-
-**Available Flags**:
-- `RATE_LIMIT_WARNINGS`: Show toast notifications for approaching rate limits (disabled)
-- `GUEST_BANNER_URGENCY`: Color-coded guest banner based on remaining messages (disabled)
 - `CONTEXT_AWARE_PLACEHOLDERS`: Dynamic input placeholder text based on current mode (disabled)
 - `CANVAS_SHADOW_DEPTH`: Visual depth cues for chat card shadows (disabled)
 
@@ -516,10 +515,19 @@ Centralized configuration for enabling/disabling features across the application
 ```typescript
 import { isFeatureEnabled, FEATURE_FLAGS } from '@/lib/featureFlags';
 
-if (isFeatureEnabled('RATE_LIMIT_WARNINGS')) {
-  // Show warning
+if (isFeatureEnabled('CONTEXT_AWARE_PLACEHOLDERS')) {
+  // Use context-aware placeholder
 }
 ```
+
+### Edge Function Flags
+
+**Location**: `supabase/functions/_shared/config.ts` and environment variables
+
+- `RATE_LIMIT_WARNINGS`: Enable rate limit warning responses (env var)
+- `USE_REASONING_PROVIDER`: Enable semantic status generation (default: true)
+- `USE_GLM_THINKING_FOR_CHAT`: Enable GLM thinking mode (default: true)
+- `TAVILY_ALWAYS_SEARCH`: Force web search on all messages (default: false)
 
 ## Security
 
@@ -677,7 +685,7 @@ export default function App() { ... }
 ```
 src/
 ├── components/
-│   ├── ui/                    # 63 shadcn components
+│   ├── ui/                    # 65 UI components (shadcn + custom)
 │   ├── prompt-kit/            # Chat UI primitives
 │   ├── ai-elements/           # AI-powered UI elements
 │   ├── demo/                  # Demo components
