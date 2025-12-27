@@ -71,8 +71,23 @@ export const useScrollTransition = (
   const animationStartTime = useRef<number | null>(null); // Timestamp when animation started
   const animationRafId = useRef<number>(); // Separate RAF for animation loop
 
-  // Handle async setting load: if skipLanding becomes true after mount, skip to app
+  // Handle bidirectional setting changes: support BOTH enabling and disabling landing page
+  // This allows admins to toggle landing page on/off without requiring page refresh
   useEffect(() => {
+    // Case 1: skipLanding TRUE → FALSE (re-enable landing page)
+    // Admin re-enabled landing page, but we already transitioned to app
+    // Reset the one-way lock to allow landing page to show again
+    if (!skipLandingFromSetting && hasTransitionedToApp.current) {
+      hasTransitionedToApp.current = false;
+      setState({
+        phase: "landing",
+        progress: 0,
+        scrollY: 0,
+      });
+    }
+
+    // Case 2: skipLanding FALSE → TRUE (skip to app)
+    // Admin disabled landing page, immediately transition to app
     if (skipLandingFromSetting && !hasTransitionedToApp.current) {
       hasTransitionedToApp.current = true;
       setState({

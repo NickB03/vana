@@ -70,10 +70,10 @@ Deno.test("validateImmutability should NOT flag object property assignments", ()
 
   const result = validateImmutability(code);
 
-  // Should detect the property assignment (which is still a mutation pattern)
-  // But in this case, it's on a new object, so context matters
-  // Our validator is conservative and flags all direct assignments
-  assert(result.hasMutations);
+  // Object property assignments (obj.property = value) are NOT array mutations
+  // Our validator only flags array assignments like array[i] = value
+  // Object property mutations are safe in most React contexts
+  assert(!result.hasMutations, "Should not flag object property assignments as array mutations");
 });
 
 Deno.test("validateImmutability should provide auto-fix for direct assignments", () => {
@@ -322,14 +322,14 @@ Deno.test("autoFixArtifactCode should preserve indentation when fixing", () => {
   }
 });
 
-Deno.test("autoFixArtifactCode should fix minimax algorithm pattern", () => {
+Deno.test("autoFixArtifactCode should skip minimax algorithm pattern (multiple mutations)", () => {
   const code = `
 function minimax(board, depth, isMaximizing) {
   for (let i = 0; i < board.length; i++) {
     if (board[i] === null) {
       board[i] = isMaximizing ? 'X' : 'O';
       const score = minimax(board, depth + 1, !isMaximizing);
-      board[i] = null;
+      board[i] = null;  // Second mutation of same array - triggers skip
     }
   }
 }
@@ -337,9 +337,17 @@ function minimax(board, depth, isMaximizing) {
 
   const { fixed, changes } = autoFixArtifactCode(code);
 
-  assert(changes.length > 0);
-  assert(fixed.includes("const new"));
-  assert(fixed.includes("[...board]"));
+  // Should skip auto-fix due to multiple mutations of same array
+  assert(changes.length > 0, "Should have changes array with skip message");
+  assert(
+    changes.some(change => change.includes("Auto-fix skipped")),
+    "Changes should include skip message"
+  );
+  assert(
+    changes.some(change => change.includes("multiple-mutations")),
+    "Skip reason should be 'multiple-mutations'"
+  );
+  assertEquals(fixed, code, "Code should remain unchanged when skipped");
 });
 
 // ==================== Integration with validateArtifactCode ====================
@@ -432,26 +440,29 @@ function minimax(board, depth, isMaximizing) {
   assert(result.autoFixAvailable);
 });
 
-Deno.test("autoFixArtifactCode should fix complex minimax algorithm", () => {
+Deno.test("validateImmutability should detect and skip complex minimax algorithm", () => {
   const code = `
 function minimax(board, depth, isMaximizing) {
   for (let i = 0; i < board.length; i++) {
     if (board[i] === null) {
       board[i] = isMaximizing ? 'X' : 'O';
       const score = minimax(board, depth + 1, !isMaximizing);
-      board[i] = null;
+      board[i] = null;  // Second mutation triggers skip
     }
   }
 }
   `;
 
-  const { fixed, changes } = autoFixArtifactCode(code);
+  const result = validateImmutability(code);
 
-  assert(changes.length > 0);
-  assert(fixed.includes("const new"));
-  assert(fixed.includes("[...board]"));
-  assert(!fixed.includes("board[i] = isMaximizing")); // Original mutation removed
-  assert(fixed.includes("newBoard[i] = isMaximizing") || fixed.includes("const newBoard"));
+  // Should detect mutations
+  assert(result.hasMutations, "Should detect mutations");
+  assert(result.autoFixAvailable, "Should indicate auto-fix is available");
+
+  // Should skip due to multiple mutations
+  assert(result.skipped, "Should skip auto-fix");
+  assertEquals(result.skipReason, 'multiple-mutations', "Skip reason should be 'multiple-mutations'");
+  assertEquals(result.fixCount, 0, "Fix count should be 0 when skipped");
 });
 
 Deno.test("validateImmutability should handle whitespace variations", () => {

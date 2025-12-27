@@ -7,11 +7,75 @@
 
 import { transform } from "npm:sucrase@3.35.0";
 
-interface ValidationIssue {
+// ============================================================================
+// VALIDATION ERROR CODES
+// ============================================================================
+// These codes provide structured identification of validation issues,
+// enabling type-safe filtering in artifact-executor.ts instead of fragile
+// string matching on error messages.
+//
+// Naming convention: CATEGORY_SPECIFIC_ISSUE
+// Categories: RESERVED_KEYWORD, IMPORT, STORAGE, SYNTAX, IMMUTABILITY
+//
+// IMPORTANT: When adding new error codes:
+// 1. Add the code constant here
+// 2. Update the validation function to include the code in the issue
+// 3. If non-blocking, add to NON_BLOCKING_ERROR_CODES in artifact-executor.ts
+// ============================================================================
+
+/**
+ * Error codes for validation issues.
+ * Used for structured filtering instead of fragile string matching.
+ */
+export const VALIDATION_ERROR_CODES = {
+  // Reserved keyword violations (blocking - these break strict mode)
+  RESERVED_KEYWORD_EVAL: 'RESERVED_KEYWORD_EVAL',
+  RESERVED_KEYWORD_ARGUMENTS: 'RESERVED_KEYWORD_ARGUMENTS',
+  RESERVED_KEYWORD_OTHER: 'RESERVED_KEYWORD_OTHER',
+
+  // Import violations (blocking - these prevent bundling/rendering)
+  IMPORT_LOCAL_PATH: 'IMPORT_LOCAL_PATH',
+  IMPORT_REACT_UNNECESSARY: 'IMPORT_REACT_UNNECESSARY',
+  IMPORT_CONST_STAR_SYNTAX: 'IMPORT_CONST_STAR_SYNTAX',
+  IMPORT_UNQUOTED_PACKAGE: 'IMPORT_UNQUOTED_PACKAGE',
+
+  // Storage violations (blocking - not supported in sandbox)
+  STORAGE_LOCAL_STORAGE: 'STORAGE_LOCAL_STORAGE',
+  STORAGE_SESSION_STORAGE: 'STORAGE_SESSION_STORAGE',
+
+  // Immutability violations (NON-BLOCKING - only cause React strict mode warnings)
+  // These are explicitly marked non-blocking in artifact-executor.ts
+  IMMUTABILITY_ARRAY_ASSIGNMENT: 'IMMUTABILITY_ARRAY_ASSIGNMENT',
+  IMMUTABILITY_ARRAY_PUSH: 'IMMUTABILITY_ARRAY_PUSH',
+  IMMUTABILITY_ARRAY_SPLICE: 'IMMUTABILITY_ARRAY_SPLICE',
+  IMMUTABILITY_ARRAY_SORT: 'IMMUTABILITY_ARRAY_SORT',
+  IMMUTABILITY_ARRAY_REVERSE: 'IMMUTABILITY_ARRAY_REVERSE',
+  IMMUTABILITY_ARRAY_POP: 'IMMUTABILITY_ARRAY_POP',
+  IMMUTABILITY_ARRAY_SHIFT: 'IMMUTABILITY_ARRAY_SHIFT',
+  IMMUTABILITY_ARRAY_UNSHIFT: 'IMMUTABILITY_ARRAY_UNSHIFT',
+} as const;
+
+export type ValidationErrorCode = typeof VALIDATION_ERROR_CODES[keyof typeof VALIDATION_ERROR_CODES];
+
+/**
+ * Validation issue with optional structured error code.
+ * The `code` field enables type-safe filtering in artifact-executor.ts.
+ *
+ * BACKWARD COMPATIBILITY: Older validation paths may not include `code`.
+ * The filtering logic in artifact-executor.ts treats issues without codes
+ * as critical (fail-closed behavior) to ensure safety.
+ */
+export interface ValidationIssue {
   severity: 'error' | 'warning';
   message: string;
   line?: number;
   suggestion?: string;
+  /**
+   * Structured error code for type-safe filtering.
+   * If undefined, the issue is treated as critical (fail-closed).
+   * @see VALIDATION_ERROR_CODES for available codes
+   */
+  code?: ValidationErrorCode;
 }
 
 interface ValidationResult {
@@ -49,52 +113,66 @@ const FUTURE_RESERVED = [
 ];
 
 /**
- * Patterns that commonly indicate issues in React artifacts
+ * Patterns that commonly indicate issues in React artifacts.
+ * Each pattern includes an error code for structured filtering.
  */
-const PROBLEMATIC_PATTERNS = [
+const PROBLEMATIC_PATTERNS: Array<{
+  pattern: RegExp;
+  message: string;
+  severity: 'error' | 'warning';
+  code: ValidationErrorCode;
+}> = [
   {
     pattern: /import\s+.*\s+from\s+['"]@\/components/gi,
     message: 'Local @/ imports are not available in artifacts. Use Radix UI primitives instead.',
-    severity: 'error' as const
+    severity: 'error',
+    code: VALIDATION_ERROR_CODES.IMPORT_LOCAL_PATH
   },
   {
     pattern: /localStorage\.(getItem|setItem|removeItem)/gi,
     message: 'localStorage is not supported in artifacts. Use React state instead.',
-    severity: 'error' as const
+    severity: 'error',
+    code: VALIDATION_ERROR_CODES.STORAGE_LOCAL_STORAGE
   },
   {
     pattern: /sessionStorage\.(getItem|setItem|removeItem)/gi,
     message: 'sessionStorage is not supported in artifacts. Use React state instead.',
-    severity: 'error' as const
+    severity: 'error',
+    code: VALIDATION_ERROR_CODES.STORAGE_SESSION_STORAGE
   },
   {
     pattern: /import\s+React\s+from\s+['"]react['"]/gi,
     message: 'React imports not needed. Use: const { useState, useEffect } = React;',
-    severity: 'warning' as const
+    severity: 'warning',
+    code: VALIDATION_ERROR_CODES.IMPORT_REACT_UNNECESSARY
   },
   {
     // GLM generates invalid "const * as X from 'pkg'" syntax - must be caught and fixed
     // Uses \s* at start to handle indentation, optional semicolon and trailing whitespace
     pattern: /^\s*const\s*\*\s*as\s+\w+\s+from\s+['"][^'"]+['"]\s*;?\s*$/gm,
     message: 'Invalid import syntax: "const * as" should be "import * as"',
-    severity: 'error' as const
+    severity: 'error',
+    code: VALIDATION_ERROR_CODES.IMPORT_CONST_STAR_SYNTAX
   },
   {
     // GLM generates unquoted package names like "from React;" instead of "from 'react';"
     pattern: /from\s+React\s*;/g,
     message: 'Unquoted package name in import statement',
-    severity: 'error' as const
+    severity: 'error',
+    code: VALIDATION_ERROR_CODES.IMPORT_UNQUOTED_PACKAGE
   },
   {
     // Also catch unquoted ReactDOM
     pattern: /from\s+ReactDOM\s*;/g,
     message: 'Unquoted package name in import statement',
-    severity: 'error' as const
+    severity: 'error',
+    code: VALIDATION_ERROR_CODES.IMPORT_UNQUOTED_PACKAGE
   }
 ];
 
 /**
- * Detects usage of strict mode reserved keywords as variable names
+ * Detects usage of strict mode reserved keywords as variable names.
+ * Returns issues with structured error codes for type-safe filtering.
  */
 function detectReservedKeywords(code: string): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
@@ -118,13 +196,24 @@ function detectReservedKeywords(code: string): ValidationIssue[] {
 
       for (const pattern of patterns) {
         if (pattern.test(line)) {
+          // Determine the appropriate error code based on the keyword
+          let errorCode: ValidationErrorCode;
+          if (keyword === 'eval') {
+            errorCode = VALIDATION_ERROR_CODES.RESERVED_KEYWORD_EVAL;
+          } else if (keyword === 'arguments') {
+            errorCode = VALIDATION_ERROR_CODES.RESERVED_KEYWORD_ARGUMENTS;
+          } else {
+            errorCode = VALIDATION_ERROR_CODES.RESERVED_KEYWORD_OTHER;
+          }
+
           issues.push({
             severity: 'error',
             message: `Reserved keyword '${keyword}' used as variable name in strict mode`,
             line: lineNumber,
             suggestion: keyword === 'eval'
               ? `Use 'score', 'value', or 'evaluation' instead of '${keyword}'`
-              : `Rename '${keyword}' to a different variable name`
+              : `Rename '${keyword}' to a different variable name`,
+            code: errorCode
           });
         }
       }
@@ -135,18 +224,20 @@ function detectReservedKeywords(code: string): ValidationIssue[] {
 }
 
 /**
- * Detects known problematic patterns in artifact code
+ * Detects known problematic patterns in artifact code.
+ * Returns issues with structured error codes for type-safe filtering.
  */
 function detectProblematicPatterns(code: string): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
 
-  for (const { pattern, message, severity } of PROBLEMATIC_PATTERNS) {
+  for (const { pattern, message, severity, code: errorCode } of PROBLEMATIC_PATTERNS) {
     const matches = code.match(pattern);
     if (matches) {
       issues.push({
         severity,
         message: `${message} (found ${matches.length} occurrence${matches.length > 1 ? 's' : ''})`,
-        suggestion: 'Review artifact restrictions in system prompt'
+        suggestion: 'Review artifact restrictions in system prompt',
+        code: errorCode
       });
     }
   }
@@ -327,12 +418,18 @@ export function autoFixArtifactCode(code: string): { fixed: string; changes: str
 
   // Fix: Auto-fix immutability violations (direct array assignments)
   const mutationCheck = validateImmutability(fixed);
-  if (mutationCheck.hasMutations && mutationCheck.autoFixAvailable && mutationCheck.fixedCode) {
-    fixed = mutationCheck.fixedCode;
-    // Report actual fixes made, not total violations detected
-    const fixedCount = mutationCheck.fixCount || 0;
-    if (fixedCount > 0) {
-      changes.push(`Fixed ${fixedCount} immutability violation(s)`);
+  if (mutationCheck.hasMutations && mutationCheck.autoFixAvailable) {
+    // Check if auto-fix was skipped due to complexity
+    if (mutationCheck.skipped) {
+      console.warn(`[artifact-validator] Auto-fix skipped: ${mutationCheck.skipReason}`);
+      changes.push(`Auto-fix skipped (${mutationCheck.skipReason}) - immutability issues require manual fix via generate-artifact-fix`);
+    } else if (mutationCheck.fixedCode) {
+      fixed = mutationCheck.fixedCode;
+      // Report actual fixes made, not total violations detected
+      const fixedCount = mutationCheck.fixCount || 0;
+      if (fixedCount > 0) {
+        changes.push(`Fixed ${fixedCount} immutability violation(s)`);
+      }
     }
   }
 
@@ -348,64 +445,85 @@ export interface MutationValidation {
   autoFixAvailable: boolean;
   fixedCode?: string;
   fixCount?: number;  // Number of fixes actually applied
+  skipped?: boolean;  // True if auto-fix was skipped due to complexity
+  skipReason?: 'multiple-mutations' | 'too-complex';  // Reason for skip
 }
 
 /**
- * Detects array/object mutation patterns that violate React strict mode immutability
+ * Detects array/object mutation patterns that violate React strict mode immutability.
+ * Returns issues with structured error codes for type-safe filtering.
+ *
+ * NOTE: Immutability violations are NON-BLOCKING - they only cause React strict mode
+ * warnings but don't crash artifacts. Complex algorithms (e.g., minimax) may have
+ * unavoidable mutations that work correctly in production.
  */
 function detectMutationPatterns(code: string): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const lines = code.split('\n');
 
-  // Mutation patterns to detect
-  const mutationPatterns = [
+  // Mutation patterns to detect - each with an error code for structured filtering
+  const mutationPatterns: Array<{
+    pattern: RegExp;
+    message: string;
+    suggestion: string;
+    code: ValidationErrorCode;
+  }> = [
     {
       // Direct array assignment: array[i] = value
-      pattern: /(\w+)\[(\w+|\d+)\]\s*=(?!=)/g,
+      // Allow whitespace: array[i], array[ i ], array  [i], array  [ i ]  =  value
+      pattern: /(\w+)\s*\[\s*(\w+|\d+)\s*\]\s*=(?!=)/g,
       message: 'Direct array assignment detected (causes "readonly property" error in React strict mode)',
-      suggestion: 'Use immutable pattern: const newArray = [...array]; newArray[i] = value'
+      suggestion: 'Use immutable pattern: const newArray = [...array]; newArray[i] = value',
+      code: VALIDATION_ERROR_CODES.IMMUTABILITY_ARRAY_ASSIGNMENT
     },
     {
       // Array.push()
       pattern: /\.\s*push\s*\(/g,
       message: 'Array.push() mutates the original array',
-      suggestion: 'Use immutable pattern: const newArray = [...array, newItem]'
+      suggestion: 'Use immutable pattern: const newArray = [...array, newItem]',
+      code: VALIDATION_ERROR_CODES.IMMUTABILITY_ARRAY_PUSH
     },
     {
       // Array.splice()
       pattern: /\.\s*splice\s*\(/g,
       message: 'Array.splice() mutates the original array',
-      suggestion: 'Use immutable pattern: const newArray = array.filter/slice'
+      suggestion: 'Use immutable pattern: const newArray = array.filter/slice',
+      code: VALIDATION_ERROR_CODES.IMMUTABILITY_ARRAY_SPLICE
     },
     {
       // Array.sort() without copy
       pattern: /(?<!\[\.\.\.)\w+\.\s*sort\s*\(/g,
       message: 'Array.sort() mutates the original array',
-      suggestion: 'Use immutable pattern: const sortedArray = [...array].sort()'
+      suggestion: 'Use immutable pattern: const sortedArray = [...array].sort()',
+      code: VALIDATION_ERROR_CODES.IMMUTABILITY_ARRAY_SORT
     },
     {
       // Array.reverse() without copy
       pattern: /(?<!\[\.\.\.)\w+\.\s*reverse\s*\(/g,
       message: 'Array.reverse() mutates the original array',
-      suggestion: 'Use immutable pattern: const reversedArray = [...array].reverse()'
+      suggestion: 'Use immutable pattern: const reversedArray = [...array].reverse()',
+      code: VALIDATION_ERROR_CODES.IMMUTABILITY_ARRAY_REVERSE
     },
     {
       // Array.pop()
       pattern: /\.\s*pop\s*\(/g,
       message: 'Array.pop() mutates the original array',
-      suggestion: 'Use immutable pattern: const newArray = array.slice(0, -1)'
+      suggestion: 'Use immutable pattern: const newArray = array.slice(0, -1)',
+      code: VALIDATION_ERROR_CODES.IMMUTABILITY_ARRAY_POP
     },
     {
       // Array.shift()
       pattern: /\.\s*shift\s*\(/g,
       message: 'Array.shift() mutates the original array',
-      suggestion: 'Use immutable pattern: const newArray = array.slice(1)'
+      suggestion: 'Use immutable pattern: const newArray = array.slice(1)',
+      code: VALIDATION_ERROR_CODES.IMMUTABILITY_ARRAY_SHIFT
     },
     {
       // Array.unshift()
       pattern: /\.\s*unshift\s*\(/g,
       message: 'Array.unshift() mutates the original array',
-      suggestion: 'Use immutable pattern: const newArray = [newItem, ...array]'
+      suggestion: 'Use immutable pattern: const newArray = [newItem, ...array]',
+      code: VALIDATION_ERROR_CODES.IMMUTABILITY_ARRAY_UNSHIFT
     }
   ];
 
@@ -421,7 +539,7 @@ function detectMutationPatterns(code: string): ValidationIssue[] {
       .replace(/"([^"\\]|\\.)*"/g, '') // Remove double-quoted strings
       .replace(/`([^`\\]|\\.)*`/g, ''); // Remove template literals
 
-    for (const { pattern, message, suggestion } of mutationPatterns) {
+    for (const { pattern, message, suggestion, code: errorCode } of mutationPatterns) {
       // Reset pattern lastIndex
       pattern.lastIndex = 0;
 
@@ -447,7 +565,8 @@ function detectMutationPatterns(code: string): ValidationIssue[] {
           severity: 'error',
           message,
           line: lineNumber,
-          suggestion
+          suggestion,
+          code: errorCode
         });
       }
     }
@@ -473,11 +592,15 @@ export function validateImmutability(code: string): MutationValidation {
 
   let fixedCode: string | undefined;
   let fixCount: number | undefined;
+  let skipped: boolean | undefined;
+  let skipReason: 'multiple-mutations' | 'too-complex' | undefined;
 
   if (canAutoFix) {
     const result = autoFixMutations(code);
     fixedCode = result.fixedCode;
     fixCount = result.fixCount;
+    skipped = result.skipped;
+    skipReason = result.skipReason;
   }
 
   return {
@@ -485,8 +608,20 @@ export function validateImmutability(code: string): MutationValidation {
     patterns,
     autoFixAvailable: canAutoFix,
     fixedCode,
-    fixCount
+    fixCount,
+    skipped,
+    skipReason
   };
+}
+
+/**
+ * Result from auto-fix mutation attempt
+ */
+interface AutoFixResult {
+  fixedCode: string;
+  fixCount: number;
+  skipped?: boolean;
+  skipReason?: 'multiple-mutations' | 'too-complex';
 }
 
 /**
@@ -501,8 +636,11 @@ export function validateImmutability(code: string): MutationValidation {
  * Instead, we rely on:
  * 1. The AI prompt instructing the model to write immutable code
  * 2. Post-generation error fixing with generate-artifact-fix endpoint
+ *
+ * When fixes are skipped, returns `skipped: true` and `skipReason` so callers
+ * can distinguish "no fixes needed" from "fixes skipped due to complexity".
  */
-function autoFixMutations(code: string): { fixedCode: string; fixCount: number } {
+function autoFixMutations(code: string): AutoFixResult {
   // Count how many times each array is directly mutated
   const mutationCounts = new Map<string, number>();
   const directAssignPattern = /(\w+)\[([^\]]+)\]\s*=\s*([^=].*?)(?:;|$)/g;
@@ -525,9 +663,15 @@ function autoFixMutations(code: string): { fixedCode: string; fixCount: number }
   const hasMultipleMutations = Array.from(mutationCounts.values()).some(count => count > 1);
 
   if (hasMultipleMutations) {
-    // Don't auto-fix - return original code
+    // Don't auto-fix - return original code with skip indicator
     // The artifact-fix endpoint will handle this with proper understanding of context
-    return { fixedCode: code, fixCount: 0 };
+    console.warn('[artifact-validator] Skipping auto-fix - multiple mutations detected for same array');
+    return {
+      fixedCode: code,
+      fixCount: 0,
+      skipped: true,
+      skipReason: 'multiple-mutations'
+    };
   }
 
   let fixCount = 0;

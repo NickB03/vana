@@ -166,12 +166,14 @@ const Home = () => {
   const [loadingSuggestions, setLoadingSuggestions] = useState(true);
 
   // Scroll transition - triggers at the end of CTA section
-  // Use feature flag for immediate default (prevents flash), allow database override
+  // CRITICAL: Defer skipLanding decision until DB loads to prevent race conditions
+  // Using null as loading state shows landing page by default (safe fallback)
   const ctaSectionRef = useRef<HTMLDivElement>(null);
   const landingPageEnabled = landingSettingLoading
-    ? FEATURE_FLAGS.LANDING_PAGE_ENABLED  // Fast default while loading (prevents flash)
+    ? null  // Loading state - don't make decision yet
     : (landingPageSetting?.enabled ?? FEATURE_FLAGS.LANDING_PAGE_ENABLED);  // Database override or fallback
-  const skipLandingPage = !landingPageEnabled;
+  // Skip landing page only if DB explicitly says to (null = show landing as safe default)
+  const skipLandingPage = landingPageEnabled === false;
   const { phase, progress, setTriggerElement } = useScrollTransition({
     enabled: true,
     skipLanding: skipLandingPage,

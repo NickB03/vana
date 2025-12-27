@@ -1014,14 +1014,15 @@ export const ArtifactRenderer = memo(({
           window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
         } catch (error) {
           console.error('Mermaid render error:', error);
-          onPreviewErrorChange(error instanceof Error ? error.message : 'Failed to render diagram');
+          const errorMessage = error instanceof Error ? error.message : 'Failed to render diagram';
+          handleArtifactError(errorMessage);
           onLoadingChange(false);
-          window.postMessage({ type: 'artifact-rendered-complete', success: false, error: error instanceof Error ? error.message : 'Failed to render diagram' }, '*');
+          window.postMessage({ type: 'artifact-rendered-complete', success: false, error: errorMessage }, '*');
         }
       };
       renderMermaid();
     }
-  }, [artifact.content, artifact.type, onLoadingChange, onPreviewErrorChange]);
+  }, [artifact.content, artifact.type, onLoadingChange, handleArtifactError]);
 
   // Check if needs Sandpack (memoized for performance)
   const needsSandpack = useMemo(() => {

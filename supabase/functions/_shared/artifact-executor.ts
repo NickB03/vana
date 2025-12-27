@@ -32,6 +32,9 @@ import {
   validateArtifactCode,
   autoFixArtifactCode,
   preValidateAndFixGlmSyntax,
+  VALIDATION_ERROR_CODES,
+  type ValidationIssue,
+  type ValidationErrorCode,
 } from './artifact-validator.ts';
 import { getSystemInstruction } from './system-prompt-inline.ts';
 import { MODELS, ARTIFACT_TYPES, type ArtifactType, FEATURE_FLAGS } from './config.ts';
@@ -64,31 +67,56 @@ const MAX_PROMPT_LENGTH = 10000;
 // ============================================================================
 
 /**
- * Patterns for non-blocking validation issues that should not prevent artifact rendering.
- * These are typically warnings for code patterns that work but may trigger React strict mode warnings.
+ * Set of error codes that are non-blocking (don't prevent artifact rendering).
+ *
+ * NON-BLOCKING CRITERIA:
+ * - Issue doesn't crash artifacts - only causes React strict mode warnings
+ * - Complex algorithms (e.g., minimax) may have unavoidable patterns
+ * - Code works correctly in production, just not in strict mode
+ *
+ * This Set-based approach replaces the previous string-matching pattern,
+ * which was fragile and could accidentally match unrelated error messages.
+ * For example, "Direct array assignment to React ref" would have matched
+ * "Direct array assignment" and incorrectly been marked as non-blocking.
+ *
+ * @see VALIDATION_ERROR_CODES in artifact-validator.ts for all available codes
  */
-const NON_BLOCKING_PATTERNS = [
-  'Direct array assignment',
-  'mutates the original array',
-] as const;
+const NON_BLOCKING_ERROR_CODES: ReadonlySet<ValidationErrorCode> = new Set([
+  // Immutability violations - only cause strict mode warnings, don't crash artifacts
+  VALIDATION_ERROR_CODES.IMMUTABILITY_ARRAY_ASSIGNMENT,
+  VALIDATION_ERROR_CODES.IMMUTABILITY_ARRAY_PUSH,
+  VALIDATION_ERROR_CODES.IMMUTABILITY_ARRAY_SPLICE,
+  VALIDATION_ERROR_CODES.IMMUTABILITY_ARRAY_SORT,
+  VALIDATION_ERROR_CODES.IMMUTABILITY_ARRAY_REVERSE,
+  VALIDATION_ERROR_CODES.IMMUTABILITY_ARRAY_POP,
+  VALIDATION_ERROR_CODES.IMMUTABILITY_ARRAY_SHIFT,
+  VALIDATION_ERROR_CODES.IMMUTABILITY_ARRAY_UNSHIFT,
+]);
 
 /**
  * Filters validation issues to return only critical (blocking) issues.
  *
- * Non-blocking issues (like immutability warnings) are excluded because:
- * - They don't crash artifacts - they only cause React strict mode warnings
- * - Complex algorithms (e.g., minimax) may have unavoidable mutations
- * - These patterns work correctly in production, just not in strict mode
+ * Uses structured error codes for type-safe filtering instead of fragile
+ * string matching. This prevents false positives where error messages
+ * accidentally match substring patterns.
+ *
+ * FAIL-CLOSED BEHAVIOR: Issues without error codes are treated as critical.
+ * This ensures that new issue types don't accidentally bypass validation.
  *
  * @param issues - Array of validation issues to filter
  * @returns Array containing only critical issues that should block artifact rendering
  */
-function filterCriticalIssues(
-  issues: Array<{ message: string; line?: number; column?: number }>
-): Array<{ message: string; line?: number; column?: number }> {
-  return issues.filter(
-    (issue) => !NON_BLOCKING_PATTERNS.some((pattern) => issue.message.includes(pattern))
-  );
+function filterCriticalIssues(issues: ValidationIssue[]): ValidationIssue[] {
+  return issues.filter((issue) => {
+    // FAIL-CLOSED: If error has no code, treat as critical (blocking)
+    // This ensures new error types don't silently pass through
+    if (!issue.code) {
+      return true;
+    }
+
+    // Only exclude issues with explicitly non-blocking codes
+    return !NON_BLOCKING_ERROR_CODES.has(issue.code);
+  });
 }
 
 /**
