@@ -18,6 +18,8 @@ interface ValidationResult {
   valid: boolean;
   issues: ValidationIssue[];
   canAutoFix: boolean;
+  overridden?: boolean;        // Tracks when validation was overridden despite warnings (Issue #2)
+  overrideReason?: string;     // Explains why validation was overridden (e.g., 'only-immutability-warnings')
 }
 
 /**
