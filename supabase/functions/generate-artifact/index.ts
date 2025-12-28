@@ -508,8 +508,12 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
           try {
             await sendEvent("error", { error: error instanceof Error ? error.message : "Unknown streaming error", requestId });
             await writer.close();
-          } catch {
-            // Writer may already be closed
+          } catch (closeError) {
+            // Expected: writer may already be closed
+            // Log unexpected errors for investigation
+            if (!(closeError instanceof TypeError && String(closeError).includes('closed'))) {
+              console.error(`[${requestId}] Unexpected error during error handling cleanup:`, closeError);
+            }
           }
         }
       })();

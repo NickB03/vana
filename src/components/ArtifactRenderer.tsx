@@ -342,7 +342,13 @@ const BundledArtifactFrame = memo(({
 
               console.log('[BundledArtifactFrame] Updated import map with react/react-dom shims');
             } catch (e) {
-              console.warn('[BundledArtifactFrame] Failed to update import map:', e);
+              const errorMessage = e instanceof Error ? e.message : String(e);
+              console.error('[BundledArtifactFrame] Failed to update import map:', e);
+              Sentry.captureException(e, {
+                tags: { component: 'BundledArtifactFrame', action: 'import-map-update' },
+              });
+              setFetchError(`Import map configuration failed: ${errorMessage}`);
+              return; // Don't continue with broken import map
             }
           }
 
