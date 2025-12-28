@@ -1,18 +1,17 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { Artifact, ArtifactHeader, ArtifactTitle, ArtifactContent, ArtifactActions } from '@/components/ai-elements/artifact';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Artifact, ArtifactHeader, ArtifactContent, ArtifactActions, ArtifactAction } from '@/components/ai-elements/artifact';
 import { toast } from "sonner";
-import { validateArtifact, ValidationResult, categorizeError } from "@/utils/artifactValidator";
-import { Badge } from "@/components/ui/badge";
+import { validateArtifact, ValidationResult } from "@/utils/artifactValidator";
 import mermaid from "mermaid";
 import { detectAndInjectLibraries } from "@/utils/libraryDetection";
-import { extractNpmDependencies } from '@/utils/npmDetection';
 import { supabase } from "@/integrations/supabase/client";
 import { ArtifactErrorBoundary } from "./ArtifactErrorBoundary";
 import { ArtifactRenderer } from "./ArtifactRenderer";
 import { ArtifactToolbar } from "./ArtifactToolbar";
 import { ArtifactCodeEditor } from "./ArtifactCodeEditor";
 import { generateCompleteIframeStyles } from "@/utils/themeUtils";
+import { ArtifactViewToggle } from "./ArtifactViewToggle";
+import { RefreshCw } from "lucide-react";
 
 export type ArtifactType = "code" | "markdown" | "html" | "svg" | "mermaid" | "react" | "image";
 
@@ -40,6 +39,7 @@ interface ArtifactContainerProps {
 
 export const ArtifactContainer = ({ artifact, onClose, onEdit, onContentChange }: ArtifactContainerProps) => {
   // State management
+  const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
   const [isMaximized, setIsMaximized] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [errorCategory, setErrorCategory] = useState<'syntax' | 'runtime' | 'import' | 'unknown'>('unknown');
@@ -50,6 +50,14 @@ export const ArtifactContainer = ({ artifact, onClose, onEdit, onContentChange }
   const [editedContent, setEditedContent] = useState(artifact.content);
   const [themeRefreshKey, setThemeRefreshKey] = useState(0);
   const [isFixingError, setIsFixingError] = useState(false);
+
+  // Ref to store the generated preview HTML content (for pop-out functionality)
+  const previewContentRef = useRef<string | null>(null);
+
+  // Sync viewMode with isEditingCode
+  useEffect(() => {
+    setIsEditingCode(viewMode === 'code');
+  }, [viewMode]);
 
   // Initialize mermaid
   useEffect(() => {
@@ -110,10 +118,19 @@ export const ArtifactContainer = ({ artifact, onClose, onEdit, onContentChange }
       return;
     }
 
-    const isFullHTML = artifact.content.includes("<!DOCTYPE");
-    const popoutContent = isFullHTML
-      ? artifact.content
-      : `<!DOCTYPE html>
+    // Use the pre-generated preview content from ArtifactRenderer if available
+    // This is essential for React artifacts which need transpilation
+    let popoutContent: string;
+
+    if (previewContentRef.current) {
+      // Use the properly generated preview HTML (includes React, transpiled code, etc.)
+      popoutContent = previewContentRef.current;
+    } else {
+      // Fallback for artifacts where preview content isn't available yet
+      const isFullHTML = artifact.content.includes("<!DOCTYPE");
+      popoutContent = isFullHTML
+        ? artifact.content
+        : `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -134,6 +151,7 @@ export const ArtifactContainer = ({ artifact, onClose, onEdit, onContentChange }
 ${artifact.content}
 </body>
 </html>`;
+    }
 
     newWindow.document.open();
     newWindow.document.write(popoutContent);
@@ -162,7 +180,9 @@ ${artifact.content}
     setIsEditingCode(false);
   }, [artifact.content]);
 
-  const handleAIFix = async () => {
+  // CRITICAL: useCallback prevents BundledArtifactFrame's useEffect from re-running
+  // on every parent render, which was causing blob URLs to be revoked prematurely
+  const handleAIFix = useCallback(async () => {
     if (!previewError) return;
 
     setIsFixingError(true);
@@ -211,7 +231,7 @@ ${artifact.content}
     } finally {
       setIsFixingError(false);
     }
-  };
+  }, [previewError, artifact.content, artifact.type, onContentChange]);
 
   // Render functions use extracted components
   const renderPreview = () => {
@@ -235,6 +255,7 @@ ${artifact.content}
         onLoadingChange={setIsLoading}
         onPreviewErrorChange={setPreviewError}
         onErrorCategoryChange={setErrorCategory}
+        previewContentRef={previewContentRef}
       />
     );
   };
@@ -257,15 +278,24 @@ ${artifact.content}
   return (
     <Artifact className={isMaximized ? "fixed inset-4 z-50" : "h-full"} data-testid="artifact-container">
       <ArtifactHeader>
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <ArtifactTitle>{artifact.title}</ArtifactTitle>
-          {validation && validation.errors.length > 0 && (
-            <Badge variant="destructive" className="text-xs">
-              {validation.errors.length} error{validation.errors.length > 1 ? 's' : ''}
-            </Badge>
-          )}
+        <div className="flex items-center gap-3">
+          <ArtifactViewToggle
+            value={viewMode}
+            onChange={setViewMode}
+          />
+          <div className="flex items-center gap-1.5 text-sm text-gray-400">
+            <span className="text-gray-200">v1</span>
+            <span>•</span>
+            <span>Latest</span>
+          </div>
         </div>
+
         <ArtifactActions>
+          <ArtifactAction
+            icon={RefreshCw}
+            tooltip="Refresh preview"
+            onClick={handleRefresh}
+          />
           <ArtifactToolbar
             artifact={artifact}
             injectedCDNs={injectedCDNs}
@@ -279,26 +309,15 @@ ${artifact.content}
       </ArtifactHeader>
 
       <ArtifactContent className="p-0">
-        <Tabs
-          defaultValue="preview"
-          className="flex-1 flex flex-col min-h-0 overflow-hidden h-full"
-          onValueChange={(value) => setIsEditingCode(value === "code")}
-        >
-          <TabsList className="w-full justify-start rounded-none border-b bg-muted/30">
-            <TabsTrigger value="preview">Preview</TabsTrigger>
-            <TabsTrigger value="code">Edit</TabsTrigger>
-          </TabsList>
-          <TabsContent value="preview" className="flex-1 m-0 p-0 data-[state=active]:flex flex-col overflow-hidden">
-            <ArtifactErrorBoundary>
-              {renderPreview()}
-            </ArtifactErrorBoundary>
-          </TabsContent>
-          <TabsContent value="code" className="flex-1 m-0 p-0 data-[state=active]:flex overflow-hidden">
-            <ArtifactErrorBoundary>
-              {renderCode()}
-            </ArtifactErrorBoundary>
-          </TabsContent>
-        </Tabs>
+        {viewMode === 'preview' ? (
+          <ArtifactErrorBoundary>
+            {renderPreview()}
+          </ArtifactErrorBoundary>
+        ) : (
+          <ArtifactErrorBoundary>
+            {renderCode()}
+          </ArtifactErrorBoundary>
+        )}
       </ArtifactContent>
     </Artifact>
   );
