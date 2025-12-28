@@ -18,7 +18,8 @@ export const Artifact = (props: ArtifactProps) => {
   return (
     <div
       className={cn(
-        "flex flex-col overflow-hidden rounded-none border bg-background shadow-md",
+        "flex flex-col overflow-hidden",
+        // Transparent - inherits styling from unified parent container
         className
       )}
       {...rest}
@@ -33,7 +34,8 @@ export const ArtifactHeader = (props: ArtifactHeaderProps) => {
   return (
     <div
       className={cn(
-        "flex items-center justify-between border-b h-12 border-gray-700 bg-[#2d2d2d] px-3",
+        "flex items-center justify-between border-b h-12 border-border/30 bg-white/5 px-3",
+        // Subtle header - inherits from unified parent container
         className
       )}
       {...rest}

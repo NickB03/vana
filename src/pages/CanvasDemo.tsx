@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 export default function CanvasDemo() {
   const [currentView, setCurrentView] = useState<'preview' | 'code'>('preview');
   const [proposedView, setProposedView] = useState<'preview' | 'code'>('preview');
+  const [selectedOption, setSelectedOption] = useState<'glass' | 'minimal' | 'hybrid'>('hybrid');
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -38,6 +39,314 @@ export default function CanvasDemo() {
               View Live Demo in Vana UI
             </Link>
           </Button>
+        </div>
+
+        {/* UI Cohesiveness Options */}
+        <div className="border rounded-lg p-6 space-y-6">
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-semibold">UI Cohesiveness Options</h2>
+            <p className="text-muted-foreground">
+              Solving the visual disconnect between chat panel (rounded glass-morphic) and canvas panel (square minimalistic)
+            </p>
+          </div>
+
+          {/* Option Selector */}
+          <div className="flex justify-center gap-2">
+            <Button
+              variant={selectedOption === 'glass' ? 'default' : 'outline'}
+              onClick={() => setSelectedOption('glass')}
+            >
+              Option 1: Glass-Morphic
+            </Button>
+            <Button
+              variant={selectedOption === 'minimal' ? 'default' : 'outline'}
+              onClick={() => setSelectedOption('minimal')}
+            >
+              Option 2: Minimal
+            </Button>
+            <Button
+              variant={selectedOption === 'hybrid' ? 'default' : 'outline'}
+              onClick={() => setSelectedOption('hybrid')}
+              className="gap-2"
+            >
+              Option 3: Hybrid
+              <Badge variant="secondary" className="bg-green-500/20 text-green-600 border-green-500/30">
+                Recommended
+              </Badge>
+            </Button>
+          </div>
+
+          {/* Option 1: Unified Glass-Morphic */}
+          {selectedOption === 'glass' && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <h3 className="text-xl font-semibold mb-2">Option 1: Unified Glass-Morphic Design</h3>
+                <p className="text-sm text-muted-foreground">Apply chat's rounded glass aesthetic to the entire interface</p>
+              </div>
+
+              {/* Mockup */}
+              <div className="border rounded-lg overflow-hidden bg-gradient-to-br from-purple-950 via-blue-950 to-indigo-950 h-[500px] p-6">
+                <div className="flex h-full gap-6">
+                  {/* Chat Panel - Glass */}
+                  <div className="flex-1 flex flex-col rounded-3xl bg-black/70 backdrop-blur-sm border border-white/10 shadow-2xl overflow-hidden">
+                    <div className="border-b border-white/10 bg-white/5 px-4 py-3">
+                      <p className="text-white/90 text-sm font-medium">Chat Panel</p>
+                    </div>
+                    <div className="flex-1 p-4 space-y-3">
+                      <div className="bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-2 ml-auto w-fit max-w-[80%]">
+                        <p className="text-white/90 text-sm">User message</p>
+                      </div>
+                      <div className="bg-white/5 backdrop-blur-sm rounded-2xl px-4 py-2 w-fit max-w-[80%]">
+                        <p className="text-white/90 text-sm">Assistant response</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Canvas Panel - Glass */}
+                  <div className="w-[45%] flex flex-col rounded-3xl bg-black/70 backdrop-blur-sm border border-white/10 shadow-2xl overflow-hidden">
+                    <div className="border-b border-white/10 bg-white/5 px-4 py-3">
+                      <p className="text-white/90 text-sm font-medium">Canvas Panel</p>
+                    </div>
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="w-16 h-16 bg-primary/30 rounded-2xl mx-auto flex items-center justify-center mb-2">
+                          <Eye className="w-8 h-8 text-primary" />
+                        </div>
+                        <p className="text-white/70 text-sm">Artifact Preview</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Details */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <h4 className="font-medium mb-2 text-sm">Key Characteristics</h4>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                    <li><code className="text-xs bg-muted px-1 rounded">rounded-3xl</code> on both panels</li>
+                    <li><code className="text-xs bg-muted px-1 rounded">bg-black/70 backdrop-blur-sm</code> glass effect</li>
+                    <li><code className="text-xs bg-muted px-1 rounded">border-white/10</code> subtle borders</li>
+                    <li>Unified visual language throughout</li>
+                  </ul>
+                </div>
+                <div className="space-y-3">
+                  <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                    <p className="font-medium text-green-600 text-sm mb-1">Pros</p>
+                    <ul className="list-disc list-inside text-xs text-muted-foreground space-y-0.5">
+                      <li>Complete visual consistency</li>
+                      <li>Modern, polished aesthetic</li>
+                      <li>Clear panel separation</li>
+                    </ul>
+                  </div>
+                  <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    <p className="font-medium text-red-600 text-sm mb-1">Cons</p>
+                    <ul className="list-disc list-inside text-xs text-muted-foreground space-y-0.5">
+                      <li>Rounded corners waste screen space</li>
+                      <li>Less content area for artifacts</li>
+                      <li>May feel too decorative for tools</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Option 2: Minimal Everywhere */}
+          {selectedOption === 'minimal' && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <h3 className="text-xl font-semibold mb-2">Option 2: Minimal Everywhere</h3>
+                <p className="text-sm text-muted-foreground">Reduce chat to minimal styling, maximize screen real estate</p>
+              </div>
+
+              {/* Mockup */}
+              <div className="border rounded-lg overflow-hidden bg-[#1a1a1a] h-[500px] p-6">
+                <div className="flex h-full gap-0">
+                  {/* Chat Panel - Minimal */}
+                  <div className="flex-1 flex flex-col bg-[#212121] border-r border-gray-800 overflow-hidden">
+                    <div className="border-b border-gray-800 bg-[#2a2a2a] px-4 py-3">
+                      <p className="text-gray-200 text-sm font-medium">Chat Panel</p>
+                    </div>
+                    <div className="flex-1 p-4 space-y-3">
+                      <div className="bg-[#3a3a3a] rounded-lg px-4 py-2 ml-auto w-fit max-w-[80%]">
+                        <p className="text-gray-200 text-sm">User message</p>
+                      </div>
+                      <div className="bg-[#2a2a2a] rounded-lg px-4 py-2 w-fit max-w-[80%]">
+                        <p className="text-gray-200 text-sm">Assistant response</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Canvas Panel - Minimal */}
+                  <div className="w-[45%] flex flex-col bg-[#1e1e1e] overflow-hidden">
+                    <div className="border-b border-gray-800 bg-[#2d2d2d] px-4 py-3">
+                      <p className="text-gray-200 text-sm font-medium">Canvas Panel</p>
+                    </div>
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="w-16 h-16 bg-primary/20 rounded mx-auto flex items-center justify-center mb-2">
+                          <Eye className="w-8 h-8 text-primary" />
+                        </div>
+                        <p className="text-gray-400 text-sm">Artifact Preview</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Details */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <h4 className="font-medium mb-2 text-sm">Key Characteristics</h4>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                    <li><code className="text-xs bg-muted px-1 rounded">rounded-none</code> or minimal rounding</li>
+                    <li>Solid backgrounds, no blur effects</li>
+                    <li>Sharp borders between panels</li>
+                    <li>Maximum content area</li>
+                  </ul>
+                </div>
+                <div className="space-y-3">
+                  <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                    <p className="font-medium text-green-600 text-sm mb-1">Pros</p>
+                    <ul className="list-disc list-inside text-xs text-muted-foreground space-y-0.5">
+                      <li>Maximum screen real estate</li>
+                      <li>Clean, professional look</li>
+                      <li>Better for productivity tools</li>
+                      <li>Follows IDE/editor conventions</li>
+                    </ul>
+                  </div>
+                  <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    <p className="font-medium text-red-600 text-sm mb-1">Cons</p>
+                    <ul className="list-disc list-inside text-xs text-muted-foreground space-y-0.5">
+                      <li>May feel too stark/utilitarian</li>
+                      <li>Loses current brand aesthetic</li>
+                      <li>Less visual polish</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Option 3: Hybrid Approach (Recommended) */}
+          {selectedOption === 'hybrid' && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <h3 className="text-xl font-semibold mb-2">Option 3: Hybrid Approach</h3>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Badge className="bg-green-500/20 text-green-600 border-green-500/30">
+                    Recommended
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">Keep chat's rounded glass on left, subtle rounding on canvas right edge only</p>
+              </div>
+
+              {/* Mockup */}
+              <div className="border rounded-lg overflow-hidden bg-gradient-to-br from-indigo-950 via-purple-950 to-blue-950 h-[500px] p-6">
+                <div className="flex h-full gap-0">
+                  {/* Chat Panel - Glass with rounded left */}
+                  <div className="flex-1 flex flex-col rounded-tl-3xl rounded-bl-3xl bg-black/70 backdrop-blur-sm border-l border-t border-b border-white/10 shadow-2xl overflow-hidden">
+                    <div className="border-b border-white/10 bg-white/5 px-4 py-3">
+                      <p className="text-white/90 text-sm font-medium">Chat Panel</p>
+                      <p className="text-white/50 text-xs mt-1">rounded-tl-3xl rounded-bl-3xl</p>
+                    </div>
+                    <div className="flex-1 p-4 space-y-3">
+                      <div className="bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-2 ml-auto w-fit max-w-[80%]">
+                        <p className="text-white/90 text-sm">User message</p>
+                      </div>
+                      <div className="bg-white/5 backdrop-blur-sm rounded-2xl px-4 py-2 w-fit max-w-[80%]">
+                        <p className="text-white/90 text-sm">Assistant response</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Canvas Panel - Subtle glass with rounded right */}
+                  <div className="w-[45%] flex flex-col rounded-tr-lg rounded-br-lg bg-black/50 backdrop-blur-sm border-r border-t border-b border-white/10 shadow-2xl overflow-hidden">
+                    <div className="border-b border-white/10 bg-black/40 backdrop-blur-sm px-4 py-3">
+                      <p className="text-white/90 text-sm font-medium">Canvas Panel</p>
+                      <p className="text-white/50 text-xs mt-1">rounded-tr-lg rounded-br-lg</p>
+                    </div>
+                    <div className="flex-1 flex items-center justify-center bg-[#1e1e1e]/80">
+                      <div className="text-center">
+                        <div className="w-16 h-16 bg-primary/30 rounded-lg mx-auto flex items-center justify-center mb-2">
+                          <Eye className="w-8 h-8 text-primary" />
+                        </div>
+                        <p className="text-white/70 text-sm">Artifact Preview</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Details */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <h4 className="font-medium mb-2 text-sm">Key Characteristics</h4>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                    <li>Chat: <code className="text-xs bg-muted px-1 rounded">rounded-tl-3xl rounded-bl-3xl</code></li>
+                    <li>Canvas: <code className="text-xs bg-muted px-1 rounded">rounded-tr-lg rounded-br-lg</code></li>
+                    <li>Canvas header: <code className="text-xs bg-muted px-1 rounded">bg-black/50 backdrop-blur-sm</code></li>
+                    <li>Creates visual "bookends" effect</li>
+                    <li>Maintains distinct tool vs chat areas</li>
+                  </ul>
+                </div>
+                <div className="space-y-3">
+                  <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                    <p className="font-medium text-green-600 text-sm mb-1">Pros</p>
+                    <ul className="list-disc list-inside text-xs text-muted-foreground space-y-0.5">
+                      <li>Best of both worlds approach</li>
+                      <li>Keeps brand's glass aesthetic</li>
+                      <li>Maximizes canvas content area</li>
+                      <li>Visual hierarchy: chat (decorative) vs canvas (functional)</li>
+                      <li>Subtle rounding prevents harsh edge</li>
+                    </ul>
+                  </div>
+                  <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                    <p className="font-medium text-yellow-600 text-sm mb-1">Considerations</p>
+                    <ul className="list-disc list-inside text-xs text-muted-foreground space-y-0.5">
+                      <li>Requires careful balance of styling</li>
+                      <li>Different rounding amounts per panel</li>
+                      <li>May need slight gap between panels</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Implementation Example */}
+              <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                <h4 className="font-medium text-primary mb-2 text-sm">Implementation Example</h4>
+                <div className="grid grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <p className="text-muted-foreground mb-2">Chat Container:</p>
+                    <pre className="bg-muted/50 p-2 rounded overflow-x-auto">
+                      <code>{`className="
+  rounded-tl-3xl
+  rounded-bl-3xl
+  bg-black/70
+  backdrop-blur-sm
+  border-l border-t border-b
+  border-white/10
+"`}</code>
+                    </pre>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground mb-2">Canvas Container:</p>
+                    <pre className="bg-muted/50 p-2 rounded overflow-x-auto">
+                      <code>{`className="
+  rounded-tr-lg
+  rounded-br-lg
+  bg-black/50
+  backdrop-blur-sm
+  border-r border-t border-b
+  border-white/10
+"`}</code>
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Comparison Grid */}

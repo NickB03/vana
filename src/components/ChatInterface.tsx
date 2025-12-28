@@ -536,8 +536,8 @@ export function ChatInterface({
         </div>
       )}
 
-      {/* Unified chat card with embedded prompt input */}
-      <div className="relative mx-auto flex flex-1 min-h-0 w-full max-w-5xl rounded-3xl bg-black/70 backdrop-blur-sm shadow-[inset_-2px_0_4px_rgba(255,255,255,0.05)] border border-border/50">
+      {/* Chat content - transparent to show unified parent container */}
+      <div className="relative flex flex-1 min-h-0 w-full">
         <ChatContainerRoot className="flex flex-1 flex-col min-h-0 overflow-hidden">
           <ChatContainerContent
             className={combineSpacing(
@@ -854,7 +854,14 @@ export function ChatInterface({
         </div>
       ) : (
         // Desktop Layout: Side-by-side resizable panels with Gemini-style sizing (30/70 split)
-        <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
+        // UNIFIED CONTAINER: Single glass-morphic box wrapping both chat and canvas
+        <div className={cn(
+          "flex-1 min-h-0 mx-4 my-4 overflow-hidden rounded-3xl",
+          "bg-black/60 backdrop-blur-md border border-white/10 shadow-2xl",
+          // Add subtle glow effect for visual prominence
+          "ring-1 ring-white/5"
+        )}>
+        <ResizablePanelGroup direction="horizontal" className="h-full">
           <ResizablePanel
             id="chat-panel"
             order={1}
@@ -889,6 +896,7 @@ export function ChatInterface({
             )}
           </ResizablePanel>
         </ResizablePanelGroup>
+        </div>
       )}
       </div>
     </>
