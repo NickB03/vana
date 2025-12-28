@@ -8,8 +8,8 @@ import { toast } from "sonner";
 import { Markdown } from "@/components/ui/markdown";
 import { generateCompleteIframeStyles } from "@/utils/themeUtils";
 import { ArtifactSkeleton } from "@/components/ui/artifact-skeleton";
-import { WebPreview, WebPreviewBody, WebPreviewNavigation, WebPreviewNavigationButton } from '@/components/ai-elements/web-preview';
-import { RefreshCw, Maximize2, Download, Edit } from "lucide-react";
+import { WebPreview, WebPreviewBody } from '@/components/ai-elements/web-preview';
+import { Download, Edit } from "lucide-react";
 import { ValidationResult, categorizeError } from "@/utils/artifactValidator";
 import { detectNpmImports } from '@/utils/npmDetection';
 import { lazy } from "react";
@@ -700,6 +700,7 @@ interface ArtifactRendererProps {
   onLoadingChange: (loading: boolean) => void;
   onPreviewErrorChange: (error: string | null) => void;
   onErrorCategoryChange: (category: 'syntax' | 'runtime' | 'import' | 'unknown') => void;
+  previewContentRef?: React.MutableRefObject<string | null>;
 }
 
 export const ArtifactRenderer = memo(({
@@ -721,6 +722,7 @@ export const ArtifactRenderer = memo(({
   onLoadingChange,
   onPreviewErrorChange,
   onErrorCategoryChange,
+  previewContentRef,
 }: ArtifactRendererProps) => {
   const mermaidRef = useRef<HTMLDivElement>(null);
 
@@ -1026,6 +1028,11 @@ ${artifact.content}
 </body>
 </html>`;
 
+    // Store preview content for pop-out functionality
+    if (previewContentRef) {
+      previewContentRef.current = previewContent;
+    }
+
     return (
       <div className="w-full h-full relative flex flex-col">
         {validation && !validation.isValid && (
@@ -1069,21 +1076,7 @@ ${artifact.content}
               />
             </div>
           )}
-          <WebPreview key={`webpreview-${themeRefreshKey}`}>
-            <WebPreviewNavigation>
-              <WebPreviewNavigationButton
-                tooltip="Refresh preview"
-                onClick={onRefresh}
-              >
-                <RefreshCw className="h-4 w-4" />
-              </WebPreviewNavigationButton>
-              <WebPreviewNavigationButton
-                tooltip="Full screen"
-                onClick={onFullScreen}
-              >
-                <Maximize2 className="h-4 w-4" />
-              </WebPreviewNavigationButton>
-            </WebPreviewNavigation>
+          <WebPreview key={`webpreview-${themeRefreshKey}`} className="rounded-none border-0">
             <WebPreviewBody
               srcDoc={previewContent}
               key={`${injectedCDNs}-${themeRefreshKey}`}
@@ -1527,6 +1520,10 @@ ${ERROR_HANDLING_SCRIPT}
           data: { elapsed: transpileResult.elapsed, componentName },
         });
         reactPreviewContent = generateSucraseTemplate(transpileResult.code, componentName);
+        // Store preview content for pop-out functionality
+        if (previewContentRef) {
+          previewContentRef.current = reactPreviewContent;
+        }
     } else {
       // Transpilation failed - show clear error message (no Babel fallback)
       console.error('[ArtifactRenderer] Sucrase transpilation failed:', transpileResult.error);
@@ -1594,21 +1591,7 @@ ${ERROR_HANDLING_SCRIPT}
               />
             </div>
           )}
-          <WebPreview key={`webpreview-react-${themeRefreshKey}`}>
-            <WebPreviewNavigation>
-              <WebPreviewNavigationButton
-                tooltip="Refresh preview"
-                onClick={onRefresh}
-              >
-                <RefreshCw className="h-4 w-4" />
-              </WebPreviewNavigationButton>
-              <WebPreviewNavigationButton
-                tooltip="Full screen"
-                onClick={onFullScreen}
-              >
-                <Maximize2 className="h-4 w-4" />
-              </WebPreviewNavigationButton>
-            </WebPreviewNavigation>
+          <WebPreview key={`webpreview-react-${themeRefreshKey}`} className="rounded-none border-0">
             <WebPreviewBody
               srcDoc={reactPreviewContent}
               key={`${injectedCDNs}-${themeRefreshKey}`}
