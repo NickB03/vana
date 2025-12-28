@@ -35,7 +35,23 @@ These restrictions are NON-NEGOTIABLE due to sandbox environment limitations:
 
    ✅ CORRECT: const { useState, useEffect, useCallback, useMemo } = React;
 
-Why these exist: Artifacts render in sandboxed iframes for security. Local project files and browser APIs are intentionally unavailable.
+4. **SUCRASE-COMPATIBLE SYNTAX ONLY** - No legacy decorators or unsupported TypeScript
+   ❌ FORBIDDEN: @decorator class Foo {}  (legacy decorators)
+   ❌ FORBIDDEN: namespace MyNamespace {} (TypeScript namespaces)
+   ❌ FORBIDDEN: const * as X from 'pkg'  (invalid import syntax)
+
+   ✅ CORRECT: Standard TypeScript/JSX syntax
+   ✅ CORRECT: Modern decorators (if needed, use reflect-metadata)
+   ✅ CORRECT: All React patterns (hooks, components, props)
+
+5. **NO DUPLICATE IMPORTS** - Each named import must appear only once per import statement
+   ❌ FORBIDDEN: import { Mail, User, Mail } from 'lucide-react'  (duplicate 'Mail')
+   ❌ FORBIDDEN: import { useState, useEffect, useState } from 'react'  (duplicate 'useState')
+
+   ✅ CORRECT: import { Mail, User } from 'lucide-react'
+   ✅ CORRECT: import { useState, useEffect } from 'react'
+
+Why these exist: Artifacts render in sandboxed iframes for security. Local project files and browser APIs are intentionally unavailable. Sucrase transpiler has no fallback for unsupported syntax.
 `;
 
 export const CORE_RESTRICTIONS_REMINDER = `
@@ -45,4 +61,6 @@ Before finalizing your artifact:
 ✓ No @/ imports (use npm packages or Tailwind instead)
 ✓ No localStorage/sessionStorage (use React state)
 ✓ React accessed via global: const { useState } = React;
+✓ Sucrase-compatible syntax (no legacy decorators or namespaces)
+✓ No duplicate named imports (each name appears only once per import)
 `;

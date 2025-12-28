@@ -27,7 +27,6 @@ import {
   callGLMWithRetry,
   processGLMStream,
   callGLMWithToolResult,
-  parseStatusMarker,
   type ToolCall,
   type NativeToolCall,
 } from '../../_shared/glm-client.ts';
@@ -512,7 +511,6 @@ export async function handleToolCallingChat(
 
           // Accumulate reasoning text for context
           let fullReasoningAccumulated = '';
-          let lastStatusMarker = '';
 
           // Process stream with native tool call detection
           // GLM now uses OpenAI-compatible tool_calls in response instead of XML
@@ -528,17 +526,6 @@ export async function handleToolCallingChat(
                   type: 'reasoning_chunk',
                   chunk: chunk,
                 });
-
-                // Parse [STATUS:] markers and emit status updates
-                const statusMarker = parseStatusMarker(fullReasoningAccumulated);
-                if (statusMarker && statusMarker !== lastStatusMarker) {
-                  lastStatusMarker = statusMarker;
-                  sendEvent({
-                    type: 'status_update',
-                    status: statusMarker,
-                  });
-                  console.log(`${logPrefix} 📊 Status marker: "${statusMarker}"`);
-                }
 
                 // Process through ReasoningProvider for semantic status generation
                 await reasoningProvider.processReasoningChunk(chunk);
@@ -703,7 +690,7 @@ export async function handleToolCallingChat(
                       sendEvent({
                         type: 'reasoning_complete',
                         reasoning: fullReasoningAccumulated,
-                        reasoningSteps: null, // Structured steps not used with [STATUS:] markers
+                        reasoningSteps: null, // ReasoningProvider generates semantic status updates instead
                       });
                       console.log(`${logPrefix} 📤 Sent reasoning_complete event (${fullReasoningAccumulated.length} chars)`);
                     }
@@ -747,7 +734,6 @@ export async function handleToolCallingChat(
 
               // Track continuation reasoning for context
               let continuationReasoningText = '';
-              let lastContinuationStatusMarker = '';
 
               // BUG FIX (2025-12-20): Pass the assistant's tool_calls to the continuation
               // This ensures GLM has the proper conversation context and returns a real response
@@ -774,17 +760,6 @@ export async function handleToolCallingChat(
                       type: 'reasoning_chunk',
                       chunk: chunk,
                     });
-
-                    // Parse [STATUS:] markers and emit status updates
-                    const statusMarker = parseStatusMarker(continuationReasoningText);
-                    if (statusMarker && statusMarker !== lastContinuationStatusMarker) {
-                      lastContinuationStatusMarker = statusMarker;
-                      sendEvent({
-                        type: 'status_update',
-                        status: statusMarker,
-                      });
-                      console.log(`${logPrefix} 📊 Continuation status marker: "${statusMarker}"`);
-                    }
 
                     // Process through ReasoningProvider for semantic status generation
                     await reasoningProvider.processReasoningChunk(chunk);

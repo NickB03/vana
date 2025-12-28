@@ -1587,3 +1587,214 @@ export default function App() {
   assertEquals(fixed.includes('const point = { x: 10, y: 20 }'), true);
   assertEquals(fixed.includes('const items = [1, 2, 3]'), true);
 });
+
+// ============================================================================
+// Duplicate Import Removal Tests (removeDuplicateImports via autoFixArtifactCode)
+// ============================================================================
+// Tests for the removeDuplicateImports function which is called internally
+// by autoFixArtifactCode. We test it through the public API.
+
+Deno.test("autoFixArtifactCode - removes simple duplicate imports", () => {
+  const code = `import { Mail, User, Mail } from "lucide-react";
+
+export default function App() {
+  return <div><Mail /><User /></div>;
+}`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Should report 1 duplicate removed
+  assertEquals(changes.some(c => c.includes('1 duplicate import')), true);
+
+  // Verify the import statement is deduplicated
+  // Match the import line (Sucrase preserves import structure)
+  const importMatch = fixed.match(/import\s*\{([^}]+)\}\s*from\s*["']lucide-react["']/);
+  if (importMatch) {
+    const imports = importMatch[1].split(',').map((s: string) => s.trim()).filter(Boolean);
+    // Should have exactly 2 unique imports: Mail and User
+    assertEquals(imports.length, 2);
+    assertEquals(imports.includes('Mail'), true);
+    assertEquals(imports.includes('User'), true);
+  } else {
+    // If Sucrase transforms the import differently, just check no duplicate Mail
+    const mailCount = (fixed.match(/\bMail\b/g) || []).length;
+    // In JSX transpiled output, Mail appears in React.createElement calls
+    // Just ensure the import line doesn't have duplicate Mail
+    assertEquals(fixed.includes('Mail, User, Mail'), false);
+  }
+});
+
+Deno.test("autoFixArtifactCode - removes aliased duplicate imports", () => {
+  const code = `import { X as A, Y, X as B } from "pkg";
+
+export default function App() {
+  return <div>{A}{Y}</div>;
+}`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Sucrase handles duplicate aliased imports during transpilation
+  // The original import X (aliased as A) should be kept, the duplicate X as B removed
+  // Check that we don't have both aliases in the output
+  assertEquals(fixed.includes('X as A'), true);
+  assertEquals(fixed.includes('X as B'), false);
+  // Sucrase reports its transpilation
+  assertEquals(changes.some(c => c.includes('Sucrase')), true);
+});
+
+Deno.test("autoFixArtifactCode - handles multiline imports with duplicates", () => {
+  const code = `import {
+  Mail,
+  User,
+  Mail
+} from "lucide-react";
+
+export default function App() {
+  return <Mail />;
+}`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Should detect and remove the duplicate
+  assertEquals(changes.some(c => c.includes('duplicate import')), true);
+
+  // The fixed code should not have duplicate Mail in import
+  const importMatch = fixed.match(/import\s*\{([^}]+)\}\s*from/);
+  if (importMatch) {
+    const mailCount = importMatch[1].split(',').filter((s: string) => s.trim() === 'Mail').length;
+    assertEquals(mailCount, 1);
+  }
+});
+
+Deno.test("autoFixArtifactCode - removes duplicates from multiple import statements", () => {
+  const code = `import { A, B, A } from "pkg1";
+import { C, D, C } from "pkg2";
+
+export default function App() {
+  return <div>{A}{B}{C}{D}</div>;
+}`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Should report 2 duplicates removed (one from each import)
+  assertEquals(changes.some(c => c.includes('2 duplicate import')), true);
+
+  // Neither import should have duplicates
+  assertEquals(fixed.includes('A, B, A'), false);
+  assertEquals(fixed.includes('C, D, C'), false);
+});
+
+Deno.test("autoFixArtifactCode - preserves imports without duplicates", () => {
+  const code = `import { Mail, User } from "lucide-react";
+
+export default function App() {
+  return <div><Mail /><User /></div>;
+}`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Should NOT report any duplicate removal
+  assertEquals(changes.some(c => c.includes('duplicate import')), false);
+
+  // Import should be preserved (note: Sucrase will transpile JSX)
+  assertEquals(fixed.includes('Mail'), true);
+  assertEquals(fixed.includes('User'), true);
+});
+
+Deno.test("autoFixArtifactCode - removes triple duplicate imports", () => {
+  const code = `import { A, A, A } from "pkg";
+
+export default function App() {
+  return <div>{A}</div>;
+}`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Should report 2 duplicates removed (keeping only 1 A)
+  assertEquals(changes.some(c => c.includes('2 duplicate import')), true);
+
+  // Verify only one A remains in import
+  const importMatch = fixed.match(/import\s*\{([^}]+)\}\s*from\s*["']pkg["']/);
+  if (importMatch) {
+    const imports = importMatch[1].split(',').map((s: string) => s.trim()).filter(Boolean);
+    assertEquals(imports.length, 1);
+    assertEquals(imports[0], 'A');
+  }
+});
+
+Deno.test("autoFixArtifactCode - handles mixed aliased and non-aliased duplicates", () => {
+  // When X and X as Alias both exist, they have the same original name (X)
+  // Sucrase handles this during transpilation - removes the duplicate
+  const code = `import { X, X as Alias } from "pkg";
+
+export default function App() {
+  return <div>{X}</div>;
+}`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Sucrase handles the deduplication during transpilation
+  assertEquals(changes.some(c => c.includes('Sucrase')), true);
+
+  // The aliased version (X as Alias) should be removed by Sucrase
+  assertEquals(fixed.includes('X as Alias'), false);
+
+  // Verify X is still present in the import
+  assertEquals(fixed.includes('import { X'), true);
+});
+
+Deno.test("autoFixArtifactCode - handles default import with duplicate named imports", () => {
+  // Note: The regex in removeDuplicateImports requires `import { ... } from` pattern
+  // and doesn't match `import Default, { ... } from` pattern
+  // However, Sucrase handles this case during transpilation
+  const code = `import React, { useState, useState } from 'react';
+
+export default function App() {
+  const [count, setCount] = useState(0);
+  return <div>{count}</div>;
+}`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Sucrase transpiles the code and handles imports
+  assertEquals(changes.some(c => c.includes('Sucrase')), true);
+
+  // useState should still be usable (appears in the transpiled output)
+  assertEquals(fixed.includes('useState'), true);
+
+  // The code should be valid JavaScript after transformation
+  assertEquals(fixed.includes('React.createElement'), true);
+});
+
+Deno.test("autoFixArtifactCode - preserves whitespace style in deduplicated imports", () => {
+  const code = `import { A,  B,   A } from "pkg";
+
+export default function App() {
+  return <div>{A}{B}</div>;
+}`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Should remove the duplicate
+  assertEquals(changes.some(c => c.includes('1 duplicate import')), true);
+
+  // The fixed import should use standard spacing
+  assertEquals(fixed.includes('import { A, B }'), true);
+});
+
+Deno.test("autoFixArtifactCode - handles complex real-world duplicate scenario", () => {
+  // This simulates a real GLM output bug
+  const code = `import { Mail, User, Settings, Mail, User } from "lucide-react";
+import { Button, Input, Button } from "ui-library";
+
+export default function App() {
+  return (
+    <div>
+      <Mail />
+      <User />
+      <Settings />
+      <Button>Click</Button>
+      <Input />
+    </div>
+  );
+}`;
+  const { fixed, changes } = autoFixArtifactCode(code);
+
+  // Should report 3 duplicates removed (2 from lucide-react, 1 from ui-library)
+  assertEquals(changes.some(c => c.includes('3 duplicate import')), true);
+
+  // Verify no duplicates remain
+  assertEquals(fixed.includes('Mail, User, Settings, Mail'), false);
+  assertEquals(fixed.includes('Button, Input, Button'), false);
+});

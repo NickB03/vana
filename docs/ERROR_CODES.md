@@ -1,6 +1,6 @@
 # Artifact Validation Error Codes
 
-> **Last Updated**: 2025-12-27
+> **Last Updated**: 2025-12-28
 > **Status**: Complete reference for structured error code system
 > **Migration**: Replaced fragile string matching in commit b1f86ad
 
@@ -21,6 +21,7 @@
 - [Migration from String Matching](#migration-from-string-matching)
 - [Error Handling Best Practices](#error-handling-best-practices)
 - [Related Documentation](#related-documentation)
+- [Frontend Error Recovery System](#frontend-error-recovery-system)
 
 ---
 
@@ -104,7 +105,7 @@ Detects invalid or unsupported import patterns in artifact code. These errors **
 
 **Auto-fix**: Yes (transforms `const * as` → `import * as`, adds quotes to package names, removes unnecessary React imports)
 
-**Why Blocking**: Import errors prevent Babel/bundler from parsing the code or resolving dependencies, causing complete rendering failures.
+**Why Blocking**: Import errors prevent the transpiler/bundler from parsing the code or resolving dependencies, causing complete rendering failures.
 
 **Validation Location**: `detectProblematicPatterns()` in `artifact-validator.ts` (lines 230-246)
 
@@ -485,6 +486,89 @@ describe('Error Code System', () => {
 
 ---
 
+## Frontend Error Recovery System
+
+The frontend error recovery system (`src/utils/artifactErrorRecovery.ts`) classifies runtime errors to provide user-friendly messages and determine recovery strategies. Unlike the backend validation system which prevents errors, this system handles errors that occur during artifact rendering.
+
+### Error Categories
+
+The frontend uses a rule-based classification system where patterns are matched against error messages. Rules are evaluated in order (first match wins), so more specific patterns must come before generic ones.
+
+### Duplicate Declaration Errors
+
+**Category**: `duplicate-declaration` (renamed from `duplicate-import` in 2025-12-28)
+
+**Why Renamed**: The original name was misleading because the same error pattern matches BOTH:
+- Duplicate imports: `import { X, X } from '...'`
+- Variable redeclarations: `const x = 1; const x = 2;`
+
+Using `duplicate-declaration` provides honest UX messaging that doesn't incorrectly claim the issue is an "import" when it might be a variable.
+
+**Engine-Specific Error Messages**:
+
+Different JavaScript engines produce different error messages for the same issue. The system detects all variants:
+
+| Engine | Browser | Error Message Format | Example |
+|--------|---------|---------------------|---------|
+| JavaScriptCore | Safari | `"Cannot declare a lexical variable twice: 'X'"` | `Cannot declare a lexical variable twice: 'count'` |
+| V8 | Chrome, Edge, Node.js | `"Identifier 'X' has already been declared"` | `Identifier 'count' has already been declared` |
+| SpiderMonkey | Firefox | `"redeclaration of let X"` or `"redeclaration of const X"` | `redeclaration of let count` |
+| TypeScript | All | `"Duplicate identifier"` | `Duplicate identifier 'count'` |
+
+**Detection Triggers**:
+
+```typescript
+// From src/utils/artifactErrorRecovery.ts
+patterns: [
+  'cannot declare a lexical variable twice',  // Safari/JSC
+  'has already been declared',                // Chrome/V8
+  'redeclaration of let',                     // Firefox let
+  'redeclaration of const',                   // Firefox const
+  'duplicate identifier',                     // TypeScript
+]
+```
+
+**Backend Patterns** (from `supabase/functions/_shared/artifact-rules/error-patterns.ts`):
+
+```typescript
+'duplicate-declaration': {
+  triggers: [
+    'cannot declare a lexical variable twice',   // Safari - most specific (42 chars = highest score)
+    'identifier.*has already been declared',     // Chrome - includes variable name context
+    'redeclaration of let',                      // Firefox let
+    'redeclaration of const',                    // Firefox const
+    'duplicate identifier',                      // TypeScript
+  ],
+  patterns: [
+    'Find the duplicate identifier mentioned in the error message',
+    'For duplicate imports: import { X, X } from "..." → import { X } from "..."',
+    'For separate imports: Combine into single import or remove one',
+    'For variable duplicates: Remove the second declaration or rename it',
+    'Check if a variable shadows an import name - rename the variable',
+    'For function duplicates: Remove or rename one of the function declarations'
+  ]
+}
+```
+
+**Recovery Strategy**: `with-fix` - AI can automatically fix this error
+
+**User Message**: `"Duplicate declaration detected. AI can fix this."`
+
+### Other Frontend Error Categories
+
+| Category | Patterns | Recovery Strategy |
+|----------|----------|-------------------|
+| `syntax` | `syntaxerror`, `unexpected token` | `with-fix` |
+| `import` | `failed to resolve`, `module not found`, `cannot find module` | `different-renderer` |
+| `react` | `invalid hook call`, `hooks can only be called` | `with-fix` |
+| `timeout` | `timeout`, `bundle timeout` | `different-renderer` |
+| `bundling` | `bundling failed`, `bundle error` | `different-renderer` |
+| `runtime` | `typeerror`, `referenceerror`, `is not defined` | `with-fix` |
+
+**Implementation Note**: The `duplicate-declaration` rule is placed BEFORE the generic `syntax` rule in `ERROR_RULES` array because duplicate declaration errors may contain "syntaxerror" in some messages. First-match-wins semantics ensures specific patterns take precedence.
+
+---
+
 ## Related Documentation
 
 - **Artifact Validation**: `.claude/artifact-import-restrictions.md` - Complete guide to artifact restrictions
@@ -498,5 +582,6 @@ describe('Error Code System', () => {
 
 | Date | Change | Author |
 |------|--------|--------|
+| 2025-12-28 | Added Frontend Error Recovery System section; documented `duplicate-declaration` category rename and engine-specific error messages | Claude Code |
 | 2025-12-27 | Initial documentation of structured error code system | Claude Code |
 | 2025-12-27 | Replaced fragile string matching with error codes (commit b1f86ad) | Claude Code |

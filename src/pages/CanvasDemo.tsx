@@ -1,10 +1,10 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Eye, Code, Copy, X, ExternalLink, Maximize2, RefreshCw,
-  ChevronDown, MoreVertical, Download, FileCode
+  Eye, Code, Copy, X, Maximize2, RefreshCw,
+  Download, ExternalLink
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +12,12 @@ import { cn } from "@/lib/utils";
  * CanvasDemo - Side-by-side comparison of current vs proposed canvas UI
  *
  * This demo page helps visualize the UI changes before implementing them.
+ *
+ * Design Decisions:
+ * - Sharp corners (rounded-none) is a canvas-specific UX choice to create visual
+ *   distinction between the artifact panel and the chat interface (which uses rounded-lg)
+ * - This is NOT a system-wide design change
+ * - The design closely mirrors Claude's canvas interface
  */
 export default function CanvasDemo() {
   const [currentView, setCurrentView] = useState<'preview' | 'code'>('preview');
@@ -19,13 +25,19 @@ export default function CanvasDemo() {
 
   return (
     <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-4">
           <h1 className="text-3xl font-bold">Canvas UI Redesign Demo</h1>
           <p className="text-muted-foreground">
-            Side-by-side comparison: Current implementation vs Claude's design
+            Side-by-side comparison: Current implementation vs Claude's canvas design
           </p>
+          <Button asChild>
+            <Link to="/canvas-live-demo" className="gap-2">
+              <ExternalLink className="h-4 w-4" />
+              View Live Demo in Vana UI
+            </Link>
+          </Button>
         </div>
 
         {/* Comparison Grid */}
@@ -52,9 +64,6 @@ export default function CanvasDemo() {
                   </Button>
                   <Button variant="ghost" size="sm" className="size-8 p-0 text-muted-foreground hover:text-foreground">
                     <Download className="size-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" className="size-8 p-0 text-muted-foreground hover:text-foreground">
-                    <ExternalLink className="size-4" />
                   </Button>
                   <Button variant="ghost" size="sm" className="size-8 p-0 text-muted-foreground hover:text-foreground">
                     <Maximize2 className="size-4" />
@@ -144,74 +153,95 @@ export default function CanvasDemo() {
                 <li>Translucent header <code className="text-xs bg-muted px-1 rounded">bg-muted/50</code></li>
                 <li>Text-based tab labels below header</li>
                 <li>URL input bar for web preview</li>
-                <li>More toolbar icons visible</li>
+                <li>Title + badge in header</li>
               </ul>
             </div>
           </div>
 
-          {/* PROPOSED DESIGN (Claude-style) */}
+          {/* PROPOSED DESIGN (Claude Canvas Style) */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Badge>Proposed</Badge>
               <span className="text-sm text-muted-foreground">Claude's canvas design</span>
             </div>
 
-            {/* Proposed Artifact Container */}
+            {/* Proposed Artifact Container - Matches Claude exactly */}
             <div className="flex flex-col overflow-hidden border bg-background shadow-md h-[500px]">
-              {/* Proposed Header - Compact, solid background */}
-              <div className="flex items-center justify-between border-b bg-background px-3 py-2">
-                <div className="flex items-center gap-2">
-                  {/* View Toggle Icons */}
-                  <div className="flex items-center border rounded-md">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={cn(
-                        "h-7 w-7 p-0 rounded-r-none",
-                        proposedView === 'preview' && "bg-muted"
-                      )}
+              {/* Proposed Header - Claude style */}
+              <div className="flex items-center justify-between border-b bg-[#2d2d2d] px-3 py-2">
+                <div className="flex items-center gap-3">
+                  {/* Segmented Toggle Pill - Eye/Code icons */}
+                  <div className="flex items-center bg-[#404040] rounded-full p-0.5">
+                    <button
                       onClick={() => setProposedView('preview')}
-                    >
-                      <Eye className="size-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
                       className={cn(
-                        "h-7 w-7 p-0 rounded-l-none border-l",
-                        proposedView === 'code' && "bg-muted"
+                        "flex items-center justify-center size-7 rounded-full transition-all",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+                        proposedView === 'preview'
+                          ? "bg-[#5a5a5a] text-white"
+                          : "text-gray-400 hover:text-gray-200"
                       )}
-                      onClick={() => setProposedView('code')}
+                      aria-label="Preview mode"
+                      aria-pressed={proposedView === 'preview'}
                     >
-                      <Code className="size-3.5" />
-                    </Button>
+                      <Eye className="size-4" />
+                    </button>
+                    <button
+                      onClick={() => setProposedView('code')}
+                      className={cn(
+                        "flex items-center justify-center size-7 rounded-full transition-all",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+                        proposedView === 'code'
+                          ? "bg-[#5a5a5a] text-white"
+                          : "text-gray-400 hover:text-gray-200"
+                      )}
+                      aria-label="Code mode"
+                      aria-pressed={proposedView === 'code'}
+                    >
+                      <Code className="size-4" />
+                    </button>
                   </div>
 
-                  {/* Filename */}
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <FileCode className="size-3.5" />
-                    <span>InteractiveDashboard</span>
-                    <span className="text-muted-foreground/60">·</span>
-                    <span className="text-muted-foreground/60">JSX</span>
+                  {/* Version Indicator */}
+                  <div className="flex items-center gap-1.5 text-sm text-gray-400">
+                    <span className="text-gray-200">v2</span>
+                    <span>•</span>
+                    <span>Latest</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-0.5">
-                  {/* Copy with dropdown indicator */}
-                  <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1">
-                    Copy
-                    <ChevronDown className="size-3" />
-                  </Button>
-
+                <div className="flex items-center gap-1">
                   {/* Refresh */}
-                  <Button variant="ghost" size="sm" className="size-7 p-0 text-muted-foreground hover:text-foreground">
-                    <RefreshCw className="size-3.5" />
-                  </Button>
+                  <button
+                    className="flex items-center justify-center size-8 rounded text-gray-400 hover:text-gray-200 hover:bg-[#404040] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label="Refresh preview"
+                  >
+                    <RefreshCw className="size-4" />
+                  </button>
+
+                  {/* Download */}
+                  <button
+                    className="flex items-center justify-center size-8 rounded text-gray-400 hover:text-gray-200 hover:bg-[#404040] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label="Download artifact"
+                  >
+                    <Download className="size-4" />
+                  </button>
+
+                  {/* Expand/Maximize */}
+                  <button
+                    className="flex items-center justify-center size-8 rounded text-gray-400 hover:text-gray-200 hover:bg-[#404040] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label="Expand canvas"
+                  >
+                    <Maximize2 className="size-4" />
+                  </button>
 
                   {/* Close */}
-                  <Button variant="ghost" size="sm" className="size-7 p-0 text-muted-foreground hover:text-foreground">
-                    <X className="size-3.5" />
-                  </Button>
+                  <button
+                    className="flex items-center justify-center size-8 rounded text-gray-400 hover:text-gray-200 hover:bg-[#404040] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label="Close canvas"
+                  >
+                    <X className="size-4" />
+                  </button>
                 </div>
               </div>
 
@@ -245,93 +275,244 @@ export default function CanvasDemo() {
 
             {/* Proposed Design Notes */}
             <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 text-sm space-y-2">
-              <p className="font-medium text-primary">Proposed changes:</p>
+              <p className="font-medium text-primary">Proposed changes (Claude style):</p>
               <ul className="list-disc list-inside text-muted-foreground space-y-1">
-                <li><code className="text-xs bg-muted px-1 rounded">rounded-none</code> sharp corners</li>
-                <li><code className="text-xs bg-muted px-1 rounded">shadow-md</code> more defined shadow</li>
-                <li>Solid header <code className="text-xs bg-muted px-1 rounded">bg-background</code></li>
-                <li>Icon toggle (Eye/Code) in header</li>
+                <li>Sharp corners <code className="text-xs bg-muted px-1 rounded">rounded-none</code> (canvas-specific)</li>
+                <li>Dark header bar <code className="text-xs bg-muted px-1 rounded">bg-[#2d2d2d]</code></li>
+                <li><strong>Segmented pill toggle</strong> with Eye/Code icons in header</li>
+                <li><strong>Version indicator</strong> "v2 • Latest"</li>
                 <li><strong>No URL bar</strong> - removed entirely</li>
-                <li>Compact header <code className="text-xs bg-muted px-1 rounded">py-2</code></li>
-                <li>Copy button with dropdown</li>
+                <li>Icon-only action buttons (refresh, download, expand, close)</li>
+                <li><code className="text-xs bg-muted px-1 rounded">aria-label</code> + <code className="text-xs bg-muted px-1 rounded">aria-pressed</code> for a11y</li>
               </ul>
             </div>
           </div>
         </div>
 
-        {/* Additional Comparison: Component Details */}
+        {/* Component Details */}
         <div className="border rounded-lg p-6 space-y-6">
-          <h2 className="text-xl font-semibold">Component-Level Changes</h2>
+          <h2 className="text-xl font-semibold">Key Design Elements</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Header Comparison */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Segmented Toggle */}
             <div className="space-y-3">
-              <h3 className="font-medium">Header Padding</h3>
-              <div className="flex gap-4">
-                <div className="flex-1 border rounded p-1">
-                  <div className="bg-muted/50 px-4 py-3 rounded text-xs text-center">
-                    Current: px-4 py-3
-                  </div>
+              <h3 className="font-medium">Segmented Toggle Pill</h3>
+              <div className="flex flex-col gap-3 p-4 border rounded-lg bg-[#2d2d2d]">
+                <div className="flex items-center bg-[#404040] rounded-full p-0.5 w-fit">
+                  <button className="flex items-center justify-center size-7 rounded-full bg-[#5a5a5a] text-white">
+                    <Eye className="size-4" />
+                  </button>
+                  <button className="flex items-center justify-center size-7 rounded-full text-gray-400">
+                    <Code className="size-4" />
+                  </button>
                 </div>
-                <div className="flex-1 border rounded p-1">
-                  <div className="bg-background border px-3 py-2 rounded text-xs text-center">
-                    Proposed: px-3 py-2
-                  </div>
-                </div>
+                <p className="text-xs text-gray-400">Icon-only toggle, rounded-full pill</p>
               </div>
             </div>
 
-            {/* Corner Radius */}
+            {/* Version Badge */}
             <div className="space-y-3">
-              <h3 className="font-medium">Corner Radius</h3>
-              <div className="flex gap-4">
-                <div className="flex-1 bg-muted/50 rounded-lg h-16 flex items-center justify-center text-xs">
-                  Current: rounded-lg
+              <h3 className="font-medium">Version Indicator</h3>
+              <div className="flex flex-col gap-3 p-4 border rounded-lg bg-[#2d2d2d]">
+                <div className="flex items-center gap-1.5 text-sm">
+                  <span className="text-gray-200">v2</span>
+                  <span className="text-gray-400">•</span>
+                  <span className="text-gray-400">Latest</span>
                 </div>
-                <div className="flex-1 bg-muted/50 h-16 flex items-center justify-center text-xs border">
-                  Proposed: sharp
-                </div>
+                <p className="text-xs text-gray-400">Shows version + status inline</p>
               </div>
             </div>
 
-            {/* Shadow */}
+            {/* Action Buttons */}
             <div className="space-y-3">
-              <h3 className="font-medium">Shadow Depth</h3>
-              <div className="flex gap-4">
-                <div className="flex-1 bg-background border rounded shadow-sm h-16 flex items-center justify-center text-xs">
-                  Current: shadow-sm
+              <h3 className="font-medium">Header Actions</h3>
+              <div className="flex flex-col gap-3 p-4 border rounded-lg bg-[#2d2d2d]">
+                <div className="flex items-center gap-1">
+                  <button className="size-8 rounded flex items-center justify-center text-gray-400 hover:bg-[#404040]">
+                    <RefreshCw className="size-4" />
+                  </button>
+                  <button className="size-8 rounded flex items-center justify-center text-gray-400 hover:bg-[#404040]">
+                    <Download className="size-4" />
+                  </button>
+                  <button className="size-8 rounded flex items-center justify-center text-gray-400 hover:bg-[#404040]">
+                    <Maximize2 className="size-4" />
+                  </button>
+                  <button className="size-8 rounded flex items-center justify-center text-gray-400 hover:bg-[#404040]">
+                    <X className="size-4" />
+                  </button>
                 </div>
-                <div className="flex-1 bg-background border rounded shadow-md h-16 flex items-center justify-center text-xs">
-                  Proposed: shadow-md
-                </div>
+                <p className="text-xs text-gray-400">Refresh, download, expand, close</p>
               </div>
             </div>
+          </div>
+        </div>
 
-            {/* View Toggle */}
-            <div className="space-y-3">
-              <h3 className="font-medium">View Toggle</h3>
-              <div className="flex gap-4">
-                <div className="flex-1 border rounded p-2">
-                  <div className="flex bg-muted/30 rounded">
-                    <button className="px-3 py-1.5 text-xs bg-background rounded-l border-b-2 border-primary">Preview</button>
-                    <button className="px-3 py-1.5 text-xs text-muted-foreground">Edit</button>
+        {/* Full Page Layout Mockup */}
+        <div className="border rounded-lg p-6 space-y-4">
+          <h2 className="text-xl font-semibold">Full Page Layout Mockup</h2>
+          <p className="text-sm text-muted-foreground">How the canvas fits within the overall chat interface</p>
+
+          {/* Mockup Container */}
+          <div className="border rounded-lg overflow-hidden bg-[#1a1a1a] h-[600px]">
+            <div className="flex h-full">
+
+              {/* Sidebar */}
+              <div className="w-14 bg-[#1a1a1a] border-r border-gray-800 flex flex-col items-center py-3 gap-3">
+                {/* Logo placeholder */}
+                <div className="size-8 rounded-lg bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-xs font-bold">
+                  V
+                </div>
+                {/* Nav icons */}
+                <div className="flex-1 flex flex-col items-center gap-2 mt-4">
+                  <div className="size-9 rounded-lg bg-gray-800 flex items-center justify-center text-gray-400">
+                    <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+                    </svg>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-1 text-center">Text tabs</p>
+                  <div className="size-9 rounded-lg hover:bg-gray-800 flex items-center justify-center text-gray-500">
+                    <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  </div>
+                  <div className="size-9 rounded-lg hover:bg-gray-800 flex items-center justify-center text-gray-500">
+                    <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
                 </div>
-                <div className="flex-1 border rounded p-2">
-                  <div className="flex items-center justify-center">
-                    <div className="flex items-center border rounded-md">
-                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-r-none bg-muted">
-                        <Eye className="size-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-l-none border-l">
-                        <Code className="size-3.5" />
-                      </Button>
+                {/* User avatar */}
+                <div className="size-8 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 text-xs">
+                  N
+                </div>
+              </div>
+
+              {/* Chat Area */}
+              <div className="flex-1 flex flex-col bg-[#212121] min-w-0">
+                {/* Chat Header */}
+                <div className="h-12 border-b border-gray-800 flex items-center px-4">
+                  <span className="text-gray-200 text-sm font-medium">Slime Soccer Game</span>
+                  <svg className="size-4 ml-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+
+                {/* Messages */}
+                <div className="flex-1 overflow-auto p-4 space-y-4">
+                  {/* User message */}
+                  <div className="flex justify-end">
+                    <div className="bg-[#3a3a3a] rounded-2xl px-4 py-2 max-w-[80%]">
+                      <p className="text-gray-200 text-sm">make the blobs eyes change depending on what direction you are traveling</p>
                     </div>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-1 text-center">Icon toggle</p>
+
+                  {/* Assistant message with artifact reference */}
+                  <div className="flex justify-start">
+                    <div className="max-w-[80%] space-y-3">
+                      {/* Artifact card */}
+                      <div className="bg-[#2a2a2a] border border-gray-700 rounded-lg p-3">
+                        <div className="flex items-center gap-2">
+                          <div className="size-8 rounded bg-gray-700 flex items-center justify-center">
+                            <Eye className="size-4 text-gray-400" />
+                          </div>
+                          <div>
+                            <p className="text-gray-200 text-sm font-medium">Slime Soccer Game</p>
+                            <p className="text-gray-500 text-xs">Interactive artifact · Version 2</p>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-gray-300 text-sm">Done! Now the slimes have expressive eyes that react to their movement.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Input Area */}
+                <div className="p-4 border-t border-gray-800">
+                  <div className="bg-[#2a2a2a] rounded-xl border border-gray-700 p-3">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="Reply..."
+                        className="flex-1 bg-transparent text-gray-200 text-sm placeholder-gray-500 outline-none"
+                      />
+                      <button className="size-8 rounded-lg bg-primary flex items-center justify-center text-white">
+                        <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              {/* Canvas Panel - New Design */}
+              <div className="w-[45%] flex flex-col border-l border-gray-800">
+                {/* Canvas Header - Dark style */}
+                <div className="flex items-center justify-between bg-[#2d2d2d] px-3 py-2 border-b border-gray-700">
+                  <div className="flex items-center gap-3">
+                    {/* Segmented Toggle Pill */}
+                    <div className="flex items-center bg-[#404040] rounded-full p-0.5">
+                      <button className="flex items-center justify-center size-7 rounded-full bg-[#5a5a5a] text-white">
+                        <Eye className="size-4" />
+                      </button>
+                      <button className="flex items-center justify-center size-7 rounded-full text-gray-400">
+                        <Code className="size-4" />
+                      </button>
+                    </div>
+                    {/* Version */}
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <span className="text-gray-200">v2</span>
+                      <span className="text-gray-500">•</span>
+                      <span className="text-gray-500">Latest</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button className="size-8 rounded flex items-center justify-center text-gray-400 hover:bg-[#404040]">
+                      <RefreshCw className="size-4" />
+                    </button>
+                    <button className="size-8 rounded flex items-center justify-center text-gray-400 hover:bg-[#404040]">
+                      <Download className="size-4" />
+                    </button>
+                    <button className="size-8 rounded flex items-center justify-center text-gray-400 hover:bg-[#404040]">
+                      <Maximize2 className="size-4" />
+                    </button>
+                    <button className="size-8 rounded flex items-center justify-center text-gray-400 hover:bg-[#404040]">
+                      <X className="size-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Canvas Content */}
+                <div className="flex-1 bg-[#1e1e1e] flex items-center justify-center">
+                  <div className="text-center space-y-4">
+                    {/* Game preview placeholder */}
+                    <div className="w-64 h-40 bg-gradient-to-b from-blue-900 to-blue-950 rounded-lg mx-auto flex items-center justify-center relative overflow-hidden">
+                      {/* Simple game representation */}
+                      <div className="absolute bottom-4 left-8 size-8 rounded-full bg-green-400"></div>
+                      <div className="absolute bottom-4 right-8 size-8 rounded-full bg-red-400"></div>
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-4 rounded-full bg-white"></div>
+                      <div className="absolute bottom-0 left-0 right-0 h-1 bg-green-600"></div>
+                    </div>
+                    <p className="text-gray-400 text-sm">Slime Soccer Game</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Layout Notes */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            <div className="p-3 bg-muted/30 rounded-lg">
+              <p className="text-sm font-medium mb-1">Sidebar</p>
+              <p className="text-xs text-muted-foreground">Collapsed icon-only nav, auto-collapses when canvas opens on smaller screens</p>
+            </div>
+            <div className="p-3 bg-muted/30 rounded-lg">
+              <p className="text-sm font-medium mb-1">Chat Area</p>
+              <p className="text-xs text-muted-foreground">Flexible width, shows artifact cards inline with messages</p>
+            </div>
+            <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
+              <p className="text-sm font-medium text-primary mb-1">Canvas Panel (new)</p>
+              <p className="text-xs text-muted-foreground">Sharp corners, dark header with segmented toggle, no URL bar</p>
             </div>
           </div>
         </div>
@@ -343,20 +524,37 @@ export default function CanvasDemo() {
             <div className="border rounded-lg p-4 space-y-2">
               <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">Phase 1</Badge>
               <h3 className="font-medium">Container Styling</h3>
-              <p className="text-sm text-muted-foreground">CSS-only changes to corners, shadow, header padding</p>
-              <p className="text-xs text-green-600">Low risk</p>
+              <p className="text-sm text-muted-foreground">Sharp corners, shadow-md, dark header bar</p>
+              <p className="text-xs text-green-600">Low risk - CSS only</p>
             </div>
             <div className="border rounded-lg p-4 space-y-2">
               <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/30">Phase 2</Badge>
               <h3 className="font-medium">Remove URL Bar</h3>
-              <p className="text-sm text-muted-foreground">Remove WebPreviewUrl component from renderer</p>
+              <p className="text-sm text-muted-foreground">Delete WebPreviewUrl + dead code cleanup (done!)</p>
               <p className="text-xs text-yellow-600">Low-Medium risk</p>
             </div>
             <div className="border rounded-lg p-4 space-y-2">
               <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/30">Phase 3</Badge>
-              <h3 className="font-medium">Header View Toggle</h3>
-              <p className="text-sm text-muted-foreground">Replace tabs with icon buttons in header</p>
-              <p className="text-xs text-orange-600">Medium risk</p>
+              <h3 className="font-medium">Header Redesign</h3>
+              <p className="text-sm text-muted-foreground">Segmented pill toggle, version indicator, action buttons</p>
+              <p className="text-xs text-orange-600">Medium risk - component refactor</p>
+            </div>
+          </div>
+
+          {/* Accessibility Notes */}
+          <div className="mt-6 p-4 border rounded-lg bg-muted/30">
+            <h3 className="font-medium mb-2">Accessibility Implementation</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+              <ul className="list-disc list-inside space-y-1">
+                <li><code className="text-xs bg-muted px-1 rounded">aria-pressed</code> on toggle buttons</li>
+                <li><code className="text-xs bg-muted px-1 rounded">aria-label</code> on icon-only buttons</li>
+                <li><code className="text-xs bg-muted px-1 rounded">focus-visible:ring-2</code> for keyboard focus</li>
+              </ul>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Keyboard navigation (Tab between controls)</li>
+                <li>Space/Enter to toggle view mode</li>
+                <li>Clear visual focus indicators</li>
+              </ul>
             </div>
           </div>
         </div>

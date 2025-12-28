@@ -37,7 +37,7 @@ describe('classifyError', () => {
     const error = classifyError('Bundle timeout exceeded');
     expect(error.type).toBe('timeout');
     expect(error.canAutoFix).toBe(false);
-    expect(error.fallbackRenderer).toBe('babel');
+    expect(error.fallbackRenderer).toBe('sandpack');
     expect(error.retryStrategy).toBe('different-renderer');
   });
 
@@ -130,26 +130,28 @@ describe('shouldAttemptRecovery', () => {
 });
 
 describe('getFallbackRenderer', () => {
-  it('should return suggested fallback for timeout errors', () => {
+  // Note: 'babel' renderer was removed in December 2025 (Sucrase-only architecture)
+  // All fallbacks now go to 'sandpack' since it can handle both simple and complex artifacts
+
+  it('should return sandpack for timeout errors', () => {
     const error = classifyError('Bundle timeout exceeded');
-    expect(getFallbackRenderer(error, 'bundle')).toBe('babel');
+    expect(getFallbackRenderer(error, 'bundle')).toBe('sandpack');
   });
 
   it('should return sandpack for import errors', () => {
     const error = classifyError('Failed to resolve module');
     expect(getFallbackRenderer(error, 'bundle')).toBe('sandpack');
-    expect(getFallbackRenderer(error, 'babel')).toBe('sandpack');
   });
 
-  it('should return babel for React errors from bundle', () => {
+  it('should return sandpack for React errors from bundle', () => {
     const error = classifyError('Cannot read properties of null (reading \'useRef\')');
-    expect(getFallbackRenderer(error, 'bundle')).toBe('babel');
+    expect(getFallbackRenderer(error, 'bundle')).toBe('sandpack');
   });
 
-  it('should return null when no better renderer available', () => {
-    const error = classifyError('SyntaxError: Unexpected token }');
-    // Syntax errors from babel renderer have no better option
-    expect(getFallbackRenderer(error, 'babel')).toBeNull();
+  it('should return null when already on sandpack (no better option)', () => {
+    const error = classifyError('Failed to resolve module');
+    // Import errors from sandpack have no better option
+    expect(getFallbackRenderer(error, 'sandpack')).toBeNull();
   });
 
   it('should return null for syntax errors (no renderer change needed)', () => {

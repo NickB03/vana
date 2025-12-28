@@ -2,14 +2,16 @@
  * ArtifactErrorRecovery Component
  *
  * Displays error state with recovery options for failed artifacts.
- * Shows retry/fallback buttons and expandable technical details.
+ * Modern glassmorphism design with helpful, non-alarming visual language.
  */
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ChevronDown, ChevronUp, RefreshCw, Wrench } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown, Sparkles, RefreshCw, AlertCircle, Code2 } from "lucide-react";
 import { ArtifactError, FallbackRenderer, generateErrorDisplay } from "@/utils/artifactErrorRecovery";
+import { cn } from "@/lib/utils";
 
 /**
  * Maps fallback renderer type to user-friendly display name
@@ -17,7 +19,6 @@ import { ArtifactError, FallbackRenderer, generateErrorDisplay } from "@/utils/a
 function getRendererDisplayName(renderer: FallbackRenderer): string {
   const names: Record<FallbackRenderer, string> = {
     sandpack: 'Sandpack',
-    babel: 'Babel',
     'static-preview': 'Alternative',
   };
   return names[renderer];
@@ -45,136 +46,181 @@ export function ArtifactErrorRecovery({
   const [showDetails, setShowDetails] = useState(false);
   const display = generateErrorDisplay(error, isRecovering);
 
-  const colorClasses = {
-    red: 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200',
-    orange: 'bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-200',
-    yellow: 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200',
-    blue: 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-200',
+  // Map severity to visual styling (subtle, not alarming)
+  const severityStyles = {
+    red: {
+      border: 'border-l-destructive',
+      bg: 'bg-destructive/5',
+      icon: 'text-destructive',
+      iconBg: 'bg-destructive/10',
+    },
+    orange: {
+      border: 'border-l-orange-500',
+      bg: 'bg-orange-50/50 dark:bg-orange-950/20',
+      icon: 'text-orange-600 dark:text-orange-400',
+      iconBg: 'bg-orange-100 dark:bg-orange-900/30',
+    },
+    yellow: {
+      border: 'border-l-yellow-500',
+      bg: 'bg-yellow-50/50 dark:bg-yellow-950/20',
+      icon: 'text-yellow-600 dark:text-yellow-400',
+      iconBg: 'bg-yellow-100 dark:bg-yellow-900/30',
+    },
+    blue: {
+      border: 'border-l-blue-500',
+      bg: 'bg-blue-50/50 dark:bg-blue-950/20',
+      icon: 'text-blue-600 dark:text-blue-400',
+      iconBg: 'bg-blue-100 dark:bg-blue-900/30',
+    },
   };
 
+  const styles = severityStyles[display.color];
+
   return (
-    <Alert className={`${colorClasses[display.color]} border shadow-sm`}>
-      <div className="flex items-start gap-3">
-        <span className="text-2xl shrink-0 mt-0.5">{display.emoji}</span>
-        <div className="flex-1 space-y-3">
-          <div>
-            <AlertTitle className="text-base font-semibold mb-1">
-              {display.title}
-            </AlertTitle>
-            <AlertDescription className="text-sm">
-              {display.description}
-            </AlertDescription>
+    <Card className={cn(
+      "border-l-4 shadow-sm",
+      styles.border,
+      styles.bg,
+    )}>
+      <CardContent className="p-4 space-y-4">
+        {/* Header with icon and title */}
+        <div className="flex items-start gap-3">
+          {/* Icon badge */}
+          <div className={cn(
+            "shrink-0 rounded-lg p-2 mt-0.5",
+            styles.iconBg
+          )}>
+            <AlertCircle className={cn("h-5 w-5", styles.icon)} />
           </div>
 
-          {/* Recovery Progress Indicator */}
-          {isRecovering && (
-            <div className="flex items-center gap-2 text-sm">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              <span className="font-medium">Attempting automatic recovery...</span>
-            </div>
-          )}
+          {/* Title and description */}
+          <div className="flex-1 min-w-0 space-y-1">
+            <h3 className="font-semibold text-sm leading-tight">
+              {display.title}
+            </h3>
+            <p className="text-sm text-muted-foreground-accessible leading-relaxed">
+              {display.description}
+            </p>
+          </div>
+        </div>
 
-          {/* Action Buttons */}
-          {!isRecovering && (
-            <div className="flex flex-wrap gap-2">
-              {/* Auto-fix button for fixable errors */}
-              {error.canAutoFix && canRetry && (
-                <Button
-                  size="sm"
-                  variant="default"
-                  onClick={onAskAIFix}
-                  className="h-8 text-xs"
-                >
-                  <Wrench className="h-3 w-3 mr-1.5" />
-                  Ask AI to Fix
-                </Button>
-              )}
+        {/* Recovery Progress Indicator */}
+        {isRecovering && (
+          <div className="flex items-center gap-2.5 px-3 py-2 rounded-md bg-background/60 border border-border/50">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <span className="text-sm font-medium text-foreground">
+              Attempting automatic recovery...
+            </span>
+          </div>
+        )}
 
-              {/* Fallback renderer button */}
-              {canUseFallback && error.fallbackRenderer && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onUseFallback}
-                  className="h-8 text-xs"
-                >
-                  <RefreshCw className="h-3 w-3 mr-1.5" />
-                  Try {getRendererDisplayName(error.fallbackRenderer)} Renderer
-                </Button>
-              )}
-
-              {/* Manual retry button */}
-              {canRetry && !error.canAutoFix && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onRetry}
-                  className="h-8 text-xs"
-                >
-                  <RefreshCw className="h-3 w-3 mr-1.5" />
-                  Retry
-                </Button>
-              )}
-
-              {/* Expand technical details */}
+        {/* Action Buttons */}
+        {!isRecovering && (
+          <div className="flex flex-wrap gap-2 pt-1">
+            {/* Primary CTA: Auto-fix button for fixable errors */}
+            {error.canAutoFix && canRetry && (
               <Button
                 size="sm"
-                variant="ghost"
-                onClick={() => setShowDetails(!showDetails)}
-                className="h-8 text-xs"
+                onClick={onAskAIFix}
+                className="h-9 gap-2 bg-gradient-primary hover:opacity-90 transition-opacity"
               >
-                {showDetails ? (
-                  <>
-                    <ChevronUp className="h-3 w-3 mr-1.5" />
-                    Hide Details
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-3 w-3 mr-1.5" />
-                    Technical Details
-                  </>
-                )}
+                <Sparkles className="h-4 w-4" />
+                Ask AI to Fix
               </Button>
+            )}
+
+            {/* Secondary actions */}
+            {canUseFallback && error.fallbackRenderer && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onUseFallback}
+                className="h-9 gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Try {getRendererDisplayName(error.fallbackRenderer)}
+              </Button>
+            )}
+
+            {canRetry && !error.canAutoFix && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onRetry}
+                className="h-9 gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Retry
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Collapsible Technical Details */}
+        <Collapsible open={showDetails} onOpenChange={setShowDetails}>
+          <CollapsibleTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <ChevronDown className={cn(
+                "h-4 w-4 transition-transform duration-200",
+                showDetails && "rotate-180"
+              )} />
+              <Code2 className="h-4 w-4" />
+              <span className="text-xs font-medium">
+                {showDetails ? 'Hide' : 'Show'} Technical Details
+              </span>
+            </Button>
+          </CollapsibleTrigger>
+
+          <CollapsibleContent className="pt-3 space-y-3 border-t border-border/50 mt-3">
+            {/* Error Type */}
+            <div className="space-y-1.5">
+              <h4 className="text-xs font-semibold text-muted-foreground-accessible">
+                Error Type
+              </h4>
+              <code className="block text-xs font-mono bg-muted/50 px-3 py-2 rounded-md border border-border/50">
+                {error.type}
+              </code>
             </div>
-          )}
 
-          {/* Expandable Technical Details */}
-          {showDetails && (
-            <div className="space-y-2 border-t pt-3 mt-3 border-current/20">
-              <div>
-                <h4 className="text-xs font-semibold mb-1">Error Type:</h4>
-                <code className="text-xs bg-black/10 dark:bg-white/10 px-2 py-1 rounded">
-                  {error.type}
-                </code>
-              </div>
+            {/* Original Error */}
+            <div className="space-y-1.5">
+              <h4 className="text-xs font-semibold text-muted-foreground-accessible">
+                Original Error
+              </h4>
+              <pre className="text-xs font-mono bg-muted/50 px-3 py-2.5 rounded-md border border-border/50 overflow-x-auto whitespace-pre-wrap break-words leading-relaxed">
+                {error.originalError}
+              </pre>
+            </div>
 
-              <div>
-                <h4 className="text-xs font-semibold mb-1">Original Error:</h4>
-                <pre className="text-xs bg-black/10 dark:bg-white/10 px-3 py-2 rounded overflow-x-auto whitespace-pre-wrap break-words font-mono">
-                  {error.originalError}
-                </pre>
-              </div>
-
-              {error.suggestedFix && (
-                <div>
-                  <h4 className="text-xs font-semibold mb-1">Suggested Fix:</h4>
-                  <p className="text-xs bg-black/10 dark:bg-white/10 px-3 py-2 rounded">
-                    {error.suggestedFix}
-                  </p>
+            {/* Suggested Fix */}
+            {error.suggestedFix && (
+              <div className="space-y-1.5">
+                <h4 className="text-xs font-semibold text-muted-foreground-accessible">
+                  Suggested Fix
+                </h4>
+                <div className="text-xs bg-muted/50 px-3 py-2.5 rounded-md border border-border/50 leading-relaxed">
+                  {error.suggestedFix}
                 </div>
-              )}
-
-              <div>
-                <h4 className="text-xs font-semibold mb-1">Recovery Strategy:</h4>
-                <code className="text-xs bg-black/10 dark:bg-white/10 px-2 py-1 rounded">
-                  {error.retryStrategy}
-                  {error.fallbackRenderer && ` → ${error.fallbackRenderer}`}
-                </code>
               </div>
+            )}
+
+            {/* Recovery Strategy */}
+            <div className="space-y-1.5">
+              <h4 className="text-xs font-semibold text-muted-foreground-accessible">
+                Recovery Strategy
+              </h4>
+              <code className="block text-xs font-mono bg-muted/50 px-3 py-2 rounded-md border border-border/50">
+                {error.retryStrategy}
+                {error.fallbackRenderer && ` → ${error.fallbackRenderer}`}
+              </code>
             </div>
-          )}
-        </div>
-      </div>
-    </Alert>
+          </CollapsibleContent>
+        </Collapsible>
+      </CardContent>
+    </Card>
   );
 }

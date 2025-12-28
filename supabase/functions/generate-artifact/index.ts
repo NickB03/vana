@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { callGLM, callGLMWithRetryTracking, extractTextFromGLM, extractTextAndReasoningFromGLM, extractGLMTokenUsage, calculateGLMCost, logGLMUsage, handleGLMError, processGLMStream, parseStatusMarker } from "../_shared/glm-client.ts";
+import { callGLM, callGLMWithRetryTracking, extractTextFromGLM, extractTextAndReasoningFromGLM, extractGLMTokenUsage, calculateGLMCost, logGLMUsage, handleGLMError, processGLMStream } from "../_shared/glm-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 import { MODELS, RATE_LIMITS, FEATURE_FLAGS } from "../_shared/config.ts";
 import { validateArtifactCode, autoFixArtifactCode, preValidateAndFixGlmSyntax } from "../_shared/artifact-validator.ts";
@@ -335,18 +335,8 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
       (async () => {
         // Declare state variables at outer scope for cleanup and access
         let fullReasoning = "";
-        let lastEmittedStatus: string | null = null;
 
         try {
-          // ============================================================================
-          // STATUS MARKER SYSTEM: Parse [STATUS:] markers from GLM reasoning
-          // ============================================================================
-          // GLM emits [STATUS: action phrase] markers during thinking to indicate
-          // current action. We detect these and emit status_update SSE events.
-          // This provides real-time progress updates during artifact generation.
-          // ============================================================================
-          console.log(`[${requestId}] 🎛️ Status provider: [STATUS:] marker parsing`);
-
           // Call GLM with streaming enabled
           const glmResponse = await callGLM(
             ARTIFACT_SYSTEM_PROMPT,
@@ -389,20 +379,6 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
                 // Without this, the reasoning dropdown shows "No reasoning data available"
                 // during streaming because streamingReasoningText is never populated
                 await sendEvent("reasoning_chunk", { chunk });
-
-                // ============================================================================
-                // STATUS MARKER DETECTION: Parse [STATUS: ...] markers from reasoning
-                // ============================================================================
-                // GLM emits [STATUS: action phrase] markers during thinking to indicate
-                // current action. We detect these and emit status_update SSE events.
-                // ============================================================================
-                const currentStatus = parseStatusMarker(fullReasoning);
-                if (currentStatus && currentStatus !== lastEmittedStatus) {
-                  // New status detected - emit it immediately
-                  await sendEvent("status_update", { status: currentStatus });
-                  console.log(`[${requestId}] 📊 Status marker: "${currentStatus}"`);
-                  lastEmittedStatus = currentStatus;
-                }
               },
               onContentChunk: async (chunk: string) => {
                 // Stream content chunks directly to client
@@ -422,7 +398,7 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
 
                   await sendEvent("reasoning_complete", {
                     reasoning: cleanedReasoning,
-                    reasoningSteps: null, // Structured parsing removed - use [STATUS:] markers instead
+                    reasoningSteps: null, // Structured parsing removed - ReasoningProvider generates semantic status updates
                   });
 
                   console.log(`[${requestId}] 🧠 Reasoning sent (cleaned: ${fullReasoningText.length} → ${cleanedReasoning.length} chars)`);
@@ -474,7 +450,7 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
             }
           }
 
-          // Structured reasoning parsing removed - use [STATUS:] markers instead
+          // Structured reasoning parsing removed - ReasoningProvider generates semantic status updates
           const reasoningSteps = null;
 
           // ============================================================================
@@ -532,8 +508,12 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
           try {
             await sendEvent("error", { error: error instanceof Error ? error.message : "Unknown streaming error", requestId });
             await writer.close();
-          } catch {
-            // Writer may already be closed
+          } catch (closeError) {
+            // Expected: writer may already be closed
+            // Log unexpected errors for investigation
+            if (!(closeError instanceof TypeError && String(closeError).includes('closed'))) {
+              console.error(`[${requestId}] Unexpected error during error handling cleanup:`, closeError);
+            }
           }
         }
       })();
@@ -576,7 +556,7 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
     const { text: rawArtifactCode, reasoning: glmReasoning } = extractTextAndReasoningFromGLM(data, requestId);
     let artifactCode = rawArtifactCode;
 
-    // Structured reasoning parsing removed - use [STATUS:] markers instead
+    // Structured reasoning parsing removed - ReasoningProvider generates semantic status updates
     const reasoningSteps = null;
 
     // ============================================================================

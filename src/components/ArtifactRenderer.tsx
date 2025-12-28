@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Markdown } from "@/components/ui/markdown";
 import { generateCompleteIframeStyles } from "@/utils/themeUtils";
 import { ArtifactSkeleton } from "@/components/ui/artifact-skeleton";
-import { WebPreview, WebPreviewBody, WebPreviewNavigation, WebPreviewUrl, WebPreviewNavigationButton } from '@/components/ai-elements/web-preview';
+import { WebPreview, WebPreviewBody, WebPreviewNavigation, WebPreviewNavigationButton } from '@/components/ai-elements/web-preview';
 import { RefreshCw, Maximize2, Download, Edit } from "lucide-react";
 import { ValidationResult, categorizeError } from "@/utils/artifactValidator";
 import { detectNpmImports } from '@/utils/npmDetection';
@@ -17,7 +17,6 @@ import { classifyError, shouldAttemptRecovery, getFallbackRenderer, ArtifactErro
 import { ArtifactErrorRecovery } from "./ArtifactErrorRecovery";
 import { transpileCode } from '@/utils/sucraseTranspiler';
 import * as sucraseTranspiler from '@/utils/sucraseTranspiler';
-import { isFeatureEnabled } from '@/lib/featureFlags';
 
 // Lazy load Sandpack component for code splitting
 const SandpackArtifactRenderer = lazy(() =>
@@ -56,6 +55,7 @@ interface BundledArtifactFrameProps {
   previewError: string | null;
   onLoadingChange: (loading: boolean) => void;
   onPreviewErrorChange: (error: string | null) => void;
+  onAIFix?: () => void;
 }
 
 const BundledArtifactFrame = memo(({
@@ -66,6 +66,7 @@ const BundledArtifactFrame = memo(({
   previewError,
   onLoadingChange,
   onPreviewErrorChange,
+  onAIFix,
 }: BundledArtifactFrameProps) => {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -341,7 +342,13 @@ const BundledArtifactFrame = memo(({
 
               console.log('[BundledArtifactFrame] Updated import map with react/react-dom shims');
             } catch (e) {
-              console.warn('[BundledArtifactFrame] Failed to update import map:', e);
+              const errorMessage = e instanceof Error ? e.message : String(e);
+              console.error('[BundledArtifactFrame] Failed to update import map:', e);
+              Sentry.captureException(e, {
+                tags: { component: 'BundledArtifactFrame', action: 'import-map-update' },
+              });
+              setFetchError(`Import map configuration failed: ${errorMessage}`);
+              return; // Don't continue with broken import map
             }
           }
 
@@ -405,7 +412,7 @@ const BundledArtifactFrame = memo(({
                 });
               }
             } catch (sucraseError) {
-              console.warn('[BundledArtifactFrame] Sucrase exception, falling back to Babel:', sucraseError);
+              console.warn('[BundledArtifactFrame] Sucrase exception:', sucraseError);
               Sentry.captureException(sucraseError, {
                 tags: {
                   component: 'BundledArtifactFrame',
@@ -415,105 +422,30 @@ const BundledArtifactFrame = memo(({
               });
             }
 
-            // If Sucrase failed, fall back to Babel
+            // If Sucrase failed, show error (no Babel fallback)
             if (!sucraseSucceeded) {
-              console.log('[BundledArtifactFrame] Using Babel fallback for JSX transpilation');
+              console.error('[BundledArtifactFrame] Sucrase transpilation failed - no fallback available');
 
-              // Inject Babel Standalone if not present
-              if (!htmlContent.includes('babel')) {
-                const babelScript = `<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>\n`;
-                htmlContent = htmlContent.replace('</head>', babelScript + '</head>');
-              }
-
-              // Extract imports from the module content (they need special handling for Babel)
-              // NOTE: Server template indents imports with spaces, so we use ^\s* to match leading whitespace
-              const importStatements: string[] = [];
-              moduleContent = moduleContent.replace(
-                /^\s*import\s+(?:[\w*{}\s,]+\s+from\s+)?['"][^'"]+['"];?\s*$/gm,
-                (match) => {
-                  // Trim the captured match since it may have leading/trailing whitespace
-                  importStatements.push(match.trim());
-                  return ''; // Remove from main content
-                }
-              );
-
-              // For Babel, we need to use dynamic imports since static imports don't work in text/babel
-              // Convert: import * as Select from 'url' -> const Select = await import('url')
-              const dynamicImports = importStatements.map(imp => {
-                // Handle: import * as Name from 'url'
-                const namespaceMatch = imp.match(/import\s*\*\s*as\s+(\w+)\s+from\s+['"]([^'"]+)['"]/);
-                if (namespaceMatch) {
-                  return `const ${namespaceMatch[1]} = await import('${namespaceMatch[2]}');`;
-                }
-                // Handle: import { a, b } from 'url'
-                const namedMatch = imp.match(/import\s*\{([^}]+)\}\s*from\s+['"]([^'"]+)['"]/);
-                if (namedMatch) {
-                  const names = namedMatch[1].split(',').map(n => n.trim());
-                  return `const { ${names.join(', ')} } = await import('${namedMatch[2]}');`;
-                }
-                // Handle: import Name from 'url'
-                const defaultMatch = imp.match(/import\s+(\w+)\s+from\s+['"]([^'"]+)['"]/);
-                if (defaultMatch) {
-                  return `const { default: ${defaultMatch[1]} } = await import('${defaultMatch[2]}');`;
-                }
-                // Log warning for debugging when import cannot be converted
-                console.warn('[BundledArtifactFrame] Could not convert import statement:', imp);
-                return '// Could not convert: ' + imp;
-              }).join('\n');
-
-              // Wrap in async IIFE for dynamic imports
-              // NOTE: UMD React/ReactDOM are already loaded and set window.React/window.ReactDOM
-              // The import map shims redirect 'react' and 'react-dom' to window globals
-              // esm.sh packages with ?external=react,react-dom will use the import map
-
-              // FIX: Check if dynamic imports already include react-shim (which exports hooks)
-              // If so, skip adding duplicate hook declarations to avoid "already declared" error
-              const hasReactShimImport = dynamicImports.includes("'react-shim'") ||
-                                         dynamicImports.includes("'react'");
-
-              const reactHooksDeclaration = hasReactShimImport
-                ? '// React hooks imported via react-shim above'
-                : 'const { useState, useEffect, useCallback, useMemo, useRef, useContext, useReducer, useLayoutEffect, createContext, createElement, Fragment, memo, forwardRef } = window.React;';
-
-              const wrappedContent = `
-(async () => {
-  // Verify UMD React is available (loaded by <script> tags before this runs)
-  if (!window.React || !window.ReactDOM) {
-    throw new Error('React not loaded - UMD scripts may have failed');
-  }
-  console.log('[Artifact] Using UMD React ' + window.React.version);
-
-  // Load user dependencies (esm.sh packages with ?external=react,react-dom will use import map shims)
-  ${dynamicImports}
-
-  // Expose React hooks globally for component code that uses them directly
-  // (Only if not already imported from react-shim)
-  ${reactHooksDeclaration}
-
-  // Run component code
-  ${moduleContent}
-})();`;
-
-              // Replace the module script with a babel script
-              // CRITICAL: 'env' preset intentionally excluded (Phase 5 fix)
-              // WHY: Babel's 'env' preset converts ES6 `import` to CommonJS `require()`, which
-              // causes "require is not defined" runtime errors in browsers (CommonJS isn't available)
-              // INSTEAD: Use only `react,typescript` presets - modern browsers support ES6 natively
-              // Browser targets: Chrome 80+, Firefox 75+, Safari 14+, Edge 80+ (all support ES6 modules)
-              htmlContent = htmlContent.replace(
-                /<script type="module">[\s\S]*?<\/script>/,
-                `<script type="text/babel" data-presets="react,typescript">${wrappedContent}</script>`
-              );
-
-              const babelElapsed = performance.now() - transpileStart;
-              console.log(`[BundledArtifactFrame] Babel fallback conversion completed in ${babelElapsed.toFixed(2)}ms`);
+              // Show error to user with fix option
+              toast.error('Bundled artifact transpilation failed', {
+                description: 'The artifact code contains syntax that could not be transpiled.',
+                duration: Infinity,
+                action: onAIFix ? {
+                  label: 'Ask AI to Fix',
+                  onClick: () => onAIFix()
+                } : undefined,
+              });
 
               Sentry.addBreadcrumb({
                 category: 'artifact.bundled-transpile',
-                message: 'Babel fallback conversion completed for bundled artifact',
-                level: 'info',
-                data: { elapsed: babelElapsed, reason: 'sucrase-failed' },
+                message: 'Transpilation failed - showing error to user',
+                level: 'error',
+                data: { reason: 'sucrase-failed' },
               });
+
+              onPreviewErrorChange?.('Bundled artifact transpilation failed');
+              onLoadingChange?.(false);
+              return; // Don't proceed with rendering
             }
           }
         }
@@ -581,7 +513,7 @@ const BundledArtifactFrame = memo(({
         URL.revokeObjectURL(objectUrl);
       }
     };
-  }, [bundleUrl, onLoadingChange, onPreviewErrorChange]);
+  }, [bundleUrl, onLoadingChange, onPreviewErrorChange, onAIFix]);
 
   return (
     <div className="w-full h-full relative flex flex-col">
@@ -796,8 +728,10 @@ export const ArtifactRenderer = memo(({
   const [recoveryAttempts, setRecoveryAttempts] = useState(0);
   const [currentError, setCurrentError] = useState<ArtifactError | null>(null);
   const [isRecovering, setIsRecovering] = useState(false);
-  const [currentRenderer, setCurrentRenderer] = useState<'bundle' | 'sandpack' | 'babel'>(
-    artifact.bundleUrl ? 'bundle' : detectNpmImports(artifact.content) ? 'sandpack' : 'babel'
+  // Renderer selection: 'bundle' for server-bundled, 'sandpack' for npm imports or fallback
+  // Note: 'babel' renderer was removed in December 2025 (Sucrase-only architecture)
+  const [currentRenderer, setCurrentRenderer] = useState<'bundle' | 'sandpack'>(
+    artifact.bundleUrl ? 'bundle' : 'sandpack'
   );
   const MAX_RECOVERY_ATTEMPTS = 2;
 
@@ -887,7 +821,8 @@ export const ArtifactRenderer = memo(({
     const fallback = getFallbackRenderer(currentError, currentRenderer);
     if (fallback) {
       setRecoveryAttempts(prev => prev + 1);
-      setCurrentRenderer(fallback === 'sandpack' ? 'sandpack' : 'babel');
+      // FallbackRenderer is 'sandpack' | 'static-preview', map to renderer type
+      setCurrentRenderer('sandpack');
       setCurrentError(null);
       onRefresh();
     }
@@ -1134,7 +1069,7 @@ ${artifact.content}
               />
             </div>
           )}
-          <WebPreview defaultUrl="about:blank" key={`webpreview-${themeRefreshKey}`}>
+          <WebPreview key={`webpreview-${themeRefreshKey}`}>
             <WebPreviewNavigation>
               <WebPreviewNavigationButton
                 tooltip="Refresh preview"
@@ -1142,7 +1077,6 @@ ${artifact.content}
               >
                 <RefreshCw className="h-4 w-4" />
               </WebPreviewNavigationButton>
-              <WebPreviewUrl />
               <WebPreviewNavigationButton
                 tooltip="Full screen"
                 onClick={onFullScreen}
@@ -1323,6 +1257,7 @@ ${artifact.content}
           previewError={previewError}
           onLoadingChange={onLoadingChange}
           onPreviewErrorChange={onPreviewErrorChange}
+          onAIFix={onAIFix}
         />
       );
     }
@@ -1469,89 +1404,6 @@ ${ERROR_HANDLING_SCRIPT}
 </html>`;
     };
 
-    /**
-     * Generate HTML template with Babel (runtime transpilation)
-     * - Includes Babel script tag
-     * - Uses <script type="text/babel"> for source code
-     * - Slower but more compatible (legacy)
-     */
-    const generateBabelTemplate = (processedCode: string, componentName: string) => {
-      return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script>
-    if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
-      console.error('React or ReactDOM failed to load');
-      window.parent.postMessage({
-        type: 'artifact-error',
-        message: 'React libraries failed to load. Please refresh the page.'
-      }, '*');
-    }
-    window.react = window.React;
-    window.reactDOM = window.ReactDOM;
-  </script>
-  <script type="importmap">
-    ${IMPORT_MAP_JSON}
-  </script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
-  <script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/recharts@2.5.0/umd/Recharts.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/framer-motion@11.11.11/dist/framer-motion.js"></script>
-  ${injectedCDNs}
-  ${generateCompleteIframeStyles()}
-  <style>
-    #root {
-      width: 100%;
-      min-height: 100vh;
-    }
-  </style>
-</head>
-<body>
-  <div id="root"></div>
-  <!-- CRITICAL: 'env' preset intentionally excluded (Phase 5 fix)
-       WHY: Babel's 'env' preset converts ES6 import to CommonJS require(), which
-       causes "require is not defined" runtime errors in browsers (CommonJS isn't available)
-       INSTEAD: Use only react,typescript presets - modern browsers support ES6 natively
-       Browser targets: Chrome 80+, Firefox 75+, Safari 14+, Edge 80+ (all support ES6 modules) -->
-  <script type="text/babel" data-type="module" data-presets="react,typescript">
-${LIBRARY_SETUP_SCRIPT}
-
-    ${processedCode}
-
-    try {
-      const root = ReactDOM.createRoot(document.getElementById('root'));
-      const Component = ${componentName};
-
-      if (typeof Component === 'undefined') {
-        throw new Error('Component "${componentName}" is not defined. Make sure you have "export default ${componentName}" in your code.');
-      }
-
-      root.render(<Component />);
-
-      // Signal to parent that artifact has finished rendering
-      window.parent.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
-    } catch (error) {
-      window.parent.postMessage({
-        type: 'artifact-error',
-        message: error.message || 'Failed to render component'
-      }, '*');
-      window.parent.postMessage({ type: 'artifact-rendered-complete', success: false, error: error.message }, '*');
-      console.error('Render error:', error);
-    }
-  </script>
-  <script>
-${ERROR_HANDLING_SCRIPT}
-  </script>
-</body>
-</html>`;
-    };
-
     const processedCode = artifact.content
       .replace(/^```[\w]*\n?/gm, '')
       .replace(/^```\n?$/gm, '')
@@ -1601,9 +1453,9 @@ ${ERROR_HANDLING_SCRIPT}
     // Determine which template to use based on feature flag and transpilation success
     let reactPreviewContent: string;
 
-    if (isFeatureEnabled('SUCRASE_TRANSPILER')) {
-      // Try Sucrase transpilation first (with exception handling for library failures)
-      let transpileResult: sucraseTranspiler.TranspileResult | sucraseTranspiler.TranspileError;
+    // Sucrase-only transpilation (no Babel fallback)
+    // Try Sucrase transpilation first (with exception handling for library failures)
+    let transpileResult: sucraseTranspiler.TranspileResult | sucraseTranspiler.TranspileError;
 
       try {
         transpileResult = transpileCode(processedCode, {
@@ -1651,9 +1503,9 @@ ${ERROR_HANDLING_SCRIPT}
         } else {
           // Show user-friendly toast notification for recoverable errors
           toast.warning(
-            'Transpiler unavailable, using compatibility mode',
+            'Transpiler encountered an error',
             {
-              description: 'The fast transpiler encountered an error. Your component will still work using the fallback renderer.',
+              description: 'There was an issue processing this artifact. Please try refreshing or use "Ask AI to Fix" to resolve.',
               duration: 10000, // 10 seconds
             }
           );
@@ -1675,58 +1527,55 @@ ${ERROR_HANDLING_SCRIPT}
           data: { elapsed: transpileResult.elapsed, componentName },
         });
         reactPreviewContent = generateSucraseTemplate(transpileResult.code, componentName);
-      } else {
-        // Fallback to Babel on transpilation error
-        console.warn('[ArtifactRenderer] Sucrase transpilation failed, falling back to Babel:', transpileResult.error);
-
-        // Capture exception for Sentry dashboard visibility
-        Sentry.captureException(new Error(`Sucrase transpilation failed: ${transpileResult.error}`), {
-          tags: {
-            component: 'ArtifactRenderer',
-            transpiler: 'sucrase',
-            fallback: 'babel',
-          },
-          extra: {
-            error: transpileResult.error,
-            details: transpileResult.details,
-            line: transpileResult.line,
-            column: transpileResult.column,
-            codeLength: processedCode.length,
-            componentName,
-          },
-        });
-
-        // Notify user that degraded mode is active
-        toast.warning(
-          'Artifact transpilation fell back to compatibility mode. Please report this issue if the artifact has errors.',
-          {
-            description: `Error: ${transpileResult.error}`,
-            duration: 10000,
-          }
-        );
-
-        Sentry.addBreadcrumb({
-          category: 'artifact.transpile',
-          message: 'Using Babel fallback for simple artifact',
-          level: 'info',
-          data: {
-            reason: 'sucrase-failed',
-            error: transpileResult.error,
-            componentName,
-          },
-        });
-        reactPreviewContent = generateBabelTemplate(processedCode, componentName);
-      }
     } else {
-      // Feature flag disabled, use Babel (legacy path)
-      console.log('[ArtifactRenderer] Using Babel (SUCRASE_TRANSPILER flag disabled)');
+      // Transpilation failed - show clear error message (no Babel fallback)
+      console.error('[ArtifactRenderer] Sucrase transpilation failed:', transpileResult.error);
+
+      // Capture exception for Sentry dashboard visibility
+      Sentry.captureException(new Error(`Sucrase transpilation failed: ${transpileResult.error}`), {
+        tags: {
+          component: 'ArtifactRenderer',
+          transpiler: 'sucrase',
+          error_type: 'transpilation_failure',
+        },
+        extra: {
+          error: transpileResult.error,
+          details: transpileResult.details,
+          line: transpileResult.line,
+          column: transpileResult.column,
+          codeLength: processedCode.length,
+          componentName,
+        },
+      });
+
+      // Show error toast with AI fix option
+      const errorLocation = transpileResult.line
+        ? ` (Line ${transpileResult.line}${transpileResult.column ? `, Column ${transpileResult.column}` : ''})`
+        : '';
+
+      toast.error('Artifact transpilation failed', {
+        description: `${transpileResult.error}${errorLocation}`,
+        duration: Infinity, // Don't auto-dismiss - user needs to take action
+        action: onAIFix ? {
+          label: 'Ask AI to Fix',
+          onClick: () => onAIFix()
+        } : undefined,
+      });
+
       Sentry.addBreadcrumb({
         category: 'artifact.transpile',
-        message: 'Using Babel (feature flag disabled)',
-        level: 'info',
-        data: { componentName },
+        message: 'Transpilation failed - showing error to user',
+        level: 'error',
+        data: {
+          error: transpileResult.error,
+          componentName,
+        },
       });
-      reactPreviewContent = generateBabelTemplate(processedCode, componentName);
+
+      // Set preview error and return null - don't render broken artifact
+      onPreviewErrorChange?.(`Transpilation failed: ${transpileResult.error}`);
+      onLoadingChange?.(false);
+      return null;
     }
 
     return (
@@ -1745,7 +1594,7 @@ ${ERROR_HANDLING_SCRIPT}
               />
             </div>
           )}
-          <WebPreview defaultUrl="about:blank" key={`webpreview-react-${themeRefreshKey}`}>
+          <WebPreview key={`webpreview-react-${themeRefreshKey}`}>
             <WebPreviewNavigation>
               <WebPreviewNavigationButton
                 tooltip="Refresh preview"
@@ -1753,7 +1602,6 @@ ${ERROR_HANDLING_SCRIPT}
               >
                 <RefreshCw className="h-4 w-4" />
               </WebPreviewNavigationButton>
-              <WebPreviewUrl />
               <WebPreviewNavigationButton
                 tooltip="Full screen"
                 onClick={onFullScreen}
