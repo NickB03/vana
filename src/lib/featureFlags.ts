@@ -26,24 +26,6 @@ export const FEATURE_FLAGS = {
    */
   CANVAS_SHADOW_DEPTH: false,
 
-  /**
-   * Sucrase Transpiler
-   * Use Sucrase for artifact transpilation instead of Babel Standalone.
-   * Sucrase is faster and more lightweight, but Babel provides better compatibility.
-   * - true: Use Sucrase (default for demo site)
-   * - false: Use Babel Standalone (legacy)
-   */
-  SUCRASE_TRANSPILER: true,
-
-  /**
-   * Landing Page Enabled
-   * When enabled, shows the landing page with scroll-to-app transition on first visit.
-   * When disabled, skips landing page and goes directly to the main app.
-   *
-   * Note: This provides the immediate default value to prevent flash during load.
-   * Admin can override via database setting in /admin dashboard.
-   */
-  LANDING_PAGE_ENABLED: false,
 } as const;
 
 /**

@@ -25,7 +25,6 @@ import type { SuggestionItem } from "@/data/suggestions";
 import { TourProvider, TourAlertDialog, TOUR_STORAGE_KEYS } from "@/components/tour";
 import { OnboardingTour } from "@/components/OnboardingTour";
 import { useAppSetting, APP_SETTING_KEYS } from "@/hooks/useAppSettings";
-import { FEATURE_FLAGS } from "@/lib/featureFlags";
 
 
 /**
@@ -166,14 +165,10 @@ const Home = () => {
   const [loadingSuggestions, setLoadingSuggestions] = useState(true);
 
   // Scroll transition - triggers at the end of CTA section
-  // CRITICAL: Defer skipLanding decision until DB loads to prevent race conditions
-  // Using null as loading state shows landing page by default (safe fallback)
+  // Admin dashboard is the single source of truth for landing page setting
+  // During loading, use the default (false = skip landing) to prevent flash
   const ctaSectionRef = useRef<HTMLDivElement>(null);
-  const landingPageEnabled = landingSettingLoading
-    ? null  // Loading state - don't make decision yet
-    : (landingPageSetting?.enabled ?? FEATURE_FLAGS.LANDING_PAGE_ENABLED);  // Database override or fallback
-  // Skip landing page only if DB explicitly says to (null = show landing as safe default)
-  const skipLandingPage = landingPageEnabled === false;
+  const skipLandingPage = !(landingPageSetting?.enabled ?? false);
   const { phase, progress, setTriggerElement } = useScrollTransition({
     enabled: true,
     skipLanding: skipLandingPage,

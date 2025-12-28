@@ -995,3 +995,83 @@ Deno.test("ReasoningProvider - Error Handling", async (t) => {
     provider.destroy();
   });
 });
+
+Deno.test("ReasoningProvider - Feature Flag Integration", async (t) => {
+  await t.step("NoOp provider emits no events when USE_REASONING_PROVIDER=false", async () => {
+    const collector = createEventCollector();
+
+    // Create NoOp provider (simulates USE_REASONING_PROVIDER=false)
+    const provider = createNoOpReasoningProvider();
+
+    // Lifecycle operations
+    await provider.start();
+    await provider.processReasoningChunk('Analyzing requirements...');
+    await provider.processReasoningChunk('Planning implementation...');
+    await provider.setPhase('implementing');
+    await provider.processReasoningChunk('Building core functionality...');
+    await provider.finalize('a calculator app');
+
+    // Verify: No events were emitted
+    assertEquals(collector.events.length, 0, 'NoOp provider should emit zero events');
+  });
+
+  await t.step("NoOp provider does not emit reasoning_status events", async () => {
+    const collector = createEventCollector();
+    const provider = createNoOpReasoningProvider();
+
+    await provider.start();
+
+    // Process significant chunks that would trigger events in normal provider
+    for (let i = 0; i < 5; i++) {
+      await provider.processReasoningChunk('A'.repeat(200));
+    }
+    await delay(200);
+
+    // Filter for reasoning_status events
+    const statusEvents = collector.events.filter(e => e.type === 'reasoning_status');
+    assertEquals(statusEvents.length, 0, 'Should have zero reasoning_status events');
+
+    provider.destroy();
+  });
+
+  await t.step("NoOp provider does not emit reasoning_final events", async () => {
+    const collector = createEventCollector();
+    const provider = createNoOpReasoningProvider();
+
+    await provider.start();
+    await provider.finalize('Test Component');
+
+    const finalEvents = collector.events.filter(e => e.type === 'reasoning_final');
+    assertEquals(finalEvents.length, 0, 'Should have zero reasoning_final events');
+
+    provider.destroy();
+  });
+
+  await t.step("NoOp provider does not emit reasoning_heartbeat events", async () => {
+    const collector = createEventCollector();
+    const provider = createNoOpReasoningProvider();
+
+    await provider.start();
+
+    // Wait long enough for heartbeat to trigger (if it were active)
+    await delay(10000); // Longer than typical heartbeat interval
+
+    const heartbeatEvents = collector.events.filter(e => e.type === 'reasoning_heartbeat');
+    assertEquals(heartbeatEvents.length, 0, 'Should have zero reasoning_heartbeat events');
+
+    provider.destroy();
+  });
+
+  await t.step("NoOp provider maintains valid state without emitting events", () => {
+    const provider = createNoOpReasoningProvider();
+    const state = provider.getState();
+
+    // Verify state is valid
+    assertEquals(state.currentPhase, 'analyzing');
+    assertEquals(state.buffer, '');
+    assertEquals(state.destroyed, false);
+    assertEquals(state.pendingCalls, 0);
+
+    provider.destroy();
+  });
+});

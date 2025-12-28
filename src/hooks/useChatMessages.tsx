@@ -582,20 +582,6 @@ export function useChatMessages(
               continue;
             }
 
-            // Handle status_update event ([STATUS:] markers from GLM)
-            if (parsed.type === 'status_update') {
-              const status = parsed.status as string;
-              console.log(`[StreamProgress] Status update: "${status}"`);
-
-              // Store for preservation in updateProgress()
-              lastReasoningStatus = status;
-
-              const progress = updateProgress();
-              onDelta('', progress);
-
-              continue;
-            }
-
             // COMPATIBILITY: Handle batch 'reasoning' event format from /chat endpoint.
             // The /chat endpoint sends reasoning as a single event (all steps at once),
             // while /generate-artifact streams individual reasoning_step events.

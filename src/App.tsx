@@ -30,6 +30,7 @@ const DeepResearchDemoB = lazy(() => import("./pages/DeepResearchDemoB"));
 const DeepResearchDemoB2 = lazy(() => import("./pages/DeepResearchDemoB2"));
 const DeepResearchDemoC = lazy(() => import("./pages/DeepResearchDemoC"));
 const CanvasDemo = lazy(() => import("./pages/CanvasDemo"));
+const CanvasLiveDemo = lazy(() => import("./pages/CanvasLiveDemo"));
 
 // Optimized React Query configuration for mobile
 const queryClient = new QueryClient({
@@ -96,6 +97,7 @@ const AnimatedRoutes = () => {
         <Route path="/deep-research-demo-b2" element={<AnimatedRoute><DeepResearchDemoB2 /></AnimatedRoute>} />
         <Route path="/deep-research-demo-c" element={<AnimatedRoute><DeepResearchDemoC /></AnimatedRoute>} />
         <Route path="/canvas-demo" element={<AnimatedRoute><CanvasDemo /></AnimatedRoute>} />
+        <Route path="/canvas-live-demo" element={<AnimatedRoute><CanvasLiveDemo /></AnimatedRoute>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<AnimatedRoute><NotFound /></AnimatedRoute>} />
       </Routes>

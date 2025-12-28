@@ -595,7 +595,7 @@ export async function executeArtifactGeneration(
     );
   }
 
-  // Structured reasoning parsing removed - use [STATUS:] markers instead
+  // Structured reasoning parsing removed - ReasoningProvider generates semantic status updates
   const reasoningSteps = null;
 
   // Strip HTML document structure from React artifacts

@@ -494,7 +494,9 @@ When enabled, the response includes the reasoning process:
 
 ### Status Marker System
 
-During thinking mode, GLM emits `[STATUS: action phrase]` markers to indicate progress:
+> **⚠️ DEPRECATED**: As of December 2025, this codebase uses **ReasoningProvider** (GLM-4.5-Air) for semantic status updates instead of marker parsing. This section documents GLM-4.6's capability for reference only.
+
+During thinking mode, GLM-4.6 *can* emit `[STATUS: action phrase]` markers to indicate progress:
 
 ```
 [STATUS: analyzing requirements]
@@ -503,7 +505,7 @@ During thinking mode, GLM emits `[STATUS: action phrase]` markers to indicate pr
 [STATUS: verifying output]
 ```
 
-These are parsed from `reasoning_content` and can be streamed to the frontend for real-time feedback.
+**Note**: Our application uses ReasoningProvider to generate semantic status messages via LLM analysis rather than parsing these markers.
 
 ### Configuration in This Codebase
 
@@ -535,23 +537,22 @@ const response = await callGLM(systemPrompt, userPrompt, {
 
 ### Parsing Status Markers
 
+> **⚠️ DEPRECATED**: The `parseStatusMarker()` function was removed in December 2025. Use **ReasoningProvider** for semantic status updates.
+
+**Historical reference** (removed from codebase):
 ```typescript
-// From glm-client.ts - parseStatusMarker()
-function parseStatusMarker(text: string): string | null {
-  const statusPattern = /\[STATUS:\s*([^\]]+)\]/g;
-  const matches = Array.from(text.matchAll(statusPattern));
-
-  if (matches.length > 0) {
-    // Return LAST match (most recent status)
-    return matches[matches.length - 1][1].trim();
-  }
-  return null;
-}
-
-// Usage
-const status = parseStatusMarker("[STATUS: analyzing code] ... [STATUS: writing artifact]");
-// Returns: "writing artifact"
+// REMOVED - Use ReasoningProvider instead
+// function parseStatusMarker(text: string): string | null {
+//   const statusPattern = /\[STATUS:\s*([^\]]+)\]/g;
+//   const matches = Array.from(text.matchAll(statusPattern));
+//   if (matches.length > 0) {
+//     return matches[matches.length - 1][1].trim();
+//   }
+//   return null;
+// }
 ```
+
+**Current implementation**: See `reasoning-provider.ts` for semantic status generation using GLM-4.5-Air.
 
 ---
 
@@ -686,9 +687,8 @@ const result = await processGLMStream(
   response,
   {
     onReasoningChunk: (chunk) => {
-      // Handle reasoning text
-      const status = parseStatusMarker(chunk);
-      sendSSE('reasoning_status', { status });
+      // Process reasoning via ReasoningProvider
+      await reasoningProvider.processReasoningChunk(chunk);
     },
     onContentChunk: (chunk) => {
       // Handle artifact content
@@ -914,11 +914,8 @@ const result = await processGLMStream(
   response,
   {
     onReasoningChunk: async (chunk) => {
-      // Await async operations before next chunk
-      const status = parseStatusMarker(chunk);
-      if (status) {
-        await sendSSEEvent('reasoning_status', { status });
-      }
+      // Process via ReasoningProvider for semantic status
+      await reasoningProvider.processReasoningChunk(chunk);
     },
     onContentChunk: async (chunk) => {
       await sendSSEEvent('content', { chunk });

@@ -50,6 +50,29 @@ export const ERROR_PATTERNS: Record<string, ErrorPattern> = {
     ]
   },
 
+  // Renamed from 'duplicate-import' to handle BOTH import and variable duplicates
+  // Engine-specific error messages:
+  // - Safari/JavaScriptCore: "Cannot declare a lexical variable twice: 'X'"
+  // - Chrome/V8: "Identifier 'X' has already been declared"
+  // - Firefox/SpiderMonkey: "redeclaration of let X" or "redeclaration of const X"
+  'duplicate-declaration': {
+    triggers: [
+      'cannot declare a lexical variable twice',   // Safari - most specific (42 chars = highest score)
+      'identifier.*has already been declared',     // Chrome - includes variable name context
+      'redeclaration of let',                      // Firefox let
+      'redeclaration of const',                    // Firefox const
+      'duplicate identifier',                      // TypeScript
+    ],
+    patterns: [
+      'Find the duplicate identifier mentioned in the error message',
+      'For duplicate imports: import { X, X } from "..." → import { X } from "..."',
+      'For separate imports: Combine into single import or remove one',
+      'For variable duplicates: Remove the second declaration or rename it',
+      'Check if a variable shadows an import name - rename the variable',
+      'For function duplicates: Remove or rename one of the function declarations'
+    ]
+  },
+
   'syntax-error': {
     triggers: ['syntaxerror', 'unexpected token', 'unexpected end of input'],
     patterns: [

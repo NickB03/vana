@@ -139,7 +139,7 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
       expect(srcDoc).toContain('React.createElement');
     });
 
-    it('falls back to Babel when Sucrase transpilation fails', () => {
+    it('shows error UI when Sucrase transpilation fails', () => {
       // Mock failed transpilation
       vi.mocked(sucraseTranspiler.transpileCode).mockReturnValue({
         success: false,
@@ -147,12 +147,13 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
         details: 'Unexpected token',
       });
 
-      const { container } = render(<ArtifactRenderer {...baseProps} />);
+      const mockOnAIFix = vi.fn();
+      render(<ArtifactRenderer {...baseProps} onAIFix={mockOnAIFix} />);
 
       // Verify transpileCode was called
       expect(sucraseTranspiler.transpileCode).toHaveBeenCalled();
 
-      // Verify Sentry captureException was called (captures errors to dashboard)
+      // Verify Sentry captureException was called
       expect(Sentry.captureException).toHaveBeenCalledWith(
         expect.objectContaining({
           message: expect.stringContaining('Sucrase transpilation failed'),
@@ -161,19 +162,20 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
           tags: expect.objectContaining({
             component: 'ArtifactRenderer',
             transpiler: 'sucrase',
-            fallback: 'babel',
+            error_type: 'transpilation_failure',
           }),
         })
       );
 
-      // Verify iframe exists with Babel template
-      const iframe = container.querySelector('iframe');
-      expect(iframe).toBeTruthy();
-
-      // Verify iframe HTML DOES contain Babel script tag
-      const srcDoc = iframe?.getAttribute('srcdoc');
-      expect(srcDoc).toContain('@babel/standalone');
-      expect(srcDoc).toContain('text/babel');
+      // Verify error toast was shown with "Ask AI to Fix" action
+      expect(toast.error).toHaveBeenCalledWith(
+        'Artifact transpilation failed',
+        expect.objectContaining({
+          action: expect.objectContaining({
+            label: 'Ask AI to Fix',
+          }),
+        })
+      );
     });
 
     it('generates correct Sucrase template with module script type', () => {
@@ -196,42 +198,10 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
   });
 
   // ============================================
-  // BABEL FALLBACK PATH TESTS
+  // NOTE: Babel Fallback tests removed (Sucrase-only architecture)
+  // Babel Standalone fallback was removed in December 2025
+  // Error recovery now uses "Ask AI to Fix" UI instead
   // ============================================
-
-  describe('Babel Fallback', () => {
-    it('uses Babel when feature flag is disabled', () => {
-      // Disable Sucrase feature flag
-      vi.mocked(featureFlags.isFeatureEnabled).mockReturnValue(false);
-
-      const { container } = render(<ArtifactRenderer {...baseProps} />);
-
-      // Verify transpileCode was NOT called
-      expect(sucraseTranspiler.transpileCode).not.toHaveBeenCalled();
-
-      // Verify iframe uses Babel template
-      const iframe = container.querySelector('iframe');
-      const srcDoc = iframe?.getAttribute('srcdoc');
-      expect(srcDoc).toContain('@babel/standalone');
-      expect(srcDoc).toContain('text/babel');
-    });
-
-    it('generates correct Babel template with text/babel script type', () => {
-      vi.mocked(featureFlags.isFeatureEnabled).mockReturnValue(false);
-
-      const { container } = render(<ArtifactRenderer {...baseProps} />);
-      const iframe = container.querySelector('iframe');
-      const srcDoc = iframe?.getAttribute('srcdoc');
-
-      // Verify Babel template uses <script type="text/babel">
-      expect(srcDoc).toContain('type="text/babel"');
-      expect(srcDoc).toContain('data-type="module"');
-      expect(srcDoc).toContain('data-presets="react,typescript"');
-
-      // Verify Babel is loaded
-      expect(srcDoc).toContain('babel.min.js');
-    });
-  });
 
   // ============================================
   // ARTIFACT TYPE RENDERING TESTS
@@ -485,9 +455,12 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
         render(<ArtifactRenderer {...baseProps} />);
       }).not.toThrow();
 
-      // Should fall back to Babel
+      // Should show error UI (no Babel fallback)
       const calls = vi.mocked(sucraseTranspiler.transpileCode).mock.calls;
       expect(calls.length).toBe(1);
+
+      // Verify error toast was shown
+      expect(toast.error).toHaveBeenCalled();
     });
   });
 
@@ -496,7 +469,7 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
   // ============================================
 
   describe('Exception Handling', () => {
-    it('falls back to Babel when transpileCode throws exception', () => {
+    it('shows error UI when transpileCode throws exception', () => {
       const reactArtifact: ArtifactData = {
         ...baseArtifact,
         type: 'react',
@@ -508,15 +481,13 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
         throw new Error('Sucrase module failed to load');
       });
 
-      // Should NOT crash - should fall back to Babel
+      // Should NOT crash - should show error UI
       expect(() => {
         render(<ArtifactRenderer {...baseProps} artifact={reactArtifact} />);
       }).not.toThrow();
 
-      // Verify Babel template is used (contains @babel/standalone)
-      const iframe = screen.getByTitle(reactArtifact.title);
-      const srcDoc = iframe.getAttribute('srcdoc');
-      expect(srcDoc).toContain('@babel/standalone');
+      // Verify error toast was shown
+      expect(toast.error).toHaveBeenCalled();
     });
 
     it('reports exception to Sentry when Sucrase throws', () => {
@@ -542,7 +513,7 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
       );
     });
 
-    it('shows error toast when Sucrase throws exception', () => {
+    it('shows error toast with Ask AI to Fix when Sucrase throws exception', () => {
       const reactArtifact: ArtifactData = {
         ...baseArtifact,
         type: 'react',
@@ -553,12 +524,17 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
         throw new Error('Sucrase library unavailable');
       });
 
-      render(<ArtifactRenderer {...baseProps} artifact={reactArtifact} />);
+      const mockOnAIFix = vi.fn();
+      render(<ArtifactRenderer {...baseProps} artifact={reactArtifact} onAIFix={mockOnAIFix} />);
 
-      // User should see warning toast
-      expect(toast.warning).toHaveBeenCalledWith(
-        expect.stringContaining('compatibility mode'),
-        expect.any(Object)
+      // User should see error toast with "Ask AI to Fix" action
+      expect(toast.error).toHaveBeenCalledWith(
+        'Artifact transpilation failed',
+        expect.objectContaining({
+          action: expect.objectContaining({
+            label: 'Ask AI to Fix',
+          }),
+        })
       );
     });
   });
@@ -639,17 +615,17 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
       const artifact1 = { ...baseArtifact, id: 'art1', content: 'export default () => <div>A</div>' };
       const artifact2 = { ...baseArtifact, id: 'art2', content: 'export default () => <div>B</div>' };
 
-      let callCount = 0;
-      vi.mocked(sucraseTranspiler.transpileCode).mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) throw new Error('First fails');
-        return { success: true, code: 'const App = () => React.createElement("div", null, "Test");', elapsed: 5 };
+      // Both succeed for this test (error handling tested separately)
+      vi.mocked(sucraseTranspiler.transpileCode).mockReturnValue({
+        success: true,
+        code: 'const App = () => React.createElement("div", null, "Test");',
+        elapsed: 5
       });
 
       const { container: c1 } = render(<ArtifactRenderer {...baseProps} artifact={artifact1} />);
       const { container: c2 } = render(<ArtifactRenderer {...baseProps} artifact={artifact2} />);
 
-      // Both should render (first with Babel fallback, second with Sucrase)
+      // Both should render with Sucrase
       expect(c1.querySelector('iframe')).toBeTruthy();
       expect(c2.querySelector('iframe')).toBeTruthy();
     });
@@ -743,7 +719,7 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
       consoleSpy.mockRestore();
     });
 
-    it('falls back to Babel when Sucrase fails for bundled artifact', async () => {
+    it('shows error UI when Sucrase fails for bundled artifact', async () => {
       const jsxContent = `
         import * as Lodash from 'https://esm.sh/lodash?external=react,react-dom';
         const App = () => <div>Fallback Test</div>;
@@ -761,10 +737,10 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
         details: 'Unexpected syntax',
       });
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const mockOnAIFix = vi.fn();
 
-      render(<ArtifactRenderer {...baseProps} artifact={bundledArtifact} />);
+      render(<ArtifactRenderer {...baseProps} artifact={bundledArtifact} onAIFix={mockOnAIFix} />);
 
       // Wait for async bundle fetch
       await vi.waitFor(() => {
@@ -776,32 +752,29 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
         expect(sucraseTranspiler.transpileCode).toHaveBeenCalled();
       });
 
-      // Verify fallback to Babel logging
+      // Verify error logging (no Babel fallback)
       await vi.waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith(
-          '[BundledArtifactFrame] Using Babel fallback for JSX transpilation'
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          expect.stringContaining('[BundledArtifactFrame] Sucrase transpilation failed')
         );
       });
 
-      // Verify Sentry exception was captured
-      expect(Sentry.captureException).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: expect.stringContaining('Bundled artifact Sucrase transpilation failed'),
-        }),
-        expect.objectContaining({
-          tags: expect.objectContaining({
-            component: 'BundledArtifactFrame',
-            transpiler: 'sucrase',
-            fallback: 'babel',
-          }),
-        })
-      );
+      // Verify error toast with "Ask AI to Fix" action
+      await vi.waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith(
+          'Bundled artifact transpilation failed',
+          expect.objectContaining({
+            action: expect.objectContaining({
+              label: 'Ask AI to Fix',
+            }),
+          })
+        );
+      });
 
-      consoleSpy.mockRestore();
-      consoleWarnSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
     });
 
-    it('falls back to Babel when Sucrase throws exception for bundled artifact', async () => {
+    it('shows error UI when Sucrase throws exception for bundled artifact', async () => {
       const jsxContent = `
         const App = () => <div>Exception Test</div>;
         ReactDOM.createRoot(document.getElementById('root')).render(<App />);
@@ -816,45 +789,32 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
         throw new Error('Sucrase crashed unexpectedly');
       });
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const mockOnAIFix = vi.fn();
 
-      render(<ArtifactRenderer {...baseProps} artifact={bundledArtifact} />);
+      render(<ArtifactRenderer {...baseProps} artifact={bundledArtifact} onAIFix={mockOnAIFix} />);
 
       // Wait for async bundle fetch
       await vi.waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith(bundledArtifact.bundleUrl);
       });
 
-      // Verify Sucrase exception was logged
+      // Verify Sucrase exception was handled (no Babel fallback)
       await vi.waitFor(() => {
-        expect(consoleWarnSpy).toHaveBeenCalledWith(
-          '[BundledArtifactFrame] Sucrase exception, falling back to Babel:',
-          expect.any(Error)
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          expect.stringContaining('[BundledArtifactFrame] Sucrase transpilation failed')
         );
       });
 
-      // Verify Babel fallback was used
+      // Verify error toast was shown
       await vi.waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith(
-          '[BundledArtifactFrame] Using Babel fallback for JSX transpilation'
+        expect(toast.error).toHaveBeenCalledWith(
+          'Bundled artifact transpilation failed',
+          expect.any(Object)
         );
       });
 
-      // Verify Sentry exception was captured for the thrown error
-      expect(Sentry.captureException).toHaveBeenCalledWith(
-        expect.any(Error),
-        expect.objectContaining({
-          tags: expect.objectContaining({
-            component: 'BundledArtifactFrame',
-            action: 'transpile',
-            errorType: 'exception',
-          }),
-        })
-      );
-
-      consoleSpy.mockRestore();
-      consoleWarnSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
     });
 
     it('logs Sentry breadcrumb on successful Sucrase transpilation for bundled artifact', async () => {

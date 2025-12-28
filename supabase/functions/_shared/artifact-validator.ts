@@ -297,6 +297,58 @@ function stripTypeScriptWithSucrase(code: string): { code: string; stripped: boo
 }
 
 /**
+ * Removes duplicate named imports from import statements.
+ * Handles both simple and aliased imports.
+ *
+ * Example: `import { Mail, User, Mail }` → `import { Mail, User }`
+ * Example: `import { X as A, Y, X as B }` → `import { X as A, Y }`
+ *
+ * @param code - The source code to fix
+ * @returns Fixed code and whether any duplicates were removed
+ */
+function removeDuplicateImports(code: string): { code: string; duplicatesRemoved: boolean; count: number } {
+  let duplicatesRemoved = false;
+  let totalCount = 0;
+
+  // Match import statements with named imports: import { ... } from '...'
+  // Captures: full match, the imports between braces, the rest of the statement
+  const importRegex = /import\s*\{([^}]+)\}\s*from\s*(['"][^'"]+['"])/g;
+
+  const fixed = code.replace(importRegex, (match, imports: string, source: string) => {
+    // Split imports by comma and clean up whitespace
+    const importList = imports.split(',').map((i: string) => i.trim()).filter(Boolean);
+
+    const seen = new Set<string>();
+    const unique: string[] = [];
+    let localDuplicates = 0;
+
+    for (const imp of importList) {
+      // Handle aliased imports like "Original as Alias"
+      // The key for deduplication is the original name (before 'as')
+      const originalName = imp.split(/\s+as\s+/)[0].trim();
+
+      if (originalName && !seen.has(originalName)) {
+        seen.add(originalName);
+        unique.push(imp);
+      } else if (originalName) {
+        localDuplicates++;
+      }
+    }
+
+    if (localDuplicates > 0) {
+      duplicatesRemoved = true;
+      totalCount += localDuplicates;
+      // Reconstruct the import statement with unique imports
+      return `import { ${unique.join(', ')} } from ${source}`;
+    }
+
+    return match; // No duplicates, return original
+  });
+
+  return { code: fixed, duplicatesRemoved, count: totalCount };
+}
+
+/**
  * Attempts to auto-fix common issues in artifact code
  */
 export function autoFixArtifactCode(code: string): { fixed: string; changes: string[] } {
@@ -374,6 +426,16 @@ export function autoFixArtifactCode(code: string): { fixed: string; changes: str
   }
 
   // PHASE 2: Fix GLM-specific syntax bugs (after TypeScript stripping)
+
+  // Fix: Remove duplicate named imports (GLM bug: "import { Mail, User, Mail }")
+  // This must happen before transpilation as duplicates cause SyntaxError
+  const duplicateResult = removeDuplicateImports(fixed);
+  if (duplicateResult.duplicatesRemoved) {
+    fixed = duplicateResult.code;
+    changes.push(`Removed ${duplicateResult.count} duplicate import(s)`);
+    console.log(`[artifact-validator] Fixed ${duplicateResult.count} duplicate import(s)`);
+  }
+
   // Fix: Replace 'eval' with 'score' in variable declarations
   const evalPattern = /\b(const|let|var)\s+eval\s*=/g;
   if (evalPattern.test(fixed)) {

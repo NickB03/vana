@@ -6,7 +6,7 @@
  */
 
 export type ErrorType = 'syntax' | 'runtime' | 'import' | 'bundling' | 'timeout' | 'react' | 'unknown';
-export type FallbackRenderer = 'sandpack' | 'babel' | 'static-preview';
+export type FallbackRenderer = 'sandpack' | 'static-preview';
 export type RetryStrategy = 'immediate' | 'with-fix' | 'different-renderer' | 'none';
 
 export interface ArtifactError {
@@ -30,7 +30,39 @@ interface ErrorRule {
   config: Omit<ArtifactError, 'message' | 'originalError'>;
 }
 
+/**
+ * Error classification rules - patterns and their corresponding error configurations.
+ *
+ * IMPORTANT: Rules are evaluated in order (first match wins).
+ * More specific rules MUST come before generic ones to ensure
+ * proper error classification and user-friendly messaging.
+ *
+ * Example: Duplicate declaration errors contain "syntaxerror" in some messages,
+ * so the duplicate-declaration rule must come before the generic syntax rule.
+ */
 const ERROR_RULES: ErrorRule[] = [
+  {
+    // Duplicate declaration detection - MUST be before generic syntax error
+    // Covers both import duplicates AND variable redeclarations
+    // Engine-specific patterns:
+    // - Safari: "Cannot declare a lexical variable twice: 'X'"
+    // - Chrome: "Identifier 'X' has already been declared"
+    // - Firefox: "redeclaration of let X"
+    patterns: [
+      'cannot declare a lexical variable twice',  // Safari/JSC
+      'has already been declared',                // Chrome/V8
+      'redeclaration of let',                     // Firefox let
+      'redeclaration of const',                   // Firefox const
+      'duplicate identifier',                     // TypeScript
+    ],
+    config: {
+      type: 'syntax',
+      suggestedFix: 'Remove the duplicate declaration. For imports: each name should appear once. For variables: rename or remove the duplicate.',
+      canAutoFix: true,
+      retryStrategy: 'with-fix',
+      userMessage: 'Duplicate declaration detected. AI can fix this.',
+    },
+  },
   {
     patterns: ['syntaxerror', 'unexpected token'],
     config: {
@@ -80,7 +112,7 @@ const ERROR_RULES: ErrorRule[] = [
       type: 'timeout',
       suggestedFix: 'Try using a simpler rendering method without server bundling.',
       canAutoFix: false,
-      fallbackRenderer: 'babel',
+      fallbackRenderer: 'sandpack',
       retryStrategy: 'different-renderer',
       userMessage: 'Loading timed out. Switching to faster rendering method.',
     },
@@ -182,12 +214,13 @@ export function shouldAttemptRecovery(
 /**
  * Fallback renderer mapping by error type
  * Key: error type, Value: map of current renderer to fallback
+ * Note: 'babel' renderer was removed in December 2025 (Sucrase-only architecture)
  */
-const FALLBACK_RENDERERS: Partial<Record<ErrorType, Partial<Record<'bundle' | 'sandpack' | 'babel', FallbackRenderer>>>> = {
-  timeout: { bundle: 'babel', sandpack: 'babel' },
-  bundling: { bundle: 'babel', sandpack: 'babel' },
-  import: { bundle: 'sandpack', babel: 'sandpack' },
-  react: { bundle: 'babel', sandpack: 'babel' },
+const FALLBACK_RENDERERS: Partial<Record<ErrorType, Partial<Record<'bundle' | 'sandpack', FallbackRenderer>>>> = {
+  timeout: { bundle: 'sandpack' },
+  bundling: { bundle: 'sandpack' },
+  import: { bundle: 'sandpack' },
+  react: { bundle: 'sandpack' },
 };
 
 /**
@@ -195,10 +228,10 @@ const FALLBACK_RENDERERS: Partial<Record<ErrorType, Partial<Record<'bundle' | 's
  */
 export function getFallbackRenderer(
   error: ArtifactError,
-  currentRenderer: 'bundle' | 'sandpack' | 'babel'
+  currentRenderer: 'bundle' | 'sandpack'
 ): FallbackRenderer | null {
-  // If error suggests a specific fallback, use it
-  if (error.fallbackRenderer) {
+  // If error suggests a specific fallback, use it (unless we're already on it)
+  if (error.fallbackRenderer && error.fallbackRenderer !== currentRenderer) {
     return error.fallbackRenderer;
   }
 

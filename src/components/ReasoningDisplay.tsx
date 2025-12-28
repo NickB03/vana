@@ -11,7 +11,7 @@ interface ReasoningDisplayProps {
   reasoning?: string | null;
   /** Raw reasoning text being streamed from GLM (native thinking mode) */
   streamingReasoningText?: string | null;
-  /** Semantic status update from GLM-4.5-Air (from [STATUS:] markers) */
+  /** Semantic status update from GLM-4.5-Air (via ReasoningProvider) */
   reasoningStatus?: string | null;
   isStreaming?: boolean;
   /** Whether the artifact has finished rendering (optional, defaults to true) */
@@ -60,7 +60,7 @@ function sanitizeContent(content: string): string {
  * ReasoningDisplay component - Simplified ticker pill with "Thought process" expansion
  *
  * Key features:
- * - During streaming: Shows live status updates from backend [STATUS:] markers
+ * - During streaming: Shows live semantic status updates from ReasoningProvider (GLM-4.5-Air)
  * - After streaming (collapsed): Shows "Thought process" + timer
  * - After streaming (expanded): Shows raw reasoning text
  * - Timer persists and shows clock icon
@@ -138,7 +138,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
    * FIX (2025-12-21): Semantic status takes precedence; tool messages are tool-specific
    */
   const getStreamingStatus = (): string => {
-    // HIGHEST PRIORITY: Semantic status from backend [STATUS: ...] markers
+    // HIGHEST PRIORITY: Semantic status from ReasoningProvider (GLM-4.5-Air)
     // This gives the most context-aware, human-readable status
     if (reasoningStatus && reasoningStatus !== "Thinking...") {
       return reasoningStatus;

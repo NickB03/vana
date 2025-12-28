@@ -268,7 +268,7 @@ Return ONLY the fixed code without any explanations or markdown formatting.`;
       throw new Error("No fixed code returned from AI");
     }
 
-    // Structured reasoning parsing removed - use [STATUS:] markers instead
+    // Structured reasoning parsing removed - ReasoningProvider generates semantic status updates
     const reasoningSteps = null;
 
     // Clean up any markdown code blocks that might have been added

@@ -421,6 +421,12 @@ serve(async (req) => {
       ''
     );
 
+    // FIX: Strip Lucide icons destructuring (already available via UMD globals)
+    transformedCode = transformedCode.replace(
+      /^const\s*\{[^}]*\}\s*=\s*(?:Lucide|LucideReact|window\.Lucide);?\s*$/gm,
+      ''
+    );
+
     // FIX: Fix unquoted package names in imports (e.g., "from React;" -> "from 'react';")
     // GLM sometimes generates imports without quotes around the package name
     transformedCode = transformedCode.replace(
@@ -444,7 +450,8 @@ serve(async (req) => {
 
     // Replace npm package imports with esm.sh CDN URLs
     for (const [pkg, version] of Object.entries(dependencies)) {
-      if (pkg === 'react' || pkg === 'react-dom') continue;
+      // Skip packages loaded via UMD globals
+      if (pkg === 'react' || pkg === 'react-dom' || pkg === 'lucide-react') continue;
 
       const esmUrl = buildEsmUrl(pkg, version);
       const escapedPkg = pkg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -467,6 +474,11 @@ serve(async (req) => {
       .replace(/from\s+['"]react['"]/g, `from 'react-shim'`)
       .replace(/from\s+['"]react-dom\/client['"]/g, `from 'react-dom-shim'`)
       .replace(/from\s+['"]react-dom['"]/g, `from 'react-dom-shim'`);
+
+    // Strip lucide-react imports (loaded via UMD global)
+    transformedCode = transformedCode
+      .replace(/^import\s+.*?from\s+['"]lucide-react['"];?\s*$/gm, '')
+      .replace(/^import\s+\{[^}]*\}\s+from\s+['"]lucide-react['"];?\s*$/gm, '');
 
     // Transform export default to App assignment
     const codeWithoutExport = transformedCode
@@ -528,13 +540,15 @@ serve(async (req) => {
 
     // Add prebuilt packages with ?bundle URLs (faster, single-file bundles)
     for (const pkg of prebuilt) {
+      // Skip packages loaded via UMD globals
+      if (pkg.name === 'lucide-react') continue;
       browserImportMap[pkg.name] = pkg.bundleUrl;
     }
 
     // Add remaining npm dependencies with CDN fallback
-    // Skip packages that have UMD shims (react, react-dom, framer-motion)
+    // Skip packages that have UMD shims (react, react-dom, framer-motion, lucide-react)
     for (const [pkg, version] of Object.entries(remaining)) {
-      if (pkg === 'react' || pkg === 'react-dom' || pkg === 'framer-motion') continue;
+      if (pkg === 'react' || pkg === 'react-dom' || pkg === 'framer-motion' || pkg === 'lucide-react') continue;
 
       // Try to get working CDN URL with fallback chain
       const cdnResult = await getWorkingCdnUrl(pkg, version, requestId);
@@ -598,6 +612,7 @@ serve(async (req) => {
   <!-- Common libraries that GLM expects as globals -->
   <script crossorigin src="https://unpkg.com/framer-motion@11/dist/framer-motion.js"></script>
   <script crossorigin src="https://unpkg.com/canvas-confetti@1.9.3/dist/confetti.browser.js"></script>
+  <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
 
   <script>
     // CRITICAL: Verify React loaded successfully
@@ -642,6 +657,20 @@ serve(async (req) => {
       window.canvasConfetti = { create: confetti.create || confetti, reset: confetti.reset };
       // Also expose confetti directly for simple usage
       window.confetti = confetti;
+    }
+
+    // Lucide React UMD exports to window.LucideReact
+    // GLM uses: const { Check, X, Calendar } = Lucide;
+    if (typeof LucideReact !== 'undefined') {
+      console.log('Lucide React loaded successfully');
+      // Expose as "Lucide" for GLM-generated code
+      window.Lucide = LucideReact;
+      // Also expose all icons individually as globals for convenience
+      Object.keys(LucideReact).forEach(iconName => {
+        if (typeof window[iconName] === 'undefined') {
+          window[iconName] = LucideReact[iconName];
+        }
+      });
     }
   </script>
 

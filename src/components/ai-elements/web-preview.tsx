@@ -6,7 +6,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Input } from "@/components/ui/input";
 import {
   Tooltip,
   TooltipContent,
@@ -16,11 +15,13 @@ import {
 import { cn } from "@/lib/utils";
 import { ChevronDownIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useState } from "react";
 
+/**
+ * WebPreview context for managing preview state.
+ * Note: URL state was removed as we always use srcDoc for sandboxed previews.
+ */
 export type WebPreviewContextValue = {
-  url: string;
-  setUrl: (url: string) => void;
   consoleOpen: boolean;
   setConsoleOpen: (open: boolean) => void;
 };
@@ -35,29 +36,16 @@ const useWebPreview = () => {
   return context;
 };
 
-export type WebPreviewProps = ComponentProps<"div"> & {
-  defaultUrl?: string;
-  onUrlChange?: (url: string) => void;
-};
+export type WebPreviewProps = ComponentProps<"div">;
 
 export const WebPreview = ({
   className,
   children,
-  defaultUrl = "",
-  onUrlChange,
   ...props
 }: WebPreviewProps) => {
-  const [url, setUrl] = useState(defaultUrl);
   const [consoleOpen, setConsoleOpen] = useState(false);
 
-  const handleUrlChange = (newUrl: string) => {
-    setUrl(newUrl);
-    onUrlChange?.(newUrl);
-  };
-
   const contextValue: WebPreviewContextValue = {
-    url,
-    setUrl: handleUrlChange,
     consoleOpen,
     setConsoleOpen,
   };
@@ -124,46 +112,6 @@ export const WebPreviewNavigationButton = ({
   </TooltipProvider>
 );
 
-export type WebPreviewUrlProps = ComponentProps<typeof Input>;
-
-export const WebPreviewUrl = ({
-  value,
-  onChange,
-  onKeyDown,
-  ...props
-}: WebPreviewUrlProps) => {
-  const { url, setUrl } = useWebPreview();
-  const [inputValue, setInputValue] = useState(url);
-
-  useEffect(() => {
-    setInputValue(url);
-  }, [url]);
-
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(event.target.value);
-    onChange?.(event);
-  };
-
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
-      const target = event.target as HTMLInputElement;
-      setUrl(target.value);
-    }
-    onKeyDown?.(event);
-  };
-
-  return (
-    <Input
-      className="h-8 flex-1 text-sm"
-      onChange={onChange ?? handleChange}
-      onKeyDown={handleKeyDown}
-      placeholder="Enter URL..."
-      value={value ?? inputValue}
-      {...props}
-    />
-  );
-};
-
 export type WebPreviewBodyProps = ComponentProps<"iframe"> & {
   loading?: ReactNode;
 };
@@ -175,15 +123,13 @@ export const WebPreviewBody = ({
   title = "Preview",
   ...props
 }: WebPreviewBodyProps) => {
-  const { url } = useWebPreview();
-
   return (
     <div className="flex-1 relative">
       <iframe
         className={cn("size-full", className)}
         data-testid="artifact-iframe"
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
-        src={(src ?? url) || undefined}
+        src={src || undefined}
         title={title}
         {...props}
       />

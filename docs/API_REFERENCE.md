@@ -1,6 +1,6 @@
 # API Reference - Vana Edge Functions
 
-**Last Updated**: 2025-12-22
+**Last Updated**: 2025-12-27
 **Base URL**: `https://vznhbocnuykdmjvujaka.supabase.co/functions/v1`
 
 ---
@@ -12,7 +12,7 @@
 - [Error Handling](#error-handling)
 - [Endpoints](#endpoints)
   - [Chat](#post-chat)
-    - [Dual SSE Status Update System](#dual-sse-status-update-system)
+    - [SSE Status Update System](#sse-status-update-system)
   - [Generate Artifact](#post-generate-artifact)
   - [Generate Artifact Fix](#post-generate-artifact-fix)
   - [Generate Image](#post-generate-image)
@@ -161,41 +161,13 @@ interface Message {
 
 **Content-Type**: `text/event-stream` (Server-Sent Events)
 
-#### Dual SSE Status Update System
+#### SSE Status Update System
 
-The chat API uses **TWO parallel status update mechanisms** for redundancy and backward compatibility:
-
-1. **Legacy System**: `status_update` events (parsed from `[STATUS:]` markers in GLM reasoning)
-2. **Modern System**: `reasoning_status` events (LLM-generated semantic summaries via ReasoningProvider)
-
-Both systems run simultaneously to provide resilient status updates during AI processing.
-
-##### Status Update Events Comparison
-
-| Feature | `status_update` (Legacy) | `reasoning_status` (Modern) |
-|---------|--------------------------|------------------------------|
-| **Source** | Regex parsing of `[STATUS:]` markers | LLM semantic analysis (GLM-4.5-Air) |
-| **Fallback** | None (AI-dependent) | Circuit breaker → phase templates |
-| **Metadata** | None | Extensive (phase, provider, timestamps) |
-| **Reliability** | Depends on AI emitting markers | Protected by circuit breaker |
-| **Frequency** | Sparse (marker-dependent) | Frequent (intelligent buffering) |
-| **Format** | `{ type, status }` | `{ type, status, phase, metadata }` |
+The chat API uses **ReasoningProvider** to generate semantic status updates during AI processing.
 
 **Event Types**:
 
-1. **Status Update Event** (Legacy - marker-based):
-```json
-{
-  "type": "status_update",
-  "status": "Analyzing user requirements..."
-}
-```
-- **Source**: Parsed from `[STATUS:]` markers in GLM-4.6 reasoning output
-- **Frequency**: Only when GLM emits explicit `[STATUS:]` markers
-- **Reliability**: Depends on AI model consistently emitting markers
-- **Use Case**: Backward compatibility, simple status display
-
-2. **Reasoning Status Event** (Modern - LLM-powered):
+1. **Reasoning Status Event** (LLM-powered semantic status):
 ```json
 {
   "type": "reasoning_status",
@@ -227,12 +199,12 @@ Both systems run simultaneously to provide resilient status updates during AI pr
 ```
 Chat Request → GLM-4.6 Reasoning Stream
     ↓
-[Parallel Processing]
-    ├─→ Parse [STATUS:] markers → status_update events
-    └─→ ReasoningProvider → reasoning_status events
+ReasoningProvider (GLM-4.5-Air)
+    ↓
+reasoning_status events → Client UI
 ```
 
-3. **Reasoning Step Event** (structured thinking steps):
+2. **Reasoning Step Event** (structured thinking steps):
 ```json
 {
   "type": "reasoning_step",
@@ -413,17 +385,16 @@ while (true) {
 }
 ```
 
-**Recommended Approach**: Listen for **both** `status_update` and `reasoning_status` events:
-- Use `reasoning_status` as primary (rich metadata, reliable fallback)
-- Use `status_update` as backup (simpler, but AI-dependent)
-- Prefer the most recent status update from either source
+**Recommended Approach**: Listen for `reasoning_status` events:
+- Rich metadata (phase, provider, timestamps)
+- Circuit breaker fallback ensures reliability
+- Semantic, context-aware status messages
 
-**Architecture Details**: For implementation details of the dual status system, see:
-- **CLAUDE.md** → "Status Marker System" section (legacy marker-based parsing)
-- **CLAUDE.md** → "Unified Tool-Calling Architecture" section (Issue #340)
-- **docs/REASONING_UI_ARCHITECTURE.md** → ReasoningProvider implementation details
-- **supabase/functions/_shared/glm-client.ts** → `parseStatusMarker()` function
-- **supabase/functions/chat/handlers/reasoning-provider.ts** → LLM-powered status generation
+**Architecture Details**: For implementation details of ReasoningProvider, see:
+- **CLAUDE.md** → "Status Update System" section
+- **CLAUDE.md** → "ReasoningProvider Implementation Details" section
+- **docs/REASONING_UI_ARCHITECTURE.md** → Full architecture documentation
+- **supabase/functions/_shared/reasoning-provider.ts** → Provider implementation
 
 #### AI Model
 

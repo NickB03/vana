@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { FEATURE_FLAGS } from "@/lib/featureFlags";
 
 /**
  * App Settings Keys
@@ -34,11 +33,11 @@ interface UseAppSettingsReturn {
 
 /**
  * Default settings used when database is unavailable or during initial load
- * Synced with feature flags for consistency
+ * These are hardcoded defaults - the admin panel is the single source of truth
  */
 const DEFAULT_SETTINGS: AppSettings = {
   force_tour: { enabled: false },
-  landing_page_enabled: { enabled: FEATURE_FLAGS.LANDING_PAGE_ENABLED },
+  landing_page_enabled: { enabled: false }, // Default: skip landing page
 };
 
 /**

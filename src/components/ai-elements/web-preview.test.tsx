@@ -5,7 +5,7 @@ import { WebPreview, WebPreviewBody } from "./web-preview";
 describe("WebPreviewBody", () => {
   it("renders loading overlay above the iframe", () => {
     render(
-      <WebPreview defaultUrl="about:blank">
+      <WebPreview>
         <WebPreviewBody loading={<div>Loading preview</div>} />
       </WebPreview>
     );
@@ -24,7 +24,7 @@ describe("WebPreviewBody", () => {
 
   it("does not render overlay when loading is undefined", () => {
     render(
-      <WebPreview defaultUrl="about:blank">
+      <WebPreview>
         <WebPreviewBody />
       </WebPreview>
     );

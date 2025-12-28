@@ -27,7 +27,7 @@
 **Implementation**:
 - ✅ Frontend: `src/components/ReasoningDisplay.tsx` (collapsible panel with status ticker)
 - ✅ Backend: `supabase/functions/chat/` with GLM reasoning support
-- ✅ Dual status system: `[STATUS:]` markers + ReasoningProvider semantic status
+- ✅ ReasoningProvider: Semantic status updates via GLM-4.5-Air with circuit breaker fallback
 - ✅ Documentation: `docs/REASONING_UI_ARCHITECTURE.md`
 
 **Features**:
