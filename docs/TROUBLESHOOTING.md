@@ -171,6 +171,21 @@ Sometimes cached data causes issues:
 
 ### Artifact Generation Issues
 
+#### Validation Error Codes
+
+Artifacts use **structured error codes** for validation failures. See [ERROR_CODES.md](ERROR_CODES.md) for complete reference.
+
+**Common Error Codes**:
+
+| Error Code | Category | Blocking? | Description | Fix |
+|------------|----------|-----------|-------------|-----|
+| `IMPORT_LOCAL_PATH` | Import | ✅ Yes | Using `@/` imports | Use npm packages like `@radix-ui/react-dialog` |
+| `RESERVED_KEYWORD_EVAL` | Syntax | ✅ Yes | Variable named `eval` | Rename to `score`, `value`, or `evaluation` |
+| `STORAGE_LOCAL_STORAGE` | API | ✅ Yes | Using `localStorage` | Replace with React `useState` |
+| `IMMUTABILITY_ARRAY_ASSIGNMENT` | Mutation | ❌ No | Direct array mutation | Use spread: `const newArr = [...arr]` |
+
+**Non-Blocking Errors**: All `IMMUTABILITY_*` errors only cause React warnings but don't prevent rendering.
+
 #### Issue: Artifacts not rendering
 
 **Symptoms**:
@@ -180,21 +195,26 @@ Sometimes cached data causes issues:
 
 **Solutions**:
 
-1. **Check artifact type**:
+1. **Check validation error code**:
+   - Review error message for specific error code (e.g., `IMPORT_LOCAL_PATH`)
+   - See [ERROR_CODES.md](ERROR_CODES.md) for detailed fix instructions
+
+2. **Check artifact type**:
    - Ensure you requested a supported type: `react`, `html`, `svg`, `code`, `mermaid`, `markdown`
 
-2. **Review error message**:
+3. **Review error message**:
    - Click "Show Details" on error
    - Common causes:
-     - Invalid imports (using `@/components/ui/*`)
+     - Invalid imports (using `@/components/ui/*`) → `IMPORT_LOCAL_PATH`
+     - Reserved keywords (`eval`, `arguments`) → `RESERVED_KEYWORD_*`
+     - Browser storage APIs → `STORAGE_*`
      - Syntax errors
-     - Unsupported libraries
 
-3. **Use "Fix Artifact" button**:
-   - AI will automatically fix common errors
+4. **Use "Fix Artifact" button**:
+   - AI will automatically fix common errors using error codes
    - Regenerate if fix doesn't work
 
-4. **Try regenerating**:
+5. **Try regenerating**:
    - Rephrase your request
    - Be more specific about requirements
 

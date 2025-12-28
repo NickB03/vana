@@ -513,6 +513,26 @@ interface ArtifactResponse {
 | `mermaid` | Mermaid diagrams | Flowcharts, architecture diagrams |
 | `markdown` | Markdown documents | Documentation, notes |
 
+#### Artifact Validation
+
+Generated artifacts undergo **5-layer validation** with structured error codes:
+
+- **Error Codes**: Validation uses type-safe error codes (e.g., `RESERVED_KEYWORD_EVAL`, `IMPORT_LOCAL_PATH`)
+- **Auto-Fix**: Common issues (reserved keywords, TypeScript syntax, imports) are automatically fixed
+- **Non-Blocking Errors**: Immutability violations (`IMMUTABILITY_*`) don't prevent rendering
+- **Complete Reference**: See [ERROR_CODES.md](ERROR_CODES.md) for all validation error codes
+
+**Validation Response Fields**:
+```typescript
+{
+  validation: {
+    valid: boolean;        // Overall validation status
+    autoFixed: boolean;    // Whether auto-fixes were applied
+    issueCount: number;    // Number of validation issues found
+  }
+}
+```
+
 ---
 
 ### POST /generate-artifact-fix

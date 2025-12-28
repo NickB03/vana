@@ -247,6 +247,7 @@ Experience Vana in action: [View Demo](https://llm-chat-site.pages.dev)
 
 ### Key Libraries
 
+- **sucrase** - Fast JSX/TypeScript transpilation (20x faster than Babel)
 - **marked** - Markdown parsing
 - **mermaid** - Diagram rendering
 - **shiki** - Syntax highlighting
@@ -604,17 +605,37 @@ llm-chat-site/
 
 ### Key Files
 
-| File | Purpose |
-|------|---------|
-| `src/components/ArtifactContainer.tsx` | Main artifact wrapper (state, validation, editing) |
-| `src/components/ArtifactRenderer.tsx` | Renders all artifact types (React, HTML, SVG, Mermaid, etc.) |
-| `src/components/ChatInterface.tsx` | Main chat UI with resizable panels |
-| `src/contexts/MultiArtifactContext.tsx` | Multi-artifact state management provider (312 lines) |
-| `src/hooks/use-multi-artifact.ts` | Hook for accessing multi-artifact context |
-| `src/hooks/useChatMessages.tsx` | Manages chat messages and streaming |
-| `src/utils/artifactParser.ts` | Extracts artifacts from AI responses |
-| `supabase/functions/chat/index.ts` | Main chat API endpoint |
-| `vite.config.ts` | Build configuration with PWA support |
+| File | Purpose | Lines |
+|------|---------|-------|
+| **Frontend Artifact System** | | |
+| `src/components/ArtifactContainer.tsx` | Main wrapper with state, validation, editing | ~600 |
+| `src/components/ArtifactRenderer.tsx` | Rendering engine for all artifact types | ~800 |
+| `src/components/ArtifactToolbar.tsx` | Toolbar with export, edit, theme controls | ~300 |
+| `src/components/ArtifactCard.tsx` | Preview cards for artifact selection | ~200 |
+| `src/components/ArtifactErrorBoundary.tsx` | React error boundary | ~150 |
+| `src/components/ArtifactErrorRecovery.tsx` | Auto-recovery with fallbacks | ~250 |
+| `src/components/ArtifactCodeEditor.tsx` | Inline code editor | ~200 |
+| `src/components/ArtifactTabs.tsx` | Tab navigation | ~180 |
+| **Frontend Utilities** | | |
+| `src/utils/artifactParser.ts` | XML-tag extraction from AI responses | ~200 |
+| `src/utils/artifactValidator.ts` | Frontend validation layer | ~300 |
+| `src/utils/sucraseTranspiler.ts` | Sucrase transpiler integration | ~150 |
+| **Backend Artifact System** | | |
+| `supabase/functions/_shared/artifact-executor.ts` | Server-side generation orchestrator | 793 |
+| `supabase/functions/_shared/artifact-validator.ts` | Multi-layer validation engine | 962 |
+| `supabase/functions/_shared/artifact-rules/` | 6 validation rule modules | ~1,600 |
+| **Chat & Tool System** | | |
+| `supabase/functions/chat/index.ts` | Main chat API endpoint | ~400 |
+| `supabase/functions/chat/handlers/tool-calling-chat.ts` | Tool-calling orchestrator | ~600 |
+| `supabase/functions/_shared/tool-executor.ts` | Tool execution engine | 903 |
+| `supabase/functions/_shared/glm-client.ts` | GLM-4.6 client with streaming | 1,188 |
+| **State Management** | | |
+| `src/contexts/MultiArtifactContext.tsx` | Multi-artifact state provider | 312 |
+| `src/hooks/use-multi-artifact.ts` | Multi-artifact context hook | ~50 |
+| `src/hooks/useChatMessages.tsx` | Chat messages & streaming | ~400 |
+| **Configuration** | | |
+| `vite.config.ts` | Build config with PWA support | ~300 |
+| `supabase/functions/_shared/config.ts` | Central Edge Function config | 441 |
 
 ---
 
@@ -933,28 +954,30 @@ export function parseArtifacts(content: string): {
 
 ### Adding New Artifact Types
 
-1. **Update the type definition** in `src/components/ArtifactContainer.tsx`:
+1. **Update type definition** in `src/components/ArtifactContainer.tsx`:
+   ```typescript
+   export type ArtifactType = "code" | "markdown" | "html" | "svg" | "mermaid" | "react" | "image" | "your-new-type";
+   ```
 
-```typescript
-export type ArtifactType = "code" | "html" | "react" | "svg" | "mermaid" | "markdown" | "image" | "your-new-type";
-```
+2. **Add renderer logic** in `src/components/ArtifactRenderer.tsx`:
+   ```typescript
+   if (artifact.type === "your-new-type") {
+     return <YourCustomRenderer content={artifact.content} />;
+   }
+   ```
 
-2. **Add renderer logic** in the `ArtifactRenderer` component:
+3. **Update parser** in `src/utils/artifactParser.ts`:
+   ```typescript
+   const mimeTypeMap: Record<string, ArtifactType> = {
+     'application/vnd.ant.react': 'react',
+     'text/html': 'html',
+     'application/vnd.your-type': 'your-new-type', // Add your MIME type
+   };
+   ```
 
-```typescript
-if (artifact.type === "your-new-type") {
-  return <YourCustomRenderer content={artifact.content} />;
-}
-```
+4. **Add validation rules** (optional) in `supabase/functions/_shared/artifact-rules/type-selection.ts`
 
-3. **Update the parser** in `src/utils/artifactParser.ts`:
-
-```typescript
-const mimeTypeMap: Record<string, ArtifactType> = {
-  // ... existing types
-  'application/vnd.your-type': 'your-new-type',
-};
-```
+5. **Update tool definition** (optional) in `supabase/functions/_shared/tool-definitions.ts` if the new type should be available via tool calling
 
 ### Testing
 

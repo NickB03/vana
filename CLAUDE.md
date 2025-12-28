@@ -255,7 +255,320 @@ The system uses TWO parallel mechanisms for status updates:
 
 **Feature Flag**: Set `USE_REASONING_PROVIDER=false` in `supabase/.env.local` to disable semantic status generation (disables ReasoningProvider, keeps marker system active).
 
-**Implementation**: See `supabase/functions/chat/handlers/tool-calling-chat.ts` (lines 464-475) where both systems process reasoning chunks in parallel.
+**Implementation**: See `supabase/functions/chat/handlers/tool-calling-chat.ts` (lines 326-343, 543, 789, 878-903) where both systems process reasoning chunks in parallel.
+
+### ReasoningProvider Implementation Details
+
+**Location**: `supabase/functions/_shared/reasoning-provider.ts` (1,194 lines)
+
+**Architecture**: Hybrid LLM + Template Fallback System for generating real-time status updates during artifact creation.
+
+#### Core Components
+
+**Model**: GLM-4.5-Air (via Z.ai Coding API)
+- **Purpose**: Ultra-fast semantic status generation (200-500ms response time)
+- **API**: `https://api.z.ai/api/coding/paas/v4/chat/completions`
+- **Configuration**: `max_tokens: 50`, `temperature: 0.3`, thinking mode disabled
+- **Security**: Input sanitized via `PromptInjectionDefense.sanitizeArtifactContext()`
+
+**Classes**:
+- `ReasoningProvider` — Main provider implementation (lines 780-1134)
+- `GLMClient` — LLM client for status generation (lines 488-696)
+- `createReasoningProvider()` — Factory function with sensible defaults (lines 1178-1194)
+- `createNoOpReasoningProvider()` — No-op provider for testing/disabled scenarios (lines 1145-1168)
+
+#### Flow Diagram
+
+```
+GLM-4.6 Reasoning Stream
+    ↓
+Buffer Chunks (200-800 chars)
+    ↓
+Phase Detection (keyword matching)
+    ↓
+Circuit Breaker Check
+    ├─ OPEN → Fallback Templates
+    └─ CLOSED → GLM-4.5-Air Call
+        ├─ Success → Semantic Status (SSE: reasoning_status)
+        └─ Failure → Fallback Templates + Record Failure
+```
+
+#### Phase Detection Algorithm
+
+**Method**: Keyword-based scoring with hysteresis (lines 731-764)
+
+**Phases**: `analyzing` → `planning` → `implementing` → `styling` → `finalizing`
+
+**Detection Logic**:
+1. Scan buffered text for phase keywords (case-insensitive)
+2. Score each phase based on keyword matches
+3. Select highest-scoring phase if score ≥ 2 (strong signal required)
+4. Otherwise, retain current phase (prevents flicker)
+
+**Keywords** (lines 705-726):
+```typescript
+analyzing: ['understand', 'analyze', 'consider', 'examine', 'requirement', ...]
+planning: ['plan', 'design', 'architect', 'structure', 'component', ...]
+implementing: ['implement', 'build', 'create', 'code', 'function', ...]
+styling: ['style', 'css', 'tailwind', 'color', 'responsive', ...]
+finalizing: ['final', 'finish', 'complete', 'polish', 'optimize', ...]
+```
+
+#### Circuit Breaker Pattern
+
+**Purpose**: Prevent cascading failures when LLM becomes unreliable
+
+**States**: `CLOSED` (normal) → `OPEN` (tripped) → `HALF_OPEN` (testing) → `CLOSED`
+
+**Thresholds** (lines 149-163):
+- **Failure Threshold**: 3 consecutive failures
+- **Cooldown Duration**: 30 seconds (30,000ms)
+- **Reset Condition**: Single successful LLM call closes circuit
+
+**Failure Criteria**:
+- LLM request timeout (5s default)
+- API errors (non-200 status codes)
+- Invalid/empty responses
+- Suspicious output patterns (SQL injection, XSS attempts)
+
+**Behavior** (lines 1005-1041):
+- **CLOSED**: Normal operation, calls LLM for status generation
+- **OPEN**: All requests bypass LLM, use fallback templates immediately
+- **HALF_OPEN**: After cooldown, attempt single LLM call to test recovery
+- **Auto-Reset**: Successful call resets failure counter and closes circuit
+
+**Monitoring**: Emits `circuitBreakerOpen: true` in event metadata when tripped
+
+#### Buffering Strategy
+
+**Purpose**: Balance API cost vs. update freshness (lines 94-115)
+
+**Thresholds**:
+- **minBufferChars**: 200 characters (triggers flush when reached)
+- **maxBufferChars**: 800 characters (forces flush regardless of time)
+- **maxWaitMs**: 4,000ms (forces flush if no new chunks received)
+
+**Flush Logic** (lines 976-1041):
+1. Check anti-flicker cooldown (1,200ms minimum between updates)
+2. Verify pending call limit (max 5 concurrent LLM requests)
+3. Check circuit breaker state
+4. Call LLM or fallback to templates
+5. Clear buffer after processing
+
+#### Anti-Flicker Cooldown
+
+**Purpose**: Prevent rapid status changes that create poor UX
+
+**Mechanism** (lines 123-124, 988-995):
+- Minimum 1,200ms between status emissions
+- If flush requested during cooldown, schedule for end of cooldown period
+- Cooldown timer resets on every successful emission
+
+**Example**:
+```
+Time 0ms:   Emit status "Analyzing requirements..."
+Time 500ms: Flush requested → scheduled for 1200ms
+Time 1200ms: Emit next status "Planning architecture..."
+```
+
+#### Idle Heartbeat
+
+**Purpose**: Show progress during long operations without new reasoning chunks
+
+**Mechanism** (lines 145-147, 1104-1133):
+- **Interval**: 8,000ms (8 seconds)
+- **Trigger**: No new chunks received AND no pending LLM calls
+- **Event Type**: `reasoning_heartbeat` (distinct from `reasoning_status`)
+- **Message**: First template message from current phase
+
+**Prevention**: Heartbeat paused while LLM calls are pending (prevents flicker)
+
+#### Template Fallback System
+
+**Trigger Conditions** (lines 1042-1052):
+- Circuit breaker is OPEN
+- LLM call fails or times out
+- Max pending calls reached
+- No GLM_API_KEY configured
+
+**Template Structure** (lines 212-258):
+```typescript
+const phaseTemplates = {
+  analyzing: ["Analyzing requirements...", "Understanding the context...", "Evaluating approach..."],
+  planning: ["Designing the architecture...", "Planning component structure...", "Outlining implementation strategy..."],
+  implementing: ["Building core functionality...", "Implementing features...", "Writing application logic..."],
+  styling: ["Adding visual polish...", "Styling components...", "Refining the interface..."],
+  finalizing: ["Finalizing implementation...", "Adding final touches...", "Completing the artifact..."],
+};
+```
+
+**Message Rotation**: Cycles through templates sequentially (prevents repetition within same phase)
+
+#### Configuration
+
+**Default Config** (lines 174-184):
+```typescript
+{
+  minBufferChars: 200,
+  maxBufferChars: 800,
+  maxWaitMs: 4000,
+  minUpdateIntervalMs: 1200,
+  maxPendingCalls: 5,
+  timeoutMs: 5000,
+  idleHeartbeatMs: 8000,
+  circuitBreakerThreshold: 3,
+  circuitBreakerResetMs: 30000,
+}
+```
+
+**Environment Variables**:
+- `USE_REASONING_PROVIDER`: Enable/disable provider (default: `true`)
+- `GLM_API_KEY`: Z.ai API key (required for LLM-powered status)
+
+**Feature Flag Override** (lines 42-67 in `config.ts`):
+```bash
+# Disable semantic status entirely
+supabase secrets set USE_REASONING_PROVIDER=false
+```
+
+#### Lifecycle Management
+
+**1. Initialization** (lines 799-823):
+```typescript
+const provider = createReasoningProvider(requestId, async (event) => {
+  writer.write(`data: ${JSON.stringify(event)}\n\n`);
+});
+```
+
+**2. Start** (lines 839-856):
+```typescript
+await provider.start();
+// Emits initial "Analyzing your request..." status
+// Starts idle heartbeat timer
+```
+
+**3. Process Chunks** (lines 858-888):
+```typescript
+provider.processReasoningChunk('Analyzing user requirements...');
+// Buffers text, detects phase, flushes when threshold reached
+```
+
+**4. Manual Phase Change** (lines 890-900):
+```typescript
+await provider.setPhase('implementing');
+// Emits immediate status update with new phase context
+```
+
+**5. Finalize** (lines 902-950):
+```typescript
+await provider.finalize('a calculator app');
+// Generates final summary via LLM (or fallback)
+// Emits reasoning_final event
+// Automatically calls destroy()
+```
+
+**6. Destroy** (lines 952-968):
+```typescript
+provider.destroy();
+// Clears all timers (flush, heartbeat)
+// Marks provider as destroyed (ignores subsequent calls)
+```
+
+#### Event Types
+
+**SSE Events Emitted** (lines 44-49):
+- `reasoning_status` — Regular status update (LLM or template)
+- `reasoning_final` — Final summary on artifact completion
+- `reasoning_heartbeat` — Idle keepalive during long operations
+- `reasoning_error` — Error notification (currently unused)
+
+**Event Structure** (lines 54-84):
+```typescript
+{
+  type: 'reasoning_status',
+  message: 'Building core functionality...',
+  phase: 'implementing',
+  metadata: {
+    requestId: 'req_123',
+    timestamp: '2025-12-27T10:30:00.000Z',
+    source: 'llm' | 'fallback',
+    provider: 'z.ai',           // Only if source='llm'
+    model: 'glm-4.5-air',       // Only if source='llm'
+    circuitBreakerOpen: false,
+  }
+}
+```
+
+#### Integration Points
+
+**Used By**:
+- `supabase/functions/chat/handlers/tool-calling-chat.ts` (lines 326-343, 543, 789, 878-903)
+  - Initializes provider when `USE_REASONING_PROVIDER=true`
+  - Processes reasoning chunks in parallel with `[STATUS:]` marker system
+  - Finalizes on artifact completion
+
+**Dependencies**:
+- `GLMClient` → Z.ai Coding API (GLM-4.5-Air model)
+- `PromptInjectionDefense` → Input sanitization and output validation
+- `MODELS.GLM_4_5_AIR` → Model name constant from `config.ts`
+
+#### Code Examples
+
+**Basic Usage**:
+```typescript
+import { createReasoningProvider } from './_shared/reasoning-provider.ts';
+
+const provider = createReasoningProvider('req_123', async (event) => {
+  // Emit SSE event to client
+  writer.write(`data: ${JSON.stringify(event)}\n\n`);
+});
+
+await provider.start();
+
+// Process streaming reasoning
+for await (const chunk of reasoningStream) {
+  await provider.processReasoningChunk(chunk);
+}
+
+// Finalize with artifact description
+await provider.finalize('a todo list app with dark mode');
+// Automatically calls destroy()
+```
+
+**Custom Configuration**:
+```typescript
+const provider = createReasoningProvider('req_123', eventCallback, {
+  config: {
+    minBufferChars: 300,        // More patient before flushing
+    circuitBreakerThreshold: 5, // More tolerant of failures
+  },
+  phaseConfig: {
+    implementing: {
+      name: 'Building',
+      messages: ['Coding the app...', 'Writing features...'],
+    },
+  },
+});
+```
+
+**Circuit Breaker State Monitoring**:
+```typescript
+const state = provider.getState();
+if (state.circuitBreaker.isOpen) {
+  console.warn('Circuit breaker tripped, using fallback templates');
+}
+```
+
+#### Troubleshooting
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| No status updates | `USE_REASONING_PROVIDER=false` | Set to `true` or omit (defaults to `true`) |
+| Circuit breaker stuck OPEN | Repeated LLM failures | Check GLM_API_KEY, network connectivity, Z.ai API status |
+| Rapid status flicker | Anti-flicker cooldown too short | Increase `minUpdateIntervalMs` (default 1200ms) |
+| Stale status messages | Buffer thresholds too high | Decrease `maxWaitMs` or `minBufferChars` |
+| "Empty response from GLM" | Invalid API response format | Check Z.ai API changes, validate response structure |
+| Memory leak | Provider not destroyed | Always call `destroy()` or use `finalize()` (auto-destroys) |
 
 ### Edge Function Decision Tree
 
@@ -312,16 +625,257 @@ const { prebuilt, remaining, stats } = getPrebuiltBundles(dependencies);
 
 > **📌 Canonical Reference**: This section is the single source of truth for artifact restrictions.
 
+**Component Architecture** (3,916 lines total across 10 components):
+- **Frontend**:
+  - `ArtifactContainer.tsx` — Main wrapper with state management, validation, editing (primary controller)
+  - `ArtifactRenderer.tsx` — Rendering engine for all artifact types (React, HTML, SVG, Mermaid, images)
+  - `ArtifactToolbar.tsx` — Toolbar with export, edit, maximize, and theme controls
+  - `ArtifactCard.tsx` — Preview cards for artifact selection
+  - `ArtifactErrorBoundary.tsx` — React error boundary for graceful degradation
+  - `ArtifactErrorRecovery.tsx` — Auto-recovery logic with fallback renderers
+  - `ArtifactCodeEditor.tsx` — Inline code editor with syntax highlighting
+  - `ArtifactTabs.tsx` — Tab navigation for multi-artifact workspace
+- **Backend**:
+  - `supabase/functions/_shared/artifact-executor.ts` (793 lines) — Server-side artifact generation orchestrator
+  - `supabase/functions/_shared/artifact-validator.ts` (962 lines) — Multi-layer validation engine
+  - `supabase/functions/_shared/artifact-rules/` — Validation rule modules (6 files):
+    - `core-restrictions.ts` — Import restrictions and security rules
+    - `react-patterns.ts` — React-specific validation patterns
+    - `html-patterns.ts` — HTML artifact validation
+    - `bundling-guidance.ts` — NPM bundling detection and guidance
+    - `type-selection.ts` — Artifact type inference
+    - `error-patterns.ts` — Common error pattern detection
+- **Utilities**:
+  - `src/utils/artifactParser.ts` — XML-tag artifact extraction from AI responses
+  - `src/utils/artifactValidator.ts` — Frontend validation layer
+  - `src/utils/artifactErrorRecovery.ts` — Error classification and recovery strategies
+  - `src/utils/artifactBundler.ts` — Client-side bundling coordination
+  - `src/utils/sucraseTranspiler.ts` — Sucrase transpiler integration (Phase 4)
+
 **Rendering Methods**:
 - **Sucrase** (instant, default) — Client-side transpilation, 20x faster than Babel, ~100KB bundle
 - **Babel Standalone** (instant, fallback) — Used when Sucrase fails, ~700KB bundle
 - **Server Bundling** (2-5s) — Has npm imports, uses `bundle-artifact/` Edge Function
 
-**Transpiler Configuration** (Phase 4 complete 2025-12-27):
-- **Client-side**: `src/utils/sucraseTranspiler.ts` - Sucrase transpiles JSX/TypeScript to JavaScript
-- **Server-side**: `artifact-validator.ts` - Sucrase strips TypeScript before validation
-- **Feature flag**: `SUCRASE_TRANSPILER` in `src/lib/featureFlags.ts` (enabled by default)
-- **Fallback**: Babel Standalone activates if Sucrase throws an error
+**Transpiler Architecture** (Sucrase Migration completed 2025-12-27):
+
+### Dual Transpiler System with Intelligent Fallback
+
+The project uses Sucrase as the primary transpiler with Babel Standalone as a fallback for maximum reliability.
+
+#### Primary: Sucrase (Default)
+
+**Performance Characteristics:**
+- **Speed**: ~2-10ms transpilation time (vs Babel's 150-500ms)
+- **Speedup**: ~20-50x faster than Babel Standalone
+- **Bundle Size**: ~100KB (1.6MB on disk including dependencies)
+- **Size Reduction**: 96% smaller download than Babel's ~700KB CDN bundle
+
+**Implementation:**
+- **Location**: `src/utils/sucraseTranspiler.ts`
+- **Configuration**:
+  ```typescript
+  transform(code, {
+    transforms: ['jsx', 'typescript'],  // Strip types, compile JSX
+    production: true,                   // Optimize for production
+    disableESTransforms: true,         // Keep ES6+ syntax (modern browsers)
+    jsxPragma: 'React.createElement',  // React compatibility
+    jsxFragmentPragma: 'React.Fragment'
+  })
+  ```
+- **Features**:
+  - Real-time performance logging to console
+  - Sentry integration for error tracking
+  - Detailed error reporting with line/column info
+
+**Benchmarks** (`scripts/benchmark-transpilers.ts`):
+| Artifact Size | Lines | Avg Time | Success Rate |
+|--------------|-------|----------|--------------|
+| Small (Counter) | ~50 | 2-5ms | 100% |
+| Medium (Todo App) | ~200 | 5-8ms | 100% |
+| Large (Dashboard) | ~500 | 8-12ms | 100% |
+
+**Why Sucrase?**
+- Used in production by: Claude Artifacts (Anthropic), CodeSandbox, Expo
+- 4.7M+ weekly npm downloads
+- Battle-tested reliability
+- Same approach as official Claude Code artifacts
+
+#### Fallback: Babel Standalone
+
+**Trigger Conditions:**
+- Sucrase transpilation returns `{ success: false }`
+- Sucrase throws an exception (library load failure)
+- Feature flag `SUCRASE_TRANSPILER` disabled (testing/debugging)
+
+**Characteristics:**
+- **Speed**: 150-500ms (runtime transpilation in browser)
+- **Bundle Size**: ~700KB CDN download
+- **Compatibility**: Broader syntax support for edge cases
+- **Implementation**: `<script type="text/babel">` with runtime transpilation
+
+**Fallback Flow:**
+```typescript
+// 1. Try Sucrase first
+const result = transpileCode(code);
+
+if (result.success) {
+  // Use pre-transpiled code with <script type="module">
+  return generateSucraseTemplate(result.code);
+} else {
+  // Log to Sentry and fall back to Babel
+  Sentry.captureException(new Error(result.error));
+  toast.warning('Using compatibility mode');
+  return generateBabelTemplate(code); // Runtime transpilation
+}
+```
+
+#### Template Differences
+
+**Sucrase Template** (Pre-transpiled):
+```html
+<script type="module">
+  // Code already transpiled to React.createElement() calls
+  const App = () => React.createElement("div", null, "Hello");
+  ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+<!-- NO Babel script tag needed -->
+```
+
+**Babel Template** (Runtime transpilation):
+```html
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel" data-presets="react,typescript">
+  // Raw JSX - transpiled at runtime by Babel
+  const App = () => <div>Hello</div>;
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+```
+
+#### Server-Side Integration
+
+**Location**: `supabase/functions/_shared/artifact-validator.ts`
+
+Sucrase strips TypeScript before validation:
+```typescript
+import { transform } from 'npm:sucrase@3.35.0';
+
+// Strip types for validation (keeps JSX intact)
+const result = transform(code, {
+  transforms: ['typescript'],  // Only strip types
+  disableESTransforms: true
+});
+```
+
+**Fallback**: Regex-based TypeScript stripping if Sucrase fails (safety net)
+
+#### Feature Flag Control
+
+**Location**: `src/lib/featureFlags.ts`
+
+```typescript
+export const FEATURE_FLAGS = {
+  SUCRASE_TRANSPILER: true,  // Enabled by default
+} as const;
+```
+
+**Usage**:
+```typescript
+import { isFeatureEnabled } from '@/lib/featureFlags';
+
+if (isFeatureEnabled('SUCRASE_TRANSPILER')) {
+  // Use Sucrase path
+} else {
+  // Force Babel for debugging
+}
+```
+
+#### Migration History
+
+**Phases (PR #410 - December 2025):**
+
+| Phase | Description | Changes |
+|-------|-------------|---------|
+| Phase 1 | Client-side migration | Created `sucraseTranspiler.ts`, updated `ArtifactRenderer.tsx` |
+| Phase 2 | Server-side integration | Added Sucrase to `artifact-validator.ts` for TypeScript stripping |
+| Phase 3 | Testing & benchmarks | Added 938 tests in `ArtifactRenderer.sucrase.test.tsx`, created benchmark script |
+| Phase 4 | Cleanup & docs | Feature flag enabled by default, Babel kept as fallback |
+
+**Key Files Modified:**
+- `src/utils/sucraseTranspiler.ts` (147 lines) - New transpiler utility
+- `src/components/ArtifactRenderer.tsx` (+779 lines) - Dual template system
+- `scripts/benchmark-transpilers.ts` (660 lines) - Performance validation
+- `src/utils/__tests__/sucraseTranspiler.test.ts` (698 tests)
+- `src/components/__tests__/ArtifactRenderer.sucrase.test.tsx` (938 tests)
+
+**Total Impact**:
+- **+4,510 lines** of new code and tests
+- **-1,210 lines** of deprecated code removed
+- **Net +3,300 lines** (including comprehensive test coverage)
+
+#### Error Handling & Monitoring
+
+**Sentry Integration:**
+```typescript
+// Success path
+Sentry.addBreadcrumb({
+  category: 'transpiler.sucrase',
+  message: 'Sucrase transpilation successful',
+  level: 'info',
+  data: { elapsed, codeLength, outputLength }
+});
+
+// Failure path (captured as exception for dashboard visibility)
+Sentry.captureException(new Error(`Sucrase failed: ${error}`), {
+  tags: { component: 'ArtifactRenderer', transpiler: 'sucrase' },
+  extra: { error, details, line, column }
+});
+```
+
+**User Notifications:**
+- Success: Silent (logged to console only)
+- Fallback: Warning toast with "compatibility mode" message
+- Critical failure: Error toast with refresh option
+
+#### Browser Compatibility
+
+**Target browsers** (ES6+ module support required):
+- Chrome 61+
+- Firefox 60+
+- Safari 10.1+
+- Edge 16+
+
+**Note**: Sucrase keeps ES6+ syntax intact (`disableESTransforms: true`) since modern browsers support it natively. This avoids the bloat of Babel's env preset converting everything to ES5.
+
+#### Performance Optimization Benefits
+
+**Bundle Size Reduction:**
+- **Before**: 2.6MB Babel CDN download on every artifact render
+- **After**: ~100KB Sucrase in main bundle (one-time download)
+- **Savings**: 96% reduction in transpiler download size
+
+**Transpilation Speed:**
+- **Before**: 150-500ms runtime transpilation (blocking)
+- **After**: 2-12ms pre-transpilation (non-blocking)
+- **Improvement**: 20-50x faster artifact rendering
+
+**Real-World Impact:**
+- Artifacts appear instantly (sub-10ms transpilation)
+- No CDN dependency for transpilation
+- Better offline experience (transpiler bundled)
+- Reduced bandwidth usage by 2.5MB per artifact
+
+#### Limitations & Known Issues
+
+**What Sucrase Does NOT Support:**
+- Legacy decorators (use modern decorators or Babel fallback)
+- Certain edge-case TypeScript syntax (falls back to Babel)
+- Babel plugins/presets (by design - speed over features)
+
+**Automatic Fallback Triggers:**
+- Any transpilation error (syntax issues, unsupported features)
+- Library load failure (rare, Sentry-tracked)
+- Feature flag disabled (manual override)
 
 **Supported types**: `code` | `html` | `react` | `svg` | `mermaid` | `markdown` | `image`
 
@@ -353,6 +907,32 @@ Key files:
 4. **Post-Generation Transformation** — Auto-fixes imports & immutability
 5. **Runtime Validation** — Blocks artifacts with critical errors
 
+#### Error Code System
+
+The validation system uses **structured error codes** for type-safe error handling instead of fragile string matching:
+
+- **Schema**: `CATEGORY_SPECIFIC_ISSUE` (e.g., `RESERVED_KEYWORD_EVAL`, `IMPORT_LOCAL_PATH`, `IMMUTABILITY_ARRAY_ASSIGNMENT`)
+- **Categories**: `RESERVED_KEYWORD`, `IMPORT`, `STORAGE`, `IMMUTABILITY`
+- **Blocking vs Non-Blocking**: Immutability violations are non-blocking (only cause React strict mode warnings), all other errors block rendering
+- **Fail-Closed Security**: Issues without error codes are treated as critical by default
+- **Complete Reference**: See [docs/ERROR_CODES.md](docs/ERROR_CODES.md)
+
+**Migration** (commit b1f86ad): Replaced fragile string matching with structured error codes to prevent false positives.
+
+**Example**:
+```typescript
+// ✅ CORRECT - Type-safe filtering
+const result = validateArtifactCode(code, 'react');
+if (result.issues.some(e => e.code === VALIDATION_ERROR_CODES.IMPORT_LOCAL_PATH)) {
+  // Handle forbidden import error
+}
+
+// ❌ WRONG - Fragile string matching (old approach)
+if (result.issues.some(e => e.message.includes('local import'))) {
+  // Can match unrelated errors like "Sublocal import detected"
+}
+```
+
 ### Immutability Enforcement
 
 ```javascript
@@ -366,6 +946,8 @@ const newBoard = [...board, value];
 ```
 
 **Auto-fix**: Validator transforms direct assignments into immutable patterns.
+
+**Error Codes**: All immutability violations use `IMMUTABILITY_*` codes and are **non-blocking** (only cause React strict mode warnings, don't crash artifacts). See [docs/ERROR_CODES.md](docs/ERROR_CODES.md) for complete list.
 
 ### Database Schema
 
@@ -405,16 +987,48 @@ Full schema: `supabase/migrations/`
 | `admin-analytics/` | Admin analytics dashboard data |
 | `cache-manager/` | Cache management utilities |
 
-**Shared Utilities** (`_shared/`):
-- **Core**: `config.ts`, `cors-config.ts`, `logger.ts`, `validators.ts`
-- **AI/Models**: `openrouter-client.ts`, `glm-client.ts`
-- **Unified Tool System** (Issue #340): `tool-definitions.ts`, `tool-executor.ts`, `artifact-executor.ts`, `image-executor.ts`
-- **Tool Security** (Phase 0): `tool-validator.ts`, `tool-rate-limiter.ts`, `tool-execution-tracker.ts`, `prompt-injection-defense.ts`, `safe-error-handler.ts`
-- **Context Management**: `context-selector.ts`, `context-ranker.ts`, `token-counter.ts`
-- **Artifacts**: `artifact-validator.ts`, `artifact-rules/`, `prebuilt-bundles.ts`
-- **Utilities**: `storage-retry.ts`, `rate-limiter.ts`, `api-error-handler.ts`, `error-handler.ts`, `cdn-fallback.ts`
-- **Prompts**: `system-prompt-inline.ts`, `system-prompt.txt`
-- **Integrations**: `tavily-client.ts` (web search)
+**Shared Utilities** (`_shared/` — 35 TypeScript files):
+- **Core Infrastructure**:
+  - `config.ts` (441 lines) — Central configuration, model names, feature flags, rate limits
+  - `cors-config.ts` — CORS headers and origin validation
+  - `logger.ts` — Structured logging for Edge Functions
+  - `validators.ts` (387 lines) — Input validation schemas
+- **AI/Model Clients**:
+  - `openrouter-client.ts` — OpenRouter API client for Gemini Flash Lite, Gemini Flash Image
+  - `glm-client.ts` (1,188 lines) — Z.ai GLM-4.6 client with streaming, tool calling, reasoning
+  - `glm-tool-parser.ts` (432 lines) — GLM native tool call parser
+  - `glm-chat-router.ts` — GLM chat routing logic
+- **Unified Tool System** (Issue #340):
+  - `tool-definitions.ts` (7,894 bytes) — Tool catalog (generate_artifact, generate_image, browser.search)
+  - `tool-executor.ts` (903 lines) — Main tool execution orchestrator
+  - `artifact-executor.ts` (793 lines) — Artifact generation executor
+  - `image-executor.ts` (726 lines) — Image generation executor
+- **Tool Security Infrastructure** (Phase 0):
+  - `tool-validator.ts` — Zod schemas, prototype pollution protection, param sanitization
+  - `tool-rate-limiter.ts` (423 lines) — Fail-closed circuit breaker, per-tool rate limits
+  - `tool-execution-tracker.ts` — Resource exhaustion protection (max 3 tools/request)
+  - `prompt-injection-defense.ts` — Unicode normalization, SQL/HTML pattern detection
+  - `safe-error-handler.ts` — Error sanitization, PII filtering, no stack traces in production
+- **Context & Reasoning**:
+  - `context-selector.ts` — Token-aware context window management
+  - `context-ranker.ts` — Message importance scoring (recency + artifact-relation)
+  - `token-counter.ts` — Accurate token counting for context budgets
+  - `reasoning-provider.ts` (1,194 lines) — LLM-powered semantic status generation (GLM-4.5-Air)
+  - `reasoning-types.ts` — Type definitions for reasoning system
+- **Artifact System**:
+  - `artifact-validator.ts` (962 lines) — Multi-layer validation engine
+  - `artifact-rules/` (6 files) — Validation rule modules (core-restrictions, react-patterns, html-patterns, bundling-guidance, type-selection, error-patterns)
+  - `prebuilt-bundles.ts` — Pre-bundled npm packages (70+ packages, O(1) lookup)
+- **Utilities & Integrations**:
+  - `storage-retry.ts` — Retry logic for Supabase Storage operations
+  - `rate-limiter.ts` — Guest rate limiting (IP-based)
+  - `api-error-handler.ts` — API error normalization
+  - `error-handler.ts` (400 lines) — Generic error handling
+  - `cdn-fallback.ts` — Multi-CDN failover (esm.sh → esm.run → jsdelivr)
+  - `tavily-client.ts` (926 lines) — Web search integration
+  - `title-transformer.ts` (561 lines) — Session title generation
+  - `query-rewriter.ts` — Query enhancement for search
+  - `system-prompt-inline.ts` (449 lines) — System prompts and instructions
 
 ### Unified Tool-Calling Architecture (Issue #340)
 
@@ -517,6 +1131,8 @@ Feature flags are split between frontend and Edge Functions:
 
 - `CONTEXT_AWARE_PLACEHOLDERS`: Dynamic input placeholder text based on current mode (disabled)
 - `CANVAS_SHADOW_DEPTH`: Visual depth cues for chat card shadows (disabled)
+- `SUCRASE_TRANSPILER`: Use Sucrase for artifact transpilation instead of Babel Standalone (enabled)
+- `LANDING_PAGE_ENABLED`: Show landing page with scroll-to-app transition on first visit (disabled by default, can be overridden by admin via database setting)
 
 **Usage**:
 ```typescript
@@ -526,6 +1142,8 @@ if (isFeatureEnabled('CONTEXT_AWARE_PLACEHOLDERS')) {
   // Use context-aware placeholder
 }
 ```
+
+**Note**: `LANDING_PAGE_ENABLED` provides the immediate default value to prevent flash during load. Admins can override via database setting in `/admin` dashboard (stored in `app_settings` table as `landing_page_enabled`).
 
 ### Edge Function Flags
 
@@ -634,9 +1252,26 @@ export default function App() { ... }
 ```
 
 ### Adding New Artifact Type
-1. Update `ArtifactType` in `src/components/ArtifactContainer.tsx`
-2. Add renderer logic in `ArtifactContainer` component
-3. Update parser in `src/utils/artifactParser.ts`
+1. **Update type definition** in `src/components/ArtifactContainer.tsx`:
+   ```typescript
+   export type ArtifactType = "code" | "markdown" | "html" | "svg" | "mermaid" | "react" | "image" | "your-new-type";
+   ```
+2. **Add renderer logic** in `src/components/ArtifactRenderer.tsx`:
+   ```typescript
+   if (artifact.type === "your-new-type") {
+     return <YourCustomRenderer content={artifact.content} />;
+   }
+   ```
+3. **Update parser** in `src/utils/artifactParser.ts`:
+   ```typescript
+   const mimeTypeMap: Record<string, ArtifactType> = {
+     'application/vnd.ant.react': 'react',
+     'text/html': 'html',
+     'application/vnd.your-type': 'your-new-type', // Add your MIME type
+   };
+   ```
+4. **Add validation rules** (optional) in `supabase/functions/_shared/artifact-rules/type-selection.ts`
+5. **Update tool definition** (optional) in `supabase/functions/_shared/tool-definitions.ts` if the new type should be available via tool calling
 
 ### Adding New Edge Function
 1. Create `supabase/functions/your-function/index.ts`
@@ -692,27 +1327,60 @@ export default function App() { ... }
 ```
 src/
 ├── components/
-│   ├── ui/                    # 65 UI components (shadcn + custom)
-│   ├── prompt-kit/            # Chat UI primitives
-│   ├── ai-elements/           # AI-powered UI elements
-│   ├── demo/                  # Demo components
-│   ├── kibo-ui/               # Custom UI components
-│   ├── ArtifactContainer.tsx  # Main artifact wrapper (state, validation, editing)
-│   ├── ArtifactRenderer.tsx   # Artifact rendering logic
-│   └── ChatInterface.tsx      # Main chat UI
-├── hooks/                     # Data fetching hooks
-├── utils/                     # Utilities + __tests__/
-├── pages/                     # Route components (Index, Auth, Landing)
-└── integrations/supabase/     # Supabase client + types
+│   ├── ui/                          # 65 UI components (shadcn + custom)
+│   ├── prompt-kit/                  # Chat UI primitives
+│   ├── ai-elements/                 # AI-powered UI elements
+│   ├── demo/                        # Demo components
+│   ├── kibo-ui/                     # Custom UI components
+│   ├── ArtifactContainer.tsx        # Main artifact wrapper (state, validation, editing)
+│   ├── ArtifactRenderer.tsx         # Artifact rendering engine (React, HTML, SVG, Mermaid)
+│   ├── ArtifactToolbar.tsx          # Toolbar controls (export, edit, maximize, theme)
+│   ├── ArtifactCard.tsx             # Artifact preview cards
+│   ├── ArtifactErrorBoundary.tsx    # React error boundary
+│   ├── ArtifactErrorRecovery.tsx    # Auto-recovery with fallback renderers
+│   ├── ArtifactCodeEditor.tsx       # Inline code editor
+│   ├── ArtifactTabs.tsx             # Tab navigation for multi-artifact workspace
+│   ├── ArtifactContainer.test.tsx   # Unit tests
+│   ├── ArtifactContainer.performance.test.tsx  # Performance benchmarks
+│   └── ChatInterface.tsx            # Main chat UI
+├── hooks/                           # Data fetching hooks
+├── utils/                           # Utilities + __tests__/
+│   ├── artifactParser.ts            # XML-tag extraction from AI responses
+│   ├── artifactValidator.ts         # Frontend validation layer
+│   ├── artifactErrorRecovery.ts     # Error classification & recovery
+│   ├── artifactBundler.ts           # Client-side bundling coordinator
+│   ├── sucraseTranspiler.ts         # Sucrase transpiler integration
+│   └── ...                          # Other utilities
+├── pages/                           # Route components (Index, Auth, Landing)
+└── integrations/supabase/           # Supabase client + types
 
 supabase/
 ├── functions/
-│   ├── chat/                  # handlers/, middleware/, index.ts
-│   ├── generate-artifact/     # Artifact generation
-│   ├── bundle-artifact/       # npm bundling
-│   ├── _shared/               # Shared utilities
-│   └── ...                    # Other functions
-└── migrations/                # Database migrations
+│   ├── chat/                        # Main chat endpoint
+│   │   ├── handlers/                # tool-calling-chat.ts, url-extract.ts
+│   │   ├── middleware/              # auth.ts, rateLimit.ts, validation.ts
+│   │   └── index.ts                 # Entry point
+│   ├── generate-artifact/           # Artifact generation (standalone, legacy)
+│   ├── bundle-artifact/             # Server-side npm bundling
+│   ├── generate-artifact-fix/       # AI-powered error fixing
+│   ├── generate-image/              # Image generation
+│   ├── generate-title/              # Session title generation
+│   ├── summarize-conversation/      # Context summarization
+│   ├── health/                      # Health monitoring
+│   ├── admin-analytics/             # Analytics dashboard
+│   ├── cache-manager/               # Cache utilities
+│   ├── _shared/                     # Shared utilities (35 files)
+│   │   ├── artifact-rules/          # Validation rule modules (6 files)
+│   │   ├── config.ts                # Central configuration
+│   │   ├── glm-client.ts            # GLM-4.6 client
+│   │   ├── tool-executor.ts         # Tool execution orchestrator
+│   │   ├── artifact-executor.ts     # Artifact executor
+│   │   ├── image-executor.ts        # Image executor
+│   │   ├── tool-validator.ts        # Tool parameter validation
+│   │   ├── reasoning-provider.ts    # Semantic status generation
+│   │   └── ...                      # 26 more utilities
+│   └── ...                          # Other functions
+└── migrations/                      # Database migrations
 ```
 
 ## Troubleshooting
