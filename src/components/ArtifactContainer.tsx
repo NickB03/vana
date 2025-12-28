@@ -180,7 +180,9 @@ ${artifact.content}
     setIsEditingCode(false);
   }, [artifact.content]);
 
-  const handleAIFix = async () => {
+  // CRITICAL: useCallback prevents BundledArtifactFrame's useEffect from re-running
+  // on every parent render, which was causing blob URLs to be revoked prematurely
+  const handleAIFix = useCallback(async () => {
     if (!previewError) return;
 
     setIsFixingError(true);
@@ -229,7 +231,7 @@ ${artifact.content}
     } finally {
       setIsFixingError(false);
     }
-  };
+  }, [previewError, artifact.content, artifact.type, onContentChange]);
 
   // Render functions use extracted components
   const renderPreview = () => {
