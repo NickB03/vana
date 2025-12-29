@@ -107,27 +107,38 @@ function getElementPosition(id: string) {
   };
 }
 
+const MOBILE_BREAKPOINT = 768;
+
 function calculateContentPosition(
   elementPos: { top: number; left: number; width: number; height: number },
   position: "top" | "bottom" | "left" | "right" = "bottom"
 ) {
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
+  const isMobile = viewportWidth < MOBILE_BREAKPOINT;
+
+  // Calculate responsive content width
+  const contentWidth = Math.min(CONTENT_WIDTH, viewportWidth - 32);
 
   let left = elementPos.left;
   let top = elementPos.top;
 
-  switch (position) {
+  // On mobile, prefer top/bottom positioning to avoid horizontal overflow
+  const effectivePosition = isMobile && (position === "left" || position === "right")
+    ? "bottom"
+    : position;
+
+  switch (effectivePosition) {
     case "top":
       top = elementPos.top - CONTENT_HEIGHT - PADDING;
-      left = elementPos.left + elementPos.width / 2 - CONTENT_WIDTH / 2;
+      left = elementPos.left + elementPos.width / 2 - contentWidth / 2;
       break;
     case "bottom":
       top = elementPos.top + elementPos.height + PADDING;
-      left = elementPos.left + elementPos.width / 2 - CONTENT_WIDTH / 2;
+      left = elementPos.left + elementPos.width / 2 - contentWidth / 2;
       break;
     case "left":
-      left = elementPos.left - CONTENT_WIDTH - PADDING;
+      left = elementPos.left - contentWidth - PADDING;
       top = elementPos.top + elementPos.height / 2 - CONTENT_HEIGHT / 2;
       break;
     case "right":
@@ -138,8 +149,8 @@ function calculateContentPosition(
 
   return {
     top: Math.max(PADDING, Math.min(top, viewportHeight - CONTENT_HEIGHT - PADDING)),
-    left: Math.max(PADDING, Math.min(left, viewportWidth - CONTENT_WIDTH - PADDING)),
-    width: CONTENT_WIDTH,
+    left: Math.max(PADDING, Math.min(left, viewportWidth - contentWidth - PADDING)),
+    width: contentWidth,
     height: CONTENT_HEIGHT
   };
 }
@@ -492,14 +503,15 @@ export function TourProvider({
               exit={{ opacity: 0, y: reducedMotion ? 0 : 10 }}
               style={{
                 position: "fixed",
-                width: calculateContentPosition(elementPosition, steps[currentStep]?.position).width,
+                width: `min(${CONTENT_WIDTH}px, calc(100vw - 32px))`,
+                maxWidth: "calc(100vw - 32px)",
               }}
               className="bg-popover text-popover-foreground relative z-[100] rounded-lg border p-5 shadow-lg outline-none"
             >
-              {/* Close button - top right (larger touch target for accessibility) */}
+              {/* Close button - top right (44x44px touch target for mobile accessibility) */}
               <button
                 onClick={endTour}
-                className="absolute top-1 right-1 z-10 p-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                className="absolute top-1 right-1 z-10 size-11 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                 aria-label="Close tour"
               >
                 <X className="h-5 w-5" />
@@ -528,12 +540,12 @@ export function TourProvider({
                 role="navigation"
                 aria-label="Tour navigation"
               >
-                {/* Previous button - left */}
+                {/* Previous button - left (44px height for mobile touch targets) */}
                 {currentStep > 0 ? (
                   <Button
                     onClick={previousStep}
                     variant="ghost"
-                    size="sm"
+                    className="h-11 px-4"
                     aria-label={`Go to previous step (${currentStep} of ${steps.length})`}
                   >
                     Previous
@@ -542,10 +554,10 @@ export function TourProvider({
                   <div />
                 )}
 
-                {/* Next button - right */}
+                {/* Next button - right (44px height for mobile touch targets) */}
                 <Button
                   onClick={nextStep}
-                  size="sm"
+                  className="h-11 px-4"
                   aria-label={
                     currentStep === steps.length - 1
                       ? "Finish tour"
@@ -627,7 +639,7 @@ export function TourAlertDialog({
 
   return (
     <AlertDialog open={isOpen}>
-      <AlertDialogContent className="max-w-md p-6">
+      <AlertDialogContent className="max-w-md w-[calc(100vw-32px)] sm:w-full p-4 sm:p-6 mx-4 sm:mx-auto">
         <AlertDialogHeader className="flex flex-col items-center justify-center">
           <div className="relative mb-4">
             <motion.div {...iconAnimation} transition={iconTransition}>
@@ -659,10 +671,10 @@ export function TourAlertDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="mt-6 space-y-3">
-          <Button onClick={startTour} className="w-full">
+          <Button onClick={startTour} className="w-full h-11">
             Start Tour
           </Button>
-          <Button onClick={handleSkip} variant="ghost" className="w-full">
+          <Button onClick={handleSkip} variant="ghost" className="w-full h-11">
             Skip Tour
           </Button>
         </div>
