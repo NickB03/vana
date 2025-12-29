@@ -98,11 +98,97 @@ TAVILY_ALWAYS_SEARCH=false               # Force search on all messages
 
 **Configuration Details**: See `supabase/functions/_shared/config.ts` TAVILY_CONFIG
 
+### Query Rewriting
+
+**Location**: `supabase/functions/_shared/query-rewriter.ts`
+
+Before queries reach Tavily, they pass through an LLM-powered optimization layer that improves search precision:
+
+**How It Works**:
+1. **Skip Detection**: Checks if query is already optimized (short, URL, code block)
+2. **LLM Rewriting**: Sends conversational queries to GLM-4.5-Air
+3. **Temporal Enhancement**: Adds current year for time-sensitive queries
+4. **Cleanup**: Removes LLM artifacts (quotes, prefixes)
+5. **Fallback**: Returns original query on failure
+
+**Model**: GLM-4.5-Air via Z.ai API
+- Temperature: 0 (deterministic)
+- Max tokens: 50 (concise output)
+- Latency: ~300ms
+
+**Optimization Rules**:
+- Remove conversational filler ("please", "can you", "tell me")
+- Keep technical terms exactly as written
+- Add year (2025) only for "latest", "current", "recent" queries
+- Maintain specific names and dates
+- Maximum 10 words output
+
+**Examples**:
+```typescript
+// Verbose → Concise
+"Can you help me find information about TypeScript decorators?"
+→ "TypeScript decorators"
+
+// Temporal context
+"What's the latest Next.js version?"
+→ "latest Next.js version 2025"
+
+// Already optimized
+"React hooks tutorial"
+→ "React hooks tutorial" (unchanged)
+```
+
+**Skip Conditions**:
+- Query ≤3 words (likely already optimized keywords)
+- Starts with `http://` or `https://` (URL)
+- Contains code blocks (```)
+- Already appears optimized (no conversational markers)
+
+**Conversational Markers Detected**:
+```typescript
+/^(can you|could you|please|i want|help me|show me|tell me|
+   what is|what are|how do|how does|why is|why do|
+   when did|where is|where are)/i
+```
+
+**Usage**:
+```typescript
+import { rewriteSearchQuery } from './query-rewriter.ts';
+
+const result = await rewriteSearchQuery(
+  "Can you tell me about React hooks?",
+  { requestId: 'req-123' }
+);
+// {
+//   originalQuery: "Can you tell me about React hooks?",
+//   rewrittenQuery: "React hooks",
+//   latencyMs: 287,
+//   skipped: false
+// }
+```
+
+**Result Format**:
+```typescript
+interface RewriteResult {
+  originalQuery: string;
+  rewrittenQuery: string;
+  latencyMs: number;
+  skipped?: boolean;      // True if rewriting was skipped
+  skipReason?: string;    // Why rewriting was skipped
+}
+```
+
+**Error Handling**:
+- API failures: Falls back to original query
+- Timeout: Uses original query (no retry at rewriter level)
+- Empty response: Uses original query
+- All failures logged for monitoring
+
 ### Integration with Chat
 
-**Tool-Based Search**:
+**Tool-Based Search Flow**:
 ```typescript
-// AI decides to search via tool calling
+// 1. AI decides to search via tool calling
 {
   "tool": "browser.search",
   "parameters": {
@@ -110,6 +196,20 @@ TAVILY_ALWAYS_SEARCH=false               # Force search on all messages
     "max_results": 5
   }
 }
+
+// 2. Query rewriter optimizes the search query
+const { rewrittenQuery } = await rewriteSearchQuery(
+  "latest React 19 features",
+  { requestId }
+);
+// rewrittenQuery: "latest React features 2025"
+
+// 3. Optimized query sent to Tavily
+const results = await searchWeb({ query: rewrittenQuery, max_results: 5 });
+
+// 4. Results formatted and injected into AI context
+const formattedResults = formatSearchResultsForAI(results);
+const contextWithSearch = `${userMessage}\n\n[Search Results]\n${formattedResults}`;
 ```
 
 **Automatic Context Injection**:

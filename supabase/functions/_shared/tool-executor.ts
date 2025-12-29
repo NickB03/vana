@@ -23,8 +23,8 @@
  * });
  *
  * if (result.success) {
- *   const formattedResult = formatResultForGLM(toolCall.name, result);
- *   // Inject into GLM context
+ *   const content = getToolResultContent(result);
+ *   // Use content in OpenAI-compatible tool message
  * }
  * ```
  */
@@ -37,7 +37,6 @@ import {
   type TavilySearchResponse
 } from './tavily-client.ts';
 import type { ToolCall } from './glm-client.ts';
-import { sanitizeXmlValue } from './glm-tool-parser.ts';
 import { rewriteSearchQuery } from './query-rewriter.ts';
 import { executeArtifactGeneration, isValidArtifactType, type GeneratableArtifactType } from './artifact-executor.ts';
 import { executeImageGeneration, isValidImageMode, type ImageMode } from './image-executor.ts';
@@ -716,9 +715,6 @@ async function executeImageTool(
  *
  * RFC-001: Tool Result Format Refactor
  *
- * This function replaces the unused formatResultForGLM() function and fixes
- * the bug where artifact/image tools fell back to "Tool execution failed".
- *
  * The returned content is plain text (not XML) and will be used in the
  * OpenAI-compatible tool message format:
  * ```json
@@ -782,122 +778,3 @@ Note: This image was rendered directly (temporary). If the user wants to edit it
   }
 }
 
-/**
- * @deprecated Use getToolResultContent() instead. This function is retained
- * for backward compatibility but its output is only used for logging.
- * RFC-001: Tool Result Format Refactor
- *
- * Format tool execution result for GLM's expected format
- *
- * GLM expects tool results in the following format:
- * ```
- * <tool_result>
- *   <tool_call_id>call_abc123</tool_call_id>
- *   <name>browser.search</name>
- *   <status>success</status>
- *   <result>
- *   [formatted results or error message]
- *   </result>
- * </tool_result>
- * ```
- *
- * @param toolCall - The original tool call (for id and name)
- * @param result - Tool execution result
- * @returns Formatted string for GLM context injection
- *
- * @example
- * ```typescript
- * const formatted = formatResultForGLM(
- *   { id: "call_123", name: "browser.search", arguments: { query: "test" } },
- *   { success: true, toolName: "browser.search", data: {...}, latencyMs: 500 }
- * );
- * // Returns:
- * // <tool_result>
- * //   <tool_call_id>call_123</tool_call_id>
- * //   <name>browser.search</name>
- * //   <status>success</status>
- * //   <result>
- * //   [formatted search results]
- * //   </result>
- * // </tool_result>
- * ```
- */
-export function formatResultForGLM(
-  toolCall: ToolCall,
-  result: ToolExecutionResult
-): string {
-  // Error case - inform GLM about the failure
-  if (!result.success) {
-    const errorMsg = typeof result.error === 'string'
-      ? sanitizeXmlValue(result.error)
-      : String(result.error);
-
-    return `<tool_result>
-  <tool_call_id>${toolCall.id}</tool_call_id>
-  <name>${toolCall.name}</name>
-  <status>failure</status>
-  <result>
-Error: ${errorMsg}
-  </result>
-</tool_result>`;
-  }
-
-  // Success case - format based on tool type
-  let content: string;
-
-  switch (result.toolName) {
-    case 'browser.search': {
-      // Use formatted context for search results
-      content = result.data?.formattedContext || 'No search results found';
-      break;
-    }
-
-    case 'generate_artifact': {
-      // NOTE: Content is sanitized once at line 709 (sanitizeXmlValue call)
-      // Do NOT sanitize here to avoid double-escaping (< → &lt; → &amp;lt;)
-      const artifactCode = result.data?.artifactCode || '';
-      const reasoning = result.data?.artifactReasoning || '';
-
-      content = `Artifact generated successfully:\n\n${artifactCode}`;
-      if (reasoning) {
-        content += `\n\nReasoning:\n${reasoning}`;
-      }
-      break;
-    }
-
-    case 'generate_image': {
-      // NOTE: Content is sanitized once at line 709 (sanitizeXmlValue call)
-      // Do NOT sanitize here to avoid double-escaping
-      // BUG FIX (2025-12-21): Do NOT include base64 data URLs (can be 2MB+)
-      const imageUrl = result.data?.imageUrl || '';
-      const storageSucceeded = result.data?.storageSucceeded ?? false;
-
-      // Only include URL if it's a real storage URL (not base64)
-      const isBase64 = imageUrl.startsWith('data:');
-
-      if (storageSucceeded && !isBase64) {
-        content = `Image generated successfully!\n\nImage URL: ${imageUrl}\n\nIMPORTANT: For edits, use mode="edit" and baseImage="${imageUrl}"`;
-      } else {
-        content = `Image generated successfully! (displayed directly to user - edit mode unavailable for temporary images)`;
-      }
-      break;
-    }
-
-    default: {
-      content = result.data?.formattedContext || 'No data returned';
-    }
-  }
-
-  const sanitizedContent = typeof content === 'string'
-    ? sanitizeXmlValue(content)
-    : String(content);
-
-  return `<tool_result>
-  <tool_call_id>${toolCall.id}</tool_call_id>
-  <name>${toolCall.name}</name>
-  <status>success</status>
-  <result>
-${sanitizedContent}
-  </result>
-</tool_result>`;
-}

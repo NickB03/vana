@@ -357,9 +357,20 @@ Now create the React component wrapped in artifact tags:`;
   }
 
   // Generic prompt for other artifact types
+  // Map artifact types to their MIME types to avoid biasing the model with React examples
+  const typeMapping: Record<GeneratableArtifactType, string> = {
+    react: 'application/vnd.ant.react',
+    html: 'text/html',
+    svg: 'image/svg+xml',
+    mermaid: 'application/vnd.ant.mermaid',
+    markdown: 'text/markdown',
+    code: 'application/vnd.ant.code',
+  };
+  const exampleType = typeMapping[type];
+
   return `Create an artifact for: ${prompt}
 
-IMPORTANT: Return the COMPLETE artifact wrapped in XML tags like: <artifact type="application/vnd.ant.react" title="Descriptive Title">YOUR CODE HERE</artifact>
+IMPORTANT: Return the COMPLETE artifact wrapped in XML tags like: <artifact type="${exampleType}" title="Descriptive Title">YOUR CODE HERE</artifact>
 
 For React artifacts: Return ONLY pure JSX/React component code. Do NOT include <!DOCTYPE>, <html>, <head>, <body> tags. The code will be transpiled by Babel, not rendered as a full HTML page.
 

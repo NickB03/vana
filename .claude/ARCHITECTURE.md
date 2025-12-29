@@ -14,10 +14,13 @@ All AI operations use the multi-model orchestration system for optimal cost/perf
 
 | Function | Model | Provider | Rationale |
 |----------|-------|----------|-----------|
-| Chat/Summaries/Titles | Gemini 2.5 Flash Lite | OpenRouter | Fast, unlimited, cost-effective |
+| Title Generation | GLM-4.5-Air | Z.ai API | Fast, thinking disabled |
+| Conversation Summaries | GLM-4.5-Air | Z.ai API | Fast, thinking disabled |
+| Search Query Rewriting | GLM-4.5-Air | Z.ai API | Fast query optimization |
 | Artifact Generation | GLM-4.7 | Z.ai API | Thinking mode, structured output |
 | Artifact Error Fixing | GLM-4.7 | Z.ai API | Deep reasoning for debugging |
 | Image Generation | Gemini 2.5 Flash Image | OpenRouter | High-quality image synthesis |
+| Chat Fallback | Gemini 2.5 Flash Lite | OpenRouter | Circuit breaker fallback only |
 
 **Model Constants**: All model names are defined in `supabase/functions/_shared/config.ts` as `MODELS.*` constants. **Never hardcode model names** — this causes CI/CD failures.
 
@@ -27,12 +30,13 @@ Route requests to the appropriate Edge Function based on the scenario:
 
 | Scenario | Function | Model Used |
 |----------|----------|------------|
-| User sends chat message | `chat/` | Gemini Flash Lite |
+| User sends chat message | `chat/` | GLM-4.7 (w/ OpenRouter fallback) |
 | User requests artifact | Tool-calling via `chat/` → `generate_artifact` | GLM-4.7 |
 | Artifact has errors | Tool-calling via `chat/` → `generate_artifact_fix` | GLM-4.7 |
-| First message in session | `generate-title/` | Gemini Flash Lite |
+| First message in session | `generate-title/` | GLM-4.5-Air |
 | User requests image | Tool-calling via `chat/` → `generate_image` | Gemini Flash Image |
-| Conversation exceeds context | `summarize-conversation/` | Gemini Flash Lite |
+| Conversation exceeds context | `summarize-conversation/` | GLM-4.5-Air |
+| Web search query rewrite | `query-rewriter` (shared) | GLM-4.5-Air |
 | Artifact needs npm packages | `bundle-artifact/` | N/A (esbuild bundler) |
 | Health/uptime monitoring | `health/` | N/A (status check) |
 

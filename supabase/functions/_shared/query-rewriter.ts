@@ -10,12 +10,12 @@
  * - Extracts core search intent
  * - Handles context from conversation
  *
- * Uses Gemini Flash Lite for fast, low-cost inference (~300ms).
+ * Uses GLM-4.5-Air for fast, low-cost inference.
  *
  * @module query-rewriter
  */
 
-import { callGeminiFlashWithRetry } from './openrouter-client.ts';
+import { callGLM45AirWithRetry, extractTextFromGLM45Air } from './glm-client.ts';
 import { getCurrentYear } from './config.ts';
 
 /**
@@ -49,7 +49,7 @@ export interface RewriteResult {
 /**
  * Rewrite user query for optimal search results
  *
- * Uses Gemini Flash Lite to transform natural language queries
+ * Uses GLM-4.5-Air to transform natural language queries
  * into search-optimized queries. Returns original query if rewriting fails.
  *
  * @param query - The original user query
@@ -104,7 +104,7 @@ Rules:
 Search query:`;
 
   try {
-    const httpResponse = await callGeminiFlashWithRetry(
+    const httpResponse = await callGLM45AirWithRetry(
       [{ role: 'user', content: prompt }],
       {
         max_tokens: maxTokens,
@@ -132,8 +132,7 @@ Search query:`;
     }
 
     const responseData = await httpResponse.json();
-    let rewrittenQuery =
-      responseData.choices?.[0]?.message?.content?.trim() || query;
+    let rewrittenQuery = extractTextFromGLM45Air(responseData, requestId)?.trim() || query;
 
     // Clean up any artifacts from the LLM response
     rewrittenQuery = cleanupRewrittenQuery(rewrittenQuery);

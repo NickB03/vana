@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { callGeminiFlashWithRetry, extractTextFromGeminiFlash, type OpenRouterMessage } from "../_shared/openrouter-client.ts";
+import { callGLM45AirWithRetry, extractTextFromGLM45Air, type GLM45AirMessage } from "../_shared/glm-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 import { ErrorResponseBuilder } from "../_shared/error-handler.ts";
 
@@ -109,9 +109,9 @@ serve(async (req) => {
       ? `Previous summary: ${session.conversation_summary}\n\nCreate a concise summary that builds on the previous summary and incorporates the new conversation below. Focus on key topics, decisions, and important information.`
       : "Create a concise summary of the following conversation. Focus on key topics, decisions, and important information.";
 
-    console.log("Calling AI for summarization...");
+    console.log("Calling GLM-4.5-Air for summarization...");
 
-    const messages: OpenRouterMessage[] = [
+    const messages: GLM45AirMessage[] = [
       {
         role: "system",
         content: systemContent
@@ -122,19 +122,20 @@ serve(async (req) => {
       }
     ];
 
-    const response = await callGeminiFlashWithRetry(messages, {
+    const response = await callGLM45AirWithRetry(messages, {
       temperature: 0.7,
-      max_tokens: 1000
+      max_tokens: 1000,
+      requestId
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("OpenRouter error:", response.status, errorText);
+      console.error("GLM-4.5-Air error:", response.status, errorText);
       throw new Error("Failed to generate summary");
     }
 
     const data = await response.json();
-    const summary = extractTextFromGeminiFlash(data);
+    const summary = extractTextFromGLM45Air(data);
 
     if (!summary) {
       throw new Error("No summary generated");

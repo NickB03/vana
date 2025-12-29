@@ -94,9 +94,10 @@ See [BUILD_AND_DEPLOYMENT.md](./.claude/BUILD_AND_DEPLOYMENT.md) for CI/CD detai
 ## Quick Architecture Reference
 
 **AI Models** ([full architecture](./.claude/ARCHITECTURE.md)):
-- **Chat/Summaries/Titles**: Gemini 2.5 Flash Lite (OpenRouter)
+- **Titles/Summaries/Query Rewrite**: GLM-4.5-Air (Z.ai, fast mode)
 - **Artifact Generation**: GLM-4.7 (Z.ai, thinking mode enabled)
 - **Image Generation**: Gemini 2.5 Flash Image (OpenRouter)
+- **Chat Fallback**: Gemini 2.5 Flash Lite (OpenRouter, circuit breaker only)
 
 **Artifact System** ([details](./.claude/ARTIFACT_SYSTEM.md)):
 - **Transpiler**: Sucrase-only ([docs/TRANSPILATION.md](docs/TRANSPILATION.md)) — 20x faster, "Ask AI to Fix" on errors

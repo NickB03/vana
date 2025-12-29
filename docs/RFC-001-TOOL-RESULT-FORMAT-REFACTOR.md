@@ -769,9 +769,9 @@ Deno.test("getToolResultContent - handles XML-breaking characters safely", () =>
 
 **File**: `supabase/functions/_shared/__tests__/tool-result-format.test.ts`
 
-- Remove tests for deleted `formatResultForGLM()` function
-- Keep tests for `formatToolResult()` and `formatToolError()` if retained as utilities
-- Add note that these are legacy/test-only functions
+> **NOTE**: This file was deleted on 2025-12-28 as part of dead code removal. The tests for
+> `formatResultForGLM()`, `formatToolResult()`, and `formatToolError()` were removed since
+> these functions are no longer used (native OpenAI-compatible function calling is now active).
 
 #### 4.3 Integration Test (Gated)
 
@@ -816,15 +816,20 @@ Update to show new format and remove XML examples.
 #### 5.2 Update Code Comments
 
 **Files**:
-- `glm-tool-parser.ts` - Mark XML formatting functions as legacy/test-only
 - `glm-client.ts` - Remove inline XML comment examples
 
-#### 5.3 Keep for Backward Compatibility (Optional)
+#### 5.3 Dead Code Removal (COMPLETED 2025-12-28)
 
-These functions can be retained but marked as deprecated:
-- `formatToolResult()` in glm-tool-parser.ts
-- `formatToolError()` in glm-tool-parser.ts
-- `sanitizeXmlValue()` - Still needed for other XML operations
+The following files/functions were deleted as dead code:
+- `glm-tool-parser.ts` - Entire file deleted (XML parsing utilities no longer used)
+- `buildToolSystemPromptSection()` from glm-client.ts - Deleted (XML tool docs no longer needed)
+- `formatResultForGLM()` from tool-executor.ts - Deleted (deprecated, replaced by getToolResultContent())
+- `parseToolCall` re-export from glm-client.ts - Deleted (XML parsing no longer needed)
+
+Related test files deleted:
+- `glm-tool-parser.test.ts`
+- `glm-client-tools.test.ts`
+- `tool-result-format.test.ts`
 
 ---
 

@@ -23,7 +23,6 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { MODELS, RETRY_CONFIG, GLM_CONFIG, getSearchRecencyPhrase } from './config.ts';
-import { parseToolCall } from './glm-tool-parser.ts';
 
 // GLM API configuration
 const GLM_API_KEY = Deno.env.get("GLM_API_KEY");
@@ -172,71 +171,6 @@ export const GLM_SEARCH_TOOL: GLMToolDefinition = {
   }
 };
 
-/**
- * Build tool definition section for system prompt
- * Converts GLMToolDefinition[] into XML format that GLM expects
- *
- * @param tools - Array of tool definitions
- * @returns XML-formatted tool definitions to append to system prompt
- *
- * @example
- * ```typescript
- * const toolSection = buildToolSystemPromptSection([GLM_SEARCH_TOOL]);
- * const systemPrompt = basePrompt + "\n\n" + toolSection;
- * ```
- */
-export function buildToolSystemPromptSection(tools: GLMToolDefinition[]): string {
-  if (!tools || tools.length === 0) {
-    return "";
-  }
-
-  const toolDefinitions = tools.map(tool => {
-    const params = Object.entries(tool.parameters.properties)
-      .map(([name, prop]) => {
-        const required = tool.parameters.required.includes(name) ? " (required)" : "";
-        const defaultVal = prop.default !== undefined ? ` [default: ${JSON.stringify(prop.default)}]` : "";
-        return `  - ${name}: ${prop.type}${required}${defaultVal} - ${prop.description}`;
-      })
-      .join("\n");
-
-    return `<tool name="${tool.name}">
-  <description>${tool.description}</description>
-  <parameters>
-${params}
-  </parameters>
-</tool>`;
-  }).join("\n\n");
-
-  return `
-## Available Tools
-
-You have access to the following tools to assist users:
-
-${toolDefinitions}
-
-## Tool Usage Instructions
-
-When you need to use a tool, you MUST output a COMPLETE tool call with ALL tags:
-
-<tool_call>
-<name>tool.name</name>
-<arguments>
-<arg_name>value</arg_name>
-</arguments>
-</tool_call>
-
-CRITICAL: You MUST include the closing </tool_call> tag. Without it, the tool will not execute.
-
-Example of a COMPLETE browser.search tool call:
-<tool_call>
-<name>browser.search</name>
-<arguments>
-<query>your search query here</query>
-</arguments>
-</tool_call>
-
-After calling a tool, WAIT for the tool result before continuing your response.`;
-}
 
 /**
  * Call GLM-4.7 for artifact generation or fixing
@@ -787,9 +721,6 @@ export interface GLMStreamCallbacks {
   onNativeToolCall?: (toolCall: NativeToolCall) => void | Promise<void>;
 }
 
-// Re-export parseToolCall from glm-tool-parser for backward compatibility
-export { parseToolCall } from './glm-tool-parser.ts';
-
 /**
  * Read with timeout - wraps reader.read() with a timeout promise
  * Returns null if timeout occurs, signaling stream stall
@@ -1200,4 +1131,178 @@ export async function handleGLMError(
       }
     }
   );
+}
+
+// ============================================================================
+// GLM-4.5-Air Functions (Lightweight, Fast Tasks)
+// ============================================================================
+
+/**
+ * Simple message format for GLM-4.5-Air
+ * Compatible with OpenRouter message format for easy migration
+ */
+export interface GLM45AirMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
+
+/**
+ * Options for GLM-4.5-Air calls
+ */
+export interface CallGLM45AirOptions {
+  temperature?: number;
+  max_tokens?: number;
+  requestId?: string;
+}
+
+/**
+ * Call GLM-4.5-Air for fast, lightweight tasks (titles, summaries, query rewriting)
+ *
+ * GLM-4.5-Air is optimized for speed and cost-efficiency on simple tasks.
+ * Uses the same Z.ai API endpoint as GLM-4.7 but with thinking mode disabled.
+ *
+ * @param messages - Array of messages in OpenAI format
+ * @param options - Configuration options
+ * @returns Response object
+ *
+ * @example
+ * ```typescript
+ * const response = await callGLM45Air(
+ *   [
+ *     { role: "system", content: "Generate a short title" },
+ *     { role: "user", content: "User's first message here" }
+ *   ],
+ *   { max_tokens: 50, requestId: "req-123" }
+ * );
+ * ```
+ */
+export async function callGLM45Air(
+  messages: GLM45AirMessage[],
+  options?: CallGLM45AirOptions
+): Promise<Response> {
+  const {
+    temperature = 0.7,
+    max_tokens = 100,
+    requestId = crypto.randomUUID()
+  } = options || {};
+
+  if (!GLM_API_KEY) {
+    throw new Error("GLM_API_KEY not configured");
+  }
+
+  console.log(`[${requestId}] 🚀 Calling GLM-4.5-Air via Z.ai API (fast mode)`);
+
+  // Create AbortController for timeout protection
+  const timeout = GLM_CONFIG.REQUEST_TIMEOUT_MS;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    console.warn(`[${requestId}] ⏱️ GLM-4.5-Air request timeout after ${timeout}ms - aborting`);
+    controller.abort();
+  }, timeout);
+
+  try {
+    const response = await fetch(`${GLM_BASE_URL}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${GLM_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: MODELS.GLM_4_5_AIR.split('/').pop(), // Extract "glm-4.5-air" from "zhipu/glm-4.5-air"
+        messages,
+        temperature,
+        max_tokens,
+        stream: false,
+        // Disable thinking mode for fast responses
+        thinking: { type: "disabled" }
+      }),
+      signal: controller.signal
+    });
+
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * Call GLM-4.5-Air with exponential backoff retry logic
+ * Handles transient failures gracefully
+ *
+ * @param messages - Array of messages
+ * @param options - Configuration options
+ * @param retryCount - Current retry attempt (internal)
+ * @returns Response object
+ */
+export async function callGLM45AirWithRetry(
+  messages: GLM45AirMessage[],
+  options?: CallGLM45AirOptions,
+  retryCount = 0
+): Promise<Response> {
+  const requestId = options?.requestId || crypto.randomUUID();
+
+  try {
+    const response = await callGLM45Air(messages, {
+      ...options,
+      requestId
+    });
+
+    if (response.ok) {
+      return response;
+    }
+
+    // Handle rate limiting (429) and service overload (503) with exponential backoff
+    if (response.status === 429 || response.status === 503) {
+      if (retryCount < RETRY_CONFIG.MAX_RETRIES) {
+        // CRITICAL: Drain response body to prevent resource leak
+        await response.text();
+
+        const delayMs = Math.min(
+          RETRY_CONFIG.INITIAL_DELAY_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, retryCount),
+          RETRY_CONFIG.MAX_DELAY_MS
+        );
+
+        const retryAfter = response.headers.get('Retry-After');
+        const actualDelayMs = retryAfter ? parseInt(retryAfter) * 1000 : delayMs;
+
+        const errorType = response.status === 429 ? "Rate limited" : "Service overloaded";
+        console.log(`[${requestId}] ${errorType} (${response.status}). Retry ${retryCount + 1}/${RETRY_CONFIG.MAX_RETRIES} after ${actualDelayMs}ms`);
+
+        await new Promise(resolve => setTimeout(resolve, actualDelayMs));
+
+        return callGLM45AirWithRetry(messages, options, retryCount + 1);
+      } else {
+        console.error(`[${requestId}] Max retries exceeded (status: ${response.status})`);
+      }
+    }
+
+    return response;
+  } catch (error) {
+    if (retryCount < RETRY_CONFIG.MAX_RETRIES) {
+      const delayMs = Math.min(
+        RETRY_CONFIG.INITIAL_DELAY_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, retryCount),
+        RETRY_CONFIG.MAX_DELAY_MS
+      );
+      console.log(`[${requestId}] Network error, retrying after ${delayMs}ms:`, error);
+
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+
+      return callGLM45AirWithRetry(messages, options, retryCount + 1);
+    }
+
+    throw error;
+  }
+}
+
+/**
+ * Extract text from GLM-4.5-Air response
+ * Uses the same format as GLM-4.7 (OpenAI-compatible)
+ *
+ * @param responseData - JSON response from GLM API
+ * @param requestId - Optional request ID for logging
+ * @returns Extracted text content
+ */
+export function extractTextFromGLM45Air(responseData: any, requestId?: string): string {
+  // Reuse the same extraction logic as GLM-4.7
+  return extractTextFromGLM(responseData, requestId);
 }

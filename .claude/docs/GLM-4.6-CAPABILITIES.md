@@ -237,8 +237,7 @@ export const GLM_CONFIG = {
 
 **Key Functions**:
 - `callGLM()` — Main entry point for GLM API calls
-- `parseToolCall()` — Extract tool calls from responses
-- `streamGLMResponse()` — Handle SSE streaming
+- `processGLMStream()` — Handle SSE streaming with native tool call support
 
 **Usage Example**:
 ```typescript

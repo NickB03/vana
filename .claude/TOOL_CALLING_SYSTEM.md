@@ -58,11 +58,51 @@ const TOOL_CATALOG = {
 
 **Purpose**: Web search via Tavily API
 
-**Model**: N/A (direct API call)
+**Model**: N/A (direct API call, but query rewriting uses GLM-4.5-Air)
 
 **Parameters**:
 - `query`: Search query
 - `max_results`: Number of results (default: 5)
+
+**Query Rewriting**:
+
+Before sending queries to Tavily, the system optimizes them using LLM-powered query rewriting:
+
+**Location**: `supabase/functions/_shared/query-rewriter.ts`
+
+**Purpose**: Transform conversational queries into search-optimized queries for better results
+
+**Model**: GLM-4.5-Air via Z.ai API (~300ms latency)
+
+**Process**:
+1. **Smart Skip Logic**: Short queries (≤3 words), URLs, and code blocks skip rewriting
+2. **LLM Optimization**: Conversational queries sent to GLM-4.5-Air for rewriting
+3. **Temporal Context**: Adds current year for "latest", "current", "recent" queries
+4. **Fallback**: Returns original query if rewriting fails
+
+**Examples**:
+```typescript
+// Conversational query → optimized
+"Can you please tell me what the weather is like in NYC?"
+→ "weather NYC"
+
+// Temporal context injection
+"What are the latest React features?"
+→ "latest React features 2025"
+
+// Already optimized → unchanged
+"TypeScript generics tutorial"
+→ "TypeScript generics tutorial"
+```
+
+**Key Functions**:
+- `rewriteSearchQuery()` — Main rewriting function with retry logic
+- `shouldRewriteQuery()` — Determines if rewriting would improve results
+
+**Configuration**:
+- Temperature: 0 (deterministic results)
+- Max tokens: 50 (concise queries only)
+- Timeout: Inherits from OpenRouter client retry logic
 
 ## SSE Event Flow
 

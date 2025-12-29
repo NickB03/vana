@@ -582,6 +582,34 @@ export function useChatMessages(
               continue;
             }
 
+            // Handle reasoning_final event (completion summary from ReasoningProvider)
+            if (parsed.type === 'reasoning_final') {
+              const finalMessage = parsed.message as string;
+              console.log(`[StreamProgress] Reasoning final: "${finalMessage}"`);
+
+              // Update the reasoning status to show completion
+              lastReasoningStatus = finalMessage;
+
+              const progress = updateProgress();
+              onDelta('', progress);
+
+              continue;
+            }
+
+            // Handle status_update event (artifact generation status updates)
+            if (parsed.type === 'status_update') {
+              const status = parsed.status as string;
+              const isFinal = parsed.final as boolean | undefined;
+              console.log(`[StreamProgress] Status update: "${status}"${isFinal ? ' (final)' : ''}`);
+
+              lastReasoningStatus = status;
+
+              const progress = updateProgress();
+              onDelta('', progress);
+
+              continue;
+            }
+
             // COMPATIBILITY: Handle batch 'reasoning' event format from /chat endpoint.
             // The /chat endpoint sends reasoning as a single event (all steps at once),
             // while /generate-artifact streams individual reasoning_step events.

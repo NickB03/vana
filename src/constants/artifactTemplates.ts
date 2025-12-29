@@ -91,8 +91,9 @@ Create an interactive form using Tailwind CSS:
 - Use ONLY Tailwind CSS for styling (NO local component imports)
 `,
     exampleStructure: `
-import { useState } from "react"
 import { Mail, User, MessageSquare, AlertCircle, CheckCircle } from "lucide-react"
+
+const { useState } = React
 
 export default function ContactForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -295,8 +296,9 @@ Create a data table with Tailwind CSS:
 - Use ONLY Tailwind CSS for styling (NO local component imports)
 `,
     exampleStructure: `
-import { useState } from "react"
 import { Search, ChevronUp, ChevronDown, Edit, Trash } from "lucide-react"
+
+const { useState } = React
 
 export default function DataTable() {
   const [search, setSearch] = useState("")
@@ -501,44 +503,3 @@ export default function SettingsPage() {
 `
   }
 ];
-
-/**
- * Detect which template best matches the user's request
- */
-export function detectTemplate(prompt: string): ArtifactTemplate | null {
-  const lowerPrompt = prompt.toLowerCase();
-
-  for (const template of ARTIFACT_TEMPLATES) {
-    const matchCount = template.keywords.filter(keyword =>
-      lowerPrompt.includes(keyword)
-    ).length;
-
-    // If 2 or more keywords match, suggest this template
-    if (matchCount >= 2) {
-      return template;
-    }
-  }
-
-  return null;
-}
-
-/**
- * Generate enhanced system prompt with template guidance
- */
-export function getTemplateGuidance(template: ArtifactTemplate): string {
-  return `
-TEMPLATE GUIDANCE: ${template.name}
-${template.systemPromptGuidance}
-
-Required Libraries: ${template.requiredLibraries.length > 0 ? template.requiredLibraries.join(', ') : 'None'}
-
-⚠️ CRITICAL: Use ONLY Radix UI primitives + Tailwind CSS
-- NO local imports (@/components/ui/*, @/lib/*, etc.)
-- Artifacts run in isolated sandboxes without access to local files
-
-Example Structure:
-${template.exampleStructure}
-
-Follow these best practices for this template type.
-`;
-}
