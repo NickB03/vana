@@ -36,6 +36,34 @@ function sanitizeContent(content: string): string {
     .replace(/\//g, '&#x2F;'); // Prevent closing tag injection
 }
 
+/**
+ * Normalize user input for API transmission to GLM models.
+ * NOT for HTML rendering - preserves all visible characters.
+ *
+ * Security is handled separately by:
+ * - PromptInjectionDefense (prompt injection)
+ * - ReactMarkdown (XSS in chat)
+ * - Iframe sandbox (XSS in artifacts)
+ * - artifact-validator (code validation)
+ *
+ * This function only normalizes text for consistent processing:
+ * - Standardizes line endings (CRLF/CR → LF)
+ * - Removes invisible control characters
+ * - Removes zero-width Unicode characters
+ * - Preserves all visible user intent including JSX, quotes, slashes
+ */
+export function normalizePromptForApi(value: string): string {
+  if (!value || typeof value !== 'string') {
+    return '';
+  }
+
+  return value
+    .replace(/\r\n/g, '\n')           // Normalize Windows line endings
+    .replace(/\r/g, '\n')             // Handle standalone CR
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')  // Strip ASCII control chars (keep TAB \x09, LF \x0A)
+    .replace(/[\u200B-\u200F\u2028-\u202F\uFEFF]/g, '');  // Strip zero-width and line/paragraph separators
+}
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -237,12 +265,12 @@ export class ToolParameterValidator {
       throw new ToolValidationError('prompt', 'Must be a string', 'TYPE_ERROR');
     }
 
-    // Sanitize and validate prompt content
-    const sanitizedPrompt = sanitizeContent(prompt);
-    if (sanitizedPrompt.trim().length === 0) {
+    // Normalize prompt for API transmission (preserves visible characters)
+    const normalizedPrompt = normalizePromptForApi(prompt);
+    if (normalizedPrompt.trim().length === 0) {
       throw new ToolValidationError('prompt', 'Cannot be empty', 'EMPTY');
     }
-    if (sanitizedPrompt.length > this.MAX_ARTIFACT_PROMPT) {
+    if (normalizedPrompt.length > this.MAX_ARTIFACT_PROMPT) {
       throw new ToolValidationError(
         'prompt',
         `Maximum ${this.MAX_ARTIFACT_PROMPT} characters allowed`,
@@ -253,7 +281,7 @@ export class ToolParameterValidator {
     // SECURITY FIX: Return frozen object to prevent post-validation modification
     return Object.freeze({
       type: type as ArtifactType,
-      prompt: sanitizedPrompt
+      prompt: normalizedPrompt
     });
   }
 
@@ -288,12 +316,12 @@ export class ToolParameterValidator {
       throw new ToolValidationError('prompt', 'Must be a string', 'TYPE_ERROR');
     }
 
-    // Sanitize and validate prompt content
-    const sanitizedPrompt = sanitizeContent(prompt);
-    if (sanitizedPrompt.trim().length === 0) {
+    // Normalize prompt for API transmission (preserves visible characters)
+    const normalizedPrompt = normalizePromptForApi(prompt);
+    if (normalizedPrompt.trim().length === 0) {
       throw new ToolValidationError('prompt', 'Cannot be empty', 'EMPTY');
     }
-    if (sanitizedPrompt.length > this.MAX_IMAGE_PROMPT) {
+    if (normalizedPrompt.length > this.MAX_IMAGE_PROMPT) {
       throw new ToolValidationError(
         'prompt',
         `Maximum ${this.MAX_IMAGE_PROMPT} characters allowed`,
@@ -319,7 +347,7 @@ export class ToolParameterValidator {
 
     // SECURITY FIX: Return frozen object to prevent post-validation modification
     return Object.freeze({
-      prompt: sanitizedPrompt,
+      prompt: normalizedPrompt,
       aspectRatio
     });
   }
@@ -355,11 +383,12 @@ export class ToolParameterValidator {
       throw new ToolValidationError('query', 'Must be a string', 'TYPE_ERROR');
     }
 
-    const sanitizedQuery = sanitizeContent(query);
-    if (sanitizedQuery.trim().length === 0) {
+    // Normalize query for API transmission (preserves visible characters)
+    const normalizedQuery = normalizePromptForApi(query);
+    if (normalizedQuery.trim().length === 0) {
       throw new ToolValidationError('query', 'Cannot be empty', 'EMPTY');
     }
-    if (sanitizedQuery.length > this.MAX_SEARCH_QUERY) {
+    if (normalizedQuery.length > this.MAX_SEARCH_QUERY) {
       throw new ToolValidationError(
         'query',
         `Maximum ${this.MAX_SEARCH_QUERY} characters allowed`,
@@ -368,7 +397,7 @@ export class ToolParameterValidator {
     }
 
     // SECURITY FIX: Return frozen object to prevent post-validation modification
-    return Object.freeze({ query: sanitizedQuery });
+    return Object.freeze({ query: normalizedQuery });
   }
 
   /**

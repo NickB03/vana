@@ -2,6 +2,7 @@ import { memo, useState, useEffect, useMemo } from "react";
 import { Markdown } from "@/components/ui/markdown";
 import { InlineImage } from "@/components/InlineImage";
 import { ArtifactCard } from "@/components/ArtifactCard";
+import { ArtifactCardSkeleton } from "@/components/ArtifactCardSkeleton";
 import { parseArtifacts } from "@/utils/artifactParser";
 import { ArtifactData } from "@/components/ArtifactContainer";
 import { bundleArtifact, needsBundling } from "@/utils/artifactBundler";
@@ -73,6 +74,7 @@ export const MessageWithArtifacts = memo(({
   const [artifacts, setArtifacts] = useState<ArtifactData[]>([]);
   const [cleanContent, setCleanContent] = useState(content);
   const [bundlingStatus, setBundlingStatus] = useState<Record<string, 'idle' | 'bundling' | 'success' | 'error'>>({});
+  const [inProgressCount, setInProgressCount] = useState(0);
 
   // Convert web search results to citation sources map
   // Use provided citationSources if available, otherwise convert from searchResults
@@ -91,9 +93,10 @@ export const MessageWithArtifacts = memo(({
 
   // Parse artifacts asynchronously (now uses crypto hash for stable IDs)
   useEffect(() => {
-    parseArtifacts(content).then(({ artifacts: parsedArtifacts, cleanContent: parsed }) => {
+    parseArtifacts(content).then(({ artifacts: parsedArtifacts, cleanContent: parsed, inProgressCount: inProgress }) => {
       setArtifacts(parsedArtifacts);
       setCleanContent(parsed);
+      setInProgressCount(inProgress);
     });
   }, [content]);
 
@@ -323,6 +326,11 @@ export const MessageWithArtifacts = memo(({
           className="mt-3"
           isBundling={bundlingStatus[artifact.id] === 'bundling'}
         />
+      ))}
+
+      {/* Render skeleton cards for in-progress artifacts (streaming) */}
+      {inProgressCount > 0 && Array.from({ length: inProgressCount }, (_, i) => (
+        <ArtifactCardSkeleton key={`skeleton-${i}`} className="mt-3" />
       ))}
     </MessageErrorBoundary>
   );

@@ -113,7 +113,14 @@ export function LoginForm() {
             )}
           </div>
           <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading} data-testid="login-button">
-            {isLoading ? "Loading..." : "Login"}
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              "Login"
+            )}
           </Button>
 
           <div className="relative">

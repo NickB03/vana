@@ -141,17 +141,22 @@ export function ChatSidebar({
             </Button>
           </div>
         ) : isLoading ? (
-          // Loading skeleton
-          <div className="px-4 pt-3 space-y-3">
+          // Loading skeleton with accessibility support
+          <div
+            role="status"
+            aria-label="Loading conversations"
+            className="px-4 pt-3 space-y-3"
+          >
             <div className="space-y-2">
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-10 w-full rounded-md" />
-              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-4 w-16" aria-hidden="true" />
+              <Skeleton className="h-10 w-full rounded-md" aria-hidden="true" />
+              <Skeleton className="h-10 w-full rounded-md" aria-hidden="true" />
             </div>
             <div className="space-y-2 pt-2">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-4 w-20" aria-hidden="true" />
+              <Skeleton className="h-10 w-full rounded-md" aria-hidden="true" />
             </div>
+            <span className="sr-only">Loading conversations</span>
           </div>
         ) : sessions.length === 0 ? (
           // Empty state

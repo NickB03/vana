@@ -415,6 +415,7 @@ export function useChatMessages(
       let searchResults: WebSearchResults | undefined; // Store web search results
       let lastSequence = 0; // Track SSE event sequence
       let lastReasoningStatus: string | undefined; // Track last reasoning status for preservation
+      let currentToolExecution: ToolExecution | undefined; // Track current tool execution state
 
       // Stream timeout protection
       const CHAT_STREAM_TIMEOUT_MS = 120000; // 2 minutes max for chat streaming
@@ -465,6 +466,7 @@ export function useChatMessages(
           searchResults, // Include search results in progress updates
           reasoningStatus: lastReasoningStatus, // Preserve status for ticker display
           streamingReasoningText: reasoningText, // Preserve raw text for fallback
+          toolExecution: currentToolExecution, // Preserve tool execution state
         };
       };
 
@@ -646,12 +648,13 @@ export function useChatMessages(
 
               console.log(`🔧 [StreamProgress] Tool call started: ${toolName}`, toolArgs);
 
-              const progress = updateProgress();
-              progress.toolExecution = {
+              // Update tracked tool execution state
+              currentToolExecution = {
                 toolName,
                 arguments: toolArgs,
                 timestamp,
               };
+              const progress = updateProgress();
               onDelta('', progress);
 
               continue;
@@ -669,14 +672,15 @@ export function useChatMessages(
                 latencyMs
               });
 
-              const progress = updateProgress();
-              progress.toolExecution = {
+              // Update tracked tool execution state with result
+              currentToolExecution = {
                 toolName,
                 success,
                 sourceCount,
                 latencyMs,
                 timestamp,
               };
+              const progress = updateProgress();
               onDelta('', progress);
 
               continue;

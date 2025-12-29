@@ -369,6 +369,44 @@ flowchart TB
     style EXEC fill:#4caf50,color:#fff
 ```
 
+### Normalization vs. Sanitization
+
+The validation pipeline distinguishes between two separate concerns:
+
+```mermaid
+flowchart LR
+    subgraph API["API Transmission Path"]
+        direction TB
+        A1[normalizePromptForApi]
+        A2["Normalize line endings"]
+        A3["Remove control chars"]
+        A4["Preserve: / < > quotes"]
+        A1 --> A2 --> A3 --> A4
+    end
+
+    subgraph Display["Display Rendering Path"]
+        direction TB
+        D1[sanitizeContent]
+        D2["Encode < to &lt;"]
+        D3["Encode > to &gt;"]
+        D4["Encode / to &#x2F;"]
+        D1 --> D2 --> D3 --> D4
+    end
+
+    Input[User Input] --> API
+    Input --> Display
+
+    API -->|"To GLM"| GLM[AI Model]
+    Display -->|"To Browser"| Chat[Chat UI]
+
+    style A1 fill:#4caf50,color:#fff
+    style D1 fill:#f44336,color:#fff
+```
+
+**Key Distinction:**
+- `normalizePromptForApi()` → Used for AI model input (preserves npm paths like `@radix-ui/react-select`)
+- `sanitizeContent()` → Used for HTML display (prevents XSS but corrupts npm paths)
+
 ---
 
 ## 10. Error Sanitization Flow

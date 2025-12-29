@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -27,11 +28,13 @@ export function UserProfileButton({ collapsed = false }: UserProfileButtonProps)
   const navigate = useNavigate();
   const { themeMode, colorTheme, setThemeMode, setColorTheme } = useTheme();
   const [user, setUser] = useState<{ email?: string; name?: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     // Get current user
     const getUser = async () => {
+      setIsLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUser({
@@ -39,6 +42,7 @@ export function UserProfileButton({ collapsed = false }: UserProfileButtonProps)
           name: user.user_metadata?.name || user.email?.split('@')[0] || 'User'
         });
       }
+      setIsLoading(false);
     };
     getUser();
   }, []);
@@ -57,6 +61,29 @@ export function UserProfileButton({ collapsed = false }: UserProfileButtonProps)
       .toUpperCase()
       .slice(0, 2);
   };
+
+  // Show skeleton while loading user data
+  if (isLoading) {
+    return (
+      <div
+        className={cn(
+          "w-full flex items-center gap-3 px-3 py-2.5",
+          collapsed && "justify-center px-2"
+        )}
+        role="status"
+        aria-label="Loading profile"
+      >
+        <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+        {!collapsed && (
+          <div className="flex flex-col gap-2 flex-1 min-w-0">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-3 w-32" />
+          </div>
+        )}
+        <span className="sr-only">Loading profile</span>
+      </div>
+    );
+  }
 
   if (!user) return null;
 

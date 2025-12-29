@@ -12,6 +12,7 @@ import { ArtifactCodeEditor } from "./ArtifactCodeEditor";
 import { generateCompleteIframeStyles } from "@/utils/themeUtils";
 import { ArtifactViewToggle } from "./ArtifactViewToggle";
 import { RefreshCw } from "lucide-react";
+import { useMinimumLoadingTime } from "@/hooks/use-minimum-loading-time";
 
 export type ArtifactType = "code" | "markdown" | "html" | "svg" | "mermaid" | "react" | "image";
 
@@ -50,6 +51,9 @@ export const ArtifactContainer = ({ artifact, onClose, onEdit, onContentChange }
   const [editedContent, setEditedContent] = useState(artifact.content);
   const [themeRefreshKey, setThemeRefreshKey] = useState(0);
   const [isFixingError, setIsFixingError] = useState(false);
+
+  // Ensure skeleton shows for minimum 300ms to prevent flash on fast loads
+  const showLoadingSkeleton = useMinimumLoadingTime(isLoading, 300);
 
   // Ref to store the generated preview HTML content (for pop-out functionality)
   const previewContentRef = useRef<string | null>(null);
@@ -238,7 +242,7 @@ ${artifact.content}
     return (
       <ArtifactRenderer
         artifact={artifact}
-        isLoading={isLoading}
+        isLoading={showLoadingSkeleton}
         previewError={previewError}
         errorCategory={errorCategory}
         validation={validation}

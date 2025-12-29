@@ -68,6 +68,12 @@ const JSX_RUNTIME_SHIM = 'data:text/javascript,if(!window.React){throw new Error
 // The UMD build exposes: motion, AnimatePresence, useAnimation, useMotionValue, etc.
 const FRAMER_MOTION_SHIM = 'data:text/javascript,if(!window.Motion){throw new Error("Framer Motion failed to load. Please refresh the page.")}const M=window.Motion;export default M;export const{motion,AnimatePresence,useAnimation,useMotionValue,useTransform,useSpring,useScroll,useInView,useDragControls,useAnimationControls,useReducedMotion,useMotionTemplate,animate,stagger,delay,spring,easeIn,easeOut,easeInOut,circIn,circOut,circInOut,backIn,backOut,backInOut,anticipate,cubicBezier,MotionConfig,LazyMotion,domAnimation,domMax,m}=M;';
 
+// Lucide React shim - redirects ESM imports to window.LucideReact loaded via UMD
+// This avoids the dual React instance problem where esm.sh lucide-react tries to import 'react'
+// before window.React is available, causing "react.forwardRef is undefined" errors.
+// The UMD build exposes all icons on window.LucideReact.
+const LUCIDE_REACT_SHIM = 'data:text/javascript,if(!window.LucideReact){throw new Error("Lucide React failed to load. Please refresh the page.")}const L=window.LucideReact;export default L;export const createLucideIcon=L.createLucideIcon;export const{Check,X,ChevronDown,ChevronUp,ChevronLeft,ChevronRight,ArrowUp,ArrowDown,ArrowLeft,ArrowRight,Plus,Minus,Edit,Trash,Save,Download,Upload,Search,Filter,Settings,User,Menu,MoreVertical,Trophy,Star,Heart,Flag,Target,Award,PlayCircle,PauseCircle,SkipForward,SkipBack,AlertCircle,CheckCircle,XCircle,Info,HelpCircle,Loader,Clock,Calendar,Mail,Phone,Grid,List,Layout,Sidebar,Maximize,Minimize,Copy,Eye,EyeOff,Lock,Unlock,Share,Link,Home,Folder,File,Image,Code,Terminal,Play,Pause,Square,Circle,Maximize2,Minimize2,ExternalLink,RefreshCw,RotateCw,RotateCcw,Sun,Moon,Bell,Bookmark,Camera,Database,Disc,FileText,Globe,Hash,Key,Layers,MapPin,Mic,Monitor,Package,Percent,Power,Printer,Send,Server,Shield,Shuffle,Sliders,Smartphone,Tag,ThumbsUp,ThumbsDown,Trash2,TrendingUp,TrendingDown,Tv,Type,Video,Volume,VolumeX,Wifi,WifiOff,Zap,ZoomIn,ZoomOut,PlusCircle,MinusCircle,ArrowUpCircle,ArrowDownCircle,ArrowLeftCircle,ArrowRightCircle,ChevronFirst,ChevronLast,ChevronsUp,ChevronsDown,ChevronsLeft,ChevronsRight,MoreHorizontal,Grip,GripVertical,GripHorizontal,Move,MoveHorizontal,MoveVertical,Pencil,PencilLine,Eraser,Undo,Redo,Undo2,Redo2,History,Bold,Italic,Underline,Strikethrough,AlignLeft,AlignCenter,AlignRight,AlignJustify,ListOrdered,Table,Columns,Rows,SplitSquareHorizontal,SplitSquareVertical}=L;';
+
 /**
  * Peer dependencies that need to be externalized to prevent dual instances.
  * When a package has peer deps, we externalize them so they use the prebuilt version.
@@ -113,6 +119,107 @@ const ARTIFACT_HASH_REGEX = /^artifact-[0-9a-f]{32}$/i;
 const SEMVER_REGEX = /^[\^~>=<]?(\d+\.)?(\d+\.)?(\*|\d+)(-[\w.]+)?(\+[\w.]+)?$/;
 const NPM_TAG_REGEX = /^(latest|next|beta|alpha|canary)$/;
 const SAFE_PACKAGE_NAME = /^[@a-z0-9\-/]+$/i;
+
+/**
+ * Normalize default exports to use 'App' as the component name.
+ * Replaces the fragile regex chain that broke certain export patterns.
+ *
+ * Handles all GLM-generated export patterns:
+ * 1. export default function App() {}
+ * 2. export default function OtherName() {}
+ * 3. export default function() {} (anonymous)
+ * 4. function App() {} ... export default App;
+ * 5. const X = () => {}; export default X;
+ * 6. export { X as default };
+ * 7. export default () => ...
+ * 8. export default memo(App) / forwardRef(App)
+ * 9. export default class extends Component {}
+ */
+export function normalizeDefaultExportToApp(code: string): string {
+  // Check if App already exists as a declaration
+  const hasAppDeclaration = /\b(function|const|let|var|class)\s+App\b/.test(code);
+
+  // Pattern 1: export default function App() -> function App()
+  if (/export\s+default\s+function\s+App\s*\(/.test(code)) {
+    return code.replace(/export\s+default\s+function\s+App/, 'function App');
+  }
+
+  // Pattern 2: export default function OtherName() -> function App()
+  const namedFnMatch = code.match(/export\s+default\s+function\s+([A-Za-z_$][\w$]*)\s*\(/);
+  if (namedFnMatch && namedFnMatch[1] !== 'App') {
+    return code.replace(/export\s+default\s+function\s+[A-Za-z_$][\w$]*/, 'function App');
+  }
+
+  // Pattern 3: export default function() -> function App()
+  if (/export\s+default\s+function\s*\(/.test(code)) {
+    return code.replace(/export\s+default\s+function\s*\(/, 'function App(');
+  }
+
+  // Pattern 4: function App() {} ... export default App; -> just remove export
+  if (hasAppDeclaration && /export\s+default\s+App\s*;?/.test(code)) {
+    return code.replace(/\n?export\s+default\s+App\s*;?/, '');
+  }
+
+  // Pattern 8: export default memo(App) / forwardRef(App) etc - HOC patterns
+  const hocMatch = code.match(/export\s+default\s+(memo|forwardRef|withRouter|connect)\s*\(\s*([A-Za-z_$][\w$]*)\s*\)/);
+  if (hocMatch) {
+    const [, hoc, componentName] = hocMatch;
+    // If the wrapped component is already declared
+    if (new RegExp(`\\b(function|const|let|var|class)\\s+${componentName}\\b`).test(code)) {
+      // If component is already named App, just remove the export line entirely
+      // to avoid duplicate declaration (can't do: const App = memo(App) when App exists)
+      if (componentName === 'App') {
+        return code.replace(/\n?export\s+default\s+[^;]+;?/, '');
+      }
+      // For other components (e.g., Calculator), create App alias
+      return code.replace(/export\s+default\s+/, 'const App = ');
+    }
+  }
+
+  // Pattern 5: const X = ...; export default X; -> add App alias
+  const namedExportMatch = code.match(/export\s+default\s+([A-Za-z_$][\w$]*)\s*;?/);
+  if (namedExportMatch && !hasAppDeclaration) {
+    const exportedName = namedExportMatch[1];
+    // Check it's not a reserved word or expression
+    if (!/^(function|class|async|await|null|undefined|true|false)$/.test(exportedName)) {
+      return code
+        .replace(/\n?export\s+default\s+[A-Za-z_$][\w$]*\s*;?/, '')
+        + `\nconst App = ${exportedName};`;
+    }
+  }
+
+  // Pattern 6: export { X as default } -> remove and add alias
+  const namedAsDefaultMatch = code.match(/export\s*\{\s*([A-Za-z_$][\w$]*)\s+as\s+default\s*\}\s*;?/);
+  if (namedAsDefaultMatch) {
+    const exportedName = namedAsDefaultMatch[1];
+    let result = code.replace(/\n?export\s*\{[^}]*\bas\s+default\b[^}]*\}\s*;?/, '');
+    if (exportedName !== 'App' && !hasAppDeclaration) {
+      result += `\nconst App = ${exportedName};`;
+    }
+    return result;
+  }
+
+  // Pattern 7: export default () => ... -> const App = () => ...
+  if (/export\s+default\s+(\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>/.test(code)) {
+    return code.replace(/export\s+default\s+/, 'const App = ');
+  }
+
+  // Pattern 9: export default class ... -> const App = class ...
+  if (/export\s+default\s+class\b/.test(code)) {
+    return code.replace(/export\s+default\s+class/, 'const App = class');
+  }
+
+  // Fallback: any remaining export default -> const App =
+  if (/export\s+default\s+/.test(code)) {
+    if (hasAppDeclaration) {
+      // App already exists, just remove the export
+      return code.replace(/\n?export\s+default\s+[^;]+;?/, '');
+    }
+    return code.replace(/export\s+default\s+/, 'const App = ');
+  }
+
+  return code;
+}
 
 serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -462,7 +569,7 @@ serve(async (req) => {
     // Replace npm package imports with esm.sh CDN URLs
     for (const [pkg, version] of Object.entries(dependencies)) {
       // Skip packages loaded via UMD globals
-      if (pkg === 'react' || pkg === 'react-dom' || pkg === 'lucide-react') continue;
+      if (pkg === 'react' || pkg === 'react-dom' || pkg === 'lucide-react' || pkg === 'framer-motion') continue;
 
       const esmUrl = buildEsmUrl(pkg, version);
       const escapedPkg = pkg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -491,12 +598,8 @@ serve(async (req) => {
       .replace(/^import\s+.*?from\s+['"]lucide-react['"];?\s*$/gm, '')
       .replace(/^import\s+\{[^}]*\}\s+from\s+['"]lucide-react['"];?\s*$/gm, '');
 
-    // Transform export default to App assignment
-    const codeWithoutExport = transformedCode
-      .replace(/export\s+default\s+function\s+(\w+)/, 'function App')
-      .replace(/export\s+default\s+function/, 'function App')
-      .replace(/export\s+default\s+/, 'const App = ')
-      .replace(/export\s+{[^}]+as\s+default\s*}/, '');
+    // Transform export default to App assignment using robust normalizer
+    const codeWithoutExport = normalizeDefaultExportToApp(transformedCode);
 
     const bundleTime = Date.now() - bundleStartTime;
     console.log(`[${requestId}] Code transformation completed in ${bundleTime}ms`);
@@ -535,6 +638,9 @@ serve(async (req) => {
       // Framer Motion shim - avoids esm.sh import issues with Safari's import map resolution
       // The UMD is already loaded via <script> tag, so we just redirect to window.Motion
       'framer-motion': FRAMER_MOTION_SHIM,
+      // Lucide React shim - avoids dual React instance problem
+      // The UMD is already loaded via <script> tag, so we just redirect to window.LucideReact
+      'lucide-react': LUCIDE_REACT_SHIM,
     };
 
     // Check for prebuilt bundles - these use ?bundle for faster loading

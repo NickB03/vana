@@ -12,6 +12,8 @@ import { motion } from "motion/react";
 import { scaleIn, ANIMATION_DURATIONS, ANIMATION_EASINGS } from "@/utils/animationConstants";
 import { CHAT_SPACING, SAFE_AREA_SPACING, combineSpacing } from "@/utils/spacingConstants";
 import { MessageSkeleton } from "@/components/ui/message-skeleton";
+import { ArtifactCardSkeleton } from "@/components/ArtifactCardSkeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   ChatContainerContent,
   ChatContainerRoot,
@@ -741,13 +743,52 @@ export function ChatInterface({
                     />
                   </ReasoningErrorBoundary>
                   {/* Show content immediately - reasoning is supplementary context, not blocking */}
-                  {streamingMessage && (
+                  {streamingMessage ? (
                     <MessageWithArtifacts
                       content={streamingMessage}
                       sessionId={sessionId || ''}
                       onArtifactOpen={handleArtifactOpen}
                       searchResults={streamProgress.searchResults}
                     />
+                  ) : (
+                    /* Text skeleton while waiting for content to arrive */
+                    <div
+                      role="status"
+                      aria-label="Preparing response"
+                      className="space-y-2 mt-2"
+                    >
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-5/6" />
+                      <Skeleton className="h-4 w-4/5" />
+                      <span className="sr-only">Preparing response</span>
+                    </div>
+                  )}
+
+                  {/* Show artifact skeleton during generate_artifact tool execution */}
+                  {/* Keep skeleton visible until the artifact tag is fully closed in streaming content */}
+                  {streamProgress.toolExecution?.toolName === 'generate_artifact' &&
+                   !streamingMessage.includes('</artifact>') && (
+                    <ArtifactCardSkeleton className="mt-3 mx-6" />
+                  )}
+
+                  {/* Show image skeleton during generate_image tool execution */}
+                  {streamProgress.toolExecution?.toolName === 'generate_image' &&
+                   streamProgress.toolExecution?.success === undefined && (
+                    <div className="my-4 mx-6 max-w-md">
+                      <div
+                        className="relative rounded-xl overflow-hidden border-2 border-border"
+                        role="status"
+                        aria-label="Generating image"
+                      >
+                        <Skeleton className="h-96 w-full" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="text-sm text-muted-foreground bg-background/80 backdrop-blur-sm px-4 py-2 rounded-lg">
+                            Generating image...
+                          </div>
+                        </div>
+                        <span className="sr-only">Generating image</span>
+                      </div>
+                    </div>
                   )}
                 </div>
               </MessageComponent>

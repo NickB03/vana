@@ -351,6 +351,49 @@ Token-aware context windowing system that optimizes conversation history for AI 
 - Graceful degradation when context exceeds budget
 - Guest session support for artifact bundling
 
+## Input Normalization & Security Layers
+
+The system implements defense-in-depth for input handling with clear separation of concerns:
+
+### Normalization vs. Sanitization
+
+| Function | Purpose | Location | When Used |
+|----------|---------|----------|-----------|
+| `normalizePromptForApi()` | Text normalization for API transmission | tool-validator.ts, validators.ts | Before sending prompts to GLM |
+| `sanitizeContent()` | HTML entity encoding for display | validators.ts | Before rendering in HTML contexts |
+
+### normalizePromptForApi()
+
+**Purpose**: Normalize user input for consistent API processing WITHOUT modifying visible content.
+
+**Transformations**:
+- Standardizes line endings (CRLF/CR → LF)
+- Removes ASCII control characters (keeps TAB and LF)
+- Removes zero-width Unicode (U+200B-U+200F, U+2028-U+202F, U+FEFF)
+- Preserves all visible characters including `/`, `<`, `>`, quotes
+
+**Critical**: Does NOT HTML-encode forward slashes, which allows npm paths like `@radix-ui/react-select` to pass through uncorrupted.
+
+**Location**: `supabase/functions/_shared/tool-validator.ts` (exported), `supabase/functions/_shared/validators.ts`
+
+### Security Layer Stack
+
+```
+┌─────────────────────────────────────────┐
+│ Layer 4: Iframe Sandbox                 │ ← XSS containment in artifacts
+├─────────────────────────────────────────┤
+│ Layer 3: artifact-validator             │ ← Code pattern validation
+├─────────────────────────────────────────┤
+│ Layer 2: PromptInjectionDefense         │ ← Prompt manipulation detection
+├─────────────────────────────────────────┤
+│ Layer 1: normalizePromptForApi()        │ ← Input text normalization
+├─────────────────────────────────────────┤
+│ Layer 0: sanitizeContent() (display)    │ ← HTML encoding for chat display
+└─────────────────────────────────────────┘
+```
+
+Each layer has a single responsibility—no layer attempts to handle all security concerns.
+
 ## Prebuilt Bundle System
 
 Optimizes artifact loading by using pre-bundled common dependencies instead of runtime fetching:
@@ -367,6 +410,8 @@ Optimizes artifact loading by using pre-bundled common dependencies instead of r
   - Phase 4: 3D & WebGL - Three.js, React Three Fiber, Drei, React Three Postprocessing
 - **5-10x Faster Loading**: Eliminates CDN round-trips for common packages
 - **Smart Bundling**: Pure packages use `?bundle` for single-file optimization, React packages use standard URLs
+
+**Note**: `framer-motion` is handled specially via UMD shim (not ESM bundling) to avoid Safari import map compatibility issues. It's excluded from both import transform and import map loops in `bundle-artifact/index.ts`.
 
 **Usage**:
 ```typescript

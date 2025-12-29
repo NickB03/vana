@@ -519,28 +519,45 @@ const BundledArtifactFrame = memo(({
     <div className="w-full h-full relative flex flex-col">
       <div className="flex-1 relative">
         {isLoading && !fetchError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-20">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-20">
             <ArtifactSkeleton type="react" />
           </div>
         )}
         {(previewError || fetchError) && !isLoading && (
-          <div className="absolute top-2 left-2 right-2 bg-destructive/10 border border-destructive text-destructive text-xs p-3 rounded z-10 flex flex-col gap-2">
-            <div className="flex items-start gap-2">
-              <span className="font-semibold shrink-0">⚠️ Bundle Error:</span>
-              <span className="flex-1 break-words font-mono">{previewError || fetchError}</span>
-            </div>
-            <div className="flex gap-2 pl-6">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-6 text-xs"
-                onClick={() => {
-                  navigator.clipboard.writeText(previewError || fetchError || '');
-                  toast.success("Error copied to clipboard");
-                }}
-              >
-                Copy Error
-              </Button>
+          <div className="absolute inset-0 flex items-center justify-center bg-background/95 backdrop-blur-sm z-20">
+            <div className="bg-destructive/10 border border-destructive text-destructive p-6 rounded-lg flex flex-col gap-4 max-w-lg mx-4 shadow-lg">
+              <div className="flex flex-col gap-2">
+                <h3 className="font-semibold text-base flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5" />
+                  Component Error
+                </h3>
+                <p className="text-sm break-words font-mono bg-destructive/5 p-3 rounded">
+                  {previewError || fetchError}
+                </p>
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs"
+                  onClick={() => {
+                    navigator.clipboard.writeText(previewError || fetchError || '');
+                    toast.success("Error copied to clipboard");
+                  }}
+                >
+                  Copy Error
+                </Button>
+                {onAIFix && (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="text-xs"
+                    onClick={onAIFix}
+                  >
+                    Ask AI to Fix
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -1149,12 +1166,7 @@ ${artifact.content}
   if (artifact.type === "mermaid") {
     return (
       <div className="w-full h-full overflow-auto p-4 bg-background flex items-center justify-center">
-        {isLoading && (
-          <div className="flex flex-col items-center gap-2">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-            <p className="text-sm text-muted-foreground">Rendering diagram...</p>
-          </div>
-        )}
+        {isLoading && <ArtifactSkeleton type="mermaid" />}
         {previewError && !isLoading && (
           <div className="bg-destructive/10 border border-destructive text-destructive text-xs p-2 rounded flex items-start gap-2">
             <span className="font-semibold shrink-0">⚠️ Error:</span>

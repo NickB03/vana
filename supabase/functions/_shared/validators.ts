@@ -44,6 +44,34 @@ function sanitizeContent(content: string): string {
 }
 
 /**
+ * Normalize user input for API transmission to GLM models.
+ * NOT for HTML rendering - preserves all visible characters.
+ *
+ * Security is handled separately by:
+ * - PromptInjectionDefense (prompt injection)
+ * - ReactMarkdown (XSS in chat)
+ * - Iframe sandbox (XSS in artifacts)
+ * - artifact-validator (code validation)
+ *
+ * This function only normalizes text for consistent processing:
+ * - Standardizes line endings (CRLF/CR → LF)
+ * - Removes invisible control characters
+ * - Removes zero-width Unicode characters
+ * - Preserves all visible user intent including JSX, quotes, slashes
+ */
+function normalizePromptForApi(value: string): string {
+  if (!value || typeof value !== "string") {
+    return "";
+  }
+
+  return value
+    .replace(/\r\n/g, "\n")           // Normalize Windows line endings
+    .replace(/\r/g, "\n")             // Handle standalone CR
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")  // Strip ASCII control chars (keep TAB \x09, LF \x0A)
+    .replace(/[\u200B-\u200F\u2028-\u202F\uFEFF]/g, "");  // Strip zero-width and line/paragraph separators
+}
+
+/**
  * Message structure
  */
 export interface Message {
@@ -205,9 +233,9 @@ export class ImageRequestValidator implements Validator<any> {
       );
     }
 
-    // ✅ SECURITY FIX: Sanitize prompt to prevent XSS attacks
-    // Image generation prompts can also be vectors for script injection
-    data.prompt = sanitizeContent(prompt);
+    // Normalize prompt for API transmission (preserves visible characters)
+    // XSS prevention is handled at display layer (ReactMarkdown, iframe sandbox)
+    data.prompt = normalizePromptForApi(prompt);
 
     if (data.prompt.trim().length === 0) {
       throw new ValidationError(

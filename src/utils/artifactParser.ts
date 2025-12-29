@@ -85,11 +85,48 @@ function stripMarkdownFences(content: string): string {
   return cleaned.trim();
 }
 
+/**
+ * Detect in-progress (unclosed) artifact tags during streaming.
+ * Uses indexOf-based scanning instead of regex for:
+ * - Better performance (no regex compilation on each call)
+ * - Explicit edge case handling (e.g., <artifactxxx won't match)
+ * - Clearer intent in the code
+ *
+ * @param content - The streaming message content
+ * @returns Number of artifact tags that have been opened but not yet closed
+ */
+export const detectInProgressArtifacts = (content: string): number => {
+  let openCount = 0;
+  let closeCount = 0;
+  let pos = 0;
+
+  // Count valid opening tags: <artifact> or <artifact ...>
+  while ((pos = content.indexOf('<artifact', pos)) !== -1) {
+    const nextChar = content[pos + 9]; // character after '<artifact'
+    // Valid tag must be followed by '>' (self-closing or empty) or ' ' (has attributes)
+    // Also accept newline/tab as attribute separator (AI sometimes formats tags across lines)
+    if (nextChar === '>' || nextChar === ' ' || nextChar === '\n' || nextChar === '\t') {
+      openCount++;
+    }
+    pos += 9; // Move past '<artifact' to continue searching
+  }
+
+  // Count closing tags: </artifact>
+  pos = 0;
+  while ((pos = content.indexOf('</artifact>', pos)) !== -1) {
+    closeCount++;
+    pos += 11; // '</artifact>'.length
+  }
+
+  return Math.max(0, openCount - closeCount);
+};
+
 // Parse message content to extract artifacts
 export const parseArtifacts = async (content: string): Promise<{
   artifacts: ArtifactData[];
   cleanContent: string;
   warnings: Array<{ artifactTitle: string; messages: string[] }>;
+  inProgressCount: number;
 }> => {
   const artifacts: ArtifactData[] = [];
   const warnings: Array<{ artifactTitle: string; messages: string[] }> = [];
@@ -158,5 +195,8 @@ export const parseArtifacts = async (content: string): Promise<{
   // Regular code blocks (```) should be rendered inline with syntax highlighting
   // This prevents treating every code snippet as an artifact
 
-  return { artifacts, cleanContent, warnings };
+  // Detect in-progress artifacts (streaming)
+  const inProgressCount = detectInProgressArtifacts(content);
+
+  return { artifacts, cleanContent, warnings, inProgressCount };
 };

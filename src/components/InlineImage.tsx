@@ -3,6 +3,7 @@ import { ImagePreviewDialog } from "./ImagePreviewDialog";
 import { ArtifactData } from "./ArtifactContainer";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface InlineImageProps {
   artifact: ArtifactData;
@@ -13,7 +14,7 @@ export function InlineImage({ artifact }: InlineImageProps) {
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     try {
       // If it's a base64 data URL (AI generated)
       if (artifact.content.startsWith('data:')) {
@@ -24,7 +25,7 @@ export function InlineImage({ artifact }: InlineImageProps) {
         toast.success("Image downloaded");
         return;
       }
-      
+
       // If it's a storage bucket URL
       const response = await fetch(artifact.content);
       const blob = await response.blob();
@@ -40,6 +41,27 @@ export function InlineImage({ artifact }: InlineImageProps) {
       toast.error("Failed to download image");
     }
   };
+
+  // Show skeleton during image generation (when content is empty)
+  if (!artifact.content) {
+    return (
+      <div className="my-4 max-w-md">
+        <div
+          className="relative rounded-xl overflow-hidden border-2 border-border"
+          role="status"
+          aria-label="Generating image"
+        >
+          <Skeleton className="h-96 w-full" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-sm text-muted-foreground bg-background/80 backdrop-blur-sm px-4 py-2 rounded-lg">
+              Generating image...
+            </div>
+          </div>
+          <span className="sr-only">Generating image</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="my-4">
@@ -58,10 +80,10 @@ export function InlineImage({ artifact }: InlineImageProps) {
             e.currentTarget.style.display = 'none';
           }}
         />
-        
+
         {/* Subtle hover darkening only */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors pointer-events-none" />
-        
+
         {/* Semi-transparent download icon in top-right corner */}
         <button
           onClick={handleDownload}
@@ -71,7 +93,7 @@ export function InlineImage({ artifact }: InlineImageProps) {
           <Download className="h-4 w-4 text-white" />
         </button>
       </div>
-      
+
       <ImagePreviewDialog
         open={previewOpen}
         onOpenChange={setPreviewOpen}

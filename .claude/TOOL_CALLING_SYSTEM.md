@@ -189,6 +189,33 @@ const artifactSchema = z.object({
 });
 ```
 
+#### Parameter Normalization
+
+The tool validator applies `normalizePromptForApi()` to normalize all input parameters before validation:
+
+**Function**: `normalizePromptForApi(value: string): string`
+**Location**: `supabase/functions/_shared/tool-validator.ts` (exported)
+
+**Applied to**:
+- `validateArtifactParams()` → artifact prompts
+- `validateImageParams()` → image generation prompts
+- `validateSearchParams()` → search queries
+
+**Transformations**:
+```typescript
+value
+  .replace(/\r\n/g, '\n')           // Windows line endings
+  .replace(/\r/g, '\n')             // Mac Classic line endings
+  .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')  // Control chars
+  .replace(/[\u200B-\u200F\u2028-\u202F\uFEFF]/g, '');  // Zero-width Unicode
+```
+
+**Critical Distinction**:
+- `normalizePromptForApi()` = Text normalization (preserves visible chars)
+- `sanitizeContent()` = HTML encoding (for display contexts only)
+
+This separation ensures npm paths like `@radix-ui/react-select` are not corrupted by HTML encoding of forward slashes.
+
 ### Tool Rate Limiter
 
 **Location**: `supabase/functions/_shared/tool-rate-limiter.ts`

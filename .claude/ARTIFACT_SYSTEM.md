@@ -130,6 +130,58 @@ When artifacts contain npm imports, they're automatically bundled via the `bundl
 
 **Bundle Timeout**: 60 seconds for large dependency trees
 
+### Export Transformation
+
+**Function**: `normalizeDefaultExportToApp()` in `bundle-artifact/index.ts`
+
+Replaces the previous fragile regex chain with structured pattern matching. Handles all 9 GLM-generated export patterns:
+
+| Pattern | Input | Output |
+|---------|-------|--------|
+| 1 | `export default function App() {}` | `function App() {}` |
+| 2 | `export default function Calculator() {}` | `function App() {}` |
+| 3 | `export default function() {}` | `function App() {}` |
+| 4 | `function App() {} export default App;` | `function App() {}` |
+| 5 | `const X = () => {}; export default X;` | `const X = () => {}; const App = X;` |
+| 6 | `export { X as default };` | `const App = X;` |
+| 7 | `export default () => ...` | `const App = () => ...` |
+| 8 | `export default memo(App)` | Removes export (App already exists) |
+| 9 | `export default class ...` | `const App = class ...` |
+
+**Key Improvement**: Pattern 4 (separate declaration + export) was the root cause of "const App = App" bugs—now handled correctly.
+
+### Export Pattern Normalization Flow
+
+The `normalizeDefaultExportToApp()` function maps all 9 GLM-generated export patterns to a consistent output:
+
+```mermaid
+flowchart LR
+    subgraph Patterns["9 Export Patterns"]
+        P1["1: export default function App()"]
+        P2["2: export default function Other()"]
+        P3["3: export default function()"]
+        P4["4: function App() + export default App"]
+        P5["5: const X + export default X"]
+        P6["6: export { X as default }"]
+        P7["7: export default () => ..."]
+        P8["8: export default memo(App)"]
+        P9["9: export default class"]
+    end
+
+    T["normalizeDefaultExportToApp()"]
+
+    subgraph Result["Normalized Output"]
+        R["function App() or const App = ..."]
+    end
+
+    Patterns --> T --> Result
+
+    style T fill:#4caf50,color:#fff
+    style Result fill:#c8e6c9
+```
+
+This transformation eliminates export statement fragility and prevents "const App = App" circular reference bugs.
+
 ### React Instance Unification
 
 **Problem**: Multiple React instances cause "Invalid hook call" errors
@@ -158,15 +210,78 @@ const url = `https://esm.sh/${pkg}@${version}?external=react,react-dom`;
 - `supabase/functions/bundle-artifact/index.ts` — Server-side bundling
 - `src/components/ArtifactRenderer.tsx` — Client-side rendering
 
+**Special Package Handling**:
+- **Framer Motion**: Both import transform and import map loops skip `framer-motion` (lines 566 and 662 in bundle-artifact/index.ts). This ensures the UMD shim (`FRAMER_MOTION_SHIM`) is used instead of ESM imports, avoiding Safari compatibility issues.
+
 ## Validation System
 
-### 5-Layer Validation
+### 5-Layer Validation Architecture
 
-1. **System Prompt Prevention** — AI receives warnings during generation
-2. **Template Examples** — All templates use Radix UI + Tailwind
-3. **Pre-Generation Validation** — Scans for patterns before generation
-4. **Post-Generation Transformation** — Auto-fixes imports & immutability
-5. **Runtime Validation** — Blocks artifacts with critical errors
+The validation system uses five progressive layers to prevent invalid artifacts from reaching users:
+
+```mermaid
+flowchart TB
+    Input[User Prompt] --> L0_5
+
+    subgraph L0_5["Layer 0.5: Input Normalization"]
+        N["normalizePromptForApi()"]
+    end
+
+    L0_5 --> L1
+
+    subgraph L1["Layer 1: System Prompt Prevention"]
+        SP["AI Receives Generation Warnings"]
+    end
+
+    L1 --> L2
+
+    subgraph L2["Layer 2: Template Examples"]
+        TE["Radix UI + Tailwind Patterns"]
+    end
+
+    L2 --> L3
+
+    subgraph L3["Layer 3: Pre-Generation Scanning"]
+        PV["Pattern Detection Rules"]
+    end
+
+    L3 --> L4
+
+    subgraph L4["Layer 4: Post-Transform Auto-Fix"]
+        PT["Import Normalization & Immutability"]
+    end
+
+    L4 --> L5
+
+    subgraph L5["Layer 5: Runtime Validation"]
+        RV["Critical Error Blocking"]
+    end
+
+    L5 --> Output[Validated Artifact Ready]
+
+    style L0_5 fill:#e3f2fd
+    style N fill:#2196f3,color:#fff
+    style L1 fill:#f3e5f5
+    style SP fill:#9c27b0,color:#fff
+    style L2 fill:#fce4ec
+    style TE fill:#e91e63,color:#fff
+    style L3 fill:#fff3e0
+    style PV fill:#ff9800,color:#fff
+    style L4 fill:#e0f2f1
+    style PT fill:#009688,color:#fff
+    style L5 fill:#fbe9e7
+    style RV fill:#d32f2f,color:#fff
+    style Output fill:#c8e6c9,color:#000
+```
+
+**Layer Details**:
+
+- **Layer 0.5**: Input Normalization via `normalizePromptForApi()` — Standardizes text before API transmission (normalize line endings, remove control characters, strip zero-width Unicode). Preserves all visible characters (slashes, quotes, angle brackets for JSX).
+- **Layer 1**: System Prompt Prevention — AI receives explicit warnings during generation about restricted patterns
+- **Layer 2**: Template Examples — All templates use Radix UI + Tailwind as reference
+- **Layer 3**: Pre-Generation Validation — Scans prompts for dangerous patterns before artifact generation
+- **Layer 4**: Post-Generation Transformation — Auto-fixes import statements & immutability violations
+- **Layer 5**: Runtime Validation — Blocks artifacts with critical errors before rendering
 
 ### Error Code System
 

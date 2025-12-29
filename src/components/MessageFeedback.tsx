@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ThumbsUp, ThumbsDown } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -134,7 +134,11 @@ export function MessageFeedback({
           aria-label="Helpful response"
           title="Helpful response"
         >
-          <ThumbsUp className="h-3.5 w-3.5" />
+          {isLoading && selectedRating === 'positive' ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <ThumbsUp className="h-3.5 w-3.5" />
+          )}
         </Button>
 
         <Button
@@ -150,7 +154,11 @@ export function MessageFeedback({
           aria-label="Not helpful"
           title="Not helpful"
         >
-          <ThumbsDown className="h-3.5 w-3.5" />
+          {isLoading && selectedRating === 'negative' ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <ThumbsDown className="h-3.5 w-3.5" />
+          )}
         </Button>
 
         {isLoading && (
