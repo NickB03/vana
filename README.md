@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Vana Banner](.claude/Gemini_Generated_Image_2imzp72imzp72imz.jpg)
+![Vana Banner](.claude/assets/images/Gemini_Generated_Image_2imzp72imzp72imz.jpg)
 
 **Transform natural language into interactive code, components, and diagrams in real-time**
 

@@ -12,7 +12,7 @@ The artifact version control system is fully implemented at the database and hoo
 - ❌ UI integration (components not imported in `ArtifactContainer.tsx` or `ChatInterface.tsx`)
 - ❌ User-accessible features
 
-This documentation describes the technical implementation. See `docs/archive/WEEK_3-4_HANDOFF.md` for planned integration work.
+This documentation describes the technical implementation. UI integration work is tracked in the project roadmap.
 
 ---
 

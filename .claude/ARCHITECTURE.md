@@ -46,7 +46,7 @@ The system provides real-time progress updates during artifact generation using 
 
 ### ReasoningProvider Architecture
 
-**Purpose**: Generate semantic, contextual status messages during artifact creation by analyzing GLM-4.6 reasoning output.
+**Purpose**: Generate semantic, contextual status messages during artifact creation by analyzing GLM-4.7 reasoning output.
 
 **Model**: GLM-4.5-Air (via Z.ai Coding API)
 - Ultra-fast semantic status generation (200-500ms response time)
@@ -58,7 +58,7 @@ The system provides real-time progress updates during artifact generation using 
 ### Flow Diagram
 
 ```
-GLM-4.6 Reasoning Stream
+GLM-4.7 Reasoning Stream
     ↓
 Buffer Chunks (200-800 chars)
     ↓

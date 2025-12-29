@@ -1,5 +1,7 @@
 # GLM-4.6 Model Capabilities
 
+> **DEPRECATION NOTICE (December 2025)**: This project has migrated to **GLM-4.7** for artifact generation. GLM-4.6 documentation is retained for historical reference only. For current documentation, see [GLM-4.7-MIGRATION-GUIDE.md](./GLM-4.7-MIGRATION-GUIDE.md).
+
 ## Overview
 
 GLM-4.6 is a large language model provided by Z.ai (Zhipu AI) via their Coding API. It serves as the primary model for artifact generation and fixing in Vana.

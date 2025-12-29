@@ -1,5 +1,5 @@
 # Reasoning UI Architecture
-## GLM 4.6 Thinking Mode with Server-Sent Events
+## GLM 4.7 Thinking Mode with Server-Sent Events
 
 > **Version**: 1.0.0
 > **Last Updated**: 2025-12-21
@@ -11,7 +11,7 @@
 
 1. [Executive Summary](#executive-summary)
 2. [System Overview](#system-overview)
-3. [GLM 4.6 Thinking Mode](#glm-46-thinking-mode)
+3. [GLM 4.7 Thinking Mode](#glm-47-thinking-mode)
 4. [Architecture Layers](#architecture-layers)
 5. [SSE Event Protocol](#sse-event-protocol)
 6. [Status Extraction System](#status-extraction-system)
@@ -28,7 +28,7 @@
 
 ## Executive Summary
 
-This document describes the architecture for implementing a Claude-style "thinking ticker" UI pattern using GLM 4.6's native reasoning capabilities with Supabase Edge Functions and React. The system provides real-time visualization of AI reasoning processes through Server-Sent Events (SSE), enabling transparent insight into model decision-making.
+This document describes the architecture for implementing a Claude-style "thinking ticker" UI pattern using GLM 4.7's native reasoning capabilities with Supabase Edge Functions and React. The system provides real-time visualization of AI reasoning processes through Server-Sent Events (SSE), enabling transparent insight into model decision-making.
 
 **Key Features**:
 - Real-time streaming of AI reasoning content
@@ -39,7 +39,7 @@ This document describes the architecture for implementing a Claude-style "thinki
 - Abort capability for long-running generations
 
 **Technology Stack**:
-- **AI Model**: GLM 4.6 (via Z.ai API)
+- **AI Model**: GLM 4.7 (via Z.ai API)
 - **Backend**: Supabase Edge Functions (Deno runtime)
 - **Frontend**: React 18+ with TypeScript
 - **Protocol**: Server-Sent Events (SSE)
@@ -71,7 +71,7 @@ The reasoning UI system consists of three primary layers:
 └─────────────────────────────────────────────────────────────┘
                             ↕ HTTPS
 ┌─────────────────────────────────────────────────────────────┐
-│                    GLM 4.6 API (Z.ai)                       │
+│                    GLM 4.7 API (Z.ai)                       │
 │         Native Streaming with reasoning_content             │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -80,23 +80,23 @@ The reasoning UI system consists of three primary layers:
 
 | Component | Responsibility | Key Operations |
 |-----------|----------------|----------------|
-| **GLM 4.6 API** | Generate reasoning and response content | Stream `reasoning_content` + `content` deltas |
+| **GLM 4.7 API** | Generate reasoning and response content | Stream `reasoning_content` + `content` deltas |
 | **Edge Function** | Transform raw GLM stream into UI-friendly events | Parse stream, extract status, emit SSE events |
 | **useGLMChat Hook** | Manage streaming state and message history | Handle SSE events, update state, track duration |
 | **ThinkingPanel** | Render reasoning UI with expand/collapse | Auto-scroll, duration display, status ticker |
 
 ---
 
-## GLM 4.6 Thinking Mode
+## GLM 4.7 Thinking Mode
 
 ### How It Works
 
-GLM 4.6 has native reasoning support that differs from Claude's extended thinking in several key ways:
+GLM 4.7 has native reasoning support that differs from Claude's extended thinking in several key ways:
 
 **Enabling Thinking Mode**:
 ```json
 {
-  "model": "glm-4.6",
+  "model": "glm-4.7",
   "messages": [...],
   "thinking": {
     "type": "enabled"  // or "disabled", default is "enabled"
@@ -114,7 +114,7 @@ GLM 4.6 has native reasoning support that differs from Claude's extended thinkin
 
 ### Streaming Response Structure
 
-GLM 4.6 streams three distinct content types in the `delta` object:
+GLM 4.7 streams three distinct content types in the `delta` object:
 
 | Field | Purpose | When It Appears |
 |-------|---------|-----------------|
@@ -133,9 +133,9 @@ data: {"id":"chatcmpl-123","choices":[{"index":0,"delta":{"content":"Based on my
 data: [DONE]
 ```
 
-### Comparison: GLM 4.6 vs Claude
+### Comparison: GLM 4.7 vs Claude
 
-| Feature | GLM 4.6 | Claude Extended Thinking |
+| Feature | GLM 4.7 | Claude Extended Thinking |
 |---------|---------|--------------------------|
 | Enable thinking | `thinking: { type: "enabled" }` | `thinking: { type: "enabled", budget_tokens: N }` |
 | Thinking field | `delta.reasoning_content` | Separate `thinking` content block |
@@ -148,14 +148,14 @@ data: [DONE]
 
 ## Architecture Layers
 
-### Layer 1: GLM 4.6 API (Data Source)
+### Layer 1: GLM 4.7 API (Data Source)
 
 **Endpoint**: `https://api.z.ai/api/paas/v4/chat/completions`
 
 **Request Format**:
 ```typescript
 {
-  model: 'glm-4.6',
+  model: 'glm-4.7',
   messages: Array<{ role: string; content: string }>,
   thinking: { type: 'enabled' | 'disabled' },
   stream: true,
@@ -177,13 +177,13 @@ data: [DONE]\n\n
 
 **Location**: `supabase/functions/chat/handlers/tool-calling-chat.ts`
 
-**Purpose**: Transform raw GLM stream into UI-friendly events with extracted status updates
+**Purpose**: Transform raw GLM 4.7 stream into UI-friendly events with extracted status updates
 
 **Key Components**:
 1. **CORS Handler**: Manages preflight requests and headers
 2. **Stream Parser**: Processes SSE chunks into JSON events
 3. **Status Extractor**: Analyzes reasoning content for meaningful phrases
-4. **Event Emitter**: Transforms GLM deltas into custom SSE events
+4. **Event Emitter**: Transforms GLM 4.7 deltas into custom SSE events
 
 **Environment Variables**:
 - `GLM_API_KEY`: Authentication token for Z.ai API
@@ -589,10 +589,10 @@ if (status && status !== lastStatusEmitted && status.length > 15) {
 
 **Responsibilities**:
 1. Validate incoming requests
-2. Call GLM 4.6 API with streaming enabled
+2. Call GLM 4.7 API with streaming enabled
 3. Parse SSE stream from GLM
 4. Extract status updates from reasoning content
-5. Transform GLM deltas into custom SSE events
+5. Transform GLM 4.7 deltas into custom SSE events
 6. Handle errors and edge cases
 
 ### Request Validation
@@ -804,7 +804,7 @@ try {
 ```
 
 **Error Scenarios**:
-1. **GLM API Failure**: Return error details with original status code
+1. **GLM 4.7 API Failure**: Return error details with original status code
 2. **Malformed JSON**: Skip line, log warning, continue processing
 3. **Network Interruption**: Browser handles reconnection or timeout
 4. **Missing API Key**: Return 500 error immediately
@@ -1236,13 +1236,13 @@ function formatDuration(seconds: number): string {
 ┌──────────────────────────────────────────────────────────────────┐
 │ 4. EDGE FUNCTION PROCESSING                                      │
 │    - Validate request                                            │
-│    - Call GLM 4.6 API with thinking enabled                      │
+│    - Call GLM 4.7 API with thinking enabled                      │
 │    - Receive SSE stream from GLM                                 │
 └────────────────────────────┬─────────────────────────────────────┘
                              │
                              ↓
 ┌──────────────────────────────────────────────────────────────────┐
-│ 5. GLM STREAMING RESPONSE                                        │
+│ 5. GLM 4.7 STREAMING RESPONSE                                    │
 │    data: {"delta":{"reasoning_content":"Let me think..."}}       │
 │    data: {"delta":{"reasoning_content":" about this..."}}        │
 │    data: {"delta":{"content":"Based on my analysis"}}            │
@@ -1310,7 +1310,7 @@ function formatDuration(seconds: number): string {
 ### Timing Diagram
 
 ```
-Time (s)  │ GLM Stream          │ SSE Events              │ UI State
+Time (s)  │ GLM 4.7 Stream      │ SSE Events              │ UI State
 ──────────┼─────────────────────┼─────────────────────────┼──────────────────────
 0.0       │ Request sent        │                         │ isStreaming=true
           │                     │                         │ thinking.isThinking=true
@@ -1466,7 +1466,7 @@ useEffect(() => {
 - Total: ~8-10KB per message (compressed)
 
 **Latency**:
-- GLM API: ~200-500ms to first token
+- GLM 4.7 API: ~200-500ms to first token
 - Edge Function: +10-50ms transformation overhead
 - Total TTFT (Time To First Token): ~250-550ms
 
@@ -1476,16 +1476,16 @@ useEffect(() => {
 
 ### Backend Error Scenarios
 
-#### 1. GLM API Failure
+#### 1. GLM 4.7 API Failure
 
 ```typescript
 const glmResponse = await fetch('https://api.z.ai/api/paas/v4/chat/completions', {...});
 
 if (!glmResponse.ok) {
   const errorText = await glmResponse.text();
-  console.error('GLM API error:', errorText);
+  console.error('GLM 4.7 API error:', errorText);
   return new Response(
-    JSON.stringify({ error: 'GLM API request failed', details: errorText }),
+    JSON.stringify({ error: 'GLM 4.7 API request failed', details: errorText }),
     { status: glmResponse.status, headers: corsHeaders }
   );
 }
@@ -1823,13 +1823,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 
 ### C. API Request Examples
 
-**GLM 4.6 Chat Completion (with thinking)**:
+**GLM 4.7 Chat Completion (with thinking)**:
 ```bash
 curl -X POST https://api.z.ai/api/paas/v4/chat/completions \
   -H "Authorization: Bearer $GLM_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "glm-4.6",
+    "model": "glm-4.7",
     "messages": [
       {"role": "user", "content": "Explain recursion"}
     ],
@@ -1950,7 +1950,7 @@ curl -X POST https://your-project.supabase.co/functions/v1/chat \
 | Term | Definition |
 |------|------------|
 | **SSE** | Server-Sent Events - HTTP streaming protocol for server-to-client push |
-| **GLM 4.6** | Zhipu AI's reasoning-capable language model with 200K context window |
+| **GLM 4.7** | Zhipu AI's reasoning-capable language model with 200K context window |
 | **Thinking Mode** | AI mode where model emits internal reasoning before final response |
 | **TransformStream** | Web API for streaming data transformation |
 | **Duration Ticker** | Live timer showing elapsed thinking time |
@@ -1968,7 +1968,7 @@ curl -X POST https://your-project.supabase.co/functions/v1/chat \
 A: SSE is simpler for unidirectional server-to-client streaming, auto-reconnects, and works over HTTP/2. WebSockets require more complex infrastructure and don't provide benefits for this use case.
 
 **Q: Can I use this with Claude or GPT-4?**
-A: Yes, but you'll need to adapt the stream parser. Claude uses `content_block_start` events with block types, while GPT-4 doesn't natively support thinking mode. The UI components are model-agnostic.
+A: Yes, but you'll need to adapt the stream parser. Claude uses `content_block_start` events with block types, while GPT-4 doesn't natively support thinking mode. The UI components are model-agnostic. GLM 4.7's thinking mode is well-suited for artifact generation.
 
 **Q: How do I handle rate limiting?**
 A: Implement retry logic with exponential backoff in the Edge Function. Z.ai API returns 429 status codes when rate limited. Consider adding a queue system for high-traffic applications.
@@ -1986,7 +1986,7 @@ A: Use `supabase start` to run Edge Functions locally. Set `GLM_API_KEY` in `sup
 
 ## Conclusion
 
-This architecture provides a production-ready implementation of Claude-style reasoning UI using GLM 4.6's native capabilities. The system is:
+This architecture provides a production-ready implementation of Claude-style reasoning UI using GLM 4.7's native capabilities. The system is:
 
 - **Transparent**: Users see genuine AI reasoning, not simulated phases
 - **Performant**: Optimized streaming with minimal overhead

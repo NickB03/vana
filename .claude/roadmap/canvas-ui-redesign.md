@@ -1,7 +1,8 @@
-> **STATUS**: 📋 Planned
-> **Last Updated**: 2025-12-23
-> **Priority**: Medium
-> **Implementation**: Not yet started
+> **STATUS**: ✅ Implemented
+> **Last Updated**: 2025-12-28
+> **Implementation Date**: 2025-12-28
+> **PR**: #423 (merged)
+> **Commit**: d9be0ad
 
 # Canvas UI Redesign Plan
 
@@ -208,15 +209,15 @@ const [activeView, setActiveView] = useState<'preview' | 'code'>('preview');
 
 ## Testing Checklist
 
-- [ ] Artifact container renders with sharp corners
-- [ ] Header is more compact
-- [ ] No URL input bar visible
-- [ ] View toggle icons work (Preview/Code switching)
-- [ ] All existing functionality preserved (copy, export, etc.)
-- [ ] Dark mode styling consistent
-- [ ] Server-bundled artifacts render correctly
-- [ ] Client-side Babel artifacts render correctly
-- [ ] Error states display properly
+- [x] Artifact container renders with sharp corners
+- [x] Header is more compact
+- [x] No URL input bar visible
+- [x] View toggle icons work (Preview/Code switching)
+- [x] All existing functionality preserved (copy, export, etc.)
+- [x] Dark mode styling consistent
+- [x] Server-bundled artifacts render correctly
+- [x] Client-side Babel artifacts render correctly
+- [x] Error states display properly
 
 ---
 

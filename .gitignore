@@ -72,7 +72,6 @@ test-*.png
 *-debug.png
 chat-interface-*.png
 guest-mode-*.png
-.env
 
 # Backup files from migrations
 *.lovable-backup
@@ -137,6 +136,7 @@ __image_snapshots__/
 __diff_output__/
 screenshots/
 .screenshots/
+docs/examples/
 supabase/.env.local
 supabase/functions/deno.lock
 deno.lock

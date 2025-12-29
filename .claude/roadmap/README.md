@@ -17,6 +17,33 @@ Roadmap files document planned features, architectural decisions, and implementa
 
 ### ✅ Implemented Features
 
+#### Canvas UI Redesign
+**File**: `canvas-ui-redesign.md`
+
+**Status**: ✅ Implemented (2025-12-28)
+
+**Implementation**:
+- PR #423 merged (commit: d9be0ad)
+- Updated container styling with unified dark header design
+- Compact toolbar with icon-based view toggles
+- URL bar removed in favor of filename display
+- Sharp corners and enhanced shadow styling
+
+**Features**:
+- Unified dark header container matching Claude's canvas design
+- Icon-based Preview/Code toggle in header toolbar
+- Compact header with `px-3 py-2` padding
+- Sharp corners with `shadow-md` styling
+- Clean toolbar with Copy, Refresh, and Close actions
+
+**Key Components Modified**:
+- `src/components/ai-elements/artifact.tsx` - Container styling
+- `src/components/ArtifactRenderer.tsx` - URL bar removal
+- `src/components/ArtifactContainer.tsx` - View toggle refactor
+- `src/components/ArtifactToolbar.tsx` - Header-based view toggle icons
+
+---
+
 #### GLM Reasoning UI Guide
 **File**: `claude_style_reasoning_guide/glm-reasoning-ui-guide.md`
 
@@ -41,25 +68,6 @@ Roadmap files document planned features, architectural decisions, and implementa
 ---
 
 ### 📋 Planned Features
-
-#### Canvas UI Redesign
-**File**: `canvas-ui-redesign.md`
-
-**Status**: 📋 Planned
-
-**Priority**: Medium
-
-**Summary**: Update the artifact/canvas UI to match Claude's canvas interface design with sharper corners, compact headers, and header-based view toggles.
-
-**Implementation Status**: Not started. Current artifact UI is functional but doesn't match Claude's design patterns.
-
-**Key Components to Modify**:
-- `src/components/ai-elements/artifact.tsx` - Container styling
-- `src/components/ArtifactRenderer.tsx` - URL bar removal
-- `src/components/ArtifactContainer.tsx` - View toggle refactor
-- `src/components/ArtifactToolbar.tsx` - Add view toggle icons
-
----
 
 #### MCP UI Integration
 **File**: `mcp-ui-integration.md`
@@ -145,7 +153,7 @@ Roadmap files document planned features, architectural decisions, and implementa
 ```
 .claude/roadmap/
 ├── README.md                              # This file
-├── canvas-ui-redesign.md                  # 📋 Planned - Canvas UI updates
+├── canvas-ui-redesign.md                  # ✅ Implemented - Canvas UI updates
 ├── mcp-ui-integration.md                  # 📋 Planned - MCP UI widget support
 ├── DEEP_RESEARCH_IMPLEMENTATION_PLAN.md   # 📋 Planned - Deep research feature
 └── claude_style_reasoning_guide/
@@ -223,5 +231,5 @@ For questions about roadmap items:
 
 ---
 
-**Last Updated**: 2025-12-23
+**Last Updated**: 2025-12-28
 **Maintained By**: Development team + AI assistants
