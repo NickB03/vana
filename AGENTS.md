@@ -91,7 +91,7 @@ See [BUILD_AND_DEPLOYMENT.md](./.claude/BUILD_AND_DEPLOYMENT.md) for CI/CD detai
 
 **AI Models** ([full architecture](./.claude/ARCHITECTURE.md)):
 - **Chat/Summaries/Titles**: Gemini 2.5 Flash Lite (OpenRouter)
-- **Artifact Generation**: GLM-4.6 (Z.ai, thinking mode enabled)
+- **Artifact Generation**: GLM-4.7 (Z.ai, thinking mode enabled)
 - **Image Generation**: Gemini 2.5 Flash Image (OpenRouter)
 
 **Artifact System** ([details](./.claude/ARTIFACT_SYSTEM.md)):
@@ -100,7 +100,7 @@ See [BUILD_AND_DEPLOYMENT.md](./.claude/BUILD_AND_DEPLOYMENT.md) for CI/CD detai
 - **Validation**: 5-layer system with structured error codes
 
 **Tool Calling** ([details](./.claude/TOOL_CALLING_SYSTEM.md)):
-- `generate_artifact` → GLM-4.6
+- `generate_artifact` → GLM-4.7
 - `generate_image` → Gemini Flash Image
 - `browser.search` → Tavily
 

@@ -3,7 +3,7 @@
  *
  * RFC-001: Tool Result Format Refactor
  *
- * These tests validate that GLM-4.6 accepts the standard OpenAI tool message format
+ * These tests validate that GLM-4.7 accepts the standard OpenAI tool message format
  * BEFORE we refactor the codebase. Run with GLM_API_KEY environment variable.
  *
  * Usage:
@@ -49,7 +49,7 @@ async function testToolMessageFormat(
         "Authorization": `Bearer ${GLM_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "glm-4.6",
+        model: "glm-4.7",
         messages: [
           { role: "system", content: "You are a helpful assistant." },
           { role: "user", content: "Search for AI news" },

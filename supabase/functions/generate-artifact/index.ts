@@ -112,9 +112,9 @@ serve(async (req) => {
         { data: apiThrottleResult, error: apiThrottleError },
         rateLimitResult
       ] = await Promise.all([
-        // Check GLM-4.6 API throttle (10 RPM for artifact generation - stricter than chat)
+        // Check GLM-4.7 API throttle (10 RPM for artifact generation - stricter than chat)
         serviceClient.rpc("check_api_throttle", {
-          p_api_name: "glm-4.6",
+          p_api_name: "glm-4.7",
           p_max_requests: RATE_LIMITS.ARTIFACT.API_THROTTLE.MAX_REQUESTS,
           p_window_seconds: RATE_LIMITS.ARTIFACT.API_THROTTLE.WINDOW_SECONDS
         }),
@@ -122,9 +122,20 @@ serve(async (req) => {
         isGuest ? (async () => {
           // Get client IP address (trusted headers set by Supabase Edge infrastructure)
           // X-Forwarded-For is sanitized by Supabase proxy to prevent spoofing
-          const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0].trim()
-            || req.headers.get("x-real-ip")
-            || "unknown";
+          const rawClientIp = req.headers.get("x-forwarded-for")?.split(",")[0].trim()
+            || req.headers.get("x-real-ip");
+
+          let clientIp: string;
+          if (!rawClientIp) {
+            // SECURITY: Generate unique ID instead of shared "unknown" bucket
+            clientIp = `no-ip_${Date.now()}_${crypto.randomUUID().substring(0, 8)}`;
+            console.warn(
+              `[generate-artifact] SECURITY: Missing IP headers (x-forwarded-for, x-real-ip). ` +
+              `Using unique identifier: ${clientIp}. Check proxy configuration.`
+            );
+          } else {
+            clientIp = rawClientIp;
+          }
 
           return await serviceClient.rpc("check_guest_rate_limit", {
             p_identifier: clientIp,
@@ -150,7 +161,7 @@ serve(async (req) => {
           { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
         );
       } else if (apiThrottleResult && !apiThrottleResult.allowed) {
-        console.warn(`[${requestId}] 🚨 API throttle exceeded for GLM-4.6 artifact generation`);
+        console.warn(`[${requestId}] 🚨 API throttle exceeded for GLM-4.7 artifact generation`);
         return new Response(
           JSON.stringify({
             error: "API rate limit exceeded. Please try again in a moment.",
@@ -246,7 +257,7 @@ serve(async (req) => {
     // Track timing for latency calculation
     const startTime = Date.now();
 
-    // Construct user prompt for GLM-4.6
+    // Construct user prompt for GLM-4.7
     // CRITICAL: Must be explicit about format - GLM tends to generate full HTML documents
     // when we need pure JSX/React component code for Babel transpilation
     const userPrompt = artifactType === 'react'
@@ -485,7 +496,7 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
             requestId,
             functionName: 'generate-artifact-stream',
             provider: 'z.ai',
-            model: MODELS.GLM_4_6,
+            model: MODELS.GLM_4_7,
             userId: user?.id,
             isGuest: !user,
             inputTokens: 0, // Not available in streaming mode
@@ -525,8 +536,8 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
     // ============================================================================
     // NON-STREAMING MODE: Original behavior (wait for complete response)
     // ============================================================================
-    // Call GLM-4.6 via Z.ai API with retry logic and tracking
-    console.log(`[${requestId}] 🤖 Routing to GLM-4.6 via Z.ai API`);
+    // Call GLM-4.7 via Z.ai API with retry logic and tracking
+    console.log(`[${requestId}] 🤖 Routing to GLM-4.7 via Z.ai API`);
     const { response, retryCount } = await callGLMWithRetryTracking(
       ARTIFACT_SYSTEM_PROMPT,
       userPrompt,
@@ -562,7 +573,7 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
     // ============================================================================
     // POST-GENERATION CLEANUP: Strip HTML Document Structure from React Artifacts
     // ============================================================================
-    // GLM-4.6 sometimes appends full HTML documents after the React code
+    // GLM-4.7 sometimes appends full HTML documents after the React code
     // This causes Babel transpilation to fail with "Unexpected token '<'"
     // We need to strip everything after the React component ends
     if (artifactType === 'react' || artifactCode.includes('application/vnd.ant.react')) {
@@ -658,7 +669,7 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
       requestId,
       functionName: 'generate-artifact',
       provider: 'z.ai',
-      model: MODELS.GLM_4_6,
+      model: MODELS.GLM_4_7,
       userId: user?.id,
       isGuest: !user,
       inputTokens: tokenUsage.inputTokens,

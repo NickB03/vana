@@ -23,7 +23,7 @@ interface SystemPromptParams {
 }
 
 /**
- * Tool definitions for GLM-4.6 native tool-calling
+ * Tool definitions for GLM-4.7 native tool-calling
  * These replace the automatic search injection when tool-calling is enabled
  */
 export const TOOL_CALLING_SECTION = `

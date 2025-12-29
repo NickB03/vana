@@ -1,7 +1,7 @@
 /**
  * Tool-Calling Chat Handler
  *
- * Orchestrates GLM-4.6 tool-calling for chat with web search integration.
+ * Orchestrates GLM-4.7 tool-calling for chat with web search integration.
  *
  * Flow:
  * 1. Send user message to GLM with tools enabled
@@ -50,7 +50,7 @@ import {
   createNoOpReasoningProvider,
   type IReasoningProvider
 } from '../../_shared/reasoning-provider.ts';
-import { FEATURE_FLAGS, USE_REASONING_PROVIDER } from '../../_shared/config.ts';
+import { FEATURE_FLAGS, USE_REASONING_PROVIDER, DEFAULT_MODEL_PARAMS } from '../../_shared/config.ts';
 
 /**
  * Helper function to log detailed debug information for premade card failures
@@ -128,7 +128,7 @@ function parseToolArguments(
 }
 
 /**
- * Handle tool-calling chat with GLM-4.6
+ * Handle tool-calling chat with GLM-4.7
  *
  * Orchestrates the full tool-calling flow:
  * 1. Call GLM with tools enabled (browser.search)
@@ -206,7 +206,7 @@ export async function handleToolCallingChat(
   const logPrefix = `[${requestId}]`;
 
   console.log(
-    `${logPrefix} 🔧 Starting unified tool-calling chat with GLM-4.6 ` +
+    `${logPrefix} 🔧 Starting unified tool-calling chat with GLM-4.7 ` +
     `(modeHint=${modeHint}, toolChoice=${toolChoice})`
   );
 
@@ -487,7 +487,7 @@ export async function handleToolCallingChat(
               tools: allTools,
               toolChoice: currentToolChoice,
               temperature: 0.7,
-              max_tokens: 8000,
+              max_tokens: DEFAULT_MODEL_PARAMS.CHAT_MAX_TOKENS,
               // BUG FIX: Pass full conversation history for multi-turn context
               conversationMessages,
             }

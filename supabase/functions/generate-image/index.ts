@@ -103,9 +103,21 @@ serve(async (req) => {
       // Check appropriate rate limit based on auth status
       isGuest ? (async () => {
         // Get client IP address (trusted headers set by Supabase Edge infrastructure)
-        const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0].trim()
-          || req.headers.get("x-real-ip")
-          || "unknown";
+        // X-Forwarded-For is sanitized by Supabase proxy to prevent spoofing
+        const rawClientIp = req.headers.get("x-forwarded-for")?.split(",")[0].trim()
+          || req.headers.get("x-real-ip");
+
+        let clientIp: string;
+        if (!rawClientIp) {
+          // SECURITY: Generate unique ID instead of shared "unknown" bucket
+          clientIp = `no-ip_${Date.now()}_${crypto.randomUUID().substring(0, 8)}`;
+          console.warn(
+            `[generate-image] SECURITY: Missing IP headers (x-forwarded-for, x-real-ip). ` +
+            `Using unique identifier: ${clientIp}. Check proxy configuration.`
+          );
+        } else {
+          clientIp = rawClientIp;
+        }
 
         return await serviceClient.rpc("check_guest_rate_limit", {
           p_identifier: clientIp,

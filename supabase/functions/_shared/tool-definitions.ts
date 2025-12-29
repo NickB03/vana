@@ -101,7 +101,7 @@ export const TOOL_CATALOG = {
     required: ['type', 'prompt'],
     execution: {
       handler: 'artifact',
-      model: MODELS.GLM_4_6,
+      model: MODELS.GLM_4_7,
       streaming: true,
     },
   },

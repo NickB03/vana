@@ -114,6 +114,22 @@ export const ERROR_PATTERNS: Record<string, ErrorPattern> = {
       'Store data in component state, not browser storage',
       'Use useEffect to initialize state from initial values'
     ]
+  },
+
+  'glm-html-fragment': {
+    triggers: [
+      'const * as',
+      'unexpected end of jsx element',
+      '<!doctype html>',  // Case-insensitive: matches both <!DOCTYPE and <!doctype
+      '</body></html>'  // Orphan closing tags appended to React components
+    ],
+    patterns: [
+      'Check for invalid import syntax: "const * as X" is not valid JS - use "import * as X from"',
+      'Look for trailing HTML document after React component - remove <!DOCTYPE>, <html>, <body> tags',
+      'Check for orphan closing tags (</div>, </html>) at end of file - remove them',
+      'Ensure all JSX elements have matching opening/closing tags',
+      'Verify React component has exactly one root element or use a fragment <></>'
+    ]
   }
 };
 

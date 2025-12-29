@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { callGLMWithRetryTracking, extractTextAndReasoningFromGLM, extractGLMTokenUsage, calculateGLMCost, logGLMUsage, handleGLMError } from "../_shared/glm-client.ts";
 import { getCorsHeaders } from "../_shared/cors-config.ts";
-import { MODELS, RATE_LIMITS } from "../_shared/config.ts";
+import { MODELS, RATE_LIMITS, DEFAULT_MODEL_PARAMS } from "../_shared/config.ts";
 import { getRelevantPatterns, getTypeSpecificGuidance } from "../_shared/artifact-rules/error-patterns.ts";
 
 serve(async (req) => {
@@ -45,27 +45,37 @@ serve(async (req) => {
       );
     }
 
+    // ============================================================================
+    // Authentication: Optional (supports both authenticated users and guests)
+    // ============================================================================
+    // Mirrors the pattern from generate-artifact/index.ts
+    // Invalid/missing auth tokens are treated as guest requests
+    // ============================================================================
+    let user = null;
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "No authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
-    const supabase = createClient(
+    let supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Validate authentication if header provided
+    if (authHeader) {
+      supabase = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+        { global: { headers: { Authorization: authHeader } } }
+      );
+
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        user = authUser;
+      }
+      // Note: Invalid tokens fall through as guest (user = null)
     }
+
+    // Determine guest status based on ACTUAL auth result (not header presence)
+    const isGuest = !user;
 
     // Create service_role client for rate limiting checks
     const serviceClient = createClient(
@@ -76,29 +86,55 @@ serve(async (req) => {
     // ============================================================================
     // CRITICAL SECURITY: Rate Limiting (Defense-in-Depth)
     // ============================================================================
-    // Parallelize API throttle and user rate limit checks for faster response
+    // Parallelize API throttle and guest/user rate limit checks for faster response
     // This prevents:
-    // 1. API abuse (unlimited expensive Kimi K2 requests)
+    // 1. API abuse (unlimited expensive GLM-4.7 requests)
     // 2. Service degradation (overwhelming external APIs)
-    // 3. Financial damage (Kimi K2 costs ~$0.02 per 1K tokens)
+    // 3. Rate-limit bypass via fake auth tokens (now fixed!)
     // ============================================================================
     const [
       { data: apiThrottleResult, error: apiThrottleError },
-      { data: userRateLimitResult, error: userRateLimitError }
+      rateLimitResult
     ] = await Promise.all([
-      // Check GLM-4.6 API throttle (10 RPM for artifact generation - stricter than chat)
+      // Check GLM-4.7 API throttle (10 RPM for artifact generation - stricter than chat)
       serviceClient.rpc("check_api_throttle", {
-        p_api_name: "glm-4.6",
+        p_api_name: "glm-4.7",
         p_max_requests: RATE_LIMITS.ARTIFACT.API_THROTTLE.MAX_REQUESTS,
         p_window_seconds: RATE_LIMITS.ARTIFACT.API_THROTTLE.WINDOW_SECONDS
       }),
-      // Check authenticated user rate limit (50 requests per 5 hours)
-      serviceClient.rpc("check_user_rate_limit", {
-        p_user_id: user.id,
+      // Check appropriate rate limit based on VALIDATED auth status
+      isGuest ? (async () => {
+        // Get client IP address (trusted headers set by Supabase Edge infrastructure)
+        // X-Forwarded-For is sanitized by Supabase proxy to prevent spoofing
+        const rawClientIp = req.headers.get("x-forwarded-for")?.split(",")[0].trim()
+          || req.headers.get("x-real-ip");
+
+        let clientIp: string;
+        if (!rawClientIp) {
+          // SECURITY: Generate unique ID instead of shared "unknown" bucket
+          clientIp = `no-ip_${Date.now()}_${crypto.randomUUID().substring(0, 8)}`;
+          console.warn(
+            `[generate-artifact-fix] SECURITY: Missing IP headers (x-forwarded-for, x-real-ip). ` +
+            `Using unique identifier: ${clientIp}. Check proxy configuration.`
+          );
+        } else {
+          clientIp = rawClientIp;
+        }
+
+        return await serviceClient.rpc("check_guest_rate_limit", {
+          p_identifier: clientIp,
+          p_max_requests: RATE_LIMITS.ARTIFACT.GUEST.MAX_REQUESTS,
+          p_window_hours: RATE_LIMITS.ARTIFACT.GUEST.WINDOW_HOURS
+        });
+      })() : serviceClient.rpc("check_user_rate_limit", {
+        p_user_id: user!.id,
         p_max_requests: RATE_LIMITS.ARTIFACT.AUTHENTICATED.MAX_REQUESTS,
         p_window_hours: RATE_LIMITS.ARTIFACT.AUTHENTICATED.WINDOW_HOURS
       })
     ]);
+
+    // Extract rate limit data and error from the result
+    const { data: userRateLimitResult, error: userRateLimitError } = rateLimitResult;
 
     // Generate unique request ID for tracking
     const requestId = crypto.randomUUID();
@@ -115,7 +151,7 @@ serve(async (req) => {
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
       );
     } else if (apiThrottleResult && !apiThrottleResult.allowed) {
-      console.warn(`[${requestId}] 🚨 API throttle exceeded for GLM-4.6 artifact fix`);
+      console.warn(`[${requestId}] 🚨 API throttle exceeded for GLM-4.7 artifact fix`);
       return new Response(
         JSON.stringify({
           error: "API rate limit exceeded. Please try again in a moment.",
@@ -151,7 +187,8 @@ serve(async (req) => {
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
       );
     } else if (userRateLimitResult && !userRateLimitResult.allowed) {
-      console.warn(`[${requestId}] 🚨 User rate limit exceeded (${RATE_LIMITS.ARTIFACT.AUTHENTICATED.MAX_REQUESTS} per ${RATE_LIMITS.ARTIFACT.AUTHENTICATED.WINDOW_HOURS}h)`);
+      const limitConfig = isGuest ? RATE_LIMITS.ARTIFACT.GUEST : RATE_LIMITS.ARTIFACT.AUTHENTICATED;
+      console.warn(`[${requestId}] 🚨 ${isGuest ? 'Guest' : 'User'} rate limit exceeded (${limitConfig.MAX_REQUESTS} per ${limitConfig.WINDOW_HOURS}h)`);
       return new Response(
         JSON.stringify({
           error: "Rate limit exceeded. Please try again later.",
@@ -179,7 +216,7 @@ serve(async (req) => {
       };
     }
 
-    console.log(`[${requestId}] Generating fix for artifact type: ${type}, user: ${user.id}, error:`, errorMessage.substring(0, 100));
+    console.log(`[${requestId}] Generating fix for artifact type: ${type}, user: ${isGuest ? 'guest' : user!.id}, error:`, errorMessage.substring(0, 100));
 
     // Track timing for latency calculation
     const startTime = Date.now();
@@ -234,7 +271,7 @@ ${typeGuidance}
     // Token reduction: ~650 tokens → ~200 tokens (68% reduction)
     // Quality improvement: Focused fixes, less over-engineering
 
-    // Prepare user prompt for Kimi K2-Thinking
+    // Prepare user prompt for GLM-4.7 (thinking mode enabled)
     const userPrompt = `Fix this ${type} artifact that has the following error:
 
 ERROR: ${errorMessage}
@@ -244,14 +281,14 @@ ${content}
 
 Return ONLY the fixed code without any explanations or markdown formatting.`;
 
-    // Call GLM-4.6 via Z.ai API with retry logic and tracking
-    console.log(`[${requestId}] 🚀 Routing to GLM-4.6 for artifact fix (reasoning model)`);
+    // Call GLM-4.7 via Z.ai API with retry logic and tracking
+    console.log(`[${requestId}] 🚀 Routing to GLM-4.7 for artifact fix (reasoning model)`);
     const { response, retryCount } = await callGLMWithRetryTracking(
       systemPrompt,
       userPrompt,
       {
         temperature: 0.6, // Lower temperature for more deterministic fixes (GLM scale)
-        max_tokens: 8000,
+        max_tokens: DEFAULT_MODEL_PARAMS.ARTIFACT_MAX_TOKENS,
         requestId,
         enableThinking: true // Enable reasoning for better debugging
       }
@@ -292,9 +329,9 @@ Return ONLY the fixed code without any explanations or markdown formatting.`;
       requestId,
       functionName: 'generate-artifact-fix',
       provider: 'z.ai',
-      model: MODELS.GLM_4_6,
-      userId: user.id,
-      isGuest: false,
+      model: MODELS.GLM_4_7,
+      userId: isGuest ? null : user!.id,
+      isGuest,
       inputTokens: tokenUsage.inputTokens,
       outputTokens: tokenUsage.outputTokens,
       totalTokens: tokenUsage.totalTokens,

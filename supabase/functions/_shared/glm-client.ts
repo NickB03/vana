@@ -1,18 +1,24 @@
 // deno-lint-ignore-file no-explicit-any
 /**
- * GLM-4.6 API Client
+ * GLM-4.7 API Client
  *
- * Dedicated client for Z.ai's GLM-4.6 model for artifact generation and fixing.
- * Uses OpenAI-compatible API format with thinking mode support.
+ * Dedicated client for Z.ai's GLM-4.7 model for artifact generation and fixing.
+ * Uses OpenAI-compatible API format with enhanced thinking mode support.
  *
  * Key Features:
  * - OpenAI-compatible message format
- * - Built-in thinking/reasoning mode
+ * - Built-in thinking/reasoning mode (enabled by default in 4.7)
+ * - Streaming tool calls via tool_stream parameter
+ * - 200K context window, 128K max output tokens
  * - Automatic retry with exponential backoff
  * - Usage logging for admin dashboard
- * - Cost tracking and analytics
  *
- * API Documentation: https://docs.z.ai/guides/llm/glm-4.6
+ * Upgraded from GLM-4.6 (2025-12-28):
+ * - +5.8% on SWE-bench, +12.9% on SWE-bench Multilingual
+ * - +12.2% on τ²-Bench (tool usage)
+ * - Better UI/code output quality
+ *
+ * API Documentation: https://docs.z.ai/guides/llm/glm-4.7
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
@@ -76,6 +82,7 @@ export interface CallGLMOptions {
   promptPreview?: string;
   enableThinking?: boolean;
   stream?: boolean; // Enable SSE streaming
+  toolStream?: boolean; // GLM-4.7: Enable streaming tool call arguments
   tools?: GLMToolDefinition[]; // Tool definitions for function calling
   toolChoice?: "auto" | "generate_artifact" | "generate_image";
   /**
@@ -232,7 +239,7 @@ After calling a tool, WAIT for the tool result before continuing your response.`
 }
 
 /**
- * Call GLM-4.6 for artifact generation or fixing
+ * Call GLM-4.7 for artifact generation or fixing
  * Uses OpenAI-compatible format with optional thinking mode
  *
  * @param systemPrompt - System instruction for the model
@@ -247,10 +254,11 @@ export async function callGLM(
 ): Promise<Response> {
   const {
     temperature = 1.0, // GLM recommends 1.0 for general evaluations
-    max_tokens = 8000,
+    max_tokens = 16000, // GLM-4.7 supports up to 128K output tokens
     requestId = crypto.randomUUID(),
-    enableThinking = true, // Enable reasoning by default for artifact generation
+    enableThinking = true, // Enable reasoning by default (GLM-4.7 has it on by default anyway)
     stream = false, // Streaming disabled by default for backward compatibility
+    toolStream: rawToolStream = true, // GLM-4.7: Enable streaming tool call arguments by default
     tools,
     toolChoice = "auto",
     toolResultContext,
@@ -258,6 +266,14 @@ export async function callGLM(
     timeoutMs,
     conversationMessages
   } = options || {};
+
+  // VALIDATION: toolStream only works when stream=true
+  const toolStream = stream ? rawToolStream : false;
+  if (rawToolStream && !stream) {
+    console.warn(
+      `[${requestId}] toolStream=true ignored because stream=false. Tool streaming requires stream=true.`
+    );
+  }
 
   if (!GLM_API_KEY) {
     throw new Error("GLM_API_KEY not configured");
@@ -336,7 +352,7 @@ export async function callGLM(
     );
   }
 
-  console.log(`[${requestId}] 🤖 Routing to GLM-4.6 via Z.ai API (thinking: ${enableThinking}, stream: ${stream})`);
+  console.log(`[${requestId}] 🤖 Routing to GLM-4.7 via Z.ai API (thinking: ${enableThinking}, stream: ${stream}, toolStream: ${toolStream})`);
 
   // DEBUG: Log message array structure for troubleshooting 400 errors
   console.log(`[${requestId}] 📨 Messages array (${messages.length} messages):`,
@@ -363,12 +379,14 @@ export async function callGLM(
     // Build request body
     const requestBody: Record<string, unknown> = {
       // Extract model name from "provider/model-name" format
-      model: MODELS.GLM_4_6.split('/').pop(),
+      model: MODELS.GLM_4_7.split('/').pop(),
       messages,
       temperature,
       max_tokens,
       stream, // Enable SSE streaming when requested
-      // GLM-specific: thinking mode for reasoning
+      // GLM-4.7: Enable streaming tool call arguments for better UX
+      tool_stream: toolStream,
+      // GLM-specific: thinking mode for reasoning (enabled by default in 4.7)
       thinking: enableThinking ? { type: "enabled" } : { type: "disabled" }
     };
 
@@ -573,7 +591,7 @@ export function extractTextFromGLM(responseData: any, requestId?: string): strin
       console.log(`${logPrefix} 🧠 GLM reasoning used: ${reasoningContent.length} chars`);
     }
 
-    console.log(`${logPrefix} ✅ Extracted artifact from GLM-4.6, length: ${text.length} characters (finish_reason: ${finishReason})`);
+    console.log(`${logPrefix} ✅ Extracted artifact from GLM-4.7, length: ${text.length} characters (finish_reason: ${finishReason})`);
     return text;
   }
 
@@ -624,7 +642,7 @@ export function extractTextAndReasoningFromGLM(
       );
     } else {
       console.log(
-        `${logPrefix} ✅ Extracted artifact from GLM-4.6: ${text.length} chars | ` +
+        `${logPrefix} ✅ Extracted artifact from GLM-4.7: ${text.length} chars | ` +
         `No reasoning content (finish_reason: ${finishReason})`
       );
     }
@@ -662,7 +680,7 @@ export function extractGLMTokenUsage(responseData: any): {
 }
 
 /**
- * Calculate cost for a GLM-4.6 API call
+ * Calculate cost for a GLM-4.7 API call
  * Pricing: Based on Z.ai Coding Plan pricing
  * Note: Adjust these values based on actual Z.ai pricing
  *
@@ -672,7 +690,7 @@ export function extractGLMTokenUsage(responseData: any): {
  */
 export function calculateGLMCost(inputTokens: number, outputTokens: number): number {
   // Z.ai Coding Plan pricing (estimate - adjust based on actual pricing)
-  // GLM-4.6 is competitive with other frontier models
+  // GLM-4.7 is competitive with other frontier models
   const INPUT_COST_PER_M = 0.10;  // $0.10 per 1M input tokens (estimate)
   const OUTPUT_COST_PER_M = 0.30; // $0.30 per 1M output tokens (estimate)
 
@@ -810,7 +828,7 @@ export async function processGLMStream(
   callbacks: GLMStreamCallbacks,
   requestId?: string,
   chunkTimeoutMs = GLM_CONFIG.CHUNK_TIMEOUT_MS
-): Promise<{ reasoning: string; content: string; finishReason?: string; nativeToolCalls?: NativeToolCall[] }> {
+): Promise<{ reasoning: string; content: string; finishReason?: string; nativeToolCalls?: NativeToolCall[]; incompleteToolCallCount?: number }> {
   const logPrefix = requestId ? `[${requestId}]` : "";
 
   if (!response.body) {
@@ -896,6 +914,12 @@ export async function processGLMStream(
               // Tool calls stream incrementally: first chunk has id + name, subsequent chunks have arguments
               if (delta.tool_calls && Array.isArray(delta.tool_calls)) {
                 for (const toolCallDelta of delta.tool_calls) {
+                  if (toolCallDelta.index === undefined) {
+                    console.warn(
+                      `${logPrefix} Tool call delta missing 'index' field (defaulting to 0). ` +
+                      `Delta: ${JSON.stringify(toolCallDelta).substring(0, 200)}`
+                    );
+                  }
                   const index = toolCallDelta.index ?? 0;
 
                   // Get or create accumulator for this tool call
@@ -923,8 +947,15 @@ export async function processGLMStream(
               }
             }
           } catch (parseError) {
-            // Non-JSON line, skip
-            console.warn(`${logPrefix} Failed to parse SSE chunk:`, parseError);
+            if (parseError instanceof SyntaxError) {
+              // Expected: Non-JSON SSE lines (comments, keepalives, etc.)
+              // Debug level since these are normal during streaming
+            } else {
+              // Unexpected error during chunk processing
+              // Log it but don't re-throw - SSE parsing must be resilient
+              // Re-throwing breaks tool call execution by preventing stream completion
+              console.error(`${logPrefix} Unexpected error processing SSE chunk (continuing):`, parseError);
+            }
           }
         }
       }
@@ -949,6 +980,20 @@ export async function processGLMStream(
       }
     }
 
+    // Observability: Log accumulated tool calls
+    if (nativeToolCalls.length > 0) {
+      console.log(`${logPrefix} 🔧 Accumulated ${nativeToolCalls.length} native tool call(s)`);
+    }
+
+    // Track incomplete tool calls for observability
+    const incompleteCount = Array.from(toolCallAccumulators.values())
+      .filter(acc => !acc.id || !acc.name).length;
+    if (incompleteCount > 0) {
+      console.warn(
+        `${logPrefix} ${incompleteCount} incomplete tool call(s) detected - missing id or name`
+      );
+    }
+
     console.log(`${logPrefix} ✅ Stream processed: reasoning=${fullReasoning.length} chars, content=${fullContent.length} chars, finish_reason=${finishReason || 'none'}, tool_calls=${nativeToolCalls.length}`);
     await callbacks.onComplete?.(fullReasoning, fullContent);
 
@@ -956,7 +1001,8 @@ export async function processGLMStream(
       reasoning: fullReasoning,
       content: fullContent,
       finishReason,
-      nativeToolCalls: nativeToolCalls.length > 0 ? nativeToolCalls : undefined
+      nativeToolCalls: nativeToolCalls.length > 0 ? nativeToolCalls : undefined,
+      incompleteToolCallCount: incompleteCount > 0 ? incompleteCount : undefined
     };
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));

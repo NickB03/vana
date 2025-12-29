@@ -198,7 +198,7 @@ export default function AdminDashboard() {
         >
           <div>
             <h1 className="text-3xl font-bold">AI Usage Dashboard</h1>
-            <p className="text-muted-foreground">Monitor Kimi K2 & Gemini API usage and costs</p>
+            <p className="text-muted-foreground">Monitor GLM-4.7 & Gemini API usage and costs</p>
           </div>
           <div className="flex items-center gap-4">
             {/* Landing Page Toggle */}

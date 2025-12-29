@@ -156,7 +156,7 @@ export const RATE_LIMITS = {
     GEMINI_RPM: getEnvInt('RATE_LIMIT_API_THROTTLE_RPM', 15, 1),
     WINDOW_SECONDS: getEnvInt('RATE_LIMIT_API_THROTTLE_WINDOW', 60, 1)
   },
-  /** Artifact generation rate limits (more restrictive due to expensive GLM-4.6 model) */
+  /** Artifact generation rate limits (more restrictive due to expensive GLM-4.7 model) */
   ARTIFACT: {
     /** API throttle for artifact generation (stricter than chat) */
     API_THROTTLE: {
@@ -271,8 +271,19 @@ export const API_ENDPOINTS = {
 export const MODELS = {
   /** Gemini 2.5 Flash Lite for chat/summaries/titles */
   GEMINI_FLASH: 'google/gemini-2.5-flash-lite',
-  /** GLM-4.6 for artifact generation and fixing (replaces Kimi K2) - via Z.ai API */
-  GLM_4_6: 'zhipu/glm-4.6',
+  /** GLM-4.7 for artifact generation and fixing - via Z.ai Coding API
+   *
+   * Upgraded from GLM-4.6 (2025-12-28):
+   * - 200K context window (up from 128K)
+   * - 128K max output tokens (up from 8K)
+   * - +5.8% on SWE-bench, +12.9% on SWE-bench Multilingual
+   * - Enhanced tool calling (+12.2% on τ²-Bench)
+   * - Streaming tool calls via tool_stream
+   * - Preserved thinking across turns
+   *
+   * @see https://docs.z.ai/guides/llm/glm-4.7
+   */
+  GLM_4_7: 'zhipu/glm-4.7',
   /** GLM-4.5-Air for ultra-fast reasoning summarization (sidecar commentator) - via Z.ai API */
   GLM_4_5_AIR: 'zhipu/glm-4.5-air',
   /** Gemini Flash Image for image generation */
@@ -281,12 +292,15 @@ export const MODELS = {
 
 /**
  * Default AI model parameters
+ *
+ * GLM-4.7 supports up to 128K output tokens, increased from GLM-4.6's 8K limit.
+ * Using generous limits for maximum quality on this demo site.
  */
 export const DEFAULT_MODEL_PARAMS = {
   TEMPERATURE: 0.7,
-  MAX_TOKENS: 8000,
-  CHAT_MAX_TOKENS: 8000,
-  ARTIFACT_MAX_TOKENS: 8000,
+  MAX_TOKENS: 16000,
+  CHAT_MAX_TOKENS: 16000,
+  ARTIFACT_MAX_TOKENS: 16000,
   IMAGE_MAX_TOKENS: 1024
 } as const;
 

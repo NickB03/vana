@@ -1,7 +1,7 @@
 /**
  * GLM Tool Call Parser
  *
- * Parses GLM-4.6's XML-based tool call format for agentic workflows.
+ * Parses GLM-4.7's XML-based tool call format for agentic workflows.
  * Handles streaming detection, multi-tool parsing, and result formatting.
  *
  * Format:

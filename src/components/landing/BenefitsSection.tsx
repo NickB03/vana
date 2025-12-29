@@ -59,12 +59,12 @@ export const BenefitsSection = () => {
             <div className="space-y-3 sm:space-y-4">
               <h3 className={cn(TYPOGRAPHY.HEADING.md.full, "font-bold")}>Multi-Model AI Engine</h3>
               <p className={cn(TYPOGRAPHY.BODY.lg.full, "text-muted-foreground")}>
-                Vana orchestrates multiple specialized AI models—Gemini 2.5 Flash Lite for chat, GLM-4.6 for complex artifact generation, and GLM-4.5-Air for real-time status updates.
+                Vana orchestrates multiple specialized AI models—Gemini 2.5 Flash Lite for chat, GLM-4.7 for complex artifact generation, and GLM-4.5-Air for real-time status updates.
               </p>
               <ul className="space-y-2">
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span>GLM-4.6 thinking mode for deep reasoning</span>
+                  <span>GLM-4.7 thinking mode for deep reasoning</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />

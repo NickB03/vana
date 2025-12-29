@@ -78,7 +78,7 @@ export const MultiModelGraphic = () => {
                 {/* Floating AI Models (Top) */}
                 {[
                     { color: "#3b82f6", label: "Gemini", x: 100 },
-                    { color: "#8b5cf6", label: "GLM-4.6", x: 200 },
+                    { color: "#8b5cf6", label: "GLM-4.7", x: 200 },
                     { color: "#10b981", label: "Air Air", x: 300 }
                 ].map((model, i) => (
                     <motion.g

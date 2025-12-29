@@ -1,13 +1,13 @@
 /**
  * Tool Executor Service
  *
- * Executes tool calls from GLM-4.6 and returns formatted results.
+ * Executes tool calls from GLM-4.7 and returns formatted results.
  * Supports browser.search, generate_artifact, and generate_image tools.
  *
  * Key Features:
  * - Routes tool calls to appropriate handlers
  * - Wraps Tavily client for web search
- * - Integrates artifact generation via GLM-4.6
+ * - Integrates artifact generation via GLM-4.7
  * - Integrates image generation via Gemini Flash Image
  * - Formats results in GLM's expected format
  * - Logs tool execution for analytics
@@ -135,7 +135,7 @@ function isSupportedTool(toolName: string): toolName is SupportedTool {
 }
 
 /**
- * Execute a tool call from GLM-4.6
+ * Execute a tool call from GLM-4.7
  *
  * Routes the tool call to the appropriate handler based on tool name.
  * Logs execution for analytics and handles errors gracefully.
@@ -499,9 +499,9 @@ async function executeSearchTool(
 }
 
 /**
- * Execute generate_artifact tool using GLM-4.6
+ * Execute generate_artifact tool using GLM-4.7
  *
- * Generates artifacts (React, HTML, SVG, etc.) using GLM-4.6 thinking mode.
+ * Generates artifacts (React, HTML, SVG, etc.) using GLM-4.7 thinking mode.
  * Includes validation and auto-fixing of generated code.
  *
  * @param type - Artifact type to generate

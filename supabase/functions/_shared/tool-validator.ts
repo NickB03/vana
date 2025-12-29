@@ -131,6 +131,37 @@ function validateOnlyExpectedKeys(
 // Validator Implementation
 // =============================================================================
 
+/**
+ * Normalize artifact type from MIME format to short form
+ *
+ * GLM-4.7 sometimes outputs full MIME types like "application/vnd.ant.react"
+ * instead of short forms like "react". This function normalizes both formats.
+ */
+function normalizeArtifactType(type: string): string {
+  // Map of full MIME types to short forms
+  const mimeToShort: Record<string, ArtifactType> = {
+    'application/vnd.ant.react': 'react',
+    'application/vnd.ant.html': 'html',
+    'application/vnd.ant.svg': 'svg',
+    'application/vnd.ant.code': 'code',
+    'application/vnd.ant.mermaid': 'mermaid',
+    'application/vnd.ant.markdown': 'markdown',
+    // Also handle potential variations
+    'text/html': 'html',
+    'image/svg+xml': 'svg',
+    'text/markdown': 'markdown',
+  };
+
+  // Check if it's a MIME type
+  const normalized = mimeToShort[type.toLowerCase()];
+  if (normalized) {
+    return normalized;
+  }
+
+  // Return as-is (already short form or invalid)
+  return type.toLowerCase();
+}
+
 export class ToolParameterValidator {
 
   // Valid artifact types (strict allowlist)
@@ -177,17 +208,22 @@ export class ToolParameterValidator {
     validateOnlyExpectedKeys(params, this.ARTIFACT_EXPECTED_KEYS);
 
     // Validate 'type' field
-    const type = params.type;
-    if (type === undefined || type === null) {
+    const rawType = params.type;
+    if (rawType === undefined || rawType === null) {
       throw new ToolValidationError('type', 'Required field missing', 'REQUIRED');
     }
-    if (typeof type !== 'string') {
+    if (typeof rawType !== 'string') {
       throw new ToolValidationError('type', 'Must be a string', 'TYPE_ERROR');
     }
+
+    // GLM-4.7 FIX: Normalize MIME types to short form
+    // e.g., "application/vnd.ant.react" -> "react"
+    const type = normalizeArtifactType(rawType);
+
     if (!this.VALID_ARTIFACT_TYPES.includes(type as ArtifactType)) {
       throw new ToolValidationError(
         'type',
-        `Must be one of: ${this.VALID_ARTIFACT_TYPES.join(', ')}`,
+        `Must be one of: ${this.VALID_ARTIFACT_TYPES.join(', ')} (received: ${rawType})`,
         'INVALID_ENUM'
       );
     }

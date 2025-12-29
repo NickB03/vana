@@ -311,7 +311,7 @@ function validateParams(params: ArtifactExecutorParams, safeRequestId: string): 
 /**
  * Construct the user prompt based on artifact type
  *
- * CRITICAL: GLM-4.6 tends to generate full HTML documents for React artifacts.
+ * CRITICAL: GLM-4.7 tends to generate full HTML documents for React artifacts.
  * This prompt explicitly instructs it to return ONLY pure JSX/React code.
  *
  * @param prompt - User's description of what to create
@@ -369,7 +369,7 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
 /**
  * Strip HTML document structure from React artifacts
  *
- * GLM-4.6 sometimes appends full HTML documents after the React code.
+ * GLM-4.7 sometimes appends full HTML documents after the React code.
  * This causes Babel transpilation to fail with "Unexpected token '<'".
  *
  * @param code - Raw artifact code from GLM
@@ -458,8 +458,8 @@ export async function executeArtifactGeneration(
     userPromptPreview: userPrompt.substring(0, 200),
   });
 
-  // Call GLM-4.6 with retry logic
-  console.log(`[${requestId}] 🤖 Calling GLM-4.6 via Z.ai API`);
+  // Call GLM-4.7 with retry logic
+  console.log(`[${requestId}] 🤖 Calling GLM-4.7 via Z.ai API`);
   let response;
   let retryCount;
 
@@ -476,7 +476,7 @@ export async function executeArtifactGeneration(
       max_tokens: 16000, // Doubled from 8000 to handle complex artifacts
       requestId,
       enableThinking, // Enable reasoning for better artifact generation
-      timeoutMs: 120000, // 2min timeout for complex artifacts (default 60s was too short for Radix UI + animations)
+      timeoutMs: 170000, // ~3min timeout for GLM-4.7 thinking mode (must be < 180s tool limit)
     });
 
     response = result.response;

@@ -6,7 +6,7 @@
  *
  * Extracted from deprecated reasoning-generator.ts (Dec 2025) as part of
  * Phase 4 cleanup of the GLM Thinking Migration. The reasoning generation
- * logic is now handled by GLM-4.6's native thinking mode via streaming.
+ * logic is now handled by GLM-4.7's native thinking mode via streaming.
  *
  * ## Exports
  *

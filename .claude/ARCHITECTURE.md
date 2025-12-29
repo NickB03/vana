@@ -15,8 +15,8 @@ All AI operations use the multi-model orchestration system for optimal cost/perf
 | Function | Model | Provider | Rationale |
 |----------|-------|----------|-----------|
 | Chat/Summaries/Titles | Gemini 2.5 Flash Lite | OpenRouter | Fast, unlimited, cost-effective |
-| Artifact Generation | GLM-4.6 | Z.ai API | Thinking mode, structured output |
-| Artifact Error Fixing | GLM-4.6 | Z.ai API | Deep reasoning for debugging |
+| Artifact Generation | GLM-4.7 | Z.ai API | Thinking mode, structured output |
+| Artifact Error Fixing | GLM-4.7 | Z.ai API | Deep reasoning for debugging |
 | Image Generation | Gemini 2.5 Flash Image | OpenRouter | High-quality image synthesis |
 
 **Model Constants**: All model names are defined in `supabase/functions/_shared/config.ts` as `MODELS.*` constants. **Never hardcode model names** — this causes CI/CD failures.
@@ -28,8 +28,8 @@ Route requests to the appropriate Edge Function based on the scenario:
 | Scenario | Function | Model Used |
 |----------|----------|------------|
 | User sends chat message | `chat/` | Gemini Flash Lite |
-| User requests artifact | Tool-calling via `chat/` → `generate_artifact` | GLM-4.6 |
-| Artifact has errors | Tool-calling via `chat/` → `generate_artifact_fix` | GLM-4.6 |
+| User requests artifact | Tool-calling via `chat/` → `generate_artifact` | GLM-4.7 |
+| Artifact has errors | Tool-calling via `chat/` → `generate_artifact_fix` | GLM-4.7 |
 | First message in session | `generate-title/` | Gemini Flash Lite |
 | User requests image | Tool-calling via `chat/` → `generate_image` | Gemini Flash Image |
 | Conversation exceeds context | `summarize-conversation/` | Gemini Flash Lite |

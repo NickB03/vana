@@ -35,7 +35,7 @@ Deno.test('countTokens - estimates tokens for longer text', () => {
 
 Deno.test('MODEL_BUDGETS - contains expected models', () => {
   assertExists(MODEL_BUDGETS[MODELS.GEMINI_FLASH]);
-  assertExists(MODEL_BUDGETS[MODELS.GLM_4_6]);
+  assertExists(MODEL_BUDGETS[MODELS.GLM_4_7]);
 });
 
 Deno.test('MODEL_BUDGETS - GEMINI_FLASH has correct configuration', () => {
@@ -46,11 +46,11 @@ Deno.test('MODEL_BUDGETS - GEMINI_FLASH has correct configuration', () => {
   assertEquals(budget.safetyMargin, 0.1);
 });
 
-Deno.test('MODEL_BUDGETS - GLM_4_6 has correct configuration', () => {
-  const budget = MODEL_BUDGETS[MODELS.GLM_4_6];
-  assertEquals(budget.model, MODELS.GLM_4_6);
-  assertEquals(budget.maxContextTokens, 128000);
-  assertEquals(budget.reservedForResponse, 8000);
+Deno.test('MODEL_BUDGETS - GLM_4_7 has correct configuration', () => {
+  const budget = MODEL_BUDGETS[MODELS.GLM_4_7];
+  assertEquals(budget.model, MODELS.GLM_4_7);
+  assertEquals(budget.maxContextTokens, 200000); // GLM-4.7 increased to 200K
+  assertEquals(budget.reservedForResponse, 16000); // Increased for 4.7's higher output capacity
   assertEquals(budget.safetyMargin, 0.15);
 });
 
@@ -60,10 +60,10 @@ Deno.test('calculateContextBudget - calculates available tokens for GEMINI_FLASH
   assertEquals(available, 111104);
 });
 
-Deno.test('calculateContextBudget - calculates available tokens for GLM_4_6', () => {
-  const available = calculateContextBudget(MODELS.GLM_4_6);
-  // 128000 - 8000 - (128000 * 0.15) = 128000 - 8000 - 19200 = 100800
-  assertEquals(available, 100800);
+Deno.test('calculateContextBudget - calculates available tokens for GLM_4_7', () => {
+  const available = calculateContextBudget(MODELS.GLM_4_7);
+  // 200000 - 16000 - (200000 * 0.15) = 200000 - 16000 - 30000 = 154000
+  assertEquals(available, 154000);
 });
 
 Deno.test('calculateContextBudget - throws error for unknown model', () => {

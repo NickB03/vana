@@ -51,6 +51,16 @@ These restrictions are NON-NEGOTIABLE due to sandbox environment limitations:
    ✅ CORRECT: import { Mail, User } from 'lucide-react'
    ✅ CORRECT: import { useState, useEffect } from 'react'
 
+6. **CLEAN JSX/HTML OUTPUT** - No trailing document fragments or orphan elements
+   ❌ FORBIDDEN: Orphan closing tags: </div></body></html> at end of file
+   ❌ FORBIDDEN: Appending <!DOCTYPE html><html>... after a React component
+   ❌ FORBIDDEN: const * as Name from 'package' (invalid import syntax)
+
+   ✅ CORRECT: Complete, self-contained component with matched tags
+   ✅ CORRECT: import * as Name from 'package' (valid namespace import)
+
+   Why: The transpiler will fail on malformed output. Return ONLY the requested artifact.
+
 Why these exist: Artifacts render in sandboxed iframes for security. Local project files and browser APIs are intentionally unavailable. Sucrase transpiler has no fallback for unsupported syntax.
 `;
 
@@ -63,4 +73,5 @@ Before finalizing your artifact:
 ✓ React accessed via global: const { useState } = React;
 ✓ Sucrase-compatible syntax (no legacy decorators or namespaces)
 ✓ No duplicate named imports (each name appears only once per import)
+✓ No trailing HTML fragments after React components
 `;

@@ -339,9 +339,20 @@ serve(async (req) => {
       rateLimitError = result.error;
     } else {
       // Guest rate limit (IP-based, 20 req/5h - same as chat)
-      const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0].trim()
-        || req.headers.get("x-real-ip")
-        || "unknown";
+      const rawClientIp = req.headers.get("x-forwarded-for")?.split(",")[0].trim()
+        || req.headers.get("x-real-ip");
+
+      let clientIp: string;
+      if (!rawClientIp) {
+        // SECURITY: Generate unique ID instead of shared "unknown" bucket
+        clientIp = `no-ip_${Date.now()}_${crypto.randomUUID().substring(0, 8)}`;
+        console.warn(
+          `[bundle-artifact] SECURITY: Missing IP headers (x-forwarded-for, x-real-ip). ` +
+          `Using unique identifier: ${clientIp}. Check proxy configuration.`
+        );
+      } else {
+        clientIp = rawClientIp;
+      }
 
       console.log(`[${requestId}] Guest IP address: ${clientIp}`);
 

@@ -658,7 +658,7 @@ Deno.test("fixOrphanedMethodChains - handles Object methods", () => {
 // ============================================================================
 // GLM-Specific Malformed Syntax Tests
 // ============================================================================
-// GLM-4.6 sometimes generates invalid JavaScript syntax that must be caught
+// GLM-4.7 sometimes generates invalid JavaScript syntax that must be caught
 // and fixed before code execution. These tests validate our safety net.
 
 Deno.test("validateArtifactCode - detects 'const * as X from pkg' malformed syntax", () => {
