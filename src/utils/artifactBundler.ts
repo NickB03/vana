@@ -42,17 +42,19 @@ export interface BundleError {
  * @param artifactId - Unique artifact identifier
  * @param sessionId - Chat session identifier
  * @param title - Artifact title
+ * @param skipNpmCheck - Skip npm import detection (caller already verified)
  * @returns Bundle response with signed URL or error
  */
 export async function bundleArtifact(
   code: string,
   artifactId: string,
   sessionId: string,
-  title: string
+  title: string,
+  skipNpmCheck: boolean = false
 ): Promise<BundleResponse | BundleError> {
   try {
-    // 1. Check if bundling is needed
-    if (!detectNpmImports(code)) {
+    // 1. Check if bundling is needed (skip if caller already verified)
+    if (!skipNpmCheck && !detectNpmImports(code)) {
       return {
         success: false,
         error: "No npm imports detected",

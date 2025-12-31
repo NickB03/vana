@@ -192,13 +192,10 @@ export async function exportMermaidAsSVG(
   title: string
 ): Promise<string> {
   try {
-    const mermaid = (await import('mermaid')).default;
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: 'default',
-      securityLevel: 'loose'
-    });
+    const { ensureMermaidInit } = await import('./mermaidInit');
+    ensureMermaidInit();
 
+    const mermaid = (await import('mermaid')).default;
     const id = `mermaid-export-${Date.now()}`;
     const { svg } = await mermaid.render(id, mermaidContent);
     return svg;

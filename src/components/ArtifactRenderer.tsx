@@ -56,6 +56,7 @@ interface BundledArtifactFrameProps {
   onLoadingChange: (loading: boolean) => void;
   onPreviewErrorChange: (error: string | null) => void;
   onAIFix?: () => void;
+  previewContentRef?: React.MutableRefObject<string | null>;
 }
 
 const BundledArtifactFrame = memo(({
@@ -67,6 +68,7 @@ const BundledArtifactFrame = memo(({
   onLoadingChange,
   onPreviewErrorChange,
   onAIFix,
+  previewContentRef,
 }: BundledArtifactFrameProps) => {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -450,6 +452,11 @@ const BundledArtifactFrame = memo(({
           }
         }
 
+        // Store processed HTML for pop-out functionality
+        if (previewContentRef) {
+          previewContentRef.current = htmlContent;
+        }
+
         // Create blob URL from the fetched HTML content
         const blob = new Blob([htmlContent], { type: 'text/html' });
         objectUrl = URL.createObjectURL(blob);
@@ -571,7 +578,7 @@ const BundledArtifactFrame = memo(({
             src={blobUrl}
             className="w-full h-full border-0 bg-background"
             title={title}
-            sandbox="allow-scripts allow-same-origin"
+            sandbox="allow-scripts"
             onLoad={() => {
             onLoadingChange(false);
             // Signal to parent that artifact has finished rendering
@@ -621,7 +628,7 @@ const IMPORT_MAP_JSON = JSON.stringify(REACT_IMPORT_MAP, null, 2);
 
 // Library setup script - exposes UMD libraries as globals
 const LIBRARY_SETUP_SCRIPT = `
-    const { useState, useEffect, useReducer, useRef, useMemo, useCallback } = React;
+    const { useState, useEffect, useReducer, useRef, useMemo, useCallback, useContext, useLayoutEffect } = React;
 
     const LucideIcons = window.LucideReact || window.lucideReact || {};
     const {
@@ -1100,7 +1107,7 @@ ${artifact.content}
               loading={isLoading ? <ArtifactSkeleton type={artifact.type} /> : undefined}
               className="w-full h-full border-0 bg-background"
               title={artifact.title}
-              sandbox="allow-scripts allow-same-origin allow-downloads allow-popups"
+              sandbox="allow-scripts allow-downloads allow-popups"
             />
           </WebPreview>
         </div>
@@ -1263,6 +1270,7 @@ ${artifact.content}
           onLoadingChange={onLoadingChange}
           onPreviewErrorChange={onPreviewErrorChange}
           onAIFix={onAIFix}
+          previewContentRef={previewContentRef}
         />
       );
     }
@@ -1610,7 +1618,7 @@ ${ERROR_HANDLING_SCRIPT}
               loading={isLoading ? <ArtifactSkeleton type={artifact.type} /> : undefined}
               className="w-full h-full border-0 bg-background"
               title={artifact.title}
-              sandbox="allow-scripts allow-same-origin allow-downloads allow-popups"
+              sandbox="allow-scripts allow-downloads allow-popups"
             />
           </WebPreview>
         </div>

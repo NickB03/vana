@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Artifact, ArtifactHeader, ArtifactContent, ArtifactActions, ArtifactAction } from '@/components/ai-elements/artifact';
 import { toast } from "sonner";
 import { validateArtifact, ValidationResult } from "@/utils/artifactValidator";
-import mermaid from "mermaid";
+import { ensureMermaidInit } from "@/utils/mermaidInit";
 import { detectAndInjectLibraries } from "@/utils/libraryDetection";
 import { supabase } from "@/integrations/supabase/client";
 import { ArtifactErrorBoundary } from "./ArtifactErrorBoundary";
@@ -46,7 +46,6 @@ export const ArtifactContainer = ({ artifact, onClose, onEdit, onContentChange }
   const [errorCategory, setErrorCategory] = useState<'syntax' | 'runtime' | 'import' | 'unknown'>('unknown');
   const [isLoading, setIsLoading] = useState(true);
   const [validation, setValidation] = useState<ValidationResult | null>(null);
-  const [injectedCDNs, setInjectedCDNs] = useState<string>('');
   const [isEditingCode, setIsEditingCode] = useState(false);
   const [editedContent, setEditedContent] = useState(artifact.content);
   const [themeRefreshKey, setThemeRefreshKey] = useState(0);
@@ -65,11 +64,7 @@ export const ArtifactContainer = ({ artifact, onClose, onEdit, onContentChange }
 
   // Initialize mermaid
   useEffect(() => {
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: 'default',
-      securityLevel: 'loose'
-    });
+    ensureMermaidInit();
   }, []);
 
   // Watch for theme changes
@@ -100,13 +95,13 @@ export const ArtifactContainer = ({ artifact, onClose, onEdit, onContentChange }
     return () => clearTimeout(timeoutId);
   }, [artifact.content, artifact.type]);
 
-  // Auto-inject libraries
-  useEffect(() => {
-    if (artifact.type === "html" || artifact.type === "code" || artifact.type === "react") {
-      setInjectedCDNs('');
-      const cdn = detectAndInjectLibraries(artifact.content);
-      setInjectedCDNs(cdn);
+  // Memoize library detection - only recomputes when content/type actually change
+  const injectedCDNs = useMemo(() => {
+    // Skip detection for types that never need CDN injection
+    if (artifact.type === 'mermaid' || artifact.type === 'markdown' || artifact.type === 'image' || artifact.type === 'svg') {
+      return '';
     }
+    return detectAndInjectLibraries(artifact.content);
   }, [artifact.content, artifact.type]);
 
   // Handlers

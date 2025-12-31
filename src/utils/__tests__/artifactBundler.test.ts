@@ -715,3 +715,118 @@ export default function App() { return <div>Hello</div> }`;
     expect(needsBundling(code, 'react')).toBe(false);
   });
 });
+
+// ============================================
+// SKIP NPM CHECK TESTS
+// ============================================
+
+describe('bundleArtifact with skipNpmCheck', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    global.fetch = vi.fn();
+
+    // Mock console methods to reduce test noise
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  it('skips npm detection when skipNpmCheck is true', async () => {
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: {
+        session: {
+          access_token: 'valid-token',
+          user: { id: 'user-id' }
+        } as any
+      },
+      error: null
+    });
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        bundleUrl: 'https://example.com/bundle.html',
+        bundleSize: 1000,
+        bundleTime: 500,
+        dependencies: ['framer-motion'],
+        expiresAt: new Date().toISOString(),
+        requestId: 'req-1'
+      })
+    });
+
+    // Code WITHOUT npm imports - normally would fail
+    const code = `export default function App() { return <div>Hello</div> }`;
+
+    // With skipNpmCheck=true, should skip detection and attempt bundling
+    const result = await bundleArtifact(code, 'id', 'session', 'title', true);
+
+    // Should fail at dependency extraction stage (no dependencies found)
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe('No valid dependencies found');
+    }
+  });
+
+  it('performs npm detection when skipNpmCheck is false (default)', async () => {
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: {
+        session: {
+          access_token: 'valid-token',
+          user: { id: 'user-id' }
+        } as any
+      },
+      error: null
+    });
+
+    // Code WITHOUT npm imports
+    const code = `export default function App() { return <div>Hello</div> }`;
+
+    // With skipNpmCheck=false (default), should fail at detection stage
+    const result = await bundleArtifact(code, 'id', 'session', 'title', false);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe('No npm imports detected');
+    }
+
+    // Should not call fetch since it failed early
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('bundles successfully when skipNpmCheck is true with valid npm imports', async () => {
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: {
+        session: {
+          access_token: 'valid-token',
+          user: { id: 'user-id' }
+        } as any
+      },
+      error: null
+    });
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        bundleUrl: 'https://example.com/bundle.html',
+        bundleSize: 1000,
+        bundleTime: 500,
+        dependencies: ['framer-motion'],
+        expiresAt: new Date().toISOString(),
+        requestId: 'req-1'
+      })
+    });
+
+    const code = `import { motion } from 'framer-motion';`;
+
+    // Should work normally with skipNpmCheck=true when imports are present
+    const result = await bundleArtifact(code, 'id', 'session', 'title', true);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.bundleUrl).toBe('https://example.com/bundle.html');
+    }
+  });
+});

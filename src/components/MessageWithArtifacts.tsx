@@ -1,4 +1,4 @@
-import { memo, useState, useEffect, useMemo } from "react";
+import { memo, useState, useEffect, useMemo, useDeferredValue } from "react";
 import { Markdown } from "@/components/ui/markdown";
 import { InlineImage } from "@/components/InlineImage";
 import { ArtifactCard } from "@/components/ArtifactCard";
@@ -76,6 +76,9 @@ export const MessageWithArtifacts = memo(({
   const [bundlingStatus, setBundlingStatus] = useState<Record<string, 'idle' | 'bundling' | 'success' | 'error'>>({});
   const [inProgressCount, setInProgressCount] = useState(0);
 
+  // Defer content parsing to reduce computation during rapid streaming updates
+  const deferredContent = useDeferredValue(content);
+
   // Convert web search results to citation sources map
   // Use provided citationSources if available, otherwise convert from searchResults
   const citationSourcesMap = useMemo(() => {
@@ -92,13 +95,22 @@ export const MessageWithArtifacts = memo(({
   }, [cleanContent, citationSourcesMap]);
 
   // Parse artifacts asynchronously (now uses crypto hash for stable IDs)
+  // Uses deferredContent to defer expensive parsing during rapid updates
   useEffect(() => {
-    parseArtifacts(content).then(({ artifacts: parsedArtifacts, cleanContent: parsed, inProgressCount: inProgress }) => {
-      setArtifacts(parsedArtifacts);
-      setCleanContent(parsed);
-      setInProgressCount(inProgress);
-    });
-  }, [content]);
+    parseArtifacts(deferredContent)
+      .then(({ artifacts: parsedArtifacts, cleanContent: parsed, inProgressCount: inProgress }) => {
+        setArtifacts(parsedArtifacts);
+        setCleanContent(parsed);
+        setInProgressCount(inProgress);
+      })
+      .catch((error) => {
+        console.error('[MessageWithArtifacts] Failed to parse artifacts:', error);
+        // Set safe defaults so UI doesn't hang
+        setArtifacts([]);
+        setCleanContent(deferredContent);
+        setInProgressCount(0);
+      });
+  }, [deferredContent]);
 
   // Handle server-side bundling for artifacts with npm imports
   useEffect(() => {
@@ -162,7 +174,8 @@ export const MessageWithArtifacts = memo(({
             artifact.content,
             artifact.id,
             sessionId,
-            artifact.title
+            artifact.title,
+            true  // skipNpmCheck - we already called needsBundling()
           );
 
           if (result.success) {

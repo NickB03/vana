@@ -13,6 +13,11 @@ export interface NpmImport {
  * @returns true if npm imports are found
  */
 export function detectNpmImports(code: string): boolean {
+  // Quick early-exit: if code doesn't contain import patterns, skip regex
+  if (!code.includes('import ') && !code.includes(' from ')) {
+    return false;
+  }
+
   // Match: import X from 'package-name' OR import X from '@scope/package-name'
   // Supports: scoped packages (@radix-ui/react-dialog), multiline imports, sub-paths
   // Excludes: react, react-dom, relative imports (./), absolute imports (/)
