@@ -43,13 +43,13 @@ describe('bundleArtifact', () => {
         bundleUrl: 'https://example.com/bundle.html',
         bundleSize: 1000,
         bundleTime: 500,
-        dependencies: ['framer-motion'],
+        dependencies: ['lodash'],
         expiresAt: new Date().toISOString(),
         requestId: 'req-guest'
       })
     });
 
-    const code = `import { motion } from 'framer-motion';`;
+    const code = `import _ from 'lodash';`;
     const result = await bundleArtifact(code, 'artifact-id', 'session-id', 'Test Artifact');
 
     expect(result.success).toBe(true);
@@ -84,7 +84,7 @@ describe('bundleArtifact', () => {
       json: async () => ({ error: 'Unauthorized' })
     });
 
-    const code = `import { motion } from 'framer-motion';`;
+    const code = `import _ from 'lodash';`;
     const result = await bundleArtifact(code, 'id', 'session', 'title');
 
     expect(result.success).toBe(false);
@@ -117,7 +117,7 @@ describe('bundleArtifact', () => {
       json: async () => ({ error: 'Rate limit exceeded' })
     });
 
-    const code = `import { motion } from 'framer-motion';`;
+    const code = `import _ from 'lodash';`;
     const result = await bundleArtifact(code, 'id', 'session', 'title');
 
     expect(result.success).toBe(false);
@@ -147,7 +147,7 @@ describe('bundleArtifact', () => {
       json: async () => ({ error: 'Rate limit exceeded' })
     });
 
-    const code = `import { motion } from 'framer-motion';`;
+    const code = `import _ from 'lodash';`;
     const result = await bundleArtifact(code, 'id', 'session', 'title');
 
     expect(result.success).toBe(false);
@@ -245,7 +245,7 @@ export default function App() { return <div>Hello</div> }`;
       bundleUrl: 'https://storage.supabase.co/signed-url/bundle.html',
       bundleSize: 12345,
       bundleTime: 2000,
-      dependencies: ['framer-motion'],
+      dependencies: ['lodash'],
       expiresAt: new Date(Date.now() + 3600000).toISOString(),
       requestId: 'req-12345'
     };
@@ -256,9 +256,9 @@ export default function App() { return <div>Hello</div> }`;
       json: async () => mockResponse
     });
 
-    const code = `import { motion } from 'framer-motion';
+    const code = `import _ from 'lodash';
 export default function App() {
-  return <motion.div>Animated</motion.div>;
+  return <div>{_.join(['Hello', 'World'], ' ')}</div>;
 }`;
 
     const result = await bundleArtifact(code, 'artifact-123', 'session-456', 'My Animation');
@@ -268,7 +268,7 @@ export default function App() {
       expect(result.bundleUrl).toBe(mockResponse.bundleUrl);
       expect(result.bundleSize).toBe(12345);
       expect(result.bundleTime).toBe(2000);
-      expect(result.dependencies).toContain('framer-motion');
+      expect(result.dependencies).toContain('lodash');
       expect(result.requestId).toBe('req-12345');
       expect(result.expiresAt).toBeTruthy();
     }
@@ -282,7 +282,7 @@ export default function App() {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer valid-token'
         }),
-        body: expect.stringContaining('framer-motion')
+        body: expect.stringContaining('lodash')
       })
     );
   });
@@ -306,25 +306,25 @@ export default function App() {
         bundleUrl: 'https://example.com/bundle.html',
         bundleSize: 1000,
         bundleTime: 500,
-        dependencies: ['framer-motion'],
+        dependencies: ['lodash'],
         expiresAt: new Date().toISOString(),
         requestId: 'req-1'
       })
     });
 
-    const code = `import { motion } from 'framer-motion';`;
-    await bundleArtifact(code, 'art-456', 'sess-789', 'Animation Component');
+    const code = `import _ from 'lodash';`;
+    await bundleArtifact(code, 'art-456', 'sess-789', 'Utility Component');
 
     expect(global.fetch).toHaveBeenCalled();
     const fetchCall = vi.mocked(global.fetch).mock.calls[0];
     const requestBody = JSON.parse(fetchCall[1]?.body as string);
 
     expect(requestBody).toEqual({
-      code: `import { motion } from 'framer-motion';`,
-      dependencies: { 'framer-motion': '^11.0.0' },
+      code: `import _ from 'lodash';`,
+      dependencies: { lodash: '^4.17.21' },
       artifactId: 'art-456',
       sessionId: 'sess-789',
-      title: 'Animation Component',
+      title: 'Utility Component',
       isGuest: false // Has session, so not a guest
     });
   });
@@ -350,7 +350,7 @@ export default function App() {
       json: async () => ({ error: 'Internal server error' })
     });
 
-    const code = `import { motion } from 'framer-motion';`;
+    const code = `import _ from 'lodash';`;
     const result = await bundleArtifact(code, 'id', 'session', 'title');
 
     expect(result.success).toBe(false);
@@ -374,7 +374,7 @@ export default function App() {
 
     global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
-    const code = `import { motion } from 'framer-motion';`;
+    const code = `import _ from 'lodash';`;
     const result = await bundleArtifact(code, 'id', 'session', 'title');
 
     expect(result.success).toBe(false);
@@ -404,7 +404,7 @@ export default function App() {
       })
     });
 
-    const code = `import { motion } from 'framer-motion';`;
+    const code = `import _ from 'lodash';`;
     const result = await bundleArtifact(code, 'id', 'session', 'title');
 
     expect(result.success).toBe(false);
@@ -431,7 +431,7 @@ export default function App() {
       json: async () => ({}) // Empty error response
     });
 
-    const code = `import { motion } from 'framer-motion';`;
+    const code = `import _ from 'lodash';`;
     const result = await bundleArtifact(code, 'id', 'session', 'title');
 
     expect(result.success).toBe(false);
@@ -454,7 +454,7 @@ export default function App() {
     // Throw non-Error object
     global.fetch = vi.fn().mockRejectedValue('String error');
 
-    const code = `import { motion } from 'framer-motion';`;
+    const code = `import _ from 'lodash';`;
     const result = await bundleArtifact(code, 'id', 'session', 'title');
 
     expect(result.success).toBe(false);
@@ -487,7 +487,7 @@ export default function App() {
         bundleUrl: 'https://example.com/bundle.html',
         bundleSize: 50000,
         bundleTime: 3500,
-        dependencies: ['framer-motion', 'lucide-react', 'recharts'],
+        dependencies: ['lodash', 'date-fns', 'axios'],
         expiresAt: new Date().toISOString(),
         requestId: 'req-multi'
       })
@@ -495,9 +495,9 @@ export default function App() {
 
     // Use only unscoped packages (scoped packages with @ are filtered by regex)
     const code = `
-import { motion } from 'framer-motion';
-import { Star } from 'lucide-react';
-import { LineChart } from 'recharts';
+import _ from 'lodash';
+import { format } from 'date-fns';
+import axios from 'axios';
 export default function App() { return <div>Test</div> }
 `;
 
@@ -506,9 +506,9 @@ export default function App() { return <div>Test</div> }
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.dependencies).toHaveLength(3);
-      expect(result.dependencies).toContain('framer-motion');
-      expect(result.dependencies).toContain('lucide-react');
-      expect(result.dependencies).toContain('recharts');
+      expect(result.dependencies).toContain('lodash');
+      expect(result.dependencies).toContain('date-fns');
+      expect(result.dependencies).toContain('axios');
     }
 
     // Verify request included all dependencies
@@ -541,7 +541,7 @@ export default function App() { return <div>Test</div> }
       }
     });
 
-    const code = `import { motion } from 'framer-motion';`;
+    const code = `import _ from 'lodash';`;
     const result = await bundleArtifact(code, 'id', 'session', 'title');
 
     expect(result.success).toBe(false);
@@ -571,14 +571,14 @@ export default function App() { return <div>Test</div> }
         success: true,
         bundleSize: 12345,
         bundleTime: 2000,
-        dependencies: ['framer-motion'],
+        dependencies: ['lodash'],
         expiresAt: new Date().toISOString(),
         requestId: 'req-123'
         // Missing bundleUrl!
       })
     });
 
-    const code = `import { motion } from 'framer-motion';`;
+    const code = `import _ from 'lodash';`;
     const result = await bundleArtifact(code, 'id', 'session', 'title');
 
     expect(result.success).toBe(false);
@@ -608,13 +608,13 @@ export default function App() { return <div>Test</div> }
         bundleUrl: 'https://storage.supabase.co/bundle.html',
         bundleSize: '12345', // String instead of number
         bundleTime: 2000,
-        dependencies: ['framer-motion'],
+        dependencies: ['lodash'],
         expiresAt: new Date().toISOString(),
         requestId: 'req-123'
       })
     });
 
-    const code = `import { motion } from 'framer-motion';`;
+    const code = `import _ from 'lodash';`;
     const result = await bundleArtifact(code, 'id', 'session', 'title');
 
     expect(result.success).toBe(false);
@@ -644,13 +644,13 @@ export default function App() { return <div>Test</div> }
         bundleUrl: 'https://storage.supabase.co/bundle.html',
         bundleSize: 12345,
         bundleTime: 2000,
-        dependencies: 'framer-motion', // String instead of array
+        dependencies: 'lodash', // String instead of array
         expiresAt: new Date().toISOString(),
         requestId: 'req-123'
       })
     });
 
-    const code = `import { motion } from 'framer-motion';`;
+    const code = `import _ from 'lodash';`;
     const result = await bundleArtifact(code, 'id', 'session', 'title');
 
     expect(result.success).toBe(false);
@@ -667,8 +667,7 @@ export default function App() { return <div>Test</div> }
 
 describe('needsBundling', () => {
   it('returns true for React artifacts with npm imports', () => {
-    // Use unscoped package (scoped packages starting with @ are filtered by regex [^'"@./])
-    const code = `import { motion } from 'framer-motion';`;
+    const code = `import _ from 'lodash';`;
     expect(needsBundling(code, 'react')).toBe(true);
   });
 
@@ -692,16 +691,18 @@ export default function App() { return <div>Hello</div> }`;
     expect(needsBundling(code, 'markdown')).toBe(false);
   });
 
-  it('returns true for scoped npm packages like @radix-ui', () => {
-    // Server-side bundling now supports scoped packages (e.g., @radix-ui/*)
-    // The regex properly differentiates between npm scoped packages and local @/ imports
-    const code = `import * as DropdownMenu from '@radix-ui/react-dropdown-menu';`;
+  it('returns true for scoped npm packages like @tanstack', () => {
+    const code = `import { useQuery } from '@tanstack/react-query';`;
     expect(needsBundling(code, 'react')).toBe(true);
   });
 
-  it('returns true for React artifacts with common npm packages', () => {
-    expect(needsBundling(`import { motion } from 'framer-motion';`, 'react')).toBe(true);
-    expect(needsBundling(`import { Star } from 'lucide-react';`, 'react')).toBe(true);
+  it('returns false for React artifacts with runtime-provided packages', () => {
+    expect(needsBundling(`import { motion } from 'framer-motion';`, 'react')).toBe(false);
+    expect(needsBundling(`import { Star } from 'lucide-react';`, 'react')).toBe(false);
+    expect(needsBundling(`import { LineChart } from 'recharts';`, 'react')).toBe(false);
+  });
+
+  it('returns true for React artifacts with non-runtime packages', () => {
     expect(needsBundling(`import _ from 'lodash';`, 'react')).toBe(true);
   });
 
@@ -749,7 +750,7 @@ describe('bundleArtifact with skipNpmCheck', () => {
         bundleUrl: 'https://example.com/bundle.html',
         bundleSize: 1000,
         bundleTime: 500,
-        dependencies: ['framer-motion'],
+        dependencies: ['lodash'],
         expiresAt: new Date().toISOString(),
         requestId: 'req-1'
       })
@@ -813,13 +814,13 @@ describe('bundleArtifact with skipNpmCheck', () => {
         bundleUrl: 'https://example.com/bundle.html',
         bundleSize: 1000,
         bundleTime: 500,
-        dependencies: ['framer-motion'],
+        dependencies: ['lodash'],
         expiresAt: new Date().toISOString(),
         requestId: 'req-1'
       })
     });
 
-    const code = `import { motion } from 'framer-motion';`;
+    const code = `import _ from 'lodash';`;
 
     // Should work normally with skipNpmCheck=true when imports are present
     const result = await bundleArtifact(code, 'id', 'session', 'title', true);

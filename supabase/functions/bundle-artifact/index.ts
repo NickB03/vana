@@ -6,7 +6,14 @@ import { RATE_LIMITS } from "../_shared/config.ts";
 import { uploadWithRetry } from "../_shared/storage-retry.ts";
 import { fixOrphanedMethodChains } from "../_shared/artifact-validator.ts";
 import { getPrebuiltBundles } from "../_shared/prebuilt-bundles.ts";
-import { getWorkingCdnUrl, CDN_PROVIDERS } from "../_shared/cdn-fallback.ts";
+import { getWorkingCdnUrl } from "../_shared/cdn-fallback.ts";
+import {
+  JSX_RUNTIME_SHIM,
+  REACT_DOM_CLIENT_SHIM,
+  REACT_DOM_SHIM,
+  REACT_EXPORT_NAMES,
+  REACT_SHIM,
+} from "../_shared/react-shims.ts";
 
 /**
  * Bundle Artifact Edge Function
@@ -36,6 +43,7 @@ interface BundleRequest {
   sessionId: string;                // Chat session identifier (UUID)
   title: string;                    // Artifact title (max 200 chars)
   isGuest?: boolean;                // Whether this is a guest request (skips auth)
+  bundleReact?: boolean;            // Use ESM React instead of UMD + shims
 }
 
 interface BundleResponse {
@@ -55,13 +63,14 @@ const MAX_BUNDLE_SIZE = 10 * 1024 * 1024; // 10MB (matches storage bucket limit)
 // NOTE: Bundle timeout is handled by Supabase Edge Function runtime (default 60s).
 // Client-side timeout in useChatMessages.tsx:bundleArtifact() is 60 seconds.
 
-// React/ReactDOM import map shims (data URLs that redirect ESM imports to window globals)
-// Used by esm.sh packages with ?external=react,react-dom
-// CRITICAL: Include error detection to surface load failures clearly to users
-const REACT_SHIM = 'data:text/javascript,if(!window.React){throw new Error("React failed to load. Please refresh the page.")}const R=window.React;export default R;export const{useState,useEffect,useRef,useMemo,useCallback,useContext,createContext,createElement,Fragment,memo,forwardRef,useReducer,useLayoutEffect,useImperativeHandle,useDebugValue,useDeferredValue,useTransition,useId,useSyncExternalStore,useInsertionEffect,lazy,Suspense,startTransition,Children,cloneElement,isValidElement,createRef,Component,PureComponent,StrictMode}=R;';
-const REACT_DOM_SHIM = 'data:text/javascript,if(!window.ReactDOM){throw new Error("ReactDOM failed to load. Please refresh the page.")}const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync,findDOMNode,unmountComponentAtNode,render,hydrate}=D;';
-const REACT_DOM_CLIENT_SHIM = 'data:text/javascript,if(!window.ReactDOM){throw new Error("ReactDOM failed to load. Please refresh the page.")}const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync}=D;';
-const JSX_RUNTIME_SHIM = 'data:text/javascript,if(!window.React){throw new Error("React failed to load (jsx-runtime). Please refresh the page.")}const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};';
+const REACT_ESM_VERSION = "18.3.1";
+const REACT_ESM_URLS = {
+  react: `https://esm.sh/react@${REACT_ESM_VERSION}`,
+  reactDom: `https://esm.sh/react-dom@${REACT_ESM_VERSION}`,
+  reactDomClient: `https://esm.sh/react-dom@${REACT_ESM_VERSION}/client`,
+  jsxRuntime: `https://esm.sh/react@${REACT_ESM_VERSION}/jsx-runtime`,
+  jsxDevRuntime: `https://esm.sh/react@${REACT_ESM_VERSION}/jsx-dev-runtime`,
+} as const;
 
 // Framer Motion shim - redirects ESM imports to window.Motion loaded via UMD
 // This avoids the esm.sh import which has issues with Safari's import map resolution
@@ -248,7 +257,15 @@ serve(async (req) => {
       return errors.validation("Invalid JSON", "Request body must be valid JSON");
     }
 
-    const { code, dependencies, artifactId, sessionId, title, isGuest = false } = body;
+    const {
+      code,
+      dependencies,
+      artifactId,
+      sessionId,
+      title,
+      isGuest = false,
+      bundleReact = false,
+    } = body;
 
     console.log(`[${requestId}] Request type: ${isGuest ? 'GUEST' : 'AUTHENTICATED'}`);
 
@@ -528,9 +545,10 @@ serve(async (req) => {
     );
 
     // FIX: Strip duplicate React hook destructuring (already available via UMD globals)
+    const reactExportPattern = REACT_EXPORT_NAMES.join("|");
     transformedCode = transformedCode.replace(
-      /^const\s*\{[^}]*(?:useState|useEffect|useReducer|useRef|useMemo|useCallback|useContext|useLayoutEffect)[^}]*\}\s*=\s*React;?\s*$/gm,
-      ''
+      new RegExp(`^const\\s*\\{[^}]*(?:${reactExportPattern})[^}]*\\}\\s*=\\s*React;?\\s*$`, "gm"),
+      ""
     );
 
     // FIX: Strip duplicate Framer Motion destructuring (already imported via esm.sh)
@@ -569,7 +587,8 @@ serve(async (req) => {
     // Replace npm package imports with esm.sh CDN URLs
     for (const [pkg, version] of Object.entries(dependencies)) {
       // Skip packages loaded via UMD globals
-      if (pkg === 'react' || pkg === 'react-dom' || pkg === 'lucide-react' || pkg === 'framer-motion') continue;
+      const usesUmdGlobal = !bundleReact && (pkg === 'lucide-react' || pkg === 'framer-motion');
+      if (pkg === 'react' || pkg === 'react-dom' || usesUmdGlobal) continue;
 
       const esmUrl = buildEsmUrl(pkg, version);
       const escapedPkg = pkg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -586,17 +605,21 @@ serve(async (req) => {
       );
     }
 
-    // Replace React imports with window global references
-    // We'll use a shim approach in the HTML
-    transformedCode = transformedCode
-      .replace(/from\s+['"]react['"]/g, `from 'react-shim'`)
-      .replace(/from\s+['"]react-dom\/client['"]/g, `from 'react-dom-shim'`)
-      .replace(/from\s+['"]react-dom['"]/g, `from 'react-dom-shim'`);
+    if (!bundleReact) {
+      // Replace React imports with window global references
+      // We'll use a shim approach in the HTML
+      transformedCode = transformedCode
+        .replace(/from\s+['"]react['"]/g, `from 'react-shim'`)
+        .replace(/from\s+['"]react-dom\/client['"]/g, `from 'react-dom-shim'`)
+        .replace(/from\s+['"]react-dom['"]/g, `from 'react-dom-shim'`);
+    }
 
-    // Strip lucide-react imports (loaded via UMD global)
-    transformedCode = transformedCode
-      .replace(/^import\s+.*?from\s+['"]lucide-react['"];?\s*$/gm, '')
-      .replace(/^import\s+\{[^}]*\}\s+from\s+['"]lucide-react['"];?\s*$/gm, '');
+    if (!bundleReact) {
+      // Strip lucide-react imports (loaded via UMD global)
+      transformedCode = transformedCode
+        .replace(/^import\s+.*?from\s+['"]lucide-react['"];?\s*$/gm, '')
+        .replace(/^import\s+\{[^}]*\}\s+from\s+['"]lucide-react['"];?\s*$/gm, '');
+    }
 
     // Transform export default to App assignment using robust normalizer
     const codeWithoutExport = normalizeDefaultExportToApp(transformedCode);
@@ -622,26 +645,130 @@ serve(async (req) => {
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
 
+    const reactGlobalAssignments = REACT_EXPORT_NAMES.map(
+      (name) => `      globalThis.${name} = globalThis.React.${name};`
+    ).join("\n");
+
+    const reactUmdScripts = bundleReact
+      ? ""
+      : `
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>`;
+
+    const framerMotionScript = bundleReact
+      ? ""
+      : `
+  <script crossorigin src="https://unpkg.com/framer-motion@11/dist/framer-motion.js"></script>`;
+
+    const lucideScript = bundleReact
+      ? ""
+      : `
+  <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>`;
+
+    const reactUmdBootstrapScript = bundleReact
+      ? ""
+      : `
+  <script>
+    // CRITICAL: Verify React loaded successfully
+    if (typeof globalThis.React === 'undefined' || typeof globalThis.ReactDOM === 'undefined') {
+      console.error('React or ReactDOM failed to load from UMD');
+      document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('root').innerHTML = '<div class="error-container"><h2>React Load Error</h2><p>React libraries failed to load. Please refresh the page.</p></div>';
+      });
+    } else {
+      console.log('React ' + globalThis.React.version + ' loaded successfully');
+
+      // Expose React exports as globals for GLM-generated code that uses destructuring
+${reactGlobalAssignments}
+    }
+  </script>`;
+
+    const libraryBootstrapScript = bundleReact
+      ? `
+  <script>
+    // Expose canvas-confetti (GLM uses: const { create } = canvasConfetti)
+    if (typeof confetti !== 'undefined') {
+      window.canvasConfetti = { create: confetti.create || confetti, reset: confetti.reset };
+      // Also expose confetti directly for simple usage
+      window.confetti = confetti;
+    }
+  </script>`
+      : `
+  <script>
+    // Framer Motion UMD exports to window.Motion automatically
+    // The Motion global provides: motion, AnimatePresence, useAnimation, etc.
+    // GLM uses: const { motion, AnimatePresence } = Motion;
+    if (typeof Motion !== 'undefined' && Motion.motion) {
+      console.log('Framer Motion loaded successfully');
+      // Also expose common motion utilities directly as globals for convenience
+      window.motion = Motion.motion;
+      window.AnimatePresence = Motion.AnimatePresence;
+    }
+
+    // Expose canvas-confetti (GLM uses: const { create } = canvasConfetti)
+    if (typeof confetti !== 'undefined') {
+      window.canvasConfetti = { create: confetti.create || confetti, reset: confetti.reset };
+      // Also expose confetti directly for simple usage
+      window.confetti = confetti;
+    }
+
+    // Lucide React UMD exports to window.LucideReact
+    // GLM uses: const { Check, X, Calendar } = Lucide;
+    if (typeof LucideReact !== 'undefined') {
+      console.log('Lucide React loaded successfully');
+      // Expose as "Lucide" for GLM-generated code
+      window.Lucide = LucideReact;
+      // Also expose all icons individually as globals for convenience
+      Object.keys(LucideReact).forEach(iconName => {
+        if (typeof window[iconName] === 'undefined') {
+          window[iconName] = LucideReact[iconName];
+        }
+      });
+    }
+  </script>`;
+
+    const reactEsmImports = bundleReact
+      ? `import * as __React from 'react';
+    import * as __ReactDOMClient from 'react-dom/client';
+    import * as __ReactDOMLegacy from 'react-dom';`
+      : "";
+
+    const reactEsmBootstrap = bundleReact
+      ? `
+    const __ReactDOM = { ...__ReactDOMLegacy, ...__ReactDOMClient };
+    globalThis.React = __React;
+    globalThis.ReactDOM = __ReactDOM;
+${reactGlobalAssignments}`
+      : "";
+
     // Build import map for browser using shared shim constants
     // Shims redirect ESM imports to window.React/ReactDOM globals loaded via UMD
-    const browserImportMap: Record<string, string> = {
-      // Shims for transformed code (code that explicitly imports 'react-shim')
-      'react-shim': REACT_SHIM,
-      'react-dom-shim': REACT_DOM_SHIM,
-      // Bare specifiers for esm.sh packages with ?external=react,react-dom
-      'react': REACT_SHIM,
-      'react-dom': REACT_DOM_SHIM,
-      'react-dom/client': REACT_DOM_CLIENT_SHIM,
-      // JSX runtime shims for modern JSX transform (React 17+)
-      'react/jsx-runtime': JSX_RUNTIME_SHIM,
-      'react/jsx-dev-runtime': JSX_RUNTIME_SHIM,
-      // Framer Motion shim - avoids esm.sh import issues with Safari's import map resolution
-      // The UMD is already loaded via <script> tag, so we just redirect to window.Motion
-      'framer-motion': FRAMER_MOTION_SHIM,
-      // Lucide React shim - avoids dual React instance problem
-      // The UMD is already loaded via <script> tag, so we just redirect to window.LucideReact
-      'lucide-react': LUCIDE_REACT_SHIM,
-    };
+    const browserImportMap: Record<string, string> = bundleReact
+      ? {
+          react: REACT_ESM_URLS.react,
+          "react-dom": REACT_ESM_URLS.reactDom,
+          "react-dom/client": REACT_ESM_URLS.reactDomClient,
+          "react/jsx-runtime": REACT_ESM_URLS.jsxRuntime,
+          "react/jsx-dev-runtime": REACT_ESM_URLS.jsxDevRuntime,
+        }
+      : {
+          // Shims for transformed code (code that explicitly imports 'react-shim')
+          "react-shim": REACT_SHIM,
+          "react-dom-shim": REACT_DOM_SHIM,
+          // Bare specifiers for esm.sh packages with ?external=react,react-dom
+          react: REACT_SHIM,
+          "react-dom": REACT_DOM_SHIM,
+          "react-dom/client": REACT_DOM_CLIENT_SHIM,
+          // JSX runtime shims for modern JSX transform (React 17+)
+          "react/jsx-runtime": JSX_RUNTIME_SHIM,
+          "react/jsx-dev-runtime": JSX_RUNTIME_SHIM,
+          // Framer Motion shim - avoids esm.sh import issues with Safari's import map resolution
+          // The UMD is already loaded via <script> tag, so we just redirect to window.Motion
+          "framer-motion": FRAMER_MOTION_SHIM,
+          // Lucide React shim - avoids dual React instance problem
+          // The UMD is already loaded via <script> tag, so we just redirect to window.LucideReact
+          "lucide-react": LUCIDE_REACT_SHIM,
+        };
 
     // Check for prebuilt bundles - these use ?bundle for faster loading
     // Prebuilt packages get single-file bundles, remaining get standard ESM URLs
@@ -658,14 +785,15 @@ serve(async (req) => {
     // Add prebuilt packages with ?bundle URLs (faster, single-file bundles)
     for (const pkg of prebuilt) {
       // Skip packages loaded via UMD globals
-      if (pkg.name === 'lucide-react') continue;
+      if (!bundleReact && pkg.name === 'lucide-react') continue;
       browserImportMap[pkg.name] = pkg.bundleUrl;
     }
 
     // Add remaining npm dependencies with CDN fallback
     // Skip packages that have UMD shims (react, react-dom, framer-motion, lucide-react)
     for (const [pkg, version] of Object.entries(remaining)) {
-      if (pkg === 'react' || pkg === 'react-dom' || pkg === 'framer-motion' || pkg === 'lucide-react') continue;
+      const usesUmdGlobal = !bundleReact && (pkg === 'framer-motion' || pkg === 'lucide-react');
+      if (pkg === 'react' || pkg === 'react-dom' || usesUmdGlobal) continue;
 
       // Try to get working CDN URL with fallback chain
       const cdnResult = await getWorkingCdnUrl(pkg, version, requestId);
@@ -719,77 +847,18 @@ serve(async (req) => {
                  connect-src 'self' https://esm.sh https://*.esm.sh https://esm.run https://cdn.jsdelivr.net;">
   <title>${sanitizedTitle}</title>
 
-  <!-- React/ReactDOM UMD globals (CRITICAL: Must load before component) -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  ${reactUmdScripts}
 
   <!-- PropTypes library (CRITICAL: Required by Recharts and other UMD libs) -->
   <script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
 
   <!-- Common libraries that GLM expects as globals -->
-  <script crossorigin src="https://unpkg.com/framer-motion@11/dist/framer-motion.js"></script>
+  ${framerMotionScript}
   <script crossorigin src="https://unpkg.com/canvas-confetti@1.9.3/dist/confetti.browser.js"></script>
-  <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
+  ${lucideScript}
 
-  <script>
-    // CRITICAL: Verify React loaded successfully
-    if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
-      console.error('React or ReactDOM failed to load from UMD');
-      document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('root').innerHTML = '<div class="error-container"><h2>React Load Error</h2><p>React libraries failed to load. Please refresh the page.</p></div>';
-      });
-    } else {
-      console.log('React ' + React.version + ' loaded successfully');
-
-      // Expose React hooks as globals for GLM-generated code that uses destructuring
-      // GLM often generates: const { useState, useEffect } = React;
-      // After the fix strips this, the hooks need to be available globally
-      window.useState = React.useState;
-      window.useEffect = React.useEffect;
-      window.useCallback = React.useCallback;
-      window.useMemo = React.useMemo;
-      window.useRef = React.useRef;
-      window.useContext = React.useContext;
-      window.useReducer = React.useReducer;
-      window.useLayoutEffect = React.useLayoutEffect;
-      window.createContext = React.createContext;
-      window.createElement = React.createElement;
-      window.Fragment = React.Fragment;
-      window.memo = React.memo;
-      window.forwardRef = React.forwardRef;
-    }
-
-    // Framer Motion UMD exports to window.Motion automatically
-    // The Motion global provides: motion, AnimatePresence, useAnimation, etc.
-    // GLM uses: const { motion, AnimatePresence } = Motion;
-    if (typeof Motion !== 'undefined' && Motion.motion) {
-      console.log('Framer Motion loaded successfully');
-      // Also expose common motion utilities directly as globals for convenience
-      window.motion = Motion.motion;
-      window.AnimatePresence = Motion.AnimatePresence;
-    }
-
-    // Expose canvas-confetti (GLM uses: const { create } = canvasConfetti)
-    if (typeof confetti !== 'undefined') {
-      window.canvasConfetti = { create: confetti.create || confetti, reset: confetti.reset };
-      // Also expose confetti directly for simple usage
-      window.confetti = confetti;
-    }
-
-    // Lucide React UMD exports to window.LucideReact
-    // GLM uses: const { Check, X, Calendar } = Lucide;
-    if (typeof LucideReact !== 'undefined') {
-      console.log('Lucide React loaded successfully');
-      // Expose as "Lucide" for GLM-generated code
-      window.Lucide = LucideReact;
-      // Also expose all icons individually as globals for convenience
-      Object.keys(LucideReact).forEach(iconName => {
-        if (typeof window[iconName] === 'undefined') {
-          window[iconName] = LucideReact[iconName];
-        }
-      });
-    }
-  </script>
+  ${reactUmdBootstrapScript}
+  ${libraryBootstrapScript}
 
   <!-- Import map for ESM dependencies -->
   <script type="importmap">
@@ -837,7 +906,10 @@ ${importMapJson}
   <script type="module">
     // CRITICAL: ESM imports MUST be at module top level (not in try/catch blocks)
     // JavaScript spec requires static imports to be hoisted and evaluated before any code runs
+    ${reactEsmImports}
     ${importsBlock}
+
+    ${reactEsmBootstrap}
 
     // Runtime component execution (can be in try/catch)
     try {
@@ -847,8 +919,8 @@ ${importMapJson}
       // Render the component
       const rootElement = document.getElementById('root');
       if (rootElement && typeof App !== 'undefined') {
-        const root = ReactDOM.createRoot(rootElement);
-        root.render(React.createElement(App));
+        const root = globalThis.ReactDOM.createRoot(rootElement);
+        root.render(globalThis.React.createElement(App));
         console.log('Component rendered successfully');
 
         // Signal to parent that artifact has finished rendering

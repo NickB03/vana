@@ -17,6 +17,14 @@ import { classifyError, shouldAttemptRecovery, getFallbackRenderer, ArtifactErro
 import { ArtifactErrorRecovery } from "./ArtifactErrorRecovery";
 import { transpileCode } from '@/utils/sucraseTranspiler';
 import * as sucraseTranspiler from '@/utils/sucraseTranspiler';
+import {
+  BASE_REACT_IMPORTS,
+  JSX_RUNTIME_SHIM,
+  REACT_DOM_CLIENT_SHIM,
+  REACT_DOM_SHIM,
+  REACT_EXPORT_NAMES,
+  REACT_SHIM,
+} from "@/utils/reactShims";
 
 // Lazy load Sandpack component for code splitting
 const SandpackArtifactRenderer = lazy(() =>
@@ -24,6 +32,16 @@ const SandpackArtifactRenderer = lazy(() =>
     default: module.SandpackArtifactRenderer
   }))
 );
+
+/**
+ * Template Constants - Shared between components
+ * These must be defined before BundledArtifactFrame to avoid reference errors
+ */
+const REACT_GLOBAL_EXPORTS = REACT_EXPORT_NAMES.join(", ");
+const REACT_GLOBAL_EXPORTS_PATTERN = REACT_EXPORT_NAMES.join("|");
+const REACT_GLOBAL_ASSIGNMENTS = REACT_EXPORT_NAMES.map(
+  (name) => `      window.${name} = React.${name};`
+).join("\n");
 
 /**
  * BundledArtifactFrame - Renders server-bundled artifacts via blob URL
@@ -217,19 +235,15 @@ const BundledArtifactFrame = memo(({
         // Check if React hooks are NOT exposed as globals
         // Old bundles strip "const { useState } = React" but don't expose hooks globally
         if (!htmlContent.includes('window.useState = React.useState') && htmlContent.includes('useState(')) {
-          console.log('[BundledArtifactFrame] Injecting React hook globals');
+          console.log('[BundledArtifactFrame] Injecting React globals');
           const hooksScript = `
   <script>
-    // Injected: React hooks as globals
+    // Injected: React globals
     if (typeof React !== 'undefined') {
-      window.useState = React.useState;
-      window.useEffect = React.useEffect;
-      window.useCallback = React.useCallback;
-      window.useMemo = React.useMemo;
-      window.useRef = React.useRef;
-      window.useContext = React.useContext;
-      window.useReducer = React.useReducer;
-      window.useLayoutEffect = React.useLayoutEffect;
+${REACT_GLOBAL_ASSIGNMENTS}
+      if (typeof ReactDOM !== 'undefined' && ReactDOM.unstable_batchedUpdates) {
+        window.unstable_batchedUpdates = ReactDOM.unstable_batchedUpdates;
+      }
     }
   </script>`;
           // Inject after React script
@@ -321,19 +335,15 @@ const BundledArtifactFrame = memo(({
 
               // Use the existing shim URLs if present, or create new ones
               // The shims export window.React/window.ReactDOM which were loaded via UMD
-              const reactShim = importMap.imports['react-shim'] ||
-                "data:text/javascript,const R=window.React;export default R;export const{useState,useEffect,useRef,useMemo,useCallback,useContext,createContext,createElement,Fragment,memo,forwardRef,useReducer,useLayoutEffect,useImperativeHandle,useDebugValue,useDeferredValue,useTransition,useId,useSyncExternalStore,useInsertionEffect,lazy,Suspense,startTransition,Children,cloneElement,isValidElement,createRef,Component,PureComponent,StrictMode}=R;";
-              const reactDomShim = importMap.imports['react-dom-shim'] ||
-                "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync,findDOMNode,unmountComponentAtNode,render,hydrate}=D;";
-              // JSX Runtime shim - esm.sh packages use the modern JSX transform which imports jsx/jsxs from react/jsx-runtime
-              // React 18+ exposes these on the main React object or we can construct them from createElement
-              // Note: Fragment must be React.Fragment (a symbol), not the React object itself
-              const jsxRuntimeShim = "data:text/javascript,const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};";
+              const reactShim = REACT_SHIM;
+              const reactDomShim = REACT_DOM_SHIM;
+              const reactDomClientShim = REACT_DOM_CLIENT_SHIM;
+              const jsxRuntimeShim = JSX_RUNTIME_SHIM;
 
               // Add bare specifier entries that point to the shims
               importMap.imports['react'] = reactShim;
               importMap.imports['react-dom'] = reactDomShim;
-              importMap.imports['react-dom/client'] = reactDomShim;
+              importMap.imports['react-dom/client'] = reactDomClientShim;
               importMap.imports['react/jsx-runtime'] = jsxRuntimeShim;
               importMap.imports['react/jsx-dev-runtime'] = jsxRuntimeShim;
 
@@ -600,18 +610,15 @@ const BundledArtifactFrame = memo(({
 BundledArtifactFrame.displayName = 'BundledArtifactFrame';
 
 /**
- * Template Constants - Shared between Sucrase and Babel artifact templates
- * Issue #12 (PR #410): Extracted from duplicate code in generateSucraseTemplate and generateBabelTemplate
+ * Additional Template Constants - Shared between artifact templates
+ * Note: REACT_GLOBAL_EXPORTS, REACT_GLOBAL_EXPORTS_PATTERN, and REACT_GLOBAL_ASSIGNMENTS
+ * are defined earlier in the file before BundledArtifactFrame
  */
 
 // React Import Map (shims for ES modules to use UMD React)
 const REACT_IMPORT_MAP = {
   imports: {
-    "react": "data:text/javascript,const R=window.React;export default R;export const{useState,useEffect,useRef,useMemo,useCallback,useContext,createContext,createElement,Fragment,memo,forwardRef,useReducer,useLayoutEffect,useImperativeHandle,useDebugValue,useDeferredValue,useTransition,useId,useSyncExternalStore,useInsertionEffect,lazy,Suspense,startTransition,Children,cloneElement,isValidElement,createRef,Component,PureComponent,StrictMode}=R;",
-    "react-dom": "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync,findDOMNode,unmountComponentAtNode,render,hydrate}=D;",
-    "react-dom/client": "data:text/javascript,const D=window.ReactDOM;export default D;export const{createRoot,hydrateRoot,createPortal,flushSync}=D;",
-    "react/jsx-runtime": "data:text/javascript,const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};",
-    "react/jsx-dev-runtime": "data:text/javascript,const R=window.React;const Fragment=R.Fragment;const jsx=(type,props,key)=>R.createElement(type,{...props,key});const jsxs=jsx;export{jsx,jsxs,Fragment};",
+    ...BASE_REACT_IMPORTS,
     "@radix-ui/react-dialog": "https://esm.sh/@radix-ui/react-dialog@1.0.5?external=react,react-dom",
     "@radix-ui/react-dropdown-menu": "https://esm.sh/@radix-ui/react-dropdown-menu@2.0.6?external=react,react-dom",
     "@radix-ui/react-popover": "https://esm.sh/@radix-ui/react-popover@1.0.7?external=react,react-dom",
@@ -628,7 +635,7 @@ const IMPORT_MAP_JSON = JSON.stringify(REACT_IMPORT_MAP, null, 2);
 
 // Library setup script - exposes UMD libraries as globals
 const LIBRARY_SETUP_SCRIPT = `
-    const { useState, useEffect, useReducer, useRef, useMemo, useCallback, useContext, useLayoutEffect } = React;
+    const { ${REACT_GLOBAL_EXPORTS} } = React;
 
     const LucideIcons = window.LucideReact || window.lucideReact || {};
     const {
@@ -721,6 +728,7 @@ interface ArtifactRendererProps {
   onFullScreen: () => void;
   onEdit?: (suggestion?: string) => void;
   onAIFix: () => void;
+  onBundleReactFallback?: (errorMessage: string) => void;
   onLoadingChange: (loading: boolean) => void;
   onPreviewErrorChange: (error: string | null) => void;
   onErrorCategoryChange: (category: 'syntax' | 'runtime' | 'import' | 'unknown') => void;
@@ -743,12 +751,14 @@ export const ArtifactRenderer = memo(({
   onFullScreen,
   onEdit,
   onAIFix,
+  onBundleReactFallback,
   onLoadingChange,
   onPreviewErrorChange,
   onErrorCategoryChange,
   previewContentRef,
 }: ArtifactRendererProps) => {
   const mermaidRef = useRef<HTMLDivElement>(null);
+  const bundleReactFallbackAttemptsRef = useRef<Set<string>>(new Set());
 
   // Error recovery state
   const [recoveryAttempts, setRecoveryAttempts] = useState(0);
@@ -840,6 +850,18 @@ export const ArtifactRenderer = memo(({
     return 'unknown';
   }, []);
 
+  const shouldAttemptBundleReactFallback = useCallback((message: string) => {
+    const normalized = message.toLowerCase();
+    if (!normalized.includes('does not provide an export named')) {
+      return false;
+    }
+    return (
+      normalized.includes('react-dom') ||
+      normalized.includes('react-dom/client') ||
+      normalized.includes('react')
+    );
+  }, []);
+
   // Handle fallback renderer
   const handleUseFallback = useCallback(() => {
     if (!currentError) return;
@@ -862,6 +884,19 @@ export const ArtifactRenderer = memo(({
     // Update existing error handlers
     onPreviewErrorChange(errorMessage);
     onErrorCategoryChange(mapErrorTypeToCategory(classifiedError.type));
+
+    if (
+      onBundleReactFallback &&
+      artifact.type === 'react' &&
+      artifact.bundleUrl &&
+      shouldAttemptBundleReactFallback(errorMessage)
+    ) {
+      const attempts = bundleReactFallbackAttemptsRef.current;
+      if (!attempts.has(artifact.id)) {
+        attempts.add(artifact.id);
+        onBundleReactFallback(errorMessage);
+      }
+    }
 
     // Check if automatic recovery should be attempted
     if (shouldAttemptRecovery(classifiedError, recoveryAttempts, MAX_RECOVERY_ATTEMPTS)) {
@@ -887,7 +922,19 @@ export const ArtifactRenderer = memo(({
         handleUseFallback();
       }
     }
-  }, [onPreviewErrorChange, onErrorCategoryChange, mapErrorTypeToCategory, recoveryAttempts, onAIFix, handleUseFallback]);
+  }, [
+    onPreviewErrorChange,
+    onErrorCategoryChange,
+    mapErrorTypeToCategory,
+    recoveryAttempts,
+    onAIFix,
+    handleUseFallback,
+    onBundleReactFallback,
+    artifact.bundleUrl,
+    artifact.id,
+    artifact.type,
+    shouldAttemptBundleReactFallback,
+  ]);
 
   // Track when loading started for elapsed time logging
   const loadingStartTimeRef = useRef<number>(Date.now());
@@ -1162,7 +1209,8 @@ ${artifact.content}
           decoding="async"
           className="max-w-full max-h-full object-contain"
           onError={(e) => {
-            console.error('SVG rendering error:', artifact.content);
+            console.error('[ArtifactRenderer] SVG rendering error:', artifact.content);
+            onPreviewErrorChange?.('The SVG image failed to render. The image data may be corrupted or contain invalid syntax.');
           }}
         />
       </div>
@@ -1430,7 +1478,7 @@ ${ERROR_HANDLING_SCRIPT}
       .replace(/^import\s+\{[^}]*\}\s+from\s+['"]lucide-react['"];?\s*$/gm, '')
       .replace(/^import\s+.*?from\s+['"]recharts['"];?\s*$/gm, '')
       .replace(/^import\s+.*?from\s+['"]framer-motion['"];?\s*$/gm, '')
-      .replace(/^const\s*\{[^}]*(?:useState|useEffect|useReducer|useRef|useMemo|useCallback|useContext|useLayoutEffect)[^}]*\}\s*=\s*React;?\s*$/gm, '')
+      .replace(new RegExp(`^const\\s*\\{[^}]*(?:${REACT_GLOBAL_EXPORTS_PATTERN})[^}]*\\}\\s*=\\s*React;?\\s*$`, 'gm'), '')
       // Strip Framer Motion destructuring (iframe template already declares these)
       .replace(/^const\s*\{\s*motion\s*,\s*AnimatePresence\s*\}\s*=\s*Motion;?\s*$/gm, '')
       .replace(/^const\s*\{[^}]*(?:motion|AnimatePresence)[^}]*\}\s*=\s*(?:Motion|FramerMotion|window\.Motion);?\s*$/gm, '')
@@ -1438,8 +1486,11 @@ ${ERROR_HANDLING_SCRIPT}
       .replace(/^const\s*\{[^}]*(?:BarChart|LineChart|PieChart|AreaChart|ResponsiveContainer)[^}]*\}\s*=\s*(?:Recharts|window\.Recharts);?\s*$/gm, '')
       // Strip Lucide icons destructuring (iframe template already declares these)
       .replace(/^const\s*\{[^}]*\}\s*=\s*(?:LucideIcons|window\.LucideReact|LucideReact);?\s*$/gm, '')
-      // Strip malformed "const * as X from 'package'" syntax (GLM bug - generates invalid JS)
-      .replace(/^const\s*\*\s*as\s+\w+\s+from\s+['"][^'"]+['"];?\s*$/gm, '')
+      // Fix malformed "const * as X from 'package'" syntax (GLM bug - generates invalid JS)
+      .replace(
+        /^const\s*\*\s*as\s+(\w+)\s+from\s+(['"][^'"]+['"])\s*;?\s*$/gm,
+        'import * as $1 from $2;'
+      )
       // Strip Radix UI destructuring - the iframe template now provides RadixUISelect via dynamic import
       .replace(/^const\s*\{[^}]*\}\s*=\s*RadixUISelect;?\s*$/gm, '')
       // NOTE: Keep Radix UI imports - they resolve via import map in the iframe template

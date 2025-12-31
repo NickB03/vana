@@ -462,6 +462,84 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
       // Verify error toast was shown
       expect(toast.error).toHaveBeenCalled();
     });
+
+    it('triggers bundleReact fallback on missing ReactDOM export errors', async () => {
+      vi.mocked(sucraseTranspiler.transpileCode).mockReturnValue({
+        success: true,
+        code: 'const App = () => React.createElement("div", null, "Hello");',
+        elapsed: 1.8,
+      });
+
+      const mockOnBundleReactFallback = vi.fn();
+      const artifact: ArtifactData = {
+        ...baseArtifact,
+        bundleUrl: 'https://storage.example.com/bundle.html',
+      };
+
+      render(
+        <ArtifactRenderer
+          {...baseProps}
+          artifact={artifact}
+          onBundleReactFallback={mockOnBundleReactFallback}
+        />
+      );
+
+      await vi.waitFor(() => {
+        expect(sucraseTranspiler.transpileCode).toHaveBeenCalled();
+      });
+
+      const errorMessage =
+        "The requested module 'react-dom' does not provide an export named 'unstable_batchedUpdates'";
+      window.dispatchEvent(new MessageEvent('message', {
+        data: { type: 'artifact-error', message: errorMessage },
+        origin: 'null',
+      }));
+
+      await vi.waitFor(() => {
+        expect(mockOnBundleReactFallback).toHaveBeenCalledWith(errorMessage);
+      });
+    });
+
+    it('does not repeat bundleReact fallback for the same artifact', async () => {
+      vi.mocked(sucraseTranspiler.transpileCode).mockReturnValue({
+        success: true,
+        code: 'const App = () => React.createElement("div", null, "Hello");',
+        elapsed: 2.1,
+      });
+
+      const mockOnBundleReactFallback = vi.fn();
+      const artifact: ArtifactData = {
+        ...baseArtifact,
+        bundleUrl: 'https://storage.example.com/bundle.html',
+      };
+
+      render(
+        <ArtifactRenderer
+          {...baseProps}
+          artifact={artifact}
+          onBundleReactFallback={mockOnBundleReactFallback}
+        />
+      );
+
+      await vi.waitFor(() => {
+        expect(sucraseTranspiler.transpileCode).toHaveBeenCalled();
+      });
+
+      const errorMessage =
+        "The requested module 'react-dom' does not provide an export named 'unstable_batchedUpdates'";
+      window.dispatchEvent(new MessageEvent('message', {
+        data: { type: 'artifact-error', message: errorMessage },
+        origin: 'null',
+      }));
+      window.dispatchEvent(new MessageEvent('message', {
+        data: { type: 'artifact-error', message: errorMessage },
+        origin: 'null',
+      }));
+
+      await vi.waitFor(() => {
+        expect(mockOnBundleReactFallback).toHaveBeenCalledTimes(1);
+      });
+    });
   });
 
   // ============================================

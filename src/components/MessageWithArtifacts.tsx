@@ -17,6 +17,7 @@ interface MessageWithArtifactsProps {
   messageId?: string;
   sessionId: string;  // CRITICAL: Used for server-side bundling, not messageId
   onArtifactOpen: (artifact: ArtifactData) => void;
+  artifactOverrides?: Record<string, Partial<ArtifactData>>;
   searchResults?: WebSearchResultsType | null;
   citationSources?: Map<number, CitationSource[]>;
   className?: string;
@@ -67,6 +68,7 @@ export const MessageWithArtifacts = memo(({
   messageId,
   sessionId,
   onArtifactOpen,
+  artifactOverrides,
   searchResults,
   citationSources,
   className = ""
@@ -75,6 +77,17 @@ export const MessageWithArtifacts = memo(({
   const [cleanContent, setCleanContent] = useState(content);
   const [bundlingStatus, setBundlingStatus] = useState<Record<string, 'idle' | 'bundling' | 'success' | 'error'>>({});
   const [inProgressCount, setInProgressCount] = useState(0);
+
+  const mergedArtifacts = useMemo(() => {
+    if (!artifactOverrides || Object.keys(artifactOverrides).length === 0) {
+      return artifacts;
+    }
+
+    return artifacts.map((artifact) => {
+      const override = artifactOverrides[artifact.id];
+      return override ? { ...artifact, ...override } : artifact;
+    });
+  }, [artifacts, artifactOverrides]);
 
   // Defer content parsing to reduce computation during rapid streaming updates
   const deferredContent = useDeferredValue(content);
@@ -114,8 +127,13 @@ export const MessageWithArtifacts = memo(({
 
   // Handle server-side bundling for artifacts with npm imports
   useEffect(() => {
+    let isMounted = true;
+
     async function handleBundling() {
-      for (const artifact of artifacts) {
+      for (const artifact of mergedArtifacts) {
+        // Check if component is still mounted before processing each artifact
+        if (!isMounted) return;
+
         // Skip if already bundled or bundling
         if (artifact.bundleUrl || bundlingStatus[artifact.id] !== undefined) {
           continue;
@@ -136,6 +154,7 @@ export const MessageWithArtifacts = memo(({
         if (!sessionId || sessionId.length === 0) {
           console.error(`[MessageWithArtifacts] Cannot bundle ${artifact.id} - invalid session ID`);
 
+          if (!isMounted) return;
           setArtifacts(prev =>
             prev.map(a =>
               a.id === artifact.id
@@ -155,11 +174,13 @@ export const MessageWithArtifacts = memo(({
             duration: 10000
           });
 
+          if (!isMounted) return;
           setBundlingStatus(prev => ({ ...prev, [artifact.id]: 'error' }));
           continue;
         }
 
         // Mark as bundling
+        if (!isMounted) return;
         setBundlingStatus(prev => ({ ...prev, [artifact.id]: 'bundling' }));
 
         // Show bundling toast
@@ -179,94 +200,99 @@ export const MessageWithArtifacts = memo(({
           );
 
           if (result.success) {
-          // Update artifact with bundle URL
-          setArtifacts(prev =>
-            prev.map(a =>
-              a.id === artifact.id
-                ? {
-                    ...a,
-                    bundleUrl: result.bundleUrl,
-                    bundleTime: result.bundleTime,
-                    dependencies: result.dependencies
-                  }
-                : a
-            )
-          );
-
-          setBundlingStatus(prev => ({ ...prev, [artifact.id]: 'success' }));
-
-          toast.success(`${artifact.title} bundled successfully!`, {
-            id: `bundle-${artifact.id}`,
-            duration: 3000
-          });
-
-          console.log(`[MessageWithArtifacts] Bundled ${artifact.id} in ${result.bundleTime}ms with ${result.dependencies.length} packages`);
-        } else {
-          // Bundling failed - check if artifact has npm imports
-          const hasNpmImports = needsBundling(artifact.content, artifact.type);
-
-          if (hasNpmImports) {
-            // Mark artifact as unbundleable - don't try Babel fallback
+            // Update artifact with bundle URL
+            if (!isMounted) return;
             setArtifacts(prev =>
               prev.map(a =>
                 a.id === artifact.id
                   ? {
                       ...a,
-                      bundlingFailed: true,
-                      bundleError: result.error,
-                      bundleErrorDetails: result.details,
-                      bundleStatus: 'error'
+                      bundleUrl: result.bundleUrl,
+                      bundleTime: result.bundleTime,
+                      dependencies: result.dependencies
                     }
                   : a
               )
             );
 
-            // Show error toast with appropriate message
-            if (result.retryable) {
-              toast.error(`Bundling failed for ${artifact.title}`, {
-                id: `bundle-${artifact.id}`,
-                description: `${result.error}. You can try again.`,
-                duration: 7000
-              });
-            } else if (result.requiresAuth) {
-              toast.error(result.error, {
-                id: `bundle-${artifact.id}`,
-                description: result.details || "Please refresh the page",
-                duration: 10000
-              });
-            } else if (result.retryAfter) {
-              toast.error(result.error, {
-                id: `bundle-${artifact.id}`,
-                description: result.details,
-                duration: 10000
-              });
-            } else {
-              toast.error(`Bundling failed for ${artifact.title}`, {
-                id: `bundle-${artifact.id}`,
-                description: result.details || result.error,
-                duration: 7000
-              });
-            }
+            if (!isMounted) return;
+            setBundlingStatus(prev => ({ ...prev, [artifact.id]: 'success' }));
 
-            console.error(`[MessageWithArtifacts] Bundle failed for ${artifact.id}:`, result.error, result.details);
-          } else {
-            // No npm imports - safe to fallback to Babel
-            toast.warning(`Bundling failed for ${artifact.title}, using fallback renderer`, {
+            toast.success(`${artifact.title} bundled successfully!`, {
               id: `bundle-${artifact.id}`,
-              description: "Artifact will render with limited features",
-              duration: 5000
+              duration: 3000
             });
 
-            console.warn(`[MessageWithArtifacts] Bundle failed for ${artifact.id}, falling back to Babel:`, result.error);
-          }
+            console.log(`[MessageWithArtifacts] Bundled ${artifact.id} in ${result.bundleTime}ms with ${result.dependencies.length} packages`);
+          } else {
+            // Bundling failed - check if artifact has npm imports
+            const hasNpmImports = needsBundling(artifact.content, artifact.type);
 
-          setBundlingStatus(prev => ({ ...prev, [artifact.id]: 'error' }));
-        }
+            if (hasNpmImports) {
+              // Mark artifact as unbundleable - don't try Babel fallback
+              if (!isMounted) return;
+              setArtifacts(prev =>
+                prev.map(a =>
+                  a.id === artifact.id
+                    ? {
+                        ...a,
+                        bundlingFailed: true,
+                        bundleError: result.error,
+                        bundleErrorDetails: result.details,
+                        bundleStatus: 'error'
+                      }
+                    : a
+                )
+              );
+
+              // Show error toast with appropriate message
+              if (result.retryable) {
+                toast.error(`Bundling failed for ${artifact.title}`, {
+                  id: `bundle-${artifact.id}`,
+                  description: `${result.error}. You can try again.`,
+                  duration: 7000
+                });
+              } else if (result.requiresAuth) {
+                toast.error(result.error, {
+                  id: `bundle-${artifact.id}`,
+                  description: result.details || "Please refresh the page",
+                  duration: 10000
+                });
+              } else if (result.retryAfter) {
+                toast.error(result.error, {
+                  id: `bundle-${artifact.id}`,
+                  description: result.details,
+                  duration: 10000
+                });
+              } else {
+                toast.error(`Bundling failed for ${artifact.title}`, {
+                  id: `bundle-${artifact.id}`,
+                  description: result.details || result.error,
+                  duration: 7000
+                });
+              }
+
+              console.error(`[MessageWithArtifacts] Bundle failed for ${artifact.id}:`, result.error, result.details);
+            } else {
+              // No npm imports - safe to fallback to Babel
+              toast.warning(`Bundling failed for ${artifact.title}, using fallback renderer`, {
+                id: `bundle-${artifact.id}`,
+                description: "Artifact will render with limited features",
+                duration: 5000
+              });
+
+              console.warn(`[MessageWithArtifacts] Bundle failed for ${artifact.id}, falling back to Babel:`, result.error);
+            }
+
+            if (!isMounted) return;
+            setBundlingStatus(prev => ({ ...prev, [artifact.id]: 'error' }));
+          }
         } catch (error) {
           console.error(`[MessageWithArtifacts] Unexpected bundling error for ${artifact.id}:`, error);
 
           const errorMessage = error instanceof Error ? error.message : String(error);
 
+          if (!isMounted) return;
           setArtifacts(prev =>
             prev.map(a =>
               a.id === artifact.id
@@ -281,6 +307,7 @@ export const MessageWithArtifacts = memo(({
             )
           );
 
+          if (!isMounted) return;
           setBundlingStatus(prev => ({ ...prev, [artifact.id]: 'error' }));
 
           toast.error(`Failed to bundle ${artifact.title}`, {
@@ -293,12 +320,16 @@ export const MessageWithArtifacts = memo(({
     }
 
     handleBundling();
+
+    return () => {
+      isMounted = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [artifacts, sessionId]);
+  }, [mergedArtifacts, sessionId]);
 
   // Separate image artifacts from interactive artifacts
-  const imageArtifacts = artifacts.filter(a => a.type === 'image');
-  const otherArtifacts = artifacts.filter(a => a.type !== 'image');
+  const imageArtifacts = mergedArtifacts.filter(a => a.type === 'image');
+  const otherArtifacts = mergedArtifacts.filter(a => a.type !== 'image');
 
   return (
     <MessageErrorBoundary messageContent={content}>

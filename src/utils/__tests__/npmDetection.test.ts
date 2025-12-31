@@ -4,13 +4,13 @@ import { detectNpmImports, extractNpmDependencies, isSafePackage } from '../npmD
 describe('npmDetection', () => {
   describe('detectNpmImports', () => {
     it('detects scoped packages starting with @', () => {
-      // Regex now supports scoped packages like @radix-ui/react-dialog
-      const code = `import * as Dialog from '@radix-ui/react-dialog';`;
+      // Regex now supports scoped packages like @tanstack/react-query
+      const code = `import { useQuery } from '@tanstack/react-query';`;
       expect(detectNpmImports(code)).toBe(true);
     });
 
     it('detects npm imports for non-scoped packages', () => {
-      const code = `import { motion } from 'framer-motion';`;
+      const code = `import _ from 'lodash';`;
       expect(detectNpmImports(code)).toBe(true);
     });
 
@@ -35,15 +35,16 @@ describe('npmDetection', () => {
     it('detects multiple npm packages with mixed imports', () => {
       const code = `
         import { motion } from 'framer-motion';
+        import _ from 'lodash';
         import React from 'react'; // Should ignore
         import { helper } from './local'; // Should ignore
       `;
       expect(detectNpmImports(code)).toBe(true);
     });
 
-    it('detects recharts imports', () => {
+    it('ignores recharts imports', () => {
       const code = `import { LineChart, Line, XAxis, YAxis } from 'recharts';`;
-      expect(detectNpmImports(code)).toBe(true);
+      expect(detectNpmImports(code)).toBe(false);
     });
 
     it('ignores code with no imports', () => {

@@ -36,9 +36,16 @@ interface ArtifactContainerProps {
   onClose?: () => void;
   onEdit?: (suggestion?: string) => void;
   onContentChange?: (newContent: string) => void;
+  onBundleReactFallback?: (artifact: ArtifactData, errorMessage: string) => void;
 }
 
-export const ArtifactContainer = ({ artifact, onClose, onEdit, onContentChange }: ArtifactContainerProps) => {
+export const ArtifactContainer = ({
+  artifact,
+  onClose,
+  onEdit,
+  onContentChange,
+  onBundleReactFallback,
+}: ArtifactContainerProps) => {
   // State management
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
   const [isMaximized, setIsMaximized] = useState(false);
@@ -232,6 +239,10 @@ ${artifact.content}
     }
   }, [previewError, artifact.content, artifact.type, onContentChange]);
 
+  const handleBundleReactFallback = useCallback((errorMessage: string) => {
+    onBundleReactFallback?.(artifact, errorMessage);
+  }, [artifact, onBundleReactFallback]);
+
   // Render functions use extracted components
   const renderPreview = () => {
     return (
@@ -251,6 +262,7 @@ ${artifact.content}
         onFullScreen={handleFullScreen}
         onEdit={onEdit}
         onAIFix={handleAIFix}
+        onBundleReactFallback={handleBundleReactFallback}
         onLoadingChange={setIsLoading}
         onPreviewErrorChange={setPreviewError}
         onErrorCategoryChange={setErrorCategory}

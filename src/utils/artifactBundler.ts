@@ -14,6 +14,7 @@ export interface BundleRequest {
   artifactId: string;
   sessionId: string;
   title: string;
+  bundleReact?: boolean;
 }
 
 export interface BundleResponse {
@@ -50,7 +51,8 @@ export async function bundleArtifact(
   artifactId: string,
   sessionId: string,
   title: string,
-  skipNpmCheck: boolean = false
+  skipNpmCheck: boolean = false,
+  bundleReact: boolean = false
 ): Promise<BundleResponse | BundleError> {
   try {
     // 1. Check if bundling is needed (skip if caller already verified)
@@ -87,19 +89,22 @@ export async function bundleArtifact(
       headers["Authorization"] = `Bearer ${session.access_token}`;
     }
 
+    const requestBody = {
+      code,
+      dependencies,
+      artifactId,
+      sessionId,
+      title,
+      isGuest,
+      ...(bundleReact ? { bundleReact: true } : {})
+    } as BundleRequest & { isGuest: boolean };
+
     const response = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bundle-artifact`,
       {
         method: "POST",
         headers,
-        body: JSON.stringify({
-          code,
-          dependencies,
-          artifactId,
-          sessionId,
-          title,
-          isGuest
-        } as BundleRequest & { isGuest: boolean })
+        body: JSON.stringify(requestBody)
       }
     );
 

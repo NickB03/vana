@@ -37,6 +37,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/componen
 import { ArtifactContainer as Artifact, ArtifactData } from "@/components/ArtifactContainer";
 import { MessageWithArtifacts } from "@/components/MessageWithArtifacts";
 import { parseArtifacts } from "@/utils/artifactParser";
+import { bundleArtifact } from "@/utils/artifactBundler";
 import { ThinkingIndicator } from "@/components/ThinkingIndicator";
 import { ReasoningDisplay } from "@/components/ReasoningDisplay";
 import { ReasoningErrorBoundary } from "@/components/ReasoningErrorBoundary";
@@ -105,12 +106,14 @@ export function ChatInterface({
     percentage: 0
   });
   const [currentArtifact, setCurrentArtifact] = useState<ArtifactData | null>(null);
+  const [artifactOverrides, setArtifactOverrides] = useState<Record<string, Partial<ArtifactData>>>({});
   const [isEditingArtifact, setIsEditingArtifact] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [imageMode, setImageMode] = useState(initialImageMode);
   const [artifactMode, setArtifactMode] = useState(initialArtifactMode);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const bundleReactFallbackAttemptsRef = useRef<Set<string>>(new Set());
   // Ref to store handleSend for stable access in effects (prevents re-triggering initialPrompt effect)
   const handleSendRef = useRef<((message?: string) => Promise<void>) | null>(null);
   // Track which session+prompt combination has been initialized (using ref to avoid stale closure issues)
@@ -123,6 +126,73 @@ export function ChatInterface({
       onCanvasToggle(true);
     }
   }, [onCanvasToggle]);
+
+  const handleBundleReactFallback = useCallback(async (artifact: ArtifactData, errorMessage: string) => {
+    if (!sessionId) {
+      toast({
+        title: "Unable to retry bundling",
+        description: "Session is missing. Please refresh the page.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (artifact.type !== "react" || !artifact.bundleUrl) {
+      return;
+    }
+
+    const attempts = bundleReactFallbackAttemptsRef.current;
+    if (attempts.has(artifact.id)) {
+      return;
+    }
+    attempts.add(artifact.id);
+
+    toast({
+      title: `Retrying ${artifact.title} with ESM React`,
+      description: "This should resolve missing ReactDOM exports.",
+    });
+
+    const result = await bundleArtifact(
+      artifact.content,
+      artifact.id,
+      sessionId,
+      artifact.title,
+      true,
+      true
+    );
+
+    if (result.success) {
+      const update = {
+        bundleUrl: result.bundleUrl,
+        bundleTime: result.bundleTime,
+        dependencies: result.dependencies,
+        bundlingFailed: false,
+        bundleError: undefined,
+        bundleErrorDetails: undefined,
+        bundleStatus: 'success' as const,
+      };
+
+      setArtifactOverrides(prev => ({
+        ...prev,
+        [artifact.id]: {
+          ...prev[artifact.id],
+          ...update,
+        }
+      }));
+
+      setCurrentArtifact(prev => (prev?.id === artifact.id ? { ...prev, ...update } : prev));
+
+      toast({
+        title: `${artifact.title} re-bundled with ESM React`,
+      });
+    } else {
+      toast({
+        title: `ESM React bundling failed for ${artifact.title}`,
+        description: result.details || result.error || errorMessage,
+        variant: "destructive",
+      });
+    }
+  }, [sessionId]);
 
   // Define handleSend early using useCallback to avoid initialization errors
   const handleSend = useCallback(async (message?: string) => {
@@ -206,6 +276,8 @@ export function ChatInterface({
     setCurrentArtifact(null);
     setIsEditingArtifact(false);
     setLastMessageElapsedTime("");
+    setArtifactOverrides({});
+    bundleReactFallbackAttemptsRef.current.clear();
     onArtifactChange?.(false);
     setMessageSentTracker(0); // Reset tracker
     setImageMode(false);
@@ -606,6 +678,7 @@ export function ChatInterface({
                         messageId={message.id}
                         sessionId={message.session_id}
                         onArtifactOpen={handleArtifactOpen}
+                        artifactOverrides={artifactOverrides}
                         searchResults={message.search_results}
                       />
 
@@ -748,6 +821,7 @@ export function ChatInterface({
                       content={streamingMessage}
                       sessionId={sessionId || ''}
                       onArtifactOpen={handleArtifactOpen}
+                      artifactOverrides={artifactOverrides}
                       searchResults={streamProgress.searchResults}
                     />
                   ) : (
@@ -871,6 +945,7 @@ export function ChatInterface({
                   artifact={currentArtifact}
                   onClose={handleCloseCanvas}
                   onEdit={handleEditArtifact}
+                  onBundleReactFallback={handleBundleReactFallback}
                   onContentChange={(newContent) => {
                     setCurrentArtifact({ ...currentArtifact, content: newContent });
                   }}
@@ -935,6 +1010,7 @@ export function ChatInterface({
                     artifact={currentArtifact}
                     onClose={handleCloseCanvas}
                     onEdit={handleEditArtifact}
+                    onBundleReactFallback={handleBundleReactFallback}
                     onContentChange={(newContent) => {
                       setCurrentArtifact({ ...currentArtifact, content: newContent });
                     }}

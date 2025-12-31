@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MessageWithArtifacts } from '../MessageWithArtifacts';
 import * as bundlerModule from '@/utils/artifactBundler';
+import * as artifactParser from '@/utils/artifactParser';
 import { toast } from 'sonner';
 
 // Mock dependencies
@@ -587,6 +588,71 @@ export default function App() { return <div>Test</div> }`;
 
       // bundleArtifact should never be called for images
       expect(bundleSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Artifact overrides', () => {
+    it('applies overrides to rendered artifact cards', async () => {
+      const artifact = {
+        id: 'artifact-override',
+        type: 'react',
+        title: 'Original Title',
+        content: 'export default function App() { return <div>Hi</div>; }'
+      };
+
+      vi.spyOn(artifactParser, 'parseArtifacts').mockResolvedValue({
+        artifacts: [artifact],
+        cleanContent: 'Clean content',
+        inProgressCount: 0
+      });
+
+      render(
+        <MessageWithArtifacts
+          {...baseProps}
+          content="override-content"
+          artifactOverrides={{
+            [artifact.id]: { title: 'Overridden Title' }
+          }}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId(`artifact-card-${artifact.id}`)).toHaveTextContent('Overridden Title');
+      });
+    });
+
+    it('skips bundling when overrides provide bundleUrl', async () => {
+      const artifact = {
+        id: 'artifact-bundled',
+        type: 'react',
+        title: 'Bundled Title',
+        content: `import * as Dialog from '@radix-ui/react-dialog';
+export default function App() { return <div>Test</div> }`
+      };
+
+      vi.spyOn(artifactParser, 'parseArtifacts').mockResolvedValue({
+        artifacts: [artifact],
+        cleanContent: 'Clean content',
+        inProgressCount: 0
+      });
+
+      vi.mocked(bundlerModule.needsBundling).mockReturnValue(true);
+
+      render(
+        <MessageWithArtifacts
+          {...baseProps}
+          content="bundle-override-content"
+          artifactOverrides={{
+            [artifact.id]: { bundleUrl: 'https://signed-url.com/bundle.html' }
+          }}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId(`artifact-card-${artifact.id}`)).toBeInTheDocument();
+      });
+
+      expect(bundlerModule.bundleArtifact).not.toHaveBeenCalled();
     });
   });
 });

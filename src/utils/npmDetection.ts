@@ -7,6 +7,28 @@ export interface NpmImport {
   version?: string;
 }
 
+const RUNTIME_ALLOWLIST = new Set([
+  "lucide-react",
+  "framer-motion",
+  "recharts",
+  "@radix-ui/react-dialog",
+  "@radix-ui/react-dropdown-menu",
+  "@radix-ui/react-popover",
+  "@radix-ui/react-tabs",
+  "@radix-ui/react-select",
+  "@radix-ui/react-slider",
+  "@radix-ui/react-switch",
+  "@radix-ui/react-tooltip",
+]);
+
+const REACT_CORE_PACKAGES = new Set([
+  "react",
+  "react-dom",
+  "react-dom/client",
+  "react/jsx-runtime",
+  "react/jsx-dev-runtime",
+]);
+
 /**
  * Detects if code contains npm package imports (excluding React core)
  * @param code - The code to analyze
@@ -28,23 +50,22 @@ export function detectNpmImports(code: string): boolean {
     const pkg = match[1];
 
     // Exclude React core packages (already available via CDN in iframe)
-    if (pkg !== 'react' && pkg !== 'react-dom') {
-      return true;
+    if (REACT_CORE_PACKAGES.has(pkg) || RUNTIME_ALLOWLIST.has(pkg)) {
+      continue;
     }
+
+    return true;
   }
 
   // Also detect malformed imports from GLM (e.g., "const * as Select from '@radix-ui/...'")
   // These are invalid JS but indicate the artifact needs Radix UI server bundling
   const malformedImportRegex = /const\s*\*\s*as\s+\w+\s+from\s+['"]((?:@[a-z0-9-]+\/)?[a-z0-9-]+)['"]/gi;
-  if (malformedImportRegex.test(code)) {
-    return true;
-  }
-
-  // Detect Radix UI usage patterns even without proper imports (e.g., Select.Root, Dialog.Content)
-  // This catches cases where GLM uses Radix UI but with broken import syntax
-  const radixUsagePattern = /\b(Select|Dialog|DropdownMenu|Popover|Tabs|Slider|Switch|Tooltip)\.(Root|Trigger|Content|Portal|Viewport|Item|Value|Icon|ItemText|Close|Overlay|Title|Description)\b/;
-  if (radixUsagePattern.test(code)) {
-    return true;
+  let malformedMatch;
+  while ((malformedMatch = malformedImportRegex.exec(code)) !== null) {
+    const pkg = malformedMatch[1];
+    if (!REACT_CORE_PACKAGES.has(pkg) && !RUNTIME_ALLOWLIST.has(pkg)) {
+      return true;
+    }
   }
 
   return false;
@@ -66,7 +87,7 @@ export function extractNpmDependencies(code: string): Record<string, string> {
     const pkg = match[1];
 
     // Skip React core (Sandpack includes these by default)
-    if (pkg === 'react' || pkg === 'react-dom') continue;
+    if (REACT_CORE_PACKAGES.has(pkg)) continue;
 
     // Skip if already added
     if (deps[pkg]) continue;
@@ -80,7 +101,7 @@ export function extractNpmDependencies(code: string): Record<string, string> {
   let malformedMatch;
   while ((malformedMatch = malformedImportRegex.exec(code)) !== null) {
     const pkg = malformedMatch[1];
-    if (pkg === 'react' || pkg === 'react-dom') continue;
+    if (REACT_CORE_PACKAGES.has(pkg)) continue;
     if (!deps[pkg]) {
       deps[pkg] = getPackageVersion(pkg);
     }
@@ -179,4 +200,3 @@ export function isSafePackage(pkg: string): boolean {
   // Allow standard package names
   return /^[a-z0-9-]+$/.test(pkg);
 }
-
