@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { motion } from "motion/react";
-import { ShaderBackground } from "@/components/ui/shader-background";
+import { SparkleBackground, type SparkleBackgroundProps } from "@/components/ui/sparkle-background";
 import { fadeInUp } from "@/utils/animationConstants";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +36,16 @@ export interface PageLayoutProps {
    * Optional delay (in seconds) applied to the entrance animation.
    */
   animationDelay?: number;
+  /**
+   * Optional sparkle background settings for live tweaking.
+   * Passed through to SparkleBackground component.
+   */
+  sparkleSettings?: Omit<SparkleBackgroundProps, 'className' | 'opacity'>;
+  /**
+   * Whether to render the sparkle background in PageLayout.
+   * Set to false when rendering SparkleBackground separately (e.g., inside SidebarInset).
+   */
+  showSparkleBackground?: boolean;
 }
 
 const DEFAULT_GRADIENT_STYLE: CSSProperties = {
@@ -51,6 +61,8 @@ export function PageLayout({
   gradientStyle,
   enableEntranceAnimation = true,
   animationDelay = 0,
+  sparkleSettings,
+  showSparkleBackground = true,
 }: PageLayoutProps) {
   const Container = enableEntranceAnimation ? motion.div : "div";
 
@@ -63,17 +75,19 @@ export function PageLayout({
     : undefined;
 
   return (
-    <>
-      {/* Shader background layer */}
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -1 }}>
-        <ShaderBackground className={shaderOpacityClassName} />
-      </div>
+    <div className="min-h-screen w-full bg-zinc-950 relative">
+      {/* Sparkle background layer - z-0 sits on top of bg-zinc-950 */}
+      {showSparkleBackground && (
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <SparkleBackground className={shaderOpacityClassName} {...sparkleSettings} />
+        </div>
+      )}
 
       {/* Radial gradient overlay */}
       {showGradient && (
         <div
-          className="fixed inset-0 pointer-events-none"
-          style={mergedGradientStyle}
+          className="fixed inset-0 pointer-events-none z-0"
+          style={{ ...mergedGradientStyle, zIndex: 0 }}
         />
       )}
 
@@ -81,11 +95,11 @@ export function PageLayout({
       <Container
         {...(enableEntranceAnimation ? fadeInUp : {})}
         transition={transition}
-        className={cn(className)}
+        className={cn("relative z-10", className)}
       >
         {children}
       </Container>
-    </>
+    </div>
   );
 }
 

@@ -517,8 +517,8 @@ export function ChatInterface({
   // Render chat content (messages + input) - reusable for both mobile and desktop
   const renderChatContent = () => (
     <div className="flex flex-1 flex-col min-h-0 px-4 pt-4 pb-4">
-      {/* Guest mode banner - positioned above chat card */}
-      {isGuest && messages.length > 0 && (
+      {/* Guest mode banner - only show when 3 or fewer messages remaining */}
+      {isGuest && messages.length > 0 && (guestMaxMessages - guestMessageCount) <= 3 && (
         <div className="mx-auto w-full max-w-5xl mb-3">
           <SystemMessage
             variant="action"
@@ -614,7 +614,7 @@ export function ChatInterface({
                         <MessageActions
                           className={cn(
                             "flex gap-1",
-                            "opacity-60 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100",
+                            "opacity-100 md:opacity-60 transition-opacity duration-150 md:group-hover:opacity-100 focus-within:opacity-100",
                             isLastMessage && "opacity-100"
                           )}
                         >
@@ -622,23 +622,23 @@ export function ChatInterface({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 rounded-sm hover:bg-muted/50"
+                              className="h-8 w-8 md:h-6 md:w-6 rounded-sm hover:bg-muted/50"
                               onClick={() => handleRetry(message.id)}
                               disabled={isLoading || isStreaming}
                               aria-label="Regenerate response"
                             >
-                              <RotateCw className="h-3 w-3 text-muted-foreground/60" />
+                              <RotateCw className="h-4 w-4 md:h-3 md:w-3 text-muted-foreground/60" />
                             </Button>
                           </MessageAction>
                           <MessageAction tooltip="Copy" delayDuration={100}>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 rounded-sm hover:bg-muted/50"
+                              className="h-8 w-8 md:h-6 md:w-6 rounded-sm hover:bg-muted/50"
                               onClick={() => handleCopyMessage(message.content)}
                               aria-label="Copy message content"
                             >
-                              <Copy className="h-3 w-3 text-muted-foreground/60" />
+                              <Copy className="h-4 w-4 md:h-3 md:w-3 text-muted-foreground/60" />
                             </Button>
                           </MessageAction>
                         </MessageActions>
@@ -664,29 +664,29 @@ export function ChatInterface({
                         <MessageActions
                           className={cn(
                             "flex gap-1",
-                            "opacity-60 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100"
+                            "opacity-100 md:opacity-60 transition-opacity duration-150 md:group-hover:opacity-100 focus-within:opacity-100"
                           )}
                         >
                           <MessageAction tooltip="Edit" delayDuration={100}>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 rounded-sm hover:bg-muted/50"
+                              className="h-8 w-8 md:h-6 md:w-6 rounded-sm hover:bg-muted/50"
                               onClick={() => handleEditMessage(message.id, message.content)}
                               aria-label="Edit message"
                             >
-                              <Pencil className="h-3 w-3 text-muted-foreground/60" />
+                              <Pencil className="h-4 w-4 md:h-3 md:w-3 text-muted-foreground/60" />
                             </Button>
                           </MessageAction>
                           <MessageAction tooltip="Copy" delayDuration={100}>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 rounded-sm hover:bg-muted/50"
+                              className="h-8 w-8 md:h-6 md:w-6 rounded-sm hover:bg-muted/50"
                               onClick={() => handleCopyMessage(message.content)}
                               aria-label="Copy message content"
                             >
-                              <Copy className="h-3 w-3 text-muted-foreground/60" />
+                              <Copy className="h-4 w-4 md:h-3 md:w-3 text-muted-foreground/60" />
                             </Button>
                           </MessageAction>
                         </MessageActions>
@@ -767,29 +767,29 @@ export function ChatInterface({
                   {/* Show artifact skeleton during generate_artifact tool execution */}
                   {/* Keep skeleton visible until the artifact tag is fully closed in streaming content */}
                   {streamProgress.toolExecution?.toolName === 'generate_artifact' &&
-                   !streamingMessage.includes('</artifact>') && (
-                    <ArtifactCardSkeleton className="mt-3 mx-6" />
-                  )}
+                    !streamingMessage.includes('</artifact>') && (
+                      <ArtifactCardSkeleton className="mt-3 mx-6" />
+                    )}
 
                   {/* Show image skeleton during generate_image tool execution */}
                   {streamProgress.toolExecution?.toolName === 'generate_image' &&
-                   streamProgress.toolExecution?.success === undefined && (
-                    <div className="my-4 mx-6 max-w-md">
-                      <div
-                        className="relative rounded-xl overflow-hidden border-2 border-border"
-                        role="status"
-                        aria-label="Generating image"
-                      >
-                        <Skeleton className="h-96 w-full" />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="text-sm text-muted-foreground bg-background/80 backdrop-blur-sm px-4 py-2 rounded-lg">
-                            Generating image...
+                    streamProgress.toolExecution?.success === undefined && (
+                      <div className="my-4 mx-6 max-w-md">
+                        <div
+                          className="relative rounded-xl overflow-hidden border-2 border-border"
+                          role="status"
+                          aria-label="Generating image"
+                        >
+                          <Skeleton className="h-96 w-full" />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="text-sm text-muted-foreground bg-background/80 backdrop-blur-sm px-4 py-2 rounded-lg">
+                              Generating image...
+                            </div>
                           </div>
+                          <span className="sr-only">Generating image</span>
                         </div>
-                        <span className="sr-only">Generating image</span>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               </MessageComponent>
             )}
@@ -857,88 +857,93 @@ export function ChatInterface({
       />
       <div className="flex flex-1 flex-col min-h-0">
         {isMobile ? (
-        // Mobile Layout: Fullscreen artifact overlay or chat
-        <div className="relative flex-1 min-h-0">
-          {isCanvasOpen && currentArtifact ? (
-            // Mobile: Fullscreen artifact
-            <div className="fixed inset-0 z-50 bg-background">
-              <Artifact
-                artifact={currentArtifact}
-                onClose={handleCloseCanvas}
-                onEdit={handleEditArtifact}
-                onContentChange={(newContent) => {
-                  setCurrentArtifact({ ...currentArtifact, content: newContent });
-                }}
-              />
-            </div>
-          ) : (
-            // Mobile: Chat with floating artifact button
-            <>
-              {renderChatContent()}
-              {currentArtifact && !isCanvasOpen && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="icon"
-                      className="fixed bottom-20 right-4 z-40 h-14 w-14 rounded-full bg-primary shadow-lg shadow-primary/30 hover:brightness-110 hover:-translate-y-0.5 transition-all"
-                      style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
-                      onClick={() => onCanvasToggle?.(true)}
-                    >
-                      <Maximize2 className="h-6 w-6 text-white" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>View Artifact</TooltipContent>
-                </Tooltip>
-              )}
-            </>
-          )}
-        </div>
-      ) : (
-        // Desktop Layout: Side-by-side resizable panels with Gemini-style sizing (30/70 split)
-        // UNIFIED CONTAINER: Single glass-morphic box wrapping both chat and canvas
-        <div className={cn(
-          "flex-1 min-h-0 mx-4 my-4 overflow-hidden rounded-3xl",
-          "bg-black/60 backdrop-blur-md border border-white/10 shadow-2xl",
-          // Add subtle glow effect for visual prominence
-          "ring-1 ring-white/5"
-        )}>
-        <ResizablePanelGroup direction="horizontal" className="h-full">
-          <ResizablePanel
-            id="chat-panel"
-            order={1}
-            defaultSize={isCanvasOpen && currentArtifact ? 30 : 100}
-            minSize={20}
-            maxSize={isCanvasOpen && currentArtifact ? 50 : 100}
-            className="md:min-w-[280px] flex flex-col"
-          >
-            {renderChatContent()}
-          </ResizablePanel>
-
-          <ResizableHandle
-            withHandle
-            className={`hidden md:flex ${!isCanvasOpen || !currentArtifact ? 'invisible' : ''}`}
-          />
-          <ResizablePanel
-            id="canvas-panel"
-            order={2}
-            defaultSize={isCanvasOpen && currentArtifact ? 70 : 0}
-            minSize={isCanvasOpen && currentArtifact ? 50 : 0}
-            className={`md:min-w-[400px] flex flex-col ${!isCanvasOpen || !currentArtifact ? 'hidden' : ''}`}
-          >
-            {currentArtifact && (
-              <Artifact
-                artifact={currentArtifact}
-                onClose={handleCloseCanvas}
-                onEdit={handleEditArtifact}
-                onContentChange={(newContent) => {
-                  setCurrentArtifact({ ...currentArtifact, content: newContent });
-                }}
-              />
+          // Mobile Layout: Fullscreen artifact overlay or chat
+          // Glass card container matches desktop styling for visual consistency
+          <div className={cn(
+            "flex flex-col flex-1 min-h-0 mx-3 my-3 overflow-hidden rounded-2xl",
+            "bg-black/60 backdrop-blur-md border border-white/10 shadow-xl",
+            "ring-1 ring-white/5"
+          )}>
+            {isCanvasOpen && currentArtifact ? (
+              // Mobile: Fullscreen artifact
+              <div className="fixed inset-0 z-50 bg-background">
+                <Artifact
+                  artifact={currentArtifact}
+                  onClose={handleCloseCanvas}
+                  onEdit={handleEditArtifact}
+                  onContentChange={(newContent) => {
+                    setCurrentArtifact({ ...currentArtifact, content: newContent });
+                  }}
+                />
+              </div>
+            ) : (
+              // Mobile: Chat with floating artifact button
+              <>
+                {renderChatContent()}
+                {currentArtifact && !isCanvasOpen && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        className="fixed bottom-20 right-4 z-40 h-14 w-14 rounded-full bg-primary shadow-lg shadow-primary/30 hover:brightness-110 hover:-translate-y-0.5 transition-all"
+                        style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
+                        onClick={() => onCanvasToggle?.(true)}
+                      >
+                        <Maximize2 className="h-6 w-6 text-white" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>View Artifact</TooltipContent>
+                  </Tooltip>
+                )}
+              </>
             )}
-          </ResizablePanel>
-        </ResizablePanelGroup>
-        </div>
-      )}
+          </div>
+        ) : (
+          // Desktop Layout: Side-by-side resizable panels with Gemini-style sizing (30/70 split)
+          // UNIFIED CONTAINER: Single glass-morphic box wrapping both chat and canvas
+          <div className={cn(
+            "flex-1 min-h-0 mx-4 my-4 overflow-hidden rounded-3xl",
+            "bg-black/60 backdrop-blur-md border border-white/10 shadow-2xl",
+            // Add subtle glow effect for visual prominence
+            "ring-1 ring-white/5"
+          )}>
+            <ResizablePanelGroup direction="horizontal" className="h-full">
+              <ResizablePanel
+                id="chat-panel"
+                order={1}
+                defaultSize={isCanvasOpen && currentArtifact ? 30 : 100}
+                minSize={20}
+                maxSize={isCanvasOpen && currentArtifact ? 50 : 100}
+                className="md:min-w-[280px] flex flex-col"
+              >
+                {renderChatContent()}
+              </ResizablePanel>
+
+              <ResizableHandle
+                withHandle
+                className={`hidden md:flex ${!isCanvasOpen || !currentArtifact ? 'invisible' : ''}`}
+              />
+              <ResizablePanel
+                id="canvas-panel"
+                order={2}
+                defaultSize={isCanvasOpen && currentArtifact ? 70 : 0}
+                minSize={isCanvasOpen && currentArtifact ? 50 : 0}
+                className={`md:min-w-[400px] flex flex-col ${!isCanvasOpen || !currentArtifact ? 'hidden' : ''}`}
+              >
+                {currentArtifact && (
+                  <Artifact
+                    artifact={currentArtifact}
+                    onClose={handleCloseCanvas}
+                    onEdit={handleEditArtifact}
+                    onContentChange={(newContent) => {
+                      setCurrentArtifact({ ...currentArtifact, content: newContent });
+                    }}
+                  />
+                )}
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </div>
+        )}
       </div>
     </>
   );

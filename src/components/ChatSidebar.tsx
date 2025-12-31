@@ -9,6 +9,7 @@ import { ViggleLogo } from "@/components/ViggleLogo";
 import { SidebarItem } from "@/components/SidebarItem";
 import { UserProfileButton } from "@/components/UserProfileButton";
 import { TOUR_STEP_IDS } from "@/components/tour";
+import { useIsMobile } from "@/hooks/use-mobile";
 interface ChatSidebarProps {
   sessions: ChatSession[];
   currentSessionId?: string;
@@ -58,10 +59,12 @@ export function ChatSidebar({
   const [isLogoHovered, setIsLogoHovered] = useState(false);
   const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
+  const isMobile = useIsMobile();
 
   const groupedSessions = groupChatsByPeriod(sessions);
 
-  return <Sidebar id={TOUR_STEP_IDS.SIDEBAR} collapsible="icon">
+  // Tour ID only applied on desktop - on mobile it's on the MobileHeader button
+  return <Sidebar id={isMobile ? undefined : TOUR_STEP_IDS.SIDEBAR} collapsible="icon">
       <SidebarHeader className={cn(
         "group flex flex-row items-center py-2 transition-all duration-200",
         collapsed ? "justify-center px-0" : "justify-between px-3 gap-2"

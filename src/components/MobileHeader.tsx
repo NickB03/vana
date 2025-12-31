@@ -1,0 +1,96 @@
+import { PanelLeft, LogIn } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useSidebar } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
+import { TOUR_STEP_IDS } from "@/components/tour";
+import { useNavigate } from "react-router-dom";
+
+interface MobileHeaderProps {
+  className?: string;
+  showLogo?: boolean;
+  isAuthenticated?: boolean;
+}
+
+/**
+ * MobileHeader - Gemini-style mobile navigation header
+ *
+ * Features:
+ * - Hamburger menu icon to toggle sidebar drawer
+ * - Only visible on mobile (< 768px)
+ * - Integrates with SidebarProvider context
+ * - Smooth slide-in animation for sidebar
+ *
+ * Usage:
+ * Must be used within a SidebarProvider context.
+ * Place at the top of your main content area.
+ */
+export function MobileHeader({ className, showLogo = true, isAuthenticated = false }: MobileHeaderProps) {
+  const { setOpenMobile, openMobile, isMobile } = useSidebar();
+  const navigate = useNavigate();
+
+  // Only render on mobile when sidebar is closed
+  // This prevents showing duplicate icons during sidebar open animation
+  if (!isMobile || openMobile) {
+    return null;
+  }
+
+  return (
+    <header
+      className={cn(
+        "flex items-center justify-between px-4 py-3 bg-transparent",
+        "md:hidden", // Hide on desktop (redundant with isMobile check but adds CSS safety)
+        className
+      )}
+    >
+      {/* Left side: Sidebar toggle + Logo */}
+      <div className="flex items-center gap-3">
+        {/* Sidebar toggle button - uses TOUR_STEP_IDS.SIDEBAR for onboarding */}
+        <Button
+          id={TOUR_STEP_IDS.SIDEBAR}
+          variant="ghost"
+          size="icon"
+          onClick={() => setOpenMobile(true)}
+          className={cn(
+            "h-10 w-10 rounded-full",
+            "bg-white/5 hover:bg-white/10",
+            "border border-white/10",
+            "transition-all duration-200"
+          )}
+          aria-label="Open navigation menu"
+          aria-expanded="false"
+          aria-controls="mobile-sidebar"
+        >
+          <PanelLeft className="h-5 w-5 text-white/80" />
+        </Button>
+
+        {/* App name/logo */}
+        {showLogo && (
+          <span className="text-lg font-semibold text-white/90 tracking-tight">
+            Vana
+          </span>
+        )}
+      </div>
+
+      {/* Right side: Sign in button (only when not authenticated) */}
+      {!isAuthenticated && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/auth")}
+          className={cn(
+            "h-9 px-3 rounded-full",
+            "bg-white/5 hover:bg-white/10",
+            "border border-white/10",
+            "text-white/80 hover:text-white",
+            "transition-all duration-200",
+            "flex items-center gap-2"
+          )}
+          aria-label="Sign in"
+        >
+          <LogIn className="h-4 w-4" />
+          <span className="text-sm font-medium">Sign in</span>
+        </Button>
+      )}
+    </header>
+  );
+}

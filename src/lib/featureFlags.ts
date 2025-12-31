@@ -26,6 +26,14 @@ export const FEATURE_FLAGS = {
    */
   CANVAS_SHADOW_DEPTH: false,
 
+  /**
+   * Sparkle Controls Debug Panel
+   * When enabled, shows the Sparkle Controls panel on the home page
+   * for live tweaking of sparkle background settings.
+   * Disable for production, enable for development/testing.
+   */
+  SPARKLE_CONTROLS_PANEL: false,
+
 } as const;
 
 /**

@@ -97,6 +97,7 @@ export default function GalleryHoverCarousel({
 
     return () => {
       carouselApi.off("select", updateScrollState);
+      carouselApi.off("reInit", updateScrollState);
     };
   }, [carouselApi]);
 
@@ -150,14 +151,14 @@ export default function GalleryHoverCarousel({
             }}
             className="relative w-full max-w-full"
           >
-            <CarouselContent className="-ml-2 md:-ml-4 -mr-2 md:-mr-4 py-3 sm:py-4">
+            <CarouselContent className="-ml-2 md:-ml-4 -mr-2 md:-mr-4">
               {items.map((item) => {
                 const isLoading = loadingItemId === item.id;
                 return (
                 <CarouselItem key={item.id} className="px-2 sm:px-3 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5 2xl:basis-1/6">
                   <div
                     onClick={() => !isLoading && onItemClick?.(item)}
-                    className={`group block relative w-full h-[100px] sm:h-[110px] md:h-[120px] ${isLoading ? 'cursor-wait' : 'cursor-pointer'}`}
+                    className={`group block relative w-full h-[clamp(100px,15vh,150px)] ${isLoading ? 'cursor-wait' : 'cursor-pointer'}`}
                   >
                     <Card className={`overflow-hidden rounded-3xl h-full w-full transition-all duration-300 hover:scale-105 ${isLoading ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
                       {/* Image */}

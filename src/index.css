@@ -602,6 +602,11 @@ All colors MUST be HSL.
     --safe-area-inset-left: env(safe-area-inset-left, 0px);
   }
 
+  html {
+    /* Prevent horizontal scrolling - fix mobile viewport overflow */
+    overflow-x: hidden;
+  }
+
   * {
     @apply border-border;
   }
@@ -619,6 +624,8 @@ All colors MUST be HSL.
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    /* Prevent horizontal scrolling on all viewports */
+    overflow-x: hidden;
   }
 
   /* Ensure headings use theme foreground color */
@@ -743,6 +750,34 @@ All colors MUST be HSL.
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* ChatLayout positioning - uses CSS variables for dynamic positioning */
+  [data-chat-content] {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* Mobile: percentage from top (default: 71%) */
+    top: var(--mobile-prompt-position, 71%);
+  }
+
+  /* Desktop layout: requires BOTH min-width AND min-height */
+  @media (min-width: 768px) and (min-height: 600px) {
+    [data-chat-content] {
+      /* Desktop: percentage from top (default: 50%) */
+      top: var(--desktop-prompt-position, 50%);
+    }
+  }
+
+  /* Hide desktop carousel on short viewports */
+  @media (max-height: 599px) {
+    .desktop-carousel {
+      display: none !important;
+    }
+    .mobile-carousel {
+      display: block !important;
     }
   }
 }

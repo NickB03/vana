@@ -1,6 +1,7 @@
 import React from "react";
 import { PromptInput, PromptInputTextarea } from "@/components/prompt-kit/prompt-input";
 import { PromptInputControls } from "@/components/prompt-kit/prompt-input-controls";
+import { MobileSuggestionCarousel } from "@/components/prompt-kit/mobile-suggestion-carousel";
 import GalleryHoverCarousel from "@/components/ui/gallery-hover-carousel";
 import type { SuggestionItem } from "@/data/suggestions";
 import { CHAT_SPACING } from "@/utils/spacingConstants";
@@ -54,9 +55,12 @@ export interface ChatLayoutProps {
 
   // Optional customization
   heading?: string;
-  subheading?: string;
   placeholder?: string;
   sendIcon?: "send" | "arrow";
+
+  // Position controls (for debug panel tweaking)
+  promptPosition?: number; // Desktop position (% from top)
+  mobilePromptPosition?: number; // Mobile position (% from top)
 }
 
 /**
@@ -80,29 +84,38 @@ export const ChatLayout = React.memo(({
   artifactMode,
   onArtifactModeChange,
   heading = "Hi, I'm Vana.",
-  subheading = "Get started by choosing from an idea below or tell me what you want to do in chat",
   placeholder = "Ask anything",
-  sendIcon = "send"
+  sendIcon = "send",
+  promptPosition = 50, // Default desktop position (50% from top)
+  mobilePromptPosition = 71, // Default mobile position (71% from top)
 }: ChatLayoutProps) => {
   return (
-    <div className="flex h-full flex-col items-center justify-between overflow-y-auto p-4 sm:p-8 pt-safe pb-safe">
-      {/* Top spacer for vertical centering */}
-      <div aria-hidden="true"></div>
-
-      {/* Centered heading */}
-      <div className="text-center w-full">
-        <h1 className="bg-gradient-primary bg-clip-text text-3xl sm:text-4xl md:text-5xl font-bold text-transparent mb-4">
+    <div
+      className="relative flex flex-col h-full w-full max-w-[100vw] overflow-hidden pt-safe pb-safe"
+      style={{
+        '--mobile-prompt-position': `${mobilePromptPosition}%`,
+        '--desktop-prompt-position': `${promptPosition}%`,
+      } as React.CSSProperties}
+    >
+      {/* Heading - positioned at 30% from top, scales with viewport */}
+      <div
+        className="absolute left-0 right-0 text-center px-4"
+        style={{ top: '30%', transform: 'translateY(-50%)' }}
+      >
+        <h1 className="bg-gradient-to-r from-indigo-200 via-white to-indigo-200 bg-clip-text text-[clamp(1.75rem,min(4vw,5vh),3rem)] font-bold text-transparent">
           {heading}
         </h1>
-        <p className="text-foreground/80 text-sm sm:text-base">
-          {subheading}
-        </p>
       </div>
 
-      {/* Bottom section with prompt and suggestions */}
-      <div className="w-full">
-        {/* Prompt Input - max-w-5xl for consistency */}
-        <div className="w-full max-w-5xl mx-auto mb-6 px-4">
+      {/* Bottom content - positioned at locked percentages */}
+      {/* Desktop: 63% from top, Mobile: 71% from top */}
+      {/* Switches to mobile layout when viewport height < 600px OR width < 768px */}
+      <div
+        data-chat-content
+        className="flex flex-col justify-start p-[clamp(1rem,2vh,2rem)]"
+      >
+        {/* Prompt Input - viewport-relative max-width with clamp() */}
+        <div className="w-full max-w-[clamp(320px,85vw,64rem)] mx-auto mb-2 px-4">
           <PromptInput
             id={TOUR_STEP_IDS.CHAT_INPUT}
             value={input}
@@ -136,30 +149,58 @@ export const ChatLayout = React.memo(({
           </PromptInput>
         </div>
 
-        {/* Suggestion Carousel - max-w-5xl to match prompt */}
-        <div id={TOUR_STEP_IDS.SUGGESTIONS} className="w-full max-w-5xl mx-auto py-2">
+        {/* Suggestions - Pills on mobile, Carousel on desktop */}
+        {/* Using CSS-based responsive design to avoid hydration issues */}
+        <div id={TOUR_STEP_IDS.SUGGESTIONS} className="w-full max-w-[clamp(320px,85vw,64rem)] mx-auto py-[clamp(0.25rem,1vh,0.5rem)]">
           {loadingSuggestions ? (
-            <div
-              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-4"
-              role="status"
-              aria-label="Loading suggestions"
-            >
-              {[...Array(10)].map((_, i) => (
-                <div
-                  key={i}
-                  className="h-48 bg-muted/20 animate-pulse rounded-lg"
-                  aria-hidden="true"
-                />
-              ))}
-            </div>
+            <>
+              {/* Mobile loading skeleton - single carousel item */}
+              <div
+                className="flex items-center justify-center px-4 md:hidden"
+                role="status"
+                aria-label="Loading suggestions"
+              >
+                <div className="h-10 w-full max-w-xs bg-muted/20 animate-pulse rounded-full" />
+              </div>
+              {/* Desktop loading skeleton - cards */}
+              <div
+                className="hidden md:grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-4"
+                role="status"
+                aria-label="Loading suggestions"
+              >
+                {[...Array(10)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-48 bg-muted/20 animate-pulse rounded-lg"
+                    aria-hidden="true"
+                  />
+                ))}
+              </div>
+            </>
           ) : (
-            <GalleryHoverCarousel
-              heading=""
-              className="py-0 bg-transparent"
-              onItemClick={onSuggestionClick}
-              loadingItemId={loadingItemId}
-              items={suggestions}
-            />
+            <>
+              {/* Mobile: Continuous auto-scrolling suggestion carousel */}
+              {/* Shows when: width < 768px OR height < 600px */}
+              <div className="mobile-carousel md:hidden overflow-hidden">
+                <MobileSuggestionCarousel
+                  items={suggestions.slice(0, 8)}
+                  onItemClick={onSuggestionClick}
+                  loadingItemId={loadingItemId}
+                  speed={0.5}
+                />
+              </div>
+              {/* Desktop: Image carousel - overflow-hidden prevents layout issues when hidden */}
+              {/* Shows when: width >= 768px AND height >= 600px */}
+              <div className="desktop-carousel hidden md:block overflow-hidden">
+                <GalleryHoverCarousel
+                  heading=""
+                  className="py-0 bg-transparent"
+                  onItemClick={onSuggestionClick}
+                  loadingItemId={loadingItemId}
+                  items={suggestions}
+                />
+              </div>
+            </>
           )}
         </div>
       </div>

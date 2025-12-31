@@ -25,7 +25,12 @@ import type { SuggestionItem } from "@/data/suggestions";
 import { TourProvider, TourAlertDialog, TOUR_STORAGE_KEYS } from "@/components/tour";
 import { OnboardingTour } from "@/components/OnboardingTour";
 import { useAppSetting, APP_SETTING_KEYS } from "@/hooks/useAppSettings";
-
+import { MobileHeader } from "@/components/MobileHeader";
+import { SparkleBackground } from "@/components/ui/sparkle-background";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
+import { SparkleErrorBoundary } from "@/components/SparkleErrorBoundary";
+import { useSparkleSettings } from "@/hooks/useSparkleSettings";
+import { SparkleControlPanel } from "@/components/dev/SparkleControlPanel";
 
 /**
  * Landing to app transition variants - Enhanced Cinematic Depth-of-Field Effect
@@ -126,6 +131,23 @@ const Home = () => {
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Sparkle background settings - using custom hook
+  const { settings: sparkleSettings, updateSetting: updateSparkleSetting, reset: resetSparkleSettings, resetCounter } = useSparkleSettings();
+
+  // Sparkle control panel state
+  const [sparkleControlMinimized, setSparkleControlMinimized] = useState(false);
+
+  // Layout position controls (for tweaking before locking in)
+  const [promptPosition, setPromptPosition] = useState(63); // Desktop default: 63% from top
+  const [mobilePromptPosition, setMobilePromptPosition] = useState(71); // Mobile default: 71% from top
+
+  const handleSparkleReset = useCallback(() => {
+    resetSparkleSettings();
+    // Reset layout positions
+    setPromptPosition(63);
+    setMobilePromptPosition(71);
+  }, [resetSparkleSettings]);
+
   // Chat state
   const { sessions, isLoading: sessionsLoading, createSession, deleteSession } = useChatSessions();
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>();
@@ -198,10 +220,16 @@ const Home = () => {
   // Lazy load suggestions after initial render
   useEffect(() => {
     const timer = setTimeout(() => {
-      import('@/data/suggestions').then(({ suggestions: loadedSuggestions }) => {
-        setSuggestions(loadedSuggestions);
-        setLoadingSuggestions(false);
-      });
+      import('@/data/suggestions')
+        .then(({ suggestions: loadedSuggestions }) => {
+          setSuggestions(loadedSuggestions);
+          setLoadingSuggestions(false);
+        })
+        .catch((error) => {
+          console.error('[Home] Failed to load suggestions:', error);
+          setLoadingSuggestions(false);
+          // Graceful degradation - empty suggestions is acceptable
+        });
     }, 100); // Small delay to prioritize critical rendering
 
     return () => clearTimeout(timer);
@@ -378,16 +406,26 @@ const Home = () => {
 
       setIsLoading(true);
       const promptToSend = input; // Capture before clearing
-      const sessionId = await createSession(promptToSend);
-      if (sessionId) {
-        setCurrentSessionId(sessionId);
-        // Set pending prompt for ChatInterface to auto-send
-        setPendingAuthPrompt(promptToSend);
-        setInput(""); // Clear input to prevent double-send
-        setShowChat(true);
-        // imageMode will be passed to ChatInterface via initialImageMode prop
+      try {
+        const sessionId = await createSession(promptToSend);
+        if (sessionId) {
+          setCurrentSessionId(sessionId);
+          // Set pending prompt for ChatInterface to auto-send
+          setPendingAuthPrompt(promptToSend);
+          setInput(""); // Clear input to prevent double-send
+          setShowChat(true);
+          // imageMode will be passed to ChatInterface via initialImageMode prop
+        }
+      } catch (error) {
+        console.error('[Home] Failed to create session:', error);
+        toast({
+          title: "Failed to start chat",
+          description: "Please try again",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     }
   }, [input, isAuthenticated, guestSession, showChat, toast, navigate, createSession]);
 
@@ -444,16 +482,26 @@ const Home = () => {
       }
 
       setIsLoading(true);
-      const sessionId = await createSession(prompt);
-      if (sessionId) {
-        setCurrentSessionId(sessionId);
-        // Use pendingAuthPrompt instead of input to prevent auto-send bugs
-        setPendingAuthPrompt(prompt);
-        setInput(""); // Clear input so it doesn't persist and re-trigger
-        setShowChat(true);
+      try {
+        const sessionId = await createSession(prompt);
+        if (sessionId) {
+          setCurrentSessionId(sessionId);
+          // Use pendingAuthPrompt instead of input to prevent auto-send bugs
+          setPendingAuthPrompt(prompt);
+          setInput(""); // Clear input so it doesn't persist and re-trigger
+          setShowChat(true);
+        }
+      } catch (error) {
+        console.error('[Home] Failed to create session:', error);
+        toast({
+          title: "Failed to start chat",
+          description: "Please try again",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+        setLoadingSuggestionId(null);
       }
-      setIsLoading(false);
-      setLoadingSuggestionId(null);
     }
   }, [isAuthenticated, guestSession, toast, navigate, createSession]);
 
@@ -491,11 +539,9 @@ const Home = () => {
   return (
     <PageLayout
       shaderOpacityClassName=""
-      gradientStyle={{
-        background:
-          "radial-gradient(125% 125% at 50% 10%, transparent 40%, rgba(30, 41, 59, 0.2) 100%)",
-      }}
+      showGradient={false}
       enableEntranceAnimation={false}
+      showSparkleBackground={false}  /* Render sparkle inside SidebarInset for proper centering */
     >
       {/* Global shader background and subtle gradient are provided by PageLayout */}
 
@@ -615,8 +661,14 @@ const Home = () => {
                 isLoading={sessionsLoading}
               />
 
-              <SidebarInset className="relative bg-transparent">
-                <main className="flex h-[100dvh] flex-col overflow-hidden">
+              <SidebarInset className="relative bg-zinc-950 overflow-hidden">
+                {/* Sparkle background - positioned relative to SidebarInset for proper centering */}
+                <SparkleErrorBoundary resetKey={resetCounter}>
+                  <SparkleBackground position="absolute" {...sparkleSettings} />
+                </SparkleErrorBoundary>
+                <main className="flex h-[100dvh] flex-col overflow-hidden relative z-10">
+                  {/* Mobile Header - Gemini-style hamburger menu */}
+                  <MobileHeader isAuthenticated={isAuthenticated} />
 
                   {/* Main Content */}
                   <div className="flex-1 overflow-hidden flex flex-col">
@@ -635,6 +687,8 @@ const Home = () => {
                         artifactMode={artifactMode}
                         onArtifactModeChange={setArtifactMode}
                         sendIcon="send"
+                        promptPosition={promptPosition}
+                        mobilePromptPosition={mobilePromptPosition}
                       />
                     ) : (
                       <ChatInterface
@@ -674,6 +728,21 @@ const Home = () => {
         open={showLimitDialog}
         onOpenChange={setShowLimitDialog}
       />
+
+      {/* Sparkle Controls Panel - controlled by feature flag */}
+      {FEATURE_FLAGS.SPARKLE_CONTROLS_PANEL && (
+        <SparkleControlPanel
+          sparkleSettings={sparkleSettings}
+          onUpdateSetting={updateSparkleSetting}
+          onReset={handleSparkleReset}
+          promptPosition={promptPosition}
+          onPromptPositionChange={setPromptPosition}
+          mobilePromptPosition={mobilePromptPosition}
+          onMobilePromptPositionChange={setMobilePromptPosition}
+          minimized={sparkleControlMinimized}
+          onMinimizedChange={setSparkleControlMinimized}
+        />
+      )}
     </PageLayout>
   );
 };
