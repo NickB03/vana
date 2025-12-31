@@ -72,7 +72,7 @@ export function Settings({ open, onOpenChange }: SettingsProps) {
               </div>
 
               <p className="text-xs text-muted-foreground italic">
-                This version info helps verify code synchronization between GitHub and Lovable environments.
+                This version info helps verify code synchronization between GitHub and production environments.
               </p>
             </div>
           </div>

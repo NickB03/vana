@@ -58,7 +58,7 @@ function generateVersionFile() {
  * Application Version Information
  *
  * This file is automatically updated on commits via pre-commit hook.
- * Used to verify code synchronization between GitHub and Lovable environments.
+ * Used to verify code synchronization between GitHub and production environments.
  */
 
 export const APP_VERSION = {

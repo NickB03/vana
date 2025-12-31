@@ -80,7 +80,7 @@ export function ChatSidebar({
             {isLogoHovered ? (
               <PanelLeft className="h-[20px] w-[20px] shrink-0 text-primary transition-all duration-200" strokeWidth={1.5} />
             ) : (
-              <ViggleLogo className="text-primary h-6 w-6 shrink-0 transition-all duration-200" />
+              <ViggleLogo className="h-6 w-6 shrink-0 transition-all duration-200" />
             )}
           </button>
         ) : (
@@ -90,7 +90,7 @@ export function ChatSidebar({
               onClick={onNewChat}
               aria-label="Return to home"
             >
-              <ViggleLogo className="text-primary h-6 w-auto shrink-0 transition-all duration-200" />
+              <ViggleLogo className="h-6 w-auto shrink-0 transition-all duration-200" />
             </button>
 
             <div className="flex items-center gap-1">

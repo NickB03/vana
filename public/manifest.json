@@ -1,6 +1,6 @@
 {
-  "name": "AI Assistant",
-  "short_name": "AI Assistant",
+  "name": "Vana",
+  "short_name": "Vana",
   "description": "AI-Powered Chat Assistant for content creation, image generation, and code generation",
   "start_url": "/",
   "display": "standalone",
@@ -8,9 +8,16 @@
   "background_color": "#ffffff",
   "icons": [
     {
-      "src": "https://storage.googleapis.com/gpt-engineer-file-uploads/OC7fxCsI8GZ5WHrbh3LxjMoliXA3/uploads/1761355340262-nebius.png",
+      "src": "/vana-icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/vana-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }

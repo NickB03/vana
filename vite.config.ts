@@ -1,7 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 import compression from "vite-plugin-compression";
 import { VitePWA } from "vite-plugin-pwa";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
@@ -57,7 +56,6 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === "development" && componentTagger(),
     // Brotli compression
     compression({
       algorithm: "brotliCompress",
@@ -73,17 +71,24 @@ export default defineConfig(({ mode }) => ({
     // PWA configuration - Optimized for fast updates on portfolio site
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "robots.txt"],
+      includeAssets: ["vana-logo-optimized.png", "robots.txt"],
       manifest: {
-        name: "AI Assistant",
-        short_name: "AI Assistant",
+        name: "Vana",
+        short_name: "Vana",
         description: "AI-Powered Chat Assistant",
         theme_color: "#8B7BF7",
         icons: [
           {
-            src: "https://storage.googleapis.com/gpt-engineer-file-uploads/OC7fxCsI8GZ5WHrbh3LxjMoliXA3/uploads/1761355340262-nebius.png",
+            src: "/vana-icon-192.png",
             sizes: "192x192",
-            type: "image/png"
+            type: "image/png",
+            purpose: "any maskable"
+          },
+          {
+            src: "/vana-icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable"
           }
         ]
       },
