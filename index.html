@@ -50,18 +50,35 @@
   
   <style>
     /* Critical CSS for fast initial render */
+    /* Using dvh (dynamic viewport height) for iOS Safari compatibility */
+    /* dvh accounts for browser chrome and keyboard, preventing layout issues */
+    html {
+      /* Prevent pull-to-refresh and overscroll on mobile */
+      overscroll-behavior: none;
+      /* Ensure proper height calculation */
+      height: 100%;
+    }
     body {
       margin: 0;
       padding: 0;
       width: 100%;
+      /* Use dvh for dynamic viewport height (iOS 15.4+) with vh fallback */
       min-height: 100vh;
       min-height: 100dvh;
+      /* Account for safe areas on iOS (notch, home indicator) */
+      padding-bottom: env(safe-area-inset-bottom);
       font-family: system-ui, -apple-system, sans-serif;
+      /* Prevent pull-to-refresh on iOS Safari */
+      overscroll-behavior-y: none;
     }
     #root {
+      /* Use dvh for dynamic viewport height with vh fallback */
       min-height: 100vh;
       min-height: 100dvh;
       width: 100%;
+      /* Ensure proper display */
+      display: flex;
+      flex-direction: column;
     }
   </style>
 </head>

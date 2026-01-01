@@ -1,4 +1,4 @@
-<!-- AGENTS.md | Auto-generated from CLAUDE.md | Last synced: 2025-12-28 -->
+<!-- AGENTS.md | Auto-generated from CLAUDE.md | Last synced: 2026-01-01 -->
 
 # Repository Guidelines for AI Coding Assistants
 
@@ -17,7 +17,7 @@ This file provides essential guidance for AI coding assistants (Gemini, Cline, C
 ## Quick Start
 
 **Required versions**:
-- Node.js v20+, npm v10+, Deno v1.40+, Supabase CLI v1.x, Chrome (DevTools MCP)
+- Node.js v20+, npm v10+, Deno v1.40+, Supabase CLI v1.x, Chrome (DevTools MCP), Xcode 15+ (XcodeBuildMCP)
 
 ```bash
 npm install # Install dependencies
@@ -41,6 +41,7 @@ npm run dev # Dev server on port 8080
 | Model names | Always use `MODELS.*` from `config.ts` |
 | Artifact imports | NO `@/` imports — use npm packages |
 | Chrome screenshots | Always use `filePath` param ([why?](./.claude/CHROME_MCP_COMMANDS.md#screenshot-requirements)) |
+| iOS Simulator UI | Call `describe_ui` before `tap`/`swipe` — never guess coordinates |
 
 ## 🎯 MUST Rules (Non-Negotiable)
 
@@ -53,6 +54,7 @@ npm run dev # Dev server on port 8080
 7. **Animation**: Only animate new messages, not entire chat history
 8. **Routes**: Add new routes ABOVE the `*` catch-all in App.tsx
 9. **Critical Files Protection**: NEVER redirect git output to critical files ([why?](./.claude/BUILD_AND_DEPLOYMENT.md#critical-files-protection))
+10. **iOS Simulator Automation**: ALWAYS call `describe_ui` before `tap`/`swipe`/`long_press` — coordinates from screenshots are unreliable
 
 ## ⚠️ Anti-Patterns
 
@@ -67,6 +69,7 @@ npm run dev # Dev server on port 8080
 | `git show ... > index.html` | Manual copy | Corrupts file |
 | Deploy without verification | Run Chrome DevTools checks | Runtime errors |
 | Manual CORS headers | Use `getCorsHeaders()` | Security |
+| `tap` without `describe_ui` | Call `describe_ui` first, use returned coordinates | Fragile automation |
 
 ## Essential Commands
 
@@ -118,6 +121,7 @@ See [BUILD_AND_DEPLOYMENT.md](./.claude/BUILD_AND_DEPLOYMENT.md) for CI/CD detai
 | Artifact blank screen | Check console → avoid `@/` imports → [details](./.claude/TROUBLESHOOTING.md#artifact-issues) |
 | Rate limiting errors | Restart edge runtime → [guide](./.claude/TROUBLESHOOTING.md#rate-limiting-issues) |
 | Edge Function timeout | Check function size/quotas → [guide](./.claude/TROUBLESHOOTING.md#build-development-issues) |
+| XcodeBuildMCP "describe_ui not called" warning | Call `describe_ui` before `tap`/`swipe` to get accurate coordinates |
 
 **Full guide**: [TROUBLESHOOTING.md](./.claude/TROUBLESHOOTING.md)
 
@@ -135,6 +139,14 @@ if (!session) { navigate("/auth"); return; }
 export default function App() { ... }
 </artifact>
 ```
+
+**iOS Simulator automation** (XcodeBuildMCP):
+```
+1. describe_ui → Get accessibility tree with element frames
+2. Find target element → Locate button/field in returned JSON
+3. tap/swipe/type → Use exact coordinates or id/label from describe_ui
+```
+Prefer `tap({ id: "accessibilityId" })` or `tap({ label: "Button Text" })` over raw coordinates.
 
 **More patterns**: [COMMON_PATTERNS.md](./.claude/COMMON_PATTERNS.md)
 
