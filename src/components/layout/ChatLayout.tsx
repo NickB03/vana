@@ -87,11 +87,11 @@ export const ChatLayout = React.memo(({
   placeholder = "Ask anything",
   sendIcon = "send",
   promptPosition = 50, // Default desktop position (50% from top)
-  mobilePromptPosition = 71, // Default mobile position (71% from top)
+  mobilePromptPosition = 58, // Default mobile position (58% from top) - accounts for Safari toolbar
 }: ChatLayoutProps) => {
   return (
     <div
-      className="relative flex flex-col h-full w-full max-w-[100vw] overflow-hidden pt-safe pb-safe"
+      className="relative flex flex-col h-full w-full overflow-hidden pt-safe pb-safe overscroll-none"
       style={{
         '--mobile-prompt-position': `${mobilePromptPosition}%`,
         '--desktop-prompt-position': `${promptPosition}%`,
@@ -115,7 +115,8 @@ export const ChatLayout = React.memo(({
         className="flex flex-col justify-start p-[clamp(1rem,2vh,2rem)]"
       >
         {/* Prompt Input - viewport-relative max-width with clamp() */}
-        <div className="w-full max-w-[clamp(320px,85vw,64rem)] mx-auto mb-2 px-4">
+        {/* Mobile: 95vw (nearly full width), Desktop: 85vw (maintain breathing room) */}
+        <div className="w-full max-w-[clamp(320px,95vw,64rem)] md:max-w-[clamp(320px,85vw,64rem)] mx-auto mb-2 px-4">
           <PromptInput
             id={TOUR_STEP_IDS.CHAT_INPUT}
             value={input}
@@ -151,7 +152,8 @@ export const ChatLayout = React.memo(({
 
         {/* Suggestions - Pills on mobile, Carousel on desktop */}
         {/* Using CSS-based responsive design to avoid hydration issues */}
-        <div id={TOUR_STEP_IDS.SUGGESTIONS} className="w-full max-w-[clamp(320px,85vw,64rem)] mx-auto py-[clamp(0.25rem,1vh,0.5rem)]">
+        {/* Mobile: 95vw (nearly full width), Desktop: 85vw (maintain breathing room) */}
+        <div id={TOUR_STEP_IDS.SUGGESTIONS} className="w-full max-w-[clamp(320px,95vw,64rem)] md:max-w-[clamp(320px,85vw,64rem)] mx-auto py-[clamp(0.25rem,1vh,0.5rem)]">
           {loadingSuggestions ? (
             <>
               {/* Mobile loading skeleton - single carousel item */}
@@ -181,7 +183,8 @@ export const ChatLayout = React.memo(({
             <>
               {/* Mobile: Continuous auto-scrolling suggestion carousel */}
               {/* Shows when: width < 768px OR height < 600px */}
-              <div className="mobile-carousel md:hidden overflow-hidden">
+              {/* Full-width container to prevent edge clipping on carousel items */}
+              <div className="mobile-carousel md:hidden w-screen -mx-4 overflow-hidden">
                 <MobileSuggestionCarousel
                   items={suggestions.slice(0, 8)}
                   onItemClick={onSuggestionClick}

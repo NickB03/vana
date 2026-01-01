@@ -11,6 +11,7 @@ import { AnimatedRoute } from "@/components/AnimatedRoute";
 import { AnimationErrorBoundary } from "@/components/AnimationErrorBoundary";
 import { UpdateNotification } from "@/components/UpdateNotification";
 import { storeVersionInfo, logCacheBustingInfo, isNewVersionAvailable, clearAllCaches } from "@/utils/cacheBusting";
+import { usePreventOverscroll } from "@/hooks/usePreventOverscroll";
 
 // Lazy load pages for code splitting
 const Home = lazy(() => import("./pages/Home"));
@@ -110,6 +111,9 @@ const AnimatedRoutes = () => {
 };
 
 const App = () => {
+  // Prevent iOS Safari rubber-banding/bounce/drag behavior
+  usePreventOverscroll();
+
   // Initialize version tracking and cache busting on app startup
   useEffect(() => {
     const checkVersion = async () => {

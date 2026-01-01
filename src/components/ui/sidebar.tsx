@@ -175,7 +175,7 @@ const Sidebar = React.forwardRef<
           }
           side={side}
         >
-          <div className="flex h-full w-full flex-col">{children}</div>
+          <div className="flex h-full w-full flex-col pt-safe pb-safe">{children}</div>
         </SheetContent>
       </Sheet>
     );
@@ -217,7 +217,7 @@ const Sidebar = React.forwardRef<
       >
         <div
           data-sidebar="sidebar"
-          className="flex h-full w-full flex-col bg-black/70 backdrop-blur-sm shadow-[inset_-2px_0_4px_rgba(255,255,255,0.05)] group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow overflow-hidden"
+          className="flex h-full w-full flex-col bg-black/70 backdrop-blur-sm shadow-[inset_-2px_0_4px_rgba(255,255,255,0.05)] group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow overflow-hidden overscroll-none"
         >
           {children}
         </div>
@@ -318,7 +318,7 @@ const SidebarHeader = React.forwardRef<HTMLDivElement, React.ComponentProps<"div
 SidebarHeader.displayName = "SidebarHeader";
 
 const SidebarFooter = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(({ className, ...props }, ref) => {
-  return <div ref={ref} data-sidebar="footer" className={cn("flex flex-col gap-2 p-2", className)} {...props} />;
+  return <div ref={ref} data-sidebar="footer" className={cn("flex flex-col gap-2 p-2 pb-safe", className)} {...props} />;
 });
 SidebarFooter.displayName = "SidebarFooter";
 

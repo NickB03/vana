@@ -671,7 +671,7 @@ const Home = () => {
                   <MobileHeader isAuthenticated={isAuthenticated} />
 
                   {/* Main Content */}
-                  <div className="flex-1 overflow-hidden flex flex-col">
+                  <div className="flex-1 overflow-hidden flex flex-col max-h-full">
                     {!showChat ? (
                       <ChatLayout
                         input={input}

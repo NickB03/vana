@@ -78,7 +78,7 @@ export function ChatSidebar({
             onMouseLeave={() => setIsLogoHovered(false)}
           >
             {isLogoHovered ? (
-              <PanelLeft className="h-[20px] w-[20px] shrink-0 text-primary transition-all duration-200" strokeWidth={1.5} />
+              <PanelLeft className="h-[20px] w-[20px] shrink-0 text-white/80 transition-all duration-200" strokeWidth={1.5} />
             ) : (
               <ViggleLogo className="h-6 w-6 shrink-0 transition-all duration-200" />
             )}
@@ -95,12 +95,12 @@ export function ChatSidebar({
 
             <div className="flex items-center gap-1">
               <button
-                className="flex items-center justify-center size-10 hover:bg-accent hover:text-accent-foreground rounded-md transition-all duration-200"
+                className="flex items-center justify-center h-10 w-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-200"
                 onClick={toggleSidebar}
                 aria-label="Collapse sidebar"
                 data-testid="sidebar-toggle"
               >
-                <PanelLeft className="h-[20px] w-[20px] shrink-0 transition-all duration-200" strokeWidth={1.5} />
+                <PanelLeft className="h-5 w-5 shrink-0 text-white/80 transition-all duration-200" strokeWidth={1.5} />
               </button>
             </div>
           </>
@@ -116,7 +116,7 @@ export function ChatSidebar({
               className="w-full h-10 hover:bg-accent rounded-md p-0 flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 group"
               data-testid="new-chat-button"
             >
-              <CirclePlus className="h-6 w-6 shrink-0 group-hover:text-primary transition-colors duration-200" strokeWidth={2} />
+              <CirclePlus className="h-6 w-6 shrink-0 text-white/80 transition-colors duration-200" strokeWidth={2} />
             </Button>
           ) : (
             <Button
@@ -125,8 +125,8 @@ export function ChatSidebar({
               className="w-full justify-start hover:bg-accent h-10 px-3 py-2 transition-all duration-200 hover:scale-105 active:scale-95 group"
               data-testid="new-chat-button"
             >
-              <CirclePlus className="h-6 w-6 mr-2 shrink-0 group-hover:text-primary transition-colors duration-200" strokeWidth={2} />
-              <span className="text-base whitespace-nowrap">New chat</span>
+              <CirclePlus className="h-6 w-6 mr-2 shrink-0 text-white/80 transition-colors duration-200" strokeWidth={2} />
+              <span className="text-base whitespace-nowrap text-white/80">New chat</span>
             </Button>
           )}
         </div>

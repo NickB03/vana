@@ -37,7 +37,7 @@ export function MobileHeader({ className, showLogo = true, isAuthenticated = fal
   return (
     <header
       className={cn(
-        "flex items-center justify-between px-4 py-3 bg-transparent",
+        "flex items-center justify-between px-4 py-2 pt-safe bg-transparent",
         "md:hidden", // Hide on desktop (redundant with isMobile check but adds CSS safety)
         className
       )}

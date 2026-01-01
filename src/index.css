@@ -605,6 +605,14 @@ All colors MUST be HSL.
   html {
     /* Prevent horizontal scrolling - fix mobile viewport overflow */
     overflow-x: hidden;
+    /* Prevent overscroll bounce/rubber-banding on mobile */
+    overscroll-behavior-y: none;
+    /* Use dynamic viewport height for proper mobile sizing */
+    height: 100%;
+    width: 100%;
+    /* Ensure no default margins/padding that cause black bars */
+    margin: 0;
+    padding: 0;
   }
 
   * {
@@ -626,6 +634,15 @@ All colors MUST be HSL.
     text-rendering: optimizeLegibility;
     /* Prevent horizontal scrolling on all viewports */
     overflow-x: hidden;
+    /* Prevent overscroll bounce/rubber-banding on mobile */
+    overscroll-behavior-y: none;
+    /* Full viewport sizing without position:fixed issues */
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
+    width: 100%;
+    /* Remove any default margins that cause black bars */
+    margin: 0;
+    padding: 0;
   }
 
   /* Ensure headings use theme foreground color */
@@ -647,16 +664,20 @@ All colors MUST be HSL.
     touch-action: manipulation;
   }
   
-  /* Mobile-specific layout fixes */
+  /* Mobile-specific layout fixes for iOS Safari rubber-banding prevention */
   @media (max-width: 640px) {
     body {
-      /* Prevent horizontal scrolling */
       overflow-x: hidden;
+      overscroll-behavior: none;
+      touch-action: pan-y pinch-zoom;
     }
 
-    /* Ensure full viewport height accounting for mobile chrome */
     #root {
-      min-height: 100dvh; /* dynamic viewport height */
+      min-height: 100dvh;
+      width: 100%;
+      overflow-x: hidden;
+      overscroll-behavior: none;
+      touch-action: pan-y pinch-zoom;
     }
   }
 
@@ -758,9 +779,15 @@ All colors MUST be HSL.
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 0;
-    /* Mobile: percentage from top (default: 71%) */
-    top: var(--mobile-prompt-position, 71%);
+    /* Account for safe area insets (iOS home indicator, notch) + extra padding for carousel */
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    /* Mobile: percentage from top (default: 58%) - accounts for Safari toolbar */
+    top: var(--mobile-prompt-position, 58%);
+    /* Prevent content overflow that causes scrolling */
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden; /* Only hide horizontal overflow */
+    overflow-y: visible; /* Allow vertical overflow for carousel */
   }
 
   /* Desktop layout: requires BOTH min-width AND min-height */
