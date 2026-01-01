@@ -23,7 +23,12 @@ function ChatContainerRoot({
 }: ChatContainerRootProps) {
   return (
     <StickToBottom
-      className={cn("flex overflow-y-auto", className)}
+      className={cn(
+        "flex overflow-y-auto",
+        // Prevent pull-to-refresh and rubber-banding on mobile
+        "overscroll-none touch-pan-y",
+        className
+      )}
       resize="smooth"
       initial="instant"
       role="log"
