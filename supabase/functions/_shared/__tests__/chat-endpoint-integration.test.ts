@@ -328,14 +328,30 @@ Deno.test({
     if (toolCallStartEvents.length > 0) {
       console.log("✓ Tool call detected");
 
-      const toolCallData = JSON.parse(toolCallStartEvents[0].data || "{}");
+      let toolCallData;
+      try {
+        toolCallData = JSON.parse(toolCallStartEvents[0].data || "{}");
+      } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : String(e);
+        const rawData = toolCallStartEvents[0].data || "";
+        console.error("Tool call data (raw):", rawData);
+        throw new Error(`Tool call SSE event returned malformed JSON: ${errorMessage}. Raw: ${rawData.substring(0, 200)}`);
+      }
       console.log(`  Tool: ${toolCallData.toolName || "unknown"}`);
 
       // Check for tool_result event
       const toolResultEvents = events.filter((e) => e.event === "tool_result");
       if (toolResultEvents.length > 0) {
         console.log("✓ Tool execution completed");
-        const resultData = JSON.parse(toolResultEvents[0].data || "{}");
+        let resultData;
+        try {
+          resultData = JSON.parse(toolResultEvents[0].data || "{}");
+        } catch (e) {
+          const errorMessage = e instanceof Error ? e.message : String(e);
+          const rawData = toolResultEvents[0].data || "";
+          console.error("Tool result data (raw):", rawData);
+          throw new Error(`Tool result SSE event returned malformed JSON: ${errorMessage}. Raw: ${rawData.substring(0, 200)}`);
+        }
         console.log(`  Success: ${resultData.success}`);
       }
     } else {
@@ -394,7 +410,15 @@ Deno.test({
     if (toolCallStartEvents.length > 0) {
       console.log("✓ Tool call detected");
 
-      const toolCallData = JSON.parse(toolCallStartEvents[0].data || "{}");
+      let toolCallData;
+      try {
+        toolCallData = JSON.parse(toolCallStartEvents[0].data || "{}");
+      } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : String(e);
+        const rawData = toolCallStartEvents[0].data || "";
+        console.error("Tool call data (raw):", rawData);
+        throw new Error(`Tool call SSE event returned malformed JSON: ${errorMessage}. Raw: ${rawData.substring(0, 200)}`);
+      }
       console.log(`  Tool: ${toolCallData.toolName || "unknown"}`);
 
       // Should be generate_image
@@ -406,7 +430,15 @@ Deno.test({
       const toolResultEvents = events.filter((e) => e.event === "tool_result");
       if (toolResultEvents.length > 0) {
         console.log("✓ Tool execution completed");
-        const resultData = JSON.parse(toolResultEvents[0].data || "{}");
+        let resultData;
+        try {
+          resultData = JSON.parse(toolResultEvents[0].data || "{}");
+        } catch (e) {
+          const errorMessage = e instanceof Error ? e.message : String(e);
+          const rawData = toolResultEvents[0].data || "";
+          console.error("Tool result data (raw):", rawData);
+          throw new Error(`Tool result SSE event returned malformed JSON: ${errorMessage}. Raw: ${rawData.substring(0, 200)}`);
+        }
         console.log(`  Success: ${resultData.success}`);
       }
     } else {

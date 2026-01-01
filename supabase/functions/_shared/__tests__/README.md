@@ -22,8 +22,10 @@ Unlike unit tests that mock external dependencies, the integration tests validat
 | `image-endpoint-integration.test.ts` | /generate-image Edge Function | ~$0.05 |
 | `title-endpoint-integration.test.ts` | /generate-title Edge Function | ~$0.005 |
 | `artifact-endpoint-integration.test.ts` | /generate-artifact Edge Function | ~$0.02 |
-| `rate-limiting-integration.test.ts` | Rate limiting enforcement | ~$0.00 |
+| `rate-limiting-integration.test.ts` | Rate limiting RPC functions (disabled) | ~$0.00 |
 | `tavily-integration.test.ts` | Tavily search API | ~$0.01 |
+
+**Run locally:** `supabase start && deno task test:integration:endpoints`
 
 ## Prerequisites
 
@@ -152,7 +154,7 @@ Integration tests have longer timeouts than unit tests:
 
 ### Cost Awareness
 
-**Total cost per full run: ~$0.20**
+**Total cost per full run: ~$0.25**
 
 Be mindful of costs when:
 - Running tests repeatedly during development

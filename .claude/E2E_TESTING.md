@@ -35,8 +35,8 @@ We use a **three-tier testing strategy** to balance speed, coverage, and confide
 |------|---------|
 | **Unit tests** | `npm run test` |
 | **Integration tests (all)** | `npm run test:integration` |
-| **API integration (GLM)** | `GLM_API_KEY=xxx deno test --allow-net --allow-env _shared/__tests__/glm-integration.test.ts` |
-| **API integration (OpenRouter)** | `OPENROUTER_GEMINI_FLASH_KEY=xxx deno test --allow-net --allow-env _shared/__tests__/openrouter-integration.test.ts` |
+| **API integration (GLM)** | `GLM_API_KEY=xxx deno test --allow-net --allow-env --allow-read _shared/__tests__/glm-integration.test.ts` |
+| **API integration (OpenRouter)** | `OPENROUTER_GEMINI_FLASH_KEY=xxx deno test --allow-net --allow-env --allow-read _shared/__tests__/openrouter-integration.test.ts` |
 | **E2E (local)** | `npm run test:e2e:headed` |
 | **E2E (GitHub)** | `gh workflow run e2e-manual.yml` |
 | **E2E critical only** | `gh workflow run e2e-manual.yml -f test_filter="@critical"` |
@@ -170,26 +170,26 @@ npm run test:integration
 cd supabase/functions
 
 # GLM API tests
-GLM_API_KEY=xxx deno test --allow-net --allow-env _shared/__tests__/glm-integration.test.ts
+GLM_API_KEY=xxx deno test --allow-net --allow-env --allow-read _shared/__tests__/glm-integration.test.ts
 
 # OpenRouter tests
 OPENROUTER_GEMINI_FLASH_KEY=xxx OPENROUTER_GEMINI_IMAGE_KEY=xxx \
-  deno test --allow-net --allow-env _shared/__tests__/openrouter-integration.test.ts
+  deno test --allow-net --allow-env --allow-read _shared/__tests__/openrouter-integration.test.ts
 
 # Chat endpoint tests (requires local Supabase)
 SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_ANON_KEY=xxx \
-  deno test --allow-net --allow-env _shared/__tests__/chat-endpoint-integration.test.ts
+  deno test --allow-net --allow-env --allow-read _shared/__tests__/chat-endpoint-integration.test.ts
 
 # Circuit breaker tests
 GLM_API_KEY=xxx OPENROUTER_GEMINI_FLASH_KEY=xxx \
-  deno test --allow-net --allow-env _shared/__tests__/circuit-breaker-integration.test.ts
+  deno test --allow-net --allow-env --allow-read _shared/__tests__/circuit-breaker-integration.test.ts
 
 # Rate limiting RPC tests (requires local Supabase)
 SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_SERVICE_ROLE_KEY=xxx \
-  deno test --allow-net --allow-env _shared/__tests__/rate-limiting-integration.test.ts
+  deno test --allow-net --allow-env --allow-read _shared/__tests__/rate-limiting-integration.test.ts
 
 # Tavily search tests
-TAVILY_API_KEY=xxx deno test --allow-net --allow-env _shared/__tests__/tavily-integration.test.ts
+TAVILY_API_KEY=xxx deno test --allow-net --allow-env --allow-read _shared/__tests__/tavily-integration.test.ts
 ```
 
 #### Environment Variables Required

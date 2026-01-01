@@ -42,10 +42,14 @@ function generateTestId(prefix: string): string {
 async function cleanupGuestRateLimit(identifier: string) {
   if (!supabase) return;
 
-  await supabase
+  const { error } = await supabase
     .from("guest_rate_limits")
     .delete()
     .eq("identifier", identifier);
+
+  if (error) {
+    console.warn(`⚠️ Cleanup failed for guest rate limit "${identifier}":`, error.message);
+  }
 }
 
 /**
@@ -54,10 +58,14 @@ async function cleanupGuestRateLimit(identifier: string) {
 async function cleanupUserRateLimit(userId: string) {
   if (!supabase) return;
 
-  await supabase
+  const { error } = await supabase
     .from("user_rate_limits")
     .delete()
     .eq("user_id", userId);
+
+  if (error) {
+    console.warn(`⚠️ Cleanup failed for user rate limit "${userId}":`, error.message);
+  }
 }
 
 /**
@@ -66,10 +74,14 @@ async function cleanupUserRateLimit(userId: string) {
 async function cleanupApiThrottle(apiName: string) {
   if (!supabase) return;
 
-  await supabase
+  const { error } = await supabase
     .from("api_throttle_state")
     .delete()
     .eq("api_name", apiName);
+
+  if (error) {
+    console.warn(`⚠️ Cleanup failed for API throttle "${apiName}":`, error.message);
+  }
 }
 
 /**
@@ -98,7 +110,11 @@ async function createTestUser(email: string): Promise<string | null> {
 async function deleteTestUser(userId: string) {
   if (!supabase) return;
 
-  await supabase.auth.admin.deleteUser(userId);
+  const { error } = await supabase.auth.admin.deleteUser(userId);
+
+  if (error) {
+    console.warn(`⚠️ Cleanup failed for test user "${userId}":`, error.message);
+  }
 }
 
 // ============================================================================
