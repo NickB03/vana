@@ -139,13 +139,13 @@ const Home = () => {
 
   // Layout position controls (for tweaking before locking in)
   const [promptPosition, setPromptPosition] = useState(63); // Desktop default: 63% from top
-  const [mobilePromptPosition, setMobilePromptPosition] = useState(71); // Mobile default: 71% from top
+  const [mobilePromptPosition, setMobilePromptPosition] = useState(58); // Mobile default: 58% from top
 
   const handleSparkleReset = useCallback(() => {
     resetSparkleSettings();
     // Reset layout positions
     setPromptPosition(63);
-    setMobilePromptPosition(71);
+    setMobilePromptPosition(58);
   }, [resetSparkleSettings]);
 
   // Chat state

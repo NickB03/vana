@@ -781,13 +781,22 @@ All colors MUST be HSL.
     right: 0;
     /* Account for safe area insets (iOS home indicator, notch) + extra padding for carousel */
     bottom: max(1rem, env(safe-area-inset-bottom));
-    /* Mobile: percentage from top (default: 58%) - accounts for Safari toolbar */
-    top: var(--mobile-prompt-position, 58%);
+    /* Mobile: clamp the prompt band to keep suggestions visible on short screens */
+    top: clamp(52%, var(--mobile-prompt-position, 58%), 64%);
+    overscroll-behavior: contain;
+    touch-action: pan-y;
     /* Prevent content overflow that causes scrolling */
     display: flex;
     flex-direction: column;
     overflow-x: hidden; /* Only hide horizontal overflow */
     overflow-y: visible; /* Allow vertical overflow for carousel */
+  }
+
+  /* Extra guard for small viewports: pull content higher so input and carousel stay visible */
+  @media (max-height: 800px) {
+    [data-chat-content] {
+      top: clamp(48%, var(--mobile-prompt-position, 56%), 60%);
+    }
   }
 
   /* Desktop layout: requires BOTH min-width AND min-height */

@@ -91,7 +91,7 @@ export const ChatLayout = React.memo(({
 }: ChatLayoutProps) => {
   return (
     <div
-      className="relative flex flex-col h-full w-full overflow-hidden pt-safe pb-safe overscroll-none"
+      className="relative flex flex-col h-full min-h-[100dvh] w-full overflow-hidden pt-safe pb-safe overscroll-none touch-pan-y"
       style={{
         '--mobile-prompt-position': `${mobilePromptPosition}%`,
         '--desktop-prompt-position': `${promptPosition}%`,
