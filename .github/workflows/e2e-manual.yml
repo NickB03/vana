@@ -1,0 +1,73 @@
+name: E2E Tests (Manual)
+
+# Trigger manually from GitHub Actions UI or via gh CLI
+on:
+  workflow_dispatch:
+    inputs:
+      test_filter:
+        description: 'Test filter (e.g., "chat" or "@critical" or leave empty for all)'
+        required: false
+        default: ''
+        type: string
+      headed:
+        description: 'Record video of tests'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  e2e:
+    name: E2E Tests
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.19.0'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build application
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://mock-project.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJtb2NrIiwic3ViIjoibW9jayJ9.mock
+
+      - name: Run E2E tests
+        run: |
+          if [ -n "${{ inputs.test_filter }}" ]; then
+            echo "🧪 Running filtered tests: ${{ inputs.test_filter }}"
+            npx playwright test --grep "${{ inputs.test_filter }}"
+          else
+            echo "🧪 Running all E2E tests"
+            npx playwright test
+          fi
+        env:
+          CI: true
+          VITE_SUPABASE_URL: https://mock-project.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJtb2NrIiwic3ViIjoibW9jayJ9.mock
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Upload failure screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-failures-${{ github.run_id }}
+          path: test-results/
+          retention-days: 7

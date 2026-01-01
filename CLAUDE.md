@@ -30,6 +30,10 @@ npm run dev                    # Dev server on port 8080
 | Dev server | `npm run dev` (port 8080) |
 | Kill & restart dev | `lsof -ti:8080 \| xargs kill -9; npm run dev` |
 | Run tests | `npm run test` |
+| Run integration tests | `npm run test:integration` (requires `supabase start`) |
+| Run E2E (local) | `npm run test:e2e:headed` |
+| Run E2E (GitHub) | `gh workflow run e2e-manual.yml` |
+| Run E2E critical | `gh workflow run e2e-manual.yml -f test_filter="@critical"` |
 | Build production | `npm run build` |
 | Deploy functions | `./scripts/deploy-simple.sh prod` |
 | Model names | Always use `MODELS.*` from `config.ts` |
@@ -80,10 +84,12 @@ lsof -ti:8080 | xargs kill -9 2>/dev/null; npm run dev  # Kill & restart
 
 **Testing**:
 ```bash
-npm run test                  # All tests
+npm run test                  # Unit tests
 npm run test -- --watch       # Watch mode
+npm run test:integration      # Integration tests (requires `supabase start`)
 npm run test:coverage         # Coverage (55% min)
 ```
+Integration tests location: `supabase/functions/_shared/__tests__/`
 
 **Deployment**:
 ```bash
@@ -200,6 +206,7 @@ supabase/
 - [BUILD_AND_DEPLOYMENT.md](./.claude/BUILD_AND_DEPLOYMENT.md) — CI/CD, optimization
 - [COMMON_PATTERNS.md](./.claude/COMMON_PATTERNS.md) — Development recipes
 - [TROUBLESHOOTING.md](./.claude/TROUBLESHOOTING.md) — Debugging guide
+- [E2E_TESTING.md](./.claude/E2E_TESTING.md) — Testing strategy, E2E & integration tests
 - [artifact-import-restrictions.md](./.claude/artifact-import-restrictions.md) — Import rules for artifacts
 - [docs/GLM-4.6-CAPABILITIES.md](./.claude/docs/GLM-4.6-CAPABILITIES.md) — GLM model features
 

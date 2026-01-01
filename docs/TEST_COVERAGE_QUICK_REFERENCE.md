@@ -193,16 +193,27 @@ src/
 ### Backend Tests (Deno)
 ```
 supabase/functions/
-├─ _shared/
-│  └─ __tests__/
-│     ├─ tavily-client.test.ts ✅
-│     ├─ config.test.ts ⚠️
-│     └─ [Various API tests]
-├─ chat/
-│  └─ __tests__/
-│     └─ [No intent-detector tests]
-└─ [MISSING: Schema migration tests]
+└─ _shared/
+   └─ __tests__/
+      ├─ Unit Tests
+      │  ├─ tavily-client.test.ts ✅
+      │  ├─ config.test.ts ⚠️
+      │  └─ [Various utility tests]
+      │
+      └─ Integration Tests (Real API calls)
+         ├─ glm-integration.test.ts ✅
+         ├─ openrouter-integration.test.ts ✅
+         ├─ chat-endpoint-integration.test.ts ✅
+         ├─ circuit-breaker-integration.test.ts ✅
+         ├─ image-endpoint-integration.test.ts ✅
+         ├─ title-endpoint-integration.test.ts ✅
+         ├─ artifact-endpoint-integration.test.ts ✅
+         ├─ tavily-integration.test.ts ✅
+         └─ rate-limiting-integration.test.ts (commented out)
 ```
+
+Run: `npm run test:integration` (requires `supabase start`)
+See: `supabase/functions/_shared/__tests__/README.md` for details.
 
 ---
 
@@ -284,6 +295,6 @@ supabase/functions/
 
 ## Related Documentation
 
-- Full analysis: `/docs/TEST_COVERAGE_ANALYSIS.md`
-- Issue tracker: `/docs/ISSUE_TRACKER_271-281.md`
 - Testing guide: See project CLAUDE.md (Testing section)
+- E2E Testing: `/.claude/E2E_TESTING.md`
+- Integration tests README: `/supabase/functions/_shared/__tests__/README.md`

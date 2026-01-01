@@ -1,21 +1,209 @@
-# Edge Functions Shared Modules - Test Suite
+# Edge Functions Test Suite
 
-Comprehensive test suite for the refactored Supabase Edge Functions shared modules with **90%+ code coverage**.
+## Overview
 
-## 📋 Test Overview
+This directory contains the comprehensive test suite for Supabase Edge Functions shared modules, including **real API integration tests** that make actual API calls to external services (GLM/Z.ai, OpenRouter, Tavily).
 
-| Module | Test File | Tests | Coverage Target |
-|--------|-----------|-------|-----------------|
-| config.ts | config.test.ts | 38 | 100% |
-| error-handler.ts | error-handler.test.ts | 50 | 95% |
-| validators.ts | validators.test.ts | 65 | 95% |
-| rate-limiter.ts | rate-limiter.test.ts | 35 | 90% |
-| Integration | integration.test.ts | 25 | N/A |
-| **Total** | **5 files** | **~213 tests** | **90%+** |
+Unlike unit tests that mock external dependencies, the integration tests validate:
+- API contracts and response formats
+- Tool calling behavior and structured outputs
+- Streaming response handling
+- Error handling and resilience patterns
+- Rate limiting enforcement
 
-## 🚀 Quick Start
+## Integration Test Files
 
-### Run All Tests
+| File | Description | Cost/Run |
+|------|-------------|----------|
+| `glm-integration.test.ts` | GLM API (Z.ai) - tool calling, thinking mode | ~$0.02 |
+| `openrouter-integration.test.ts` | OpenRouter - image generation, chat | ~$0.05 |
+| `chat-endpoint-integration.test.ts` | /chat Edge Function - streaming, tools | ~$0.05 |
+| `circuit-breaker-integration.test.ts` | Resilience layer - fallback behavior | ~$0.03 |
+| `image-endpoint-integration.test.ts` | /generate-image Edge Function | ~$0.05 |
+| `title-endpoint-integration.test.ts` | /generate-title Edge Function | ~$0.005 |
+| `artifact-endpoint-integration.test.ts` | /generate-artifact Edge Function | ~$0.02 |
+| `rate-limiting-integration.test.ts` | Rate limiting enforcement | ~$0.00 |
+| `tavily-integration.test.ts` | Tavily search API | ~$0.01 |
+
+## Prerequisites
+
+### 1. Supabase Running Locally
+
+```bash
+supabase start
+```
+
+This starts the local Supabase stack including the Edge Functions runtime.
+
+### 2. Required Environment Variables
+
+Set these in your environment or `.env` file:
+
+| Variable | Description | Required For |
+|----------|-------------|--------------|
+| `GLM_API_KEY` | Z.ai API key for GLM models | GLM tests, artifact generation |
+| `OPENROUTER_GEMINI_FLASH_KEY` | OpenRouter key for chat | Chat endpoint, circuit breaker |
+| `OPENROUTER_GEMINI_IMAGE_KEY` | OpenRouter key for images | Image generation |
+| `TAVILY_API_KEY` | Tavily search API key | Search/browser tools |
+| `SUPABASE_URL` | Local Supabase URL (http://127.0.0.1:54321) | All endpoint tests |
+| `SUPABASE_ANON_KEY` | Local Supabase anon key | All endpoint tests |
+
+## Running Tests
+
+### From Project Root
+
+```bash
+# Run all integration tests
+npm run test:integration
+
+# Run with verbose output
+npm run test:integration -- --reporter=verbose
+```
+
+### Individual Test Files
+
+```bash
+cd supabase/functions
+
+# GLM API tests
+deno test --allow-net --allow-env _shared/__tests__/glm-integration.test.ts
+
+# OpenRouter tests
+deno test --allow-net --allow-env _shared/__tests__/openrouter-integration.test.ts
+
+# Chat endpoint tests
+deno test --allow-net --allow-env _shared/__tests__/chat-endpoint-integration.test.ts
+
+# Circuit breaker tests
+deno test --allow-net --allow-env _shared/__tests__/circuit-breaker-integration.test.ts
+
+# Image endpoint tests
+deno test --allow-net --allow-env _shared/__tests__/image-endpoint-integration.test.ts
+
+# Title endpoint tests
+deno test --allow-net --allow-env _shared/__tests__/title-endpoint-integration.test.ts
+
+# Artifact endpoint tests
+deno test --allow-net --allow-env _shared/__tests__/artifact-endpoint-integration.test.ts
+
+# Rate limiting tests
+deno test --allow-net --allow-env _shared/__tests__/rate-limiting-integration.test.ts
+
+# Tavily search tests
+deno test --allow-net --allow-env _shared/__tests__/tavily-integration.test.ts
+```
+
+### Run Specific Test
+
+```bash
+deno test --allow-net --allow-env --filter "should complete chat with tool call" _shared/__tests__/glm-integration.test.ts
+```
+
+## Test Philosophy
+
+### 1. Real API Calls (Not Mocked)
+
+These tests hit actual external APIs to verify real-world behavior. This catches issues that mocks would miss:
+- API contract changes
+- Rate limiting behavior
+- Network timeout handling
+- Response format variations
+
+### 2. Fail Loudly on Errors
+
+Tests are designed to fail explicitly when something goes wrong:
+- No silent catches that swallow errors
+- Clear error messages indicating what failed
+- Stack traces preserved for debugging
+
+### 3. Strict Contract Enforcement for Tool Calling
+
+Tool call responses are validated strictly:
+- Required fields must be present
+- Field types must match expected schema
+- Tool names must match defined tools
+- Arguments must be valid JSON
+
+### 4. Soft Assertions for AI-Generated Content
+
+Since AI responses are non-deterministic, content validation uses soft assertions:
+- Check that content exists and is non-empty
+- Verify content type (string, object, etc.)
+- Don't assert exact content matches
+- Allow reasonable variation in responses
+
+## Notes
+
+### Rate Limit Tests
+
+Rate limiting tests in `rate-limiting-integration.test.ts` are **commented out** by default. This is because:
+- The demo environment has limited quotas
+- Triggering rate limits could affect other tests
+- Rate limit windows may persist across test runs
+
+To run rate limit tests, uncomment them and run in isolation.
+
+### Test Timeouts
+
+Integration tests have longer timeouts than unit tests:
+- Default: 30 seconds per test
+- Image generation: 60 seconds
+- Streaming tests: 45 seconds
+
+### Cost Awareness
+
+**Total cost per full run: ~$0.20**
+
+Be mindful of costs when:
+- Running tests repeatedly during development
+- Setting up CI/CD pipelines
+- Running the full suite unnecessarily
+
+Consider running individual test files during development rather than the full suite.
+
+---
+
+# Unit Test Suite
+
+Comprehensive unit test suite for the refactored Supabase Edge Functions shared modules with **90%+ code coverage**.
+
+## Unit Test Files
+
+| Module | Test File | Coverage Target |
+|--------|-----------|-----------------|
+| api-error-handler.ts | api-error-handler.test.ts | 95% |
+| artifact-validator.ts | artifact-validator.test.ts | 95% |
+| cdn-fallback.ts | cdn-fallback.test.ts | 90% |
+| config.ts | config.test.ts | 100% |
+| config-env.ts | config-env.test.ts | 100% |
+| context-selector.ts | context-selector.test.ts | 90% |
+| cors-config.ts | cors-config.test.ts | 95% |
+| error-handler.ts | error-handler.test.ts | 95% |
+| glm-chat-router.ts | glm-chat-router.test.ts | 90% |
+| glm-conversation-messages.ts | glm-conversation-messages.test.ts | 90% |
+| glm-openai-format.ts | glm-openai-format.validation.test.ts | 90% |
+| glm-stream-error-resilience.ts | glm-stream-error-resilience.test.ts | 90% |
+| glm-tool-continuation.ts | glm-tool-continuation.test.ts | 90% |
+| immutability-validator.ts | immutability-validator.test.ts | 95% |
+| logger.ts | logger.test.ts | 90% |
+| model-config.ts | model-config.test.ts | 95% |
+| prebuilt-bundles.ts | prebuilt-bundles.test.ts | 90% |
+| prompt-normalization.ts | prompt-normalization.test.ts | 90% |
+| query-rewriter.ts | query-rewriter.test.ts | 90% |
+| rate-limiter.ts | rate-limiter.test.ts | 90% |
+| reasoning-provider.ts | reasoning-provider.test.ts | 90% |
+| storage-retry.ts | storage-retry.test.ts | 90% |
+| tavily-client.ts | tavily-client.test.ts | 90% |
+| title-transformer.ts | title-transformer.test.ts | 90% |
+| token-counter.ts | token-counter.test.ts | 90% |
+| tool-result-content.ts | tool-result-content.test.ts | 90% |
+| validators.ts | validators.test.ts | 95% |
+| Cross-module | integration.test.ts | N/A |
+| **Total** | **28 unit test files** | **90%+** |
+
+## Quick Start
+
+### Run All Unit Tests
 
 ```bash
 cd supabase/functions
@@ -40,20 +228,60 @@ deno task test:coverage
 deno task test:detailed
 ```
 
-## 📦 Test Structure
+## Test Structure
 
 ```
 __tests__/
-├── config.test.ts              # Config constant tests
-├── error-handler.test.ts       # Error response builder tests
-├── validators.test.ts          # Request validation tests
-├── rate-limiter.test.ts        # Rate limiting service tests
-├── integration.test.ts         # Cross-module integration tests
-├── test-utils.ts              # Shared test utilities
-└── README.md                  # This file
+├── # Integration Tests (real API calls)
+├── glm-integration.test.ts               # GLM API tests
+├── openrouter-integration.test.ts        # OpenRouter API tests
+├── tavily-integration.test.ts            # Tavily search API tests
+├── chat-endpoint-integration.test.ts     # /chat endpoint tests
+├── artifact-endpoint-integration.test.ts # /generate-artifact endpoint tests
+├── image-endpoint-integration.test.ts    # /generate-image endpoint tests
+├── title-endpoint-integration.test.ts    # /generate-title endpoint tests
+├── circuit-breaker-integration.test.ts   # Resilience/fallback tests
+├── rate-limiting-integration.test.ts     # Rate limiting tests
+│
+├── # Unit Tests
+├── api-error-handler.test.ts             # API error handling tests
+├── artifact-validator.test.ts            # Artifact validation tests
+├── cdn-fallback.test.ts                  # CDN fallback tests
+├── config.test.ts                        # Config constant tests
+├── config-env.test.ts                    # Environment config tests
+├── context-selector.test.ts              # Context selection tests
+├── cors-config.test.ts                   # CORS configuration tests
+├── error-handler.test.ts                 # Error response builder tests
+├── glm-chat-router.test.ts               # GLM chat routing tests
+├── glm-conversation-messages.test.ts     # GLM message format tests
+├── glm-openai-format.validation.test.ts  # GLM OpenAI format tests
+├── glm-stream-error-resilience.test.ts   # GLM stream error tests
+├── glm-tool-continuation.test.ts         # GLM tool continuation tests
+├── immutability-validator.test.ts        # Immutability tests
+├── integration.test.ts                   # Cross-module integration tests
+├── logger.test.ts                        # Logger tests
+├── model-config.test.ts                  # Model configuration tests
+├── prebuilt-bundles.test.ts              # Prebuilt bundle tests
+├── prompt-normalization.test.ts          # Prompt normalization tests
+├── query-rewriter.test.ts                # Query rewriter tests
+├── rate-limiter.test.ts                  # Rate limiting service tests
+├── reasoning-provider.test.ts            # Reasoning provider tests
+├── storage-retry.test.ts                 # Storage retry tests
+├── tavily-client.test.ts                 # Tavily client unit tests
+├── title-transformer.test.ts             # Title transformer tests
+├── token-counter.test.ts                 # Token counting tests
+├── tool-result-content.test.ts           # Tool result content tests
+├── validators.test.ts                    # Request validation tests
+│
+├── # Utilities & Examples
+├── test-utils.ts                         # Shared test utilities
+├── test-apis.ts                          # API test helpers
+├── test-glm-endpoints.ts                 # GLM endpoint helpers
+├── tavily-client.example.ts              # Tavily client example
+└── README.md                             # This file
 ```
 
-## 🧪 Test Categories
+## Test Categories
 
 ### Unit Tests (70%)
 
@@ -103,7 +331,7 @@ Deno.test("Complete guest chat flow", () => {
 });
 ```
 
-## 📝 Test Utilities
+## Test Utilities
 
 The `test-utils.ts` module provides helper functions for common testing patterns:
 
@@ -147,7 +375,7 @@ assertHasHeaders(response, { "Content-Type": "application/json" });
 const longString = generateString(5000); // 5000 character string
 ```
 
-## 🎯 Coverage Goals
+## Coverage Goals
 
 ### Overall Target: 90%+
 
@@ -169,18 +397,7 @@ deno task test:detailed
 deno coverage coverage --lcov > coverage.lcov
 ```
 
-### Coverage Output Example
-
-```
-cover file:///Users/.../config.ts ... 100.000% (165/165)
-cover file:///Users/.../error-handler.ts ... 95.454% (315/330)
-cover file:///Users/.../validators.ts ... 95.098% (330/347)
-cover file:///Users/.../rate-limiter.ts ... 90.146% (247/274)
-
-Total: 93.289% (1057/1116)
-```
-
-## 🔍 Running Specific Tests
+## Running Specific Tests
 
 ### Run Single Test File
 
@@ -200,7 +417,7 @@ deno test --allow-env --allow-net --allow-read --filter "MessageValidator" _shar
 deno test --allow-env --allow-net --allow-read --fail-fast _shared/__tests__/
 ```
 
-## 🐛 Debugging Tests
+## Debugging Tests
 
 ### Enable Verbose Output
 
@@ -220,7 +437,7 @@ deno test --allow-env --allow-net --allow-read --inspect-brk _shared/__tests__/c
 deno test --allow-env --allow-net --allow-read --parallel=1 _shared/__tests__/
 ```
 
-## ✅ Pre-Commit Checklist
+## Pre-Commit Checklist
 
 Before committing changes to shared modules, ensure:
 
@@ -236,7 +453,7 @@ Before committing changes to shared modules, ensure:
 deno task test && deno task lint && deno task fmt:check && deno task check
 ```
 
-## 🚦 CI/CD Integration
+## CI/CD Integration
 
 Tests run automatically on:
 
@@ -256,27 +473,24 @@ See `.github/workflows/edge-functions-tests.yml`
 
 ### PR Checks
 
-✅ All tests must pass before merging
+- All tests must pass before merging
+- Coverage must be >= 90%
+- Linting and formatting must pass
+- Type checking must pass
 
-✅ Coverage must be ≥90%
-
-✅ Linting and formatting must pass
-
-✅ Type checking must pass
-
-## 📚 Writing New Tests
+## Writing New Tests
 
 ### Test Naming Convention
 
 Use descriptive "should..." pattern:
 
 ```typescript
-// ✅ GOOD
+// GOOD
 Deno.test("RequestValidator.forChat should reject empty messages array", () => {
   // Test implementation
 });
 
-// ❌ BAD
+// BAD
 Deno.test("Empty messages", () => {
   // Test implementation
 });
@@ -322,7 +536,7 @@ Deno.test("Module should handle errors", () => {
 - Very long inputs
 - Whitespace-only inputs
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Tests Failing Locally
 
@@ -335,11 +549,29 @@ Deno.test("Module should handle errors", () => {
 2. **Check Deno version:**
    ```bash
    deno --version
-   # Should be v1.x
+   # Should be v1.40+
    ```
 
 3. **Verify permissions:**
    Tests require `--allow-env`, `--allow-net`, `--allow-read`
+
+### Integration Tests Failing
+
+1. **Check Supabase is running:**
+   ```bash
+   supabase status
+   ```
+
+2. **Verify environment variables are set**
+
+3. **Check API key validity and quotas**
+
+4. **Review Edge Function logs:**
+   ```bash
+   supabase functions logs <function-name>
+   ```
+
+5. **Try running the specific test in isolation**
 
 ### Coverage Not Generating
 
@@ -366,7 +598,7 @@ Deno.test("Module should handle errors", () => {
    deno test --allow-env --allow-net --allow-read --parallel=1 _shared/__tests__/
    ```
 
-## 📊 Performance Benchmarks
+## Performance Benchmarks
 
 Target execution times:
 
@@ -374,22 +606,10 @@ Target execution times:
 |--------------|-------------|----------------|
 | Single unit test | <10ms | 50ms |
 | Single integration test | <50ms | 100ms |
-| Full test suite | <2s | 5s |
+| Full unit test suite | <2s | 5s |
+| Full integration suite | <60s | 120s |
 
-### Actual Performance
-
-```bash
-# Example output
-test config.test.ts ... ok (127ms)
-test error-handler.test.ts ... ok (245ms)
-test validators.test.ts ... ok (318ms)
-test rate-limiter.test.ts ... ok (156ms)
-test integration.test.ts ... ok (289ms)
-
-Total time: 1.135s
-```
-
-## 🤝 Contributing
+## Contributing
 
 When adding new shared modules:
 
@@ -408,16 +628,16 @@ When adding new shared modules:
 - [ ] Coverage meets threshold
 - [ ] Performance benchmarks met
 
-## 📖 Additional Resources
+## Additional Resources
 
-- **Test Plan**: See `.claude/REFACTORING_TEST_PLAN.md`
+- **E2E Testing Guide**: See `.claude/E2E_TESTING.md`
 - **Deno Testing**: https://docs.deno.com/runtime/manual/basics/testing/
 - **Deno Assertions**: https://jsr.io/@std/assert
 - **Coverage Guide**: https://docs.deno.com/runtime/manual/basics/testing/coverage
 
 ---
 
-**Last Updated**: 2025-11-13
-**Test Suite Version**: 1.0
-**Total Tests**: ~213
+**Last Updated**: 2025-12-31
+**Test Suite Version**: 2.0
+**Total Test Files**: 37 (28 unit + 9 integration)
 **Coverage**: 90%+

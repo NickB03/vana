@@ -1,0 +1,136 @@
+name: Integration Tests
+
+# Manual trigger with provider selection and scheduled daily runs
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: 'Provider to test (all, glm, openrouter, tavily)'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - glm
+          - openrouter
+          - tavily
+  schedule:
+    # Daily at 6 AM UTC
+    - cron: '0 6 * * *'
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/functions/_shared/__tests__/*-integration.test.ts'
+      - 'supabase/functions/_shared/**/*.ts'
+      - 'supabase/functions/deno.json'
+      - '.github/workflows/integration-tests.yml'
+
+jobs:
+  integration-tests:
+    name: Integration Tests - ${{ inputs.provider || 'all' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Cache Deno dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.deno
+            ~/.cache/deno
+          key: ${{ runner.os }}-deno-${{ hashFiles('**/deno.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-deno-
+
+      - name: Run integration tests - All providers
+        if: ${{ inputs.provider == 'all' || inputs.provider == '' || github.event_name != 'workflow_dispatch' }}
+        working-directory: supabase/functions
+        run: deno task test:integration
+        env:
+          GLM_API_KEY: ${{ secrets.GLM_API_KEY }}
+          OPENROUTER_GEMINI_FLASH_KEY: ${{ secrets.OPENROUTER_GEMINI_FLASH_KEY }}
+          OPENROUTER_GEMINI_IMAGE_KEY: ${{ secrets.OPENROUTER_GEMINI_IMAGE_KEY }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+
+      - name: Run integration tests - GLM only
+        if: ${{ inputs.provider == 'glm' }}
+        working-directory: supabase/functions
+        run: deno task test:integration:glm
+        env:
+          GLM_API_KEY: ${{ secrets.GLM_API_KEY }}
+
+      - name: Run integration tests - OpenRouter only
+        if: ${{ inputs.provider == 'openrouter' }}
+        working-directory: supabase/functions
+        run: deno task test:integration:openrouter
+        env:
+          OPENROUTER_GEMINI_FLASH_KEY: ${{ secrets.OPENROUTER_GEMINI_FLASH_KEY }}
+          OPENROUTER_GEMINI_IMAGE_KEY: ${{ secrets.OPENROUTER_GEMINI_IMAGE_KEY }}
+
+      - name: Run integration tests - Tavily only
+        if: ${{ inputs.provider == 'tavily' }}
+        working-directory: supabase/functions
+        run: deno task test:integration:tavily
+        env:
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+
+      - name: Generate test summary
+        if: always()
+        run: |
+          echo "## Integration Tests Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ inputs.provider }}" == "" ]; then
+            PROVIDER="all"
+          else
+            PROVIDER="${{ inputs.provider }}"
+          fi
+
+          echo "**Provider(s) Tested**: \`$PROVIDER\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch**: ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "### Result: ✅ All tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### Result: ❌ Tests failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### API Cost Estimate" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Integration tests make real API calls. Estimated costs:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Provider | Cost |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| GLM-4.5 Air | ~$0.01 per test |" >> $GITHUB_STEP_SUMMARY
+          echo "| Gemini Flash | ~$0.001 per test |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tavily | ~$0.001 per search |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "For manual runs, monitor API usage in respective dashboards." >> $GITHUB_STEP_SUMMARY
+
+      - name: Capture test failure details
+        if: failure()
+        working-directory: supabase/functions
+        run: |
+          echo "## Test Failure Details" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Command executed**: \`deno task test:integration$(if [ '${{ inputs.provider }}' != 'all' ] && [ '${{ inputs.provider }}' != '' ]; then echo ":${{ inputs.provider }}"; fi)\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Troubleshooting Steps:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Verify API keys are correctly configured in GitHub Secrets" >> $GITHUB_STEP_SUMMARY
+          echo "2. Check provider API rate limits and quota status" >> $GITHUB_STEP_SUMMARY
+          echo "3. Review integration test source at: \`supabase/functions/_shared/__tests__/\`" >> $GITHUB_STEP_SUMMARY
+          echo "4. Run tests locally with: \`cd supabase/functions && deno task test:integration\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "See workflow logs above for detailed error output." >> $GITHUB_STEP_SUMMARY
