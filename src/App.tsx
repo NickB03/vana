@@ -11,6 +11,7 @@ import { AnimatedRoute } from "@/components/AnimatedRoute";
 import { AnimationErrorBoundary } from "@/components/AnimationErrorBoundary";
 import { UpdateNotification } from "@/components/UpdateNotification";
 import { storeVersionInfo, logCacheBustingInfo, isNewVersionAvailable, clearAllCaches } from "@/utils/cacheBusting";
+import { usePreventPullToRefresh } from "@/hooks/usePreventPullToRefresh";
 
 // Lazy load pages for code splitting
 const Home = lazy(() => import("./pages/Home"));
@@ -110,6 +111,9 @@ const AnimatedRoutes = () => {
 };
 
 const App = () => {
+  // Prevent pull-to-refresh on iOS Safari (CSS alone doesn't work)
+  usePreventPullToRefresh();
+
   // Initialize version tracking and cache busting on app startup
   useEffect(() => {
     const checkVersion = async () => {
