@@ -16,6 +16,8 @@ interface SparklesProps {
   background?: string
   glow?: boolean
   glowColor?: string
+  /** Pause all particle movement and animations (useful during scroll) */
+  paused?: boolean
   options?: Record<string, unknown>
   onError?: (error: Error) => void
 }
@@ -34,16 +36,38 @@ export function Sparkles({
   background = "transparent",
   glow = false,
   glowColor,
+  paused = false,
   options = {},
   onError,
 }: SparklesProps) {
   const [isReady, setIsReady] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const onErrorRef = useRef(onError)
 
   // Keep ref updated to avoid stale closure
   useEffect(() => {
     onErrorRef.current = onError
   }, [onError])
+
+  // Mobile detection for performance optimization
+  // Reduces FPS and disables glow effects on mobile devices
+  // Debounced to prevent excessive re-renders during window resize
+  useEffect(() => {
+    let timeoutId: number | null = null
+    const checkMobile = () => {
+      if (timeoutId) window.clearTimeout(timeoutId)
+      timeoutId = window.setTimeout(() => {
+        setIsMobile(window.innerWidth < 768)
+      }, 100)
+    }
+    // Set initial value immediately (no debounce for initial render)
+    setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', checkMobile)
+    return () => {
+      window.removeEventListener('resize', checkMobile)
+      if (timeoutId) window.clearTimeout(timeoutId)
+    }
+  }, [])
 
   // Initialize particle engine once on mount
   useEffect(() => {
@@ -75,13 +99,14 @@ export function Sparkles({
         enable: false,
         zIndex: 1,
       },
-      fpsLimit: 120,
+      // Mobile optimization: reduce FPS from 120 to 30 on mobile to prevent GPU overload and scroll stuttering
+      fpsLimit: isMobile ? 30 : 60,
       particles: {
         color: {
           value: color,
         },
         move: {
-          enable: true,
+          enable: !paused,
           direction: "none" as const,
           speed: {
             min: minSpeed ?? speed / 10,
@@ -98,7 +123,7 @@ export function Sparkles({
             max: opacity,
           },
           animation: {
-            enable: true,
+            enable: !paused,
             sync: false,
             speed: opacitySpeed,
           },
@@ -109,8 +134,8 @@ export function Sparkles({
             max: size,
           },
         },
-        // Add shadow/glow effect when enabled
-        ...(glow && {
+        // Add shadow/glow effect when enabled (disabled on mobile for performance)
+        ...(glow && !isMobile && {
           shadow: {
             enable: true,
             color: {
@@ -127,7 +152,7 @@ export function Sparkles({
       detectRetina: true,
     }
     return { ...defaultOptions, ...options }
-  }, [background, color, density, glow, glowColor, minOpacity, minSize, minSpeed, opacity, opacitySpeed, options, size, speed])
+  }, [background, color, density, glow, glowColor, minOpacity, minSize, minSpeed, opacity, opacitySpeed, options, size, speed, isMobile, paused])
 
   return isReady ? (
     <Particles id={id} options={particleOptions} className={className} />

@@ -1,5 +1,6 @@
 import { useState, useEffect, memo } from "react"
 import { Sparkles } from "@/components/Sparkles"
+import { useScrollPause } from "@/hooks/useScrollPause"
 
 // Default settings from SparklesDemo - exported for control panels
 export const SPARKLE_DEFAULTS = {
@@ -78,6 +79,9 @@ export const SparkleBackground = memo(function SparkleBackground({
   opacitySpeed = SPARKLE_DEFAULTS.opacitySpeed,
   minOpacity = SPARKLE_DEFAULTS.minOpacity,
 }: SparkleBackgroundProps) {
+  // Pause animations during scroll for better performance
+  const { isScrolling } = useScrollPause(150)
+
   // Detect mobile viewport for responsive curve position
   const [isMobile, setIsMobile] = useState(false)
 
@@ -158,6 +162,7 @@ export const SparkleBackground = memo(function SparkleBackground({
             glowColor={useGradient ? glowGradient[0] : glowColor}
             opacitySpeed={opacitySpeed}
             minOpacity={minOpacity}
+            paused={isScrolling}
             className="absolute inset-0 w-full h-full"
           />
         </div>
