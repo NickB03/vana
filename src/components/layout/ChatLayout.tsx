@@ -113,7 +113,7 @@ export const ChatLayout = React.memo(({
       {/* Switches to mobile layout when viewport height < 600px OR width < 768px */}
       <div
         data-chat-content
-        className="flex flex-col justify-start p-[clamp(1rem,2vh,2rem)] pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-[clamp(1rem,2vh,2rem)]"
+        className="flex flex-col justify-start p-[clamp(1rem,2vh,2rem)] pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:pb-[clamp(1rem,2vh,2rem)]"
       >
         {/* Prompt Input - viewport-relative max-width with clamp() */}
         {/* Mobile: 95vw (nearly full width), Desktop: 85vw (maintain breathing room) */}
