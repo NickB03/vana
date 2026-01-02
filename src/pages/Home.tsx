@@ -633,7 +633,7 @@ const Home = () => {
           <OnboardingTour />
           <TourAlertDialog isOpen={showTourDialog} setIsOpen={setShowTourDialog} />
           <motion.div
-            className={phase === "app" ? "relative min-h-screen" : "fixed inset-0 z-50"}
+            className={phase === "app" ? "relative min-h-[var(--app-height)]" : "fixed inset-0 z-50"}
             style={{
               pointerEvents: phase !== "landing" ? "auto" : "none",
             }}
@@ -666,7 +666,7 @@ const Home = () => {
                 <SparkleErrorBoundary resetKey={resetCounter}>
                   <SparkleBackground position="absolute" {...sparkleSettings} />
                 </SparkleErrorBoundary>
-                <main className="flex h-[100dvh] flex-col overflow-hidden relative z-10">
+                <main className="flex h-[var(--app-height)] flex-col overflow-hidden relative z-10">
                   {/* Mobile Header - Gemini-style hamburger menu */}
                   <MobileHeader isAuthenticated={isAuthenticated} />
 

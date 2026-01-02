@@ -17,7 +17,7 @@ export const Hero = () => {
   };
 
   return (
-    <section className="relative min-h-[100dvh] w-full flex items-center justify-center px-4 md:px-6">
+    <section className="relative min-h-[var(--app-height)] w-full flex items-center justify-center px-4 md:px-6">
       <div className="container max-w-[100rem] mx-auto relative z-10 w-full px-4 sm:px-6 lg:px-8">
         <div className="grid md:grid-cols-[1.3fr,1.5fr] lg:grid-cols-[1.5fr,1.8fr] gap-8 sm:gap-10 lg:gap-10 items-center w-full">
           {/* Left: Headline + CTAs */}

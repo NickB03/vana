@@ -91,7 +91,8 @@ export const ChatLayout = React.memo(({
 }: ChatLayoutProps) => {
   return (
     <div
-      className="relative flex flex-col h-full min-h-[100dvh] w-full overflow-hidden pt-safe pb-safe overscroll-none touch-pan-y"
+      data-chat-layout
+      className="relative flex flex-col h-full min-h-[var(--app-height)] w-full overflow-hidden pt-safe pb-safe overscroll-none touch-pan-y"
       style={{
         '--mobile-prompt-position': `${mobilePromptPosition}%`,
         '--desktop-prompt-position': `${promptPosition}%`,
@@ -99,8 +100,8 @@ export const ChatLayout = React.memo(({
     >
       {/* Heading - positioned at 30% from top, scales with viewport */}
       <div
-        className="absolute left-0 right-0 text-center px-4"
-        style={{ top: '30%', transform: 'translateY(-50%)' }}
+        data-chat-heading
+        className="text-center px-4"
       >
         <h1 className="bg-gradient-to-r from-indigo-200 via-white to-indigo-200 bg-clip-text text-[clamp(1.75rem,min(4vw,5vh),3rem)] font-bold text-transparent">
           {heading}

@@ -139,12 +139,44 @@ function PromptInputTextarea({
     onKeyDown?.(e)
   }
 
+  /**
+   * iOS Safari keyboard fix - force viewport restoration on blur
+   *
+   * Problem: When iOS keyboard dismisses, Safari sometimes doesn't properly restore
+   * the visual viewport, leaving a gap between content and Safari's bottom toolbar.
+   *
+   * Solution: When textarea loses focus (keyboard dismissing), wait for keyboard
+   * animation to complete (300ms), then force viewport restoration using
+   * scrollTo(0, window.scrollY). This triggers Safari to recalculate the visual
+   * viewport.
+   */
+  const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+    // Only apply fix on iOS Safari (including iPadOS reporting as Mac)
+    const isIOS =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+
+    if (isIOS) {
+      // Wait for keyboard dismiss animation (typically 300ms on iOS)
+      setTimeout(() => {
+        // Force viewport restoration by scrolling to current position
+        // This triggers Safari to recalculate the visual viewport
+        window.scrollTo(0, window.scrollY)
+      }, 300)
+    }
+
+    // Call original onBlur handler if provided
+    props.onBlur?.(e)
+  }
+
   return (
     <Textarea
       ref={textareaRef}
+      {...props}
       value={value}
       onChange={(e) => setValue(e.target.value)}
       onKeyDown={handleKeyDown}
+      onBlur={handleBlur}
       className={cn(
         "text-foreground min-h-[44px] w-full resize-none border-none bg-transparent shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
         className
@@ -152,7 +184,6 @@ function PromptInputTextarea({
       rows={1}
       disabled={disabled}
       data-testid="chat-input"
-      {...props}
     />
   )
 }

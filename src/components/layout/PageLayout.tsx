@@ -75,7 +75,7 @@ export function PageLayout({
     : undefined;
 
   return (
-    <div className="min-h-screen w-full bg-zinc-950 relative">
+    <div className="min-h-[var(--app-height)] w-full bg-zinc-950 relative">
       {/* Sparkle background layer - z-0 sits on top of bg-zinc-950 */}
       {showSparkleBackground && (
         <div className="fixed inset-0 pointer-events-none z-0">
@@ -102,4 +102,3 @@ export function PageLayout({
     </div>
   );
 }
-

@@ -23,7 +23,7 @@ export const HeroV2 = () => {
   };
 
   return (
-    <section className={combineSpacing("relative min-h-[100dvh] w-full flex items-center justify-center", SECTION_SPACING.full)}>
+    <section className={combineSpacing("relative min-h-[var(--app-height)] w-full flex items-center justify-center", SECTION_SPACING.full)}>
       <div className="container max-w-[90rem] mx-auto relative z-10 w-full px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-[1fr,0.99fr] gap-8 sm:gap-12 lg:gap-16 items-center w-full">
           {/* Left: Headline + CTAs */}

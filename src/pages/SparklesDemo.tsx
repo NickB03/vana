@@ -91,7 +91,7 @@ export default function SparklesDemo() {
         />
 
         <SidebarInset className="relative bg-zinc-950">
-          <main className="flex h-[100dvh] flex-col relative">
+          <main className="flex h-[var(--app-height)] flex-col relative">
             {/* Mobile Header */}
             <MobileHeader isAuthenticated={false} />
 
