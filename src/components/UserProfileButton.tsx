@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { User, Settings, HelpCircle, LogOut, Check, Palette } from "lucide-react";
+import { HelpCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -7,9 +7,6 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -17,8 +14,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { ThemeSwitcher } from "@/components/ui/theme-switcher";
-import { useTheme } from "@/hooks/use-theme";
 
 interface UserProfileButtonProps {
   collapsed?: boolean;
@@ -26,7 +21,6 @@ interface UserProfileButtonProps {
 
 export function UserProfileButton({ collapsed = false }: UserProfileButtonProps) {
   const navigate = useNavigate();
-  const { themeMode, colorTheme, setThemeMode, setColorTheme } = useTheme();
   const [user, setUser] = useState<{ email?: string; name?: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
@@ -144,56 +138,13 @@ export function UserProfileButton({ collapsed = false }: UserProfileButtonProps)
 
         <DropdownMenuSeparator />
 
-        {/* Settings Section */}
+        {/* Appearance (informational only) */}
         <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-          Settings
+          Appearance
         </DropdownMenuLabel>
-
-        {/* Theme Mode */}
-        <div className="px-2 py-2">
-          <div className="text-xs font-medium mb-2 text-muted-foreground">Theme Mode</div>
-          <ThemeSwitcher value={themeMode} onChange={setThemeMode} />
+        <div className="px-2 py-2 text-sm text-muted-foreground">
+          Dark mode is always on to keep the interface consistent.
         </div>
-
-        <DropdownMenuSeparator />
-
-        {/* Color Theme Submenu */}
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <Palette className="mr-2 h-4 w-4" />
-            <span>Color Theme</span>
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent>
-            <DropdownMenuItem onClick={() => setColorTheme("default")}>
-              <Check className={`mr-2 h-4 w-4 ${colorTheme === "default" ? "opacity-100" : "opacity-0"}`} />
-              <span>Default</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setColorTheme("charcoal")}>
-              <Check className={`mr-2 h-4 w-4 ${colorTheme === "charcoal" ? "opacity-100" : "opacity-0"}`} />
-              <span>Charcoal</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setColorTheme("gemini")}>
-              <Check className={`mr-2 h-4 w-4 ${colorTheme === "gemini" ? "opacity-100" : "opacity-0"}`} />
-              <span>Sky Blue</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setColorTheme("ocean")}>
-              <Check className={`mr-2 h-4 w-4 ${colorTheme === "ocean" ? "opacity-100" : "opacity-0"}`} />
-              <span>Ocean Breeze</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setColorTheme("sunset")}>
-              <Check className={`mr-2 h-4 w-4 ${colorTheme === "sunset" ? "opacity-100" : "opacity-0"}`} />
-              <span>Sunset</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setColorTheme("forest")}>
-              <Check className={`mr-2 h-4 w-4 ${colorTheme === "forest" ? "opacity-100" : "opacity-0"}`} />
-              <span>Forest</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setColorTheme("rose")}>
-              <Check className={`mr-2 h-4 w-4 ${colorTheme === "rose" ? "opacity-100" : "opacity-0"}`} />
-              <span>Rose</span>
-            </DropdownMenuItem>
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
 
         <DropdownMenuSeparator />
 

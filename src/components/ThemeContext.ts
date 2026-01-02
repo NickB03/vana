@@ -13,8 +13,8 @@ export type ThemeProviderState = {
 };
 
 const initialState: ThemeProviderState = {
-  theme: "system",
-  themeMode: "system",
+  theme: "dark",
+  themeMode: "dark",
   colorTheme: "default",
   setTheme: () => null,
   setThemeMode: () => null,

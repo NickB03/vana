@@ -133,7 +133,7 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultThemeMode="system" defaultColorTheme="default" storageKey="vite-ui-theme">
+      <ThemeProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />

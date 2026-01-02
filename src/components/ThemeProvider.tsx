@@ -1,55 +1,20 @@
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ThemeProviderContext, ThemeMode, ColorTheme } from "@/components/ThemeContext";
 
 type ThemeProviderProps = {
   children: React.ReactNode;
-  defaultThemeMode?: ThemeMode;
-  defaultColorTheme?: ColorTheme;
-  storageKey?: string;
 };
 
-/**
- * Safe localStorage getter that handles Safari private mode and quota errors
- */
-function safeGetItem(key: string): string | null {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    // Safari private mode, localStorage disabled, or quota exceeded
-    return null;
-  }
-}
+const ENFORCED_THEME_MODE: ThemeMode = "dark";
+const ENFORCED_COLOR_THEME: ColorTheme = "default";
 
-/**
- * Safe localStorage setter that handles Safari private mode and quota errors
- */
-function safeSetItem(key: string, value: string): void {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    // Safari private mode, localStorage disabled, or quota exceeded
-    console.warn(`Failed to save ${key} to localStorage`);
-  }
-}
-
-export function ThemeProvider({
-  children,
-  defaultThemeMode = "system",
-  defaultColorTheme = "default",
-  storageKey = "vite-ui-theme",
-  ...props
-}: ThemeProviderProps) {
-  const [themeMode, setThemeModeState] = useState<ThemeMode>(
-    () => (safeGetItem(`${storageKey}-mode`) as ThemeMode) || defaultThemeMode
-  );
-  const [colorTheme, setColorThemeState] = useState<ColorTheme>(
-    () => (safeGetItem(`${storageKey}-color`) as ColorTheme) || defaultColorTheme
-  );
+export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
+  const [themeMode, setThemeModeState] = useState<ThemeMode>(ENFORCED_THEME_MODE);
+  const [colorTheme, setColorThemeState] = useState<ColorTheme>(ENFORCED_COLOR_THEME);
 
   useEffect(() => {
     const root = window.document.documentElement;
 
-    // Remove all theme classes
     root.classList.remove(
       "light", "dark",
       "ocean", "ocean-light",
@@ -59,44 +24,25 @@ export function ThemeProvider({
       "charcoal", "charcoal-light"
     );
 
-    // Determine the actual mode to apply
-    let actualMode: "light" | "dark" = "dark";
-    if (themeMode === "system") {
-      actualMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    } else {
-      actualMode = themeMode;
-    }
+    root.classList.add(ENFORCED_THEME_MODE);
+  }, []);
 
-    // Apply the color theme with mode suffix
-    if (colorTheme === "default") {
-      root.classList.add(actualMode);
-    } else {
-      const themeClass = actualMode === "light" ? `${colorTheme}-light` : colorTheme;
-      root.classList.add(themeClass);
-    }
-  }, [themeMode, colorTheme]);
-
-  const setThemeMode = (mode: ThemeMode) => {
-    safeSetItem(`${storageKey}-mode`, mode);
-    setThemeModeState(mode);
+  const setThemeMode = (_mode: ThemeMode) => {
+    setThemeModeState(ENFORCED_THEME_MODE);
   };
 
-  const setColorTheme = (color: ColorTheme) => {
-    safeSetItem(`${storageKey}-color`, color);
-    setColorThemeState(color);
+  const setColorTheme = (_color: ColorTheme) => {
+    setColorThemeState(ENFORCED_COLOR_THEME);
   };
 
   // Legacy setTheme for backwards compatibility
-  const setTheme = (theme: string) => {
-    if (theme === "light" || theme === "dark" || theme === "system") {
-      setThemeMode(theme as ThemeMode);
-    } else {
-      setColorTheme(theme as ColorTheme);
-    }
+  const setTheme = (_theme: string) => {
+    setThemeModeState(ENFORCED_THEME_MODE);
+    setColorThemeState(ENFORCED_COLOR_THEME);
   };
 
   const value = {
-    theme: themeMode, // For backwards compatibility
+    theme: ENFORCED_THEME_MODE, // For backwards compatibility
     themeMode,
     colorTheme,
     setTheme,
