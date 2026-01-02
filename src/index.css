@@ -788,11 +788,12 @@ All colors MUST be HSL.
   }
 
   [data-chat-heading] {
-    margin-top: clamp(1.5rem, 8vh, 6rem);
+    /* Flexbox centering now handled by Tailwind classes */
+    /* flex-1 + items-center + justify-center in component */
   }
 
   [data-chat-content] {
-    margin-top: auto;
+    /* No margin-top: auto needed - heading flex-1 handles space distribution */
     width: 100%;
     overscroll-behavior: contain;
     touch-action: pan-y;

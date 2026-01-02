@@ -1,4 +1,4 @@
-import { PanelLeft, LogIn } from "lucide-react";
+import { PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
@@ -78,17 +78,16 @@ export function MobileHeader({ className, showLogo = true, isAuthenticated = fal
           size="sm"
           onClick={() => navigate("/auth")}
           className={cn(
-            "h-9 px-3 rounded-full",
+            "h-10 px-4 rounded-full",
             "bg-white/5 hover:bg-white/10",
             "border border-white/10",
             "text-white/80 hover:text-white",
             "transition-all duration-200",
-            "flex items-center gap-2"
+            "text-sm font-medium"
           )}
           aria-label="Sign in"
         >
-          <LogIn className="h-4 w-4" />
-          <span className="text-sm font-medium">Sign in</span>
+          Sign in
         </Button>
       )}
     </header>

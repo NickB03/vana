@@ -98,10 +98,10 @@ export const ChatLayout = React.memo(({
         '--desktop-prompt-position': `${promptPosition}%`,
       } as React.CSSProperties}
     >
-      {/* Heading - positioned at 30% from top, scales with viewport */}
+      {/* Heading - centered in the space above content */}
       <div
         data-chat-heading
-        className="text-center px-4"
+        className="flex-1 flex items-center justify-center px-4"
       >
         <h1 className="bg-gradient-to-r from-indigo-200 via-white to-indigo-200 bg-clip-text text-[clamp(1.75rem,min(4vw,5vh),3rem)] font-bold text-transparent">
           {heading}

@@ -26,6 +26,7 @@ import { TourProvider, TourAlertDialog, TOUR_STORAGE_KEYS } from "@/components/t
 import { OnboardingTour } from "@/components/OnboardingTour";
 import { useAppSetting, APP_SETTING_KEYS } from "@/hooks/useAppSettings";
 import { MobileHeader } from "@/components/MobileHeader";
+import { DesktopHeader } from "@/components/DesktopHeader";
 import { SparkleBackground } from "@/components/ui/sparkle-background";
 import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import { SparkleErrorBoundary } from "@/components/SparkleErrorBoundary";
@@ -669,6 +670,9 @@ const Home = () => {
                 <main className="flex h-[var(--app-height)] flex-col overflow-hidden relative z-10">
                   {/* Mobile Header - Gemini-style hamburger menu */}
                   <MobileHeader isAuthenticated={isAuthenticated} />
+
+                  {/* Desktop Header - Sign in button (top-right corner) */}
+                  <DesktopHeader isAuthenticated={isAuthenticated} />
 
                   {/* Main Content */}
                   <div className="flex-1 overflow-hidden flex flex-col max-h-full">

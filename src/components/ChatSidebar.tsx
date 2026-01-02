@@ -71,16 +71,16 @@ export function ChatSidebar({
       )}>
         {collapsed ? (
           <button
-            className="flex items-center justify-center h-10 w-10 hover:bg-transparent cursor-pointer transition-all duration-200"
+            className="flex items-center justify-center h-10 w-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-200"
             onClick={toggleSidebar}
             aria-label="Expand sidebar"
             onMouseEnter={() => setIsLogoHovered(true)}
             onMouseLeave={() => setIsLogoHovered(false)}
           >
             {isLogoHovered ? (
-              <PanelLeft className="h-[20px] w-[20px] shrink-0 text-white/80 transition-all duration-200" strokeWidth={1.5} />
+              <PanelLeft className="h-5 w-5 shrink-0 text-white/80 transition-all duration-200" strokeWidth={1.5} />
             ) : (
-              <ViggleLogo className="h-6 w-6 shrink-0 transition-all duration-200" />
+              <ViggleLogo className="h-6 w-auto shrink-0 transition-all duration-200" />
             )}
           </button>
         ) : (
