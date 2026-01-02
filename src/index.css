@@ -688,6 +688,24 @@ All colors MUST be HSL.
     }
   }
 
+  /* Mobile chat scroll optimization - prevents scroll lag on touch devices */
+  [data-stick-to-bottom] {
+    /* Enable hardware-accelerated momentum scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
+    /* Prevent smooth scroll interference during touch gestures */
+    scroll-behavior: auto;
+  }
+
+  /* Optimize rendering for off-screen chat messages on mobile */
+  @media (max-width: 768px) {
+    .chat-message {
+      /* Skip rendering content until it's near the viewport */
+      content-visibility: auto;
+      /* Estimated message height for layout calculations */
+      contain-intrinsic-size: 0 120px;
+    }
+  }
+
   /* Safe area input container for mobile keyboard */
   .safe-mobile-input {
     position: relative;

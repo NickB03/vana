@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import AutoScroll from "embla-carousel-auto-scroll";
 import { cn } from "@/lib/utils";
@@ -33,6 +33,8 @@ export interface MobileSuggestionCarouselProps<T extends MobileSuggestionItem> {
  * - Smooth continuous scrolling (no jerky transitions)
  * - Infinite loop - seamlessly wraps around
  * - Pauses on touch/hover
+ * - Pauses when scrolled off-screen (saves battery/CPU)
+ * - Respects prefers-reduced-motion setting
  * - Minimal vertical footprint
  */
 export function MobileSuggestionCarousel<T extends MobileSuggestionItem>({
@@ -58,6 +60,10 @@ export function MobileSuggestionCarousel<T extends MobileSuggestionItem>({
 
   // Track mounted state to prevent state updates after unmount
   const isMountedRef = useRef(true);
+
+  // Track visibility state for intersection observer
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isInView, setIsInView] = useState(true);
 
   const [emblaRef, emblaApi] = useEmblaCarousel(
     {
@@ -94,6 +100,59 @@ export function MobileSuggestionCarousel<T extends MobileSuggestionItem>({
     };
   }, []);
 
+  // Intersection observer to pause when off-screen
+  useEffect(() => {
+    const container = containerRef.current;
+    // Wait for both container and emblaApi to be ready
+    if (!container || !emblaApi) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const visible = entry.isIntersecting;
+
+        // Only update state if value actually changed (prevents infinite re-renders)
+        setIsInView(prev => {
+          if (prev === visible) return prev;
+
+          // Pause/resume based on visibility
+          if (visible) {
+            autoScrollPlugin.current?.play();
+          } else {
+            autoScrollPlugin.current?.stop();
+          }
+
+          return visible;
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [emblaApi]);
+
+  // Respect prefers-reduced-motion
+  useEffect(() => {
+    // Wait for emblaApi to be ready before accessing plugin
+    if (!emblaApi) return;
+
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
+      if (e.matches) {
+        // User prefers reduced motion - stop auto-scroll
+        autoScrollPlugin.current?.stop();
+      } else if (isInView) {
+        // User doesn't prefer reduced motion and carousel is visible - resume
+        autoScrollPlugin.current?.play();
+      }
+    };
+
+    handleChange(mediaQuery);
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, [isInView, emblaApi]);
+
   const handleItemClick = useCallback(
     (item: T) => {
       // Pause auto-scroll on click
@@ -120,7 +179,7 @@ export function MobileSuggestionCarousel<T extends MobileSuggestionItem>({
   if (items.length === 0) return null;
 
   return (
-    <div className={cn("w-full overflow-hidden", className)}>
+    <div ref={containerRef} className={cn("w-full overflow-hidden", className)}>
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex gap-2 px-4">
           {items.map((item) => {

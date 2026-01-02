@@ -65,6 +65,7 @@
     "@shikijs/transformers": "^3.19.0",
     "@supabase/supabase-js": "^2.75.1",
     "@tanstack/react-query": "^5.83.0",
+    "@tanstack/react-virtual": "^3.13.14",
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.9.1",
     "chrome-remote-interface": "^0.33.3",
