@@ -617,7 +617,9 @@ export function ChatInterface({
             className={combineSpacing(
               "w-full",
               CHAT_SPACING.messageList,
-              CHAT_SPACING.message.gap
+              CHAT_SPACING.message.gap,
+              // Extra bottom padding on mobile to ensure artifact cards are fully visible above prompt input
+              "pb-24 md:pb-6"
             )}
             aria-label="Chat conversation"
             data-testid="message-list"
@@ -933,8 +935,9 @@ export function ChatInterface({
         {isMobile ? (
           // Mobile Layout: Fullscreen artifact overlay or chat
           // Glass card container matches desktop styling for visual consistency
+          // Bottom margin accounts for Safari toolbar + safe area to prevent keyboard blank space
           <div className={cn(
-            "flex flex-col flex-1 min-h-0 mx-3 my-3 overflow-hidden rounded-2xl",
+            "flex flex-col flex-1 min-h-0 mx-3 mt-3 mb-[calc(0.75rem+env(safe-area-inset-bottom))] overflow-hidden rounded-2xl",
             "bg-black/60 backdrop-blur-md border border-white/10 shadow-xl",
             "ring-1 ring-white/5"
           )}>

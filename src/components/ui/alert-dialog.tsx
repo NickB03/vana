@@ -35,8 +35,10 @@ const AlertDialogContent = React.forwardRef<
       ref={ref}
       className={cn(
         // Mobile-first positioning using dvh (dynamic viewport height) for iOS Safari compatibility
-        // dvh adjusts for browser chrome and keyboard, preventing dialog from being pushed off-screen
-        "fixed left-[50%] top-[calc(var(--app-height)/2)] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200",
+        // Use top-[50dvh] for reliable mobile centering instead of CSS variable
+        "fixed left-[50%] top-[50dvh] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200",
+        // Constrain height to prevent content overflow on mobile
+        "max-h-[90dvh] overflow-y-auto",
         // Safe area handling for iOS notch/home indicator
         "pb-[calc(1.5rem+env(safe-area-inset-bottom))]",
         // Animations

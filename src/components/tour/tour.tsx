@@ -639,8 +639,8 @@ export function TourAlertDialog({
 
   return (
     <AlertDialog open={isOpen}>
-      <AlertDialogContent className="max-w-md w-[calc(100vw-32px)] sm:w-full p-4 sm:p-6 mx-4 sm:mx-auto">
-        <AlertDialogHeader className="flex flex-col items-center justify-center">
+      <AlertDialogContent className="max-w-md w-[calc(100vw-32px)] sm:w-full p-4 sm:p-6 flex flex-col">
+        <AlertDialogHeader className="flex flex-col items-center justify-center flex-shrink-0">
           <div className="relative mb-4">
             <motion.div {...iconAnimation} transition={iconTransition}>
               <div className="relative">
@@ -670,7 +670,7 @@ export function TourAlertDialog({
             Take a quick tour to learn about the key features and functionality of this application.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="mt-6 space-y-3">
+        <div className="mt-6 space-y-3 flex-shrink-0">
           <Button onClick={startTour} className="w-full h-11">
             Start Tour
           </Button>
