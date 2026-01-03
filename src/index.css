@@ -60,7 +60,7 @@ All colors MUST be HSL.
 
   .dark {
     /* Monochrome Premium (dark) - True neutral palette with no color accents */
-    --background: 0 0% 9%;
+    --background: 0 0% 0%;
     --foreground: 0 0% 95%;
     --card: 0 0% 13%;
     --card-foreground: 0 0% 95%;

@@ -36,8 +36,10 @@ import {
   type ValidationIssue,
   type ValidationErrorCode,
 } from './artifact-validator.ts';
+import { getStructuralIssues } from './artifact-structure.ts';
+import { getRelevantPatterns, getTypeSpecificGuidance } from './artifact-rules/error-patterns.ts';
 import { getSystemInstruction } from './system-prompt-inline.ts';
-import { MODELS, ARTIFACT_TYPES, type ArtifactType, FEATURE_FLAGS } from './config.ts';
+import { MODELS, ARTIFACT_TYPES, type ArtifactType, FEATURE_FLAGS, DEFAULT_MODEL_PARAMS } from './config.ts';
 import { ErrorCode } from './error-handler.ts';
 import type { StructuredReasoning } from './reasoning-types.ts';
 
@@ -65,6 +67,8 @@ const MAX_PROMPT_LENGTH = 10000;
 // ============================================================================
 // VALIDATION HELPERS
 // ============================================================================
+
+type ValidationResult = ReturnType<typeof validateArtifactCode>;
 
 /**
  * Set of error codes that are non-blocking (don't prevent artifact rendering).
@@ -117,6 +121,130 @@ function filterCriticalIssues(issues: ValidationIssue[]): ValidationIssue[] {
     // Only exclude issues with explicitly non-blocking codes
     return !NON_BLOCKING_ERROR_CODES.has(issue.code);
   });
+}
+
+/**
+ * Build a concise validation summary for AI fix prompts.
+ */
+function formatValidationIssues(issues: ValidationIssue[]): string {
+  if (issues.length === 0) {
+    return 'No validation issues provided.';
+  }
+
+  return issues
+    .map((issue) => {
+      const hint = issue.suggestion ? ` Suggestion: ${issue.suggestion}` : '';
+      return `- ${issue.message}${hint}`;
+    })
+    .join('\n');
+}
+
+/**
+ * Merge structural issues into validation result while preserving canAutoFix.
+ */
+function mergeValidationIssues(
+  validation: ValidationResult,
+  additionalIssues: ValidationIssue[]
+): ValidationResult {
+  if (additionalIssues.length === 0) {
+    return validation;
+  }
+
+  const hasCriticalErrors = additionalIssues.some((issue) => issue.severity === 'error');
+
+  return {
+    ...validation,
+    valid: validation.valid && !hasCriticalErrors,
+    issues: [...validation.issues, ...additionalIssues],
+  };
+}
+
+interface ArtifactAutoFixResult {
+  code: string;
+  finishReason: string | null;
+}
+
+/**
+ * Attempt a targeted AI fix when validation fails for non-auto-fixable issues.
+ */
+async function attemptArtifactAutoFix(params: {
+  code: string;
+  type: GeneratableArtifactType;
+  prompt: string;
+  issues: ValidationIssue[];
+  requestId: string;
+}): Promise<ArtifactAutoFixResult | null> {
+  const { code, type, prompt, issues, requestId } = params;
+  const errorMessage = issues.map((issue) => issue.message).join(' | ');
+  const relevantPatterns = getRelevantPatterns(errorMessage);
+  const typeGuidance = getTypeSpecificGuidance(type);
+
+  const systemPrompt = `You are an expert artifact debugger.
+
+[CRITICAL - ORIGINAL REQUEST]
+${prompt}
+
+[CRITICAL - VALIDATION ERRORS]
+${formatValidationIssues(issues)}
+
+[FIX PATTERNS]
+${relevantPatterns.map((pattern, i) => `${i + 1}. ${pattern}`).join('\n')}
+
+${typeGuidance}
+
+[OUTPUT REQUIREMENTS]
+- Return ONLY the complete artifact code
+- Preserve ALL requested features and styling
+- Do NOT add explanations or markdown fences
+- If input contains <artifact> tags, keep a SINGLE artifact block
+- Avoid forbidden APIs: localStorage, sessionStorage, @/ imports
+- Use React globals (const { useState } = React) instead of React imports
+- If the code looks truncated or incomplete, rewrite the full artifact from scratch`;
+
+  const userPrompt = `Fix this ${type} artifact. The current code fails validation.
+
+CODE:
+${code}
+
+Return ONLY the fixed code without any additional text.`;
+
+  try {
+    const { response } = await callGLMWithRetryTracking(systemPrompt, userPrompt, {
+      temperature: 0.6,
+      max_tokens: DEFAULT_MODEL_PARAMS.ARTIFACT_MAX_TOKENS,
+      requestId,
+      enableThinking: true,
+      timeoutMs: 170000,
+    });
+
+    if (!response.ok) {
+      console.warn(`[${requestId}] ⚠️  AI fix call failed with status ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    const finishReason = data?.choices?.[0]?.finish_reason ?? null;
+    const { text: extractedCode } = extractTextAndReasoningFromGLM(data, requestId);
+
+    if (finishReason === 'length') {
+      console.warn(`[${requestId}] ⚠️  AI fix output truncated (finish_reason="length")`);
+    }
+
+    if (!extractedCode || extractedCode.trim().length === 0) {
+      console.warn(`[${requestId}] ⚠️  AI fix returned empty code`);
+      return null;
+    }
+
+    const fixedCode = extractedCode
+      .replace(/^```[\w]*\n/, '')
+      .replace(/\n```$/, '')
+      .trim();
+
+    return { code: fixedCode, finishReason };
+  } catch (error) {
+    console.warn(`[${requestId}] ⚠️  AI fix attempt failed:`, error);
+    return null;
+  }
 }
 
 /**
@@ -637,7 +765,17 @@ export async function executeArtifactGeneration(
   });
 
   let validation = validateArtifactCode(artifactCode, type);
+  const structuralIssues = getStructuralIssues({
+    code: artifactCode,
+    artifactType: type,
+    finishReason,
+  });
+  if (structuralIssues.length > 0) {
+    console.warn(`[${requestId}] ⚠️  Structural issues detected:`, structuralIssues);
+    validation = mergeValidationIssues(validation, structuralIssues);
+  }
   let autoFixed = false;
+  let aiFixed = false;
 
   logPremadeDebug(requestId, 'Validation result', {
     valid: validation.valid,
@@ -680,7 +818,16 @@ export async function executeArtifactGeneration(
       // object after auto-fix, causing validation.valid to report pre-fix state instead
       // of actual post-fix state. Changed to `let validation` in Phase 5 (line 600).
       // This ensures the returned validation reflects the artifact's actual final state.
-      const revalidation = validateArtifactCode(artifactCode, type);
+      let revalidation = validateArtifactCode(artifactCode, type);
+      const revalidationStructural = getStructuralIssues({
+        code: artifactCode,
+        artifactType: type,
+        finishReason,
+      });
+      if (revalidationStructural.length > 0) {
+        revalidation = mergeValidationIssues(revalidation, revalidationStructural);
+      }
+
       if (!revalidation.valid) {
         // Check if remaining issues are only immutability warnings
         // Immutability violations don't crash artifacts - they cause React strict mode warnings
@@ -750,7 +897,58 @@ export async function executeArtifactGeneration(
         // Keep validation.valid = false for critical issues
       }
     }
-  } else if (!validation.valid) {
+  }
+
+  // AI fix pass for critical issues that remain after auto-fix
+  if (!validation.valid) {
+    const criticalIssues = filterCriticalIssues(validation.issues);
+    if (FEATURE_FLAGS.AUTO_FIX_ARTIFACTS && criticalIssues.length > 0) {
+      console.warn(`[${requestId}] 🧩 Attempting AI fix for ${criticalIssues.length} critical issue(s)...`);
+      const aiFixedResult = await attemptArtifactAutoFix({
+        code: artifactCode,
+        type,
+        prompt,
+        issues: criticalIssues,
+        requestId,
+      });
+
+      if (aiFixedResult) {
+        aiFixed = true;
+        const aiFinishReason = aiFixedResult.finishReason;
+        artifactCode = stripHtmlDocumentStructure(aiFixedResult.code, type, requestId);
+
+        const aiPreValidation = preValidateAndFixGlmSyntax(artifactCode, requestId);
+        if (aiPreValidation.issues.length > 0) {
+          console.log(`[${requestId}] 🔧 AI fix pre-validation corrected ${aiPreValidation.issues.length} issue(s)`);
+          artifactCode = aiPreValidation.fixed;
+        }
+
+        const aiAutoFix = autoFixArtifactCode(artifactCode);
+        if (aiAutoFix.changes.length > 0) {
+          console.log(`[${requestId}] 🔧 AI fix auto-applied ${aiAutoFix.changes.length} change(s):`, aiAutoFix.changes);
+          artifactCode = aiAutoFix.fixed;
+        }
+
+        validation = validateArtifactCode(artifactCode, type);
+        const aiStructuralIssues = getStructuralIssues({
+          code: artifactCode,
+          artifactType: type,
+          finishReason: aiFinishReason,
+        });
+        if (aiStructuralIssues.length > 0) {
+          validation = mergeValidationIssues(validation, aiStructuralIssues);
+        }
+
+        if (!validation.valid) {
+          console.warn(`[${requestId}] ⚠️  AI fix attempt still invalid:`, validation.issues);
+        } else {
+          console.log(`[${requestId}] ✅ AI fix resolved validation issues`);
+        }
+      }
+    }
+  }
+
+  if (!validation.valid) {
     const errorMsg = `Validation failed: ${validation.issues.map(i => i.message).join(', ')}`;
     console.error(`[${requestId}] ❌ ${errorMsg}`);
 
@@ -796,7 +994,7 @@ export async function executeArtifactGeneration(
     estimatedCost,
     validation: {
       valid: validation.valid,
-      autoFixed,
+      autoFixed: autoFixed || aiFixed,
       issueCount: validation.issues.length,
     },
     latencyMs,

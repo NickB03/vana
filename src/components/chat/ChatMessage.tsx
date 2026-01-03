@@ -12,6 +12,8 @@ import { Copy, RotateCw, Pencil, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CHAT_SPACING } from '@/utils/spacingConstants';
 import { ArtifactData } from '@/components/ArtifactContainer';
+import { motion } from 'motion/react';
+import { MESSAGE_ANIMATION } from '@/utils/animationSystem';
 
 interface ChatMessageProps {
   message: {
@@ -74,14 +76,24 @@ export const ChatMessage = React.memo(function ChatMessage({
   const hasValidReasoningText = Boolean(message.reasoning && message.reasoning.trim().length > 0);
   const hasReasoning = hasValidReasoningSteps || hasValidReasoningText;
 
+  // CRITICAL: Only animate NEW messages, not entire chat history (CLAUDE.md requirement)
+  const shouldAnimate = MESSAGE_ANIMATION.shouldAnimate(isLastMessage, isStreaming);
+
+  const MotionWrapper = shouldAnimate ? motion.div : 'div';
+  const motionProps = shouldAnimate ? {
+    ...MESSAGE_ANIMATION.variant,
+    transition: MESSAGE_ANIMATION.transition
+  } : {};
+
   return (
-    <MessageComponent
-      className={cn(
-        "chat-message mx-auto flex w-full max-w-5xl flex-col items-start",
-        CHAT_SPACING.message.container
-      )}
-      data-testid="chat-message"
-    >
+    <MotionWrapper {...motionProps}>
+      <MessageComponent
+        className={cn(
+          "chat-message mx-auto flex w-full max-w-3xl flex-col items-start",
+          CHAT_SPACING.message.container
+        )}
+        data-testid="chat-message"
+      >
       {isAssistant ? (
         <div className="group flex w-full flex-col gap-1.5">
           {/* Assistant header with icon and name */}
@@ -89,7 +101,7 @@ export const ChatMessage = React.memo(function ChatMessage({
             <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10">
               <Sparkles className="h-3.5 w-3.5 text-primary" />
             </div>
-            <span className="text-sm font-medium text-foreground">Vana</span>
+            <span className="chat-assistant-name text-foreground">Vana</span>
           </div>
 
           {hasReasoning && (
@@ -104,14 +116,16 @@ export const ChatMessage = React.memo(function ChatMessage({
               />
             </ReasoningErrorBoundary>
           )}
-          <MessageWithArtifacts
-            content={message.content}
-            messageId={message.id}
-            sessionId={message.session_id}
-            onArtifactOpen={onArtifactOpen}
-            artifactOverrides={artifactOverrides}
-            searchResults={message.search_results}
-          />
+          <div className="chat-markdown">
+            <MessageWithArtifacts
+              content={message.content}
+              messageId={message.id}
+              sessionId={message.session_id}
+              onArtifactOpen={onArtifactOpen}
+              artifactOverrides={artifactOverrides}
+              searchResults={message.search_results}
+            />
+          </div>
 
           {/* Compact action buttons - positioned at bottom right */}
           <div className="flex justify-end">
@@ -150,15 +164,10 @@ export const ChatMessage = React.memo(function ChatMessage({
         </div>
       ) : (
         <div className="group flex w-full flex-col gap-2 items-end">
-          {/* User message with subtle pill background (Claude-style) */}
-          <div className="flex items-start gap-2.5 rounded-2xl bg-muted/60 px-3 py-2 max-w-[85%] w-fit">
-            {/* User avatar: 32px circle (Claude-style) */}
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold text-sm">
-              U
-            </div>
-
-            {/* Message content - wraps properly within container */}
-            <div className="text-[15px] text-foreground leading-relaxed min-w-0 break-words">
+          {/* User message with subtle pill background - no avatar inside (modern approach) */}
+          {/* Right-alignment already indicates user message, avatar would waste horizontal space */}
+          <div className="rounded-2xl bg-muted/60 px-4 py-3 max-w-[95%] md:max-w-[90%] w-fit">
+            <div className="chat-user-message text-foreground min-w-0 break-words">
               {message.content}
             </div>
           </div>
@@ -198,6 +207,7 @@ export const ChatMessage = React.memo(function ChatMessage({
         </div>
       )}
     </MessageComponent>
+    </MotionWrapper>
   );
 }, (prevProps, nextProps) => {
   // Custom comparison - only re-render if these essential props change

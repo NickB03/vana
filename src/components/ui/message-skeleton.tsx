@@ -35,7 +35,7 @@ export const MessageSkeleton = memo(({ variant = "assistant", className }: Messa
       <div
         role="status"
         aria-label={ariaLabel}
-        className={cn("flex flex-col items-end gap-1 mx-auto w-full max-w-5xl px-4", className)}
+        className={cn("flex flex-col items-end gap-1 mx-auto w-full max-w-3xl px-4", className)}
       >
         <div className={cn(baseClasses, "h-10 w-64 rounded-3xl")} style={syncStyle} aria-hidden="true" />
         <span className="sr-only">{ariaLabel}</span>
@@ -48,7 +48,7 @@ export const MessageSkeleton = memo(({ variant = "assistant", className }: Messa
     <div
       role="status"
       aria-label={ariaLabel}
-      className={cn("mx-auto w-full max-w-5xl px-4 space-y-2", className)}
+      className={cn("mx-auto w-full max-w-3xl px-4 space-y-2", className)}
     >
       <div className="space-y-2">
         <div className={cn(baseClasses, "h-4 w-full")} style={syncStyle} aria-hidden="true" />

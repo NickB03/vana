@@ -227,11 +227,12 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
           // Use specific transitions instead of transition-all for better performance
           // Only animate properties that actually change (background, border)
           "transition-colors duration-300",
-          // CRITICAL: Background changes when expanded (like Claude screenshots)
+          // FIXED: Consistent background in all states for text readability
+          "bg-muted/30",
           isExpanded && !isStreaming
-            ? "bg-muted/30 border-border/60"
-            : "bg-transparent border-border/40",
-          "hover:border-border/60 hover:bg-muted/10"
+            ? "border-border/60"
+            : "border-border/40",
+          "hover:border-border/60 hover:bg-muted/40"
         )}
         onClick={() => showExpandButton && setIsExpanded(!isExpanded)}
         role={showExpandButton ? "button" : undefined}

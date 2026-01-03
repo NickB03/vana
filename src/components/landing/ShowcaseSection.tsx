@@ -3,7 +3,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import AutoScroll from "embla-carousel-auto-scroll";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Sparkles, Image, BarChart3, Code2, FileText, GitBranch } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles, Image, BarChart3, Code2, FileText, GitBranch, Gamepad2 } from "lucide-react";
 import { motion } from "motion/react";
 import { hoverLift, fadeInUp } from "@/utils/animationConstants";
 import { SECTION_SPACING, combineSpacing } from "@/utils/spacingConstants";
@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { CARD_STATES } from "@/utils/interactionConstants";
 import { GRADIENTS, SHOWCASE_GRADIENTS } from "@/utils/colorConstants";
+import { FroggerGame } from "@/components/demo/FroggerGame";
 
 interface ShowcaseItem {
   id: string;
@@ -23,46 +24,53 @@ interface ShowcaseItem {
 
 const showcaseItems: ShowcaseItem[] = [
   {
-    id: "research",
-    title: "Research Assistant",
-    icon: Sparkles,
-    gradient: SHOWCASE_GRADIENTS.research,
+    id: "frogger",
+    title: "Interactive Game",
+    icon: Gamepad2,
+    gradient: SHOWCASE_GRADIENTS.code,
     content: (
-      <div className="bg-gradient-to-br from-card via-muted/50 to-card rounded-lg p-4 sm:p-6 h-full flex flex-col relative overflow-hidden border border-border/50">
+      <div className="bg-gradient-to-br from-card via-muted/50 to-card rounded-lg p-3 sm:p-4 h-full flex flex-col relative overflow-hidden border border-border/50">
         {/* Decorative gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none"></div>
 
         <div className="relative z-10 flex-1 flex flex-col">
-          <div className="flex items-start gap-3 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center flex-shrink-0">
-              <Sparkles className="h-4 w-4 text-primary" />
-            </div>
-            <div className="flex-1">
-              <div className="font-semibold text-foreground mb-2">How does quantum computing work?</div>
-              <div className="text-foreground/80 space-y-2 text-sm leading-relaxed">
-                <p>Quantum computing leverages quantum mechanical phenomena like superposition and entanglement...</p>
-                <div className="mt-3 bg-muted/30 border border-primary/20 rounded-lg p-3">
-                  <p className="font-medium text-primary text-xs mb-2">Key Concepts:</p>
-                  <ul className="space-y-1 text-xs text-muted-foreground-accessible">
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-0.5">•</span>
-                      <span>Qubits can exist in multiple states simultaneously</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-0.5">•</span>
-                      <span>Quantum entanglement enables complex calculations</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-0.5">•</span>
-                      <span>Exponential speedup for specific problem types</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
+          <div className="flex items-center gap-2 mb-2">
+            <Gamepad2 className="h-4 w-4 text-primary" />
+            <span className="text-xs font-medium text-muted-foreground-accessible">Created with "Build me a Frogger game"</span>
+          </div>
+          <div className="flex-1 flex items-center justify-center bg-black/5 rounded-lg overflow-hidden">
+            <div className="scale-[0.85] origin-center">
+              <FroggerGame />
             </div>
           </div>
-          <div className="mt-auto pt-3 border-t border-border/50">
-            <div className="text-xs text-muted-foreground-accessible">Sources: 12 research papers analyzed</div>
+          <div className="mt-2 text-center">
+            <div className="text-xs text-muted-foreground-accessible">Fully playable • Generated in seconds</div>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: "image-pikachu",
+    title: "Image Generation",
+    icon: Image,
+    gradient: SHOWCASE_GRADIENTS.image,
+    content: (
+      <div className="bg-gradient-to-br from-card via-muted/50 to-card rounded-lg p-4 sm:p-6 h-full flex flex-col items-center justify-center relative overflow-hidden">
+        {/* Decorative gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none"></div>
+
+        <div className="relative z-10 w-full flex flex-col items-center justify-center h-full">
+          <div className="w-full aspect-square bg-gradient-to-br from-yellow-500/80 to-orange-500/60 rounded-xl flex items-center justify-center relative overflow-hidden max-h-48 border-2 border-yellow-500/20">
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px]"></div>
+            <div className="relative text-center p-6">
+              <Sparkles className="h-16 w-16 text-foreground/90 mx-auto mb-3" />
+              <p className="text-foreground text-sm font-semibold">Pikachu Surfing</p>
+              <p className="text-foreground/70 text-xs mt-1">"Pikachu on a surfboard wearing a tuxedo"</p>
+            </div>
+          </div>
+          <div className="mt-4 text-center bg-primary/10 border border-primary/20 rounded-lg px-4 py-2">
+            <p className="text-xs text-muted-foreground-accessible">Generated in <span className="text-primary font-semibold">2.3 seconds</span></p>
           </div>
         </div>
       </div>
@@ -117,6 +125,32 @@ const search = debounce(
             <div className="px-2 py-1 rounded bg-blue-500/20 border border-blue-500/30 text-[10px] text-blue-300">
               Generic
             </div>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: "image-landscape",
+    title: "Image Generation",
+    icon: Image,
+    gradient: SHOWCASE_GRADIENTS.image,
+    content: (
+      <div className="bg-gradient-to-br from-card via-muted/50 to-card rounded-lg p-4 sm:p-6 h-full flex flex-col items-center justify-center relative overflow-hidden">
+        {/* Decorative gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none"></div>
+
+        <div className="relative z-10 w-full flex flex-col items-center justify-center h-full">
+          <div className="w-full aspect-square bg-gradient-to-br from-blue-500/80 to-purple-500/60 rounded-xl flex items-center justify-center relative overflow-hidden max-h-48 border-2 border-blue-500/20">
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px]"></div>
+            <div className="relative text-center p-6">
+              <Image className="h-16 w-16 text-foreground/90 mx-auto mb-3" />
+              <p className="text-foreground text-sm font-semibold">Futuristic Cityscape</p>
+              <p className="text-foreground/70 text-xs mt-1">"Neon cyberpunk city at night"</p>
+            </div>
+          </div>
+          <div className="mt-4 text-center bg-primary/10 border border-primary/20 rounded-lg px-4 py-2">
+            <p className="text-xs text-muted-foreground-accessible">Generated in <span className="text-primary font-semibold">1.8 seconds</span></p>
           </div>
         </div>
       </div>
@@ -178,54 +212,7 @@ const search = debounce(
     ),
   },
   {
-    id: "diagrams",
-    title: "Mermaid Diagrams",
-    icon: GitBranch,
-    gradient: SHOWCASE_GRADIENTS.diagrams,
-    content: (
-      <div className="bg-gradient-to-br from-card via-muted/50 to-card rounded-lg p-4 sm:p-6 h-full flex flex-col relative overflow-hidden">
-        {/* Decorative gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none"></div>
-
-        <div className="relative z-10 flex flex-col h-full">
-          <div className="flex items-center gap-2 mb-4">
-            <GitBranch className="h-5 w-5 text-primary" />
-            <h4 className="font-semibold text-foreground">User Authentication Flow</h4>
-          </div>
-          <div className="flex-1 flex items-center justify-center">
-            <div className="space-y-3 w-full">
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-10 bg-blue-500/20 border border-blue-500/40 rounded-lg flex items-center justify-center text-sm font-medium text-blue-300">
-                  User Login
-                </div>
-                <div className="w-8 h-0.5 bg-gradient-to-r from-blue-500 to-cyan-500"></div>
-                <div className="flex-1 h-10 bg-cyan-500/20 border border-cyan-500/40 rounded-lg flex items-center justify-center text-sm font-medium text-cyan-300">
-                  Validate
-                </div>
-              </div>
-              <div className="flex items-center justify-center">
-                <div className="w-0.5 h-8 bg-gradient-to-b from-cyan-500 to-green-500"></div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-10 bg-red-500/20 border border-red-500/40 rounded-lg flex items-center justify-center text-sm font-medium text-red-300">
-                  Error
-                </div>
-                <div className="w-8"></div>
-                <div className="flex-1 h-10 bg-green-500/20 border border-green-500/40 rounded-lg flex items-center justify-center text-sm font-medium text-green-300">
-                  Success
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="mt-auto pt-3 border-t border-border/50">
-            <div className="text-xs text-muted-foreground-accessible">Interactive flowchart • Auto-generated from description</div>
-          </div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: "image",
+    id: "image-portrait",
     title: "Image Generation",
     icon: Image,
     gradient: SHOWCASE_GRADIENTS.image,
@@ -235,73 +222,16 @@ const search = debounce(
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none"></div>
 
         <div className="relative z-10 w-full flex flex-col items-center justify-center h-full">
-          <div className="w-full aspect-square bg-gradient-to-br from-primary/80 to-primary/60 rounded-xl flex items-center justify-center relative overflow-hidden max-h-48 border-2 border-primary/20">
+          <div className="w-full aspect-square bg-gradient-to-br from-pink-500/80 to-rose-500/60 rounded-xl flex items-center justify-center relative overflow-hidden max-h-48 border-2 border-pink-500/20">
             <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px]"></div>
             <div className="relative text-center p-6">
-              <Image className="h-16 w-16 text-foreground/90 mx-auto mb-3" />
-              <p className="text-foreground text-sm font-semibold">AI-Generated Artwork</p>
-              <p className="text-foreground/70 text-xs mt-1">Abstract digital landscape</p>
+              <Sparkles className="h-16 w-16 text-foreground/90 mx-auto mb-3" />
+              <p className="text-foreground text-sm font-semibold">Abstract Portrait</p>
+              <p className="text-foreground/70 text-xs mt-1">"Watercolor portrait, ethereal"</p>
             </div>
           </div>
           <div className="mt-4 text-center bg-primary/10 border border-primary/20 rounded-lg px-4 py-2">
-            <p className="text-xs text-muted-foreground-accessible">Generated in <span className="text-primary font-semibold">2.3 seconds</span></p>
-          </div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: "documents",
-    title: "Document Creation",
-    icon: FileText,
-    gradient: SHOWCASE_GRADIENTS.documents,
-    content: (
-      <div className="bg-gradient-to-br from-card via-muted/50 to-card rounded-lg p-4 sm:p-6 h-full relative overflow-hidden">
-        {/* Decorative gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none"></div>
-
-        <div className="relative z-10 flex flex-col h-full">
-          <div className="flex items-center gap-2 mb-4">
-            <FileText className="h-5 w-5 text-primary" />
-            <h4 className="font-semibold text-foreground">Product Requirements Document</h4>
-          </div>
-          <div className="flex-1 bg-muted/50 border border-primary/20 rounded-lg p-4 space-y-3 text-sm overflow-y-auto overflow-x-hidden">
-            <div>
-              <h5 className="font-semibold text-xs mb-1 text-primary">1. Overview</h5>
-              <p className="text-foreground/80 text-xs leading-relaxed">
-                This document outlines the requirements for implementing a new user dashboard feature with analytics and customization.
-              </p>
-            </div>
-            <div>
-              <h5 className="font-semibold text-xs mb-1 text-primary">2. User Stories</h5>
-              <ul className="text-foreground/80 text-xs space-y-1 leading-relaxed">
-                <li className="flex items-start gap-2">
-                  <span className="text-primary">•</span>
-                  <span>As a user, I want to view my activity metrics</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary">•</span>
-                  <span>As a user, I want to customize my dashboard layout</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary">•</span>
-                  <span>As an admin, I want to track user engagement</span>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h5 className="font-semibold text-xs mb-2 text-primary">3. Technical Requirements</h5>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-primary/10 border border-primary/20 rounded p-2">
-                  <div className="font-semibold text-[10px] text-primary">Framework</div>
-                  <div className="text-muted-foreground-accessible text-[10px]">React 18+</div>
-                </div>
-                <div className="bg-primary/10 border border-primary/20 rounded p-2">
-                  <div className="font-semibold text-[10px] text-primary">Database</div>
-                  <div className="text-muted-foreground-accessible text-[10px]">PostgreSQL</div>
-                </div>
-              </div>
-            </div>
+            <p className="text-xs text-muted-foreground-accessible">Generated in <span className="text-primary font-semibold">2.1 seconds</span></p>
           </div>
         </div>
       </div>

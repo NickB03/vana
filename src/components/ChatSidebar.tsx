@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { CirclePlus, MessageSquare, MoreHorizontal, PanelLeft } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -55,23 +55,30 @@ export function ChatSidebar({
   onDeleteSession,
   isLoading
 }: ChatSidebarProps) {
-  const [hoveredSessionId, setHoveredSessionId] = useState<string | null>(null);
   const [isLogoHovered, setIsLogoHovered] = useState(false);
   const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
   const isMobile = useIsMobile();
 
-  const groupedSessions = groupChatsByPeriod(sessions);
+  const groupedSessions = useMemo(() => groupChatsByPeriod(sessions), [sessions]);
 
   // Tour ID only applied on desktop - on mobile it's on the MobileHeader button
   return <Sidebar id={isMobile ? undefined : TOUR_STEP_IDS.SIDEBAR} collapsible="icon">
       <SidebarHeader className={cn(
-        "group flex flex-row items-center py-2 transition-all duration-200",
+        "group flex flex-row items-center py-2 transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]",
         collapsed ? "justify-center px-0" : "justify-between px-3 gap-2"
       )}>
         {collapsed ? (
-          <button
-            className="flex items-center justify-center h-10 w-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-200"
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "hover:bg-white/10 transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]",
+              // Mobile: circle with border, Desktop: no circle
+              isMobile
+                ? "rounded-full bg-white/5 border border-white/10"
+                : "rounded-md"
+            )}
             onClick={toggleSidebar}
             aria-label="Expand sidebar"
             onMouseEnter={() => setIsLogoHovered(true)}
@@ -82,26 +89,35 @@ export function ChatSidebar({
             ) : (
               <ViggleLogo className="h-6 w-auto shrink-0 transition-all duration-200" />
             )}
-          </button>
+          </Button>
         ) : (
           <>
-            <button
-              className="px-2 hover:bg-transparent h-auto cursor-pointer transition-all duration-200"
+            <Button
+              variant="ghost"
+              className="px-2 hover:bg-white/5 h-10 transition-all duration-200"
               onClick={onNewChat}
               aria-label="Return to home"
             >
               <ViggleLogo className="h-6 w-auto shrink-0 transition-all duration-200" />
-            </button>
+            </Button>
 
             <div className="flex items-center gap-1">
-              <button
-                className="flex items-center justify-center h-10 w-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-200"
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "hover:bg-white/10 transition-all duration-200",
+                  // Mobile: circle with border, Desktop: no circle
+                  isMobile
+                    ? "rounded-full bg-white/5 border border-white/10"
+                    : "rounded-md"
+                )}
                 onClick={toggleSidebar}
                 aria-label="Collapse sidebar"
                 data-testid="sidebar-toggle"
               >
                 <PanelLeft className="h-5 w-5 shrink-0 text-white/80 transition-all duration-200" strokeWidth={1.5} />
-              </button>
+              </Button>
             </div>
           </>
         )}
@@ -184,11 +200,7 @@ export function ChatSidebar({
                 <SidebarMenu>
                   {periodSessions.map(session => (
                     <SidebarMenuItem key={session.id} data-testid="session-item">
-                      <div
-                        className="relative flex items-center w-full group/item"
-                        onMouseEnter={() => setHoveredSessionId(session.id)}
-                        onMouseLeave={() => setHoveredSessionId(null)}
-                      >
+                      <div className="relative flex items-center w-full group/item">
                         <SidebarMenuButton
                           onClick={() => onSessionSelect(session.id)}
                           isActive={currentSessionId === session.id}
@@ -203,20 +215,18 @@ export function ChatSidebar({
                           <span className="truncate text-base whitespace-nowrap">{session.title}</span>
                         </SidebarMenuButton>
 
-                        {hoveredSessionId === session.id && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 shrink-0 absolute right-2 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200"
-                            onClick={e => {
-                              e.stopPropagation();
-                              onDeleteSession(session.id);
-                            }}
-                            data-testid="delete-session"
-                          >
-                            <MoreHorizontal className="h-4 w-4 shrink-0" />
-                          </Button>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0 absolute right-2 opacity-0 group-hover/item:opacity-100 focus:opacity-100 transition-opacity duration-200"
+                          onClick={e => {
+                            e.stopPropagation();
+                            onDeleteSession(session.id);
+                          }}
+                          data-testid="delete-session"
+                        >
+                          <MoreHorizontal className="h-4 w-4 shrink-0" />
+                        </Button>
                       </div>
                     </SidebarMenuItem>
                   ))}
@@ -227,7 +237,7 @@ export function ChatSidebar({
         )}
       </SidebarContent>
 
-      <SidebarFooter className="p-2 border-t border-border/50 transition-all duration-200">
+      <SidebarFooter className="p-2 transition-all duration-200">
         <UserProfileButton collapsed={collapsed} />
       </SidebarFooter>
     </Sidebar>;

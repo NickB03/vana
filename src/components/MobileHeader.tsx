@@ -43,7 +43,7 @@ export function MobileHeader({ className, showLogo = true, isAuthenticated = fal
       )}
     >
       {/* Left side: Sidebar toggle + Logo */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         {/* Sidebar toggle button - uses TOUR_STEP_IDS.SIDEBAR for onboarding */}
         <Button
           id={TOUR_STEP_IDS.SIDEBAR}
@@ -65,7 +65,7 @@ export function MobileHeader({ className, showLogo = true, isAuthenticated = fal
 
         {/* App name/logo */}
         {showLogo && (
-          <span className="text-lg font-semibold text-white/90 tracking-tight">
+          <span className="text-xl font-semibold text-white/80 tracking-tight leading-10">
             Vana
           </span>
         )}
@@ -75,10 +75,10 @@ export function MobileHeader({ className, showLogo = true, isAuthenticated = fal
       {!isAuthenticated && (
         <Button
           variant="ghost"
-          size="sm"
+          size="default"
           onClick={() => navigate("/auth")}
           className={cn(
-            "h-10 px-4 rounded-full",
+            "px-4 rounded-full",
             "bg-white/5 hover:bg-white/10",
             "border border-white/10",
             "text-white/80 hover:text-white",

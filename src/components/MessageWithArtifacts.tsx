@@ -340,7 +340,7 @@ export const MessageWithArtifacts = memo(({
       >
         <Markdown
           id={messageId}
-          className="prose prose-sm prose-p:mb-3 prose-p:leading-relaxed max-w-none dark:prose-invert text-foreground text-[15px] leading-relaxed"
+          className="prose max-w-none dark:prose-invert text-foreground"
         >
           {contentWithoutCitations}
         </Markdown>

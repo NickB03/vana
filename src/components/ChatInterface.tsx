@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, MutableRefObject } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { Copy, Pencil, RotateCw, Maximize2, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -586,12 +587,12 @@ export function ChatInterface({
 
 
   // Render chat content (messages + input) - reusable for both mobile and desktop
-  // Mobile-first padding: px-3 pt-2 pb-2 on mobile, px-4 pt-4 pb-4 on desktop
+  // Mobile-first padding: minimal on mobile for max text width, comfortable on desktop
   const renderChatContent = () => (
-    <div className="flex flex-1 flex-col min-h-0 px-3 pt-2 pb-2 md:px-4 md:pt-4 md:pb-4">
+    <div className="flex flex-1 flex-col min-h-0 px-1 pt-1 pb-1 md:px-4 md:pt-4 md:pb-4">
       {/* Guest mode banner - only show when 3 or fewer messages remaining */}
       {isGuest && messages.length > 0 && (guestMaxMessages - guestMessageCount) <= 3 && (
-        <div className="mx-auto w-full max-w-5xl mb-3">
+        <div className="mx-auto w-full max-w-3xl mb-3">
           <SystemMessage
             variant="action"
             fill
@@ -620,8 +621,8 @@ export function ChatInterface({
               CHAT_SPACING.messageList,
               CHAT_SPACING.message.gap,
               // Extra bottom padding on mobile to ensure artifact cards are fully visible above prompt input
-              // Reduced from pb-24 to pb-20 to reclaim 16px vertical space
-              "pb-20 md:pb-6"
+              // Optimized to minimal padding to maximize usable space
+              "pb-16 md:pb-6"
             )}
             aria-label="Chat conversation"
             data-testid="message-list"
@@ -657,7 +658,7 @@ export function ChatInterface({
             {isStreaming && (
               <MessageComponent
                 className={cn(
-                  "mx-auto flex w-full max-w-5xl flex-col items-start",
+                  "mx-auto flex w-full max-w-3xl flex-col items-start",
                   CHAT_SPACING.message.container
                 )}
               >
@@ -667,7 +668,7 @@ export function ChatInterface({
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10">
                       <Sparkles className="h-3.5 w-3.5 text-primary" />
                     </div>
-                    <span className="text-sm font-medium text-foreground">Vana</span>
+                    <span className="chat-assistant-name text-foreground">Vana</span>
                   </div>
 
                   {/* Always show reasoning during streaming, even if no data yet */}
@@ -684,13 +685,15 @@ export function ChatInterface({
                   </ReasoningErrorBoundary>
                   {/* Show content immediately - reasoning is supplementary context, not blocking */}
                   {streamingMessage ? (
-                    <MessageWithArtifacts
-                      content={streamingMessage}
-                      sessionId={sessionId || ''}
-                      onArtifactOpen={handleArtifactOpen}
-                      artifactOverrides={artifactOverrides}
-                      searchResults={streamProgress.searchResults}
-                    />
+                    <div className="chat-markdown">
+                      <MessageWithArtifacts
+                        content={streamingMessage}
+                        sessionId={sessionId || ''}
+                        onArtifactOpen={handleArtifactOpen}
+                        artifactOverrides={artifactOverrides}
+                        searchResults={streamProgress.searchResults}
+                      />
+                    </div>
                   ) : (
                     /* Text skeleton while waiting for content to arrive */
                     <div
@@ -749,21 +752,22 @@ export function ChatInterface({
           {/* Mobile-first padding: px-3 pb-3 on mobile, px-4 pb-4 on desktop */}
           {/* SAFE_AREA_SPACING.bottom provides the safe-area padding, cn() resolves conflicts */}
           <div className={combineSpacing("shrink-0 bg-transparent safe-mobile-input", CHAT_SPACING.input.container, SAFE_AREA_SPACING.bottom)}>
-            <PromptInput
-              id={TOUR_STEP_IDS.CHAT_INPUT}
-              value={input}
-              onValueChange={setInput}
-              isLoading={isLoading || isStreaming}
-              onSubmit={handleSend}
-              className="w-full relative rounded-xl bg-black/70 backdrop-blur-sm p-0 pt-1"
-            >
+            <div className="mx-auto w-full max-w-3xl">
+              <PromptInput
+                id={TOUR_STEP_IDS.CHAT_INPUT}
+                value={input}
+                onValueChange={setInput}
+                isLoading={isLoading || isStreaming}
+                onSubmit={handleSend}
+                className="w-full relative rounded-xl bg-black p-0 pt-1"
+              >
               <div className="flex flex-col">
                 <PromptInputTextarea
                   placeholder="Ask anything"
                   className={combineSpacing("min-h-[44px] text-base leading-[1.3]", CHAT_SPACING.input.textarea)}
                 />
                 <PromptInputControls
-                  className="mt-5 px-3 pb-3"
+                  className="mt-2 px-3 pb-2"
                   imageMode={imageMode}
                   onImageModeChange={setImageMode}
                   artifactMode={artifactMode}
@@ -780,10 +784,11 @@ export function ChatInterface({
                   fileInputRef={fileInputRef}
                   isUploadingFile={isUploadingFile}
                   onFileUpload={handleFileUpload}
-                  sendIcon="arrow"
+                  sendIcon="right"
                 />
               </div>
             </PromptInput>
+            </div>
           </div>
         </ChatContainerRoot>
       </div>
@@ -801,56 +806,61 @@ export function ChatInterface({
       <div className="flex flex-1 flex-col min-h-0">
         {isMobile ? (
           // Mobile Layout: Fullscreen artifact overlay or chat
-          // Glass card container matches desktop styling for visual consistency
-          // Bottom margin accounts for Safari toolbar + safe area to prevent keyboard blank space
+          // Glass effect background - edge to edge
           <div className={cn(
-            "flex flex-col flex-1 min-h-0 mx-2 mt-2 mb-[max(0.5rem,env(safe-area-inset-bottom))] overflow-hidden rounded-2xl",
-            "bg-black/60 backdrop-blur-md border border-white/10 shadow-xl",
-            "ring-1 ring-white/5"
+            "flex flex-col flex-1 min-h-0 overflow-hidden",
+            "bg-black/40 backdrop-blur-md"
           )}>
-            {isCanvasOpen && currentArtifact ? (
-              // Mobile: Fullscreen artifact
-              <div className="fixed inset-0 z-50 bg-background">
-                <Artifact
-                  artifact={currentArtifact}
-                  onClose={handleCloseCanvas}
-                  onEdit={handleEditArtifact}
-                  onBundleReactFallback={handleBundleReactFallback}
-                  onContentChange={(newContent) => {
-                    setCurrentArtifact({ ...currentArtifact, content: newContent });
-                  }}
-                />
-              </div>
-            ) : (
-              // Mobile: Chat with floating artifact button
-              <>
-                {renderChatContent()}
-                {currentArtifact && !isCanvasOpen && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="icon"
-                        className="fixed bottom-20 right-4 z-40 h-14 w-14 rounded-full bg-primary shadow-lg shadow-primary/30 hover:brightness-110 hover:-translate-y-0.5 transition-all"
-                        style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
-                        onClick={() => onCanvasToggle?.(true)}
-                      >
-                        <Maximize2 className="h-6 w-6 text-white" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>View Artifact</TooltipContent>
-                  </Tooltip>
-                )}
-              </>
+            {/* Mobile: Chat content is always rendered */}
+            {renderChatContent()}
+
+            {/* Mobile: Floating button to open artifact (when artifact exists but canvas is closed) */}
+            {currentArtifact && !isCanvasOpen && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    className="fixed bottom-20 right-4 z-40 h-14 w-14 rounded-full bg-primary shadow-lg shadow-primary/30 hover:brightness-110 hover:-translate-y-0.5 transition-all"
+                    style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
+                    onClick={() => onCanvasToggle?.(true)}
+                  >
+                    <Maximize2 className="h-6 w-6 text-white" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>View Artifact</TooltipContent>
+              </Tooltip>
             )}
+
+            {/* Mobile: Fullscreen artifact overlay with enter/exit animation */}
+            <AnimatePresence>
+              {isCanvasOpen && currentArtifact && (
+                <motion.div
+                  key="mobile-artifact"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                  className="fixed inset-0 z-50 bg-background"
+                >
+                  <Artifact
+                    artifact={currentArtifact}
+                    onClose={handleCloseCanvas}
+                    onEdit={handleEditArtifact}
+                    onBundleReactFallback={handleBundleReactFallback}
+                    onContentChange={(newContent) => {
+                      setCurrentArtifact({ ...currentArtifact, content: newContent });
+                    }}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         ) : (
           // Desktop Layout: Side-by-side resizable panels with Gemini-style sizing (30/70 split)
-          // UNIFIED CONTAINER: Single glass-morphic box wrapping both chat and canvas
+          // Glass effect background - edge to edge (no margins)
           <div className={cn(
-            "flex-1 min-h-0 mx-4 my-4 overflow-hidden rounded-3xl",
-            "bg-black/60 backdrop-blur-md border border-white/10 shadow-2xl",
-            // Add subtle glow effect for visual prominence
-            "ring-1 ring-white/5"
+            "flex-1 min-h-0 overflow-hidden",
+            "bg-black/60 backdrop-blur-md shadow-2xl"
           )}>
             <ResizablePanelGroup direction="horizontal" className="h-full">
               <ResizablePanel
@@ -873,18 +883,32 @@ export function ChatInterface({
                 order={2}
                 defaultSize={isCanvasOpen && currentArtifact ? 70 : 0}
                 minSize={isCanvasOpen && currentArtifact ? 50 : 0}
-                className={`md:min-w-[400px] flex flex-col ${!isCanvasOpen || !currentArtifact ? 'hidden' : ''}`}
+                className={cn(
+                  "md:min-w-[400px] flex flex-col",
+                  // Hide panel when canvas is closed OR no artifact exists
+                  // This triggers ResizablePanelGroup to redistribute space to chat panel
+                  (!isCanvasOpen || !currentArtifact) && "hidden"
+                )}
               >
+                {/* Desktop artifact with scale-in animation on open */}
                 {currentArtifact && (
-                  <Artifact
-                    artifact={currentArtifact}
-                    onClose={handleCloseCanvas}
-                    onEdit={handleEditArtifact}
-                    onBundleReactFallback={handleBundleReactFallback}
-                    onContentChange={(newContent) => {
-                      setCurrentArtifact({ ...currentArtifact, content: newContent });
-                    }}
-                  />
+                  <motion.div
+                    key={currentArtifact.id}
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                    className="h-full"
+                  >
+                    <Artifact
+                      artifact={currentArtifact}
+                      onClose={handleCloseCanvas}
+                      onEdit={handleEditArtifact}
+                      onBundleReactFallback={handleBundleReactFallback}
+                      onContentChange={(newContent) => {
+                        setCurrentArtifact({ ...currentArtifact, content: newContent });
+                      }}
+                    />
+                  </motion.div>
                 )}
               </ResizablePanel>
             </ResizablePanelGroup>

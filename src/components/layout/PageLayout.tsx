@@ -50,7 +50,7 @@ export interface PageLayoutProps {
 
 const DEFAULT_GRADIENT_STYLE: CSSProperties = {
   zIndex: -1,
-  background: "radial-gradient(125% 125% at 50% 10%, #000000 40%, #1e293b 100%)",
+  background: "radial-gradient(175% 125% at 50% 10%, #000000 40%, #1e293b 100%)",
 };
 
 export function PageLayout({
@@ -75,7 +75,7 @@ export function PageLayout({
     : undefined;
 
   return (
-    <div className="min-h-[var(--app-height)] w-full bg-zinc-950 relative">
+    <div className="min-h-[var(--app-height)] w-full bg-black relative">
       {/* Sparkle background layer - z-0 sits on top of bg-zinc-950 */}
       {showSparkleBackground && (
         <div className="fixed inset-0 pointer-events-none z-0">

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { useScrollTransition } from "@/hooks/useScrollTransition";
 import { useGuestSession } from "@/hooks/useGuestSession";
 import { PageLayout } from "@/components/layout/PageLayout";
@@ -19,6 +19,7 @@ import { SidebarInset } from "@/components/ui/sidebar";
 import { useChatSessions } from "@/hooks/useChatSessions";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureValidSession } from "@/utils/authHelpers";
+import { validateFile, sanitizeFilename } from "@/utils/fileValidation";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import type { SuggestionItem } from "@/data/suggestions";
@@ -166,6 +167,7 @@ const Home = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const chatSendHandlerRef = useRef<((message?: string) => Promise<void>) | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [showTourDialog, setShowTourDialog] = useState(false);
 
   // Guest session
@@ -356,6 +358,86 @@ const Home = () => {
     setShowChat(true);
   }, []);
 
+  /**
+   * Handles file upload from home input
+   * Validates file, uploads to Supabase storage, and adds reference to input
+   */
+  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingFile(true);
+    try {
+      // Validate file with comprehensive checks
+      const validationResult = await validateFile(file);
+      if (!validationResult.valid) {
+        toast({ title: validationResult.error || "File validation failed", variant: "destructive" });
+        return;
+      }
+
+      const session = await ensureValidSession();
+      if (!session) {
+        toast({ title: "Authentication required. Please refresh the page or sign in again.", variant: "destructive" });
+        return;
+      }
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Sanitize filename and create upload path
+      const sanitized = sanitizeFilename(file.name);
+      const fileExt = sanitized.substring(sanitized.lastIndexOf('.'));
+      const fileName = `${user.id}/${Date.now()}${fileExt}`;
+
+      // Upload to Supabase storage
+      const { error: uploadError } = await supabase.storage
+        .from('user-uploads')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get signed URL (7 days expiry) for private bucket access
+      const { data: signedUrlData, error: urlError } = await supabase.storage
+        .from('user-uploads')
+        .createSignedUrl(fileName, 604800); // 7 days = 604800 seconds
+
+      if (urlError) {
+        throw new Error(`Failed to generate secure URL: ${urlError.message}`);
+      }
+
+      if (!signedUrlData?.signedUrl) {
+        throw new Error('Failed to generate secure URL: No URL returned from storage service');
+      }
+
+      // Add file reference to input
+      setInput(prev => `${prev}\n[${file.name}](${signedUrlData.signedUrl})`);
+
+      toast({ title: "File uploaded successfully" });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error("File upload error:", {
+        error: errorMessage,
+        fileName: file?.name,
+        fileSize: file?.size,
+        fileType: file?.type
+      });
+
+      // Provide user-friendly error message based on the error type
+      if (errorMessage.includes('secure URL')) {
+        toast({ title: `Upload succeeded but URL generation failed: ${errorMessage}`, variant: "destructive" });
+      } else if (errorMessage.includes('File too large')) {
+        toast({ title: 'File is too large. Maximum size is 100MB.', variant: "destructive" });
+      } else if (errorMessage.includes('Invalid file type')) {
+        toast({ title: 'Invalid file type. Supported types: images, documents, text files.', variant: "destructive" });
+      } else {
+        toast({ title: `Failed to upload file: ${errorMessage}`, variant: "destructive" });
+      }
+    } finally {
+      setIsUploadingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }, [toast, setInput]);
 
   /**
    * Handles message submission from home input or chat interface
@@ -662,7 +744,7 @@ const Home = () => {
                 isLoading={sessionsLoading}
               />
 
-              <SidebarInset className="relative bg-zinc-950 overflow-hidden">
+              <SidebarInset className="relative bg-black overflow-hidden">
                 {/* Sparkle background - positioned relative to SidebarInset for proper centering */}
                 <SparkleErrorBoundary resetKey={resetCounter}>
                   <SparkleBackground position="absolute" {...sparkleSettings} />
@@ -674,51 +756,74 @@ const Home = () => {
                   {/* Desktop Header - Sign in button (top-right corner) */}
                   <DesktopHeader isAuthenticated={isAuthenticated} />
 
-                  {/* Main Content */}
+                  {/* Main Content - AnimatePresence for smooth crossfade between views */}
                   <div className="flex-1 overflow-hidden flex flex-col max-h-full">
-                    {!showChat ? (
-                      <ChatLayout
-                        input={input}
-                        onInputChange={setInput}
-                        onSubmit={handleSubmit}
-                        isLoading={isLoading}
-                        suggestions={suggestions}
-                        loadingSuggestions={loadingSuggestions}
-                        loadingItemId={loadingSuggestionId}
-                        onSuggestionClick={handleSuggestionClick}
-                        imageMode={imageMode}
-                        onImageModeChange={setImageMode}
-                        artifactMode={artifactMode}
-                        onArtifactModeChange={setArtifactMode}
-                        sendIcon="send"
-                        promptPosition={promptPosition}
-                        mobilePromptPosition={mobilePromptPosition}
-                      />
-                    ) : (
-                      <ChatInterface
-                        sessionId={currentSessionId ?? guestSession.sessionId ?? undefined}
-                        initialPrompt={!isAuthenticated ? guestInitialPrompt : pendingAuthPrompt}
-                        initialImageMode={imageMode}
-                        initialArtifactMode={artifactMode}
-                        isCanvasOpen={isCanvasOpen}
-                        onCanvasToggle={handleCanvasToggle}
-                        onArtifactChange={handleArtifactChange}
-                        input={input}
-                        onInputChange={setInput}
-                        onSendMessage={handler => {
-                          chatSendHandlerRef.current = handler;
-                        }}
-                        onInitialPromptSent={() => {
-                          // Clear pending prompts only after they have been sent
-                          setGuestInitialPrompt(undefined);
-                          setPendingAuthPrompt(undefined);
-                        }}
-                        isGuest={!isAuthenticated}
-                        guestMessageCount={guestSession.messageCount}
-                        guestMaxMessages={guestSession.maxMessages}
-                        guestSession={guestSessionMemo}
-                      />
-                    )}
+                    <AnimatePresence mode="wait">
+                      {!showChat ? (
+                        <motion.div
+                          key="chat-layout"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                          className="flex-1 flex flex-col min-h-0"
+                        >
+                          <ChatLayout
+                            input={input}
+                            onInputChange={setInput}
+                            onSubmit={handleSubmit}
+                            isLoading={isLoading}
+                            suggestions={suggestions}
+                            loadingSuggestions={loadingSuggestions}
+                            loadingItemId={loadingSuggestionId}
+                            onSuggestionClick={handleSuggestionClick}
+                            fileInputRef={fileInputRef}
+                            isUploadingFile={isUploadingFile}
+                            onFileUpload={handleFileUpload}
+                            imageMode={imageMode}
+                            onImageModeChange={setImageMode}
+                            artifactMode={artifactMode}
+                            onArtifactModeChange={setArtifactMode}
+                            sendIcon="right"
+                            promptPosition={promptPosition}
+                            mobilePromptPosition={mobilePromptPosition}
+                          />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key={`chat-interface-${currentSessionId ?? 'guest'}`}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                          className="flex-1 flex flex-col min-h-0"
+                        >
+                          <ChatInterface
+                            sessionId={currentSessionId ?? guestSession.sessionId ?? undefined}
+                            initialPrompt={!isAuthenticated ? guestInitialPrompt : pendingAuthPrompt}
+                            initialImageMode={imageMode}
+                            initialArtifactMode={artifactMode}
+                            isCanvasOpen={isCanvasOpen}
+                            onCanvasToggle={handleCanvasToggle}
+                            onArtifactChange={handleArtifactChange}
+                            input={input}
+                            onInputChange={setInput}
+                            onSendMessage={handler => {
+                              chatSendHandlerRef.current = handler;
+                            }}
+                            onInitialPromptSent={() => {
+                              // Clear pending prompts only after they have been sent
+                              setGuestInitialPrompt(undefined);
+                              setPendingAuthPrompt(undefined);
+                            }}
+                            isGuest={!isAuthenticated}
+                            guestMessageCount={guestSession.messageCount}
+                            guestMaxMessages={guestSession.maxMessages}
+                            guestSession={guestSessionMemo}
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </main>
               </SidebarInset>

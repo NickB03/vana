@@ -151,7 +151,7 @@ const Sidebar = React.forwardRef<
   if (collapsible === "none") {
     return (
       <div
-        className={cn("flex h-full w-[--sidebar-width] flex-col bg-black/70 backdrop-blur-sm text-sidebar-foreground shadow-[inset_-2px_0_4px_rgba(255,255,255,0.05)]", className)}
+        className={cn("flex h-full w-[--sidebar-width] flex-col bg-black/70 backdrop-blur-sm text-sidebar-foreground shadow-[4px_0_12px_rgba(0,0,0,0.4)] border-r border-white/10", className)}
         ref={ref}
         {...props}
       >
@@ -167,7 +167,7 @@ const Sidebar = React.forwardRef<
           id="mobile-sidebar"
           data-sidebar="sidebar"
           data-mobile="true"
-          className="w-[--sidebar-width] bg-black/70 backdrop-blur-sm p-0 text-sidebar-foreground shadow-[inset_-2px_0_4px_rgba(255,255,255,0.05)] [&>button]:hidden"
+          className="w-[--sidebar-width] bg-black/70 backdrop-blur-sm p-0 text-sidebar-foreground shadow-[4px_0_12px_rgba(0,0,0,0.4)] border-r border-white/10 [&>button]:hidden"
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -193,7 +193,7 @@ const Sidebar = React.forwardRef<
       {/* This is what handles the sidebar gap on desktop */}
       <div
         className={cn(
-          "relative h-svh w-[--sidebar-width] bg-transparent transition-[width] duration-200 ease-out",
+          "relative h-svh w-[--sidebar-width] bg-transparent transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
           "group-data-[collapsible=offcanvas]:w-0",
           "group-data-[side=right]:rotate-180",
           variant === "floating" || variant === "inset"
@@ -203,7 +203,7 @@ const Sidebar = React.forwardRef<
       />
       <div
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width,transform] duration-200 ease-out md:flex",
+          "fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width,transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] md:flex",
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
@@ -217,7 +217,7 @@ const Sidebar = React.forwardRef<
       >
         <div
           data-sidebar="sidebar"
-          className="flex h-full w-full flex-col bg-black/70 backdrop-blur-sm shadow-[inset_-2px_0_4px_rgba(255,255,255,0.05)] group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow overflow-hidden overscroll-none"
+          className="flex h-full w-full flex-col bg-black/70 backdrop-blur-sm shadow-[4px_0_12px_rgba(0,0,0,0.4)] border-r border-white/10 group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow overflow-hidden overscroll-none -ml-px"
         >
           {children}
         </div>

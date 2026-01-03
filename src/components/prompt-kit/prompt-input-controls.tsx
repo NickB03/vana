@@ -33,7 +33,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, WandSparkles, ImagePlus, ArrowUp, Send, Square } from "lucide-react";
+import { Plus, WandSparkles, ImagePlus, ArrowUp, ArrowRight, Send, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PromptInputAction } from "@/components/prompt-kit/prompt-input";
 import React from "react";
@@ -67,7 +67,7 @@ export interface PromptInputControlsProps {
   onFileUpload?: (event: React.ChangeEvent<HTMLInputElement>) => void;
 
   // Customization
-  sendIcon?: "arrow" | "send"; // Different send icons for different contexts
+  sendIcon?: "arrow" | "right" | "send"; // Different send icons for different contexts
   className?: string;
 }
 
@@ -92,11 +92,11 @@ export function PromptInputControls({
   fileInputRef,
   isUploadingFile = false,
   onFileUpload,
-  sendIcon = "arrow",
+  sendIcon = "right",
   className,
 }: PromptInputControlsProps) {
   const isButtonLoading = isLoading || isStreaming;
-  const SendIcon = sendIcon === "arrow" ? ArrowUp : Send;
+  const SendIcon = sendIcon === "arrow" ? ArrowUp : sendIcon === "right" ? ArrowRight : Send;
 
   return (
     <div className={cn("flex w-full items-center justify-between gap-2", className)}>
@@ -136,7 +136,7 @@ export function PromptInputControls({
           </>
         )}
 
-        {/* Image mode toggle */}
+        {/* Image mode toggle - Emerald/teal to match send button theme */}
         {onImageModeChange && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -147,7 +147,7 @@ export function PromptInputControls({
                 className={cn(
                   "size-9 rounded-full transition-all duration-200",
                   imageMode
-                    ? "bg-blue-500 text-white shadow-lg ring-2 ring-blue-400/60 hover:bg-blue-600 hover:ring-blue-500/70"
+                    ? "bg-emerald-500 text-white shadow-lg ring-2 ring-emerald-400/60 hover:bg-emerald-600 hover:ring-emerald-500/70"
                     : "hover:bg-accent"
                 )}
                 onClick={() => {
@@ -168,7 +168,7 @@ export function PromptInputControls({
           </Tooltip>
         )}
 
-        {/* Artifact mode toggle */}
+        {/* Artifact mode toggle - Dark navy slate */}
         {(onArtifactModeChange || onCreateClick) && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -180,7 +180,7 @@ export function PromptInputControls({
                   "size-9 rounded-full transition-all duration-200",
                   onArtifactModeChange
                     ? artifactMode
-                      ? "bg-purple-500 text-white shadow-lg ring-2 ring-purple-400/60 hover:bg-purple-600 hover:ring-purple-500/70"
+                      ? "bg-[#2624bf] text-white shadow-lg ring-2 ring-[#4341d1]/60 hover:brightness-110 hover:ring-[#5553e0]/70"
                       : "hover:bg-accent"
                     : isCanvasOpen && "bg-primary/10 text-primary hover:bg-primary/20"
                 )}
@@ -216,37 +216,40 @@ export function PromptInputControls({
 
       {/* Right side - Send/Stop button */}
       {isStreaming && onStop ? (
-        // Stop button during streaming - neutral styling to match action buttons
+        // Stop button during streaming - glass morphism style
         <PromptInputAction tooltip="Stop generating">
           <Button
             type="button"
             size="icon"
-            className="size-9 rounded-full bg-muted/80 hover:bg-muted border border-border/50 transition-all duration-200"
+            className="size-9 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 shadow-lg transition-all duration-200"
             onClick={onStop}
             data-testid="stop-button"
           >
-            <Square size={18} className="text-muted-foreground" />
+            <Square size={18} className="text-white/70" />
           </Button>
         </PromptInputAction>
       ) : (
-        // Send button when not streaming
+        // Send button when not streaming - glass morphism style
         <PromptInputAction tooltip="Send message">
           <Button
             type="submit"
             size="icon"
             disabled={!input.trim() || isButtonLoading}
-            className="size-9 rounded-full hover:brightness-115 hover:-translate-y-1 transition-all duration-200"
-            style={{
-              background: 'linear-gradient(135deg, hsl(var(--accent-primary)), hsl(var(--accent-primary-bright)))',
-              boxShadow: '0 4px 14px hsl(var(--accent-primary) / 0.4)',
-            }}
+            className={cn(
+              "size-9 rounded-full backdrop-blur-md transition-all duration-200",
+              !input.trim() || isButtonLoading
+                ? "bg-white/5 border border-white/10"
+                : "bg-white/10 border border-white/20 hover:bg-white/20 shadow-lg"
+            )}
             onClick={onSend}
             data-testid="send-button"
           >
             {isLoading ? (
-              <div className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              <div className="size-4 animate-spin rounded-full border-2 border-white/70 border-t-transparent" />
             ) : (
-              <SendIcon size={18} className="text-white" />
+              <SendIcon size={18} className={cn(
+                !input.trim() || isButtonLoading ? "text-white/40" : "text-white"
+              )} />
             )}
           </Button>
         </PromptInputAction>

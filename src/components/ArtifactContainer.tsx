@@ -13,6 +13,8 @@ import { generateCompleteIframeStyles } from "@/utils/themeUtils";
 import { ArtifactViewToggle } from "./ArtifactViewToggle";
 import { RefreshCw } from "lucide-react";
 import { useMinimumLoadingTime } from "@/hooks/use-minimum-loading-time";
+import { motion } from "motion/react";
+import { ARTIFACT_ANIMATION } from "@/utils/animationSystem";
 
 export type ArtifactType = "code" | "markdown" | "html" | "svg" | "mermaid" | "react" | "image";
 
@@ -287,7 +289,12 @@ ${artifact.content}
 
   // Return JSX (moved old renderPreview/renderCode to extracted components)
   return (
-    <Artifact className={isMaximized ? "fixed inset-4 z-50" : "h-full"} data-testid="artifact-container">
+    <motion.div
+      {...ARTIFACT_ANIMATION.variant}
+      transition={ARTIFACT_ANIMATION.transition}
+      className={isMaximized ? "fixed inset-4 z-50" : "h-full"}
+    >
+      <Artifact className="h-full" data-testid="artifact-container">
       <ArtifactHeader>
         <div className="flex items-center gap-3">
           <ArtifactViewToggle
@@ -331,5 +338,6 @@ ${artifact.content}
         )}
       </ArtifactContent>
     </Artifact>
+    </motion.div>
   );
 };

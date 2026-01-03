@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 interface DesktopHeaderProps {
   className?: string;
@@ -36,21 +37,22 @@ export function DesktopHeader({ className, isAuthenticated = false }: DesktopHea
       )}
     >
       {/* Sign in button - matches sidebar toggle style */}
-      <button
+      <Button
+        variant="ghost"
+        size="default"
         onClick={() => navigate("/auth")}
         className={cn(
-          "flex items-center justify-center h-10 px-4 rounded-full",
+          "px-4 rounded-full",
           "bg-white/5 hover:bg-white/10",
           "border border-white/10",
           "text-white/80 hover:text-white",
           "transition-all duration-200",
-          "cursor-pointer",
           "text-sm font-medium"
         )}
         aria-label="Sign in"
       >
         Sign in
-      </button>
+      </Button>
     </header>
   );
 }

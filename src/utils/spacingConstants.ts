@@ -49,14 +49,14 @@ export const COMPONENT_SPACING = {
  */
 export const CHAT_SPACING = {
   message: {
-    container: 'px-3 py-2 md:px-4', // Tighter horizontal on mobile
-    gap: 'gap-3 md:gap-4',           // Tighter gap on mobile
+    container: 'px-2 py-1.5 md:px-4', // Minimal horizontal on mobile for max text width
+    gap: 'gap-2 md:gap-4',           // Tighter gap on mobile
   },
   input: {
-    container: 'px-3 pb-3 md:px-4 md:pb-4', // Mobile-first input padding
+    container: 'px-2 pb-1 md:px-4 md:pb-4', // Minimal input padding on mobile
     textarea: 'pl-3 pt-2.5 md:pl-4 md:pt-3',
   },
-  messageList: 'px-3 py-4 md:px-4 md:py-6', // Reduced padding on mobile
+  messageList: 'px-1 py-2 md:px-4 md:py-6', // Minimal padding on mobile for max width
 } as const;
 
 /**

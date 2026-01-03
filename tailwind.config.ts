@@ -17,6 +17,14 @@ export default {
         /** Tablet breakpoint: 900px (fills gap between md:768px and lg:1024px) */
         tablet: '900px',
       },
+      fontSize: {
+        // Optimized typography scale for chat readability
+        // Base mobile: 16px (prevents iOS zoom on input focus)
+        // Base desktop: 15px (comfortable reading at typical viewing distances)
+        'chat-base': ['15px', { lineHeight: '1.6', letterSpacing: '0.01em' }],
+        'chat-user': ['15px', { lineHeight: '1.5', letterSpacing: '0.01em' }],
+        'chat-assistant': ['14px', { lineHeight: '1.4', letterSpacing: '0.005em' }],
+      },
       backgroundSize: {
         'auto': 'auto',
         'cover': 'cover',
@@ -89,6 +97,7 @@ export default {
         xs: "0.375rem", // 6px for pill components
       },
       keyframes: {
+        // Radix UI component animations
         "accordion-down": {
           from: {
             height: "0",
@@ -105,10 +114,12 @@ export default {
             height: "0",
           },
         },
+
+        // Unified fade animations (consistent 12px translate distance)
         "fade-in": {
           from: {
             opacity: "0",
-            transform: "translateY(10px)",
+            transform: "translateY(12px)",
           },
           to: {
             opacity: "1",
@@ -125,6 +136,26 @@ export default {
             transform: "translateX(0)",
           },
         },
+        "fade-in-right": {
+          from: {
+            opacity: "0",
+            transform: "translateX(12px)",
+          },
+          to: {
+            opacity: "1",
+            transform: "translateX(0)",
+          },
+        },
+        "fade-out-left": {
+          from: {
+            opacity: "1",
+            transform: "translateX(0)",
+          },
+          to: {
+            opacity: "0",
+            transform: "translateX(-12px)",
+          },
+        },
         "fade-out-right": {
           from: {
             opacity: "1",
@@ -135,6 +166,30 @@ export default {
             transform: "translateX(12px)",
           },
         },
+
+        // Scale animations for modals/artifacts
+        "scale-in": {
+          from: {
+            opacity: "0",
+            transform: "scale(0.95)",
+          },
+          to: {
+            opacity: "1",
+            transform: "scale(1)",
+          },
+        },
+        "scale-out": {
+          from: {
+            opacity: "1",
+            transform: "scale(1)",
+          },
+          to: {
+            opacity: "0",
+            transform: "scale(0.95)",
+          },
+        },
+
+        // Skeleton loader animations
         "shimmer": {
           "0%": {
             backgroundPosition: "200% 0",
@@ -155,13 +210,24 @@ export default {
         },
       },
       animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in": "fade-in 0.3s ease-out",
-        "fade-in-left": "fade-in-left 0.4s ease-out forwards",
-        "fade-out-right": "fade-out-right 0.4s ease-out forwards",
+        // Radix UI (200ms, standard easing)
+        "accordion-down": "accordion-down 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+        "accordion-up": "accordion-up 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+
+        // Fade animations (300ms moderate, 200ms normal)
+        "fade-in": "fade-in 0.3s cubic-bezier(0, 0, 0.2, 1)",
+        "fade-in-left": "fade-in-left 0.2s cubic-bezier(0, 0, 0.2, 1) forwards",
+        "fade-in-right": "fade-in-right 0.2s cubic-bezier(0, 0, 0.2, 1) forwards",
+        "fade-out-left": "fade-out-left 0.2s cubic-bezier(0.4, 0, 1, 1) forwards",
+        "fade-out-right": "fade-out-right 0.2s cubic-bezier(0.4, 0, 1, 1) forwards",
+
+        // Scale animations (200ms, decelerate easing)
+        "scale-in": "scale-in 0.2s cubic-bezier(0, 0, 0.2, 1)",
+        "scale-out": "scale-out 0.2s cubic-bezier(0.4, 0, 1, 1)",
+
+        // Skeleton loaders (continuous)
         "shimmer": "shimmer 4s infinite linear",
-        "shimmer-pulse": "shimmer-pulse 3s infinite ease-in-out",
+        "shimmer-pulse": "shimmer-pulse 3s infinite cubic-bezier(0.4, 0, 0.2, 1)",
       },
       typography: {
         DEFAULT: {

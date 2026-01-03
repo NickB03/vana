@@ -33,6 +33,12 @@ export const FEATURE_FLAGS = {
    * Useful for troubleshooting why premade cards fail to generate artifacts.
    */
   DEBUG_PREMADE_CARDS: Deno.env.get('DEBUG_PREMADE_CARDS') === 'true',
+
+  /**
+   * Automatically attempt an AI fix pass when artifact validation fails.
+   * Enabled by default; set AUTO_FIX_ARTIFACTS=false to disable.
+   */
+  AUTO_FIX_ARTIFACTS: Deno.env.get('AUTO_FIX_ARTIFACTS') !== 'false',
 } as const;
 
 // =============================================================================

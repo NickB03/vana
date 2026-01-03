@@ -279,6 +279,75 @@ export const SparkleControlPanel = memo(function SparkleControlPanel({
               />
             </div>
 
+            {/* Vignette Section Header */}
+            <div className="border-t border-zinc-700 pt-3 mt-3">
+              <Label className="text-xs text-zinc-300 font-semibold">Vignette Shape</Label>
+            </div>
+
+            {/* Vignette Width */}
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label className="text-xs text-zinc-400">Vignette Width</Label>
+                <span className="text-xs text-zinc-500">{sparkleSettings.vignetteWidth}%</span>
+              </div>
+              <Slider
+                value={[sparkleSettings.vignetteWidth]}
+                onValueChange={([v]) => onUpdateSetting('vignetteWidth', v)}
+                min={20}
+                max={100}
+                step={5}
+                className="w-full"
+              />
+            </div>
+
+            {/* Vignette Height */}
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label className="text-xs text-zinc-400">Vignette Height</Label>
+                <span className="text-xs text-zinc-500">{sparkleSettings.vignetteHeight}%</span>
+              </div>
+              <Slider
+                value={[sparkleSettings.vignetteHeight]}
+                onValueChange={([v]) => onUpdateSetting('vignetteHeight', v)}
+                min={20}
+                max={100}
+                step={5}
+                className="w-full"
+              />
+            </div>
+
+            {/* Gradient Spread X */}
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label className="text-xs text-zinc-400">Gradient Spread X</Label>
+                <span className="text-xs text-zinc-500">{sparkleSettings.gradientSpreadX}%</span>
+              </div>
+              <Slider
+                value={[sparkleSettings.gradientSpreadX]}
+                onValueChange={([v]) => onUpdateSetting('gradientSpreadX', v)}
+                min={50}
+                max={300}
+                step={10}
+                className="w-full"
+              />
+            </div>
+
+            {/* Gradient Spread Y */}
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label className="text-xs text-zinc-400">Gradient Spread Y</Label>
+                <span className="text-xs text-zinc-500">{sparkleSettings.gradientSpreadY}%</span>
+              </div>
+              <Slider
+                value={[sparkleSettings.gradientSpreadY]}
+                onValueChange={([v]) => onUpdateSetting('gradientSpreadY', v)}
+                min={20}
+                max={150}
+                step={5}
+                className="w-full"
+              />
+            </div>
+
             {/* Particle Color */}
             <div className="space-y-2">
               <Label className="text-xs text-zinc-400">Particle Color</Label>

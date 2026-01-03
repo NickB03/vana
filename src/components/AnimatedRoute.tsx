@@ -10,7 +10,7 @@
 
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
-import { fadeInUp, ANIMATION_DURATIONS, ANIMATION_EASINGS } from "@/utils/animationConstants";
+import { ROUTE_ANIMATION } from "@/utils/animationSystem";
 
 interface AnimatedRouteProps {
   children: ReactNode;
@@ -25,11 +25,8 @@ interface AnimatedRouteProps {
 export function AnimatedRoute({ children }: AnimatedRouteProps) {
   return (
     <motion.div
-      {...fadeInUp}
-      transition={{
-        duration: ANIMATION_DURATIONS.moderate,
-        ease: ANIMATION_EASINGS.easeInOut
-      }}
+      {...ROUTE_ANIMATION.variant}
+      transition={ROUTE_ANIMATION.transition}
     >
       {children}
     </motion.div>

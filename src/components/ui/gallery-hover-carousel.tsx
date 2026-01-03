@@ -151,14 +151,14 @@ export default function GalleryHoverCarousel({
             }}
             className="relative w-full max-w-full"
           >
-            <CarouselContent className="-ml-2 md:-ml-4 -mr-2 md:-mr-4">
+            <CarouselContent className="-ml-2 md:-ml-3 -mr-2 md:-mr-3 py-2">
               {items.map((item) => {
                 const isLoading = loadingItemId === item.id;
                 return (
-                <CarouselItem key={item.id} className="px-2 sm:px-3 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5 2xl:basis-1/6">
+                <CarouselItem key={item.id} className="px-2 md:px-2.5 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
                   <div
                     onClick={() => !isLoading && onItemClick?.(item)}
-                    className={`group block relative w-full h-[clamp(100px,15vh,150px)] ${isLoading ? 'cursor-wait' : 'cursor-pointer'}`}
+                    className={`group block relative w-full h-[clamp(90px,12vh,130px)] ${isLoading ? 'cursor-wait' : 'cursor-pointer'}`}
                   >
                     <Card className={`overflow-hidden rounded-3xl h-full w-full transition-all duration-300 hover:scale-105 ${isLoading ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
                       {/* Image */}
@@ -187,17 +187,17 @@ export default function GalleryHoverCarousel({
                       </div>
 
                       {/* Text Section */}
-                      <div className="absolute bottom-0 left-0 w-full h-1/2 px-2 sm:px-3 transition-all duration-500 flex flex-col justify-center bg-background/95 backdrop-blur-sm opacity-100 rounded-b-3xl">
-                        <h3 className="text-xs font-medium sm:text-sm">{item.title}</h3>
-                        <p className="text-muted-foreground text-[10px] sm:text-xs line-clamp-2">
+                      <div className="absolute bottom-0 left-0 w-full h-1/2 px-1.5 sm:px-2 transition-all duration-500 flex flex-col justify-center bg-background/95 backdrop-blur-sm opacity-100 rounded-b-3xl">
+                        <h3 className="text-[10px] font-medium sm:text-xs">{item.title}</h3>
+                        <p className="text-muted-foreground text-[8px] sm:text-[10px] line-clamp-2">
                           {item.summary}
                         </p>
                         <Button
                           variant="outline"
                           size="icon"
-                          className="absolute bottom-1 right-1 sm:bottom-1.5 sm:right-1.5 border border-gray-200 dark:border-gray-800 hover:-rotate-45 transition-all duration-500 rounded-full h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center text-primary hover:text-primary/80"
+                          className="absolute bottom-1 right-1 border border-gray-200 dark:border-gray-800 hover:-rotate-45 transition-all duration-500 rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center text-primary hover:text-primary/80"
                         >
-                          <ArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                          <ArrowRight className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
                         </Button>
                       </div>
                     </Card>

@@ -42,6 +42,10 @@ export default function SparklesDemo() {
   const [particleGlow, setParticleGlow] = useState(SPARKLE_DEFAULTS.particleGlow)
   const [opacitySpeed, setOpacitySpeed] = useState(SPARKLE_DEFAULTS.opacitySpeed)
   const [minOpacity, setMinOpacity] = useState(SPARKLE_DEFAULTS.minOpacity)
+  const [vignetteWidth, setVignetteWidth] = useState(SPARKLE_DEFAULTS.vignetteWidth)
+  const [vignetteHeight, setVignetteHeight] = useState(SPARKLE_DEFAULTS.vignetteHeight)
+  const [gradientSpreadX, setGradientSpreadX] = useState(SPARKLE_DEFAULTS.gradientSpreadX)
+  const [gradientSpreadY, setGradientSpreadY] = useState(SPARKLE_DEFAULTS.gradientSpreadY)
 
   const handleReset = () => {
     setHeight(SPARKLE_DEFAULTS.height)
@@ -57,6 +61,10 @@ export default function SparklesDemo() {
     setParticleGlow(SPARKLE_DEFAULTS.particleGlow)
     setOpacitySpeed(SPARKLE_DEFAULTS.opacitySpeed)
     setMinOpacity(SPARKLE_DEFAULTS.minOpacity)
+    setVignetteWidth(SPARKLE_DEFAULTS.vignetteWidth)
+    setVignetteHeight(SPARKLE_DEFAULTS.vignetteHeight)
+    setGradientSpreadX(SPARKLE_DEFAULTS.gradientSpreadX)
+    setGradientSpreadY(SPARKLE_DEFAULTS.gradientSpreadY)
   }
 
   // Generate the glow background based on mode
@@ -64,7 +72,7 @@ export default function SparklesDemo() {
     if (useGradient) {
       // Create a conic/radial gradient from the colors
       const colorStops = glowGradient.map((c, i) => `${c} ${(i / (glowGradient.length - 1)) * 100}%`).join(', ')
-      return `radial-gradient(ellipse 100% 60% at 50% 100%, ${glowGradient[0]}, transparent 70%), conic-gradient(from 180deg at 50% 100%, ${colorStops})`
+      return `radial-gradient(ellipse ${gradientSpreadX}% ${gradientSpreadY}% at 50% 100%, ${glowGradient[0]}, transparent 70%), conic-gradient(from 180deg at 50% 100%, ${colorStops})`
     }
     return `radial-gradient(circle at bottom center, ${glowColor}, transparent 70%)`
   }
@@ -75,7 +83,7 @@ export default function SparklesDemo() {
   }
 
   return (
-    <div className="min-h-screen w-full overflow-hidden bg-zinc-950">
+    <div className="min-h-screen w-full overflow-hidden bg-black">
       <SidebarProvider
         defaultOpen={true}
         open={sidebarOpen}
@@ -90,7 +98,7 @@ export default function SparklesDemo() {
           isLoading={sessionsLoading}
         />
 
-        <SidebarInset className="relative bg-zinc-950">
+        <SidebarInset className="relative bg-black">
           <main className="flex h-[var(--app-height)] flex-col relative">
             {/* Mobile Header */}
             <MobileHeader isAuthenticated={false} />
@@ -105,8 +113,8 @@ export default function SparklesDemo() {
                 className="absolute left-0 right-0 bottom-0"
                 style={{
                   height: `${height}%`,
-                  maskImage: 'radial-gradient(50% 50%, white, transparent)',
-                  WebkitMaskImage: 'radial-gradient(50% 50%, white, transparent)',
+                  maskImage: `radial-gradient(${vignetteWidth}% ${vignetteHeight}%, white, transparent)`,
+                  WebkitMaskImage: `radial-gradient(${vignetteWidth}% ${vignetteHeight}%, white, transparent)`,
                 }}
               >
                 {/* Layer 1: Glow (behind everything) - supports solid or gradient */}
@@ -122,8 +130,8 @@ export default function SparklesDemo() {
                 <div
                   className="absolute inset-0"
                   style={{
-                    maskImage: 'radial-gradient(50% 50%, white, transparent 85%)',
-                    WebkitMaskImage: 'radial-gradient(50% 50%, white, transparent 85%)',
+                    maskImage: `radial-gradient(${vignetteWidth}% ${vignetteHeight}%, white, transparent 85%)`,
+                    WebkitMaskImage: `radial-gradient(${vignetteWidth}% ${vignetteHeight}%, white, transparent 85%)`,
                   }}
                 >
                   <Sparkles
@@ -198,7 +206,7 @@ export default function SparklesDemo() {
                           input={input}
                           onSend={() => {}}
                           showFileUpload={false}
-                          sendIcon="send"
+                          sendIcon="right"
                         />
                       </div>
                     </PromptInput>
@@ -382,6 +390,80 @@ export default function SparklesDemo() {
                         step={5}
                         className="w-full"
                       />
+                    </div>
+
+                    {/* Vignette Section Header */}
+                    <div className="pt-2 border-t border-zinc-700">
+                      <Label className="text-xs text-zinc-300 font-medium">Vignette Shape</Label>
+                    </div>
+
+                    {/* Vignette Width */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <Label className="text-xs text-zinc-400">Vignette Width</Label>
+                        <span className="text-xs text-zinc-500">{vignetteWidth}%</span>
+                      </div>
+                      <Slider
+                        value={[vignetteWidth]}
+                        onValueChange={([v]) => setVignetteWidth(v)}
+                        min={20}
+                        max={100}
+                        step={5}
+                        className="w-full"
+                      />
+                    </div>
+
+                    {/* Vignette Height */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <Label className="text-xs text-zinc-400">Vignette Height</Label>
+                        <span className="text-xs text-zinc-500">{vignetteHeight}%</span>
+                      </div>
+                      <Slider
+                        value={[vignetteHeight]}
+                        onValueChange={([v]) => setVignetteHeight(v)}
+                        min={20}
+                        max={100}
+                        step={5}
+                        className="w-full"
+                      />
+                    </div>
+
+                    {/* Gradient Spread X */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <Label className="text-xs text-zinc-400">Gradient Spread X</Label>
+                        <span className="text-xs text-zinc-500">{gradientSpreadX}%</span>
+                      </div>
+                      <Slider
+                        value={[gradientSpreadX]}
+                        onValueChange={([v]) => setGradientSpreadX(v)}
+                        min={50}
+                        max={300}
+                        step={10}
+                        className="w-full"
+                      />
+                    </div>
+
+                    {/* Gradient Spread Y */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <Label className="text-xs text-zinc-400">Gradient Spread Y</Label>
+                        <span className="text-xs text-zinc-500">{gradientSpreadY}%</span>
+                      </div>
+                      <Slider
+                        value={[gradientSpreadY]}
+                        onValueChange={([v]) => setGradientSpreadY(v)}
+                        min={20}
+                        max={150}
+                        step={5}
+                        className="w-full"
+                      />
+                    </div>
+
+                    {/* Particle Section Header */}
+                    <div className="pt-2 border-t border-zinc-700">
+                      <Label className="text-xs text-zinc-300 font-medium">Particle Colors</Label>
                     </div>
 
                     {/* Particle Color */}

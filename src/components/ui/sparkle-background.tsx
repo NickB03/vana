@@ -18,6 +18,12 @@ export const SPARKLE_DEFAULTS = {
   particleGlow: true,
   opacitySpeed: 0.5,
   minOpacity: 0.7,
+  // Vignette controls - shape of the radial mask fade
+  vignetteWidth: 75,     // Horizontal spread of vignette (%)
+  vignetteHeight: 55,    // Vertical spread of vignette (%)
+  // Gradient spread controls - how far colors extend
+  gradientSpreadX: 150,  // Horizontal spread of gradient colors (%)
+  gradientSpreadY: 60,   // Vertical spread of gradient colors (%)
 }
 
 export interface SparkleBackgroundProps {
@@ -45,6 +51,14 @@ export interface SparkleBackgroundProps {
   particleGlow?: boolean
   opacitySpeed?: number
   minOpacity?: number
+  /** Horizontal spread of vignette mask (%). Higher = wider visible area. Default: 50 */
+  vignetteWidth?: number
+  /** Vertical spread of vignette mask (%). Higher = taller visible area. Default: 50 */
+  vignetteHeight?: number
+  /** Horizontal spread of gradient colors (%). Higher = colors extend further left/right. Default: 150 */
+  gradientSpreadX?: number
+  /** Vertical spread of gradient colors (%). Higher = colors extend further up. Default: 60 */
+  gradientSpreadY?: number
 }
 
 /**
@@ -78,6 +92,10 @@ export const SparkleBackground = memo(function SparkleBackground({
   particleGlow = SPARKLE_DEFAULTS.particleGlow,
   opacitySpeed = SPARKLE_DEFAULTS.opacitySpeed,
   minOpacity = SPARKLE_DEFAULTS.minOpacity,
+  vignetteWidth = SPARKLE_DEFAULTS.vignetteWidth,
+  vignetteHeight = SPARKLE_DEFAULTS.vignetteHeight,
+  gradientSpreadX = SPARKLE_DEFAULTS.gradientSpreadX,
+  gradientSpreadY = SPARKLE_DEFAULTS.gradientSpreadY,
 }: SparkleBackgroundProps) {
   // Pause animations during scroll for better performance
   const { isScrolling } = useScrollPause(150)
@@ -112,7 +130,7 @@ export const SparkleBackground = memo(function SparkleBackground({
           return `${c} ${percent}%`;
         })
         .join(', ')
-      return `radial-gradient(ellipse 100% 60% at 50% 100%, ${glowGradient[0]}, transparent 70%), conic-gradient(from 180deg at 50% 100%, ${colorStops})`
+      return `radial-gradient(ellipse ${gradientSpreadX}% ${gradientSpreadY}% at 50% 100%, ${glowGradient[0]}, transparent 70%), conic-gradient(from 180deg at 50% 100%, ${colorStops})`
     }
     return `radial-gradient(circle at bottom center, ${glowColor}, transparent 70%)`
   }
@@ -132,8 +150,8 @@ export const SparkleBackground = memo(function SparkleBackground({
         className="absolute left-0 right-0 bottom-0"
         style={{
           height: `${height}%`,
-          maskImage: 'radial-gradient(50% 50%, white, transparent)',
-          WebkitMaskImage: 'radial-gradient(50% 50%, white, transparent)',
+          maskImage: `radial-gradient(${vignetteWidth}% ${vignetteHeight}%, white, transparent)`,
+          WebkitMaskImage: `radial-gradient(${vignetteWidth}% ${vignetteHeight}%, white, transparent)`,
         }}
       >
         {/* Layer 1: Glow (behind everything) - supports solid or gradient */}
@@ -149,8 +167,8 @@ export const SparkleBackground = memo(function SparkleBackground({
         <div
           className="absolute inset-0"
           style={{
-            maskImage: 'radial-gradient(50% 50%, white, transparent 85%)',
-            WebkitMaskImage: 'radial-gradient(50% 50%, white, transparent 85%)',
+            maskImage: `radial-gradient(${vignetteWidth}% ${vignetteHeight}%, white, transparent 85%)`,
+            WebkitMaskImage: `radial-gradient(${vignetteWidth}% ${vignetteHeight}%, white, transparent 85%)`,
           }}
         >
           <Sparkles
