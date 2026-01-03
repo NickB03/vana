@@ -1,51 +1,34 @@
-import { useState, useRef, useEffect, useCallback, MutableRefObject } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Copy, Pencil, RotateCw, Maximize2, Sparkles } from "lucide-react";
+import { Maximize2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { validateFile, sanitizeFilename } from "@/utils/fileValidation";
 import { ensureValidSession } from "@/utils/authHelpers";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CHAT_SPACING, SAFE_AREA_SPACING, combineSpacing } from "@/utils/spacingConstants";
-import { MessageSkeleton } from "@/components/ui/message-skeleton";
-import { ArtifactCardSkeleton } from "@/components/ArtifactCardSkeleton";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ChatContainerContent,
-  ChatContainerRoot,
-} from "@/components/ui/chat-container";
-import {
-  Message as MessageComponent,
-  MessageContent,
-  MessageActions,
-  MessageAction,
-} from "@/components/prompt-kit/message";
 import {
   PromptInput,
   PromptInputTextarea,
 } from "@/components/prompt-kit/prompt-input";
 import { PromptInputControls } from "@/components/prompt-kit/prompt-input-controls";
 import { ScrollButton } from "@/components/ui/scroll-button";
-import { Markdown } from "@/components/ui/markdown";
 import { useChatMessages, ChatMessage, type StreamProgress } from "@/hooks/useChatMessages";
 import { useStreamCancellation } from "@/hooks/useStreamCancellation";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ArtifactContainer as Artifact, ArtifactData } from "@/components/ArtifactContainer";
-import { MessageWithArtifacts } from "@/components/MessageWithArtifacts";
 import { parseArtifacts } from "@/utils/artifactParser";
 import { bundleArtifact } from "@/utils/artifactBundler";
-import { ThinkingIndicator } from "@/components/ThinkingIndicator";
-import { ReasoningDisplay } from "@/components/ReasoningDisplay";
-import { ReasoningErrorBoundary } from "@/components/ReasoningErrorBoundary";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SystemMessage } from "@/components/ui/system-message";
 import { RateLimitPopup } from "@/components/RateLimitPopup";
 import { useNavigate } from "react-router-dom";
 import { TOUR_STEP_IDS } from "@/components/tour";
-import { ChatMessage as ChatMessageComponent } from "@/components/chat/ChatMessage";
+import { VirtualizedMessageList } from "@/components/chat/VirtualizedMessageList";
+import { ERROR_IDS } from "@/constants/errorIds";
+import { logError } from "@/utils/errorLogging";
 
 interface ChatInterfaceProps {
   sessionId?: string;
@@ -118,8 +101,39 @@ export function ChatInterface({
   const handleSendRef = useRef<((message?: string) => Promise<void>) | null>(null);
   // Track which session+prompt combination has been initialized (using ref to avoid stale closure issues)
   const initializedSessionRef = useRef<string | null>(null);
+  // Use stable timestamp that doesn't change on every render (prevents VirtualizedMessageList re-measurement loops)
+  const streamingTimestampRef = useRef<string | null>(null);
 
-  // Memoized artifact open handler to prevent breaking MessageWithArtifacts memo
+  // Create displayMessages array that includes streaming message for virtualized rendering
+  // This combines completed messages with the current streaming message (if any)
+  // ENHANCED: Include streaming data (reasoning, reasoning_steps, search_results) in the streaming message
+  const displayMessages = useMemo(() => {
+    const allMessages = [...messages];
+    if (streamingMessage) {
+      // Use stable timestamp that doesn't change on every render
+      if (!streamingTimestampRef.current) {
+        streamingTimestampRef.current = new Date().toISOString();
+      }
+
+      allMessages.push({
+        id: 'streaming-temp',
+        session_id: sessionId || '',
+        role: "assistant" as const,
+        content: streamingMessage,
+        created_at: streamingTimestampRef.current,
+        // Include streaming data for ReasoningDisplay
+        reasoning: streamProgress.streamingReasoningText,
+        reasoning_steps: streamProgress.reasoningSteps,
+        search_results: streamProgress.searchResults,
+      });
+    } else {
+      // Clear timestamp when streaming ends
+      streamingTimestampRef.current = null;
+    }
+    return allMessages;
+  }, [messages, streamingMessage, sessionId, streamProgress]);
+
+  // Memoized artifact open handler to prevent breaking memoization
   const handleArtifactOpen = useCallback((artifact: ArtifactData) => {
     setCurrentArtifact(artifact);
     if (onCanvasToggle) {
@@ -223,38 +237,65 @@ export function ChatInterface({
     // Increment tracker to trigger mode reset
     setMessageSentTracker(prev => prev + 1);
 
-    await streamChat(
-      messageToSend,
-      (chunk, progress) => {
-        // Only append text chunks (ignore empty chunks from reasoning updates)
-        if (chunk) {
-          setStreamingMessage((prev) => prev + chunk);
-        }
-        // Always update progress (includes reasoning steps)
-        setStreamProgress(progress);
-      },
-      () => {
-        setStreamingMessage("");
-        setIsStreaming(false);
-        setIsEditingArtifact(false);
-        // CRITICAL FIX: Preserve reasoning data when streaming completes!
-        // Only update stage/message, keep reasoningSteps/streamingReasoningText/reasoningStatus
-        // This prevents the "No reasoning data available" bug where reasoning is lost after generation
-        setStreamProgress((prevProgress) => ({
-          ...prevProgress,
-          stage: "complete",
-          message: "",
-          percentage: 100,
-          // Preserved automatically: reasoningSteps, streamingReasoningText, reasoningStatus, toolExecution
-        }));
-        completeStream();
-      },
-      currentArtifact && isEditingArtifact ? currentArtifact : undefined,
-      toolChoice,
-      0, // retryCount
-      abortController.signal
-    );
-  }, [input, isLoading, isStreaming, setInput, streamChat, currentArtifact, isEditingArtifact, imageMode, artifactMode, startStream, completeStream]);
+    try {
+      await streamChat(
+        messageToSend,
+        (chunk, progress) => {
+          // Only append text chunks (ignore empty chunks from reasoning updates)
+          if (chunk) {
+            setStreamingMessage((prev) => prev + chunk);
+          }
+          // Always update progress (includes reasoning steps)
+          setStreamProgress(progress);
+        },
+        () => {
+          setStreamingMessage("");
+          setIsStreaming(false);
+          setIsEditingArtifact(false);
+          // CRITICAL FIX: Preserve reasoning data when streaming completes!
+          // Only update stage/message, keep reasoningSteps/streamingReasoningText/reasoningStatus
+          // This prevents the "No reasoning data available" bug where reasoning is lost after generation
+          setStreamProgress((prevProgress) => ({
+            ...prevProgress,
+            stage: "complete",
+            message: "",
+            percentage: 100,
+            // Preserved automatically: reasoningSteps, streamingReasoningText, reasoningStatus, toolExecution
+          }));
+          completeStream();
+        },
+        currentArtifact && isEditingArtifact ? currentArtifact : undefined,
+        toolChoice,
+        0, // retryCount
+        abortController.signal
+      );
+    } catch (streamError) {
+      logError(streamError instanceof Error ? streamError : new Error(String(streamError)), {
+        errorId: ERROR_IDS.STREAM_FAILED,
+        sessionId,
+        metadata: {
+          toolChoice,
+          messageLength: messageToSend.length,
+          hasArtifact: !!(currentArtifact && isEditingArtifact),
+        },
+      });
+
+      // Clean up streaming state
+      setStreamingMessage("");
+      setIsStreaming(false);
+      setIsEditingArtifact(false);
+      completeStream();
+
+      // Inform user
+      toast({
+        title: "Message failed to send",
+        description: streamError instanceof Error
+          ? streamError.message
+          : "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [input, isLoading, isStreaming, setInput, streamChat, currentArtifact, isEditingArtifact, imageMode, artifactMode, startStream, completeStream, sessionId]);
 
   // Keep ref updated with latest handleSend (for stable access in effects)
   handleSendRef.current = handleSend;
@@ -493,10 +534,34 @@ export function ChatInterface({
       await navigator.clipboard.writeText(content);
       toast({ title: "Copied to clipboard" });
     } catch (error) {
-      console.error("Failed to copy:", error);
-      toast({ title: "Failed to copy", variant: "destructive" });
+      logError(error instanceof Error ? error : new Error(String(error)), {
+        errorId: ERROR_IDS.CLIPBOARD_COPY_FAILED,
+        sessionId,
+        metadata: {
+          contentLength: content.length,
+          isSecureContext: window.isSecureContext,
+          hasClipboardAPI: !!navigator.clipboard,
+        },
+      });
+
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      let userMessage = "Failed to copy to clipboard";
+
+      if (errorMessage.includes("permission")) {
+        userMessage = "Clipboard access denied. Please allow clipboard permissions or select text manually.";
+      } else if (!navigator.clipboard) {
+        userMessage = "Clipboard not supported. Please select and copy text manually.";
+      } else if (!window.isSecureContext) {
+        userMessage = "Clipboard requires HTTPS. Please select and copy text manually.";
+      }
+
+      toast({
+        title: "Copy failed",
+        description: userMessage,
+        variant: "destructive"
+      });
     }
-  }, []);
+  }, [sessionId]);
 
   const handleRetry = useCallback(async (messageId: string) => {
     if (isLoading || isStreaming) {
@@ -567,14 +632,24 @@ export function ChatInterface({
         description: "Creating a new response to your message"
       });
     } catch (error) {
-      console.error("Failed to retry:", error);
+      logError(error instanceof Error ? error : new Error(String(error)), {
+        errorId: ERROR_IDS.MESSAGE_RETRY_FAILED,
+        sessionId,
+        metadata: {
+          messageId,
+          userMessageContent: userMessage.content,
+          failedMessageContent: failedMessage.content,
+        },
+      });
+
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
       toast({
         title: "Failed to retry",
-        description: "Could not regenerate the response",
+        description: `Could not regenerate response: ${errorMessage}`,
         variant: "destructive"
       });
     }
-  }, [messages, isLoading, isStreaming, deleteMessage, streamChat, currentArtifact, isEditingArtifact, startStream, completeStream]);
+  }, [messages, isLoading, isStreaming, deleteMessage, streamChat, currentArtifact, isEditingArtifact, startStream, completeStream, sessionId]);
 
   const handleEditMessage = useCallback((messageId: string, content: string) => {
     setEditingMessageId(messageId);
@@ -613,138 +688,26 @@ export function ChatInterface({
 
       {/* Chat content - transparent to show unified parent container */}
       <div className="relative flex flex-1 min-h-0 w-full">
-        {/* Remove overflow-hidden to prevent conflict with StickToBottom's overflow-y-auto */}
-        <ChatContainerRoot className="flex flex-1 flex-col min-h-0">
-          <ChatContainerContent
-            className={combineSpacing(
-              "w-full",
-              CHAT_SPACING.messageList,
-              CHAT_SPACING.message.gap,
-              // Extra bottom padding on mobile to ensure artifact cards are fully visible above prompt input
-              // Optimized to minimal padding to maximize usable space
-              "pb-16 md:pb-6"
-            )}
-            aria-label="Chat conversation"
-            data-testid="message-list"
-          >
+        {/* Virtualized message list with built-in scroll container */}
+        {/* Replaces ChatContainerRoot/ChatContainerContent for 90%+ DOM node reduction */}
+        <div className="flex flex-1 flex-col min-h-0 relative">
+          <VirtualizedMessageList
+            messages={displayMessages}
+            isStreaming={isStreaming}
+            isLoading={isLoading}
+            lastMessageElapsedTime={lastMessageElapsedTime}
+            onRetry={handleRetry}
+            onCopy={handleCopyMessage}
+            onEdit={handleEditMessage}
+            onArtifactOpen={handleArtifactOpen}
+            artifactOverrides={artifactOverrides}
+            streamProgress={streamProgress}
+            onCancelStream={cancelStream}
+            artifactRenderStatus={artifactRenderStatus}
+            className="flex-1 min-h-0"
+          />
 
-            {messages.map((message, index) => {
-              const isLastMessage = index === messages.length - 1;
-
-              // Only animate new messages (last message when not streaming)
-              // This prevents performance issues with long chat histories
-              const shouldAnimate = isLastMessage && !isStreaming;
-
-              const messageContent = (
-                <ChatMessageComponent
-                  message={message}
-                  isLastMessage={isLastMessage}
-                  isStreaming={isStreaming}
-                  isLoading={isLoading}
-                  lastMessageElapsedTime={isLastMessage ? lastMessageElapsedTime : undefined}
-                  onRetry={handleRetry}
-                  onCopy={handleCopyMessage}
-                  onEdit={handleEditMessage}
-                  onArtifactOpen={handleArtifactOpen}
-                  artifactOverrides={artifactOverrides}
-                />
-              );
-
-              // For now, keep regular rendering - virtualization can be added later
-              // when we refactor the scroll container architecture
-              return <div key={message.id}>{messageContent}</div>;
-            })}
-
-            {isStreaming && (
-              <MessageComponent
-                className={cn(
-                  "mx-auto flex w-full max-w-3xl flex-col items-start",
-                  CHAT_SPACING.message.container
-                )}
-              >
-                <div className="flex w-full flex-col gap-2">
-                  {/* Assistant header with icon and name */}
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                      <Sparkles className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <span className="chat-assistant-name text-foreground">Vana</span>
-                  </div>
-
-                  {/* Always show reasoning during streaming, even if no data yet */}
-                  <ReasoningErrorBoundary fallback={<ThinkingIndicator status="Loading reasoning..." />}>
-                    <ReasoningDisplay
-                      streamingReasoningText={streamProgress.streamingReasoningText}
-                      reasoningStatus={streamProgress.reasoningStatus}
-                      isStreaming={true}
-                      artifactRendered={artifactRenderStatus === 'rendered' || artifactRenderStatus === 'error'}
-                      onStop={cancelStream}
-                      parentElapsedTime={lastMessageElapsedTime}
-                      toolExecution={streamProgress.toolExecution}
-                    />
-                  </ReasoningErrorBoundary>
-                  {/* Show content immediately - reasoning is supplementary context, not blocking */}
-                  {streamingMessage ? (
-                    <div className="chat-markdown">
-                      <MessageWithArtifacts
-                        content={streamingMessage}
-                        sessionId={sessionId || ''}
-                        onArtifactOpen={handleArtifactOpen}
-                        artifactOverrides={artifactOverrides}
-                        searchResults={streamProgress.searchResults}
-                      />
-                    </div>
-                  ) : (
-                    /* Text skeleton while waiting for content to arrive */
-                    <div
-                      role="status"
-                      aria-label="Preparing response"
-                      className="space-y-2 mt-2"
-                    >
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-5/6" />
-                      <Skeleton className="h-4 w-4/5" />
-                      <span className="sr-only">Preparing response</span>
-                    </div>
-                  )}
-
-                  {/* Show artifact skeleton during generate_artifact tool execution */}
-                  {/* Keep skeleton visible until the artifact tag is fully closed in streaming content */}
-                  {streamProgress.toolExecution?.toolName === 'generate_artifact' &&
-                    !streamingMessage.includes('</artifact>') && (
-                      <ArtifactCardSkeleton className="mt-3 mx-6" />
-                    )}
-
-                  {/* Show image skeleton during generate_image tool execution */}
-                  {streamProgress.toolExecution?.toolName === 'generate_image' &&
-                    streamProgress.toolExecution?.success === undefined && (
-                      <div className="my-4 mx-6 max-w-md">
-                        <div
-                          className="relative rounded-xl overflow-hidden border-2 border-border"
-                          role="status"
-                          aria-label="Generating image"
-                        >
-                          <Skeleton className="h-96 w-full" />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="text-sm text-muted-foreground bg-background/80 backdrop-blur-sm px-4 py-2 rounded-lg">
-                              Generating image...
-                            </div>
-                          </div>
-                          <span className="sr-only">Generating image</span>
-                        </div>
-                      </div>
-                    )}
-                </div>
-              </MessageComponent>
-            )}
-
-            {/* Show skeleton only when loading but not yet streaming */}
-            {isLoading && !isStreaming && (
-              <MessageSkeleton variant="assistant" />
-            )}
-          </ChatContainerContent>
-
-          <div className="absolute bottom-4 right-4">
+          <div className="absolute bottom-4 right-4 z-10">
             <ScrollButton className="shadow-sm" />
           </div>
 
@@ -790,7 +753,7 @@ export function ChatInterface({
             </PromptInput>
             </div>
           </div>
-        </ChatContainerRoot>
+        </div>
       </div>
     </div>
   );

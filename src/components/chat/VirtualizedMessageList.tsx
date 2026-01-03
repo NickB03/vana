@@ -1,9 +1,10 @@
 import React, { useRef, useCallback, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ChatMessage } from './ChatMessage';
-import { motion } from 'motion/react';
-import { scaleIn, ANIMATION_DURATIONS, ANIMATION_EASINGS } from '@/utils/animationConstants';
 import { ArtifactData } from '@/components/ArtifactContainer';
+import { StreamProgress } from '@/hooks/useChatMessages';
+import { ERROR_IDS } from '@/constants/errorIds';
+import { logError, logForDebugging } from '@/utils/errorLogging';
 
 interface Message {
   id: string;
@@ -26,6 +27,10 @@ interface VirtualizedMessageListProps {
   onArtifactOpen: (artifact: ArtifactData) => void;
   artifactOverrides?: Record<string, Partial<ArtifactData>>;
   className?: string;
+  // Streaming-specific props
+  streamProgress?: StreamProgress;
+  onCancelStream?: () => void;
+  artifactRenderStatus?: 'pending' | 'rendered' | 'error';
 }
 
 /**
@@ -77,13 +82,27 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
   onArtifactOpen,
   artifactOverrides,
   className,
+  streamProgress,
+  onCancelStream,
+  artifactRenderStatus,
 }: VirtualizedMessageListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
   // Estimate size based on message content
   const estimateSize = useCallback((index: number) => {
     const message = messages[index];
-    if (!message) return 200; // fallback default
+    if (!message) {
+      logForDebugging('VirtualizedMessageList: missing message at index', {
+        index,
+        messagesLength: messages.length,
+      });
+      return 200;
+    }
+
+    // Use larger fixed height for streaming message to avoid constant re-measurement
+    if (message.id === 'streaming-temp') {
+      return 400; // Generous estimate for streaming content with reasoning
+    }
 
     // Base heights differ by role
     const baseHeight = message.role === 'assistant' ? 150 : 80;
@@ -115,11 +134,27 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (messages.length > 0 && parentRef.current) {
-      // Scroll to bottom smoothly
-      parentRef.current.scrollTo({
-        top: parentRef.current.scrollHeight,
-        behavior: 'smooth',
-      });
+      try {
+        parentRef.current.scrollTo({
+          top: parentRef.current.scrollHeight,
+          behavior: 'smooth',
+        });
+      } catch (scrollError) {
+        // Fallback to instant scroll
+        try {
+          parentRef.current.scrollTop = parentRef.current.scrollHeight;
+        } catch (fallbackError) {
+          logError(fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError)), {
+            errorId: ERROR_IDS.MESSAGE_LIST_SCROLL_FAILED,
+            sessionId: '', // TODO: Get sessionId from props if needed
+            metadata: {
+              messagesLength: messages.length,
+              scrollHeight: parentRef.current?.scrollHeight,
+              clientHeight: parentRef.current?.clientHeight,
+            },
+          });
+        }
+      }
     }
   }, [messages.length]);
 
@@ -145,24 +180,8 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
           if (!message) return null;
 
           const isLastMessage = virtualRow.index === messages.length - 1;
-
-          // Only animate new messages (last message when not streaming)
-          const shouldAnimate = isLastMessage && !isStreaming;
-
-          const messageContent = (
-            <ChatMessage
-              message={message}
-              isLastMessage={isLastMessage}
-              isStreaming={isStreaming && isLastMessage}
-              isLoading={isLoading}
-              lastMessageElapsedTime={isLastMessage ? lastMessageElapsedTime : undefined}
-              onRetry={onRetry}
-              onCopy={onCopy}
-              onEdit={onEdit}
-              onArtifactOpen={onArtifactOpen}
-              artifactOverrides={artifactOverrides}
-            />
-          );
+          // Only pass streaming props to the streaming message
+          const isStreamingThisMessage = message.id === 'streaming-temp' && streamProgress;
 
           return (
             <div
@@ -177,20 +196,22 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
                 transform: `translateY(${virtualRow.start}px)`,
               }}
             >
-              {shouldAnimate ? (
-                <motion.div
-                  className="will-change-transform transform-gpu"
-                  {...scaleIn}
-                  transition={{
-                    duration: ANIMATION_DURATIONS.moderate,
-                    ease: ANIMATION_EASINGS.easeOut,
-                  }}
-                >
-                  {messageContent}
-                </motion.div>
-              ) : (
-                messageContent
-              )}
+              {/* Animation is handled internally by ChatMessage via MESSAGE_ANIMATION */}
+              <ChatMessage
+                message={message}
+                isLastMessage={isLastMessage}
+                isStreaming={isStreaming && isLastMessage}
+                isLoading={isLoading}
+                lastMessageElapsedTime={isLastMessage ? lastMessageElapsedTime : undefined}
+                onRetry={onRetry}
+                onCopy={onCopy}
+                onEdit={onEdit}
+                onArtifactOpen={onArtifactOpen}
+                artifactOverrides={artifactOverrides}
+                streamProgress={isStreamingThisMessage ? streamProgress : undefined}
+                onCancel={isStreamingThisMessage ? onCancelStream : undefined}
+                artifactRenderStatus={isStreamingThisMessage ? artifactRenderStatus : undefined}
+              />
             </div>
           );
         })}
@@ -199,6 +220,7 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
   );
 }, (prevProps, nextProps) => {
   // Custom comparison to prevent unnecessary re-renders
+  // IMPORTANT: Include streamProgress comparison for streaming updates
   return (
     prevProps.messages.length === nextProps.messages.length &&
     prevProps.messages[prevProps.messages.length - 1]?.id === nextProps.messages[nextProps.messages.length - 1]?.id &&
@@ -206,7 +228,9 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
     prevProps.isStreaming === nextProps.isStreaming &&
     prevProps.isLoading === nextProps.isLoading &&
     prevProps.lastMessageElapsedTime === nextProps.lastMessageElapsedTime &&
-    prevProps.artifactOverrides === nextProps.artifactOverrides
+    prevProps.artifactOverrides === nextProps.artifactOverrides &&
+    prevProps.streamProgress === nextProps.streamProgress &&
+    prevProps.artifactRenderStatus === nextProps.artifactRenderStatus
   );
 });
 
