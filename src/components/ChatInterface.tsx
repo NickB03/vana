@@ -586,8 +586,9 @@ export function ChatInterface({
 
 
   // Render chat content (messages + input) - reusable for both mobile and desktop
+  // Mobile-first padding: px-3 pt-2 pb-2 on mobile, px-4 pt-4 pb-4 on desktop
   const renderChatContent = () => (
-    <div className="flex flex-1 flex-col min-h-0 px-4 pt-4 pb-4">
+    <div className="flex flex-1 flex-col min-h-0 px-3 pt-2 pb-2 md:px-4 md:pt-4 md:pb-4">
       {/* Guest mode banner - only show when 3 or fewer messages remaining */}
       {isGuest && messages.length > 0 && (guestMaxMessages - guestMessageCount) <= 3 && (
         <div className="mx-auto w-full max-w-5xl mb-3">
@@ -619,7 +620,8 @@ export function ChatInterface({
               CHAT_SPACING.messageList,
               CHAT_SPACING.message.gap,
               // Extra bottom padding on mobile to ensure artifact cards are fully visible above prompt input
-              "pb-24 md:pb-6"
+              // Reduced from pb-24 to pb-20 to reclaim 16px vertical space
+              "pb-20 md:pb-6"
             )}
             aria-label="Chat conversation"
             data-testid="message-list"
@@ -744,7 +746,9 @@ export function ChatInterface({
           </div>
 
           {/* Prompt Input - embedded within chat card */}
-          <div className={combineSpacing("shrink-0 bg-transparent safe-mobile-input px-4 pb-4", SAFE_AREA_SPACING.bottom)}>
+          {/* Mobile-first padding: px-3 pb-3 on mobile, px-4 pb-4 on desktop */}
+          {/* SAFE_AREA_SPACING.bottom provides the safe-area padding, cn() resolves conflicts */}
+          <div className={combineSpacing("shrink-0 bg-transparent safe-mobile-input", CHAT_SPACING.input.container, SAFE_AREA_SPACING.bottom)}>
             <PromptInput
               id={TOUR_STEP_IDS.CHAT_INPUT}
               value={input}
@@ -800,7 +804,7 @@ export function ChatInterface({
           // Glass card container matches desktop styling for visual consistency
           // Bottom margin accounts for Safari toolbar + safe area to prevent keyboard blank space
           <div className={cn(
-            "flex flex-col flex-1 min-h-0 mx-3 mt-3 mb-[calc(0.75rem+env(safe-area-inset-bottom))] overflow-hidden rounded-2xl",
+            "flex flex-col flex-1 min-h-0 mx-2 mt-2 mb-[max(0.5rem,env(safe-area-inset-bottom))] overflow-hidden rounded-2xl",
             "bg-black/60 backdrop-blur-md border border-white/10 shadow-xl",
             "ring-1 ring-white/5"
           )}>

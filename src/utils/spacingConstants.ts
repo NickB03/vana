@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 /**
  * Spacing Constants
  *
@@ -43,18 +45,18 @@ export const COMPONENT_SPACING = {
 /**
  * Chat-specific spacing (message bubbles, chat containers)
  * Optimized for conversation flow - matches Claude's design
+ * Mobile-first with larger desktop padding
  */
 export const CHAT_SPACING = {
   message: {
-    container: 'px-4 py-2', // Reduced vertical padding for tighter message spacing
-    bubble: 'px-4 py-2.5',  // Consistent with container padding
-    gap: 'gap-4',           // Tight gap between messages (Claude-style)
+    container: 'px-3 py-2 md:px-4', // Tighter horizontal on mobile
+    gap: 'gap-3 md:gap-4',           // Tighter gap on mobile
   },
   input: {
-    container: 'px-3 pb-3 md:px-5 md:pb-5',
-    textarea: 'pl-4 pt-3',
+    container: 'px-3 pb-3 md:px-4 md:pb-4', // Mobile-first input padding
+    textarea: 'pl-3 pt-2.5 md:pl-4 md:pt-3',
   },
-  messageList: 'px-4 py-6', // Reduced padding for tighter layout
+  messageList: 'px-3 py-4 md:px-4 md:py-6', // Reduced padding on mobile
 } as const;
 
 /**
@@ -81,8 +83,10 @@ export const GAP_SPACING = {
 } as const;
 
 /**
- * Helper function to combine multiple spacing values
+ * Helper function to combine multiple spacing values with intelligent conflict resolution.
+ * Uses tailwind-merge via cn() to handle conflicting classes (e.g., pb-4 + pb-[max(...)]).
+ * This prevents unpredictable CSS specificity issues where both classes would apply.
  */
 export const combineSpacing = (...spacings: string[]): string => {
-  return spacings.join(' ');
+  return cn(...spacings);
 };

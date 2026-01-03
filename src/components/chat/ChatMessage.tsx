@@ -126,23 +126,23 @@ export const ChatMessage = React.memo(function ChatMessage({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 md:h-6 md:w-6 rounded-sm hover:bg-muted/50"
+                  className="h-11 w-11 md:h-6 md:w-6 rounded-sm hover:bg-muted/50"
                   onClick={() => onRetry(message.id)}
                   disabled={isLoading || isStreaming}
                   aria-label="Regenerate response"
                 >
-                  <RotateCw className="h-4 w-4 md:h-3 md:w-3 text-muted-foreground/60" />
+                  <RotateCw className="h-5 w-5 md:h-3 md:w-3 text-muted-foreground/60" />
                 </Button>
               </MessageAction>
               <MessageAction tooltip="Copy" delayDuration={100}>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 md:h-6 md:w-6 rounded-sm hover:bg-muted/50"
+                  className="h-11 w-11 md:h-6 md:w-6 rounded-sm hover:bg-muted/50"
                   onClick={() => onCopy(message.content)}
                   aria-label="Copy message content"
                 >
-                  <Copy className="h-4 w-4 md:h-3 md:w-3 text-muted-foreground/60" />
+                  <Copy className="h-5 w-5 md:h-3 md:w-3 text-muted-foreground/60" />
                 </Button>
               </MessageAction>
             </MessageActions>
@@ -175,22 +175,22 @@ export const ChatMessage = React.memo(function ChatMessage({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 md:h-6 md:w-6 rounded-sm hover:bg-muted/50"
+                  className="h-11 w-11 md:h-6 md:w-6 rounded-sm hover:bg-muted/50"
                   onClick={() => onEdit(message.id, message.content)}
                   aria-label="Edit message"
                 >
-                  <Pencil className="h-4 w-4 md:h-3 md:w-3 text-muted-foreground/60" />
+                  <Pencil className="h-5 w-5 md:h-3 md:w-3 text-muted-foreground/60" />
                 </Button>
               </MessageAction>
               <MessageAction tooltip="Copy" delayDuration={100}>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 md:h-6 md:w-6 rounded-sm hover:bg-muted/50"
+                  className="h-11 w-11 md:h-6 md:w-6 rounded-sm hover:bg-muted/50"
                   onClick={() => onCopy(message.content)}
                   aria-label="Copy message content"
                 >
-                  <Copy className="h-4 w-4 md:h-3 md:w-3 text-muted-foreground/60" />
+                  <Copy className="h-5 w-5 md:h-3 md:w-3 text-muted-foreground/60" />
                 </Button>
               </MessageAction>
             </MessageActions>
