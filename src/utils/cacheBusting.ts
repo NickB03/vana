@@ -1,4 +1,5 @@
 import { APP_VERSION } from '@/version';
+import { logError } from '@/utils/errorLogging';
 
 /**
  * Cache Busting Utilities
@@ -155,7 +156,7 @@ export async function refreshResource(url: string): Promise<Response | null> {
 export async function verifyDeployment(): Promise<boolean> {
   try {
     // Fetch index.html with no-cache to get latest version
-    const response = await fetch('/index.html', {
+    const response = await fetch(`/index.html?build_bust=${Date.now()}`, {
       cache: 'no-store',
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -185,6 +186,43 @@ export async function verifyDeployment(): Promise<boolean> {
     console.error('Deployment verification error:', error);
     return false;
   }
+}
+
+/**
+ * Reload the page with a cache-busting query param to force a fresh fetch
+ * from the network (helps stubborn iOS caches).
+ *
+ * Falls back to a standard reload if URL manipulation fails.
+ */
+export function reloadWithCacheBuster(): void {
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set('cb', Date.now().toString());
+    window.location.replace(url.toString());
+  } catch (error) {
+    logError(error instanceof Error ? error : new Error(String(error)), {
+      errorId: 'CACHE_BUST_RELOAD_FAILED',
+      metadata: { href: window.location.href }
+    });
+    window.location.reload();
+  }
+}
+
+/**
+ * Clear all caches and reload with a cache-busting URL to guarantee the newest build.
+ */
+export async function clearCachesAndReload(reason?: string): Promise<void> {
+  console.log('♻️ Forcing cache-busting reload', reason ? `(${reason})` : '');
+  try {
+    await clearAllCaches();
+  } catch (error) {
+    logError(error instanceof Error ? error : new Error(String(error)), {
+      errorId: 'CACHE_CLEAR_FAILED',
+      metadata: { reason }
+    });
+    // Continue with reload anyway - user should still get fresh content
+  }
+  reloadWithCacheBuster();
 }
 
 /**
@@ -241,4 +279,3 @@ export async function logCacheBustingInfo(): Promise<void> {
   console.log('Cache Stats:', stats);
   console.groupEnd();
 }
-

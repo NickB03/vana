@@ -12,13 +12,29 @@ interface ErrorContext {
   metadata?: Record<string, unknown>;
 }
 
+// Backwards-compatible interface for simpler usage
+export interface LogErrorOptions {
+  /** Unique identifier for the error type */
+  errorId: string;
+  /** Additional context about the error */
+  metadata?: Record<string, unknown>;
+}
+
 /**
  * Log an error to Sentry and console
  * Use this for unexpected errors that should be tracked in production
+ *
+ * @example
+ * ```typescript
+ * logError(new Error('Failed to reload'), {
+ *   errorId: 'CACHE_BUST_RELOAD_FAILED',
+ *   metadata: { href: window.location.href }
+ * });
+ * ```
  */
 export function logError(
   error: Error | string,
-  context: ErrorContext
+  context: ErrorContext | LogErrorOptions
 ): void {
   const errorMessage = error instanceof Error ? error.message : error;
   const errorStack = error instanceof Error ? error.stack : undefined;
@@ -34,10 +50,11 @@ export function logError(
   // });
 
   // Console logging for development and as fallback
+  const fullContext = context as ErrorContext;
   console.error(`[${context.errorId}]`, errorMessage, {
     stack: errorStack,
-    sessionId: context.sessionId,
-    userId: context.userId,
+    sessionId: fullContext.sessionId,
+    userId: fullContext.userId,
     ...context.metadata,
   });
 }
