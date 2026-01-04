@@ -7,32 +7,39 @@
  * Run with: npm run test:integration
  */
 
-import { describe, it, expect, beforeAll, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useMessageFeedback } from '../useMessageFeedback';
 import {
   testSupabase,
   createTestSession,
   createTestMessage,
+  getTestUserId,
 } from '@/test/integration-setup';
 
 describe('useMessageFeedback (Integration)', () => {
   let testSession: { id: string };
   let testMessage: { id: string };
+  let testUserId: string;
 
-  // Create test data before tests
-  beforeAll(async () => {
-    testSession = await createTestSession();
+  // Create FRESH test data before EACH test to avoid cleanup conflicts
+  // The integration-setup's afterEach cleans up tracked sessions/messages,
+  // so we need to recreate them for each test.
+  beforeEach(async () => {
+    testUserId = await getTestUserId();
+    testSession = await createTestSession(testUserId);
     testMessage = await createTestMessage(testSession.id, 'assistant', 'Test response');
   });
 
-  // Clean up feedback after each test
+  // Clean up feedback after each test (sessions/messages cleaned by integration-setup)
   afterEach(async () => {
     // Delete any feedback created during tests
-    await testSupabase
-      .from('message_feedback')
-      .delete()
-      .eq('message_id', testMessage.id);
+    if (testMessage?.id) {
+      await testSupabase
+        .from('message_feedback')
+        .delete()
+        .eq('message_id', testMessage.id);
+    }
   });
 
   describe('submitFeedback - REAL database operations', () => {

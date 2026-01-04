@@ -120,12 +120,20 @@ export function useMessageFeedback() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
-      const { data, error } = await supabase
+      // Build query - use .is() for NULL comparison (SQL: IS NULL vs = NULL)
+      let query = supabase
         .from('message_feedback')
         .select('*')
-        .eq('message_id', messageId)
-        .eq('user_id', user?.id || null)
-        .maybeSingle();
+        .eq('message_id', messageId);
+
+      // SQL requires IS NULL, not = NULL for null comparisons
+      if (user?.id) {
+        query = query.eq('user_id', user.id);
+      } else {
+        query = query.is('user_id', null);
+      }
+
+      const { data, error } = await query.maybeSingle();
 
       if (error) throw error;
 

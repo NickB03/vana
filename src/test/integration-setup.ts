@@ -11,20 +11,70 @@ import '@testing-library/jest-dom';
 import { vi, beforeAll, afterAll, afterEach } from 'vitest';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
+// ============================================================================
+// localStorage Mock for Supabase Auth
+// ============================================================================
+// The @supabase/auth-js client requires a proper Storage interface.
+// jsdom's localStorage doesn't fully implement the Storage interface that
+// Supabase expects, causing "storage.getItem is not a function" errors.
+// This provides a complete in-memory implementation.
+
+const localStorageData: Record<string, string> = {};
+
+const localStorageMock: Storage = {
+  getItem: (key: string): string | null => {
+    return localStorageData[key] ?? null;
+  },
+  setItem: (key: string, value: string): void => {
+    localStorageData[key] = value;
+  },
+  removeItem: (key: string): void => {
+    delete localStorageData[key];
+  },
+  clear: (): void => {
+    Object.keys(localStorageData).forEach(key => delete localStorageData[key]);
+  },
+  key: (index: number): string | null => {
+    const keys = Object.keys(localStorageData);
+    return keys[index] ?? null;
+  },
+  get length(): number {
+    return Object.keys(localStorageData).length;
+  },
+};
+
+// Install the mock before any Supabase clients are created
+Object.defineProperty(global, 'localStorage', {
+  value: localStorageMock,
+  writable: true,
+});
+
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock,
+  writable: true,
+});
+
 // Real Supabase client for integration tests
 // These are the default local Supabase credentials from `supabase start`
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'http://127.0.0.1:54321';
-const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+
+// Use service_role key for integration tests to bypass RLS
+// This is safe because we're testing against LOCAL Supabase only
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
 
 // Export real client for tests to use
-export const testSupabase: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Using service_role to bypass RLS for test data creation
+export const testSupabase: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-// Test user credentials (create via Supabase dashboard or seed script)
+// Test user credentials
 export const TEST_USER = {
   email: 'test@example.com',
   password: 'test-password-123',
 };
+
+// Store test user ID once created
+let testUserId: string | null = null;
 
 // Track created test data for cleanup
 const createdSessionIds: string[] = [];
@@ -46,14 +96,14 @@ export function trackMessage(messageId: string) {
 
 /**
  * Create a test chat session
+ * @param userId - Required user ID (use generateTestUserId() if you don't have one)
  */
-export async function createTestSession(userId?: string) {
+export async function createTestSession(userId: string) {
   const { data, error } = await testSupabase
     .from('chat_sessions')
     .insert({
-      user_id: userId || null,
+      user_id: userId,
       title: `Test Session ${Date.now()}`,
-      guest_session_id: userId ? null : `guest-${Date.now()}`,
     })
     .select()
     .single();
@@ -62,6 +112,39 @@ export async function createTestSession(userId?: string) {
 
   trackSession(data.id);
   return data;
+}
+
+/**
+ * Get or create a test user ID
+ * Creates a real user in auth.users if needed (required for FK constraints)
+ */
+export async function getTestUserId(): Promise<string> {
+  if (testUserId) return testUserId;
+
+  // Try to get existing test user first
+  const { data: { users }, error: listError } = await testSupabase.auth.admin.listUsers();
+
+  if (!listError && users) {
+    const existingUser = users.find(u => u.email === TEST_USER.email);
+    if (existingUser) {
+      testUserId = existingUser.id;
+      return testUserId;
+    }
+  }
+
+  // Create test user if it doesn't exist
+  const { data, error } = await testSupabase.auth.admin.createUser({
+    email: TEST_USER.email,
+    password: TEST_USER.password,
+    email_confirm: true, // Auto-confirm for testing
+  });
+
+  if (error) {
+    throw new Error(`Failed to create test user: ${error.message}`);
+  }
+
+  testUserId = data.user.id;
+  return testUserId;
 }
 
 /**
