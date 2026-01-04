@@ -12,6 +12,7 @@
 
 import { CORE_RESTRICTIONS, CORE_RESTRICTIONS_REMINDER } from './artifact-rules/core-restrictions.ts';
 import { BUNDLING_GUIDANCE, BUNDLING_COST_REMINDER } from './artifact-rules/bundling-guidance.ts';
+import { GOLDEN_PATTERNS, GOLDEN_PATTERNS_REMINDER } from './artifact-rules/golden-patterns.ts';
 import { TYPE_SELECTION } from './artifact-rules/type-selection.ts';
 import { getCurrentYear, getSearchRecencyPhrase } from './config.ts';
 
@@ -20,6 +21,7 @@ interface SystemPromptParams {
   currentDate?: string;
   alwaysSearchEnabled?: boolean;
   useToolCalling?: boolean;  // Enable GLM native tool-calling
+  matchedTemplate?: string;  // Injected template guidance from template-matcher.ts
 }
 
 /**
@@ -199,6 +201,12 @@ When creating visual artifacts (HTML, React components, UI elements):
 
 ${CORE_RESTRICTIONS}
 
+# 🎯 RUNTIME PATTERNS (PREVENT CRASHES)
+
+${GOLDEN_PATTERNS}
+
+{{MATCHED_TEMPLATE}}
+
 # 💰 Cost-Awareness Guidelines
 
 ${BUNDLING_GUIDANCE}
@@ -313,6 +321,8 @@ ${CORE_RESTRICTIONS_REMINDER}
 
 ${BUNDLING_COST_REMINDER}
 
+${GOLDEN_PATTERNS_REMINDER}
+
 ## Iterative Updates
 
 When user asks to modify an artifact:
@@ -377,6 +387,7 @@ export function getSystemInstruction(params: SystemPromptParams = {}): string {
     fullArtifactContext = '',
     alwaysSearchEnabled = false,
     useToolCalling = false,
+    matchedTemplate = '',
     currentDate = new Date().toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -400,7 +411,9 @@ ${TOOL_CALLING_SECTION}`;
     // Combine and replace artifact context placeholder
     return `${opening}
 
-${restOfPrompt}`.replace(/\{\{FULL_ARTIFACT_CONTEXT\}\}/g, fullArtifactContext);
+${restOfPrompt}`
+      .replace(/\{\{FULL_ARTIFACT_CONTEXT\}\}/g, fullArtifactContext)
+      .replace(/\{\{MATCHED_TEMPLATE\}\}/g, matchedTemplate);
   }
 
   // Legacy mode: Use automatic search detection
@@ -424,5 +437,6 @@ ${restOfPrompt}`.replace(/\{\{FULL_ARTIFACT_CONTEXT\}\}/g, fullArtifactContext);
     .replace(/\{\{FULL_ARTIFACT_CONTEXT\}\}/g, fullArtifactContext)
     .replace(/\{\{ALWAYS_SEARCH_MODE\}\}/g, alwaysSearchMode)
     .replace(/\{\{SEARCH_BEHAVIOR\}\}/g, searchBehavior)
-    .replace(/\{\{SEARCH_GUARANTEE\}\}/g, searchGuarantee);
+    .replace(/\{\{SEARCH_GUARANTEE\}\}/g, searchGuarantee)
+    .replace(/\{\{MATCHED_TEMPLATE\}\}/g, matchedTemplate);
 }

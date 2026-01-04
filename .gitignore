@@ -153,3 +153,5 @@ backups/
 # Auto Claude data directory
 .auto-claude/
 supabase/functions/.env
+
+worktrees/

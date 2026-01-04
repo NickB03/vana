@@ -5,6 +5,7 @@ import ReactMarkdown, { Components } from "react-markdown"
 import remarkBreaks from "remark-breaks"
 import remarkGfm from "remark-gfm"
 import { CodeBlock, CodeBlockCode } from "./code-block"
+import { ImageZoom } from "./image-zoom"
 
 export type MarkdownProps = {
   children: string
@@ -63,11 +64,9 @@ const INITIAL_COMPONENTS: Partial<Components> = {
   },
   img: function ImageComponent({ src, alt, ...props }) {
     return (
-      <img
-        src={src}
+      <ImageZoom
+        src={src || ""}
         alt={alt || ""}
-        loading="lazy"
-        decoding="async"
         className="rounded-lg max-w-full h-auto"
         {...props}
       />

@@ -796,8 +796,11 @@ export function useChatMessages(
                   reasoningText = artifactReasoning;
                 }
 
+                // BUG FIX: Pass artifact XML to onDelta so ChatInterface can strip it for display
+                // Without this, raw XML appears in chat during streaming
+                // ChatInterface.tsx lines 120-126 will strip the tags for clean display
                 const progress = updateProgress();
-                onDelta('', progress);
+                onDelta(artifactXml + '\n\n', progress);
               }
 
               continue;
@@ -827,20 +830,24 @@ export function useChatMessages(
 
                 console.log(`[StreamProgress] Image added to fullResponse, length=${fullResponse.length}`);
 
+                // BUG FIX: Pass image XML to onDelta so ChatInterface can strip it for display
+                // Without this, raw XML appears in chat during streaming
+                // ChatInterface.tsx lines 120-126 will strip the tags for clean display
                 const progress = updateProgress();
-                onDelta('', progress);
+                onDelta(imageXml + '\n\n', progress);
               } else {
                 // BUG FIX (2025-12-21): If image data is missing but event was received,
                 // still mark response as complete to prevent infinite retry loop
                 console.warn(`[StreamProgress] image_complete event received but no imageUrl or imageData`);
 
                 // Add placeholder to prevent empty response error
+                const placeholderXml = '<artifact type="image" title="Generated Image">\n[Image generation completed but image data unavailable]\n</artifact>';
                 if (!fullResponse) {
-                  fullResponse = '<artifact type="image" title="Generated Image">\n[Image generation completed but image data unavailable]\n</artifact>';
+                  fullResponse = placeholderXml;
                 }
 
                 const progress = updateProgress();
-                onDelta('', progress);
+                onDelta(placeholderXml + '\n\n', progress);
               }
 
               continue;

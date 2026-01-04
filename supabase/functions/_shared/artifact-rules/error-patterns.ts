@@ -138,6 +138,22 @@ export const ERROR_PATTERNS: Record<string, ErrorPattern> = {
  * Longer trigger matches = more specific = higher confidence.
  */
 export function getRelevantPatterns(errorMessage: string): string[] {
+  // Guard against null/undefined input (CRITICAL: prevents runtime crash)
+  if (!errorMessage || typeof errorMessage !== 'string') {
+    console.warn('[error-patterns] getRelevantPatterns called with invalid input:', {
+      type: typeof errorMessage,
+      value: errorMessage === null ? 'null' : errorMessage === undefined ? 'undefined' : String(errorMessage).slice(0, 50)
+    });
+    // Return generic patterns as fallback
+    return [
+      'Check syntax: balanced braces, parentheses, quotes',
+      'Verify variable names and scope',
+      'Check React hook usage: const { useState } = React',
+      'Ensure immutable updates: use spread operators',
+      'Remove unsupported APIs: localStorage, @/ imports'
+    ];
+  }
+
   const lowerError = errorMessage.toLowerCase();
   const matches: Array<{ category: string; score: number; patterns: string[]; matchedTriggers: string[] }> = [];
 
@@ -222,6 +238,9 @@ Common Issues:
 `;
 
     default:
+      console.warn(
+        `[error-patterns] Unsupported artifact type: "${type}". Supported types: react, html, svg`
+      );
       return '';
   }
 }

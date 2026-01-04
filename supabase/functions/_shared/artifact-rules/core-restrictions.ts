@@ -1,77 +1,116 @@
 /**
- * Core Artifact Restrictions
+ * Core Artifact Patterns
  *
- * Critical constraints that apply to ALL artifact types.
- * These restrictions prevent artifact failures due to sandbox limitations.
+ * Prescriptive patterns that apply to ALL artifact types.
+ * These patterns ensure artifacts work reliably in sandbox environments.
  *
  * Usage: Import and include at TOP and BOTTOM of generation prompts
  * for maximum compliance (primacy + recency effect).
  */
 
 export const CORE_RESTRICTIONS = `
-[CRITICAL - ARTIFACT WILL FAIL]
+[ARTIFACT SUCCESS PATTERNS]
 
-These restrictions are NON-NEGOTIABLE due to sandbox environment limitations:
+Follow these patterns EXACTLY to ensure your artifact works:
 
-1. **NO LOCAL IMPORTS** - Artifacts run in isolated iframes with no access to project files
-   ❌ FORBIDDEN: import { Button } from "@/components/ui/button"
-   ❌ FORBIDDEN: import { Card } from "@/components/ui/card"
-   ❌ FORBIDDEN: import { cn } from "@/lib/utils"
-   ❌ FORBIDDEN: import anything from "@/..."
+1. **USE NPM PACKAGES** (MANDATORY)
 
-   ✅ ALLOWED: import * as Dialog from '@radix-ui/react-dialog'
-   ✅ ALLOWED: import { Check } from 'lucide-react'
-   ✅ ALLOWED: Third-party npm packages (triggers server bundling)
+   ALWAYS use direct npm package imports for UI components and utilities:
+   \`\`\`jsx
+   import * as Dialog from '@radix-ui/react-dialog';
+   import { Check, X, ArrowRight } from 'lucide-react';
+   import { clsx } from 'clsx';
+   \`\`\`
 
-2. **NO BROWSER STORAGE** - localStorage/sessionStorage APIs not supported
-   ❌ FORBIDDEN: localStorage.setItem('key', value)
-   ❌ FORBIDDEN: sessionStorage.getItem('key')
+   Copy these patterns exactly. The sandbox has no access to local project files.
 
-   ✅ CORRECT: const [value, setValue] = useState(initialValue)
+   ⚠️ These will FAIL: \`import { Button } from "@/components/ui/button"\`, \`import { cn } from "@/lib/utils"\`
 
-3. **REACT AS GLOBAL** - React loaded as UMD global, not ES6 module
-   ❌ FORBIDDEN: import React from 'react'
-   ❌ FORBIDDEN: import { useState } from 'react'
+2. **USE REACT STATE** (MANDATORY)
 
-   ✅ CORRECT: const { useState, useEffect, useCallback, useMemo } = React;
+   ALWAYS manage data with React hooks:
+   \`\`\`jsx
+   const [value, setValue] = useState(initialValue);
+   const [items, setItems] = useState([]);
+   \`\`\`
 
-4. **SUCRASE-COMPATIBLE SYNTAX ONLY** - No legacy decorators or unsupported TypeScript
-   ❌ FORBIDDEN: @decorator class Foo {}  (legacy decorators)
-   ❌ FORBIDDEN: namespace MyNamespace {} (TypeScript namespaces)
-   ❌ FORBIDDEN: const * as X from 'pkg'  (invalid import syntax)
+   Copy this pattern for ALL data that needs to persist during the session.
 
-   ✅ CORRECT: Standard TypeScript/JSX syntax
-   ✅ CORRECT: Modern decorators (if needed, use reflect-metadata)
-   ✅ CORRECT: All React patterns (hooks, components, props)
+   ⚠️ These will FAIL: \`localStorage.setItem(...)\`, \`sessionStorage.getItem(...)\`
 
-5. **NO DUPLICATE IMPORTS** - Each named import must appear only once per import statement
-   ❌ FORBIDDEN: import { Mail, User, Mail } from 'lucide-react'  (duplicate 'Mail')
-   ❌ FORBIDDEN: import { useState, useEffect, useState } from 'react'  (duplicate 'useState')
+3. **REACT GLOBALS** (MANDATORY)
 
-   ✅ CORRECT: import { Mail, User } from 'lucide-react'
-   ✅ CORRECT: import { useState, useEffect } from 'react'
+   ALWAYS start your artifact with this exact line:
+   \`\`\`jsx
+   const { useState, useEffect, useCallback, useMemo, useRef } = React;
+   \`\`\`
 
-6. **CLEAN JSX/HTML OUTPUT** - No trailing document fragments or orphan elements
-   ❌ FORBIDDEN: Orphan closing tags: </div></body></html> at end of file
-   ❌ FORBIDDEN: Appending <!DOCTYPE html><html>... after a React component
-   ❌ FORBIDDEN: const * as Name from 'package' (invalid import syntax)
+   React and ReactDOM are pre-loaded as globals. Copy the line above exactly.
 
-   ✅ CORRECT: Complete, self-contained component with matched tags
-   ✅ CORRECT: import * as Name from 'package' (valid namespace import)
+   ⚠️ These will FAIL: \`import React from 'react'\`, \`import { useState } from 'react'\`
 
-   Why: The transpiler will fail on malformed output. Return ONLY the requested artifact.
+4. **STANDARD SYNTAX ONLY** (MANDATORY)
 
-Why these exist: Artifacts render in sandboxed iframes for security. Local project files and browser APIs are intentionally unavailable. Sucrase transpiler has no fallback for unsupported syntax.
+   ALWAYS use modern JavaScript/TypeScript syntax:
+   \`\`\`jsx
+   // Standard class (no decorators)
+   class MyClass {
+     constructor() { }
+   }
+
+   // Standard function components
+   function MyComponent() { return <div>...</div>; }
+
+   // Valid namespace imports
+   import * as Icons from 'lucide-react';
+   \`\`\`
+
+   Copy these patterns. The Sucrase transpiler only supports standard syntax.
+
+   ⚠️ These will FAIL: \`@decorator class Foo {}\`, \`namespace MyNamespace {}\`, \`const * as X from 'pkg'\`
+
+5. **UNIQUE IMPORTS** (MANDATORY)
+
+   ALWAYS ensure each import name appears only once:
+   \`\`\`jsx
+   import { Mail, User, Settings } from 'lucide-react';  // ✓ Each name once
+   import { useState, useEffect, useMemo } from 'react'; // ✓ Each name once
+   \`\`\`
+
+   Copy this pattern exactly. Remove any duplicate names.
+
+   ⚠️ These will FAIL: \`import { Mail, User, Mail } from 'lucide-react'\`, \`import { useState, useState } from 'react'\`
+
+6. **COMPLETE COMPONENTS** (MANDATORY)
+
+   ALWAYS export exactly one complete component:
+   \`\`\`jsx
+   export default function App() {
+     return (
+       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+         {/* Your component content */}
+       </div>
+     );
+   }
+   \`\`\`
+
+   Copy this structure exactly. Return ONLY the component code, nothing after it.
+
+   ⚠️ These will FAIL: Orphan tags like \`</div></body></html>\` after component, multiple HTML documents in one file
+
+WHY: Artifacts run in sandboxed iframes for security. Local imports and browser storage APIs are intentionally blocked. The Sucrase transpiler has strict syntax requirements.
 `;
 
 export const CORE_RESTRICTIONS_REMINDER = `
-[CRITICAL REMINDER]
+[ARTIFACT CHECKLIST]
 
-Before finalizing your artifact:
-✓ No @/ imports (use npm packages or Tailwind instead)
-✓ No localStorage/sessionStorage (use React state)
-✓ React accessed via global: const { useState } = React;
-✓ Sucrase-compatible syntax (no legacy decorators or namespaces)
-✓ No duplicate named imports (each name appears only once per import)
-✓ No trailing HTML fragments after React components
+Verify your artifact has ALL of these:
+
+✓ Started with: const { useState, useEffect } = React;
+✓ Wrapped in: <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+✓ Ended with: export default function App() { ... }
+✓ Used npm packages (lucide-react, @radix-ui/*, clsx)
+✓ Used React state (const [value, setValue] = useState(...))
+✓ Each import name appears only once
+✓ No code after the component export
 `;

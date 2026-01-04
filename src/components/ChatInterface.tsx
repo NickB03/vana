@@ -108,6 +108,7 @@ export function ChatInterface({
   // Create displayMessages array that includes streaming message for virtualized rendering
   // This combines completed messages with the current streaming message (if any)
   // ENHANCED: Include streaming data (reasoning, reasoning_steps, search_results) in the streaming message
+  // BUG FIX: Strip artifact XML from streaming content to prevent raw tags from showing
   const displayMessages = useMemo(() => {
     const allMessages = [...messages];
     if (streamingMessage) {
@@ -116,11 +117,28 @@ export function ChatInterface({
         streamingTimestampRef.current = new Date().toISOString();
       }
 
+      // CRITICAL FIX: Remove artifact XML tags from streaming display
+      // When artifacts arrive via tool_complete events, they get prepended to fullResponse
+      // but we don't want to show raw XML during streaming - show skeleton instead
+      // The completed message will have the full XML for proper parsing
+      let displayContent = streamingMessage;
+
+      // Strip complete artifact tags: <artifact ...>content</artifact>
+      const completeArtifactRegex = /<artifact\b[^>]*>[\s\S]*?<\/artifact>/gi;
+      displayContent = displayContent.replace(completeArtifactRegex, '');
+
+      // Strip incomplete/partial artifact tags during streaming
+      // Handles cases where closing tag hasn't arrived yet or tag is cut off mid-stream
+      const incompleteArtifactRegex = /<artifact\b[^>]*>[\s\S]*$/gi;
+      displayContent = displayContent.replace(incompleteArtifactRegex, '');
+
+      displayContent = displayContent.trim();
+
       allMessages.push({
         id: 'streaming-temp',
         session_id: sessionId || '',
         role: "assistant" as const,
-        content: streamingMessage,
+        content: displayContent,
         created_at: streamingTimestampRef.current,
         // Include streaming data for ReasoningDisplay
         reasoning: streamProgress.streamingReasoningText,

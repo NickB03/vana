@@ -45,6 +45,7 @@ import { PromptInjectionDefense } from '../../_shared/prompt-injection-defense.t
 import { SafeErrorHandler } from '../../_shared/safe-error-handler.ts';
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.75.1';
 import { getSystemInstruction } from '../../_shared/system-prompt-inline.ts';
+import { getMatchingTemplate } from '../../_shared/artifact-rules/template-matcher.ts';
 import {
   createReasoningProvider,
   createNoOpReasoningProvider,
@@ -220,10 +221,32 @@ export async function handleToolCallingChat(
   const sanitizedModeHint = PromptInjectionDefense.sanitizeModeHint(modeHint);
   const sanitizedArtifactContext = PromptInjectionDefense.sanitizeArtifactContext(fullArtifactContext);
 
+  // Get the last user message for template matching
+  const lastUserMessage = messages
+    .filter(m => m.role === 'user')
+    .pop()?.content || '';
+
+  // Match user request to artifact template for optimized guidance
+  const templateMatch = getMatchingTemplate(lastUserMessage);
+
+  // Log template matching result for observability
+  if (templateMatch.matched) {
+    console.log(
+      `${logPrefix} 🎯 Template matched: ${templateMatch.templateId} ` +
+      `(confidence: ${templateMatch.confidence}%)`
+    );
+  } else {
+    console.log(
+      `${logPrefix} 📋 No template match: reason=${templateMatch.reason}` +
+      (templateMatch.confidence ? `, best_confidence=${templateMatch.confidence}%` : '')
+    );
+  }
+
   // Get system instruction with tool-calling enabled and sanitized artifact context
   const toolEnabledSystemPrompt = getSystemInstruction({
     useToolCalling: true,
     fullArtifactContext: sanitizedArtifactContext,
+    matchedTemplate: templateMatch.template,
   });
 
   // Combine with search/URL context if provided

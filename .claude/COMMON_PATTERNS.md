@@ -475,9 +475,534 @@ eventSource.onerror = (error) => {
 };
 ```
 
+## Artifact System Patterns
+
+### Using Template Matching
+
+**When to use**: When generating artifacts and you want to match user intent to predefined templates
+
+**Pattern**:
+```typescript
+import { getMatchingTemplate } from '../_shared/artifact-rules/index.ts';
+import type { TemplateMatchOutput } from '../_shared/artifact-rules/index.ts';
+
+const result: TemplateMatchOutput = getMatchingTemplate(userMessage);
+
+if (result.matched) {
+  // Template matched successfully
+  console.log('Using template:', result.templateId);
+  console.log('Confidence:', result.confidence);
+  console.log('Template code:', result.template.code);
+  console.log('Description:', result.template.description);
+} else {
+  // No match found
+  console.log('No template match. Reason:', result.reason);
+  // result.reason: 'invalid_input' | 'no_matches' | 'low_confidence'
+}
+```
+
+**Available Templates**:
+```typescript
+import { getAvailableTemplateIds } from '../_shared/artifact-rules/index.ts';
+
+const templateIds = getAvailableTemplateIds();
+// Returns: ['calculator', 'weather-dashboard', 'todo-list', 'timer']
+```
+
+**Why**: Templates provide battle-tested, reliable starting points for common artifact types, reducing generation failures.
+
+### Using Design Tokens
+
+**When to use**: When generating artifacts that need consistent theming and styling
+
+**Pattern**:
+```typescript
+import {
+  LIGHT_COLORS,
+  DARK_COLORS,
+  TYPOGRAPHY,
+  SPACING,
+  RADIUS,
+  SHADOW,
+  MOTION,
+  Z_INDEX,
+  BREAKPOINTS
+} from '../_shared/artifact-rules/index.ts';
+
+// Using color tokens
+const primaryColor = LIGHT_COLORS.primary;  // '#3b82f6'
+const darkPrimary = DARK_COLORS.primary;    // '#60a5fa'
+
+// Using typography
+const headingFont = TYPOGRAPHY.heading.family;     // 'Inter Variable, sans-serif'
+const headingSize = TYPOGRAPHY.heading.size.xl;    // '2.25rem'
+
+// Using spacing
+const cardPadding = SPACING.md;  // '1rem'
+const gap = SPACING.lg;          // '1.5rem'
+
+// Using motion tokens
+const transitionDuration = MOTION.duration.normal;  // '200ms'
+const easing = MOTION.easing.smooth;                // 'cubic-bezier(0.4, 0, 0.2, 1)'
+```
+
+**Generate Full Theme CSS**:
+```typescript
+import { generateThemeCSS } from '../_shared/artifact-rules/index.ts';
+
+const themeCSS = generateThemeCSS();
+// Returns complete CSS with :root and .dark variables
+```
+
+**Why**: Design tokens ensure visual consistency across all artifacts and provide automatic dark mode support.
+
+### Finding Canonical Examples
+
+**When to use**: When you need reference implementations for specific artifact patterns
+
+**Pattern**:
+```typescript
+import { findRelevantExample } from '../_shared/artifact-rules/index.ts';
+
+const result = findRelevantExample(userRequest);
+
+if (result.example) {
+  console.log('Found example:', result.example.title);
+  console.log('Code:', result.example.code);
+  console.log('Description:', result.example.description);
+  console.log('Matched keywords:', result.matchedKeywords);
+  console.log('Match count:', result.debugInfo.matchCount);
+} else {
+  console.log('No relevant example found');
+}
+```
+
+**Get All Examples**:
+```typescript
+import { CANONICAL_EXAMPLES, getCanonicalExampleSection } from '../_shared/artifact-rules/index.ts';
+
+// Get all examples
+const allExamples = CANONICAL_EXAMPLES;
+
+// Get examples by section
+const reactExamples = getCanonicalExampleSection('react');
+const utilityExamples = getCanonicalExampleSection('utilities');
+```
+
+**Why**: Canonical examples provide proven implementations that follow best practices and avoid common pitfalls.
+
+### Validating React Boilerplate
+
+**When to use**: Before generating artifacts, to ensure code follows mandatory patterns
+
+**Pattern**:
+```typescript
+import { validateReactBoilerplate, getViolationFix } from '../_shared/artifact-rules/index.ts';
+import type { ValidationResult } from '../_shared/artifact-rules/index.ts';
+
+const code = `
+export default function App() {
+  return <div>Hello</div>;
+}
+`;
+
+const result: ValidationResult = validateReactBoilerplate(code);
+
+if (!result.valid) {
+  console.log('Validation failed!');
+
+  // Handle critical violations
+  result.violations.forEach(violation => {
+    console.log('Error:', violation.message);
+    console.log('Rule:', violation.rule);
+    console.log('Severity:', violation.severity);
+
+    // Get suggested fix
+    const fix = getViolationFix(violation.rule);
+    if (fix) {
+      console.log('Suggested fix:', fix);
+    }
+  });
+}
+
+// Handle warnings
+if (result.warnings.length > 0) {
+  result.warnings.forEach(warning => {
+    console.log('Warning:', warning.message);
+  });
+}
+```
+
+**Mandatory Patterns Enforced**:
+```typescript
+import { MANDATORY_REACT_BOILERPLATE } from '../_shared/artifact-rules/index.ts';
+
+// View all mandatory patterns
+console.log(MANDATORY_REACT_BOILERPLATE);
+// Includes:
+// - Must export default function
+// - Must use function name 'App'
+// - Must use React 18+ patterns
+// - Package version constraints
+```
+
+**Why**: Validation catches common mistakes before artifacts are rendered, preventing runtime errors and blank screens.
+
+### Using Package Versions
+
+**When to use**: When generating artifacts that use npm packages
+
+**Pattern**:
+```typescript
+import { PACKAGE_VERSIONS } from '../_shared/artifact-rules/index.ts';
+
+// Get approved package versions
+const reactVersion = PACKAGE_VERSIONS.react;           // '^18.3.1'
+const lucideVersion = PACKAGE_VERSIONS['lucide-react']; // '^0.344.0'
+
+// Example: Generate package.json dependencies
+const dependencies = {
+  'react': PACKAGE_VERSIONS.react,
+  'react-dom': PACKAGE_VERSIONS['react-dom'],
+  'lucide-react': PACKAGE_VERSIONS['lucide-react'],
+  // ... other packages
+};
+```
+
+**Why**: Using approved package versions ensures compatibility and avoids breaking changes.
+
+### Using Pattern Cache
+
+**When to use**: Before running full template matching, check cache for faster lookups
+
+**Pattern**:
+```typescript
+import {
+  getCachedMatch,
+  cacheSuccessfulMatch,
+  getCacheStats,
+  normalizeRequest,
+} from '../_shared/artifact-rules/index.ts';
+
+// 1. Check cache FIRST (before expensive matching)
+const cachedPattern = getCachedMatch(userRequest);
+
+if (cachedPattern) {
+  console.log('Cache hit!');
+  console.log('Template IDs:', cachedPattern.templateIds);
+  console.log('Confidence:', cachedPattern.confidence);
+  console.log('Hit count:', cachedPattern.hitCount);
+
+  // Use cached template directly
+  const templateId = cachedPattern.templateIds[0];
+  // ... proceed with artifact generation
+} else {
+  console.log('Cache miss - running full template matching');
+
+  // Run expensive template matching
+  const matchResult = getMatchingTemplate(userRequest);
+
+  if (matchResult.matched) {
+    // Cache successful match for future lookups
+    cacheSuccessfulMatch(
+      userRequest,
+      [matchResult.templateId],
+      matchResult.confidence
+    );
+  }
+}
+
+// 2. Monitor cache performance
+const stats = getCacheStats();
+console.log('Cache size:', stats.size);
+console.log('Hit rate:', stats.hitRate, '%');
+console.log('Total hits:', stats.totalHits);
+console.log('Total misses:', stats.totalMisses);
+```
+
+**Manual Pattern Normalization**:
+```typescript
+// Normalize request for consistent matching
+const normalized = normalizeRequest('Create a TODO list!');
+// Returns: "create a todo list"
+
+// Use normalized version for cache lookup
+const cached = getCachedMatch(normalized);
+```
+
+**Why**: Pattern cache provides instant lookups for common requests, reducing response time from seconds to milliseconds. Hit rate typically 60-80% in production.
+
+### Using Verification Checklist
+
+**When to use**: Before finalizing artifact generation, inject checklist into system prompt
+
+**Pattern**:
+```typescript
+import {
+  getChecklistForPrompt,
+  getCriticalChecklistSummary,
+  getChecklistStats,
+  getChecklistByPriority,
+} from '../_shared/artifact-rules/index.ts';
+
+// 1. Get FULL checklist for comprehensive verification
+const fullChecklist = getChecklistForPrompt();
+// Returns markdown-formatted checklist (80+ items)
+// Inject into system prompt:
+const systemPrompt = `
+${baseInstructions}
+
+${fullChecklist}
+
+Verify ALL applicable checklist items before finalizing artifact.
+`;
+
+// 2. Get CRITICAL-ONLY checklist for quick review
+const criticalOnly = getCriticalChecklistSummary();
+// Returns only critical items (30+ items)
+// Use for fast validation or streaming generation
+
+// 3. Get checklist statistics
+const stats = getChecklistStats();
+console.log('Total items:', stats.total);          // 80+
+console.log('Critical:', stats.critical);          // 30+
+console.log('Important:', stats.important);        // 25+
+console.log('Nice-to-have:', stats.niceToHave);   // 20+
+console.log('Categories:', stats.categories);      // 9
+```
+
+**Filter by Priority**:
+```typescript
+import { getChecklistByPriority } from '../_shared/artifact-rules/index.ts';
+
+// Get only critical items (array of ChecklistItem objects)
+const criticalItems = getChecklistByPriority('critical');
+
+criticalItems.forEach(item => {
+  console.log(item.id);          // e.g., 'dt-1'
+  console.log(item.description); // e.g., 'All colors from semantic tokens'
+  console.log(item.priority);    // 'critical'
+  console.log(item.examples);    // { bad?: string, good: string }
+});
+```
+
+**Filter by Category**:
+```typescript
+import {
+  getChecklistByCategory,
+  getCategoryNames,
+} from '../_shared/artifact-rules/index.ts';
+
+// Get all category names
+const categories = getCategoryNames();
+// ['Design Tokens & Visual Consistency', 'Interactive States', ...]
+
+// Get items for specific category
+const a11yItems = getChecklistByCategory('Accessibility (WCAG 2.1 AA)');
+// Returns ChecklistItem[] for accessibility category
+```
+
+**Why**: The verification checklist ensures production-grade quality by enforcing 80+ quality checks across design, accessibility, UX, and code quality.
+
+### Using Task Complexity Analysis
+
+**When to use**: BEFORE template matching to classify request and plan multi-step generation
+
+**Pattern**:
+```typescript
+import {
+  analyzeTaskComplexity,
+  type TaskAnalysis,
+} from '../_shared/artifact-rules/index.ts';
+
+// Analyze BEFORE matching templates
+const analysis: TaskAnalysis = analyzeTaskComplexity(userRequest);
+
+console.log('Complexity:', analysis.complexity);
+// 'simple' | 'moderate' | 'complex'
+
+console.log('Requires multi-step:', analysis.requiresMultiStep);
+// true for complex tasks requiring multiple artifacts
+
+console.log('Suggested templates:', analysis.suggestedTemplates);
+// ['landing-page', 'dashboard', 'chart']
+
+console.log('Dependencies:', analysis.dependencies);
+// Templates that depend on others
+
+console.log('Reasoning:', analysis.reasoning);
+// Explanation for the classification
+
+// Use complexity tier to adjust generation strategy
+if (analysis.complexity === 'complex') {
+  // Multi-step generation required
+  for (const templateId of analysis.suggestedTemplates) {
+    // Generate each artifact separately
+    console.log('Generating:', templateId);
+  }
+} else if (analysis.complexity === 'moderate') {
+  // Single artifact with multiple features
+  console.log('Single artifact with customization');
+} else {
+  // Simple, single-purpose artifact
+  console.log('Direct template application');
+}
+```
+
+**Complexity Examples**:
+```typescript
+// SIMPLE (single artifact, clear scope)
+analyzeTaskComplexity("create a bar chart showing sales data")
+// → { complexity: 'simple', suggestedTemplates: ['chart'], ... }
+
+analyzeTaskComplexity("make a company logo")
+// → { complexity: 'simple', suggestedTemplates: [], ... }
+
+// MODERATE (single template, multiple features)
+analyzeTaskComplexity("create a contact form with email validation and success message")
+// → { complexity: 'moderate', suggestedTemplates: ['form-page'], ... }
+
+analyzeTaskComplexity("dashboard with filters and sorting")
+// → { complexity: 'moderate', suggestedTemplates: ['dashboard'], ... }
+
+// COMPLEX (multiple templates, full applications)
+analyzeTaskComplexity("build a website with landing page, dashboard, and analytics charts")
+// → { complexity: 'complex', suggestedTemplates: ['landing-page', 'dashboard', 'chart'],
+//     requiresMultiStep: true, ... }
+
+analyzeTaskComplexity("create an app with user profiles and admin portal")
+// → { complexity: 'complex', suggestedTemplates: ['settings-panel', 'dashboard'],
+//     requiresMultiStep: true, ... }
+```
+
+**Why**: Task complexity analysis prevents scope creep and ensures multi-step planning for complex requests, improving generation success rate.
+
+### Using Anti-Pattern Detection
+
+**When to use**: After generating code, validate against anti-patterns and quality standards
+
+**Pattern**:
+```typescript
+import {
+  detectAntiPatterns,
+  validateQualityStandards,
+} from '../_shared/artifact-rules/index.ts';
+
+const generatedCode = `
+export default function App() {
+  return (
+    <div className="p-4 bg-blue-500">
+      <h1 className="text-2xl font-['Inter']">Hello World</h1>
+      <button>Click me</button>
+    </div>
+  );
+}
+`;
+
+// 1. Detect anti-patterns (returns issues with severity)
+const antiPatterns = detectAntiPatterns(generatedCode);
+
+antiPatterns.forEach(issue => {
+  console.log(`[${issue.severity.toUpperCase()}] ${issue.issue}`);
+});
+
+// Example output:
+// [ERROR] Banned font detected: Inter. Use alternatives: Geist, Satoshi, Plus Jakarta Sans, ...
+// [ERROR] Banned color detected: bg-blue-500. Use semantic tokens with intentional palette...
+// [WARNING] Buttons detected without hover states. Add hover feedback for interactivity
+
+// 2. Validate quality standards (returns pass/fail + score)
+const qualityResult = validateQualityStandards(generatedCode);
+
+console.log('Quality check passed:', qualityResult.passes);  // false
+console.log('Quality score:', qualityResult.score);          // 0.375 (3/8)
+console.log('Failures:', qualityResult.failures);
+
+// Example output:
+// Failures: [
+//   'Uses default Tailwind colors',
+//   'Uses generic fonts (Inter/Roboto)',
+//   'Missing loading state',
+//   'Missing empty state',
+//   'Missing error handling'
+// ]
+
+// 3. Use validation results to improve code
+if (!qualityResult.passes) {
+  console.log('⚠️ Code quality below threshold');
+  console.log('Issues to fix:', qualityResult.failures.join(', '));
+
+  // Regenerate with fixes or show user improvement suggestions
+}
+
+// 4. Block generation if critical errors found
+const criticalErrors = antiPatterns.filter(p => p.severity === 'error');
+if (criticalErrors.length > 0) {
+  console.log('❌ Cannot proceed - critical anti-patterns detected');
+  // Show errors to user and request regeneration
+}
+```
+
+**Quality Checklist Items**:
+```typescript
+// The 8 quality standards checked by validateQualityStandards():
+// 1. Has custom color palette (not Tailwind defaults)
+// 2. Uses distinctive typography (not Inter/Roboto)
+// 3. Implements unique layout (not pure card grid)
+// 4. Includes personality elements (custom icons, illustrations)
+// 5. Handles all component states (loading, empty, error)
+// 6. Has meaningful hover/focus states
+// 7. Uses intentional animation timing (not instant)
+// 8. Contains specific copy (not generic placeholders)
+```
+
+**Integration Example**:
+```typescript
+// Use in artifact generation pipeline
+async function generateArtifact(userRequest: string) {
+  // 1. Analyze complexity
+  const analysis = analyzeTaskComplexity(userRequest);
+
+  // 2. Check cache
+  const cached = getCachedMatch(userRequest);
+
+  // 3. Match template (if not cached)
+  const template = cached || getMatchingTemplate(userRequest);
+
+  // 4. Generate code (AI call)
+  const code = await generateCodeFromTemplate(template, userRequest);
+
+  // 5. Validate quality
+  const antiPatterns = detectAntiPatterns(code);
+  const quality = validateQualityStandards(code);
+
+  // 6. Return or regenerate
+  if (quality.passes && antiPatterns.length === 0) {
+    // Cache successful generation
+    cacheSuccessfulMatch(userRequest, [template.id], 0.95);
+    return { code, quality: 'excellent' };
+  } else {
+    // Show validation errors and request fixes
+    return {
+      code,
+      quality: 'needs-improvement',
+      issues: antiPatterns,
+      failures: quality.failures,
+    };
+  }
+}
+```
+
+**Why**: Anti-pattern detection and quality validation ensure generated artifacts meet production standards and avoid common pitfalls like generic design, missing states, and poor accessibility.
+
 ## References
 
 - **Session Utils**: `src/utils/sessionUtils.ts`
 - **Artifact Parser**: `src/utils/artifactParser.ts`
+- **Artifact Rules**: `supabase/functions/_shared/artifact-rules/index.ts`
+- **Pattern Cache**: `supabase/functions/_shared/artifact-rules/pattern-cache.ts`
+- **Verification Checklist**: `supabase/functions/_shared/artifact-rules/verification-checklist.ts`
+- **Template Matcher**: `supabase/functions/_shared/artifact-rules/template-matcher.ts`
+- **Design Tokens**: `supabase/functions/_shared/artifact-rules/design-tokens.ts`
 - **TanStack Query Docs**: https://tanstack.com/query/latest
 - **Supabase Client Docs**: https://supabase.com/docs/reference/javascript

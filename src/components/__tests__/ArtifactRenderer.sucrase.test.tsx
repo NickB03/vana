@@ -464,6 +464,14 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
     });
 
     it('triggers bundleReact fallback on missing ReactDOM export errors', async () => {
+      // Setup: Mock fetch for bundled artifact
+      vi.stubEnv('VITE_SUPABASE_URL', 'https://valid-supabase-url.supabase.co');
+      const bundleHtml = `<!DOCTYPE html><html><head></head><body><div id="root"></div><script type="module">const App = () => <div>Hello</div>;</script></body></html>`;
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve(bundleHtml),
+      } as Response);
+
       vi.mocked(sucraseTranspiler.transpileCode).mockReturnValue({
         success: true,
         code: 'const App = () => React.createElement("div", null, "Hello");',
@@ -471,21 +479,22 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
       });
 
       const mockOnBundleReactFallback = vi.fn();
-      const artifact: ArtifactData = {
+      const bundledArtifact: ArtifactData = {
         ...baseArtifact,
-        bundleUrl: 'https://storage.example.com/bundle.html',
+        bundleUrl: 'https://valid-supabase-url.supabase.co/storage/bundle.html',
       };
 
       render(
         <ArtifactRenderer
           {...baseProps}
-          artifact={artifact}
+          artifact={bundledArtifact}
           onBundleReactFallback={mockOnBundleReactFallback}
         />
       );
 
+      // Wait for bundle fetch and Sucrase transpilation
       await vi.waitFor(() => {
-        expect(sucraseTranspiler.transpileCode).toHaveBeenCalled();
+        expect(global.fetch).toHaveBeenCalled();
       });
 
       const errorMessage =
@@ -498,9 +507,19 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
       await vi.waitFor(() => {
         expect(mockOnBundleReactFallback).toHaveBeenCalledWith(errorMessage);
       });
+
+      vi.unstubAllEnvs();
     });
 
     it('does not repeat bundleReact fallback for the same artifact', async () => {
+      // Setup: Mock fetch for bundled artifact
+      vi.stubEnv('VITE_SUPABASE_URL', 'https://valid-supabase-url.supabase.co');
+      const bundleHtml = `<!DOCTYPE html><html><head></head><body><div id="root"></div><script type="module">const App = () => <div>Hello</div>;</script></body></html>`;
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve(bundleHtml),
+      } as Response);
+
       vi.mocked(sucraseTranspiler.transpileCode).mockReturnValue({
         success: true,
         code: 'const App = () => React.createElement("div", null, "Hello");',
@@ -508,21 +527,22 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
       });
 
       const mockOnBundleReactFallback = vi.fn();
-      const artifact: ArtifactData = {
+      const bundledArtifact: ArtifactData = {
         ...baseArtifact,
-        bundleUrl: 'https://storage.example.com/bundle.html',
+        bundleUrl: 'https://valid-supabase-url.supabase.co/storage/bundle.html',
       };
 
       render(
         <ArtifactRenderer
           {...baseProps}
-          artifact={artifact}
+          artifact={bundledArtifact}
           onBundleReactFallback={mockOnBundleReactFallback}
         />
       );
 
+      // Wait for bundle fetch
       await vi.waitFor(() => {
-        expect(sucraseTranspiler.transpileCode).toHaveBeenCalled();
+        expect(global.fetch).toHaveBeenCalled();
       });
 
       const errorMessage =
@@ -539,6 +559,8 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
       await vi.waitFor(() => {
         expect(mockOnBundleReactFallback).toHaveBeenCalledTimes(1);
       });
+
+      vi.unstubAllEnvs();
     });
   });
 
@@ -666,7 +688,7 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
 
   describe('Performance Logging', () => {
     it('logs transpilation performance to console', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
 
       vi.mocked(sucraseTranspiler.transpileCode).mockReturnValue({
         success: true,
@@ -770,7 +792,7 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
         elapsed: 8.5,
       });
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
 
       render(<ArtifactRenderer {...baseProps} artifact={bundledArtifact} />);
 
@@ -815,7 +837,7 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
         details: 'Unexpected syntax',
       });
 
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
       const mockOnAIFix = vi.fn();
 
       render(<ArtifactRenderer {...baseProps} artifact={bundledArtifact} onAIFix={mockOnAIFix} />);
@@ -867,7 +889,7 @@ describe('ArtifactRenderer - Sucrase Integration Tests', () => {
         throw new Error('Sucrase crashed unexpectedly');
       });
 
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
       const mockOnAIFix = vi.fn();
 
       render(<ArtifactRenderer {...baseProps} artifact={bundledArtifact} onAIFix={mockOnAIFix} />);

@@ -24,21 +24,251 @@ All AI operations use the multi-model orchestration system for optimal cost/perf
 
 **Model Constants**: All model names are defined in `supabase/functions/_shared/config.ts` as `MODELS.*` constants. **Never hardcode model names** — this causes CI/CD failures.
 
+## Artifact Generation Architecture
+
+### Artifact Rules Module System
+
+**Location**: `supabase/functions/_shared/artifact-rules/`
+
+The artifact generation system uses a modular architecture with separation of concerns across multiple specialized modules:
+
+#### Module Structure
+
+```
+artifact-rules/
+├── index.ts                  # Barrel export (single entry point)
+├── core-restrictions.ts      # Hard constraints and banned patterns
+├── template-matcher.ts       # Template selection via confidence scoring
+├── design-tokens.ts          # Design system tokens and anti-patterns
+├── canonical-examples.ts     # Full working examples for AI to copy
+├── mandatory-patterns.ts     # Required React boilerplate patterns
+└── golden-patterns.ts        # Best practice recommendations
+```
+
+**Design Philosophy**:
+- **Prescriptive over restrictive**: Show exact patterns to copy instead of listing violations
+- **Template-first generation**: Match user intent to proven examples
+- **Separation of concerns**: Each module has a single responsibility
+- **Structured failures**: Return rich error context instead of silent failures
+
+#### Template Matching Pipeline
+
+**Purpose**: Intelligently match user requests to pre-built artifact templates using multi-criterion confidence scoring.
+
+**Architecture**:
+
+```
+User Message
+    ↓
+Input Validation (throw on null/undefined, return [] on empty)
+    ↓
+For Each Template:
+    ├─ calculateConfidenceScore() → 5 criteria scores
+    │   ├─ Keyword Density (30%): matched/total keywords ratio
+    │   ├─ Word Boundary (25%): exact word matches (not substrings)
+    │   ├─ Specificity (20%): templates with more keywords need more matches
+    │   ├─ Template Relevance (15%): description word overlap
+    │   └─ Intent Clarity (10%): artifact-building verbs present
+    ↓
+calculateWeightedConfidence() → 0-100 score
+    ↓
+Filter by threshold (default: 25%)
+    ↓
+Sort by confidence (highest first)
+    ↓
+Return TemplateMatchOutput:
+    ├─ matched: true → formatTemplateGuidance()
+    ├─ matched: false → structured reason (no_matches | low_confidence | invalid_input)
+    └─ metadata: confidence, templateId, scores breakdown
+```
+
+**Key Algorithms**:
+
+1. **Keyword Matching**:
+   - Word boundary matches (full credit): `\b${keyword}\b`
+   - Substring matches (half credit): `includes(keyword)`
+   - Prevents false positives (e.g., "dash" matching "dashboard")
+
+2. **Confidence Thresholds**:
+   - **High Quality**: ≥70% (preferred for template injection)
+   - **Minimum Match**: ≥25% (consider as candidate)
+   - **Rejection**: <30% for non-high-quality matches
+
+3. **Specificity Scaling**:
+   - Templates with 8+ keywords: require 30% keyword match
+   - Templates with 5-7 keywords: require 25% keyword match
+   - Templates with 3-4 keywords: require 20% keyword match
+   - Templates with <3 keywords: require 15% keyword match
+
+**Return Types**:
+```typescript
+interface TemplateMatchResult {
+  template: ArtifactTemplate;
+  confidence: number; // 0-100
+  scores: {
+    keywordDensity: number;
+    wordBoundary: number;
+    specificity: number;
+    templateRelevance: number;
+    intentClarity: number;
+  };
+  isHighQuality: boolean; // confidence >= 70%
+}
+
+interface TemplateMatchOutput {
+  template: string; // Formatted guidance or ''
+  matched: boolean;
+  reason: 'invalid_input' | 'no_matches' | 'low_confidence' | 'matched';
+  confidence?: number;
+  templateId?: string;
+}
+```
+
+#### Design Tokens System
+
+**Purpose**: Enforce consistent design language across artifacts using semantic tokens instead of ad-hoc values.
+
+**Location**: `supabase/functions/_shared/artifact-rules/design-tokens.ts`
+
+**Architecture**:
+
+```
+Design Tokens (Token-First Methodology)
+    ├─ Color Tokens (semantic names)
+    │   ├─ LIGHT_COLORS (hsl values for light mode)
+    │   ├─ DARK_COLORS (adjusted for dark backgrounds)
+    │   └─ Categories: background, surface, text, border, primary, accent, semantic states
+    ├─ Typography Tokens (size, lineHeight, weight, letterSpacing)
+    │   ├─ Fixed scales (display → h1-h6 → body → caption)
+    │   └─ Fluid scales (clamp() for responsive sizing)
+    ├─ Spacing Tokens (8px base system)
+    │   └─ 0, 1 (4px), 2 (8px), 3 (12px), ... 24 (96px)
+    ├─ Radius, Shadow, Motion, Z-Index tokens
+    ├─ Design Directions (style templates)
+    │   ├─ Minimal Premium SaaS (md radius, sm shadow, comfortable)
+    │   ├─ Bold Editorial (sm radius, no shadow, high contrast)
+    │   ├─ Soft & Organic (2xl radius, md shadow, spacious)
+    │   ├─ Dark Neon Restrained (lg radius, lg shadow, high contrast)
+    │   └─ Playful & Colorful (xl radius, md shadow, vibrant)
+    └─ Anti-Patterns (Z.ai "AI Slop" prevention)
+        ├─ Banned: Inter, Roboto, #3b82f6, purple gradients
+        └─ Required: Custom palettes, distinctive fonts, asymmetric layouts
+```
+
+**Key Functions**:
+- `generateCSSVariables()`: Convert tokens to CSS custom properties
+- `generateThemeCSS()`: Full theme with light/dark modes + accessibility
+
+**Component State Requirements**: `default`, `hover`, `active`, `focus`, `disabled`, `loading`, `empty`, `error`
+
+#### Canonical Examples System
+
+**Purpose**: Provide complete, working artifact code that AI can copy as templates.
+
+**Philosophy** (Z.ai approach):
+- **Show, don't tell**: Full working code instead of abstract patterns
+- **Copy-paste ready**: AI uses these as starting points, not references
+- **Real-world scenarios**: Common requests (forms, dashboards, games, tables, settings)
+- **Best practices baked in**: Dark mode, validation, loading states, accessibility
+
+**Examples Included**:
+1. **Interactive Contact Form** - Validation, loading states, success feedback
+2. **Analytics Dashboard** - Recharts integration, Radix Tabs, metric cards
+3. **Tic-Tac-Toe Game** - Immutable state, winner detection, score tracking
+4. **Data Table with Search** - Filter, sort, action buttons, status badges
+5. **Settings Page** - Radix Tabs + Switch, form inputs, save feedback
+
+**Search Algorithm**:
+```typescript
+findRelevantExample(userRequest: string): ExampleMatchResult {
+  // Case-insensitive keyword matching
+  // Returns: { example, matchedKeywords[], debugInfo: { totalExamples, bestScore } }
+  // Never returns null - returns rich context for no-match scenarios
+}
+```
+
+#### Mandatory Patterns Validation
+
+**Purpose**: Enforce non-negotiable React structure for artifacts.
+
+**Critical Patterns**:
+1. **React Globals**: `const { useState } = React` (NOT imports)
+2. **Export Structure**: `export default function App()` (must be named `App`)
+3. **Wrapper Requirements**: `min-h-screen` container for full-height layouts
+4. **Package Imports**: Namespace imports for Radix UI (`import * as Dialog`)
+5. **Auto-Injected Globals**: framer-motion (no import needed)
+
+**Validation Pipeline**:
+```typescript
+validateReactBoilerplate(code: string): ValidationResult {
+  // Returns: { valid: boolean, violations: string[], warnings: string[] }
+  // Violations = build failures
+  // Warnings = best practice suggestions
+}
+```
+
+**Violation Examples**:
+- ❌ `import React from 'react'` → Use React global
+- ❌ `import { useState } from 'react'` → Use `const { useState } = React`
+- ❌ `export default function Calculator()` → Must be named `App`
+- ❌ `import { Dialog } from '@radix-ui/react-dialog'` → Use namespace import
+
+**Fix Generation**:
+```typescript
+getViolationFix(violation: string): string {
+  // Returns prescriptive before/after code examples
+  // Shows exact replacement patterns
+}
+```
+
+#### Integration with Chat Pipeline
+
+**Location**: `supabase/functions/chat/handlers/tool-calling-chat.ts`
+
+**Flow**:
+```
+1. User sends artifact request
+2. getMatchingTemplate(userMessage) → TemplateMatchOutput
+3. If matched && confidence >= 70%:
+   ├─ Inject template guidance into system prompt
+   ├─ Include CORE_RESTRICTIONS
+   ├─ Include MANDATORY_REACT_BOILERPLATE
+   └─ Include relevant CANONICAL_EXAMPLES
+4. GLM-4.7 generates artifact with thinking mode enabled
+5. Server validates output via artifact-validator.ts
+6. Return structured artifact or error with fix suggestions
+```
+
+**Data Flow**:
+```
+artifact-rules/
+    ↓ (imported by)
+chat/handlers/tool-calling-chat.ts
+    ↓ (builds system prompt)
+GLM-4.7 (Z.ai API)
+    ↓ (generates artifact)
+artifact-validator.ts
+    ↓ (validates structure)
+Client Renderer
+    ↓ (Sucrase transpile OR bundle-artifact/)
+User's Browser
+```
+
 ## Edge Function Decision Tree
 
 Route requests to the appropriate Edge Function based on the scenario:
 
-| Scenario | Function | Model Used |
-|----------|----------|------------|
-| User sends chat message | `chat/` | GLM-4.7 (w/ OpenRouter fallback) |
-| User requests artifact | Tool-calling via `chat/` → `generate_artifact` | GLM-4.7 |
-| Artifact has errors | Tool-calling via `chat/` → `generate_artifact_fix` | GLM-4.7 |
-| First message in session | `generate-title/` | GLM-4.5-Air |
-| User requests image | Tool-calling via `chat/` → `generate_image` | Gemini Flash Image |
-| Conversation exceeds context | `summarize-conversation/` | GLM-4.5-Air |
-| Web search query rewrite | `query-rewriter` (shared) | GLM-4.5-Air |
-| Artifact needs npm packages | `bundle-artifact/` | N/A (esbuild bundler) |
-| Health/uptime monitoring | `health/` | N/A (status check) |
+| Scenario | Function | Model Used | Template Matching |
+|----------|----------|------------|-------------------|
+| User sends chat message | `chat/` | GLM-4.7 (w/ OpenRouter fallback) | N/A |
+| User requests artifact | Tool-calling via `chat/` → `generate_artifact` | GLM-4.7 | ✅ getMatchingTemplate() |
+| Artifact has errors | Tool-calling via `chat/` → `generate_artifact_fix` | GLM-4.7 | N/A (uses existing context) |
+| First message in session | `generate-title/` | GLM-4.5-Air | N/A |
+| User requests image | Tool-calling via `chat/` → `generate_image` | Gemini Flash Image | N/A |
+| Conversation exceeds context | `summarize-conversation/` | GLM-4.5-Air | N/A |
+| Web search query rewrite | `query-rewriter` (shared) | GLM-4.5-Air | N/A |
+| Artifact needs npm packages | `bundle-artifact/` | N/A (esbuild bundler) | N/A |
+| Health/uptime monitoring | `health/` | N/A (status check) | N/A |
 
 ## Status Update System
 
