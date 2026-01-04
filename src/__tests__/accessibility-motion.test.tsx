@@ -17,31 +17,10 @@ vi.mock('@/integrations/supabase/client', () => ({
   },
 }));
 
-// Mock SparkleBackground (modern replacement for ShaderBackground)
-vi.mock('@/components/ui/sparkle-background', () => ({
-  SparkleBackground: ({ className }: { className?: string }) => (
-    <div data-testid="sparkle-background" className={className}>Sparkle</div>
+vi.mock('@/components/ui/shader-background', () => ({
+  ShaderBackground: ({ className }: { className?: string }) => (
+    <div data-testid="shader-background" className={className}>Shader</div>
   ),
-  SPARKLE_DEFAULTS: {
-    height: 100,
-    curvePosition: 53,
-    mobileCurvePosition: 70,
-    density: 100,
-    glowOpacity: 25,
-    particleColor: "#FFFFFF",
-    glowColor: "#8350e8",
-    glowGradient: ["#22c55e", "#3b82f6", "#8b5cf6"],
-    useGradient: true,
-    speed: 0.2,
-    particleSize: 2,
-    particleGlow: true,
-    opacitySpeed: 0.5,
-    minOpacity: 0.7,
-    vignetteWidth: 75,
-    vignetteHeight: 55,
-    gradientSpreadX: 150,
-    gradientSpreadY: 60,
-  },
 }));
 
 vi.mock('@/hooks/use-toast', () => ({
@@ -84,9 +63,9 @@ describe('Accessibility - Motion Preferences', () => {
       // Page should still render correctly
       expect(container).toBeInTheDocument();
 
-      // SparkleBackground should still be present (it's always safe)
-      const sparkle = container.querySelector('[data-testid="sparkle-background"]');
-      expect(sparkle).toBeInTheDocument();
+      // ShaderBackground should still be present (it's always safe)
+      const shader = container.querySelector('[data-testid="shader-background"]');
+      expect(shader).toBeInTheDocument();
     });
 
     it('NotFound page renders with reduced motion preference', () => {
@@ -144,8 +123,8 @@ describe('Accessibility - Motion Preferences', () => {
       expect(container).toBeInTheDocument();
 
       // Animations are enabled (motion/react will handle)
-      const sparkle = container.querySelector('[data-testid="sparkle-background"]');
-      expect(sparkle).toBeInTheDocument();
+      const shader = container.querySelector('[data-testid="shader-background"]');
+      expect(shader).toBeInTheDocument();
     });
 
     it('NotFound page enables full animations', () => {
@@ -171,12 +150,12 @@ describe('Accessibility - Motion Preferences', () => {
         </BrowserRouter>
       );
 
-      // Glass morphism classes should be present (in LoginForm Card)
-      const blurElements = container.querySelectorAll('[class*="backdrop-blur"]');
+      // Glass morphism classes should be present
+      const blurElements = container.querySelectorAll('.backdrop-blur-md');
       expect(blurElements.length).toBeGreaterThan(0);
 
       // Verify text is still readable (has proper foreground classes)
-      const textElements = container.querySelectorAll('[class*="text-"]');
+      const textElements = container.querySelectorAll('.text-foreground, .text-muted-foreground');
       expect(textElements.length).toBeGreaterThan(0);
     });
 
@@ -198,52 +177,53 @@ describe('Accessibility - Motion Preferences', () => {
     });
   });
 
-  describe('Sparkle Background Accessibility', () => {
-    it('sparkle background is purely decorative (z-0 layer)', () => {
+  describe('Shader Background Accessibility', () => {
+    it('shader background is purely decorative (negative z-index)', () => {
       const { container } = render(
         <BrowserRouter>
           <Auth />
         </BrowserRouter>
       );
 
-      const sparkle = container.querySelector('[data-testid="sparkle-background"]');
-      expect(sparkle).toBeInTheDocument();
+      const shader = container.querySelector('[data-testid="shader-background"]');
+      expect(shader).toBeInTheDocument();
 
-      // Should be in a container with z-0 class (modern layering)
-      const sparkleParent = sparkle?.parentElement;
-      expect(sparkleParent).toHaveClass('z-0');
+      // Should be in a container with z-index: -1
+      const shaderParent = shader?.parentElement;
+      expect(shaderParent).toHaveStyle({ zIndex: '-1' });
     });
 
-    it('sparkle does not interfere with screen readers', () => {
+    it('shader does not interfere with screen readers', () => {
       const { container } = render(
         <BrowserRouter>
           <Auth />
         </BrowserRouter>
       );
 
-      const sparkle = container.querySelector('[data-testid="sparkle-background"]');
-      const sparkleParent = sparkle?.parentElement;
+      const shader = container.querySelector('[data-testid="shader-background"]');
+      const shaderParent = shader?.parentElement;
 
       // Background should have pointer-events-none
-      expect(sparkleParent).toHaveClass('pointer-events-none');
+      expect(shaderParent).toHaveClass('pointer-events-none');
 
       // This ensures screen readers skip over it as decorative
     });
 
-    it('maintains readability with sparkle background', () => {
+    it('maintains readability with shader background', () => {
       const { container } = render(
         <BrowserRouter>
           <NotFound />
         </BrowserRouter>
       );
 
-      // Sparkle background is present
-      const sparkle = container.querySelector('[data-testid="sparkle-background"]');
-      expect(sparkle).toBeInTheDocument();
+      // Shader background is present
+      const shader = container.querySelector('[data-testid="shader-background"]');
+      expect(shader).toBeInTheDocument();
 
       // Content is still readable (heading is visible)
       const heading = container.querySelector('h1');
       expect(heading).toBeInTheDocument();
+      expect(heading).toHaveClass('text-foreground');
     });
   });
 
@@ -263,11 +243,11 @@ describe('Accessibility - Motion Preferences', () => {
       );
 
       // Glass effects should still be present
-      const blurElements = container.querySelectorAll('[class*="backdrop-blur"]');
+      const blurElements = container.querySelectorAll('.backdrop-blur-md');
       expect(blurElements.length).toBeGreaterThan(0);
     });
 
-    it('sparkle optimizes for mobile (opacity-30)', () => {
+    it('shader optimizes for mobile (opacity-30)', () => {
       Object.defineProperty(window, 'innerWidth', {
         writable: true,
         configurable: true,
@@ -280,8 +260,8 @@ describe('Accessibility - Motion Preferences', () => {
         </BrowserRouter>
       );
 
-      const sparkle = container.querySelector('[data-testid="sparkle-background"]');
-      expect(sparkle).toHaveClass('opacity-30');
+      const shader = container.querySelector('[data-testid="shader-background"]');
+      expect(shader).toHaveClass('opacity-30');
     });
   });
 });

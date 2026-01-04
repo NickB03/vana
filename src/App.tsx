@@ -10,7 +10,7 @@ import { AnimatePresence } from "motion/react";
 import { AnimatedRoute } from "@/components/AnimatedRoute";
 import { AnimationErrorBoundary } from "@/components/AnimationErrorBoundary";
 import { UpdateNotification } from "@/components/UpdateNotification";
-import { storeVersionInfo, logCacheBustingInfo, isNewVersionAvailable, clearCachesAndReload, verifyDeployment } from "@/utils/cacheBusting";
+import { storeVersionInfo, logCacheBustingInfo, isNewVersionAvailable, clearAllCaches } from "@/utils/cacheBusting";
 import { usePreventOverscroll } from "@/hooks/usePreventOverscroll";
 import { useIOSViewportHeight } from "@/hooks/useIOSViewportHeight";
 
@@ -119,37 +119,13 @@ const App = () => {
   // Initialize version tracking and cache busting on app startup
   useEffect(() => {
     const checkVersion = async () => {
-      try {
-        logVersionInfo();
-        storeVersionInfo();
-        logCacheBustingInfo();
-
-        // Check server for a newer build; reload immediately if found
-        const RELOAD_KEY = 'cache-bust-attempts';
-        const attempts = parseInt(sessionStorage.getItem(RELOAD_KEY) || '0', 10);
-
-        const serverHasNewBuild = await verifyDeployment();
-        if (serverHasNewBuild) {
-          if (attempts >= 3) {
-            console.error('Max cache-bust reload attempts reached, skipping');
-            sessionStorage.removeItem(RELOAD_KEY);
-          } else {
-            sessionStorage.setItem(RELOAD_KEY, String(attempts + 1));
-            await clearCachesAndReload('server-build-newer');
-            return;
-          }
-        } else {
-          // Clear attempts counter on successful load
-          sessionStorage.removeItem(RELOAD_KEY);
-        }
-
-        if (isNewVersionAvailable()) {
-          console.log('A new version is available, clearing cache and reloading...');
-          await clearCachesAndReload('version-mismatch');
-        }
-      } catch (error) {
-        console.error('Version check failed:', error);
-        // Don't prevent app from loading - version check is non-critical
+      logVersionInfo();
+      storeVersionInfo();
+      logCacheBustingInfo();
+      if (isNewVersionAvailable()) {
+        console.log('A new version is available, clearing cache and reloading...');
+        await clearAllCaches();
+        window.location.reload();
       }
     };
     checkVersion();

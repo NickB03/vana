@@ -111,6 +111,7 @@ scripts/archive/
 # Code review reports (temporary analysis artifacts)
 .claude/reports/
 *.coverage-report.txt
+.claude/assets/samples/
 
 # Test coverage and results
 coverage/

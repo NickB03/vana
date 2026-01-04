@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Maximize2 } from "lucide-react";
+import { ChevronDown, Maximize2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { validateFile, sanitizeFilename } from "@/utils/fileValidation";
@@ -14,7 +14,6 @@ import {
   PromptInputTextarea,
 } from "@/components/prompt-kit/prompt-input";
 import { PromptInputControls } from "@/components/prompt-kit/prompt-input-controls";
-import { ScrollButton } from "@/components/ui/scroll-button";
 import { useChatMessages, ChatMessage, type StreamProgress } from "@/hooks/useChatMessages";
 import { useStreamCancellation } from "@/hooks/useStreamCancellation";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
@@ -96,6 +95,8 @@ export function ChatInterface({
   const [artifactMode, setArtifactMode] = useState(initialArtifactMode);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const messageListRef = useRef<HTMLDivElement>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
   const bundleReactFallbackAttemptsRef = useRef<Set<string>>(new Set());
   // Ref to store handleSend for stable access in effects (prevents re-triggering initialPrompt effect)
   const handleSendRef = useRef<((message?: string) => Promise<void>) | null>(null);
@@ -132,6 +133,29 @@ export function ChatInterface({
     }
     return allMessages;
   }, [messages, streamingMessage, sessionId, streamProgress]);
+
+  const updateIsAtBottom = useCallback(() => {
+    const container = messageListRef.current;
+    if (!container) return;
+    const threshold = 32;
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    setIsAtBottom(distanceFromBottom <= threshold);
+  }, []);
+
+  useEffect(() => {
+    const container = messageListRef.current;
+    if (!container) return;
+    updateIsAtBottom();
+    container.addEventListener("scroll", updateIsAtBottom, { passive: true });
+    return () => {
+      container.removeEventListener("scroll", updateIsAtBottom);
+    };
+  }, [updateIsAtBottom]);
+
+  useEffect(() => {
+    updateIsAtBottom();
+  }, [displayMessages.length, updateIsAtBottom]);
 
   // Memoized artifact open handler to prevent breaking memoization
   const handleArtifactOpen = useCallback((artifact: ArtifactData) => {
@@ -705,10 +729,28 @@ export function ChatInterface({
             onCancelStream={cancelStream}
             artifactRenderStatus={artifactRenderStatus}
             className="flex-1 min-h-0"
+            scrollRef={messageListRef}
           />
 
           <div className="absolute bottom-4 right-4 z-10">
-            <ScrollButton className="shadow-sm" />
+            <Button
+              variant="outline"
+              size="icon"
+              className={cn(
+                "rounded-full transition-all duration-150 ease-out shadow-sm",
+                isAtBottom
+                  ? "pointer-events-none translate-y-4 scale-95 opacity-0"
+                  : "translate-y-0 scale-100 opacity-100"
+              )}
+              onClick={() => {
+                const container = messageListRef.current;
+                if (!container) return;
+                container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+              }}
+              aria-label="Scroll to bottom"
+            >
+              <ChevronDown className="h-5 w-5" />
+            </Button>
           </div>
 
           {/* Prompt Input - embedded within chat card */}

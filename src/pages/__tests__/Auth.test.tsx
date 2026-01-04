@@ -26,33 +26,13 @@ vi.mock('@/integrations/supabase/client', () => ({
   },
 }));
 
-// Mock SparkleBackground to avoid WebGL/canvas in tests
-vi.mock('@/components/ui/sparkle-background', () => ({
-  SparkleBackground: ({ className }: { className?: string }) => (
-    <div data-testid="sparkle-background" className={className}>
-      Sparkle Background Mock
+// Mock ShaderBackground to avoid WebGL in tests
+vi.mock('@/components/ui/shader-background', () => ({
+  ShaderBackground: ({ className }: { className?: string }) => (
+    <div data-testid="shader-background" className={className}>
+      Shader Background Mock
     </div>
   ),
-  SPARKLE_DEFAULTS: {
-    height: 100,
-    curvePosition: 53,
-    mobileCurvePosition: 70,
-    density: 100,
-    glowOpacity: 25,
-    particleColor: "#FFFFFF",
-    glowColor: "#8350e8",
-    glowGradient: ["#22c55e", "#3b82f6", "#8b5cf6"],
-    useGradient: true,
-    speed: 0.2,
-    particleSize: 2,
-    particleGlow: true,
-    opacitySpeed: 0.5,
-    minOpacity: 0.7,
-    vignetteWidth: 75,
-    vignetteHeight: 55,
-    gradientSpreadX: 150,
-    gradientSpreadY: 60,
-  },
 }));
 
 // Mock toast hook
@@ -70,19 +50,19 @@ describe('Auth Page - UI Consistency', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByTestId('sparkle-background')).toBeInTheDocument();
+    expect(screen.getByTestId('shader-background')).toBeInTheDocument();
   });
 
-  it('renders SparkleBackground component with opacity-30', () => {
-    render(
+  it('renders ShaderBackground component with opacity-30', () => {
+    const { container } = render(
       <BrowserRouter>
         <Auth />
       </BrowserRouter>
     );
 
-    const sparkle = screen.getByTestId('sparkle-background');
-    expect(sparkle).toBeInTheDocument();
-    expect(sparkle).toHaveClass('opacity-30');
+    const shader = screen.getByTestId('shader-background');
+    expect(shader).toBeInTheDocument();
+    expect(shader).toHaveClass('opacity-30');
   });
 
   it('has background layers with correct z-index', () => {
@@ -92,15 +72,15 @@ describe('Auth Page - UI Consistency', () => {
       </BrowserRouter>
     );
 
-    // Find elements with z-index styles (modern PageLayout uses z-0 and z-10)
+    // Find elements with z-index: -1 (background layers)
     const backgrounds = container.querySelectorAll('[style*="z-index"]');
     expect(backgrounds.length).toBeGreaterThan(0);
 
-    // Verify at least one has z-index: 0 (gradient overlay)
-    const hasZeroZIndex = Array.from(backgrounds).some(
-      (el) => (el as HTMLElement).style.zIndex === '0'
+    // Verify at least one has z-index: -1
+    const hasNegativeZIndex = Array.from(backgrounds).some(
+      (el) => (el as HTMLElement).style.zIndex === '-1'
     );
-    expect(hasZeroZIndex).toBe(true);
+    expect(hasNegativeZIndex).toBe(true);
   });
 
   it('has pointer-events-none on background layers', () => {
@@ -121,12 +101,13 @@ describe('Auth Page - UI Consistency', () => {
       </BrowserRouter>
     );
 
-    // Auth page has sparkle background via PageLayout
-    const sparkle = container.querySelector('[data-testid="sparkle-background"]');
-    expect(sparkle).toBeInTheDocument();
+    // Auth page has shader background and proper z-index layering
+    // (Radial gradient is global in Home.tsx, not in Auth.tsx)
+    const shader = container.querySelector('[data-testid="shader-background"]');
+    expect(shader).toBeInTheDocument();
 
-    // Verify background layers have correct z-index (z-0 for overlays)
-    const zIndexLayers = container.querySelectorAll('[style*="z-index: 0"]');
+    // Verify background layers have correct z-index
+    const zIndexLayers = container.querySelectorAll('[style*="z-index: -1"]');
     expect(zIndexLayers.length).toBeGreaterThan(0);
   });
 
@@ -184,7 +165,7 @@ describe('Auth Page - UI Consistency', () => {
     );
 
     // Component should handle OAuth state
-    expect(screen.getByTestId('sparkle-background')).toBeInTheDocument();
+    expect(screen.getByTestId('shader-background')).toBeInTheDocument();
 
     // Restore
     window.location = originalLocation;
@@ -198,8 +179,8 @@ describe('Auth Page - UI Consistency', () => {
     );
 
     // LoginForm should have glass effect classes
-    // Check for backdrop-blur class on the Card component
-    const blurElements = container.querySelectorAll('[class*="backdrop-blur"]');
+    // Check for backdrop-blur class
+    const blurElements = container.querySelectorAll('.backdrop-blur-md');
     expect(blurElements.length).toBeGreaterThan(0);
   });
 });

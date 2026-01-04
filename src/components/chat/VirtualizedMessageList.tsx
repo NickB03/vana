@@ -31,6 +31,7 @@ interface VirtualizedMessageListProps {
   streamProgress?: StreamProgress;
   onCancelStream?: () => void;
   artifactRenderStatus?: 'pending' | 'rendered' | 'error';
+  scrollRef?: React.RefObject<HTMLDivElement>;
 }
 
 /**
@@ -85,8 +86,10 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
   streamProgress,
   onCancelStream,
   artifactRenderStatus,
+  scrollRef,
 }: VirtualizedMessageListProps) {
-  const parentRef = useRef<HTMLDivElement>(null);
+  const internalRef = useRef<HTMLDivElement>(null);
+  const parentRef = scrollRef ?? internalRef;
 
   // Estimate size based on message content
   const estimateSize = useCallback((index: number) => {

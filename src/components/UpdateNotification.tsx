@@ -1,8 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, RefreshCw } from 'lucide-react';
-import { clearCachesAndReload } from '@/utils/cacheBusting';
-import { logError } from '@/utils/errorLogging';
 
 /**
  * UpdateNotification Component
@@ -16,32 +14,6 @@ import { logError } from '@/utils/errorLogging';
 export function UpdateNotification() {
   const [isVisible, setIsVisible] = useState(false);
   const [isReloading, setIsReloading] = useState(false);
-  const reloadTriggeredRef = useRef(false);
-  const reloadTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
-
-  const triggerReload = useCallback(async (reason: string) => {
-    if (reloadTriggeredRef.current) return;
-    reloadTriggeredRef.current = true;
-    setIsReloading(true);
-    console.log(`🔁 Enforcing immediate update: ${reason}`);
-    await clearCachesAndReload(reason);
-  }, []);
-
-  const activateAndReload = useCallback((worker: ServiceWorker | null, reason: string) => {
-    if (!worker) return;
-    // Skip waiting and force the new service worker to take control
-    try {
-      worker.postMessage({ type: 'SKIP_WAITING' });
-    } catch (error) {
-      logError(error instanceof Error ? error : new Error(String(error)), {
-        errorId: 'SERVICE_WORKER_POST_MESSAGE_FAILED',
-        metadata: { reason },
-      });
-    }
-    // Fallback: if controllerchange doesn't fire quickly, reload anyway
-    if (reloadTimeoutRef.current) clearTimeout(reloadTimeoutRef.current);
-    reloadTimeoutRef.current = setTimeout(() => triggerReload(`${reason}-timeout`), 400);
-  }, [triggerReload]);
 
   useEffect(() => {
     if (!navigator.serviceWorker) return;
@@ -56,21 +28,11 @@ export function UpdateNotification() {
       newWorker.addEventListener('statechange', () => {
         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
           // New service worker is ready and there's an active controller
+          // This means an update is available
           setIsVisible(true);
-          setIsReloading(true);
-          console.log('🔄 Update available - forcing immediate reload');
-          activateAndReload(newWorker, 'updatefound-installed');
+          console.log('🔄 Update available - showing notification');
         }
       });
-    };
-
-    const checkExistingWaitingWorker = (reg: ServiceWorkerRegistration | null) => {
-      if (reg?.waiting) {
-        setIsVisible(true);
-        setIsReloading(true);
-        console.log('🆕 Waiting service worker detected - forcing reload');
-        activateAndReload(reg.waiting, 'existing-waiting');
-      }
     };
 
     const setup = async () => {
@@ -79,35 +41,17 @@ export function UpdateNotification() {
         if (registration) {
           registration.addEventListener('updatefound', handleUpdateFound);
 
-          // Force an immediate update check on page load
-          try {
-            await registration.update();
-          } catch (error) {
-            logError(error instanceof Error ? error : new Error(String(error)), {
-              errorId: 'SERVICE_WORKER_UPDATE_CHECK_FAILED',
-              metadata: { phase: 'initial-check' },
-            });
-          }
-
-          // If a waiting worker is already present (user returned to stale tab), upgrade immediately
-          checkExistingWaitingWorker(registration);
-
           // Check for updates every 30 seconds
           interval = setInterval(async () => {
             try {
               await registration?.update();
             } catch (error) {
-              logError(error instanceof Error ? error : new Error(String(error)), {
-                errorId: 'SERVICE_WORKER_UPDATE_CHECK_FAILED',
-                metadata: { phase: 'interval-check' },
-              });
+              console.error('Error checking for updates:', error);
             }
           }, 30000);
         }
       } catch (error) {
-        logError(error instanceof Error ? error : new Error(String(error)), {
-          errorId: 'SERVICE_WORKER_SETUP_FAILED',
-        });
+        console.error('Service Worker setup error:', error);
       }
     };
 
@@ -119,46 +63,20 @@ export function UpdateNotification() {
       if (registration) {
         registration.removeEventListener('updatefound', handleUpdateFound);
       }
-      if (reloadTimeoutRef.current) clearTimeout(reloadTimeoutRef.current);
     };
-  }, [activateAndReload]);
+  }, []);
 
-  useEffect(() => {
-    if (!navigator.serviceWorker) return;
-
-    const handleControllerChange = () => {
-      console.log('✅ New service worker controlling page - reloading now');
-      triggerReload('controller-change');
-    };
-
-    navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
-
-    return () => {
-      navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
-    };
-  }, [triggerReload]);
-
-  const handleReload = async () => {
-    if (reloadTriggeredRef.current) return;
-    reloadTriggeredRef.current = true;
+  const handleReload = () => {
     setIsReloading(true);
-
-    // Get registration and send to WAITING worker, not controller
-    try {
-      const registration = await navigator.serviceWorker.getRegistration();
-      if (registration?.waiting) {
-        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      }
-    } catch (error) {
-      logError(error instanceof Error ? error : new Error(String(error)), {
-        errorId: 'SERVICE_WORKER_POST_MESSAGE_FAILED',
-        metadata: { phase: 'manual-reload' },
-      });
+    
+    // Signal service worker to skip waiting
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
     }
 
     // Reload after a short delay
     setTimeout(() => {
-      triggerReload('manual-reload');
+      window.location.reload();
     }, 100);
   };
 
@@ -221,3 +139,4 @@ export function UpdateNotification() {
     </div>
   );
 }
+
