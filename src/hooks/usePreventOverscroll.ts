@@ -35,6 +35,12 @@ export function usePreventOverscroll() {
 
     /**
      * Find the nearest scrollable ancestor
+     *
+     * IMPORTANT: We check for overflow: auto/scroll WITHOUT requiring actual
+     * overflow (scrollHeight > clientHeight). This is because:
+     * 1. Chat containers should be scrollable even when content is small
+     * 2. The isAtScrollBoundary check handles the "nothing to scroll" case
+     * 3. Requiring actual overflow blocks touch events on potential scroll containers
      */
     const getScrollableAncestor = (el: HTMLElement | null): HTMLElement | null => {
       while (el && el !== document.body) {
@@ -42,11 +48,11 @@ export function usePreventOverscroll() {
         const overflowY = style.overflowY;
         const overflowX = style.overflowX;
 
-        // Check if element can scroll
-        const canScrollY = (overflowY === 'auto' || overflowY === 'scroll') &&
-          el.scrollHeight > el.clientHeight;
-        const canScrollX = (overflowX === 'auto' || overflowX === 'scroll') &&
-          el.scrollWidth > el.clientWidth;
+        // Check if element is configured for scrolling (ignore if content actually overflows)
+        // This allows touch events to pass through to scroll containers that may
+        // not currently have overflow but could scroll when content grows
+        const canScrollY = overflowY === 'auto' || overflowY === 'scroll';
+        const canScrollX = overflowX === 'auto' || overflowX === 'scroll';
 
         if (canScrollY || canScrollX) {
           return el;
@@ -59,6 +65,12 @@ export function usePreventOverscroll() {
 
     /**
      * Check if element is at scroll boundary
+     *
+     * Returns true only if:
+     * 1. The element has actual scrollable content (scrollHeight > clientHeight)
+     * 2. AND the user is trying to scroll past the boundary
+     *
+     * If there's no overflow, we return false to allow touch events through
      */
     const isAtScrollBoundary = (
       el: HTMLElement,
@@ -67,24 +79,35 @@ export function usePreventOverscroll() {
     ): boolean => {
       const { scrollTop, scrollLeft, scrollHeight, scrollWidth, clientHeight, clientWidth } = el;
 
-      // Pulling down at top
-      if (deltaY > 0 && scrollTop <= 0) {
-        return true;
+      // Check if there's actual vertical overflow
+      const hasVerticalOverflow = scrollHeight > clientHeight + 1;
+      // Check if there's actual horizontal overflow
+      const hasHorizontalOverflow = scrollWidth > clientWidth + 1;
+
+      // Vertical boundary checks (only if content actually overflows)
+      if (hasVerticalOverflow) {
+        // Pulling down at top
+        if (deltaY > 0 && scrollTop <= 0) {
+          return true;
+        }
+
+        // Pulling up at bottom
+        if (deltaY < 0 && scrollTop + clientHeight >= scrollHeight - 1) {
+          return true;
+        }
       }
 
-      // Pulling up at bottom
-      if (deltaY < 0 && scrollTop + clientHeight >= scrollHeight - 1) {
-        return true;
-      }
+      // Horizontal boundary checks (only if content actually overflows)
+      if (hasHorizontalOverflow) {
+        // Pulling right at left edge
+        if (deltaX > 0 && scrollLeft <= 0) {
+          return true;
+        }
 
-      // Pulling right at left edge
-      if (deltaX > 0 && scrollLeft <= 0) {
-        return true;
-      }
-
-      // Pulling left at right edge
-      if (deltaX < 0 && scrollLeft + clientWidth >= scrollWidth - 1) {
-        return true;
+        // Pulling left at right edge
+        if (deltaX < 0 && scrollLeft + clientWidth >= scrollWidth - 1) {
+          return true;
+        }
       }
 
       return false;
