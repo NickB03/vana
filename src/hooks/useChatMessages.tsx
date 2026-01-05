@@ -281,6 +281,22 @@ export function useChatMessages(
         description: "Failed to save message",
         variant: "destructive",
       });
+
+      // BUG FIX: Still add message to local state even if DB save fails
+      // This prevents blank screen when database is unavailable
+      // The message won't persist but at least the user can see the response
+      const tempMessage: ChatMessage = {
+        id: crypto.randomUUID(),
+        session_id: sessionId || 'guest',
+        role,
+        content,
+        reasoning: reasoning || null,
+        reasoning_steps: validatedReasoningSteps,
+        search_results: searchResults || null,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, tempMessage]);
+      return tempMessage;
     }
   };
 
@@ -919,20 +935,9 @@ export function useChatMessages(
       try {
         await Promise.race([savePromise, timeoutPromise]);
       } catch (saveError) {
-        // If save fails or times out, log but continue - don't let it block completion
-        console.error("[useChatMessages] Message save error (continuing anyway):", saveError);
-        // Optimistically add message to local state in case save failed
-        const tempMessage: ChatMessage = {
-          id: crypto.randomUUID(),
-          session_id: sessionId || 'guest',
-          role: 'assistant',
-          content: fullResponse,
-          reasoning: reasoningText || null,
-          reasoning_steps: reasoningSteps,
-          search_results: searchResults || null,
-          created_at: new Date().toISOString(),
-        };
-        setMessages((prev) => [...prev, tempMessage]);
+        // Timeout or unexpected error - saveMessage() handles its own errors internally
+        // and adds a temp message to local state, so we just log here
+        console.error("[useChatMessages] Message save error (message still visible locally):", saveError);
       }
 
       // Clear streaming state synchronously to prevent race condition
