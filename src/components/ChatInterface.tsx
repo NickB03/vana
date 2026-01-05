@@ -105,10 +105,24 @@ export function ChatInterface({
   // Use stable timestamp that doesn't change on every render (prevents VirtualizedMessageList re-measurement loops)
   const streamingTimestampRef = useRef<string | null>(null);
 
-  // Create displayMessages array that includes streaming message for virtualized rendering
-  // This combines completed messages with the current streaming message (if any)
-  // ENHANCED: Include streaming data (reasoning, reasoning_steps, search_results) in the streaming message
-  // BUG FIX: Strip artifact XML from streaming content to prevent raw tags from showing
+  /**
+   * BUG FIX: Display messages with proper streaming state detection
+   *
+   * Issues fixed:
+   * 1. Use isStreaming flag instead of streamingMessage to prevent stale closures
+   *    - streamingMessage object reference changes on every update
+   *    - Checking its truthiness caused useMemo to miss updates
+   *    - isStreaming is a stable boolean that triggers re-renders correctly
+   *
+   * 2. Strip artifact XML from streaming content (prevents raw tags showing)
+   *    - XML stripping happens in message processing pipeline
+   *    - This useMemo ensures streaming message included in display array
+   *
+   * Dependencies:
+   * - isStreaming: Prevents infinite loops from streamingMessage reference changes
+   * - streamingMessage: Updates displayed content as stream progresses
+   * - messages: Base message array to append streaming message to
+   */
   const displayMessages = useMemo(() => {
     const allMessages = [...messages];
     if (isStreaming) {

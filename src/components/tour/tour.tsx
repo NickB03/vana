@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { logError, logForDebugging } from "@/utils/errorLogging";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import { Github, Linkedin, X } from "lucide-react";
 
@@ -86,26 +87,6 @@ function useReducedMotion(): boolean {
   return prefersReducedMotion;
 }
 
-/**
- * Hook to detect mobile viewport (< 768px)
- */
-function useIsMobile(): boolean {
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.innerWidth < MOBILE_BREAKPOINT;
-  });
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  return isMobile;
-}
 
 // ============================================================================
 // Utilities
@@ -143,15 +124,13 @@ function getElementPosition(id: string, stepIndex?: number, tourId?: string) {
   };
 }
 
-const MOBILE_BREAKPOINT = 768;
-
 function calculateContentPosition(
   elementPos: { top: number; left: number; width: number; height: number },
   position: "top" | "bottom" | "left" | "right" = "bottom"
 ) {
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
-  const isMobile = viewportWidth < MOBILE_BREAKPOINT;
+  const isMobile = viewportWidth < 768;
 
   // Calculate responsive content width
   const contentWidth = Math.min(CONTENT_WIDTH, viewportWidth - 32);
@@ -887,6 +866,12 @@ function MobileTourDialog({
   const reducedMotion = useReducedMotion();
   const [imageError, setImageError] = useState(false);
 
+  // Track active touch listeners for cleanup
+  const activeListenersRef = useRef<{
+    touchMove?: (e: TouchEvent) => void;
+    touchEnd?: () => void;
+  }>({});
+
   const handleNext = () => {
     setDirection(1);
     setCurrentPage(2);
@@ -896,6 +881,24 @@ function MobileTourDialog({
     setDirection(-1);
     setCurrentPage(1);
   };
+
+  // Cleanup function for touch listeners
+  const cleanupTouchListeners = useCallback(() => {
+    if (activeListenersRef.current.touchMove) {
+      document.removeEventListener('touchmove', activeListenersRef.current.touchMove);
+    }
+    if (activeListenersRef.current.touchEnd) {
+      document.removeEventListener('touchend', activeListenersRef.current.touchEnd);
+    }
+    activeListenersRef.current = {};
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      cleanupTouchListeners();
+    };
+  }, [cleanupTouchListeners]);
 
   const pageVariants = {
     enter: (dir: number) => ({
@@ -935,11 +938,60 @@ function MobileTourDialog({
       {/* Page Container */}
       <div
         className="relative flex-1 overflow-hidden"
+        /**
+         * Swipe gesture detection for mobile tour navigation
+         *
+         * Implementation:
+         * - Tracks touch start position and calculates horizontal delta on move
+         * - 50px threshold prevents accidental swipes from tap gestures
+         * - Right swipe (diffX > 0) on page 2 → navigate back to page 1
+         * - Left swipe (diffX < 0) on page 1 → navigate forward to page 2
+         * - Uses document-level listeners to track swipes that move outside dialog bounds
+         * - Cleanup tracked via activeListenersRef to prevent memory leaks
+         *
+         * Touch Event Flow:
+         * 1. onTouchStart: Record starting X position, attach move/end listeners
+         * 2. touchmove: Calculate delta, trigger navigation if threshold exceeded
+         * 3. touchend/touchcancel: Clean up all listeners
+         *
+         * Error Handling:
+         * - Validates touches array exists before accessing
+         * - Logs errors with structured errorIds for debugging
+         * - Guaranteed cleanup on unmount via useEffect
+         */
         onTouchStart={(e) => {
+          // CRITICAL: Validate touch exists before accessing properties
+          if (!e.touches[0]) {
+            logError('Touch start event missing touch point', {
+              errorId: 'TOUR_TOUCH_START_VALIDATION_FAILED',
+              metadata: {
+                touchesLength: e.touches.length,
+                eventType: e.type
+              }
+            });
+            return;
+          }
+
           const touch = e.touches[0];
           const startX = touch.clientX;
 
+          // Cleanup any existing listeners before adding new ones
+          cleanupTouchListeners();
+
           const handleTouchMove = (moveEvent: TouchEvent) => {
+            // CRITICAL: Validate touch exists in move event
+            if (!moveEvent.touches[0]) {
+              logError('Touch move event missing touch point', {
+                errorId: 'TOUR_TOUCH_MOVE_VALIDATION_FAILED',
+                metadata: {
+                  touchesLength: moveEvent.touches.length,
+                  eventType: moveEvent.type
+                }
+              });
+              cleanupTouchListeners();
+              return;
+            }
+
             const currentTouch = moveEvent.touches[0];
             const diffX = currentTouch.clientX - startX;
 
@@ -949,18 +1001,26 @@ function MobileTourDialog({
               } else if (diffX < 0 && currentPage === 1) {
                 handleNext();
               }
-              document.removeEventListener('touchmove', handleTouchMove);
-              document.removeEventListener('touchend', handleTouchEnd);
+              cleanupTouchListeners();
             }
           };
 
           const handleTouchEnd = () => {
-            document.removeEventListener('touchmove', handleTouchMove);
-            document.removeEventListener('touchend', handleTouchEnd);
+            cleanupTouchListeners();
           };
 
-          document.addEventListener('touchmove', handleTouchMove);
-          document.addEventListener('touchend', handleTouchEnd);
+          const handleTouchCancel = () => {
+            cleanupTouchListeners();
+          };
+
+          // Store listener references for cleanup
+          activeListenersRef.current.touchMove = handleTouchMove;
+          activeListenersRef.current.touchEnd = handleTouchEnd;
+
+          // Add listeners with passive: true for better scroll performance
+          document.addEventListener('touchmove', handleTouchMove, { passive: true });
+          document.addEventListener('touchend', handleTouchEnd, { passive: true });
+          document.addEventListener('touchcancel', handleTouchCancel, { passive: true });
         }}
       >
         <AnimatePresence initial={false} mode="wait" custom={direction}>

@@ -55,9 +55,17 @@ const queryClient = new QueryClient({
 
 /**
  * RootRoute: Renders Home which shows the main app interface
- * 
- * Landing page functionality has been disabled.
- * The app interface now renders directly with onboarding tour for new users.
+ *
+ * Landing page removed in PR #497:
+ * - Previous: Scroll-triggered transition from landing → app interface
+ * - Current: Direct app render with onboarding tour for new users
+ *
+ * Rationale:
+ * - Simplified user flow (one less step to reach core functionality)
+ * - Better mobile UX (mobile tour now optimized for touch)
+ * - Reduced complexity (no scroll tracking or phase management)
+ *
+ * Note: Landing content preserved in git history for reference
  */
 const RootRoute = () => {
   return <AnimatedRoute><Home /></AnimatedRoute>;
