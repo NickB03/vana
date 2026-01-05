@@ -258,9 +258,18 @@ export function ChatInterface({
       return;
     }
 
+    // CRITICAL FIX: Set UI feedback states IMMEDIATELY before any async operations
+    // This ensures the reasoning ticker appears instantly, not after throttle wait
     setInput("");
     setIsStreaming(true);
     setStreamingMessage("");
+    // Initialize progress with "analyzing" state for immediate feedback
+    setStreamProgress({
+      stage: "analyzing",
+      message: "Analyzing request...",
+      artifactDetected: false,
+      percentage: 0
+    });
 
     // IMPORTANT: Only force tool choice for explicit image generation mode
     // For artifacts, use "auto" and let GLM decide based on the prompt

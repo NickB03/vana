@@ -312,11 +312,13 @@ export function useChatMessages(
     const MAX_RETRIES = 3;
     const RETRY_DELAYS = [2000, 5000, 10000]; // Exponential backoff: 2s, 5s, 10s
 
-    setIsLoading(true);
+    // IMPORTANT: Don't set loading state here - caller should set it BEFORE calling streamChat
+    // This ensures UI feedback appears immediately, not after throttle wait
     setArtifactRenderStatus('pending');
 
     try {
       // Client-side throttling: silently wait for token (protects API from burst requests)
+      // NOTE: Caller has already set isStreaming=true, so UI shows feedback during this wait
       await chatRequestThrottle.waitForToken();
       // Get actual auth status from server (not client flags)
       const { data: { session } } = await supabase.auth.getSession();
