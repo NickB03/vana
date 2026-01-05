@@ -12,8 +12,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { logError, logForDebugging } from "@/utils/errorLogging";
 
-import { Sparkles, X } from "lucide-react";
+import { Github, Linkedin, X } from "lucide-react";
 
 // ============================================================================
 // Types
@@ -89,12 +90,26 @@ function useReducedMotion(): boolean {
 // Utilities
 // ============================================================================
 
-function getElementPosition(id: string) {
+function getElementPosition(id: string, stepIndex?: number, tourId?: string) {
   const element = document.getElementById(id);
   if (!element) {
-    console.warn(
+    logForDebugging(
       `[Tour] Target element "${id}" not found in DOM. ` +
       `Ensure the element has id="${id}" and is rendered before starting the tour.`
+    );
+    logError(
+      `Tour target element not found: ${id}`,
+      {
+        errorId: 'TOUR_ELEMENT_NOT_FOUND',
+        metadata: {
+          selectorId: id,
+          stepIndex,
+          tourId,
+          availableIds: Array.from(document.querySelectorAll('[id]'))
+            .map(el => el.id)
+            .slice(0, 20), // First 20 IDs for debugging
+        }
+      }
     );
     return null;
   }
@@ -201,8 +216,16 @@ export function TourProvider({
         }
       }
     } catch (error) {
-      console.warn(
-        `[Tour] Failed to load tour state from localStorage: ${error instanceof Error ? error.message : 'Unknown error'}`
+      logError(
+        error instanceof Error ? error : new Error('Failed to load tour state'),
+        {
+          errorId: 'TOUR_LOCALSTORAGE_READ_FAILED',
+          metadata: {
+            storageKey,
+            errorType: error instanceof Error ? error.name : 'Unknown',
+            errorMessage: error instanceof Error ? error.message : String(error),
+          }
+        }
       );
     }
   }, [storageKey]);
@@ -219,10 +242,24 @@ export function TourProvider({
       );
     } catch (error) {
       if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-        console.warn('[Tour] localStorage quota exceeded. Tour completion state will not persist.');
+        logError(
+          'localStorage quota exceeded - tour state will not persist',
+          {
+            errorId: 'TOUR_LOCALSTORAGE_QUOTA_EXCEEDED',
+            metadata: { storageKey, isCompleted, currentStep }
+          }
+        );
       } else {
-        console.warn(
-          `[Tour] Failed to save tour state: ${error instanceof Error ? error.message : 'Unknown error'}`
+        logError(
+          error instanceof Error ? error : new Error('Failed to save tour state'),
+          {
+            errorId: 'TOUR_LOCALSTORAGE_WRITE_FAILED',
+            metadata: {
+              storageKey,
+              errorType: error instanceof Error ? error.name : 'Unknown',
+              errorMessage: error instanceof Error ? error.message : String(error),
+            }
+          }
         );
       }
     }
@@ -230,12 +267,16 @@ export function TourProvider({
 
   const updateElementPosition = useCallback(() => {
     if (currentStep >= 0 && currentStep < steps.length) {
-      const position = getElementPosition(steps[currentStep]?.selectorId ?? "");
+      const position = getElementPosition(
+        steps[currentStep]?.selectorId ?? "",
+        currentStep,
+        tourId
+      );
       if (position) {
         setElementPosition(position);
       }
     }
-  }, [currentStep, steps]);
+  }, [currentStep, steps, tourId]);
 
   useEffect(() => {
     updateElementPosition();
@@ -288,21 +329,32 @@ export function TourProvider({
 
   const startTour = useCallback(() => {
     if (isTourCompleted) {
-      console.warn('[Tour] Attempted to start completed tour. Call setIsTourCompleted(false) first to restart.');
+      const message = 'Attempted to start completed tour';
+      if (import.meta.env.DEV) {
+        console.warn(`[Tour] ${message}. Call setIsTourCompleted(false) first to restart.`);
+      }
+      logError(message, {
+        errorId: 'TOUR_START_WHEN_COMPLETED',
+        metadata: { tourId }
+      });
       return;
     }
 
     if (steps.length === 0) {
-      console.warn(
-        '[Tour] Cannot start tour: No steps defined. ' +
-        'Call setSteps() with tour step configuration before starting.'
-      );
+      const message = 'Cannot start tour: No steps defined';
+      if (import.meta.env.DEV) {
+        console.warn(`[Tour] ${message}. Call setSteps() with tour step configuration before starting.`);
+      }
+      logError(message, {
+        errorId: 'TOUR_START_NO_STEPS',
+        metadata: { tourId }
+      });
       return;
     }
 
     setDirection("next");
     setCurrentStep(0);
-  }, [isTourCompleted, steps.length]);
+  }, [isTourCompleted, steps.length, tourId]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -381,15 +433,15 @@ export function TourProvider({
   const contentAnimation = useMemo(() => (
     reducedMotion
       ? {
-          initial: { opacity: 0 },
-          animate: { opacity: 1 },
-          exit: { opacity: 0 },
-        }
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+      }
       : {
-          initial: { opacity: 0, x: 20 * contentSlideDirection, filter: "blur(4px)" },
-          animate: { opacity: 1, x: 0, filter: "blur(0px)" },
-          exit: { opacity: 0, x: -20 * contentSlideDirection, filter: "blur(4px)" },
-        }
+        initial: { opacity: 0, x: 20 * contentSlideDirection, filter: "blur(4px)" },
+        animate: { opacity: 1, x: 0, filter: "blur(0px)" },
+        exit: { opacity: 0, x: -20 * contentSlideDirection, filter: "blur(4px)" },
+      }
   ), [reducedMotion, contentSlideDirection]);
 
   return (
@@ -600,6 +652,7 @@ export function TourAlertDialog({
 }) {
   const { startTour, steps, isTourCompleted, currentStep } = useTour();
   const reducedMotion = useReducedMotion();
+  const [imageError, setImageError] = useState(false);
 
   if (isTourCompleted || steps.length === 0 || currentStep > -1) {
     return null;
@@ -609,74 +662,166 @@ export function TourAlertDialog({
     setIsOpen(false);
   };
 
-  const iconAnimation = reducedMotion
+  const imageAnimation = reducedMotion
     ? {
-        initial: { scale: 0.9, opacity: 0 },
-        animate: { scale: 1, opacity: 1 },
-      }
+      initial: { scale: 0.9, opacity: 0 },
+      animate: { scale: 1, opacity: 1 },
+    }
     : {
-        initial: { scale: 0.5, rotate: -180, opacity: 0 },
-        animate: {
-          scale: 1,
-          rotate: 0,
-          opacity: 1,
-          y: [0, -12, 0],
-        },
-      };
+      initial: { scale: 0.8, opacity: 0 },
+      animate: { scale: 1, opacity: 1 },
+    };
 
-  const iconTransition = reducedMotion
+  const imageTransition = reducedMotion
     ? { duration: 0.2 }
-    : {
-        scale: { duration: 0.5, ease: [0.34, 1.56, 0.64, 1] },
-        rotate: { duration: 0.5, ease: "easeOut" },
-        opacity: { duration: 0.3 },
-        y: {
-          duration: 3,
-          repeat: Infinity,
-          ease: "easeInOut",
-        },
-      };
+    : { duration: 0.5, ease: [0.34, 1.56, 0.64, 1] as [number, number, number, number] };
 
   return (
     <AlertDialog open={isOpen}>
-      <AlertDialogContent className="max-w-md w-[calc(100vw-32px)] sm:w-full p-4 sm:p-6 flex flex-col">
-        <AlertDialogHeader className="flex flex-col items-center justify-center flex-shrink-0">
-          <div className="relative mb-4">
-            <motion.div {...iconAnimation} transition={iconTransition}>
-              <div className="relative">
-                <Sparkles className="size-24 stroke-1 text-primary" />
-                {/* Subtle pulse ring - only if motion not reduced */}
-                {!reducedMotion && (
-                  <motion.div
-                    className="absolute inset-0 rounded-full bg-primary/20"
-                    animate={{
-                      scale: [1, 1.4, 1],
-                      opacity: [0.4, 0, 0.4],
-                    }}
-                    transition={{
-                      duration: 2.5,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                  />
-                )}
-              </div>
+      <AlertDialogContent className="max-w-4xl w-[calc(100vw-32px)] sm:w-full p-0 flex flex-col overflow-hidden bg-card border-border shadow-2xl">
+        <div className="flex flex-col md:flex-row h-full">
+          {/* Left Column - Profile & Connect (Desktop Only) */}
+          <div className="hidden md:flex md:w-[280px] bg-muted/30 md:border-r border-border p-8 flex-col items-center justify-start text-center space-y-6 pt-12">
+            <motion.div
+              className="relative group"
+              {...imageAnimation}
+              transition={imageTransition}
+            >
+              <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary/20 to-secondary/20 blur-xl opacity-50 group-hover:opacity-75 transition-opacity duration-500" />
+              {imageError ? (
+                <div className="relative size-32 rounded-full bg-muted flex items-center justify-center shadow-2xl">
+                  <span className="text-4xl">👤</span>
+                </div>
+              ) : (
+                <img
+                  src="/nick-profile.jpeg"
+                  alt=""
+                  role="presentation"
+                  className="relative size-32 rounded-full object-cover shadow-2xl transition-transform duration-500 group-hover:scale-105"
+                  onError={(e) => {
+                    logError(
+                      `Profile image failed to load: ${e.currentTarget.src}`,
+                      {
+                        errorId: 'TOUR_PROFILE_IMAGE_LOAD_FAILED',
+                        metadata: {
+                          src: e.currentTarget.src,
+                          naturalWidth: e.currentTarget.naturalWidth,
+                          naturalHeight: e.currentTarget.naturalHeight,
+                        }
+                      }
+                    );
+                    setImageError(true);
+                  }}
+                />
+              )}
             </motion.div>
+
+            <div className="space-y-2">
+              <h3 className="font-bold text-lg text-foreground">Nick Bohmer</h3>
+            </div>
+
+            <div className="w-full space-y-3">
+              <Button
+                asChild
+                className="w-full bg-[#0077b5] text-white hover:bg-[#0077b5]/90 border-none transition-colors"
+              >
+                <a
+                  href="https://www.linkedin.com/in/nickbohmer/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2"
+                >
+                  <Linkedin className="size-4 fill-white text-white" />
+                  <span>Connect on LinkedIn</span>
+                </a>
+              </Button>
+
+              <Button
+                asChild
+                className="w-full transition-colors"
+              >
+                <a
+                  href="https://github.com/NickB03/llm-chat-site"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2"
+                >
+                  <Github className="size-4" />
+                  <span>View on GitHub</span>
+                </a>
+              </Button>
+            </div>
           </div>
-          <AlertDialogTitle className="text-center text-xl font-medium">
-            Welcome to Vana
-          </AlertDialogTitle>
-          <AlertDialogDescription className="text-muted-foreground mt-2 text-center text-sm">
-            Take a quick tour to learn about the key features and functionality of this application.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <div className="mt-6 space-y-3 flex-shrink-0">
-          <Button onClick={startTour} className="w-full h-11">
-            Start Tour
-          </Button>
-          <Button onClick={handleSkip} variant="ghost" className="w-full h-11">
-            Skip Tour
-          </Button>
+
+          {/* Right Column - Content */}
+          <div className="flex-1 flex flex-col p-5 md:p-6 max-h-[85vh] md:max-h-[600px] overflow-y-auto">
+            <AlertDialogHeader className="mb-6 text-left">
+              <AlertDialogTitle className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+                Welcome to Vana
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-base text-muted-foreground mt-2">
+                Thank you for visiting Vana and I'm excited to show you around.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <div className="space-y-4 flex-1">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-foreground uppercase tracking-wider opacity-80">Current release includes:</h4>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary mt-1">•</span>
+                      <span>LLM chat including search</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary mt-1">•</span>
+                      <span>Artifact generation (HTML, React, Mermaid, SVG, Code, Markdown) with live preview and export</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary mt-1">•</span>
+                      <span>Image generation using Gemini 2.5 Flash Image allows users to create and edit high-quality AI generated imagery</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-foreground uppercase tracking-wider opacity-80">Next release will contain:</h4>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary/60 mt-1">•</span>
+                      <span>Error reporting</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary/60 mt-1">•</span>
+                      <span>Deep research</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary/60 mt-1">•</span>
+                      <span>Artifact quality & performance improvements</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="space-y-2 text-sm text-muted-foreground leading-relaxed">
+                <p>
+                  The UI/UX goal is to provide insight and transparency into what the LLM is doing and how it's thinking through the reasoning ticker in chat and it's currently optimized for desktop & mobile.
+                </p>
+                <p>
+                  You may uncover a few bugs — please email <a href="mailto:nick@vana.bot" className="text-primary hover:underline font-medium transition-colors">nick@vana.bot</a> to report any issues.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-4">
+              <Button onClick={startTour} className="flex-1 h-11 font-medium bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all">
+                Start Tour
+              </Button>
+              <Button onClick={handleSkip} variant="ghost" className="h-11 px-6 font-medium bg-muted/50 hover:bg-muted transition-colors">
+                Skip
+              </Button>
+            </div>
+          </div>
         </div>
       </AlertDialogContent>
     </AlertDialog>

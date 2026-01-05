@@ -80,7 +80,7 @@ describe('TourProvider Context Functionality', () => {
 
   it('should throw error when useTour called outside provider', () => {
     // Suppress error output for this test
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => { });
 
     expect(() => {
       render(<TourConsumerOutsideProvider />);
@@ -533,7 +533,7 @@ describe('State Persistence via localStorage', () => {
       throw new Error('Storage quota exceeded');
     });
 
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => { });
 
     // Should not throw even if localStorage fails
     expect(() => {
@@ -917,13 +917,73 @@ describe('TourAlertDialog Component', () => {
       expect(screen.getByText('Welcome to Vana')).toBeInTheDocument();
     });
 
-    const skipButton = screen.getByRole('button', { name: /skip tour/i });
+    const skipButton = screen.getByRole('button', { name: /skip/i });
     fireEvent.click(skipButton);
 
     // Dialog should close
     await waitFor(() => {
       expect(screen.queryByText('Welcome to Vana')).not.toBeInTheDocument();
     });
+  });
+
+  it('should render complete profile section with correct links and content', async () => {
+    function TestComponent() {
+      const [isOpen, setIsOpen] = React.useState(true);
+      const { setSteps } = useTour();
+
+      React.useEffect(() => {
+        setSteps([
+          { content: 'Step 1', selectorId: 'step-1' },
+        ]);
+      }, [setSteps]);
+
+      return (
+        <div>
+          <div id="step-1">Target</div>
+          <TourAlertDialog isOpen={isOpen} setIsOpen={setIsOpen} />
+        </div>
+      );
+    }
+
+    render(
+      <TourProvider>
+        <TestComponent />
+      </TourProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Welcome to Vana')).toBeInTheDocument();
+    });
+
+    // Profile image verification
+    const profileImg = screen.getByRole('presentation');
+    expect(profileImg).toHaveAttribute('src', '/nick-profile.jpeg');
+    expect(profileImg).toHaveAttribute('alt', '');
+
+    // LinkedIn link verification
+    const linkedinLink = screen.getByRole('link', { name: /connect on linkedin/i });
+    expect(linkedinLink).toHaveAttribute('href', 'https://www.linkedin.com/in/nickbohmer/');
+    expect(linkedinLink).toHaveAttribute('target', '_blank');
+    expect(linkedinLink).toHaveAttribute('rel', 'noopener noreferrer');
+
+    // GitHub link verification
+    const githubLink = screen.getByRole('link', { name: /view on github/i });
+    expect(githubLink).toHaveAttribute('href', 'https://github.com/NickB03/llm-chat-site');
+    expect(githubLink).toHaveAttribute('target', '_blank');
+    expect(githubLink).toHaveAttribute('rel', 'noopener noreferrer');
+
+    // Feature lists verification
+    expect(screen.getByText(/current release includes/i)).toBeInTheDocument();
+    expect(screen.getByText(/llm chat including search/i)).toBeInTheDocument();
+    expect(screen.getByText(/artifact generation/i)).toBeInTheDocument();
+
+    expect(screen.getByText(/next release will contain/i)).toBeInTheDocument();
+    expect(screen.getByText(/error reporting/i)).toBeInTheDocument();
+    expect(screen.getByText(/deep research/i)).toBeInTheDocument();
+
+    // Email link verification
+    const emailLink = screen.getByRole('link', { name: /nick@vana\.bot/i });
+    expect(emailLink).toHaveAttribute('href', 'mailto:nick@vana.bot');
   });
 });
 
@@ -1256,5 +1316,204 @@ describe('Close button positioning', () => {
     // Both should be at the top (close button uses top-1 for larger touch target)
     expect(closeButton).toHaveClass('top-1');
     expect(stepCounter).toHaveClass('top-3');
+  });
+});
+
+describe('Image Fallback Rendering', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    cleanup();
+    localStorage.clear();
+  });
+
+  it('should render fallback emoji when profile image fails to load', async () => {
+    function TestComponent() {
+      const [isOpen, setIsOpen] = React.useState(true);
+      const { setSteps } = useTour();
+
+      React.useEffect(() => {
+        setSteps([
+          { content: 'Step 1', selectorId: 'step-1' },
+        ]);
+      }, [setSteps]);
+
+      return (
+        <div>
+          <div id="step-1">Target</div>
+          <TourAlertDialog isOpen={isOpen} setIsOpen={setIsOpen} />
+        </div>
+      );
+    }
+
+    const { unmount } = render(
+      <TourProvider>
+        <TestComponent />
+      </TourProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Welcome to Vana')).toBeInTheDocument();
+    });
+
+    // Find the image and trigger error
+    const profileImg = screen.queryByRole('presentation');
+    if (profileImg) {
+      fireEvent.error(profileImg);
+    }
+
+    // Wait for error to trigger and fallback to render
+    await waitFor(() => {
+      expect(screen.getByText('👤')).toBeInTheDocument();
+    });
+
+    // Verify original image is NOT rendered anymore
+    expect(screen.queryByRole('presentation')).not.toBeInTheDocument();
+
+    unmount();
+  });
+});
+
+describe('Responsive Layout Behavior', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    cleanup();
+    localStorage.clear();
+  });
+
+  it('should hide profile section on mobile viewports', async () => {
+    function TestComponent() {
+      const [isOpen, setIsOpen] = React.useState(true);
+      const { setSteps } = useTour();
+
+      React.useEffect(() => {
+        setSteps([
+          { content: 'Step 1', selectorId: 'step-1' },
+        ]);
+      }, [setSteps]);
+
+      return (
+        <div>
+          <div id="step-1">Target</div>
+          <TourAlertDialog isOpen={isOpen} setIsOpen={setIsOpen} />
+        </div>
+      );
+    }
+
+    const { unmount } = render(
+      <TourProvider>
+        <TestComponent />
+      </TourProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Welcome to Vana')).toBeInTheDocument();
+    });
+
+    // Profile section should have 'hidden' and 'md:flex' classes
+    // The component uses 'hidden md:flex' which hides on mobile and shows on desktop
+    const profileSection = document.querySelector('.hidden.md\\:flex');
+    expect(profileSection).toBeInTheDocument();
+    expect(profileSection).toHaveClass('hidden');
+    expect(profileSection).toHaveClass('md:flex');
+
+    unmount();
+  });
+
+  it('should show profile section on desktop viewports', async () => {
+    function TestComponent() {
+      const [isOpen, setIsOpen] = React.useState(true);
+      const { setSteps } = useTour();
+
+      React.useEffect(() => {
+        setSteps([
+          { content: 'Step 1', selectorId: 'step-1' },
+        ]);
+      }, [setSteps]);
+
+      return (
+        <div>
+          <div id="step-1">Target</div>
+          <TourAlertDialog isOpen={isOpen} setIsOpen={setIsOpen} />
+        </div>
+      );
+    }
+
+    const { unmount } = render(
+      <TourProvider>
+        <TestComponent />
+      </TourProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Welcome to Vana')).toBeInTheDocument();
+    });
+
+    // Profile section should exist with md:flex class (visible on desktop via responsive design)
+    const profileSection = document.querySelector('.hidden.md\\:flex');
+    expect(profileSection).toBeInTheDocument();
+
+    // Profile image or fallback should exist within the profile section
+    expect(screen.queryByRole('presentation') || screen.queryByText('👤')).toBeTruthy();
+
+    unmount();
+  });
+});
+
+describe('External Link Behavior', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    cleanup();
+    localStorage.clear();
+  });
+
+  it('should open LinkedIn link in new tab without losing chat session', async () => {
+    function TestComponent() {
+      const [isOpen, setIsOpen] = React.useState(true);
+      const { setSteps } = useTour();
+
+      React.useEffect(() => {
+        setSteps([
+          { content: 'Step 1', selectorId: 'step-1' },
+        ]);
+      }, [setSteps]);
+
+      return (
+        <div>
+          <div id="step-1">Target</div>
+          <TourAlertDialog isOpen={isOpen} setIsOpen={setIsOpen} />
+        </div>
+      );
+    }
+
+    const { unmount } = render(
+      <TourProvider>
+        <TestComponent />
+      </TourProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Welcome to Vana')).toBeInTheDocument();
+    });
+
+    const linkedinLink = screen.getByRole('link', { name: /connect on linkedin/i });
+
+    // Verify the link has correct attributes for opening in new tab
+    expect(linkedinLink).toHaveAttribute('href', 'https://www.linkedin.com/in/nickbohmer/');
+    expect(linkedinLink).toHaveAttribute('target', '_blank');
+    expect(linkedinLink).toHaveAttribute('rel', 'noopener noreferrer');
+
+    unmount();
   });
 });

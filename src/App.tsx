@@ -18,7 +18,7 @@ import { useIOSViewportHeight } from "@/hooks/useIOSViewportHeight";
 const Home = lazy(() => import("./pages/Home"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Signup = lazy(() => import("./pages/Signup"));
-const Landing = lazy(() => import("./pages/Landing"));
+// const Landing = lazy(() => import("./pages/Landing")); // Commented out - will repurpose later
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const DemoModeV2 = lazy(() => import("./pages/DemoModeV2"));
@@ -88,7 +88,8 @@ const AnimatedRoutes = () => {
         <Route path="/app" element={<Navigate to="/" replace />} />
         <Route path="/auth" element={<AnimatedRoute><Auth /></AnimatedRoute>} />
         <Route path="/signup" element={<AnimatedRoute><Signup /></AnimatedRoute>} />
-        <Route path="/landing" element={<AnimatedRoute><Landing /></AnimatedRoute>} />
+        {/* Landing route removed - page will be repurposed later */}
+        {/* <Route path="/landing" element={<AnimatedRoute><Landing /></AnimatedRoute>} /> */}
         <Route path="/admin" element={<AnimatedRoute><AdminDashboard /></AnimatedRoute>} />
         <Route path="/demo-frogger-v2" element={<DemoModeV2 />} />
         <Route path="/demo-dashboard" element={<DemoModeDashboard />} />

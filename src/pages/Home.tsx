@@ -615,7 +615,8 @@ const Home = () => {
   }, [autoOpenCanvas]);
 
   // Determine what content to show based on transition phase
-  const showLanding = phase !== "app";
+  // Never show landing if skipLandingPage is true (prevents flash during load)
+  const showLanding = phase !== "app" && !skipLandingPage;
   const showApp = phase !== "landing";
   const isTransitioning = phase === "transitioning";
 
@@ -629,7 +630,7 @@ const Home = () => {
       {/* Global shader background and subtle gradient are provided by PageLayout */}
 
       {/* Backdrop overlay - creates dramatic transition moment */}
-      {phase !== "landing" && (
+      {phase !== "landing" && !skipLandingPage && (
         <motion.div
           className="fixed inset-0 bg-black pointer-events-none"
           style={{ zIndex: 40 }}
@@ -646,7 +647,7 @@ const Home = () => {
       )}
 
       {/* Landing page content - renders in normal flow for scrolling */}
-      {phase !== "app" && (
+      {showLanding && (
         <div className="relative">
 
           {/* Content layer - affected by blur and fade */}
@@ -703,7 +704,7 @@ const Home = () => {
       )}
 
       {/* App interface - fixed overlay during transition, normal flow when complete */}
-      {phase !== "landing" && (
+      {showApp && (
         <TourProvider
           tourId="vana-app-onboarding"
           onComplete={() => {

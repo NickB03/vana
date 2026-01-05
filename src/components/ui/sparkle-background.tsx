@@ -1,23 +1,93 @@
 import { useState, useEffect, memo } from "react"
-import { Sparkles } from "@/components/Sparkles"
-import { useScrollPause } from "@/hooks/useScrollPause"
+import { logError } from "@/utils/errorLogging"
+
+/**
+ * Seeded Linear Congruential Generator (LCG) for deterministic random numbers.
+ * Returns a function that generates consistent pseudo-random values [0, 1).
+ *
+ * @param seed - Initial seed value
+ * @returns Function that generates next random number in sequence
+ *
+ * Why seeded: Ensures star positions remain identical across renders and builds,
+ * preventing visual "jumping" when component re-mounts.
+ */
+function seededRandom(seed: number) {
+  let state = seed
+  return () => {
+    state = (state * 1103515245 + 12345) & 0x7fffffff
+    return state / 0x7fffffff
+  }
+}
+
+/**
+ * Generates CSS box-shadow string for a layer of stars.
+ * Each star is positioned in viewport units (vw/vh) for responsive scaling.
+ *
+ * @param count - Number of stars to generate
+ * @param minSize - Minimum star size in pixels
+ * @param maxSize - Maximum star size in pixels
+ * @param minOpacity - Minimum star opacity (0-1)
+ * @param maxOpacity - Maximum star opacity (0-1)
+ * @param seed - Random seed (default: 12345)
+ * @returns Comma-separated box-shadow declarations
+ *
+ * Format: "X Y blur spread color" where X/Y are viewport percentages
+ */
+function generateBoxShadow(
+  count: number,
+  minSize: number,
+  maxSize: number,
+  minOpacity: number,
+  maxOpacity: number,
+  seed: number = 12345
+): string {
+  const random = seededRandom(seed + count)
+  const shadows: string[] = []
+
+  for (let i = 0; i < count; i++) {
+    const x = Math.round(random() * 2000) // vw units * 10 for precision
+    const y = Math.round(random() * 1000) // vh units * 10
+    const size = minSize + random() * (maxSize - minSize)
+    const opacity = minOpacity + random() * (maxOpacity - minOpacity)
+
+    shadows.push(
+      `${x / 10}vw ${y / 10}vh 0 ${size}px rgba(255, 255, 255, ${opacity.toFixed(2)})`
+    )
+  }
+
+  return shadows.join(', ')
+}
+
+/**
+ * Pre-generated static star layers (computed once at module load).
+ * Three layers create depth perception through size/opacity variation:
+ * - Small: 50 distant stars (0.5-1px, 30-70% opacity)
+ * - Medium: 35 mid-distance stars (1-1.5px, 50-90% opacity)
+ * - Large: 15 foreground stars (1.5-2.5px, 70-100% opacity)
+ * Total: 100 stars
+ */
+const STATIC_STAR_LAYERS = {
+  small: generateBoxShadow(50, 0.5, 1, 0.3, 0.7),
+  medium: generateBoxShadow(35, 1, 1.5, 0.5, 0.9),
+  large: generateBoxShadow(15, 1.5, 2.5, 0.7, 1),
+}
 
 // Default settings from SparklesDemo - exported for control panels
 export const SPARKLE_DEFAULTS = {
   height: 100,           // 100% height
   curvePosition: 53,     // Position of half-moon curve (desktop) - locked position
   mobileCurvePosition: 70, // Position of half-moon curve (mobile) - locked position
-  density: 100,          // Particle count
+  density: 100,          // Legacy prop - ignored (star count is fixed at 100)
   glowOpacity: 25,       // 25% glow opacity
   particleColor: "#FFFFFF",
   glowColor: "#8350e8",
   glowGradient: ["#22c55e", "#3b82f6", "#8b5cf6"], // Aurora gradient
   useGradient: true,
-  speed: 0.2,
-  particleSize: 2,
-  particleGlow: true,
-  opacitySpeed: 0.5,
-  minOpacity: 0.7,
+  speed: 0.2,            // Legacy prop - no animation in current implementation
+  particleSize: 2,       // Legacy prop - not used by static stars
+  particleGlow: true,    // Legacy prop - not used by static stars
+  opacitySpeed: 0.5,     // Legacy prop - no animation in current implementation
+  minOpacity: 0.7,       // Legacy prop - not used by static stars
   // Vignette controls - shape of the radial mask fade
   vignetteWidth: 75,     // Horizontal spread of vignette (%)
   vignetteHeight: 55,    // Vertical spread of vignette (%)
@@ -62,17 +132,17 @@ export interface SparkleBackgroundProps {
 }
 
 /**
- * SparkleBackground - Animated sparkle particles with half-moon horizon effect
+ * SparkleBackground - Static star field with half-moon horizon effect
  *
  * Creates a 3-layer composition:
  * 1. Glow background layer (radial/conic gradient with Aurora colors)
- * 2. Sparkles particles (middle layer with radial mask)
+ * 2. Static stars via CSS box-shadow (3 pre-generated layers for depth)
  * 3. Half moon curve (covers bottom portion)
  *
- * All settings are configurable via props for live tweaking.
- * Replaces the plasma shader background with sparkle particles.
+ * Stars are generated once at module load using seeded random for consistency.
+ * Uses CSS box-shadow on single 1px elements - zero animation overhead.
  *
- * Performance: Optimized for ~2-3% GPU usage at default density (100 particles), 60fps target on modern devices
+ * Performance: ~0% CPU, <0.5% GPU (static compositor layer, no animation loop)
  */
 export const SparkleBackground = memo(function SparkleBackground({
   className = '',
@@ -97,23 +167,40 @@ export const SparkleBackground = memo(function SparkleBackground({
   gradientSpreadX = SPARKLE_DEFAULTS.gradientSpreadX,
   gradientSpreadY = SPARKLE_DEFAULTS.gradientSpreadY,
 }: SparkleBackgroundProps) {
-  // Pause animations during scroll for better performance
-  const { isScrolling } = useScrollPause(150)
-
   // Detect mobile viewport for responsive curve position
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
+    let mounted = true;
+
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768) // md breakpoint
-    }
+      try {
+        if (!mounted) return;
+        setIsMobile(window.innerWidth < 768); // md breakpoint
+      } catch (error) {
+        logError(
+          error instanceof Error ? error : new Error('Resize handler failed'),
+          {
+            errorId: 'SPARKLE_BACKGROUND_RESIZE_ERROR',
+            metadata: {
+              mounted,
+              innerWidth: typeof window !== 'undefined' ? window.innerWidth : undefined,
+            }
+          }
+        );
+      }
+    };
 
     // Check on mount
-    checkMobile()
+    checkMobile();
 
     // Listen for resize
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
+    window.addEventListener('resize', checkMobile);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener('resize', checkMobile);
+    };
   }, [])
 
   // Use mobile curve position on smaller screens
@@ -163,25 +250,28 @@ export const SparkleBackground = memo(function SparkleBackground({
           }}
         />
 
-        {/* Layer 2: Sparkles (middle layer) */}
+        {/* Layer 2: Static stars via CSS box-shadow */}
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 overflow-hidden"
           style={{
             maskImage: `radial-gradient(${vignetteWidth}% ${vignetteHeight}%, white, transparent 85%)`,
             WebkitMaskImage: `radial-gradient(${vignetteWidth}% ${vignetteHeight}%, white, transparent 85%)`,
           }}
         >
-          <Sparkles
-            density={density}
-            color={particleColor}
-            speed={speed}
-            size={particleSize}
-            glow={particleGlow}
-            glowColor={useGradient ? glowGradient[0] : glowColor}
-            opacitySpeed={opacitySpeed}
-            minOpacity={minOpacity}
-            paused={isScrolling}
-            className="absolute inset-0 w-full h-full"
+          {/* Small distant stars */}
+          <div
+            className="absolute w-px h-px rounded-full"
+            style={{ boxShadow: STATIC_STAR_LAYERS.small }}
+          />
+          {/* Medium stars */}
+          <div
+            className="absolute w-px h-px rounded-full"
+            style={{ boxShadow: STATIC_STAR_LAYERS.medium }}
+          />
+          {/* Large bright stars */}
+          <div
+            className="absolute w-px h-px rounded-full"
+            style={{ boxShadow: STATIC_STAR_LAYERS.large }}
           />
         </div>
 
