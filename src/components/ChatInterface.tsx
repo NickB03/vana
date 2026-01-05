@@ -111,7 +111,7 @@ export function ChatInterface({
   // BUG FIX: Strip artifact XML from streaming content to prevent raw tags from showing
   const displayMessages = useMemo(() => {
     const allMessages = [...messages];
-    if (streamingMessage) {
+    if (isStreaming) {
       // Use stable timestamp that doesn't change on every render
       if (!streamingTimestampRef.current) {
         streamingTimestampRef.current = new Date().toISOString();
@@ -150,7 +150,7 @@ export function ChatInterface({
       streamingTimestampRef.current = null;
     }
     return allMessages;
-  }, [messages, streamingMessage, sessionId, streamProgress]);
+  }, [messages, streamingMessage, sessionId, streamProgress, isStreaming]);
 
   const updateIsAtBottom = useCallback(() => {
     const container = messageListRef.current;

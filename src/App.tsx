@@ -54,14 +54,10 @@ const queryClient = new QueryClient({
 });
 
 /**
- * RootRoute: Always renders Home which handles both landing and app experiences
- *
- * The Home component uses useScrollTransition hook which checks:
- * - LANDING_PAGE_ENABLED localStorage setting (admin toggle)
- * - ?skipLanding=true query param (for E2E tests)
- *
- * When landing is enabled → Shows landing content with scroll-triggered transition to app
- * When landing is disabled → Skips directly to app interface with tour
+ * RootRoute: Renders Home which shows the main app interface
+ * 
+ * Landing page functionality has been disabled.
+ * The app interface now renders directly with onboarding tour for new users.
  */
 const RootRoute = () => {
   return <AnimatedRoute><Home /></AnimatedRoute>;
