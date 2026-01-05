@@ -117,7 +117,7 @@ export const ChatLayout = React.memo(({
       >
         {/* Mobile Suggestions - ABOVE input on mobile */}
         {/* Slower speed (0.25) for more leisurely browsing */}
-        <div className="md:hidden w-screen -mx-4 overflow-hidden mb-3">
+        <div id={TOUR_STEP_IDS.SUGGESTIONS} className="md:hidden w-screen -mx-4 overflow-hidden mb-3">
           {loadingSuggestions ? (
             <div
               className="flex items-center justify-center px-4"
