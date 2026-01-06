@@ -240,6 +240,15 @@ export async function handleToolCallingChat(
       `${logPrefix} 📋 No template match: reason=${templateMatch.reason}` +
       (templateMatch.confidence ? `, best_confidence=${templateMatch.confidence}%` : '')
     );
+
+    // Warn if close to threshold (useful for tuning template keywords)
+    if (templateMatch.reason === 'low_confidence' && templateMatch.templateId) {
+      console.warn(
+        `${logPrefix} 🎯 Template match below threshold: ` +
+        `templateId=${templateMatch.templateId}, confidence=${templateMatch.confidence}%, ` +
+        `threshold=30%, message="${lastUserMessage.slice(0, 100)}..."`
+      );
+    }
   }
 
   // Get system instruction with tool-calling enabled and sanitized artifact context
@@ -479,6 +488,7 @@ export async function handleToolCallingChat(
           isGuest,
           functionName: 'chat',
           supabaseClient, // Required for image generation storage
+          userMessage: lastUserMessage, // For template matching in artifact generation
         };
 
         const FALLBACK_NOTE =
@@ -860,8 +870,11 @@ export async function handleToolCallingChat(
                 return;
               }
 
+              // IMPROVED: Show specific error details to help user understand what went wrong
+              const errorDetails = toolResult.error ? `: ${toolResult.error}` : '';
+              const timeInfo = toolResult.latencyMs ? ` (after ${Math.round(toolResult.latencyMs / 1000)}s)` : '';
               sendContentChunk(
-                `\n\n(Note: The requested tool failed, but I can still help.)\n\n`
+                `\n\n(Note: The requested tool failed${timeInfo}${errorDetails})\n\n`
               );
             }
           }

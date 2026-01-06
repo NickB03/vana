@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { logError, logForDebugging } from "@/utils/errorLogging";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import { Github, Linkedin, X } from "lucide-react";
 
@@ -86,6 +87,7 @@ function useReducedMotion(): boolean {
   return prefersReducedMotion;
 }
 
+
 // ============================================================================
 // Utilities
 // ============================================================================
@@ -122,15 +124,13 @@ function getElementPosition(id: string, stepIndex?: number, tourId?: string) {
   };
 }
 
-const MOBILE_BREAKPOINT = 768;
-
 function calculateContentPosition(
   elementPos: { top: number; left: number; width: number; height: number },
   position: "top" | "bottom" | "left" | "right" = "bottom"
 ) {
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
-  const isMobile = viewportWidth < MOBILE_BREAKPOINT;
+  const isMobile = viewportWidth < 768;
 
   // Calculate responsive content width
   const contentWidth = Math.min(CONTENT_WIDTH, viewportWidth - 32);
@@ -651,8 +651,7 @@ export function TourAlertDialog({
   setIsOpen: (isOpen: boolean) => void;
 }) {
   const { startTour, steps, isTourCompleted, currentStep } = useTour();
-  const reducedMotion = useReducedMotion();
-  const [imageError, setImageError] = useState(false);
+  const isMobile = useIsMobile();
 
   if (isTourCompleted || steps.length === 0 || currentStep > -1) {
     return null;
@@ -661,6 +660,31 @@ export function TourAlertDialog({
   const handleSkip = () => {
     setIsOpen(false);
   };
+
+  return (
+    <AlertDialog open={isOpen}>
+      {isMobile ? (
+        <MobileTourDialog onStartTour={startTour} onSkip={handleSkip} />
+      ) : (
+        <DesktopTourDialog onStartTour={startTour} onSkip={handleSkip} />
+      )}
+    </AlertDialog>
+  );
+}
+
+// ============================================================================
+// DesktopTourDialog Component (Original Single-Page Layout)
+// ============================================================================
+
+function DesktopTourDialog({
+  onStartTour,
+  onSkip
+}: {
+  onStartTour: () => void;
+  onSkip: () => void;
+}) {
+  const reducedMotion = useReducedMotion();
+  const [imageError, setImageError] = useState(false);
 
   const imageAnimation = reducedMotion
     ? {
@@ -677,153 +701,561 @@ export function TourAlertDialog({
     : { duration: 0.5, ease: [0.34, 1.56, 0.64, 1] as [number, number, number, number] };
 
   return (
-    <AlertDialog open={isOpen}>
-      <AlertDialogContent className="max-w-4xl w-[calc(100vw-32px)] sm:w-full p-0 flex flex-col overflow-hidden bg-card border-border shadow-2xl">
-        <div className="flex flex-col md:flex-row h-full">
-          {/* Left Column - Profile & Connect (Desktop Only) */}
-          <div className="hidden md:flex md:w-[280px] bg-muted/30 md:border-r border-border p-8 flex-col items-center justify-start text-center space-y-6 pt-12">
-            <motion.div
-              className="relative group"
-              {...imageAnimation}
-              transition={imageTransition}
-            >
-              <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary/20 to-secondary/20 blur-xl opacity-50 group-hover:opacity-75 transition-opacity duration-500" />
-              {imageError ? (
-                <div className="relative size-32 rounded-full bg-muted flex items-center justify-center shadow-2xl">
-                  <span className="text-4xl">👤</span>
-                </div>
-              ) : (
-                <img
-                  src="/nick-profile.jpeg"
-                  alt=""
-                  role="presentation"
-                  className="relative size-32 rounded-full object-cover shadow-2xl transition-transform duration-500 group-hover:scale-105"
-                  onError={(e) => {
-                    logError(
-                      `Profile image failed to load: ${e.currentTarget.src}`,
-                      {
-                        errorId: 'TOUR_PROFILE_IMAGE_LOAD_FAILED',
-                        metadata: {
-                          src: e.currentTarget.src,
-                          naturalWidth: e.currentTarget.naturalWidth,
-                          naturalHeight: e.currentTarget.naturalHeight,
-                        }
+    <AlertDialogContent className="max-w-4xl w-[calc(100vw-32px)] sm:w-full p-0 flex flex-col overflow-hidden bg-card border-border shadow-2xl">
+      <div className="flex flex-col md:flex-row h-full">
+        {/* Left Column - Profile & Connect (Desktop Only) */}
+        <div className="hidden md:flex md:w-[280px] bg-muted/30 md:border-r border-border p-8 flex-col items-center justify-start text-center space-y-6 pt-12">
+          <motion.div
+            className="relative group"
+            {...imageAnimation}
+            transition={imageTransition}
+          >
+            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary/20 to-secondary/20 blur-xl opacity-50 group-hover:opacity-75 transition-opacity duration-500" />
+            {imageError ? (
+              <div className="relative size-32 rounded-full bg-muted flex items-center justify-center shadow-2xl">
+                <span className="text-4xl">👤</span>
+              </div>
+            ) : (
+              <img
+                src="/nick-profile.jpeg"
+                alt=""
+                role="presentation"
+                className="relative size-32 rounded-full object-cover shadow-2xl transition-transform duration-500 group-hover:scale-105"
+                onError={(e) => {
+                  logError(
+                    `Profile image failed to load: ${e.currentTarget.src}`,
+                    {
+                      errorId: 'TOUR_PROFILE_IMAGE_LOAD_FAILED',
+                      metadata: {
+                        src: e.currentTarget.src,
+                        naturalWidth: e.currentTarget.naturalWidth,
+                        naturalHeight: e.currentTarget.naturalHeight,
                       }
-                    );
-                    setImageError(true);
-                  }}
-                />
-              )}
-            </motion.div>
+                    }
+                  );
+                  setImageError(true);
+                }}
+              />
+            )}
+          </motion.div>
 
-            <div className="space-y-2">
-              <h3 className="font-bold text-lg text-foreground">Nick Bohmer</h3>
+          <div className="space-y-2">
+            <h3 className="font-bold text-lg text-foreground">Nick Bohmer</h3>
+          </div>
+
+          <div className="w-full space-y-3">
+            <Button
+              asChild
+              className="w-full bg-[#0077b5] text-white hover:bg-[#0077b5]/90 border-none transition-colors"
+            >
+              <a
+                href="https://www.linkedin.com/in/nickbohmer/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2"
+              >
+                <Linkedin className="size-4 fill-white text-white" />
+                <span>Connect on LinkedIn</span>
+              </a>
+            </Button>
+
+            <Button
+              asChild
+              className="w-full transition-colors"
+            >
+              <a
+                href="https://github.com/NickB03/llm-chat-site"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2"
+              >
+                <Github className="size-4" />
+                <span>View on GitHub</span>
+              </a>
+            </Button>
+          </div>
+        </div>
+
+        {/* Right Column - Content */}
+        <div className="flex-1 flex flex-col p-5 md:p-6 max-h-[85vh] md:max-h-[600px] overflow-y-auto">
+          <AlertDialogHeader className="mb-6 text-left">
+            <AlertDialogTitle className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+              Welcome to Vana
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base text-muted-foreground mt-2">
+              Thank you for visiting Vana and I'm excited to show you around.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-4 flex-1">
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-2">
+                <h4 className="text-sm font-semibold text-foreground uppercase tracking-wider opacity-80">Current release includes:</h4>
+                <ul className="space-y-1 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-[2px] leading-none">•</span>
+                    <span>LLM chat including search</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-[2px] leading-none">•</span>
+                    <span>Artifact generation (HTML, React, Mermaid, SVG, Code, Markdown) with live preview and export</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-[2px] leading-none">•</span>
+                    <span>Image generation using Gemini 2.5 Flash Image allows users to create and edit high-quality AI generated imagery</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="text-sm font-semibold text-foreground uppercase tracking-wider opacity-80">Next release will contain:</h4>
+                <ul className="space-y-1 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary/60 mt-[2px] leading-none">•</span>
+                    <span>Error reporting</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary/60 mt-[2px] leading-none">•</span>
+                    <span>Deep research</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary/60 mt-[2px] leading-none">•</span>
+                    <span>Artifact quality & performance improvements</span>
+                  </li>
+                </ul>
+              </div>
             </div>
 
-            <div className="w-full space-y-3">
-              <Button
-                asChild
-                className="w-full bg-[#0077b5] text-white hover:bg-[#0077b5]/90 border-none transition-colors"
-              >
-                <a
-                  href="https://www.linkedin.com/in/nickbohmer/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2"
-                >
-                  <Linkedin className="size-4 fill-white text-white" />
-                  <span>Connect on LinkedIn</span>
-                </a>
-              </Button>
-
-              <Button
-                asChild
-                className="w-full transition-colors"
-              >
-                <a
-                  href="https://github.com/NickB03/llm-chat-site"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2"
-                >
-                  <Github className="size-4" />
-                  <span>View on GitHub</span>
-                </a>
-              </Button>
+            <div className="space-y-2 text-sm text-muted-foreground leading-relaxed">
+              <p>
+                The UI/UX goal is to provide insight and transparency into what the LLM is doing and how it's thinking through the reasoning ticker in chat and it's currently optimized for desktop & mobile.
+              </p>
+              <p>
+                You may uncover a few bugs — please email <a href="mailto:nick@vana.bot" className="text-primary hover:underline font-medium transition-colors">nick@vana.bot</a> to report any issues.
+              </p>
             </div>
           </div>
 
-          {/* Right Column - Content */}
-          <div className="flex-1 flex flex-col p-5 md:p-6 max-h-[85vh] md:max-h-[600px] overflow-y-auto">
-            <AlertDialogHeader className="mb-6 text-left">
-              <AlertDialogTitle className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
-                Welcome to Vana
-              </AlertDialogTitle>
-              <AlertDialogDescription className="text-base text-muted-foreground mt-2">
-                Thank you for visiting Vana and I'm excited to show you around.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
+          <div className="flex gap-3 mt-4">
+            <Button onClick={onStartTour} className="flex-1 h-11 font-medium bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all">
+              Start Tour
+            </Button>
+            <Button onClick={onSkip} variant="ghost" className="h-11 px-6 font-medium bg-muted/50 hover:bg-muted transition-colors">
+              Skip
+            </Button>
+          </div>
+        </div>
+      </div>
+    </AlertDialogContent>
+  );
+}
 
-            <div className="space-y-4 flex-1">
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
-                  <h4 className="text-sm font-semibold text-foreground uppercase tracking-wider opacity-80">Current release includes:</h4>
-                  <ul className="space-y-1 text-sm text-muted-foreground">
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-1">•</span>
+// ============================================================================
+// MobileTourDialog Component (Two-Page Progressive Disclosure)
+// ============================================================================
+
+function MobileTourDialog({
+  onStartTour,
+  onSkip
+}: {
+  onStartTour: () => void;
+  onSkip: () => void;
+}) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [direction, setDirection] = useState<1 | -1>(1);
+  const reducedMotion = useReducedMotion();
+  const [imageError, setImageError] = useState(false);
+
+  // Track active touch listeners for cleanup
+  const activeListenersRef = useRef<{
+    touchMove?: (e: TouchEvent) => void;
+    touchEnd?: () => void;
+  }>({});
+
+  const handleNext = () => {
+    setDirection(1);
+    setCurrentPage(2);
+  };
+
+  const handleBack = () => {
+    setDirection(-1);
+    setCurrentPage(1);
+  };
+
+  // Cleanup function for touch listeners
+  const cleanupTouchListeners = useCallback(() => {
+    if (activeListenersRef.current.touchMove) {
+      document.removeEventListener('touchmove', activeListenersRef.current.touchMove);
+    }
+    if (activeListenersRef.current.touchEnd) {
+      document.removeEventListener('touchend', activeListenersRef.current.touchEnd);
+    }
+    activeListenersRef.current = {};
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      cleanupTouchListeners();
+    };
+  }, [cleanupTouchListeners]);
+
+  const pageVariants = {
+    enter: (dir: number) => ({
+      x: dir > 0 ? '100%' : '-100%',
+      opacity: 0,
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+    },
+    exit: (dir: number) => ({
+      x: dir < 0 ? '100%' : '-100%',
+      opacity: 0,
+    }),
+  };
+
+  const transition = reducedMotion
+    ? { duration: 0.2 }
+    : { type: 'spring' as const, stiffness: 300, damping: 30 };
+
+  const imageAnimation = reducedMotion
+    ? {
+      initial: { scale: 0.95, opacity: 0 },
+      animate: { scale: 1, opacity: 1 },
+    }
+    : {
+      initial: { scale: 0.85, opacity: 0 },
+      animate: { scale: 1, opacity: 1 },
+    };
+
+  const imageTransition = reducedMotion
+    ? { duration: 0.2 }
+    : { duration: 0.4, ease: [0.34, 1.56, 0.64, 1] as [number, number, number, number] };
+
+  return (
+    <AlertDialogContent className="max-w-lg w-[calc(100vw-32px)] h-[85vh] p-0 flex flex-col overflow-hidden bg-card border-border shadow-2xl rounded-3xl">
+      {/* Page Container */}
+      <div
+        className="relative flex-1 overflow-hidden"
+        /**
+         * Swipe gesture detection for mobile tour navigation
+         *
+         * Implementation:
+         * - Tracks touch start position and calculates horizontal delta on move
+         * - 50px threshold prevents accidental swipes from tap gestures
+         * - Right swipe (diffX > 0) on page 2 → navigate back to page 1
+         * - Left swipe (diffX < 0) on page 1 → navigate forward to page 2
+         * - Uses document-level listeners to track swipes that move outside dialog bounds
+         * - Cleanup tracked via activeListenersRef to prevent memory leaks
+         *
+         * Touch Event Flow:
+         * 1. onTouchStart: Record starting X position, attach move/end listeners
+         * 2. touchmove: Calculate delta, trigger navigation if threshold exceeded
+         * 3. touchend/touchcancel: Clean up all listeners
+         *
+         * Error Handling:
+         * - Validates touches array exists before accessing
+         * - Logs errors with structured errorIds for debugging
+         * - Guaranteed cleanup on unmount via useEffect
+         */
+        onTouchStart={(e) => {
+          // CRITICAL: Validate touch exists before accessing properties
+          if (!e.touches[0]) {
+            logError('Touch start event missing touch point', {
+              errorId: 'TOUR_TOUCH_START_VALIDATION_FAILED',
+              metadata: {
+                touchesLength: e.touches.length,
+                eventType: e.type
+              }
+            });
+            return;
+          }
+
+          const touch = e.touches[0];
+          const startX = touch.clientX;
+
+          // Cleanup any existing listeners before adding new ones
+          cleanupTouchListeners();
+
+          const handleTouchMove = (moveEvent: TouchEvent) => {
+            // CRITICAL: Validate touch exists in move event
+            if (!moveEvent.touches[0]) {
+              logError('Touch move event missing touch point', {
+                errorId: 'TOUR_TOUCH_MOVE_VALIDATION_FAILED',
+                metadata: {
+                  touchesLength: moveEvent.touches.length,
+                  eventType: moveEvent.type
+                }
+              });
+              cleanupTouchListeners();
+              return;
+            }
+
+            const currentTouch = moveEvent.touches[0];
+            const diffX = currentTouch.clientX - startX;
+
+            if (Math.abs(diffX) > 50) {
+              if (diffX > 0 && currentPage === 2) {
+                handleBack();
+              } else if (diffX < 0 && currentPage === 1) {
+                handleNext();
+              }
+              cleanupTouchListeners();
+            }
+          };
+
+          const handleTouchEnd = () => {
+            cleanupTouchListeners();
+          };
+
+          const handleTouchCancel = () => {
+            cleanupTouchListeners();
+          };
+
+          // Store listener references for cleanup
+          activeListenersRef.current.touchMove = handleTouchMove;
+          activeListenersRef.current.touchEnd = handleTouchEnd;
+
+          // Add listeners with passive: true for better scroll performance
+          document.addEventListener('touchmove', handleTouchMove, { passive: true });
+          document.addEventListener('touchend', handleTouchEnd, { passive: true });
+          document.addEventListener('touchcancel', handleTouchCancel, { passive: true });
+        }}
+      >
+        <AnimatePresence initial={false} mode="wait" custom={direction}>
+          {currentPage === 1 ? (
+            <motion.div
+              key="page-1"
+              custom={direction}
+              variants={pageVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={transition}
+              className="absolute inset-0 flex flex-col px-5 py-5 overflow-y-auto"
+            >
+              {/* Page 1: Personal Intro & Features */}
+              <div className="flex flex-col space-y-4 h-full relative">
+                {/* Social Icons - Top Right */}
+                <div className="absolute top-3 right-0 flex items-center gap-2 z-10">
+                  <a
+                    href="https://www.linkedin.com/in/nickbohmer/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 rounded-md text-[#0077b5] hover:bg-[#0077b5]/10 transition-colors touch-manipulation"
+                    aria-label="Connect on LinkedIn"
+                  >
+                    <Linkedin className="size-5 fill-[#0077b5]" />
+                  </a>
+                  <a
+                    href="https://github.com/NickB03/llm-chat-site"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 rounded-md text-foreground hover:bg-muted transition-colors touch-manipulation"
+                    aria-label="View on GitHub"
+                  >
+                    <Github className="size-5" />
+                  </a>
+                </div>
+
+                {/* Header: Photo + Name */}
+                <div className="flex items-start gap-3 -mt-1">
+                  {/* Profile Photo - Left */}
+                  <motion.div
+                    className="relative flex-shrink-0"
+                    {...imageAnimation}
+                    transition={imageTransition}
+                  >
+                    {imageError ? (
+                      <div className="relative size-16 rounded-full bg-muted flex items-center justify-center shadow-lg">
+                        <span className="text-xl text-muted-foreground">N</span>
+                      </div>
+                    ) : (
+                      <img
+                        src="/nick-profile.jpeg"
+                        alt=""
+                        role="presentation"
+                        className="relative size-16 rounded-full object-cover shadow-lg ring-2 ring-primary/10"
+                        onError={(e) => {
+                          logError(
+                            `Profile image failed to load: ${e.currentTarget.src}`,
+                            {
+                              errorId: 'TOUR_PROFILE_IMAGE_LOAD_FAILED',
+                              metadata: {
+                                src: e.currentTarget.src,
+                                naturalWidth: e.currentTarget.naturalWidth,
+                                naturalHeight: e.currentTarget.naturalHeight,
+                              }
+                            }
+                          );
+                          setImageError(true);
+                        }}
+                      />
+                    )}
+                  </motion.div>
+
+                  {/* Name */}
+                  <div className="flex-1 pt-0.5">
+                    <h3 className="font-semibold text-lg text-foreground">Nick Bohmer</h3>
+                  </div>
+                </div>
+
+                {/* Welcome */}
+                <div className="space-y-2 text-center px-2">
+                  <h2 className="text-2xl font-bold text-foreground leading-tight">
+                    Welcome to Vana
+                  </h2>
+                  <p className="text-sm text-muted-foreground leading-normal">
+                    Thank you for visiting Vana and I'm excited to show you around.
+                  </p>
+                </div>
+
+                {/* Current Features */}
+                <div className="w-full text-left space-y-2.5 bg-muted/30 rounded-lg p-4">
+                  <h4 className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                    Current release includes:
+                  </h4>
+                  <ul className="space-y-2.5 text-sm text-muted-foreground leading-normal">
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-primary mt-[2px] font-bold text-base leading-none">•</span>
                       <span>LLM chat including search</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-1">•</span>
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-primary mt-[2px] font-bold text-base leading-none">•</span>
                       <span>Artifact generation (HTML, React, Mermaid, SVG, Code, Markdown) with live preview and export</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-1">•</span>
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-primary mt-[2px] font-bold text-base leading-none">•</span>
                       <span>Image generation using Gemini 2.5 Flash Image allows users to create and edit high-quality AI generated imagery</span>
                     </li>
                   </ul>
                 </div>
 
-                <div className="space-y-2">
-                  <h4 className="text-sm font-semibold text-foreground uppercase tracking-wider opacity-80">Next release will contain:</h4>
-                  <ul className="space-y-1 text-sm text-muted-foreground">
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary/60 mt-1">•</span>
+                {/* Spacer to push content to top and buttons to bottom */}
+                <div className="flex-1" />
+
+                {/* Navigation Buttons */}
+                <div className="space-y-3">
+                  <div className="w-full flex gap-3">
+                    <Button
+                      onClick={onSkip}
+                      variant="ghost"
+                      className="flex-1 h-11 font-medium text-muted-foreground hover:text-foreground"
+                    >
+                      Skip
+                    </Button>
+                    <Button
+                      onClick={handleNext}
+                      className="flex-[2] h-11 font-medium bg-primary hover:bg-primary/90 shadow-sm"
+                      aria-label="Continue to page 2"
+                    >
+                      Next
+                    </Button>
+                  </div>
+
+                  {/* Page Indicators */}
+                  <div className="flex justify-center gap-2 pb-3">
+                    <div className="size-2 rounded-full bg-primary" />
+                    <div className="size-2 rounded-full bg-muted" />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="page-2"
+              custom={direction}
+              variants={pageVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={transition}
+              className="absolute inset-0 flex flex-col px-5 py-5 overflow-y-auto"
+            >
+              {/* Page 2: What's Coming Next */}
+              <div className="flex flex-col space-y-4 h-full">
+                {/* Page Title */}
+                <div className="text-center px-2">
+                  <h2 className="text-2xl font-bold text-foreground leading-tight">
+                    What's Coming Next
+                  </h2>
+                </div>
+
+                {/* Next Release */}
+                <div className="space-y-2.5 bg-muted/30 rounded-lg p-4">
+                  <h4 className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                    Next release will contain:
+                  </h4>
+                  <ul className="space-y-2.5 text-sm text-muted-foreground leading-normal">
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-primary/60 mt-[2px] font-bold text-base leading-none">•</span>
                       <span>Error reporting</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary/60 mt-1">•</span>
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-primary/60 mt-[2px] font-bold text-base leading-none">•</span>
                       <span>Deep research</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary/60 mt-1">•</span>
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-primary/60 mt-[2px] font-bold text-base leading-none">•</span>
                       <span>Artifact quality & performance improvements</span>
                     </li>
                   </ul>
                 </div>
-              </div>
 
-              <div className="space-y-2 text-sm text-muted-foreground leading-relaxed">
-                <p>
-                  The UI/UX goal is to provide insight and transparency into what the LLM is doing and how it's thinking through the reasoning ticker in chat and it's currently optimized for desktop & mobile.
-                </p>
-                <p>
-                  You may uncover a few bugs — please email <a href="mailto:nick@vana.bot" className="text-primary hover:underline font-medium transition-colors">nick@vana.bot</a> to report any issues.
-                </p>
-              </div>
-            </div>
+                {/* UX Goal */}
+                <div className="bg-muted/20 rounded-lg p-4">
+                  <p className="text-sm text-muted-foreground leading-normal">
+                    The UI/UX goal is to provide insight and transparency into what the LLM is doing and how it's thinking through the reasoning ticker in chat and it's currently optimized for desktop & mobile.
+                  </p>
+                </div>
 
-            <div className="flex gap-3 mt-4">
-              <Button onClick={startTour} className="flex-1 h-11 font-medium bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all">
-                Start Tour
-              </Button>
-              <Button onClick={handleSkip} variant="ghost" className="h-11 px-6 font-medium bg-muted/50 hover:bg-muted transition-colors">
-                Skip
-              </Button>
-            </div>
-          </div>
-        </div>
-      </AlertDialogContent>
-    </AlertDialog>
+                {/* Contact */}
+                <div className="bg-muted/20 rounded-lg p-4">
+                  <p className="text-sm text-muted-foreground leading-normal">
+                    You may uncover a few bugs — please email{" "}
+                    <a
+                      href="mailto:nick@vana.bot"
+                      className="text-primary hover:underline font-medium underline-offset-2"
+                    >
+                      nick@vana.bot
+                    </a>{" "}
+                    to report any issues.
+                  </p>
+                </div>
+
+                {/* Spacer to push content to top and buttons to bottom */}
+                <div className="flex-1" />
+
+                {/* Navigation Buttons */}
+                <div className="space-y-3">
+                  <div className="w-full flex gap-3">
+                    <Button
+                      onClick={handleBack}
+                      variant="ghost"
+                      className="flex-1 h-11 font-medium text-muted-foreground hover:text-foreground"
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      onClick={onStartTour}
+                      className="flex-[2] h-11 font-medium bg-primary hover:bg-primary/90 shadow-sm"
+                    >
+                      Start Tour
+                    </Button>
+                  </div>
+
+                  {/* Page Indicators */}
+                  <div className="flex justify-center gap-2 pb-3">
+                    <div className="size-2 rounded-full bg-muted" />
+                    <div className="size-2 rounded-full bg-primary" />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </AlertDialogContent>
   );
 }

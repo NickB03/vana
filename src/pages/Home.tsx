@@ -1,15 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { useScrollTransition } from "@/hooks/useScrollTransition";
 import { useGuestSession } from "@/hooks/useGuestSession";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { Hero } from "@/components/landing/Hero";
-import { ShowcaseSection } from "@/components/landing/ShowcaseSection";
-import { BenefitsSection } from "@/components/landing/BenefitsSection";
-import { CTASection } from "@/components/landing/CTASection";
-import { ScrollIndicator } from "@/components/landing/ScrollIndicator";
-import ScrollProgressBar from "@/components/ui/scroll-progress-bar";
-import { RateLimitPopup } from "@/components/RateLimitPopup";
 import { GuestLimitDialog } from "@/components/GuestLimitDialog";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { ChatSidebar } from "@/components/ChatSidebar";
@@ -35,95 +27,12 @@ import { useSparkleSettings } from "@/hooks/useSparkleSettings";
 import { SparkleControlPanel } from "@/components/dev/SparkleControlPanel";
 
 /**
- * Landing to app transition variants - Enhanced Cinematic Depth-of-Field Effect
- * Used for: Scroll-triggered page transformation with premium visual polish
- *
- * Design Philosophy:
- * - Dramatic depth perception through enhanced blur and scale
- * - Smooth timed animations (800ms) instead of instant scroll-driven updates
- * - Backdrop darkening creates professional "transition moment"
- * - Extended travel distance for more noticeable transformation
- */
-const landingTransition = {
-  landing: {
-    fadeOut: {
-      initial: { opacity: 1, y: 0, scale: 1 },
-      transitioning: (progress: number) => ({
-        opacity: 1 - progress,
-        y: -100 * progress, // Doubled from 50px for more dramatic movement
-        scale: 1 - 0.1 * progress, // Doubled from 0.05 for deeper zoom-out effect
-      }),
-      complete: { opacity: 0, y: -100, scale: 0.9 },
-    },
-    blurOut: {
-      initial: { filter: 'blur(0px)' },
-      transitioning: (progress: number) => ({
-        filter: `blur(${20 * progress}px)`, // Doubled from 10px for stronger depth-of-field
-      }),
-      complete: { filter: 'blur(20px)' },
-    },
-  },
-  app: {
-    fadeIn: {
-      initial: { opacity: 0, y: 100, scale: 0.9 }, // Start farther back for "emerging" effect
-      transitioning: (progress: number) => ({
-        opacity: progress,
-        y: 100 - 100 * progress, // Doubled travel distance
-        scale: 0.9 + 0.1 * progress, // Doubled scale change
-      }),
-      complete: { opacity: 1, y: 0, scale: 1 },
-    },
-  },
-  // Backdrop overlay creates dramatic "moment of transition"
-  backdrop: {
-    initial: { opacity: 0 },
-    transitioning: (progress: number) => {
-      // Fade in to peak at 50% progress, then fade out
-      const peakProgress = progress < 0.5 ? progress * 2 : (1 - progress) * 2;
-      return { opacity: peakProgress * 0.4 }; // Max 40% darkness
-    },
-    complete: { opacity: 0 },
-  },
-};
-
-/**
- * Reduced motion variants (respects prefers-reduced-motion)
- * Gentle crossfade with minimal movement, no blur effects
- */
-const landingTransitionReduced = {
-  landing: {
-    fadeOut: {
-      initial: { opacity: 1 },
-      transitioning: (progress: number) => ({ opacity: 1 - progress }),
-      complete: { opacity: 0 },
-    },
-    blurOut: {
-      initial: { filter: 'blur(0px)' },
-      transitioning: () => ({ filter: 'blur(0px)' }), // No blur for reduced motion
-      complete: { filter: 'blur(0px)' },
-    },
-  },
-  app: {
-    fadeIn: {
-      initial: { opacity: 0 },
-      transitioning: (progress: number) => ({ opacity: progress }),
-      complete: { opacity: 1 },
-    },
-  },
-  backdrop: {
-    initial: { opacity: 0 },
-    transitioning: () => ({ opacity: 0 }), // No backdrop for reduced motion
-    complete: { opacity: 0 },
-  },
-};
-
-/**
- * Home Page - Unified landing and app experience
+ * Home Page - Main app experience
  *
  * Features:
- * - Landing page content on initial load
- * - Scroll-triggered transition to app interface
+ * - Direct app interface (landing page disabled)
  * - Guest mode with 5 message limit
+ * - Onboarding tour for new users
  * - Smooth animations with reduced-motion support
  */
 const Home = () => {
@@ -157,7 +66,7 @@ const Home = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
-  const [hasArtifact, setHasArtifact] = useState(false);
+  const [_hasArtifact, setHasArtifact] = useState(false);
   const [guestInitialPrompt, setGuestInitialPrompt] = useState<string | undefined>();
   const [pendingAuthPrompt, setPendingAuthPrompt] = useState<string | undefined>(); // For authenticated users
   const [autoOpenCanvas, setAutoOpenCanvas] = useState(false);
@@ -176,7 +85,6 @@ const Home = () => {
 
   // Global app settings (from database)
   const { value: forceTourSetting, isLoading: forceTourLoading } = useAppSetting(APP_SETTING_KEYS.FORCE_TOUR);
-  const { value: landingPageSetting, isLoading: landingSettingLoading } = useAppSetting(APP_SETTING_KEYS.LANDING_PAGE_ENABLED);
 
   // Memoize guest session functions to prevent unnecessary re-renders
   const guestSessionMemo = useMemo(() => ({
@@ -188,37 +96,6 @@ const Home = () => {
   // Lazy loaded suggestions
   const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(true);
-
-  // Scroll transition - triggers at the end of CTA section
-  // Admin dashboard is the single source of truth for landing page setting
-  // During loading, use the default (false = skip landing) to prevent flash
-  const ctaSectionRef = useRef<HTMLDivElement>(null);
-  const skipLandingPage = !(landingPageSetting?.enabled ?? false);
-  const { phase, progress, setTriggerElement } = useScrollTransition({
-    enabled: true,
-    skipLanding: skipLandingPage,
-  });
-
-  // Detect reduced motion preference (lazy init to avoid flash)
-  const [prefersReducedMotion] = useState(() =>
-    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  );
-  const transitions = prefersReducedMotion ? landingTransitionReduced : landingTransition;
-
-  // Track if user has scrolled (for scroll indicator visibility)
-  const [hasScrolled, setHasScrolled] = useState(false);
-
-  // Detect initial scroll to hide indicator
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 50) {
-        setHasScrolled(true);
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   // Lazy load suggestions after initial render
   useEffect(() => {
@@ -238,24 +115,6 @@ const Home = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Set trigger element for scroll detection - CTA section marks the end of landing content
-  useEffect(() => {
-    if (ctaSectionRef.current) {
-      setTriggerElement(ctaSectionRef.current);
-    }
-  }, [setTriggerElement]);
-
-  /**
-   * Smooth scroll to showcase section when indicator is clicked
-   */
-  const handleScrollIndicatorClick = useCallback(() => {
-    const showcaseSection = document.getElementById("showcase");
-    if (showcaseSection) {
-      showcaseSection.scrollIntoView({ behavior: "smooth", block: "start" });
-      setHasScrolled(true);
-    }
-  }, []);
-
   // Check authentication
   useEffect(() => {
     const checkAuth = async () => {
@@ -265,7 +124,7 @@ const Home = () => {
     };
     checkAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsAuthenticated(!!session);
     });
 
@@ -284,8 +143,8 @@ const Home = () => {
     // Wait for settings to load before deciding on tour
     if (forceTourLoading) return;
 
-    // Only show tour prompt when app phase is stable
-    if (phase === "app" && !showChat) {
+    // Show tour prompt on app interface (no landing page phase anymore)
+    if (!showChat) {
       const tourKey = `${TOUR_STORAGE_KEYS.TOUR_STATE_PREFIX}vana-app-onboarding`;
       try {
         // Check for ?skipTour=true query param (for E2E tests)
@@ -318,7 +177,7 @@ const Home = () => {
           }
         }
         if (!hasCompletedTour) {
-          // Delay showing dialog for smoother UX after transition
+          // Delay showing dialog for smoother UX
           const timer = setTimeout(() => setShowTourDialog(true), 500);
           return () => clearTimeout(timer);
         }
@@ -326,7 +185,7 @@ const Home = () => {
         // If localStorage access fails entirely, don't show tour
       }
     }
-  }, [phase, showChat, forceTourSetting, forceTourLoading]);
+  }, [showChat, forceTourSetting, forceTourLoading]);
 
   // Auto-collapse sidebar when canvas opens
   useEffect(() => {
@@ -614,12 +473,6 @@ const Home = () => {
     }
   }, [autoOpenCanvas]);
 
-  // Determine what content to show based on transition phase
-  // Never show landing if skipLandingPage is true (prevents flash during load)
-  const showLanding = phase !== "app" && !skipLandingPage;
-  const showApp = phase !== "landing";
-  const isTransitioning = phase === "transitioning";
-
   return (
     <PageLayout
       shaderOpacityClassName=""
@@ -629,209 +482,118 @@ const Home = () => {
     >
       {/* Global shader background and subtle gradient are provided by PageLayout */}
 
-      {/* Backdrop overlay - creates dramatic transition moment */}
-      {phase !== "landing" && !skipLandingPage && (
-        <motion.div
-          className="fixed inset-0 bg-black pointer-events-none"
-          style={{ zIndex: 40 }}
-          initial={transitions.backdrop.initial}
-          animate={
-            isTransitioning
-              ? transitions.backdrop.transitioning(progress)
-              : phase === "app"
-                ? transitions.backdrop.complete
-                : transitions.backdrop.initial
-          }
-          transition={{ duration: 0 }}
-        />
-      )}
-
-      {/* Landing page content - renders in normal flow for scrolling */}
-      {showLanding && (
-        <div className="relative">
-
-          {/* Content layer - affected by blur and fade */}
-          <motion.div
-            style={{
-              pointerEvents: phase === "landing" ? "auto" : "none",
-            }}
-            initial={{
-              ...transitions.landing.fadeOut.initial,
-              ...transitions.landing.blurOut.initial,
-            }}
-            animate={{
-              ...(isTransitioning
-                ? transitions.landing.fadeOut.transitioning(progress)
-                : phase === "landing"
-                  ? transitions.landing.fadeOut.initial
-                  : transitions.landing.fadeOut.complete),
-              ...(isTransitioning
-                ? transitions.landing.blurOut.transitioning(progress)
-                : phase === "landing"
-                  ? transitions.landing.blurOut.initial
-                  : transitions.landing.blurOut.complete),
-            }}
-            transition={{ duration: 0 }}
+      {/* App interface - renders directly without landing page transition */}
+      <TourProvider
+        tourId="vana-app-onboarding"
+        onComplete={() => {
+          console.log("[Tour] User completed onboarding tour");
+        }}
+        onSkip={(completedSteps) => {
+          console.log(`[Tour] User skipped after ${completedSteps} steps`);
+        }}
+      >
+        <OnboardingTour />
+        <TourAlertDialog isOpen={showTourDialog} setIsOpen={setShowTourDialog} />
+        <div className="relative min-h-[var(--app-height)]">
+          <SidebarProvider
+            defaultOpen={true}
+            open={sidebarOpen}
+            onOpenChange={setSidebarOpen}
           >
-            <Hero />
-            <div id="showcase">
-              <ShowcaseSection />
-            </div>
-            <BenefitsSection />
-            <div ref={ctaSectionRef}>
-              <CTASection />
-            </div>
-            {/* Spacer to allow scrolling past CTA section for transition trigger */}
-            <div className="h-[100vh]" />
-          </motion.div>
-
-          {/* Scroll indicator - only visible on landing phase before user scrolls */}
-          <ScrollIndicator
-            visible={phase === "landing" && !hasScrolled}
-            onClick={handleScrollIndicatorClick}
-          />
-
-          {/* Scroll progress bar - shows progress through landing page */}
-          {phase === "landing" && (
-            <ScrollProgressBar
-              type="circle"
-              position="bottom-right"
-              strokeSize={3}
-              showPercentage={false}
+            <ChatSidebar
+              sessions={sessions}
+              currentSessionId={currentSessionId}
+              onSessionSelect={handleSessionSelect}
+              onNewChat={handleNewChat}
+              onDeleteSession={deleteSession}
+              isLoading={sessionsLoading}
             />
-          )}
+
+            <SidebarInset className="relative bg-black overflow-hidden">
+              {/* Sparkle background - positioned relative to SidebarInset for proper centering */}
+              <SparkleErrorBoundary resetKey={resetCounter}>
+                <SparkleBackground position="absolute" {...sparkleSettings} />
+              </SparkleErrorBoundary>
+              <main className="flex h-[var(--app-height)] flex-col overflow-hidden relative z-10">
+                {/* Mobile Header - Gemini-style hamburger menu */}
+                <MobileHeader isAuthenticated={isAuthenticated} />
+
+                {/* Desktop Header - Sign in button (top-right corner) */}
+                <DesktopHeader isAuthenticated={isAuthenticated} />
+
+                {/* Main Content - AnimatePresence for smooth crossfade between views */}
+                <div className="flex-1 overflow-hidden flex flex-col max-h-full">
+                  <AnimatePresence mode="wait">
+                    {!showChat ? (
+                      <motion.div
+                        key="chat-layout"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                        className="flex-1 flex flex-col min-h-0"
+                      >
+                        <ChatLayout
+                          input={input}
+                          onInputChange={setInput}
+                          onSubmit={handleSubmit}
+                          isLoading={isLoading}
+                          suggestions={suggestions}
+                          loadingSuggestions={loadingSuggestions}
+                          loadingItemId={loadingSuggestionId}
+                          onSuggestionClick={handleSuggestionClick}
+                          fileInputRef={fileInputRef}
+                          isUploadingFile={isUploadingFile}
+                          onFileUpload={handleFileUpload}
+                          imageMode={imageMode}
+                          onImageModeChange={setImageMode}
+                          artifactMode={artifactMode}
+                          onArtifactModeChange={setArtifactMode}
+                          promptPosition={promptPosition}
+                          mobilePromptPosition={mobilePromptPosition}
+                        />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key={`chat-interface-${currentSessionId ?? 'guest'}`}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                        className="flex-1 flex flex-col min-h-0"
+                      >
+                        <ChatInterface
+                          sessionId={currentSessionId ?? guestSession.sessionId ?? undefined}
+                          initialPrompt={!isAuthenticated ? guestInitialPrompt : pendingAuthPrompt}
+                          initialImageMode={imageMode}
+                          initialArtifactMode={artifactMode}
+                          isCanvasOpen={isCanvasOpen}
+                          onCanvasToggle={handleCanvasToggle}
+                          onArtifactChange={handleArtifactChange}
+                          input={input}
+                          onInputChange={setInput}
+                          onSendMessage={handler => {
+                            chatSendHandlerRef.current = handler;
+                          }}
+                          onInitialPromptSent={() => {
+                            // Clear pending prompts only after they have been sent
+                            setGuestInitialPrompt(undefined);
+                            setPendingAuthPrompt(undefined);
+                          }}
+                          isGuest={!isAuthenticated}
+                          guestMessageCount={guestSession.messageCount}
+                          guestMaxMessages={guestSession.maxMessages}
+                          guestSession={guestSessionMemo}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </main>
+            </SidebarInset>
+          </SidebarProvider>
         </div>
-      )}
-
-      {/* App interface - fixed overlay during transition, normal flow when complete */}
-      {showApp && (
-        <TourProvider
-          tourId="vana-app-onboarding"
-          onComplete={() => {
-            console.log("[Tour] User completed onboarding tour");
-          }}
-          onSkip={(completedSteps) => {
-            console.log(`[Tour] User skipped after ${completedSteps} steps`);
-          }}
-        >
-          <OnboardingTour />
-          <TourAlertDialog isOpen={showTourDialog} setIsOpen={setShowTourDialog} />
-          <motion.div
-            className={phase === "app" ? "relative min-h-[var(--app-height)]" : "fixed inset-0 z-50"}
-            style={{
-              pointerEvents: phase !== "landing" ? "auto" : "none",
-            }}
-            initial={transitions.app.fadeIn.initial}
-            animate={
-              isTransitioning
-                ? transitions.app.fadeIn.transitioning(progress)
-                : phase === "app"
-                  ? transitions.app.fadeIn.complete
-                  : transitions.app.fadeIn.initial
-            }
-            transition={{ duration: 0 }}
-          >
-            <SidebarProvider
-              defaultOpen={true}
-              open={sidebarOpen}
-              onOpenChange={setSidebarOpen}
-            >
-              <ChatSidebar
-                sessions={sessions}
-                currentSessionId={currentSessionId}
-                onSessionSelect={handleSessionSelect}
-                onNewChat={handleNewChat}
-                onDeleteSession={deleteSession}
-                isLoading={sessionsLoading}
-              />
-
-              <SidebarInset className="relative bg-black overflow-hidden">
-                {/* Sparkle background - positioned relative to SidebarInset for proper centering */}
-                <SparkleErrorBoundary resetKey={resetCounter}>
-                  <SparkleBackground position="absolute" {...sparkleSettings} />
-                </SparkleErrorBoundary>
-                <main className="flex h-[var(--app-height)] flex-col overflow-hidden relative z-10">
-                  {/* Mobile Header - Gemini-style hamburger menu */}
-                  <MobileHeader isAuthenticated={isAuthenticated} />
-
-                  {/* Desktop Header - Sign in button (top-right corner) */}
-                  <DesktopHeader isAuthenticated={isAuthenticated} />
-
-                  {/* Main Content - AnimatePresence for smooth crossfade between views */}
-                  <div className="flex-1 overflow-hidden flex flex-col max-h-full">
-                    <AnimatePresence mode="wait">
-                      {!showChat ? (
-                        <motion.div
-                          key="chat-layout"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                          className="flex-1 flex flex-col min-h-0"
-                        >
-                          <ChatLayout
-                            input={input}
-                            onInputChange={setInput}
-                            onSubmit={handleSubmit}
-                            isLoading={isLoading}
-                            suggestions={suggestions}
-                            loadingSuggestions={loadingSuggestions}
-                            loadingItemId={loadingSuggestionId}
-                            onSuggestionClick={handleSuggestionClick}
-                            fileInputRef={fileInputRef}
-                            isUploadingFile={isUploadingFile}
-                            onFileUpload={handleFileUpload}
-                            imageMode={imageMode}
-                            onImageModeChange={setImageMode}
-                            artifactMode={artifactMode}
-                            onArtifactModeChange={setArtifactMode}
-                            sendIcon="right"
-                            promptPosition={promptPosition}
-                            mobilePromptPosition={mobilePromptPosition}
-                          />
-                        </motion.div>
-                      ) : (
-                        <motion.div
-                          key={`chat-interface-${currentSessionId ?? 'guest'}`}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                          className="flex-1 flex flex-col min-h-0"
-                        >
-                          <ChatInterface
-                            sessionId={currentSessionId ?? guestSession.sessionId ?? undefined}
-                            initialPrompt={!isAuthenticated ? guestInitialPrompt : pendingAuthPrompt}
-                            initialImageMode={imageMode}
-                            initialArtifactMode={artifactMode}
-                            isCanvasOpen={isCanvasOpen}
-                            onCanvasToggle={handleCanvasToggle}
-                            onArtifactChange={handleArtifactChange}
-                            input={input}
-                            onInputChange={setInput}
-                            onSendMessage={handler => {
-                              chatSendHandlerRef.current = handler;
-                            }}
-                            onInitialPromptSent={() => {
-                              // Clear pending prompts only after they have been sent
-                              setGuestInitialPrompt(undefined);
-                              setPendingAuthPrompt(undefined);
-                            }}
-                            isGuest={!isAuthenticated}
-                            guestMessageCount={guestSession.messageCount}
-                            guestMaxMessages={guestSession.maxMessages}
-                            guestSession={guestSessionMemo}
-                          />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </main>
-              </SidebarInset>
-            </SidebarProvider>
-          </motion.div>
-        </TourProvider>
-      )}
+      </TourProvider>
 
       {/* Guest limit dialog */}
       <GuestLimitDialog

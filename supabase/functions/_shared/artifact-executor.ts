@@ -42,6 +42,7 @@ import { getSystemInstruction } from './system-prompt-inline.ts';
 import { MODELS, ARTIFACT_TYPES, type ArtifactType, FEATURE_FLAGS, DEFAULT_MODEL_PARAMS } from './config.ts';
 import { ErrorCode } from './error-handler.ts';
 import type { StructuredReasoning } from './reasoning-types.ts';
+import { getMatchingTemplate } from './artifact-rules/template-matcher.ts';
 
 /**
  * Helper function to log detailed debug information for premade card failures
@@ -296,6 +297,13 @@ export interface ArtifactExecutorParams {
    * @default true
    */
   enableThinking?: boolean;
+
+  /**
+   * Original user message for template matching
+   * When provided, will match against artifact templates to provide structure guidance
+   * @optional
+   */
+  userMessage?: string;
 }
 
 /**
@@ -565,7 +573,7 @@ function stripHtmlDocumentStructure(
 export async function executeArtifactGeneration(
   params: ArtifactExecutorParams
 ): Promise<ArtifactExecutorResult> {
-  const { type, prompt, enableThinking = true } = params;
+  const { type, prompt, enableThinking = true, userMessage } = params;
 
   // SECURITY: Sanitize requestId to prevent log injection
   const requestId = sanitizeRequestId(params.requestId);
@@ -581,11 +589,45 @@ export async function executeArtifactGeneration(
     type,
     promptLength: prompt.length,
     enableThinking,
+    hasUserMessage: !!userMessage,
   });
 
-  // Get system prompt
+  // Match user request to artifact template for optimized guidance
+  // Use userMessage if provided (original user message), otherwise fall back to prompt
+  if (!userMessage) {
+    console.warn(
+      `[${requestId}] ⚠️ userMessage not provided, using prompt for template matching ` +
+      `(may reduce match accuracy for complex artifacts)`
+    );
+  }
+  const messageForMatching = userMessage || prompt;
+  const templateMatch = getMatchingTemplate(messageForMatching);
+
+  // Log template matching result for observability
+  if (templateMatch.matched) {
+    console.log(
+      `[${requestId}] 🎯 Template matched: ${templateMatch.templateId} ` +
+      `(confidence: ${templateMatch.confidence}%)`
+    );
+    logPremadeDebug(requestId, 'Template matched', {
+      templateId: templateMatch.templateId,
+      confidence: templateMatch.confidence,
+    });
+  } else {
+    console.log(
+      `[${requestId}] 📋 No template match: reason=${templateMatch.reason}` +
+      (templateMatch.confidence ? `, best_confidence=${templateMatch.confidence}%` : '')
+    );
+    logPremadeDebug(requestId, 'No template match', {
+      reason: templateMatch.reason,
+      confidence: templateMatch.confidence,
+    });
+  }
+
+  // Get system prompt with matched template
   const systemPrompt = getSystemInstruction({
     currentDate: new Date().toLocaleDateString(),
+    matchedTemplate: templateMatch.template,
   });
 
   // Construct user prompt based on artifact type

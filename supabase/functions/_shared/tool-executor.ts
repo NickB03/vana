@@ -69,6 +69,8 @@ export interface ToolContext {
   functionName?: string;
   /** Supabase client for image storage operations */
   supabaseClient?: SupabaseClient;
+  /** Original user message for template matching in artifact generation */
+  userMessage?: string;
 }
 
 /**
@@ -523,27 +525,37 @@ async function executeArtifactTool(
   context: ToolContext
 ): Promise<ToolExecutionResult> {
   const startTime = Date.now();
-  const { requestId } = context;
+  const { requestId, userMessage } = context;
 
   console.log(`[${requestId}] 🎨 Executing generate_artifact: type=${type}`);
+
+  if (!userMessage) {
+    console.warn(
+      `[${requestId}] ⚠️ Template matching may be suboptimal: userMessage not provided in ToolContext ` +
+      `(consider passing original user message for better template matching)`
+    );
+  }
 
   logPremadeDebug(requestId, 'executeArtifactTool started', {
     type,
     promptLength: prompt.length,
     promptPreview: prompt.substring(0, 100),
+    hasUserMessage: !!userMessage,
   });
 
   try {
     logPremadeDebug(requestId, 'Calling executeArtifactGeneration', {
       type,
       enableThinking: true,
+      hasUserMessage: !!userMessage,
     });
 
     const result = await executeArtifactGeneration({
       type,
       prompt,
       requestId,
-      enableThinking: true // Enable reasoning for better artifacts
+      enableThinking: true, // Enable reasoning for better artifacts
+      userMessage, // Pass user message for template matching
     });
 
     logPremadeDebug(requestId, 'executeArtifactGeneration returned', {
