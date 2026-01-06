@@ -51,6 +51,7 @@ import {
   createNoOpReasoningProvider,
   type IReasoningProvider
 } from '../../_shared/reasoning-provider.ts';
+import { getPrebuiltArtifact } from '../../_shared/prebuilt-artifacts.ts';
 import { FEATURE_FLAGS, USE_REASONING_PROVIDER, DEFAULT_MODEL_PARAMS } from '../../_shared/config.ts';
 
 /**
@@ -99,6 +100,8 @@ export interface ToolCallingChatParams {
   modeHint?: ModeHint;
   /** Tool choice to force a specific tool call (optional, defaults to 'auto') */
   toolChoice?: ToolChoice;
+  /** Optional prebuilt artifact identifier for instant demo rendering */
+  presetArtifactId?: string;
   /** Supabase client for storage operations (required for image generation) */
   supabaseClient?: SupabaseClient;
   /** Supabase service client for tool rate limiting */
@@ -199,6 +202,7 @@ export async function handleToolCallingChat(
     rateLimitHeaders,
     modeHint = 'auto',
     toolChoice = 'auto',
+    presetArtifactId,
     supabaseClient,
     serviceClient,
     clientIp,
@@ -240,6 +244,15 @@ export async function handleToolCallingChat(
       `${logPrefix} 📋 No template match: reason=${templateMatch.reason}` +
       (templateMatch.confidence ? `, best_confidence=${templateMatch.confidence}%` : '')
     );
+
+    // Warn if close to threshold (useful for tuning template keywords)
+    if (templateMatch.reason === 'low_confidence' && templateMatch.templateId) {
+      console.warn(
+        `${logPrefix} 🎯 Template match below threshold: ` +
+        `templateId=${templateMatch.templateId}, confidence=${templateMatch.confidence}%, ` +
+        `threshold=30%, message="${lastUserMessage.slice(0, 100)}..."`
+      );
+    }
   }
 
   // Get system instruction with tool-calling enabled and sanitized artifact context
@@ -294,6 +307,8 @@ export async function handleToolCallingChat(
     .join('\n\n');
 
   // ========================================
+  const prebuiltArtifact = getPrebuiltArtifact(presetArtifactId);
+
   // Create SSE stream for client
   // ========================================
   const stream = new ReadableStream({
@@ -343,6 +358,64 @@ export async function handleToolCallingChat(
             },
           ],
         });
+      }
+
+      if (prebuiltArtifact) {
+        const now = Date.now();
+        const reasoningTimeline = [
+          { message: 'Analyzing requirements and scope...', delayMs: 4000 },
+          { message: 'Planning game loop and input handling...', delayMs: 4000 },
+          { message: 'Designing collision detection rules...', delayMs: 4000 },
+          { message: 'Building render primitives and layout...', delayMs: 4000 },
+          { message: 'Implementing hazards, logs, and scoring...', delayMs: 4000 },
+          { message: 'Testing win/lose conditions and restart flow...', delayMs: 4000 },
+          { message: 'Finalizing artifact output...', delayMs: 4000 },
+        ];
+
+        for (const step of reasoningTimeline) {
+          sendEvent({
+            type: 'reasoning_status',
+            content: step.message,
+            timestamp: Date.now(),
+          });
+          if (step.delayMs > 0) {
+            await new Promise((resolve) => setTimeout(resolve, step.delayMs));
+          }
+        }
+
+        sendEvent({
+          type: 'tool_call_start',
+          toolName: 'generate_artifact',
+          arguments: { type: prebuiltArtifact.type, prompt: 'Create a playable Frogger game' },
+          timestamp: now,
+        });
+
+        sendEvent({
+          type: 'tool_result',
+          toolName: 'generate_artifact',
+          success: true,
+          latencyMs: 30000,
+          timestamp: now,
+        });
+
+        sendEvent({
+          type: 'artifact_complete',
+          artifactCode: prebuiltArtifact.code,
+          artifactType: prebuiltArtifact.type,
+          artifactTitle: prebuiltArtifact.title,
+          reasoning: prebuiltArtifact.reasoning,
+          timestamp: now,
+          latencyMs: 30000,
+        });
+
+        if (prebuiltArtifact.assistantMessage) {
+          sendContentChunk(prebuiltArtifact.assistantMessage);
+        }
+
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        streamClosed = true;
+        controller.close();
+        return;
       }
 
       // Initialize ReasoningProvider for semantic status generation
@@ -479,6 +552,7 @@ export async function handleToolCallingChat(
           isGuest,
           functionName: 'chat',
           supabaseClient, // Required for image generation storage
+          userMessage: lastUserMessage, // For template matching in artifact generation
         };
 
         const FALLBACK_NOTE =
@@ -860,8 +934,11 @@ export async function handleToolCallingChat(
                 return;
               }
 
+              // IMPROVED: Show specific error details to help user understand what went wrong
+              const errorDetails = toolResult.error ? `: ${toolResult.error}` : '';
+              const timeInfo = toolResult.latencyMs ? ` (after ${Math.round(toolResult.latencyMs / 1000)}s)` : '';
               sendContentChunk(
-                `\n\n(Note: The requested tool failed, but I can still help.)\n\n`
+                `\n\n(Note: The requested tool failed${timeInfo}${errorDetails})\n\n`
               );
             }
           }
