@@ -523,16 +523,16 @@ npm run build:dev        # Development build with sourcemaps
 npm run preview          # Preview production build
 
 # Testing
-npm run test             # Run tests (1,048 passing)
+npm run test             # Run tests
 npm run test:ui          # Run tests with UI
-npm run test:coverage    # Generate coverage report (74.21%)
+npm run test:coverage    # Generate coverage report
 
 # Code Quality
-npm run lint             # Run ESLint (0 errors, 94 warnings)
+npm run lint             # Run ESLint
 
 # CI/CD (runs automatically on PRs)
 # - Lint validation
-# - Full test suite (1,048 tests)
+# - Full test suite
 # - Coverage upload to Codecov
 # - Production build verification
 ```
@@ -983,22 +983,7 @@ export function parseArtifacts(content: string): {
 
 **Test Infrastructure (Nov 2025):**
 
-The project uses Vitest for frontend testing with comprehensive coverage:
-
-**Current Metrics:**
-```
-Tests:     1,048 passing (1,048 total)
-Runtime:   ~10s
-Coverage:  74.21% statements (exceeds 55% threshold by 19%)
-```
-
-**Coverage Breakdown:**
-| Metric | Current | Threshold | Status |
-|--------|---------|-----------|--------|
-| Statements | 74.21% | 55% | ✅ +19% |
-| Branches | 68.58% | 50% | ✅ +18% |
-| Functions | 65.81% | 55% | ✅ +11% |
-| Lines | 74.29% | 55% | ✅ +19% |
+The project uses Vitest for frontend testing with coverage thresholds enforced in CI.
 
 **Test Commands:**
 ```bash

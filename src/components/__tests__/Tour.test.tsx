@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { TourProvider, useTour, TourAlertDialog, TourStep } from '../tour/tour';
-import React, { ReactNode } from 'react';
+import React from 'react';
 
 // ============================================================================
 // Test Component Helpers
@@ -121,7 +121,7 @@ describe('useTour Hook Behavior', () => {
       </TourProvider>
     );
 
-    const startButton = screen.getByRole('button', { name: /start tour/i });
+    const startButton = screen.getByRole('button', { name: /Start Tour/i });
     fireEvent.click(startButton);
 
     await waitFor(() => {
@@ -828,7 +828,7 @@ describe('TourAlertDialog Component', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Welcome to Vana')).toBeInTheDocument();
+      expect(screen.getByText(/Welcome to Vana/i)).toBeInTheDocument();
     });
   });
 
@@ -846,7 +846,7 @@ describe('TourAlertDialog Component', () => {
     );
 
     // Should not render the dialog
-    expect(screen.queryByText('Welcome to Vana')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Welcome to Vana/i)).not.toBeInTheDocument();
   });
 
   it('should start tour when Start Tour button clicked', async () => {
@@ -877,10 +877,10 @@ describe('TourAlertDialog Component', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Welcome to Vana')).toBeInTheDocument();
+      expect(screen.getByText(/Welcome to Vana/i)).toBeInTheDocument();
     });
 
-    const startButton = screen.getByRole('button', { name: /start tour/i });
+    const startButton = screen.getByRole('button', { name: /Start the Tour/i });
     fireEvent.click(startButton);
 
     await waitFor(() => {
@@ -914,7 +914,7 @@ describe('TourAlertDialog Component', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Welcome to Vana')).toBeInTheDocument();
+      expect(screen.getByText(/Welcome to Vana/i)).toBeInTheDocument();
     });
 
     const skipButton = screen.getByRole('button', { name: /skip/i });
@@ -952,7 +952,7 @@ describe('TourAlertDialog Component', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Welcome to Vana')).toBeInTheDocument();
+      expect(screen.getByText(/Welcome to Vana/i)).toBeInTheDocument();
     });
 
     // Profile image verification
@@ -973,17 +973,23 @@ describe('TourAlertDialog Component', () => {
     expect(githubLink).toHaveAttribute('rel', 'noopener noreferrer');
 
     // Feature lists verification
-    expect(screen.getByText(/current release includes/i)).toBeInTheDocument();
-    expect(screen.getByText(/llm chat including search/i)).toBeInTheDocument();
-    expect(screen.getByText(/artifact generation/i)).toBeInTheDocument();
+    expect(screen.getByText(/Current Release/i)).toBeInTheDocument();
+    expect(screen.getByText(/LLM chat/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Search$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Search$/i)).toBeInTheDocument();
+    expect(screen.getByText(/Artifacts/i)).toBeInTheDocument();
+    expect(screen.getByText(/Images/i)).toBeInTheDocument();
+    expect(screen.getByText(/Reasoning/i)).toBeInTheDocument();
+    expect(screen.getByText(/Safety/i)).toBeInTheDocument();
 
-    expect(screen.getByText(/next release will contain/i)).toBeInTheDocument();
-    expect(screen.getByText(/error reporting/i)).toBeInTheDocument();
-    expect(screen.getByText(/deep research/i)).toBeInTheDocument();
+    expect(screen.getByText(/Built With/i)).toBeInTheDocument();
+    // Accordion headers should be present
+    expect(screen.getByText('Frontend')).toBeInTheDocument();
+    expect(screen.getByText('Backend')).toBeInTheDocument();
+    expect(screen.getByText('AI Models')).toBeInTheDocument();
 
-    // Email link verification
-    const emailLink = screen.getByRole('link', { name: /nick@vana\.bot/i });
-    expect(emailLink).toHaveAttribute('href', 'mailto:nick@vana.bot');
+    // Verify new footer text
+    expect(screen.getByText(/I started Vana/i)).toBeInTheDocument();
   });
 });
 
@@ -1356,7 +1362,7 @@ describe('Image Fallback Rendering', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Welcome to Vana')).toBeInTheDocument();
+      expect(screen.getByText(/Welcome to Vana/i)).toBeInTheDocument();
     });
 
     // Find the image and trigger error
@@ -1367,7 +1373,7 @@ describe('Image Fallback Rendering', () => {
 
     // Wait for error to trigger and fallback to render
     await waitFor(() => {
-      expect(screen.getByText('👤')).toBeInTheDocument();
+      expect(screen.getByText('N')).toBeInTheDocument();
     });
 
     // Verify original image is NOT rendered anymore
@@ -1377,95 +1383,7 @@ describe('Image Fallback Rendering', () => {
   });
 });
 
-describe('Responsive Layout Behavior', () => {
-  beforeEach(() => {
-    localStorage.clear();
-    vi.clearAllMocks();
-  });
 
-  afterEach(() => {
-    cleanup();
-    localStorage.clear();
-  });
-
-  it('should hide profile section on mobile viewports', async () => {
-    function TestComponent() {
-      const [isOpen, setIsOpen] = React.useState(true);
-      const { setSteps } = useTour();
-
-      React.useEffect(() => {
-        setSteps([
-          { content: 'Step 1', selectorId: 'step-1' },
-        ]);
-      }, [setSteps]);
-
-      return (
-        <div>
-          <div id="step-1">Target</div>
-          <TourAlertDialog isOpen={isOpen} setIsOpen={setIsOpen} />
-        </div>
-      );
-    }
-
-    const { unmount } = render(
-      <TourProvider>
-        <TestComponent />
-      </TourProvider>
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText('Welcome to Vana')).toBeInTheDocument();
-    });
-
-    // Profile section should have 'hidden' and 'md:flex' classes
-    // The component uses 'hidden md:flex' which hides on mobile and shows on desktop
-    const profileSection = document.querySelector('.hidden.md\\:flex');
-    expect(profileSection).toBeInTheDocument();
-    expect(profileSection).toHaveClass('hidden');
-    expect(profileSection).toHaveClass('md:flex');
-
-    unmount();
-  });
-
-  it('should show profile section on desktop viewports', async () => {
-    function TestComponent() {
-      const [isOpen, setIsOpen] = React.useState(true);
-      const { setSteps } = useTour();
-
-      React.useEffect(() => {
-        setSteps([
-          { content: 'Step 1', selectorId: 'step-1' },
-        ]);
-      }, [setSteps]);
-
-      return (
-        <div>
-          <div id="step-1">Target</div>
-          <TourAlertDialog isOpen={isOpen} setIsOpen={setIsOpen} />
-        </div>
-      );
-    }
-
-    const { unmount } = render(
-      <TourProvider>
-        <TestComponent />
-      </TourProvider>
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText('Welcome to Vana')).toBeInTheDocument();
-    });
-
-    // Profile section should exist with md:flex class (visible on desktop via responsive design)
-    const profileSection = document.querySelector('.hidden.md\\:flex');
-    expect(profileSection).toBeInTheDocument();
-
-    // Profile image or fallback should exist within the profile section
-    expect(screen.queryByRole('presentation') || screen.queryByText('👤')).toBeTruthy();
-
-    unmount();
-  });
-});
 
 describe('External Link Behavior', () => {
   beforeEach(() => {
@@ -1504,7 +1422,7 @@ describe('External Link Behavior', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Welcome to Vana')).toBeInTheDocument();
+      expect(screen.getByText(/Welcome to Vana/i)).toBeInTheDocument();
     });
 
     const linkedinLink = screen.getByRole('link', { name: /connect on linkedin/i });
@@ -1513,6 +1431,94 @@ describe('External Link Behavior', () => {
     expect(linkedinLink).toHaveAttribute('href', 'https://www.linkedin.com/in/nickbohmer/');
     expect(linkedinLink).toHaveAttribute('target', '_blank');
     expect(linkedinLink).toHaveAttribute('rel', 'noopener noreferrer');
+
+    unmount();
+  });
+});
+
+describe('Mobile View Consolidation', () => {
+  const originalMatchMedia = window.matchMedia;
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+
+    // Mock mobile viewport (< 768px)
+    window.matchMedia = vi.fn().mockImplementation((query) => {
+      return {
+        matches: query.includes('max-width: 767px') || query === '(max-width: 767px)',
+        media: query,
+        onchange: null,
+        addListener: vi.fn(), // Deprecated
+        removeListener: vi.fn(), // Deprecated
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      } as unknown as MediaQueryList;
+    });
+
+    // Mock resize to mobile width
+    window.innerWidth = 375;
+    window.dispatchEvent(new Event('resize'));
+  });
+
+  afterEach(() => {
+    cleanup();
+    localStorage.clear();
+    window.matchMedia = originalMatchMedia;
+    window.innerWidth = 1024;
+    window.dispatchEvent(new Event('resize'));
+  });
+
+  it('should render consolidated single-page view on mobile', async () => {
+    function TestComponent() {
+      const [isOpen, setIsOpen] = React.useState(true);
+      const { setSteps } = useTour();
+
+      React.useEffect(() => {
+        setSteps([
+          { content: 'Step 1', selectorId: 'step-1' },
+        ]);
+      }, [setSteps]);
+
+      return (
+        <div>
+          <div id="step-1">Target</div>
+          <TourAlertDialog isOpen={isOpen} setIsOpen={setIsOpen} />
+        </div>
+      );
+    }
+
+    const { unmount } = render(
+      <TourProvider>
+        <TestComponent />
+      </TourProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Welcome to Vana/i)).toBeInTheDocument();
+    });
+
+    // 1. Verify Header Content
+    expect(screen.getByText('Nick Bohmer')).toBeInTheDocument();
+    expect(screen.getByText('Product Leader')).toBeInTheDocument();
+
+    // 2. Verify Lists
+    expect(screen.getByText(/Current Release/i)).toBeInTheDocument();
+    expect(screen.getByText(/Built With/i)).toBeInTheDocument();
+
+    // Check for Accordion Triggers
+    expect(screen.getByText(/^Frontend$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Backend$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^AI Models$/i)).toBeInTheDocument();
+
+    // 3. Verify Actions (Start Tour and Skip only)
+    expect(screen.getByRole('button', { name: /Start the Tour/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Skip for now/i })).toBeInTheDocument();
+
+    // 4. Verify Pagination is GONE
+    expect(screen.queryByRole('button', { name: /Next/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Back$/i })).not.toBeInTheDocument();
 
     unmount();
   });

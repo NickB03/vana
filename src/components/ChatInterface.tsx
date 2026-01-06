@@ -28,6 +28,7 @@ import { TOUR_STEP_IDS } from "@/components/tour";
 import { VirtualizedMessageList } from "@/components/chat/VirtualizedMessageList";
 import { ERROR_IDS } from "@/constants/errorIds";
 import { logError } from "@/utils/errorLogging";
+import { getToolChoice } from "@/utils/toolChoice";
 
 interface ChatInterfaceProps {
   sessionId?: string;
@@ -277,22 +278,24 @@ export function ChatInterface({
     setInput("");
     setIsStreaming(true);
     setStreamingMessage("");
-    // Initialize progress with "analyzing" state for immediate feedback
-    setStreamProgress({
-      stage: "analyzing",
-      message: "Analyzing request...",
-      artifactDetected: false,
-      percentage: 0
-    });
-
-    // IMPORTANT: Only force tool choice for explicit image generation mode
-    // For artifacts, use "auto" and let GLM decide based on the prompt
-    // This prevents tool execution failures when prompts don't match tool expectations
-    const toolChoice = imageMode ? "generate_image" : "auto";
+    // Respect explicit modes: force the corresponding tool when the user opts in.
+    // Artifact mode should bias the backend and avoid plain-text replies.
+    const toolChoice = getToolChoice(imageMode, artifactMode);
     console.log("🎯 [ChatInterface.handleSend] Tool choice:", {
       imageMode,
       artifactMode,
       toolChoice,
+    });
+    // Initialize progress with "analyzing" state for immediate feedback
+    // If an artifact is explicitly requested, show the artifact skeleton ASAP.
+    setStreamProgress({
+      stage: "analyzing",
+      message: "Analyzing request...",
+      artifactDetected: false,
+      percentage: 0,
+      toolExecution: toolChoice === "generate_artifact"
+        ? { toolName: "generate_artifact", timestamp: Date.now() }
+        : undefined,
     });
     // NOTE: setImageMode/setArtifactMode moved to useEffect below to prevent render phase updates
 
@@ -311,7 +314,10 @@ export function ChatInterface({
             setStreamingMessage((prev) => prev + chunk);
           }
           // Always update progress (includes reasoning steps)
-          setStreamProgress(progress);
+          setStreamProgress((prev) => ({
+            ...progress,
+            toolExecution: progress.toolExecution ?? prev.toolExecution,
+          }));
         },
         () => {
           setStreamingMessage("");
