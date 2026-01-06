@@ -892,7 +892,7 @@ export function preValidateAndFixGlmSyntax(
   let fixed = code;
 
   // 1. Fix "const * as X from 'pkg'" -> "import * as X from 'pkg'"
-  // GLM generates this invalid hybrid syntax that Babel/bundlers can't parse
+  // GLM generates this invalid hybrid syntax that Sucrase/bundlers can't parse
   const constStarPattern = /^(\s*)const\s*\*\s*as\s+(\w+)\s+from\s+(['"][^'"]+['"])\s*;?\s*$/gm;
   fixed = fixed.replace(constStarPattern, (match, indent, name, pkg) => {
     const replacement = `${indent}import * as ${name} from ${pkg};`;

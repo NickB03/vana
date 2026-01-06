@@ -7,10 +7,14 @@ export interface NpmImport {
   version?: string;
 }
 
+// Packages available client-side via UMD + import map - don't need server bundling
+// Keep in sync with REACT_IMPORT_MAP in ArtifactRenderer.tsx
 const RUNTIME_ALLOWLIST = new Set([
+  // Charts and animations
   "lucide-react",
   "framer-motion",
   "recharts",
+  // Radix UI primitives (available via esm.sh import map)
   "@radix-ui/react-dialog",
   "@radix-ui/react-dropdown-menu",
   "@radix-ui/react-popover",
@@ -19,6 +23,13 @@ const RUNTIME_ALLOWLIST = new Set([
   "@radix-ui/react-slider",
   "@radix-ui/react-switch",
   "@radix-ui/react-tooltip",
+  "@radix-ui/react-accordion",
+  "@radix-ui/react-checkbox",
+  "@radix-ui/react-radio-group",
+  "@radix-ui/react-scroll-area",
+  "@radix-ui/react-avatar",
+  "@radix-ui/react-progress",
+  "@radix-ui/react-separator",
 ]);
 
 const REACT_CORE_PACKAGES = new Set([

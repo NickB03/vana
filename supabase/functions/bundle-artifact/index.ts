@@ -101,6 +101,12 @@ const PEER_DEPENDENCIES: Record<string, string[]> = {
   '@dnd-kit/utilities': ['@dnd-kit/core'],
   'react-chartjs-2': ['chart.js'],
   '@hookform/resolvers': ['react-hook-form'],
+  // Three.js ecosystem peer dependencies
+  '@react-three/drei': ['three'],
+  '@react-three/rapier': ['three'],
+  '@react-spring/three': ['three'],
+  '@react-three/postprocessing': ['three'],
+  'three-stdlib': ['three'],
 };
 
 /**
@@ -655,10 +661,12 @@ serve(async (req) => {
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>`;
 
+    // Use Framer Motion v10 which has better UMD compatibility with React 18
+    // v11 has stricter requirements that cause "useRef" errors
     const framerMotionScript = bundleReact
       ? ""
       : `
-  <script crossorigin src="https://unpkg.com/framer-motion@11/dist/framer-motion.js"></script>`;
+  <script crossorigin src="https://unpkg.com/framer-motion@10.18.0/dist/framer-motion.js"></script>`;
 
     const lucideScript = bundleReact
       ? ""
@@ -677,6 +685,12 @@ serve(async (req) => {
       });
     } else {
       console.log('React ' + globalThis.React.version + ' loaded successfully');
+
+      // CRITICAL FIX: Lowercase React aliases for lucide-react UMD compatibility
+      // lucide-react UMD bundle expects 'global.react' (lowercase) not 'global.React'
+      // This alias must be set BEFORE lucide-react loads
+      window.react = window.React;
+      window.reactDOM = window.ReactDOM;
 
       // Expose React exports as globals for GLM-generated code that uses destructuring
 ${reactGlobalAssignments}
