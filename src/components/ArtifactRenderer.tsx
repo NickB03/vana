@@ -490,9 +490,8 @@ ${REACT_GLOBAL_ASSIGNMENTS}
 
             // If Sucrase failed, show error with AI fix option
             if (!sucraseSucceeded) {
-              console.error('[BundledArtifactFrame] Sucrase transpilation failed - no fallback available');
+              console.error('[BundledArtifactFrame] Sucrase transpilation failed');
 
-              // Show error to user with fix option
               toast.error('Bundled artifact transpilation failed', {
                 description: 'The artifact code contains syntax that could not be transpiled.',
                 duration: Infinity,
@@ -502,16 +501,31 @@ ${REACT_GLOBAL_ASSIGNMENTS}
                 } : undefined,
               });
 
-              Sentry.addBreadcrumb({
-                category: 'artifact.bundled-transpile',
-                message: 'Transpilation failed - showing error to user',
-                level: 'error',
-                data: { reason: 'sucrase-failed' },
-              });
-
               onPreviewErrorChange?.('Bundled artifact transpilation failed');
               onLoadingChange?.(false);
-              return; // Don't proceed with rendering
+
+              // Return error UI instead of nothing to prevent blank screen
+              return (
+                <div className="w-full h-full flex items-center justify-center p-8 bg-background">
+                  <ArtifactErrorRecovery
+                    error={{
+                      type: 'syntax',
+                      message: 'Bundled artifact transpilation failed',
+                      originalError: 'Bundled artifact transpilation failed',
+                      suggestedFix: 'The artifact code contains syntax that could not be transpiled. AI can fix syntax errors.',
+                      canAutoFix: true,
+                      retryStrategy: 'with-fix',
+                      userMessage: 'The code contains a syntax error. AI can automatically fix this.'
+                    }}
+                    isRecovering={false}
+                    canRetry={true}
+                    canUseFallback={false}
+                    onRetry={onAIFix || (() => {})}
+                    onUseFallback={() => {}}
+                    onAskAIFix={onAIFix || (() => {})}
+                  />
+                </div>
+              );
             }
           }
         }

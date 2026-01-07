@@ -51,6 +51,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-deno-
 
+      - name: Start Supabase
+        run: |
+          npx supabase start
+          echo "Supabase started on http://127.0.0.1:54321"
+
+      - name: Wait for Supabase to be ready
+        run: |
+          timeout 60 bash -c 'until curl -f http://127.0.0.1:54321/functions/v1/health 2>/dev/null; do sleep 2; done' || true
+
       - name: Run integration tests - All providers
         if: ${{ inputs.provider == 'all' || inputs.provider == '' || github.event_name != 'workflow_dispatch' }}
         working-directory: supabase/functions
