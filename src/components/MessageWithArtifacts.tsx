@@ -229,7 +229,7 @@ export const MessageWithArtifacts = memo(({
             const hasNpmImports = needsBundling(artifact.content, artifact.type);
 
             if (hasNpmImports) {
-              // Mark artifact as unbundleable - don't try Babel fallback
+              // Mark artifact as unbundleable - show bundling error UI
               if (!isMounted) return;
               setArtifacts(prev =>
                 prev.map(a =>
@@ -274,14 +274,14 @@ export const MessageWithArtifacts = memo(({
 
               console.error(`[MessageWithArtifacts] Bundle failed for ${artifact.id}:`, result.error, result.details);
             } else {
-              // No npm imports - safe to fallback to Babel
-              toast.warning(`Bundling failed for ${artifact.title}, using fallback renderer`, {
+              // No npm imports - can render with client-side Sucrase transpilation
+              toast.warning(`Bundling failed for ${artifact.title}, using client-side renderer`, {
                 id: `bundle-${artifact.id}`,
                 description: "Artifact will render with limited features",
                 duration: 5000
               });
 
-              console.warn(`[MessageWithArtifacts] Bundle failed for ${artifact.id}, falling back to Babel:`, result.error);
+              console.warn(`[MessageWithArtifacts] Bundle failed for ${artifact.id}, using client-side renderer:`, result.error);
             }
 
             if (!isMounted) return;

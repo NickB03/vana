@@ -14,11 +14,11 @@ import {
   PromptInputTextarea,
 } from "@/components/prompt-kit/prompt-input";
 import { PromptInputControls } from "@/components/prompt-kit/prompt-input-controls";
-import { useChatMessages, ChatMessage, type StreamProgress } from "@/hooks/useChatMessages";
+import { useChatMessages, ChatMessage, type StreamProgress, type StreamingArtifact } from "@/hooks/useChatMessages";
 import { useStreamCancellation } from "@/hooks/useStreamCancellation";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ArtifactContainer as Artifact, ArtifactData } from "@/components/ArtifactContainer";
-import { parseArtifacts } from "@/utils/artifactParser";
+import { parseArtifacts, generateStableId } from "@/utils/artifactParser";
 import { bundleArtifact } from "@/utils/artifactBundler";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SystemMessage } from "@/components/ui/system-message";
@@ -28,6 +28,7 @@ import { TOUR_STEP_IDS } from "@/components/tour";
 import { VirtualizedMessageList } from "@/components/chat/VirtualizedMessageList";
 import { ERROR_IDS } from "@/constants/errorIds";
 import { logError } from "@/utils/errorLogging";
+import { getToolChoice } from "@/utils/toolChoice";
 
 interface ChatInterfaceProps {
   sessionId?: string;
@@ -197,6 +198,18 @@ export function ChatInterface({
     }
   }, [onCanvasToggle]);
 
+  const handleArtifactUpdate = useCallback((artifactId: string, update: Partial<ArtifactData>) => {
+    setArtifactOverrides(prev => ({
+      ...prev,
+      [artifactId]: {
+        ...prev[artifactId],
+        ...update
+      }
+    }));
+
+    setCurrentArtifact(prev => (prev?.id === artifactId ? { ...prev, ...update } : prev));
+  }, []);
+
   const handleBundleReactFallback = useCallback(async (artifact: ArtifactData, errorMessage: string) => {
     if (!sessionId) {
       toast({
@@ -277,22 +290,24 @@ export function ChatInterface({
     setInput("");
     setIsStreaming(true);
     setStreamingMessage("");
-    // Initialize progress with "analyzing" state for immediate feedback
-    setStreamProgress({
-      stage: "analyzing",
-      message: "Analyzing request...",
-      artifactDetected: false,
-      percentage: 0
-    });
-
-    // IMPORTANT: Only force tool choice for explicit image generation mode
-    // For artifacts, use "auto" and let GLM decide based on the prompt
-    // This prevents tool execution failures when prompts don't match tool expectations
-    const toolChoice = imageMode ? "generate_image" : "auto";
+    // Respect explicit modes: force the corresponding tool when the user opts in.
+    // Artifact mode should bias the backend and avoid plain-text replies.
+    const toolChoice = getToolChoice(imageMode, artifactMode);
     console.log("🎯 [ChatInterface.handleSend] Tool choice:", {
       imageMode,
       artifactMode,
       toolChoice,
+    });
+    // Initialize progress with "analyzing" state for immediate feedback
+    // If an artifact is explicitly requested, show the artifact skeleton ASAP.
+    setStreamProgress({
+      stage: "analyzing",
+      message: "Analyzing request...",
+      artifactDetected: false,
+      percentage: 0,
+      toolExecution: toolChoice === "generate_artifact"
+        ? { toolName: "generate_artifact", timestamp: Date.now() }
+        : undefined,
     });
     // NOTE: setImageMode/setArtifactMode moved to useEffect below to prevent render phase updates
 
@@ -311,7 +326,11 @@ export function ChatInterface({
             setStreamingMessage((prev) => prev + chunk);
           }
           // Always update progress (includes reasoning steps)
-          setStreamProgress(progress);
+          setStreamProgress((prev) => ({
+            ...progress,
+            toolExecution: progress.toolExecution ?? prev.toolExecution,
+            streamingArtifact: progress.streamingArtifact ?? prev.streamingArtifact,
+          }));
         },
         () => {
           setStreamingMessage("");
@@ -325,7 +344,7 @@ export function ChatInterface({
             stage: "complete",
             message: "",
             percentage: 100,
-            // Preserved automatically: reasoningSteps, streamingReasoningText, reasoningStatus, toolExecution
+            // Preserved automatically: reasoningSteps, streamingReasoningText, reasoningStatus, toolExecution, streamingArtifact
           }));
           completeStream();
         },
@@ -491,6 +510,123 @@ export function ChatInterface({
       onArtifactChange?.(false);
     }
   }, [messages, streamingMessage, onArtifactChange, sessionId]);
+
+  // P0.2: Reconcile artifact ID mismatches between streaming and saved artifacts
+  // After P0.1, IDs should match, but this is a safety fallback for timing differences
+  useEffect(() => {
+    if (!currentArtifact) return;
+
+    // Parse artifacts from all saved messages to find matching artifact with different ID
+    const parseAllArtifacts = async () => {
+      const allArtifacts: ArtifactData[] = [];
+
+      for (const message of displayMessages) {
+        if (message.role === "assistant") {
+          const { artifacts } = await parseArtifacts(message.content);
+          allArtifacts.push(...artifacts);
+        }
+      }
+
+      // Find artifact with matching content/type/title but different ID
+      const matchingArtifact = allArtifacts.find(a =>
+        a.content === currentArtifact.content &&
+        a.type === currentArtifact.type &&
+        a.title === currentArtifact.title &&
+        a.id !== currentArtifact.id
+      );
+
+      if (matchingArtifact) {
+        console.log('[ChatInterface] Reconciling artifact IDs:', {
+          from: currentArtifact.id,
+          to: matchingArtifact.id
+        });
+        setCurrentArtifact(matchingArtifact);
+
+        // Migrate override state from old ID to new ID
+        setArtifactOverrides(prev => {
+          const oldOverride = prev[currentArtifact.id];
+          if (!oldOverride) return prev;
+
+          const { [currentArtifact.id]: _, ...rest } = prev;
+          return {
+            ...rest,
+            [matchingArtifact.id]: oldOverride
+          };
+        });
+      }
+    };
+
+    parseAllArtifacts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayMessages.length, currentArtifact?.id, currentArtifact?.content]);
+
+  // Auto-open canvas when streaming artifact arrives
+  // This provides immediate feedback like ChatGPT/Gemini/Claude - artifact opens in canvas
+  // instead of raw XML appearing in chat
+  // CRITICAL: Use ref to track last opened artifact to prevent infinite re-render loops
+  const lastOpenedArtifactRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const streamingArtifact = streamProgress.streamingArtifact;
+    if (!streamingArtifact) return;
+
+    // Create stable ID from artifact content to detect duplicates
+    const artifactId = `${streamingArtifact.type}-${streamingArtifact.title}-${streamingArtifact.code.length}`;
+
+    // Skip if we've already opened this exact artifact (prevents infinite loops)
+    if (lastOpenedArtifactRef.current === artifactId) {
+      return;
+    }
+
+    lastOpenedArtifactRef.current = artifactId;
+
+    // Map artifact type string to ArtifactType
+    const mapArtifactType = (type: string): ArtifactData['type'] => {
+      switch (type) {
+        case 'react': return 'react';
+        case 'code': return 'code';
+        case 'html': return 'html';
+        case 'svg': return 'svg';
+        case 'mermaid': return 'mermaid';
+        case 'markdown': return 'markdown';
+        case 'image': return 'image';
+        default: return 'react'; // Default to react for unknown types
+      }
+    };
+
+    // P0.1 FIX: Generate deterministic hash-based ID that matches artifactParser.ts
+    // This ensures streaming artifact ID matches the ID generated when message saves
+    const createArtifactWithStableId = async () => {
+      const cleanCode = streamingArtifact.code;
+      const mappedType = mapArtifactType(streamingArtifact.type);
+
+      // Generate the same ID that parseArtifacts() will create (index 0 for first artifact)
+      const stableId = await generateStableId(cleanCode, mappedType, 0);
+
+      // Create ArtifactData with deterministic ID
+      const artifactData: ArtifactData = {
+        id: stableId,
+        type: mappedType,
+        title: streamingArtifact.title,
+        content: cleanCode,
+      };
+
+      console.log('[ChatInterface] P0.1 Streaming artifact received with stable ID:', {
+        id: stableId,
+        type: streamingArtifact.type,
+        title: streamingArtifact.title,
+        codeLength: cleanCode.length,
+      });
+
+      // Set as current artifact and open canvas
+      setCurrentArtifact(artifactData);
+      onCanvasToggle?.(true);
+      onArtifactChange?.(true);
+    };
+
+    // Execute async ID generation
+    createArtifactWithStableId();
+  }, [streamProgress.streamingArtifact, onCanvasToggle, onArtifactChange]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -765,6 +901,7 @@ export function ChatInterface({
             onCopy={handleCopyMessage}
             onEdit={handleEditMessage}
             onArtifactOpen={handleArtifactOpen}
+            onArtifactUpdate={handleArtifactUpdate}
             artifactOverrides={artifactOverrides}
             streamProgress={streamProgress}
             onCancelStream={cancelStream}

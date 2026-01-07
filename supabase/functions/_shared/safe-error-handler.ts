@@ -88,9 +88,11 @@ const ERROR_MAPPINGS: ErrorMapping[] = [
     statusCode: 500,
   },
 
-  // Resource exhaustion
+  // Resource exhaustion - be specific to avoid false positives
+  // Matches: "ResourceExhaustionError", "resource exhaustion", "max_calls", "max_time"
+  // Does NOT match generic "resource" or "timeout" (handled separately)
   {
-    pattern: /resource|exhaustion|max.?(calls|time)|timeout/i,
+    pattern: /resource.?exhaustion|ResourceExhaustionError|max.?(calls|time)|limit.?exceeded.*max/i,
     category: 'resource_exhaustion',
     safeMessage: 'Request processing limit reached. Please simplify your request.',
     retryable: false,

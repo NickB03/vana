@@ -253,6 +253,60 @@ ${REACT_GLOBAL_ASSIGNMENTS}
           );
         }
 
+        // CRITICAL FIX: Lowercase React alias for lucide-react UMD compatibility
+        // lucide-react UMD bundle expects `global.react` (lowercase) not `global.React`
+        // This alias must be set BEFORE lucide-react loads
+        if (!htmlContent.includes('window.react = window.React')) {
+          console.log('[BundledArtifactFrame] Injecting lowercase React alias for lucide-react');
+          const reactAliasScript = `
+  <script>
+    // Injected: Lowercase React alias (lucide-react UMD expects window.react)
+    if (typeof React !== 'undefined') {
+      window.react = window.React;
+      window.reactDOM = window.ReactDOM;
+    }
+  </script>`;
+          // Inject after ReactDOM script (before any library that needs it)
+          const reactDomScriptMatch = htmlContent.match(/(<script[^>]*react-dom[^>]*\.js[^>]*><\/script>)/i);
+          if (reactDomScriptMatch) {
+            htmlContent = htmlContent.replace(reactDomScriptMatch[1], reactDomScriptMatch[1] + reactAliasScript);
+          } else {
+            // Fallback: inject before </head>
+            htmlContent = htmlContent.replace('</head>', reactAliasScript + '\n</head>');
+          }
+        }
+
+        // CRITICAL FIX: Inject Lucide React UMD if needed but missing
+        // Some bundled artifacts use Lucide icons as globals (Plus, Check, etc.) but don't load the library
+        const usesLucideIcons = /\b(Plus|Check|X|ChevronDown|ChevronUp|ArrowUp|ArrowDown|Star|Heart|Edit|Trash|Search|Settings|User|Menu)\b/.test(htmlContent);
+        const hasLucideScript = htmlContent.includes('lucide-react') || htmlContent.includes('LucideReact');
+        if (usesLucideIcons && !hasLucideScript) {
+          console.log('[BundledArtifactFrame] Injecting Lucide React library for icon usage');
+          const lucideScript = `
+  <!-- Injected: Lucide React icons -->
+  <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
+  <script>
+    // Expose Lucide icons as globals
+    if (typeof LucideReact !== 'undefined') {
+      const icons = LucideReact;
+      Object.keys(icons).forEach(function(name) {
+        if (typeof window[name] === 'undefined') {
+          window[name] = icons[name];
+        }
+      });
+      window.LucideIcons = icons;
+      console.log('Lucide React injected successfully');
+    }
+  </script>`;
+          // Inject after lowercase React alias (which must come after ReactDOM)
+          const reactDomScriptMatch = htmlContent.match(/(<script[^>]*react-dom[^>]*\.js[^>]*><\/script>[\s\S]*?<\/script>)/i);
+          if (reactDomScriptMatch) {
+            htmlContent = htmlContent.replace(reactDomScriptMatch[1], reactDomScriptMatch[1] + lucideScript);
+          } else {
+            htmlContent = htmlContent.replace('</head>', lucideScript + '\n</head>');
+          }
+        }
+
         // CRITICAL FIX: Server-side escaping bug produces invalid JS
         // The bundle-artifact function escapes backticks and dollar signs for template literal embedding,
         // but those escapes persist in the final HTML, causing "Invalid or unexpected token" errors.
@@ -368,7 +422,7 @@ ${REACT_GLOBAL_ASSIGNMENTS}
         }
 
         // CRITICAL FIX: The bundle contains raw JSX which browsers can't parse natively.
-        // We use Sucrase for fast transpilation, with Babel as fallback.
+        // We use Sucrase for fast transpilation. Errors show "Ask AI to Fix" UI.
 
         // Check if bundle has JSX (component tags like <Component or <div)
         const hasJsx = /<(?:[A-Z][a-zA-Z]*|[a-z]+)[\s>/]/.test(htmlContent) &&
@@ -408,12 +462,12 @@ ${REACT_GLOBAL_ASSIGNMENTS}
                 );
                 sucraseSucceeded = true;
               } else {
-                console.warn('[BundledArtifactFrame] Sucrase transpilation failed, falling back to Babel:', transpileResult.error);
+                console.warn('[BundledArtifactFrame] Sucrase transpilation failed:', transpileResult.error);
                 Sentry.captureException(new Error(`Bundled artifact Sucrase transpilation failed: ${transpileResult.error}`), {
                   tags: {
                     component: 'BundledArtifactFrame',
                     transpiler: 'sucrase',
-                    fallback: 'babel',
+                    errorRecovery: 'ai-fix-prompt',
                   },
                   extra: {
                     error: transpileResult.error,
@@ -434,11 +488,10 @@ ${REACT_GLOBAL_ASSIGNMENTS}
               });
             }
 
-            // If Sucrase failed, show error (no Babel fallback)
+            // If Sucrase failed, show error with AI fix option
             if (!sucraseSucceeded) {
-              console.error('[BundledArtifactFrame] Sucrase transpilation failed - no fallback available');
+              console.error('[BundledArtifactFrame] Sucrase transpilation failed');
 
-              // Show error to user with fix option
               toast.error('Bundled artifact transpilation failed', {
                 description: 'The artifact code contains syntax that could not be transpiled.',
                 duration: Infinity,
@@ -448,16 +501,31 @@ ${REACT_GLOBAL_ASSIGNMENTS}
                 } : undefined,
               });
 
-              Sentry.addBreadcrumb({
-                category: 'artifact.bundled-transpile',
-                message: 'Transpilation failed - showing error to user',
-                level: 'error',
-                data: { reason: 'sucrase-failed' },
-              });
-
               onPreviewErrorChange?.('Bundled artifact transpilation failed');
               onLoadingChange?.(false);
-              return; // Don't proceed with rendering
+
+              // Return error UI instead of nothing to prevent blank screen
+              return (
+                <div className="w-full h-full flex items-center justify-center p-8 bg-background">
+                  <ArtifactErrorRecovery
+                    error={{
+                      type: 'syntax',
+                      message: 'Bundled artifact transpilation failed',
+                      originalError: 'Bundled artifact transpilation failed',
+                      suggestedFix: 'The artifact code contains syntax that could not be transpiled. AI can fix syntax errors.',
+                      canAutoFix: true,
+                      retryStrategy: 'with-fix',
+                      userMessage: 'The code contains a syntax error. AI can automatically fix this.'
+                    }}
+                    isRecovering={false}
+                    canRetry={true}
+                    canUseFallback={false}
+                    onRetry={onAIFix || (() => {})}
+                    onUseFallback={() => {}}
+                    onAskAIFix={onAIFix || (() => {})}
+                  />
+                </div>
+              );
             }
           }
         }
@@ -616,18 +684,32 @@ BundledArtifactFrame.displayName = 'BundledArtifactFrame';
  */
 
 // React Import Map (shims for ES modules to use UMD React)
+// These packages are available client-side via esm.sh and don't need server bundling
+// NOTE: Versions MUST match prebuilt-bundles.json (source of truth)
 const REACT_IMPORT_MAP = {
   imports: {
     ...BASE_REACT_IMPORTS,
-    "@radix-ui/react-dialog": "https://esm.sh/@radix-ui/react-dialog@1.0.5?external=react,react-dom",
-    "@radix-ui/react-dropdown-menu": "https://esm.sh/@radix-ui/react-dropdown-menu@2.0.6?external=react,react-dom",
-    "@radix-ui/react-popover": "https://esm.sh/@radix-ui/react-popover@1.0.7?external=react,react-dom",
-    "@radix-ui/react-tabs": "https://esm.sh/@radix-ui/react-tabs@1.0.4?external=react,react-dom",
-    "@radix-ui/react-select": "https://esm.sh/@radix-ui/react-select@2.0.0?external=react,react-dom",
-    "@radix-ui/react-slider": "https://esm.sh/@radix-ui/react-slider@1.1.2?external=react,react-dom",
-    "@radix-ui/react-switch": "https://esm.sh/@radix-ui/react-switch@1.0.3?external=react,react-dom",
-    "@radix-ui/react-tooltip": "https://esm.sh/@radix-ui/react-tooltip@1.0.7?external=react,react-dom",
-    "lucide-react": "https://esm.sh/lucide-react@0.263.1?external=react,react-dom"
+    // Charts - loaded via UMD but import map needed for ESM-style imports
+    "recharts": "https://esm.sh/recharts@2.15.0?external=react,react-dom",
+    // Radix UI primitives (versions synced with prebuilt-bundles.json)
+    "@radix-ui/react-dialog": "https://esm.sh/@radix-ui/react-dialog@1.1.15?external=react,react-dom",
+    "@radix-ui/react-dropdown-menu": "https://esm.sh/@radix-ui/react-dropdown-menu@2.1.16?external=react,react-dom",
+    "@radix-ui/react-popover": "https://esm.sh/@radix-ui/react-popover@1.1.15?external=react,react-dom",
+    "@radix-ui/react-tabs": "https://esm.sh/@radix-ui/react-tabs@1.1.13?external=react,react-dom",
+    "@radix-ui/react-select": "https://esm.sh/@radix-ui/react-select@2.2.6?external=react,react-dom",
+    "@radix-ui/react-slider": "https://esm.sh/@radix-ui/react-slider@1.3.6?external=react,react-dom",
+    "@radix-ui/react-switch": "https://esm.sh/@radix-ui/react-switch@1.2.6?external=react,react-dom",
+    "@radix-ui/react-tooltip": "https://esm.sh/@radix-ui/react-tooltip@1.2.8?external=react,react-dom",
+    "@radix-ui/react-accordion": "https://esm.sh/@radix-ui/react-accordion@1.2.12?external=react,react-dom",
+    "@radix-ui/react-checkbox": "https://esm.sh/@radix-ui/react-checkbox@1.3.3?external=react,react-dom",
+    "@radix-ui/react-radio-group": "https://esm.sh/@radix-ui/react-radio-group@1.3.8?external=react,react-dom",
+    "@radix-ui/react-scroll-area": "https://esm.sh/@radix-ui/react-scroll-area@1.2.10?external=react,react-dom",
+    "@radix-ui/react-avatar": "https://esm.sh/@radix-ui/react-avatar@1.1.11?external=react,react-dom",
+    "@radix-ui/react-progress": "https://esm.sh/@radix-ui/react-progress@1.1.8?external=react,react-dom",
+    "@radix-ui/react-separator": "https://esm.sh/@radix-ui/react-separator@1.1.8?external=react,react-dom",
+    // Icons and animations
+    "lucide-react": "https://esm.sh/lucide-react@0.556.0?external=react,react-dom",
+    "framer-motion": "https://esm.sh/framer-motion@10.18.0?external=react,react-dom"
   }
 } as const;
 
@@ -659,9 +741,11 @@ const LIBRARY_SETUP_SCRIPT = `
 
     const Recharts = window.Recharts || {};
     const {
-      BarChart, LineChart, PieChart, AreaChart, ScatterChart,
-      Bar, Line, Pie, Area, Scatter, XAxis, YAxis, CartesianGrid,
-      Tooltip, Legend, ResponsiveContainer
+      BarChart, LineChart, PieChart, AreaChart, ScatterChart, RadarChart, RadialBarChart, ComposedChart, Treemap,
+      Bar, Line, Pie, Area, Scatter, Cell, Radar, RadialBar, Sector, Funnel,
+      XAxis, YAxis, ZAxis, CartesianGrid, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+      Tooltip, Legend, ResponsiveContainer, Brush, ReferenceLine, ReferenceArea, ReferenceDot,
+      Label, LabelList
     } = Recharts;
 
     const FramerMotion = window.Motion || {};
@@ -672,6 +756,12 @@ const LIBRARY_SETUP_SCRIPT = `
         window[exportName] = FramerMotion[exportName];
       }
     });
+
+    // Canvas Confetti for celebration effects
+    if (typeof confetti !== 'undefined') {
+      window.canvasConfetti = { create: confetti.create || confetti, reset: confetti.reset };
+      window.confetti = confetti;
+    }
 
     // Radix UI Select components (imported dynamically from ESM CDN)
     let RadixUISelect = {};
@@ -968,16 +1058,19 @@ export const ArtifactRenderer = memo(({
 
       if (e.data?.type === 'artifact-error') {
         const elapsed = Date.now() - loadingStartTimeRef.current;
+        // Sanitize and limit error message length to prevent memory issues
+        const MAX_ERROR_LENGTH = 5000;
+        const sanitizedMessage = String(e.data.message || 'Unknown error').substring(0, MAX_ERROR_LENGTH);
         Sentry.addBreadcrumb({
           category: 'artifact.loading',
           message: 'Artifact error received from iframe',
           level: 'error',
-          data: { elapsed, error: e.data.message },
+          data: { elapsed, error: sanitizedMessage },
         });
-        handleArtifactError(e.data.message);
+        handleArtifactError(sanitizedMessage);
         onLoadingChange(false);
         // Ensure we signal completion even on error if not already sent
-        window.postMessage({ type: 'artifact-rendered-complete', success: false, error: e.data.message }, '*');
+        window.postMessage({ type: 'artifact-rendered-complete', success: false, error: sanitizedMessage }, '*');
       } else if (e.data?.type === 'artifact-ready') {
         const elapsed = Date.now() - loadingStartTimeRef.current;
         Sentry.addBreadcrumb({
@@ -1346,41 +1439,38 @@ ${artifact.content}
         </div>
       );
     }
-    // If bundling failed with npm imports, show error
+    // If bundling failed with npm imports, show error with recovery options
     if (artifact.bundlingFailed && detectNpmImports(artifact.content)) {
+      // Build error message from bundleError and bundleErrorDetails
+      const bundlingErrorMessage = [
+        artifact.bundleError || "This component requires npm packages that couldn't be bundled.",
+        artifact.bundleErrorDetails
+      ].filter(Boolean).join(' ');
+
+      const bundlingError = classifyError(bundlingErrorMessage);
+
       return (
-        <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-background">
-          <div className="w-16 h-16 mb-4 rounded-full bg-destructive/10 flex items-center justify-center">
-            <AlertCircle className="w-8 h-8 text-destructive" />
-          </div>
-          <h3 className="text-lg font-semibold mb-2 text-foreground">Bundling Failed</h3>
-          <p className="text-sm text-muted-foreground mb-1 max-w-md">
-            {artifact.bundleError || "This component requires npm packages that couldn't be bundled."}
-          </p>
-          {artifact.bundleErrorDetails && (
-            <p className="text-xs text-muted-foreground mb-4 max-w-md">
-              {artifact.bundleErrorDetails}
-            </p>
-          )}
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                window.location.reload();
-              }}
-            >
-              Refresh Page
-            </Button>
-            {onEdit && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => onEdit?.(`Fix this bundling error: ${artifact.bundleError}`)}
-              >
-                Ask AI for Help
-              </Button>
-            )}
+        <div className="w-full h-full flex flex-col bg-background">
+          <div className="flex-1 flex items-center justify-center p-4">
+            <div className="w-full max-w-md">
+              <ArtifactErrorRecovery
+                error={bundlingError}
+                isRecovering={isRecovering || isFixingError}
+                canRetry={recoveryAttempts < MAX_RECOVERY_ATTEMPTS}
+                canUseFallback={!!getFallbackRenderer(bundlingError, 'bundle')}
+                onRetry={() => {
+                  window.location.reload();
+                }}
+                onUseFallback={() => {
+                  // Switch to Sandpack renderer for npm imports
+                  setCurrentRenderer('sandpack');
+                  setRecoveryAttempts(prev => prev + 1);
+                }}
+                onAskAIFix={() => {
+                  onEdit?.(`Fix this bundling error: ${bundlingErrorMessage}`);
+                }}
+              />
+            </div>
           </div>
         </div>
       );
@@ -1400,6 +1490,8 @@ ${artifact.content}
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://esm.sh https://esm.run https://cdn.jsdelivr.net blob: data:; style-src 'unsafe-inline' https://cdn.tailwindcss.com; img-src 'self' data: https:; connect-src 'self' https://esm.sh https://*.esm.sh https://cdn.jsdelivr.net;">
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script>
@@ -1420,7 +1512,8 @@ ${artifact.content}
   <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
   <script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/recharts@2.5.0/umd/Recharts.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/framer-motion@11.11.11/dist/framer-motion.js"></script>
+  <script src="https://unpkg.com/framer-motion@10.18.0/dist/framer-motion.js"></script>
+  <script crossorigin src="https://unpkg.com/canvas-confetti@1.9.3/dist/confetti.browser.js"></script>
   ${injectedCDNs}
   ${generateCompleteIframeStyles()}
   <style>
@@ -1483,7 +1576,7 @@ ${ERROR_HANDLING_SCRIPT}
       .replace(/^const\s*\{\s*motion\s*,\s*AnimatePresence\s*\}\s*=\s*Motion;?\s*$/gm, '')
       .replace(/^const\s*\{[^}]*(?:motion|AnimatePresence)[^}]*\}\s*=\s*(?:Motion|FramerMotion|window\.Motion);?\s*$/gm, '')
       // Strip Recharts destructuring (iframe template already declares these)
-      .replace(/^const\s*\{[^}]*(?:BarChart|LineChart|PieChart|AreaChart|ResponsiveContainer)[^}]*\}\s*=\s*(?:Recharts|window\.Recharts);?\s*$/gm, '')
+      .replace(/^const\s*\{[^}]*(?:BarChart|LineChart|PieChart|AreaChart|ScatterChart|RadarChart|RadialBarChart|ComposedChart|Treemap|ResponsiveContainer|Cell|Brush|Label|LabelList)[^}]*\}\s*=\s*(?:Recharts|window\.Recharts);?\s*$/gm, '')
       // Strip Lucide icons destructuring (iframe template already declares these)
       .replace(/^const\s*\{[^}]*\}\s*=\s*(?:LucideIcons|window\.LucideReact|LucideReact);?\s*$/gm, '')
       // Fix malformed "const * as X from 'package'" syntax (GLM bug - generates invalid JS)
@@ -1517,8 +1610,8 @@ ${ERROR_HANDLING_SCRIPT}
     // Determine which template to use based on feature flag and transpilation success
     let reactPreviewContent: string;
 
-    // Sucrase-only transpilation (no Babel fallback)
-    // Try Sucrase transpilation first (with exception handling for library failures)
+    // Sucrase transpilation with AI-assisted error recovery
+    // Try Sucrase transpilation (with exception handling for library failures)
     let transpileResult: sucraseTranspiler.TranspileResult | sucraseTranspiler.TranspileError;
 
       try {
@@ -1596,7 +1689,7 @@ ${ERROR_HANDLING_SCRIPT}
           previewContentRef.current = reactPreviewContent;
         }
     } else {
-      // Transpilation failed - show clear error message (no Babel fallback)
+      // Transpilation failed - show error UI with AI fix option
       console.error('[ArtifactRenderer] Sucrase transpilation failed:', transpileResult.error);
 
       // Capture exception for Sentry dashboard visibility
@@ -1640,10 +1733,28 @@ ${ERROR_HANDLING_SCRIPT}
         },
       });
 
-      // Set preview error and return null - don't render broken artifact
-      onPreviewErrorChange?.(`Transpilation failed: ${transpileResult.error}`);
+      // Set preview error and show error UI - don't render broken artifact
+      const transpilationErrorMessage = `Transpilation failed: ${transpileResult.error}`;
+      onPreviewErrorChange?.(transpilationErrorMessage);
       onLoadingChange?.(false);
-      return null;
+
+      // Classify the error for proper recovery options
+      const transpilationError = classifyError(transpilationErrorMessage);
+
+      // Return error UI instead of null to prevent blank screen
+      return (
+        <div className="w-full h-full flex items-center justify-center p-8 bg-background">
+          <ArtifactErrorRecovery
+            error={transpilationError}
+            isRecovering={isFixingError}
+            canRetry={false}
+            canUseFallback={false}
+            onRetry={() => {}}
+            onUseFallback={() => {}}
+            onAskAIFix={onAIFix}
+          />
+        </div>
+      );
     }
 
     return (

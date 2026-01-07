@@ -508,7 +508,7 @@ Now create the React component wrapped in artifact tags:`;
 
 IMPORTANT: Return the COMPLETE artifact wrapped in XML tags like: <artifact type="${exampleType}" title="Descriptive Title">YOUR CODE HERE</artifact>
 
-For React artifacts: Return ONLY pure JSX/React component code. Do NOT include <!DOCTYPE>, <html>, <head>, <body> tags. The code will be transpiled by Babel, not rendered as a full HTML page.
+For React artifacts: Return ONLY pure JSX/React component code. Do NOT include <!DOCTYPE>, <html>, <head>, <body> tags. The code will be transpiled client-side, not rendered as a full HTML page.
 
 Include the opening <artifact> tag, the complete code, and the closing </artifact> tag.`;
 }
@@ -517,7 +517,7 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
  * Strip HTML document structure from React artifacts
  *
  * GLM-4.7 sometimes appends full HTML documents after the React code.
- * This causes Babel transpilation to fail with "Unexpected token '<'".
+ * This causes Sucrase transpilation to fail with "Unexpected token '<'".
  *
  * @param code - Raw artifact code from GLM
  * @param type - Artifact type
@@ -1004,7 +1004,7 @@ export async function executeArtifactGeneration(
     console.log(`[${requestId}] ✅ Artifact code validated successfully (no issues)`);
 
     // Even when validation passes, run autoFixArtifactCode to handle TypeScript stripping
-    // GLM sometimes generates TypeScript annotations that pass validation but fail in Babel
+    // GLM sometimes generates TypeScript annotations that pass validation but fail in Sucrase
     const { fixed, changes } = autoFixArtifactCode(artifactCode);
     if (changes.length > 0) {
       console.log(`[${requestId}] 🔧 Applied ${changes.length} pre-processing fix(es):`, changes);

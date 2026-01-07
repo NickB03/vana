@@ -1,10 +1,10 @@
 /**
  * Bundling Guidance
  *
- * Cost-aware guidance for choosing between Babel (instant) and
+ * Cost-aware guidance for choosing between Sucrase (instant client-side) and
  * server-side bundling (slow but supports npm packages).
  *
- * Critical for UX: Most artifacts should use Babel path.
+ * Critical for UX: Most artifacts should use client-side path.
  */
 
 export const BUNDLING_GUIDANCE = `
@@ -14,7 +14,7 @@ export const BUNDLING_GUIDANCE = `
 
 Artifacts support TWO rendering methods with different performance characteristics:
 
-### ⚡ Babel Standalone (Default - Use for 90% of artifacts)
+### ⚡ Client-Side Sucrase (Default - Use for 90% of artifacts)
 
 **Performance:**
 - Latency: <100ms (instant)
@@ -25,7 +25,7 @@ Artifacts support TWO rendering methods with different performance characteristi
 - React (global UMD)
 - Tailwind CSS (pre-loaded)
 - Lucide React (icons)
-- Recharts (charts)
+- Recharts (charts - including Cell, PieChart, RadarChart, etc.)
 - Framer Motion (animations)
 - D3, Chart.js, Three.js (r128)
 - Math.js, Lodash, Papaparse
@@ -64,21 +64,21 @@ Artifacts support TWO rendering methods with different performance characteristi
 ### Decision Matrix
 
 **Need a button/card/form?**
-→ Use Tailwind CSS (Babel path - instant)
+→ Use Tailwind CSS (client-side path - instant)
 
 **Need charts?**
-→ Use Recharts (Babel path - instant, already available)
+→ Use Recharts (client-side path - instant, already available)
 
 **Need icons?**
-→ Use Lucide React (Babel path - instant, already available)
+→ Use Lucide React (client-side path - instant, already available)
 
 **Need Dialog/Dropdown/Select/Popover?**
 → Consider Radix UI (bundling path - 2-5s delay)
-→ Alternative: Build with Tailwind + absolute positioning (Babel path)
+→ Alternative: Build with Tailwind + absolute positioning (client-side path)
 
 **Need animations?**
-→ Use Framer Motion (Babel path - instant, already available)
-→ Or Tailwind transitions (Babel path)
+→ Use Framer Motion (client-side path - instant, already available)
+→ Or Tailwind transitions (client-side path)
 
 **Need specialized npm package?**
 → Server bundling (bundling path - 2-5s delay)
@@ -136,7 +136,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 ### When Bundling Fails
 
 If server bundling fails (timeout, rate limit, etc.):
-1. System will fallback to Babel rendering
+1. System will show error with "Ask AI to Fix" option
 2. npm imports will cause runtime errors
 3. Provide Tailwind-only alternative in error message
 `;
@@ -144,7 +144,7 @@ If server bundling fails (timeout, rate limit, etc.):
 export const BUNDLING_COST_REMINDER = `
 [PERFORMANCE REMINDER]
 
-- Default to Babel path (Tailwind + available CDN libraries)
+- Default to client-side path (Tailwind + available CDN libraries)
 - Only use npm imports when truly needed
 - Each npm import adds 2-5 second delay
 - Tailwind CSS can build professional UIs without bundling

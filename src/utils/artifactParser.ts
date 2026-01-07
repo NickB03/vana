@@ -2,7 +2,7 @@ import { ArtifactData, ArtifactType } from "@/components/ArtifactContainer";
 
 // Generate stable artifact ID based on content and type
 // Returns a clean, URL-safe identifier using crypto hash
-async function generateStableId(content: string, type: ArtifactType, index: number): Promise<string> {
+export async function generateStableId(content: string, type: ArtifactType, index: number): Promise<string> {
   // Create deterministic hash from content + type + index
   const encoder = new TextEncoder();
   const data = encoder.encode(`${content}${type}${index}`);

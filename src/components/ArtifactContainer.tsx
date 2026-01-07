@@ -219,8 +219,17 @@ ${artifact.content}
       );
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to generate fix");
+        const errorData = await response.json();
+        // Handle rate limit errors with specific messaging
+        if (errorData.rateLimitExceeded) {
+          const resetTime = errorData.resetAt
+            ? new Date(errorData.resetAt).toLocaleTimeString()
+            : 'shortly';
+          toast.error(`Rate limit exceeded. Try again at ${resetTime}.`);
+          setIsFixingError(false);
+          return;
+        }
+        throw new Error(errorData.error || "Failed to generate fix");
       }
 
       const { fixedCode } = await response.json();
