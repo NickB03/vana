@@ -51,6 +51,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-deno-
 
+      - name: Create .env.local for Edge Functions
+        run: |
+          cat > supabase/.env.local <<EOF
+          GLM_API_KEY=${{ secrets.GLM_API_KEY }}
+          OPENROUTER_GEMINI_FLASH_KEY=${{ secrets.OPENROUTER_GEMINI_FLASH_KEY }}
+          OPENROUTER_GEMINI_IMAGE_KEY=${{ secrets.OPENROUTER_GEMINI_IMAGE_KEY }}
+          TAVILY_API_KEY=${{ secrets.TAVILY_API_KEY }}
+          EOF
+          echo "✅ Created supabase/.env.local with API keys for Edge Functions"
+
       - name: Start Supabase
         run: |
           npx supabase start
