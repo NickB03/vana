@@ -11,7 +11,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.generate-title]
-verify_jwt = true
+verify_jwt = false
 
 [functions.cache-manager]
 verify_jwt = true

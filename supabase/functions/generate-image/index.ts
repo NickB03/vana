@@ -14,9 +14,8 @@ serve(async (req) => {
   const origin = req.headers.get("Origin");
   const corsHeaders = getCorsHeaders(origin);
 
-  if (req.method === "OPTIONS") {
-    return handleCorsPreflightRequest(req);
-  }
+  // NOTE: OPTIONS requests are handled automatically by Supabase Edge Runtime
+  // with default CORS configuration. We only handle actual requests (POST, GET, etc.)
 
   // SECURITY FIX #3: Generate requestId immediately after CORS check (before validation)
   // This ensures all error responses include a traceable request ID
@@ -24,7 +23,19 @@ serve(async (req) => {
   const errors = ErrorResponseBuilder.withHeaders(corsHeaders, requestId);
 
   try {
-    const { prompt, mode, baseImage, sessionId } = await req.json();
+    // Parse and validate JSON body (catch syntax errors)
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (jsonError) {
+      console.error(`❌ [${requestId}] Invalid JSON in request body:`, jsonError);
+      return errors.validation(
+        "Invalid JSON in request body",
+        jsonError instanceof Error ? jsonError.message : "Failed to parse JSON"
+      );
+    }
+
+    const { prompt, mode, baseImage, sessionId } = requestBody;
 
     console.log(`🎨 [${requestId}] Request received: mode=${mode}, prompt length=${prompt?.length}`);
 

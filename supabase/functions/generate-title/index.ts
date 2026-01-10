@@ -61,27 +61,28 @@ serve(async (req) => {
       );
     }
 
+    // Support both authenticated and guest users (similar to generate-image function)
+    let user = null;
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      logger.warn('authentication_failed', { reason: 'missing_auth_header' });
-      return errors.unauthorized("No authorization header");
+
+    if (authHeader) {
+      // Authenticated user - verify token
+      const supabase = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+        { global: { headers: { Authorization: authHeader } } }
+      );
+
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        user = authUser;
+      }
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      logger.warn('authentication_failed', { reason: 'invalid_token' });
-      return errors.unauthorized("Invalid or expired authentication token");
-    }
-
-    // Create child logger with user context
-    const userLogger = logger.child({ userId: user.id });
+    // Create logger with optional user context
+    const userLogger = user ? logger.child({ userId: user.id }) : logger;
     userLogger.info('title_generation_started', {
+      isGuest: !user,
       messagePreview: message.substring(0, 50)
     });
 

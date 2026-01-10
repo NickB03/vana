@@ -315,41 +315,37 @@ Deno.test({
 });
 
 // ============================================================================
-// Test 6: Authentication required
+// Test 6: Guest user access (no authentication required)
 // ============================================================================
 
 Deno.test({
-  name: "Title Endpoint - Authentication required",
+  name: "Title Endpoint - Guest user access (no auth required)",
   ignore: !GLM_API_KEY,
   async fn() {
-    console.log("\n🔒 Testing authentication requirement...");
+    console.log("\n👤 Testing guest user access (no auth)...");
 
     const response = await fetch(FUNCTION_URL, {
       method: "POST",
       headers: {
-        // Missing Authorization header
+        // No Authorization header - testing guest access
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        message: "Test message",
+        message: "Create a simple counter app",
       }),
     });
 
-    // Should return unauthorized error
-    assertEquals(response.ok, false, "Missing auth should fail");
-    assertEquals(response.status, 401, "Should return 401 Unauthorized");
+    // Should succeed - guest users are allowed (like generate-image)
+    assertEquals(response.ok, true, "Guest request should succeed");
+    assertEquals(response.status, 200, "Should return 200 OK");
 
     const data = await response.json();
-    assertExists(data.error, "Error response should have error field");
-    assert(
-      data.error.toLowerCase().includes("authorization") ||
-        data.error.toLowerCase().includes("auth"),
-      `Error should mention authentication. Got: "${data.error}"`,
-    );
+    assertExists(data.title, "Response should have title field");
+    assert(typeof data.title === "string", "Title should be a string");
+    assert(data.title.length > 0, "Title should not be empty");
 
-    console.log("✓ Authentication requirement enforced");
-    console.log(`  Status: ${response.status}`);
-    console.log(`  Error: "${data.error}"`);
+    console.log("✓ Guest users can generate titles");
+    console.log(`  Title: "${data.title}"`);
   },
 });
 
