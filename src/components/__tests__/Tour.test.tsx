@@ -1523,3 +1523,238 @@ describe('Mobile View Consolidation', () => {
     unmount();
   });
 });
+
+describe('Desktop View Layout', () => {
+  const originalMatchMedia = window.matchMedia;
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+
+    // Mock desktop viewport (>= 768px)
+    window.matchMedia = vi.fn().mockImplementation((query) => {
+      return {
+        matches: query.includes('min-width: 768px') || query === '(min-width: 768px)',
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      } as unknown as MediaQueryList;
+    });
+
+    // Mock desktop width
+    window.innerWidth = 1024;
+    window.dispatchEvent(new Event('resize'));
+  });
+
+  afterEach(() => {
+    cleanup();
+    localStorage.clear();
+    window.matchMedia = originalMatchMedia;
+    window.innerWidth = 1024;
+    window.dispatchEvent(new Event('resize'));
+  });
+
+  it('should render two-column desktop layout with 280px sidebar', async () => {
+    function TestComponent() {
+      const [isOpen, setIsOpen] = React.useState(true);
+      const { setSteps } = useTour();
+
+      React.useEffect(() => {
+        setSteps([
+          { content: 'Step 1', selectorId: 'step-1' },
+        ]);
+      }, [setSteps]);
+
+      return (
+        <div>
+          <div id="step-1">Target</div>
+          <TourAlertDialog isOpen={isOpen} setIsOpen={setIsOpen} />
+        </div>
+      );
+    }
+
+    const { unmount } = render(
+      <TourProvider>
+        <TestComponent />
+      </TourProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Welcome to Vana/i)).toBeInTheDocument();
+    });
+
+    // Desktop should show profile section with larger image (size-32 = 128px)
+    const profileImg = screen.queryByRole('presentation');
+    expect(profileImg).toBeInTheDocument();
+    expect(profileImg).toHaveAttribute('src', '/nick-profile.jpeg');
+
+    // Verify desktop layout elements
+    expect(screen.getByText('Nick Bohmer')).toBeInTheDocument();
+    expect(screen.getByText('Product Leader')).toBeInTheDocument();
+
+    unmount();
+  });
+
+  it('should show profile section on desktop viewports', async () => {
+    function TestComponent() {
+      const [isOpen, setIsOpen] = React.useState(true);
+      const { setSteps } = useTour();
+
+      React.useEffect(() => {
+        setSteps([
+          { content: 'Step 1', selectorId: 'step-1' },
+        ]);
+      }, [setSteps]);
+
+      return (
+        <div>
+          <div id="step-1">Target</div>
+          <TourAlertDialog isOpen={isOpen} setIsOpen={setIsOpen} />
+        </div>
+      );
+    }
+
+    const { unmount } = render(
+      <TourProvider>
+        <TestComponent />
+      </TourProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Welcome to Vana/i)).toBeInTheDocument();
+    });
+
+    // Profile section should be visible on desktop
+    const profileImg = screen.queryByRole('presentation');
+    expect(profileImg).toBeInTheDocument();
+
+    unmount();
+  });
+
+  it('should display social buttons with text labels on desktop', async () => {
+    function TestComponent() {
+      const [isOpen, setIsOpen] = React.useState(true);
+      const { setSteps } = useTour();
+
+      React.useEffect(() => {
+        setSteps([
+          { content: 'Step 1', selectorId: 'step-1' },
+        ]);
+      }, [setSteps]);
+
+      return (
+        <div>
+          <div id="step-1">Target</div>
+          <TourAlertDialog isOpen={isOpen} setIsOpen={setIsOpen} />
+        </div>
+      );
+    }
+
+    const { unmount } = render(
+      <TourProvider>
+        <TestComponent />
+      </TourProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Welcome to Vana/i)).toBeInTheDocument();
+    });
+
+    // Desktop should show full-width social buttons with text labels
+    const linkedinLink = screen.getByRole('link', { name: /connect on linkedin/i });
+    expect(linkedinLink).toBeInTheDocument();
+    expect(linkedinLink).toHaveAttribute('href', 'https://www.linkedin.com/in/nickbohmer/');
+
+    const githubLink = screen.getByRole('link', { name: /view on github/i });
+    expect(githubLink).toBeInTheDocument();
+    expect(githubLink).toHaveAttribute('href', 'https://github.com/NickB03/llm-chat-site');
+
+    unmount();
+  });
+
+  it('should display features in grid format on desktop', async () => {
+    function TestComponent() {
+      const [isOpen, setIsOpen] = React.useState(true);
+      const { setSteps } = useTour();
+
+      React.useEffect(() => {
+        setSteps([
+          { content: 'Step 1', selectorId: 'step-1' },
+        ]);
+      }, [setSteps]);
+
+      return (
+        <div>
+          <div id="step-1">Target</div>
+          <TourAlertDialog isOpen={isOpen} setIsOpen={setIsOpen} />
+        </div>
+      );
+    }
+
+    const { unmount } = render(
+      <TourProvider>
+        <TestComponent />
+      </TourProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Welcome to Vana/i)).toBeInTheDocument();
+    });
+
+    // Verify feature cards are present
+    expect(screen.getByText(/LLM chat/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Search$/i)).toBeInTheDocument();
+    expect(screen.getByText(/Artifacts/i)).toBeInTheDocument();
+    expect(screen.getByText(/Images/i)).toBeInTheDocument();
+    expect(screen.getByText(/Reasoning/i)).toBeInTheDocument();
+    expect(screen.getByText(/Safety/i)).toBeInTheDocument();
+
+    // Verify Built With accordion is present
+    expect(screen.getByText(/Built With/i)).toBeInTheDocument();
+    expect(screen.getByText('Frontend')).toBeInTheDocument();
+    expect(screen.getByText('Backend')).toBeInTheDocument();
+    expect(screen.getByText('AI Models')).toBeInTheDocument();
+
+    unmount();
+  });
+
+  it('should display correct action buttons on desktop', async () => {
+    function TestComponent() {
+      const [isOpen, setIsOpen] = React.useState(true);
+      const { setSteps } = useTour();
+
+      React.useEffect(() => {
+        setSteps([
+          { content: 'Step 1', selectorId: 'step-1' },
+        ]);
+      }, [setSteps]);
+
+      return (
+        <div>
+          <div id="step-1">Target</div>
+          <TourAlertDialog isOpen={isOpen} setIsOpen={setIsOpen} />
+        </div>
+      );
+    }
+
+    const { unmount } = render(
+      <TourProvider>
+        <TestComponent />
+      </TourProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Welcome to Vana/i)).toBeInTheDocument();
+    });
+
+    // Desktop should show the same action buttons as mobile
+    expect(screen.getByRole('button', { name: /Start the Tour/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Skip for now/i })).toBeInTheDocument();
+
+    unmount();
+  });
+});

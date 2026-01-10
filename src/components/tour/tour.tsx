@@ -691,13 +691,18 @@ export function TourAlertDialog({
 }
 
 // ============================================================================
-// DesktopTourDialog Component (Original Single-Page Layout)
+// DesktopTourDialog Component (Two-Column Desktop Layout)
 // ============================================================================
-
-// ============================================================================
-// DesktopTourDialog Component (Now matches Mobile "Mockup" Layout)
-// ============================================================================
-
+/**
+ * DesktopTourDialog uses a two-column layout optimized for larger screens:
+ * - Left sidebar (280px): Profile, social links
+ * - Right content area: Features, tech stack, actions
+ *
+ * We maintain a separate implementation from MobileTourDialog to provide
+ * the best experience for each viewport. Desktop users get a spacious
+ * side-by-side layout while mobile users get an optimized single-column
+ * compact layout.
+ */
 function DesktopTourDialog({
   onStartTour,
   onSkip
@@ -705,10 +710,224 @@ function DesktopTourDialog({
   onStartTour: () => void;
   onSkip: () => void;
 }) {
-  // reusing the same layout logic as Mobile for consistency with the requested mockup
-  // If desktop needs to be different later, we can diverge.
-  // For now, "align with this one" implies the specific card look.
-  return <MobileTourDialog onStartTour={onStartTour} onSkip={onSkip} />;
+  const reducedMotion = useReducedMotion();
+  const [imageError, setImageError] = useState(false);
+
+  const imageAnimation = reducedMotion
+    ? {
+      initial: { scale: 0.9, opacity: 0 },
+      animate: { scale: 1, opacity: 1 },
+    }
+    : {
+      initial: { scale: 0.8, opacity: 0 },
+      animate: { scale: 1, opacity: 1 },
+    };
+
+  const imageTransition = reducedMotion
+    ? { duration: 0.2 }
+    : { duration: 0.5, ease: [0.34, 1.56, 0.64, 1] as [number, number, number, number] };
+
+  return (
+    <AlertDialogContent className="max-w-4xl w-[calc(100vw-32px)] sm:w-full p-0 flex flex-col overflow-hidden bg-card border-border shadow-2xl">
+      <div className="flex flex-col md:flex-row h-full">
+        {/* Left Column - Profile & Connect (Desktop Only) */}
+        <div className="hidden md:flex md:w-[280px] bg-muted/30 md:border-r border-border p-8 flex-col items-center justify-start text-center space-y-6 pt-12">
+          <motion.div
+            className="relative group"
+            {...imageAnimation}
+            transition={imageTransition}
+          >
+            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary/20 to-secondary/20 blur-xl opacity-50 group-hover:opacity-75 transition-opacity duration-500" />
+            {imageError ? (
+              <div className="relative size-32 rounded-full bg-muted flex items-center justify-center shadow-2xl">
+                <span className="text-4xl">N</span>
+              </div>
+            ) : (
+              <img
+                src="/nick-profile.jpeg"
+                alt=""
+                role="presentation"
+                className="relative size-32 rounded-full object-cover shadow-2xl transition-transform duration-500 group-hover:scale-105"
+                onError={(e) => {
+                  logError(
+                    `Profile image failed to load: ${e.currentTarget.src}`,
+                    {
+                      errorId: 'TOUR_PROFILE_IMAGE_LOAD_FAILED',
+                      metadata: {
+                        src: e.currentTarget.src,
+                        naturalWidth: e.currentTarget.naturalWidth,
+                        naturalHeight: e.currentTarget.naturalHeight,
+                      }
+                    }
+                  );
+                  setImageError(true);
+                }}
+              />
+            )}
+          </motion.div>
+
+          <div className="space-y-2">
+            <h3 className="font-bold text-lg text-foreground">Nick Bohmer</h3>
+            <p className="text-sm text-muted-foreground">Product Leader</p>
+          </div>
+
+          <div className="w-full space-y-3">
+            <Button
+              asChild
+              className="w-full bg-[#0077b5] text-white hover:bg-[#0077b5]/90 border-none transition-colors"
+            >
+              <a
+                href="https://www.linkedin.com/in/nickbohmer/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2"
+              >
+                <Linkedin className="size-4 fill-white text-white" />
+                <span>Connect on LinkedIn</span>
+              </a>
+            </Button>
+
+            <Button
+              asChild
+              className="w-full transition-colors"
+            >
+              <a
+                href="https://github.com/NickB03/llm-chat-site"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2"
+              >
+                <Github className="size-4" />
+                <span>View on GitHub</span>
+              </a>
+            </Button>
+          </div>
+        </div>
+
+        {/* Right Column - Content */}
+        <div className="flex-1 flex flex-col p-5 md:p-6 max-h-[85vh] md:max-h-[600px] overflow-y-auto">
+          <div className="mb-6 text-left">
+            <h2 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+              Welcome to Vana
+            </h2>
+            <p className="text-base text-muted-foreground mt-2">
+              I started Vana to push myself to learn, build, and grow by using AI tools in real-world production workflows. It's still a work in progress, but I'm excited to share what I've built so far.
+            </p>
+          </div>
+
+          <div className="space-y-4 flex-1">
+            {/* Current Release Features */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold text-foreground uppercase tracking-wider opacity-80 flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                Current Release
+              </h4>
+              <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-[2px] leading-none">•</span>
+                  <span><strong className="text-foreground">LLM chat</strong> with conversation history</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-[2px] leading-none">•</span>
+                  <span><strong className="text-foreground">Search</strong> powered by Tavily</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-[2px] leading-none">•</span>
+                  <span><strong className="text-foreground">Artifacts</strong> for interactive code generation</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-[2px] leading-none">•</span>
+                  <span><strong className="text-foreground">Images</strong> via Gemini 2.5 Flash</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-[2px] leading-none">•</span>
+                  <span><strong className="text-foreground">Reasoning</strong> mode for complex tasks</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-[2px] leading-none">•</span>
+                  <span><strong className="text-foreground">Safety</strong> with content moderation</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Built With Section */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold text-foreground uppercase tracking-wider opacity-80 flex items-center gap-2">
+                <Code2 className="w-4 h-4" />
+                Built With
+              </h4>
+
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="frontend" className="border-border/40">
+                  <AccordionTrigger className="py-2 text-sm hover:no-underline">
+                    <div className="flex items-center gap-2">
+                      <Palette className="w-4 h-4 text-blue-400" />
+                      <span>Frontend</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="grid grid-cols-3 gap-2 pt-1 pb-2">
+                      <div className="text-xs px-2 py-1.5 rounded bg-muted/50 border border-border/20">React 18</div>
+                      <div className="text-xs px-2 py-1.5 rounded bg-muted/50 border border-border/20">TypeScript</div>
+                      <div className="text-xs px-2 py-1.5 rounded bg-muted/50 border border-border/20">Tailwind CSS</div>
+                      <div className="text-xs px-2 py-1.5 rounded bg-muted/50 border border-border/20">Vite</div>
+                      <div className="text-xs px-2 py-1.5 rounded bg-muted/50 border border-border/20">Framer Motion</div>
+                      <div className="text-xs px-2 py-1.5 rounded bg-muted/50 border border-border/20">Radix UI</div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="backend" className="border-border/40">
+                  <AccordionTrigger className="py-2 text-sm hover:no-underline">
+                    <div className="flex items-center gap-2">
+                      <Server className="w-4 h-4 text-green-400" />
+                      <span>Backend</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="grid grid-cols-3 gap-2 pt-1 pb-2">
+                      <div className="text-xs px-2 py-1.5 rounded bg-muted/50 border border-border/20">Supabase</div>
+                      <div className="text-xs px-2 py-1.5 rounded bg-muted/50 border border-border/20">Edge Functions</div>
+                      <div className="text-xs px-2 py-1.5 rounded bg-muted/50 border border-border/20">PostgreSQL</div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="ai" className="border-border/40 border-b-0">
+                  <AccordionTrigger className="py-2 text-sm hover:no-underline">
+                    <div className="flex items-center gap-2">
+                      <Cpu className="w-4 h-4 text-purple-400" />
+                      <span>AI Models</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="grid grid-cols-2 gap-2 pt-1 pb-2">
+                      <div className="text-xs px-2 py-1.5 rounded bg-muted/50 border border-border/20">GLM 4.7</div>
+                      <div className="text-xs px-2 py-1.5 rounded bg-muted/50 border border-border/20">GLM 4.5 Air</div>
+                      <div className="text-xs px-2 py-1.5 rounded bg-muted/50 border border-border/20">Gemini Flash 2.5 Image</div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
+
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              This is a living project, and I'm still improving it. You may run into bugs — thanks for checking it out!
+            </p>
+          </div>
+
+          <div className="flex gap-3 mt-4">
+            <Button onClick={onStartTour} className="flex-1 h-11 font-medium bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all">
+              Start the Tour
+            </Button>
+            <Button onClick={onSkip} variant="ghost" className="h-11 px-6 font-medium bg-muted/50 hover:bg-muted transition-colors">
+              Skip for now
+            </Button>
+          </div>
+        </div>
+      </div>
+    </AlertDialogContent>
+  );
 }
 
 // ============================================================================
@@ -830,37 +1049,37 @@ function MobileTourDialog({
         <div className="flex-1 min-h-0 flex flex-col gap-6 overflow-y-auto px-4 pb-4">
 
           {/* Current Release Section */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
               <Sparkles className="w-3 h-3" />
               Current Release
             </h4>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center gap-2 p-2.5 rounded-xl border border-border/40 bg-muted/30">
-                <MessageSquare className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-[11px] font-medium text-foreground/90 leading-tight">LLM chat</span>
-              </div>
-              <div className="flex items-center gap-2 p-2.5 rounded-xl border border-border/40 bg-muted/30">
-                <Search className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-[11px] font-medium text-foreground/90 leading-tight">Search</span>
-              </div>
-              <div className="flex items-center gap-2 p-2.5 rounded-xl border border-border/40 bg-muted/30">
-                <FileCode className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-[11px] font-medium text-foreground/90 leading-tight">Artifacts</span>
-              </div>
-              <div className="flex items-center gap-2 p-2.5 rounded-xl border border-border/40 bg-muted/30">
-                <ImageIcon className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-[11px] font-medium text-foreground/90 leading-tight">Images</span>
-              </div>
-              <div className="flex items-center gap-2 p-2.5 rounded-xl border border-border/40 bg-muted/30">
-                <Brain className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-[11px] font-medium text-foreground/90 leading-tight">Reasoning</span>
-              </div>
-              <div className="flex items-center gap-2 p-2.5 rounded-xl border border-border/40 bg-muted/30">
-                <Shield className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-[11px] font-medium text-foreground/90 leading-tight">Safety</span>
-              </div>
-            </div>
+            <ul className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <span className="text-primary mt-[2px] leading-none">•</span>
+                <span><strong className="text-foreground">LLM chat</strong> with conversation history</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary mt-[2px] leading-none">•</span>
+                <span><strong className="text-foreground">Search</strong> powered by Tavily</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary mt-[2px] leading-none">•</span>
+                <span><strong className="text-foreground">Artifacts</strong> for interactive code generation</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary mt-[2px] leading-none">•</span>
+                <span><strong className="text-foreground">Images</strong> via Gemini 2.5 Flash</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary mt-[2px] leading-none">•</span>
+                <span><strong className="text-foreground">Reasoning</strong> mode for complex tasks</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary mt-[2px] leading-none">•</span>
+                <span><strong className="text-foreground">Safety</strong> with content moderation</span>
+              </li>
+            </ul>
           </div>
 
           {/* Built With Section (Accordion) */}
