@@ -58,15 +58,15 @@ jobs:
 
       - name: Wait for Supabase to be ready
         run: |
-          if ! timeout 60 bash -c 'until curl -f http://127.0.0.1:54321/functions/v1/health 2>/dev/null; do sleep 2; done'; then
-            echo "❌ Supabase health check failed or timed out after 60 seconds"
+          if ! timeout 60 bash -c 'until curl -f http://127.0.0.1:54321/functions/v1/health-ready 2>/dev/null; do sleep 2; done'; then
+            echo "❌ Supabase readiness check failed or timed out after 60 seconds"
             echo ""
             echo "Debugging info:"
             echo "- Checking if Supabase container is running:"
             docker ps --filter "name=supabase" || true
             echo ""
             echo "- Attempting direct connection:"
-            curl -v http://127.0.0.1:54321/functions/v1/health || true
+            curl -v http://127.0.0.1:54321/functions/v1/health-ready || true
             echo ""
             echo "- Docker logs:"
             docker logs --tail=50 supabase-studio || docker logs --tail=50 supabase-postgres || true

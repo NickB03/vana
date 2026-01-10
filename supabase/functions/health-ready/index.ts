@@ -1,61 +1,61 @@
 /**
- * Liveness Check Endpoint
+ * Readiness Check Endpoint
  *
- * Provides comprehensive system health status for production monitoring and alerting.
- * Checks connectivity to ALL dependencies: database, OpenRouter API, and storage.
+ * Provides system readiness status for CI/CD and startup verification.
+ * Only checks critical internal dependencies: database and storage.
+ * Does NOT check external APIs (OpenRouter, etc.) as they may not be configured in CI.
  *
- * NOTE: For CI/CD readiness checks (waiting for Supabase to start), use /health-ready instead.
- * This endpoint requires external API keys which may not be available in CI environments.
- *
- * Endpoint: /functions/v1/health
+ * Endpoint: /functions/v1/health-ready
  * Method: GET
  * Authentication: None (public endpoint for monitoring)
  *
+ * Use Cases:
+ * - CI/CD: Wait for Supabase to be ready before running tests
+ * - Kubernetes: Readiness probe to determine if pod can accept traffic
+ * - Local dev: Verify Supabase started successfully
+ *
  * Response Format:
  * {
- *   status: 'healthy' | 'degraded' | 'unhealthy',
+ *   status: 'ready' | 'not_ready',
  *   timestamp: ISO 8601 timestamp,
  *   latency: number (ms),
  *   services: {
  *     database: 'connected' | 'error' | 'timeout',
- *     openrouter: 'available' | 'error' | 'timeout',
  *     storage: 'available' | 'error' | 'timeout'
  *   },
  *   version: string
  * }
  *
  * HTTP Status Codes:
- * - 200: All services healthy
- * - 503: One or more services degraded/unhealthy
+ * - 200: All critical services ready
+ * - 503: One or more critical services not ready
  *
- * @module health
+ * @module health-ready
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
-import { API_ENDPOINTS } from "../_shared/config.ts";
 
 /**
- * Service health status type
+ * Service status type
  */
 type ServiceStatus = 'connected' | 'available' | 'error' | 'timeout';
 
 /**
- * Overall system health status
+ * Readiness status
  */
-type HealthStatus = 'healthy' | 'degraded' | 'unhealthy';
+type ReadinessStatus = 'ready' | 'not_ready';
 
 /**
- * Health check response structure
+ * Readiness check response structure
  */
-interface HealthCheckResponse {
-  status: HealthStatus;
+interface ReadinessCheckResponse {
+  status: ReadinessStatus;
   timestamp: string;
   latency: number;
   services: {
     database: ServiceStatus;
-    openrouter: ServiceStatus;
     storage: ServiceStatus;
   };
   version: string;
@@ -111,54 +111,6 @@ async function checkDatabase(): Promise<ServiceStatus> {
 }
 
 /**
- * Check OpenRouter API availability
- * Performs a lightweight HEAD request to verify API connectivity
- */
-async function checkOpenRouter(): Promise<ServiceStatus> {
-  try {
-    const apiKey = Deno.env.get('OPENROUTER_GEMINI_FLASH_KEY');
-
-    if (!apiKey) {
-      console.error('Missing OpenRouter API key');
-      return 'error';
-    }
-
-    // Use HEAD request for minimal overhead
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), CHECK_TIMEOUT_MS);
-
-    const response = await fetch(`${API_ENDPOINTS.OPENROUTER.BASE_URL}/models`, {
-      method: 'HEAD',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': Deno.env.get('SUPABASE_URL') || 'https://localhost',
-        'X-Title': 'Health Check'
-      },
-      signal: controller.signal
-    });
-
-    clearTimeout(timeoutId);
-
-    if (response.ok) {
-      return 'available';
-    } else if (response.status === 429) {
-      // Rate limited but API is responsive
-      return 'available';
-    } else {
-      console.error('OpenRouter check failed:', response.status);
-      return 'error';
-    }
-  } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      console.error('OpenRouter check timeout');
-      return 'timeout';
-    }
-    console.error('OpenRouter check failed:', error);
-    return 'error';
-  }
-}
-
-/**
  * Check Supabase Storage availability
  * Verifies storage bucket exists and is accessible
  */
@@ -203,27 +155,17 @@ async function checkStorage(): Promise<ServiceStatus> {
 }
 
 /**
- * Determine overall health status based on service statuses
+ * Determine readiness status based on service statuses
  */
-function determineHealthStatus(services: Record<string, ServiceStatus>): HealthStatus {
+function determineReadinessStatus(services: Record<string, ServiceStatus>): ReadinessStatus {
   const statuses = Object.values(services);
 
-  // All services healthy
+  // All services must be healthy for readiness
   if (statuses.every(s => s === 'connected' || s === 'available')) {
-    return 'healthy';
+    return 'ready';
   }
 
-  // Any service completely down
-  if (statuses.some(s => s === 'error' || s === 'timeout')) {
-    // Critical services (database) down = unhealthy
-    if (services.database === 'error' || services.database === 'timeout') {
-      return 'unhealthy';
-    }
-    // Non-critical services down = degraded
-    return 'degraded';
-  }
-
-  return 'healthy';
+  return 'not_ready';
 }
 
 serve(async (req) => {
@@ -238,26 +180,24 @@ serve(async (req) => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
 
-  console.log(`[${requestId}] Health check started`);
+  console.log(`[${requestId}] Readiness check started`);
 
   try {
-    // Run all health checks in parallel for minimal latency
-    const [database, openrouter, storage] = await Promise.all([
+    // Run critical health checks in parallel
+    const [database, storage] = await Promise.all([
       checkDatabase(),
-      checkOpenRouter(),
       checkStorage()
     ]);
 
     const services = {
       database,
-      openrouter,
       storage
     };
 
-    const status = determineHealthStatus(services);
+    const status = determineReadinessStatus(services);
     const latency = Date.now() - startTime;
 
-    const response: HealthCheckResponse = {
+    const response: ReadinessCheckResponse = {
       status,
       timestamp: new Date().toISOString(),
       latency,
@@ -265,10 +205,10 @@ serve(async (req) => {
       version: APP_VERSION
     };
 
-    console.log(`[${requestId}] Health check completed: ${status} (${latency}ms)`);
+    console.log(`[${requestId}] Readiness check completed: ${status} (${latency}ms)`);
 
     // Return appropriate HTTP status code
-    const httpStatus = status === 'healthy' ? 200 : 503;
+    const httpStatus = status === 'ready' ? 200 : 503;
 
     return new Response(
       JSON.stringify(response, null, 2),
@@ -284,17 +224,16 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error(`[${requestId}] Health check failed:`, error);
+    console.error(`[${requestId}] Readiness check failed:`, error);
 
     const latency = Date.now() - startTime;
 
-    const errorResponse: HealthCheckResponse = {
-      status: 'unhealthy',
+    const errorResponse: ReadinessCheckResponse = {
+      status: 'not_ready',
       timestamp: new Date().toISOString(),
       latency,
       services: {
         database: 'error',
-        openrouter: 'error',
         storage: 'error'
       },
       version: APP_VERSION

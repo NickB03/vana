@@ -28,5 +28,8 @@ verify_jwt = false
 [functions.health]
 verify_jwt = false
 
+[functions.health-ready]
+verify_jwt = false
+
 [functions.admin-analytics]
 verify_jwt = true
