@@ -6,6 +6,8 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import {
   AlertDialog,
   AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -729,6 +731,10 @@ function DesktopTourDialog({
 
   return (
     <AlertDialogContent className="max-w-4xl w-[calc(100vw-32px)] sm:w-full p-0 flex flex-col overflow-hidden bg-card border-border shadow-2xl">
+      <AlertDialogTitle className="sr-only">Welcome Tour - Learn about Vana's AI features</AlertDialogTitle>
+      <AlertDialogDescription className="sr-only">
+        Learn about Vana's core features, tooling, and how the tour works before you start.
+      </AlertDialogDescription>
       <div className="flex flex-col md:flex-row h-full">
         {/* Left Column - Profile & Connect (Desktop Only) */}
         <div className="hidden md:flex md:w-[280px] bg-muted/30 md:border-r border-border p-8 flex-col items-center justify-start text-center space-y-6 pt-12">
@@ -960,6 +966,10 @@ function MobileTourDialog({
 
   return (
     <AlertDialogContent className="w-[calc(100vw-32px)] max-h-[100dvh] p-0 flex flex-col overflow-hidden bg-card border-border shadow-2xl rounded-3xl">
+      <AlertDialogTitle className="sr-only">Welcome Tour - Learn about Vana's AI features</AlertDialogTitle>
+      <AlertDialogDescription className="sr-only">
+        Learn about Vana's core features, tooling, and how the tour works before you start.
+      </AlertDialogDescription>
       <div className="flex-1 flex flex-col p-4 overflow-hidden">
         {/* Header: Photo + Name + Socials */}
         <div className="flex items-center gap-3 shrink-0 mb-3">

@@ -70,6 +70,7 @@ export function normalizePromptForApi(value: string): string {
 
 export type ArtifactType = 'react' | 'html' | 'svg' | 'code' | 'mermaid' | 'markdown';
 export type AspectRatio = '1:1' | '16:9' | '9:16';
+export type ImageMode = 'generate' | 'edit';
 
 export interface ValidatedArtifactParams {
   readonly type: ArtifactType;
@@ -79,6 +80,8 @@ export interface ValidatedArtifactParams {
 export interface ValidatedImageParams {
   readonly prompt: string;
   readonly aspectRatio: AspectRatio;
+  readonly mode?: ImageMode;
+  readonly baseImage?: string;
 }
 
 export interface ValidatedSearchParams {
@@ -210,8 +213,9 @@ export class ToolParameterValidator {
   // Expected keys per tool (for extra property validation)
   private static readonly ARTIFACT_EXPECTED_KEYS = ['type', 'prompt'] as const;
   private static readonly IMAGE_EXPECTED_KEYS = ['prompt'] as const;
-  private static readonly IMAGE_OPTIONAL_KEYS = ['aspectRatio'] as const;
+  private static readonly IMAGE_OPTIONAL_KEYS = ['aspectRatio', 'mode', 'baseImage'] as const;
   private static readonly SEARCH_EXPECTED_KEYS = ['query'] as const;
+  private static readonly VALID_IMAGE_MODES: readonly ImageMode[] = ['generate', 'edit'] as const;
 
   /**
    * Validate artifact tool parameters
@@ -345,10 +349,44 @@ export class ToolParameterValidator {
       aspectRatio = params.aspectRatio as AspectRatio;
     }
 
+    // Validate 'mode' field (optional, defaults to 'generate' in executor)
+    let mode: ImageMode | undefined;
+    if (params.mode !== undefined && params.mode !== null) {
+      if (typeof params.mode !== 'string') {
+        throw new ToolValidationError('mode', 'Must be a string', 'TYPE_ERROR');
+      }
+      if (!this.VALID_IMAGE_MODES.includes(params.mode as ImageMode)) {
+        throw new ToolValidationError(
+          'mode',
+          `Must be one of: ${this.VALID_IMAGE_MODES.join(', ')}`,
+          'INVALID_ENUM'
+        );
+      }
+      mode = params.mode as ImageMode;
+    }
+
+    // Validate 'baseImage' field (optional, required for edit mode)
+    let baseImage: string | undefined;
+    if (params.baseImage !== undefined && params.baseImage !== null) {
+      if (typeof params.baseImage !== 'string') {
+        throw new ToolValidationError('baseImage', 'Must be a string', 'TYPE_ERROR');
+      }
+      if (params.baseImage.trim().length === 0) {
+        throw new ToolValidationError('baseImage', 'Cannot be empty', 'EMPTY');
+      }
+      baseImage = params.baseImage;
+    }
+
+    if (mode === 'edit' && !baseImage) {
+      throw new ToolValidationError('baseImage', 'Required for edit mode', 'REQUIRED');
+    }
+
     // SECURITY FIX: Return frozen object to prevent post-validation modification
     return Object.freeze({
       prompt: normalizedPrompt,
-      aspectRatio
+      aspectRatio,
+      mode,
+      baseImage
     });
   }
 

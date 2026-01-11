@@ -12,7 +12,6 @@
  */
 
 // Import the generated manifest (created by scripts/build-prebuilt-bundles.ts)
-// @ts-expect-error - JSON import with assert syntax not fully supported by TypeScript
 import manifest from "./prebuilt-bundles.json" with { type: "json" };
 
 export interface PrebuiltPackageEntry {

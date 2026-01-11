@@ -5,12 +5,13 @@ import { ArtifactCard } from "@/components/ArtifactCard";
 import { ArtifactCardSkeleton } from "@/components/ArtifactCardSkeleton";
 import { parseArtifacts } from "@/utils/artifactParser";
 import { ArtifactData } from "@/components/ArtifactContainer";
-import { bundleArtifact, needsBundling } from "@/utils/artifactBundler";
+import { bundleArtifact, needsBundling, bundleArtifactWithProgress } from "@/utils/artifactBundler";
 import { toast } from "sonner";
 import { WebSearchResults as WebSearchResultsType } from "@/types/webSearch";
 import { MessageErrorBoundary } from "@/components/MessageErrorBoundary";
 import { CitationSource, stripCitationMarkers } from "@/utils/citationParser";
 import { InlineCitation } from "@/components/ui/inline-citation";
+import type { BundleProgress } from "@/types/bundleProgress";
 
 interface MessageWithArtifactsProps {
   content: string;
@@ -76,6 +77,7 @@ export const MessageWithArtifacts = memo(({
   const [artifacts, setArtifacts] = useState<ArtifactData[]>([]);
   const [cleanContent, setCleanContent] = useState(content);
   const [bundlingStatus, setBundlingStatus] = useState<Record<string, 'idle' | 'bundling' | 'success' | 'error'>>({});
+  const [bundleProgress, setBundleProgress] = useState<Record<string, BundleProgress | null>>({});
   const [inProgressCount, setInProgressCount] = useState(0);
 
   const mergedArtifacts = useMemo(() => {
@@ -189,15 +191,30 @@ export const MessageWithArtifacts = memo(({
           duration: 30000 // Long duration since bundling takes time
         });
 
-        // Attempt to bundle (FIXED: Use sessionId, not messageId)
+        // Attempt to bundle with streaming progress (FIXED: Use sessionId, not messageId)
         try {
-          const result = await bundleArtifact(
+          const result = await bundleArtifactWithProgress(
             artifact.content,
             artifact.id,
             sessionId,
             artifact.title,
-            true  // skipNpmCheck - we already called needsBundling()
+            (progress) => {
+              // Update progress state for this specific artifact
+              if (!isMounted) return;
+              setBundleProgress(prev => ({
+                ...prev,
+                [artifact.id]: progress
+              }));
+            }
           );
+
+          // Clear progress after completion
+          if (!isMounted) return;
+          setBundleProgress(prev => {
+            const next = { ...prev };
+            delete next[artifact.id];
+            return next;
+          });
 
           if (result.success) {
             // Update artifact with bundle URL
@@ -292,6 +309,14 @@ export const MessageWithArtifacts = memo(({
 
           const errorMessage = error instanceof Error ? error.message : String(error);
 
+          // Clear progress on error
+          if (!isMounted) return;
+          setBundleProgress(prev => {
+            const next = { ...prev };
+            delete next[artifact.id];
+            return next;
+          });
+
           if (!isMounted) return;
           setArtifacts(prev =>
             prev.map(a =>
@@ -369,6 +394,7 @@ export const MessageWithArtifacts = memo(({
           onOpen={() => onArtifactOpen(artifact)}
           className="mt-3"
           isBundling={bundlingStatus[artifact.id] === 'bundling'}
+          bundleProgress={bundleProgress[artifact.id] || null}
         />
       ))}
 

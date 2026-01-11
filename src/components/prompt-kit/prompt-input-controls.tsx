@@ -128,6 +128,8 @@ export function PromptInputControls({
               <input
                 ref={fileInputRef}
                 type="file"
+                id="prompt-file-upload"
+                name="promptFile"
                 className="hidden"
                 onChange={onFileUpload}
                 accept=".pdf,.docx,.txt,.md,.jpg,.jpeg,.png,.webp,.gif,.svg,.csv,.json,.xlsx,.js,.ts,.tsx,.jsx,.py,.html,.css,.mp3,.wav,.m4a,.ogg"

@@ -17,9 +17,9 @@ export function ImageZoom({ className, alt, src, width, height, ...props }: Imag
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <div
+                <span
                     className={cn(
-                        'group relative cursor-zoom-in overflow-hidden rounded-md',
+                        'group relative inline-block cursor-zoom-in overflow-hidden rounded-md',
                         className
                     )}
                     style={{ width, height }}
@@ -32,10 +32,10 @@ export function ImageZoom({ className, alt, src, width, height, ...props }: Imag
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         {...props}
                     />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors duration-300 group-hover:bg-black/10">
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors duration-300 group-hover:bg-black/10">
                         <ZoomIn className="h-8 w-8 text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                    </div>
-                </div>
+                    </span>
+                </span>
             </DialogTrigger>
             <DialogContent className="max-w-[90vw] border-none bg-transparent p-0 shadow-none">
                 <div className="relative flex h-[90vh] w-full items-center justify-center overflow-hidden">

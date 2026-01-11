@@ -1336,6 +1336,16 @@ ${artifact.content}
           loading="lazy"
           decoding="async"
           className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
+          onLoad={() => {
+            onLoadingChange(false);
+            // Signal to parent that image has finished loading
+            window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
+          }}
+          onError={(e) => {
+            console.error('[ImageArtifact] Image load error:', e);
+            onLoadingChange(false);
+            window.postMessage({ type: 'artifact-rendered-complete', success: false, error: 'Failed to load image' }, '*');
+          }}
         />
         <div className="flex gap-2">
           <Button

@@ -7,6 +7,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { detectNpmImports, extractNpmDependencies } from "./npmDetection";
+import type { BundleProgress, BundleComplete, BundleError as StreamBundleError } from "@/types/bundleProgress";
+import { BundleProgressSchema, BundleCompleteSchema, BundleErrorSchema } from "@/types/bundleProgress";
 
 export interface BundleRequest {
   code: string;
@@ -216,4 +218,145 @@ export function needsBundling(code: string, type: string): boolean {
 
   // Check for npm imports (excluding React core)
   return detectNpmImports(code);
+}
+
+/**
+ * Bundle artifact with streaming progress updates.
+ * Uses SSE to receive real-time progress during the 2-5s bundling process.
+ *
+ * @param code - React component code
+ * @param artifactId - Unique artifact identifier
+ * @param sessionId - Chat session identifier
+ * @param title - Artifact title
+ * @param onProgress - Callback for progress updates
+ * @param bundleReact - Use ESM React instead of UMD (for export errors)
+ * @returns Bundle response with signed URL or error
+ */
+export async function bundleArtifactWithProgress(
+  code: string,
+  artifactId: string,
+  sessionId: string,
+  title: string,
+  onProgress: (progress: BundleProgress) => void,
+  bundleReact: boolean = false
+): Promise<BundleComplete | StreamBundleError> {
+  const dependencies = extractNpmDependencies(code);
+
+  if (Object.keys(dependencies).length === 0) {
+    return {
+      success: false,
+      error: "No valid dependencies found"
+    };
+  }
+
+  const { data: { session } } = await supabase.auth.getSession();
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json"
+  };
+
+  if (session) {
+    headers["Authorization"] = `Bearer ${session.access_token}`;
+  }
+
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bundle-artifact`,
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        code,
+        dependencies,
+        artifactId,
+        sessionId,
+        title,
+        isGuest: !session,
+        streaming: true,
+        ...(bundleReact ? { bundleReact: true } : {})
+      })
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+    return { success: false, error: error.error || 'Request failed' };
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) {
+    return { success: false, error: 'No response stream' };
+  }
+
+  // CRITICAL: Use try-finally to ensure reader is always released
+  try {
+    const decoder = new TextDecoder();
+    let result: BundleComplete | StreamBundleError | null = null;
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // Parse SSE events from buffer
+      const events = buffer.split('\n\n');
+      buffer = events.pop() || ''; // Keep incomplete event in buffer
+
+      for (const event of events) {
+        if (!event.trim()) continue;
+
+        const eventMatch = event.match(/^event:\s*(\w+)/m);
+        const dataMatch = event.match(/^data:\s*(.+)$/m);
+
+        if (eventMatch && dataMatch) {
+          try {
+            const eventType = eventMatch[1];
+            const rawData = JSON.parse(dataMatch[1]);
+
+            // Validate event data against Zod schemas
+            if (eventType === 'progress') {
+              const parseResult = BundleProgressSchema.safeParse(rawData);
+              if (!parseResult.success) {
+                console.error('[SSE] Invalid progress event format:', parseResult.error.flatten());
+                continue; // Skip invalid events
+              }
+              onProgress(parseResult.data);
+            } else if (eventType === 'complete') {
+              const parseResult = BundleCompleteSchema.safeParse(rawData);
+              if (!parseResult.success) {
+                console.error('[SSE] Invalid complete event format:', parseResult.error.flatten());
+                continue; // Skip invalid events
+              }
+              result = parseResult.data;
+            } else if (eventType === 'error') {
+              const parseResult = BundleErrorSchema.safeParse(rawData);
+              if (!parseResult.success) {
+                console.error('[SSE] Invalid error event format:', parseResult.error.flatten());
+                continue; // Skip invalid events
+              }
+              result = parseResult.data;
+            }
+          } catch (parseError) {
+            console.error('[SSE] Failed to parse event data:', parseError);
+            // Skip malformed event and continue processing
+            continue;
+          }
+        } else if (event.trim()) {
+          console.warn('[SSE] Malformed event, skipping:', event);
+        }
+      }
+    }
+
+    return result || { success: false, error: 'Stream ended unexpectedly' };
+
+  } finally {
+    // CRITICAL: Always release the reader, even if an error occurred
+    try {
+      reader.cancel();
+    } catch (cancelError) {
+      // Reader already cancelled or closed, safe to ignore
+      console.debug('[SSE] Reader already closed');
+    }
+  }
 }

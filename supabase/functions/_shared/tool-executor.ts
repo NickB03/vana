@@ -764,6 +764,10 @@ export function getToolResultContent(result: ToolExecutionResult): string {
       // BUG FIX (2025-12-21): Do NOT include base64 data URLs in tool result
       // When storage fails, imageUrl contains 2MB+ of base64 data which overwhelms GLM.
       // The client already received the image via image_complete event.
+      //
+      // BUG FIX (2026-01-10): Do NOT include the URL in plain text format.
+      // The AI model echoes the URL back in markdown format (![...](URL)),
+      // which causes duplicate image rendering - one from artifact, one from markdown.
       const url = result.data?.imageUrl || '';
       const stored = result.data?.storageSucceeded;
 
@@ -771,12 +775,13 @@ export function getToolResultContent(result: ToolExecutionResult): string {
       const isBase64 = url.startsWith('data:');
 
       if (stored && !isBase64) {
-        // Storage succeeded - include URL for potential edit operations
-        return `Image generated successfully!
+        // Storage succeeded - include URL ONLY in system instruction for edit operations
+        // The AI model needs this URL for edits, but shouldn't echo it in chat responses
+        // By embedding it in an instruction rather than stating it as a fact, we reduce
+        // the likelihood of the AI including it in markdown format
+        return `Image generated successfully! The image is now displayed to the user.
 
-Image URL: ${url}
-
-IMPORTANT: If the user wants to modify this image later, use generate_image with mode="edit" and baseImage="${url}"`;
+If the user requests modifications to this image, use generate_image with mode="edit" and baseImage="${url}"`;
       } else {
         // Storage failed - edit mode won't work without a persistent URL
         return `Image generated successfully! The image is displayed to the user.

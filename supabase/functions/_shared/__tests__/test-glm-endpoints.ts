@@ -59,6 +59,6 @@ for (const test of testCases) {
       console.log(`Error: ${text.substring(0, 200)}`);
     }
   } catch (error) {
-    console.error(`❌ Exception:`, error.message);
+    console.error(`❌ Exception:`, error instanceof Error ? error.message : String(error));
   }
 }

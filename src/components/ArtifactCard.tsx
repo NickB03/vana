@@ -2,12 +2,15 @@ import { Button } from "@/components/ui/button";
 import { Code, FileCode, Image, GitBranch, FileText, Braces, Gamepad2, LayoutDashboard, Calculator, Timer, ListTodo, Maximize2 } from "lucide-react";
 import { ArtifactData } from "./ArtifactContainer";
 import { cn } from "@/lib/utils";
+import { BundleProgressIndicator } from "./BundleProgressIndicator";
+import type { BundleProgress } from "@/types/bundleProgress";
 
 interface ArtifactCardProps {
   artifact: ArtifactData;
   onOpen: () => void;
   className?: string;
   isBundling?: boolean;
+  bundleProgress?: BundleProgress | null;
 }
 
 // Get icon based on artifact type and title keywords
@@ -111,48 +114,58 @@ const getTypeLabel = (type: string, title: string) => {
   }
 };
 
-export function ArtifactCard({ artifact, onOpen, className, isBundling = false }: ArtifactCardProps) {
+export function ArtifactCard({ artifact, onOpen, className, isBundling = false, bundleProgress = null }: ArtifactCardProps) {
   const IconComponent = getArtifactIcon(artifact.type, artifact.title);
   const typeLabel = getTypeLabel(artifact.type, artifact.title);
 
   return (
     <div
       className={cn(
-        "group flex items-center gap-3 p-3 rounded-xl",
+        "group flex flex-col gap-3 p-3 rounded-xl",
         "bg-muted/50 border border-border/50",
         "hover:bg-muted/70 hover:border-border",
         "transition-all duration-200",
         className
       )}
     >
-      {/* Icon badge - larger visual element like Claude's design */}
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-background border border-border shadow-sm">
-        <IconComponent className="h-5 w-5 text-muted-foreground" />
+      <div className="flex items-center gap-3">
+        {/* Icon badge - larger visual element like Claude's design */}
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-background border border-border shadow-sm">
+          <IconComponent className="h-5 w-5 text-muted-foreground" />
+        </div>
+
+        {/* Title and type */}
+        <div className="flex-1 min-w-0">
+          <h4 className="font-medium text-sm text-foreground truncate">
+            {artifact.title}
+          </h4>
+          <p className="text-xs text-muted-foreground">
+            Code · {typeLabel}
+          </p>
+        </div>
+
+        {/* Open button - disabled while bundling to prevent race condition */}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onOpen}
+          disabled={isBundling}
+          className="shrink-0 gap-1.5 rounded-full px-4 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title={isBundling ? "Bundling artifact with dependencies..." : "Open artifact in full screen"}
+        >
+          <Maximize2 className="h-3.5 w-3.5" />
+          {isBundling ? "Bundling..." : "Open"}
+        </Button>
       </div>
 
-      {/* Title and type */}
-      <div className="flex-1 min-w-0">
-        <h4 className="font-medium text-sm text-foreground truncate">
-          {artifact.title}
-        </h4>
-        <p className="text-xs text-muted-foreground">
-          Code · {typeLabel}
-        </p>
-      </div>
-
-      {/* Open button - disabled while bundling to prevent race condition */}
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={onOpen}
-        disabled={isBundling}
-        className="shrink-0 gap-1.5 rounded-full px-4 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        title={isBundling ? "Bundling artifact with dependencies..." : "Open artifact in full screen"}
-      >
-        <Maximize2 className="h-3.5 w-3.5" />
-        {isBundling ? "Bundling..." : "Open"}
-      </Button>
+      {/* Bundle progress indicator - shows streaming progress during bundling */}
+      {isBundling && bundleProgress && (
+        <BundleProgressIndicator
+          progress={bundleProgress}
+          className="mt-1"
+        />
+      )}
     </div>
   );
 }

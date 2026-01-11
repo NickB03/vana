@@ -91,14 +91,17 @@ export const MultiModelGraphic = () => {
                         <motion.circle
                             cx={model.x}
                             cy={80}
-                            r="24"
+                            r={24}
                             fill={model.color}
                             fillOpacity="0.1"
                             stroke={model.color}
                             strokeWidth="1"
-                            animate={{
+                            animate={isVisible ? {
                                 r: [24, 28, 24],
                                 strokeOpacity: [0.5, 1, 0.5]
+                            } : {
+                                r: 24,
+                                strokeOpacity: 0.5
                             }}
                             transition={{
                                 duration: 3,
@@ -253,25 +256,34 @@ export const StackGraphic = () => {
                 </g>
 
                 {/* Floating particles */}
-                {[...Array(5)].map((_, i) => (
-                    <motion.circle
-                        key={i}
-                        cx={Math.random() * 400}
-                        cy={Math.random() * 300}
-                        r={Math.random() * 2}
-                        fill="white"
-                        fillOpacity="0.5"
-                        animate={{
-                            y: [0, -20, 0],
-                            opacity: [0, 0.8, 0]
-                        }}
-                        transition={{
-                            duration: 3 + Math.random() * 2,
-                            repeat: Infinity,
-                            delay: Math.random() * 2
-                        }}
-                    />
-                ))}
+                {[...Array(5)].map((_, i) => {
+                    // Use index-based values for deterministic positioning (SSR-safe)
+                    const cx = (i * 87 + 23) % 400;
+                    const cy = (i * 53 + 17) % 300;
+                    const r = 0.5 + (i % 3) * 0.5; // 0.5, 1.0, 1.5, 0.5, 1.0
+                    const duration = 3 + (i % 3);
+                    const delay = i * 0.4;
+
+                    return (
+                        <motion.circle
+                            key={i}
+                            cx={cx}
+                            cy={cy}
+                            r={r}
+                            fill="white"
+                            fillOpacity="0.5"
+                            animate={{
+                                y: [0, -20, 0],
+                                opacity: [0, 0.8, 0]
+                            }}
+                            transition={{
+                                duration,
+                                repeat: Infinity,
+                                delay
+                            }}
+                        />
+                    );
+                })}
 
             </svg>
         </div>

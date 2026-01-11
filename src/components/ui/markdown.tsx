@@ -67,7 +67,7 @@ const INITIAL_COMPONENTS: Partial<Components> = {
       <ImageZoom
         src={src || ""}
         alt={alt || ""}
-        className="rounded-lg max-w-full h-auto"
+        className="rounded-lg max-w-[240px] w-full h-auto"
         {...props}
       />
     )

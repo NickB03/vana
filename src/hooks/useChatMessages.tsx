@@ -96,6 +96,10 @@ export function useChatMessages(
   });
   const { toast } = useToast();
 
+  // Phase 1: Stream session tracking to prevent race conditions
+  const streamSessionRef = useRef(0);
+  const currentSessionRef = useRef<number | null>(null);
+
   const fetchMessages = useCallback(async () => {
     // Skip database fetch for guests or when no sessionId
     // Guests use local state only (messages are in-memory for their session)
@@ -189,12 +193,14 @@ export function useChatMessages(
 
   // Timeout fallback: If artifact render signal isn't received within 10s after loading ends,
   // assume rendered. This prevents the "Rendering artifact..." spinner from getting stuck.
+  // Phase 1: Check session validity to prevent race conditions
   useEffect(() => {
     // Only start timeout when we're NOT loading and status is still pending
     if (isLoading || artifactRenderStatus !== 'pending') return;
 
     const timeout = setTimeout(() => {
-      if (artifactRenderStatus === 'pending' && !isLoading) {
+      // Validate that this timeout belongs to the current session
+      if (artifactRenderStatus === 'pending' && !isLoading && currentSessionRef.current === streamSessionRef.current) {
         console.warn('[useChatMessages] Artifact render timeout - assuming success');
         setArtifactRenderStatus('rendered');
       }
@@ -312,14 +318,22 @@ export function useChatMessages(
     const MAX_RETRIES = 3;
     const RETRY_DELAYS = [2000, 5000, 10000]; // Exponential backoff: 2s, 5s, 10s
 
-    // IMPORTANT: Don't set loading state here - caller should set it BEFORE calling streamChat
-    // This ensures UI feedback appears immediately, not after throttle wait
+    // Phase 1: Increment stream session and store ID for cleanup checks
+    const streamSessionId = ++streamSessionRef.current;
+    currentSessionRef.current = streamSessionId;
+
+    // Phase 1: Set artifact render status immediately
+    // Note: Caller should have already set isStreaming for instant UI feedback
     setArtifactRenderStatus('pending');
 
     try {
       // Client-side throttling: silently wait for token (protects API from burst requests)
       // NOTE: Caller has already set isStreaming=true, so UI shows feedback during this wait
       await chatRequestThrottle.waitForToken();
+
+      // Phase 1: Set isLoading after throttle completes
+      setIsLoading(true);
+
       // Get actual auth status from server (not client flags)
       const { data: { session } } = await supabase.auth.getSession();
       const isAuthenticated = !!session;
@@ -393,6 +407,7 @@ export function useChatMessages(
           resetAt: errorData.resetAt,
         });
 
+        // Phase 1: Clear isLoading on error exit path
         setIsLoading(false);
         onDone();
         return;
@@ -914,6 +929,7 @@ export function useChatMessages(
         }
 
         console.error("[useChatMessages] Empty chat response after retries - not saving blank message");
+        // Phase 1: Clear isLoading on error exit path
         setIsLoading(false);
         onDone();
         toast({
@@ -943,6 +959,7 @@ export function useChatMessages(
       }
 
       // Clear streaming state synchronously to prevent race condition
+      // Phase 1: Clear isLoading on success exit path
       flushSync(() => {
         setIsLoading(false);
       });
@@ -952,6 +969,8 @@ export function useChatMessages(
       // Handle stream cancellation gracefully (don't show error toast)
       if (error instanceof Error && error.name === 'AbortError') {
         console.log("Stream cancelled by user");
+        // Phase 1: Clear isLoading on cancellation
+        setIsLoading(false);
         onDone();
         return;
       }
@@ -962,6 +981,7 @@ export function useChatMessages(
 
       // Handle timeout errors specifically
       if (errorMessage.includes('Stream timeout')) {
+        // Phase 1: Clear isLoading on timeout error exit path
         setIsLoading(false);
         toast({
           title: "Request Timeout",
@@ -994,6 +1014,7 @@ export function useChatMessages(
       }
 
       // Non-retryable error - clear loading and show error
+      // Phase 1: Clear isLoading on error exit path
       setIsLoading(false);
       const authErrorMessage = getAuthErrorMessage(error);
       toast({

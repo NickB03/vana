@@ -23,11 +23,11 @@ import { logError } from '@/utils/errorLogging';
 // Helper component for tool execution loading states
 interface ToolExecutionSkeletonProps {
   toolName?: string;
-  isPending: boolean;
+  status?: string;
 }
 
-function ToolExecutionSkeleton({ toolName, isPending }: ToolExecutionSkeletonProps): React.ReactElement | null {
-  if (!isPending) return null;
+function ToolExecutionSkeleton({ toolName, status }: ToolExecutionSkeletonProps): React.ReactElement | null {
+  if (!toolName) return null;
 
   if (toolName === 'generate_artifact') {
     return <ArtifactCardSkeleton />;
@@ -150,6 +150,16 @@ export const ChatMessage = React.memo(function ChatMessage({
     transition: MESSAGE_ANIMATION.transition
   } : {};
 
+  // Phase 2: Consolidated skeleton logic - determine which skeleton to show (if any)
+  const shouldShowToolSkeleton = isStreamingMessage &&
+    streamProgress?.toolExecution?.toolName &&
+    artifactRenderStatus === 'pending';
+
+  const shouldShowMessageSkeleton = isStreamingMessage &&
+    !message.content &&
+    !streamProgress?.toolExecution &&
+    !streamProgress?.artifactDetected;
+
   return (
     <MotionWrapper {...motionProps}>
       <MessageComponent
@@ -185,8 +195,9 @@ export const ChatMessage = React.memo(function ChatMessage({
                 />
               </ReasoningErrorBoundary>
 
-              {/* Content skeleton or actual content */}
-              {message.content ? (
+              {/* Phase 3: Sequential rendering - content and tool skeleton can coexist */}
+              {/* Show content whenever it exists (unless pure message skeleton state) */}
+              {!shouldShowMessageSkeleton && message.content && (
                 <div className="chat-markdown">
                   <MessageWithArtifacts
                     content={message.content}
@@ -197,15 +208,18 @@ export const ChatMessage = React.memo(function ChatMessage({
                     searchResults={streamProgress.searchResults}
                   />
                 </div>
-              ) : (
-                <MessageSkeleton />
               )}
 
-              {/* Tool execution loading states */}
-              <ToolExecutionSkeleton
-                toolName={streamProgress.toolExecution?.toolName}
-                isPending={artifactRenderStatus === 'pending'}
-              />
+              {/* Show message skeleton ONLY when no content and no tool */}
+              {shouldShowMessageSkeleton && <MessageSkeleton />}
+
+              {/* Show tool skeleton BELOW content when tool is executing */}
+              {shouldShowToolSkeleton && (
+                <ToolExecutionSkeleton
+                  toolName={streamProgress.toolExecution?.toolName}
+                  status={streamProgress.toolExecution?.success !== undefined ? 'complete' : 'pending'}
+                />
+              )}
 
               {/* Cancel button */}
               {onCancel && (

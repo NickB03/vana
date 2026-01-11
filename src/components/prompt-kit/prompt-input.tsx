@@ -108,6 +108,7 @@ function PromptInputTextarea({
   className,
   onKeyDown,
   disableAutosize = false,
+  name,
   ...props
 }: PromptInputTextareaProps) {
   const { value, setValue, maxHeight, onSubmit, disabled, textareaRef } =
@@ -173,6 +174,7 @@ function PromptInputTextarea({
     <Textarea
       ref={textareaRef}
       {...props}
+      name={name ?? "chat-input"}
       value={value}
       onChange={(e) => setValue(e.target.value)}
       onKeyDown={handleKeyDown}

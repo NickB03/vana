@@ -66,7 +66,7 @@ export function InlineImage({ artifact }: InlineImageProps) {
   return (
     <div className="my-4">
       <div
-        className="relative group cursor-pointer rounded-xl overflow-hidden border-2 border-border hover:border-primary transition-all duration-200 max-w-md shadow-sm hover:shadow-md"
+        className="relative group cursor-pointer rounded-xl overflow-hidden border-2 border-border hover:border-primary transition-all duration-200 max-w-[240px] shadow-sm hover:shadow-md"
         onClick={() => setPreviewOpen(true)}
       >
         <img
@@ -75,9 +75,15 @@ export function InlineImage({ artifact }: InlineImageProps) {
           className="w-full h-auto bg-muted block"
           loading="lazy"
           decoding="async"
+          onLoad={() => {
+            // Signal to parent that image has finished loading
+            window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
+          }}
           onError={(e) => {
             console.error('Image failed to load:', artifact.content);
             e.currentTarget.style.display = 'none';
+            // Signal render failure to parent
+            window.postMessage({ type: 'artifact-rendered-complete', success: false, error: 'Failed to load image' }, '*');
           }}
         />
 

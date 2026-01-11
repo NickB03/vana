@@ -5,6 +5,7 @@
  * When the primary CDN (esm.sh) fails, automatically tries alternative providers.
  *
  * Features:
+ * - Database-backed cache with 24-hour TTL (reduces 3s check to ~50ms)
  * - Multi-provider fallback chain (esm.sh → esm.run → jsdelivr)
  * - Health verification with timeout (3s per check)
  * - Detailed logging for debugging CDN availability
@@ -17,8 +18,10 @@
  * }
  */
 
-export interface CdnProvider {
-  name: string;
+import { getCachedPackageUrl, cachePackageUrl, type CdnProvider } from "./cdn-cache.ts";
+
+export interface CdnProviderConfig {
+  name: CdnProvider;
   baseUrl: string;
   buildUrl: (pkg: string, version: string) => string;
   buildBundleUrl: (pkg: string, version: string) => string;
@@ -28,7 +31,7 @@ export interface CdnProvider {
  * CDN provider configurations in priority order.
  * esm.sh is primary due to superior React externalization support.
  */
-export const CDN_PROVIDERS: readonly CdnProvider[] = [
+export const CDN_PROVIDERS: readonly CdnProviderConfig[] = [
   {
     name: 'esm.sh',
     baseUrl: 'https://esm.sh',
@@ -118,8 +121,19 @@ export async function getWorkingCdnUrl(
   version: string,
   requestId: string,
   useBundleUrl = false
-): Promise<{ url: string; provider: string } | null> {
-  console.log(`[${requestId}] Checking CDNs in parallel for ${pkg}@${version}...`);
+): Promise<{ url: string; provider: CdnProvider } | null> {
+  // Check cache first (24-hour TTL) - reduces ~3s check to ~50ms
+  // Cache key includes useBundleUrl to avoid returning wrong URL type
+  const cached = await getCachedPackageUrl(pkg, version, requestId, useBundleUrl);
+  if (cached.type === 'hit') {
+    return { url: cached.url, provider: cached.provider };
+  } else if (cached.type === 'error') {
+    console.warn(`[${requestId}] CDN cache error for ${pkg}@${version}: ${cached.error.message}`);
+    // Continue to fallback despite cache error
+  }
+
+  const urlType = useBundleUrl ? "bundle" : "standard";
+  console.log(`[${requestId}] CDN cache MISS for ${pkg}@${version} (${urlType}), checking providers...`);
 
   // Try all CDNs in parallel
   const results = await Promise.all(
@@ -147,6 +161,11 @@ export async function getWorkingCdnUrl(
     if (successfulResults.length > 1) {
       console.log(`[${requestId}] Multiple CDNs available, using ${best.cdn.name} (highest priority)`);
     }
+
+    // Cache the verified URL for future requests (fire-and-forget)
+    // Include useBundleUrl to properly distinguish bundle vs standard URLs
+    cachePackageUrl(pkg, version, best.url, best.cdn.name, requestId, useBundleUrl).catch(() => {});
+
     return { url: best.url, provider: best.cdn.name };
   }
 
@@ -173,8 +192,8 @@ export async function getWorkingCdnUrl(
 export async function batchVerifyCdnUrls(
   packages: Record<string, string>,
   requestId: string
-): Promise<Map<string, { url: string; provider: string } | null>> {
-  const results = new Map<string, { url: string; provider: string } | null>();
+): Promise<Map<string, { url: string; provider: CdnProvider } | null>> {
+  const results = new Map<string, { url: string; provider: CdnProvider } | null>();
 
   // Check all packages in parallel (don't block on each one)
   await Promise.all(
