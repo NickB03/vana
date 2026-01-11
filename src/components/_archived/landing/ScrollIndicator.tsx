@@ -22,7 +22,14 @@ interface ScrollIndicatorProps {
  * - Accessible click target for smooth scroll
  */
 export const ScrollIndicator = ({ visible = true, onClick, className }: ScrollIndicatorProps) => {
-  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const prefersReducedMotion = (() => {
+    try {
+      return window?.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+    } catch (error) {
+      console.warn('Could not detect reduced motion preference:', error);
+      return false; // Safe fallback
+    }
+  })();
 
   if (!visible) return null;
 

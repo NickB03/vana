@@ -55,7 +55,8 @@ export const MultiModelGraphic = () => {
             ref={ref}
             className="relative aspect-video w-full overflow-hidden rounded-xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 shadow-2xl border border-white/10"
         >
-            <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20" />
+            {/* Grid pattern removed - asset missing */}
+            {/* <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20" /> */}
 
             <svg className="w-full h-full relative z-10" viewBox="0 0 400 300">
                 <Defs />
@@ -79,7 +80,7 @@ export const MultiModelGraphic = () => {
                 {[
                     { color: "#3b82f6", label: "Gemini", x: 100 },
                     { color: "#8b5cf6", label: "GLM-4.7", x: 200 },
-                    { color: "#10b981", label: "Air Air", x: 300 }
+                    { color: "#10b981", label: "Z.ai Air", x: 300 }
                 ].map((model, i) => (
                     <motion.g
                         key={model.label}

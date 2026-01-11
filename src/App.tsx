@@ -13,12 +13,13 @@ import { UpdateNotification } from "@/components/UpdateNotification";
 import { storeVersionInfo, logCacheBustingInfo, isNewVersionAvailable, clearAllCaches } from "@/utils/cacheBusting";
 import { usePreventOverscroll } from "@/hooks/usePreventOverscroll";
 import { useIOSViewportHeight } from "@/hooks/useIOSViewportHeight";
+import { logError } from "@/utils/errorLogging";
+import { ERROR_IDS } from "@/constants/errorIds";
 
 // Lazy load pages for code splitting
 const Home = lazy(() => import("./pages/Home"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Signup = lazy(() => import("./pages/Signup"));
-// const Landing = lazy(() => import("./pages/Landing")); // Commented out - will repurpose later
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const DemoModeV2 = lazy(() => import("./pages/DemoModeV2"));
@@ -56,7 +57,7 @@ const queryClient = new QueryClient({
 /**
  * RootRoute: Renders Home which shows the main app interface
  *
- * Landing page removed in PR #497:
+ * Landing page removed (January 2026):
  * - Previous: Scroll-triggered transition from landing → app interface
  * - Current: Direct app render with onboarding tour for new users
  *
@@ -65,7 +66,7 @@ const queryClient = new QueryClient({
  * - Better mobile UX (mobile tour now optimized for touch)
  * - Reduced complexity (no scroll tracking or phase management)
  *
- * Note: Landing content preserved in git history for reference
+ * Note: Landing page files archived in src/pages/_archived/ and src/components/_archived/landing/
  */
 const RootRoute = () => {
   return <AnimatedRoute><Home /></AnimatedRoute>;
@@ -92,8 +93,6 @@ const AnimatedRoutes = () => {
         <Route path="/app" element={<Navigate to="/" replace />} />
         <Route path="/auth" element={<AnimatedRoute><Auth /></AnimatedRoute>} />
         <Route path="/signup" element={<AnimatedRoute><Signup /></AnimatedRoute>} />
-        {/* Landing route removed - page will be repurposed later */}
-        {/* <Route path="/landing" element={<AnimatedRoute><Landing /></AnimatedRoute>} /> */}
         <Route path="/admin" element={<AnimatedRoute><AdminDashboard /></AnimatedRoute>} />
         <Route path="/demo-frogger-v2" element={<DemoModeV2 />} />
         <Route path="/demo-dashboard" element={<DemoModeDashboard />} />
@@ -124,16 +123,28 @@ const App = () => {
   // Initialize version tracking and cache busting on app startup
   useEffect(() => {
     const checkVersion = async () => {
-      logVersionInfo();
-      storeVersionInfo();
-      logCacheBustingInfo();
-      if (isNewVersionAvailable()) {
-        console.log('A new version is available, clearing cache and reloading...');
-        await clearAllCaches();
-        window.location.reload();
+      try {
+        logVersionInfo();
+        storeVersionInfo();
+        logCacheBustingInfo();
+        if (isNewVersionAvailable()) {
+          console.log('A new version is available, clearing cache and reloading...');
+          await clearAllCaches();
+          window.location.reload();
+        }
+      } catch (error) {
+        logError(error instanceof Error ? error : new Error(String(error)), {
+          errorId: ERROR_IDS.VERSION_CHECK_ERROR,
+        });
+        // Continue with current version rather than breaking the app
       }
     };
-    checkVersion();
+
+    checkVersion().catch(error => {
+      logError(error instanceof Error ? error : new Error(String(error)), {
+        errorId: ERROR_IDS.VERSION_CHECK_UNHANDLED,
+      });
+    });
   }, []);
 
   return (

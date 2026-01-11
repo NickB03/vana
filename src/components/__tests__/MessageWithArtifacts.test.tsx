@@ -60,6 +60,29 @@ describe('MessageWithArtifacts bundling state management', () => {
 
     // Default mock implementations
     vi.mocked(bundlerModule.needsBundling).mockReturnValue(false);
+
+    // CRITICAL FIX: Mock bundleArtifactWithProgress (the actual function called by component)
+    // The component calls bundleArtifactWithProgress, not bundleArtifact
+    vi.mocked(bundlerModule.bundleArtifactWithProgress).mockImplementation(
+      async (_code, _artifactId, _sessionId, _title, onProgress) => {
+        // Call onProgress callback to simulate streaming
+        if (onProgress) {
+          onProgress({ stage: 'installing', currentPackage: '@radix-ui/react-dialog' });
+        }
+
+        return {
+          success: true,
+          bundleUrl: 'https://signed-url.com',
+          bundleTime: 2000,
+          dependencies: ['@radix-ui/react-dialog'],
+          bundleSize: 12345,
+          expiresAt: new Date().toISOString(),
+          requestId: 'test-request-id'
+        };
+      }
+    );
+
+    // Also mock bundleArtifact for backwards compatibility (in case it's used elsewhere)
     vi.mocked(bundlerModule.bundleArtifact).mockResolvedValue({
       success: true,
       bundleUrl: 'https://signed-url.com',
@@ -85,12 +108,11 @@ ${code}
 
   describe('Bundling lifecycle', () => {
     it('skips bundling when artifact has existing bundleUrl', async () => {
-      const bundleSpy = vi.spyOn(bundlerModule, 'bundleArtifact');
+      const bundleSpy = vi.spyOn(bundlerModule, 'bundleArtifactWithProgress');
       vi.spyOn(bundlerModule, 'needsBundling').mockReturnValue(true);
 
-      // Note: This test verifies that bundleArtifact is NOT called when
-      // bundleUrl already exists (which we can't test directly without
-      // modifying the component to accept pre-bundled artifacts)
+      // Note: This test verifies that bundleArtifactWithProgress is called when
+      // bundleUrl doesn't exist and needsBundling returns true
       const code = `import * as Dialog from '@radix-ui/react-dialog';
 export default function App() { return <div>Test</div> }`;
 
@@ -101,19 +123,20 @@ export default function App() { return <div>Test</div> }`;
         />
       );
 
-      // Since needsBundling returns true, bundleArtifact should be called
+      // Since needsBundling returns true, bundleArtifactWithProgress should be called
       await waitFor(() => {
         expect(bundleSpy).toHaveBeenCalledWith(
           expect.stringContaining('@radix-ui/react-dialog'),
           expect.any(String),
           'valid-session-id',
-          'Test Component'
+          'Test Component',
+          expect.any(Function) // onProgress callback
         );
       }, { timeout: 3000 });
     });
 
     it('skips bundling when artifact does not need bundling', async () => {
-      const bundleSpy = vi.spyOn(bundlerModule, 'bundleArtifact');
+      const bundleSpy = vi.spyOn(bundlerModule, 'bundleArtifactWithProgress');
       vi.spyOn(bundlerModule, 'needsBundling').mockReturnValue(false);
 
       const code = `export default function App() { return <div>Hello</div> }`;
@@ -132,7 +155,7 @@ export default function App() { return <div>Test</div> }`;
     });
 
     it('validates sessionId before bundling', async () => {
-      const bundleSpy = vi.spyOn(bundlerModule, 'bundleArtifact');
+      const bundleSpy = vi.spyOn(bundlerModule, 'bundleArtifactWithProgress');
       vi.spyOn(bundlerModule, 'needsBundling').mockReturnValue(true);
 
       const code = `import * as Dialog from '@radix-ui/react-dialog';
@@ -149,18 +172,25 @@ export default function App() { return <div>Test</div> }`;
       // Wait a moment to ensure bundling doesn't happen
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // bundleArtifact should not be called with empty sessionId
+      // bundleArtifactWithProgress should not be called with empty sessionId
       expect(bundleSpy).not.toHaveBeenCalled();
     });
 
     it('prevents duplicate bundling for same artifact', async () => {
-      const bundleSpy = vi.spyOn(bundlerModule, 'bundleArtifact');
+      const bundleSpy = vi.spyOn(bundlerModule, 'bundleArtifactWithProgress');
       vi.spyOn(bundlerModule, 'needsBundling').mockReturnValue(true);
 
-      // Mock bundleArtifact to take some time
+      // Mock bundleArtifactWithProgress to take some time
       bundleSpy.mockImplementation(
-        () => new Promise(resolve => {
-          setTimeout(() => resolve({
+        async (_code, _artifactId, _sessionId, _title, onProgress) => {
+          // Simulate async bundling with delay
+          await new Promise(resolve => setTimeout(resolve, 50));
+
+          if (onProgress) {
+            onProgress({ stage: 'installing', currentPackage: '@radix-ui/react-dialog' });
+          }
+
+          return {
             success: true,
             bundleUrl: 'url',
             bundleTime: 100,
@@ -168,8 +198,8 @@ export default function App() { return <div>Test</div> }`;
             bundleSize: 100,
             expiresAt: new Date().toISOString(),
             requestId: 'test'
-          }), 50);
-        })
+          };
+        }
       );
 
       const code = `import * as Dialog from '@radix-ui/react-dialog';
@@ -199,9 +229,16 @@ export default function App() { return <div>Test</div> }`;
 
   describe('Bundling toast notifications', () => {
     it('shows bundling toast when bundling starts', async () => {
-      vi.spyOn(bundlerModule, 'bundleArtifact').mockImplementation(
-        () => new Promise(resolve => {
-          setTimeout(() => resolve({
+      vi.spyOn(bundlerModule, 'bundleArtifactWithProgress').mockImplementation(
+        async (_code, _artifactId, _sessionId, _title, onProgress) => {
+          // Simulate async bundling with delay
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+          if (onProgress) {
+            onProgress({ stage: 'installing', currentPackage: '@radix-ui/react-dialog' });
+          }
+
+          return {
             success: true,
             bundleUrl: 'url',
             bundleTime: 100,
@@ -209,8 +246,8 @@ export default function App() { return <div>Test</div> }`;
             bundleSize: 100,
             expiresAt: new Date().toISOString(),
             requestId: 'test'
-          }), 100);
-        })
+          };
+        }
       );
       vi.spyOn(bundlerModule, 'needsBundling').mockReturnValue(true);
 
@@ -236,15 +273,23 @@ export default function App() { return <div>Test</div> }`;
     });
 
     it('shows success toast when bundling completes', async () => {
-      vi.spyOn(bundlerModule, 'bundleArtifact').mockResolvedValue({
-        success: true,
-        bundleUrl: 'https://signed-url.com',
-        bundleTime: 2000,
-        dependencies: ['@radix-ui/react-dialog'],
-        bundleSize: 12345,
-        expiresAt: new Date().toISOString(),
-        requestId: 'test-request-id'
-      });
+      vi.spyOn(bundlerModule, 'bundleArtifactWithProgress').mockImplementation(
+        async (_code, _artifactId, _sessionId, _title, onProgress) => {
+          if (onProgress) {
+            onProgress({ stage: 'installing', currentPackage: '@radix-ui/react-dialog' });
+          }
+
+          return {
+            success: true,
+            bundleUrl: 'https://signed-url.com',
+            bundleTime: 2000,
+            dependencies: ['@radix-ui/react-dialog'],
+            bundleSize: 12345,
+            expiresAt: new Date().toISOString(),
+            requestId: 'test-request-id'
+          };
+        }
+      );
       vi.spyOn(bundlerModule, 'needsBundling').mockReturnValue(true);
 
       const code = `import * as Dialog from '@radix-ui/react-dialog';
@@ -271,12 +316,14 @@ export default function App() { return <div>Test</div> }`;
 
   describe('Bundling error handling', () => {
     it('shows error toast when bundling fails with npm imports', async () => {
-      vi.spyOn(bundlerModule, 'bundleArtifact').mockResolvedValue({
-        success: false,
-        error: 'Rate limit exceeded',
-        details: 'Try again in 5 minutes',
-        retryable: true
-      });
+      vi.spyOn(bundlerModule, 'bundleArtifactWithProgress').mockImplementation(
+        async () => ({
+          success: false,
+          error: 'Rate limit exceeded',
+          details: 'Try again in 5 minutes',
+          retryable: true
+        })
+      );
       vi.spyOn(bundlerModule, 'needsBundling').mockReturnValue(true);
 
       const code = `import * as Dialog from '@radix-ui/react-dialog';
@@ -301,11 +348,13 @@ export default function App() { return <div>Test</div> }`;
     });
 
     it('shows warning when bundling fails without npm imports', async () => {
-      vi.spyOn(bundlerModule, 'bundleArtifact').mockResolvedValue({
-        success: false,
-        error: 'Server error',
-        retryable: true
-      });
+      vi.spyOn(bundlerModule, 'bundleArtifactWithProgress').mockImplementation(
+        async () => ({
+          success: false,
+          error: 'Server error',
+          retryable: true
+        })
+      );
 
       // First call returns true (triggers bundling), second call returns false (for error handling)
       let callCount = 0;
@@ -325,7 +374,7 @@ export default function App() { return <div>Test</div> }`;
 
       await waitFor(() => {
         expect(toast.warning).toHaveBeenCalledWith(
-          expect.stringContaining('using fallback'),
+          expect.stringContaining('using client-side renderer'),
           expect.objectContaining({
             description: expect.stringContaining('limited features'),
             duration: 5000
@@ -335,12 +384,14 @@ export default function App() { return <div>Test</div> }`;
     });
 
     it('handles requiresAuth errors appropriately', async () => {
-      vi.spyOn(bundlerModule, 'bundleArtifact').mockResolvedValue({
-        success: false,
-        error: 'Session expired',
-        details: 'Please refresh the page',
-        requiresAuth: true
-      });
+      vi.spyOn(bundlerModule, 'bundleArtifactWithProgress').mockImplementation(
+        async () => ({
+          success: false,
+          error: 'Session expired',
+          details: 'Please refresh the page',
+          requiresAuth: true
+        })
+      );
       vi.spyOn(bundlerModule, 'needsBundling').mockReturnValue(true);
 
       const code = `import * as Dialog from '@radix-ui/react-dialog';
@@ -365,12 +416,14 @@ export default function App() { return <div>Test</div> }`;
     });
 
     it('handles retryAfter rate limiting errors', async () => {
-      vi.spyOn(bundlerModule, 'bundleArtifact').mockResolvedValue({
-        success: false,
-        error: 'Rate limit exceeded',
-        details: 'You can bundle again in 5 minutes',
-        retryAfter: 300
-      });
+      vi.spyOn(bundlerModule, 'bundleArtifactWithProgress').mockImplementation(
+        async () => ({
+          success: false,
+          error: 'Rate limit exceeded',
+          details: 'You can bundle again in 5 minutes',
+          retryAfter: 300
+        })
+      );
       vi.spyOn(bundlerModule, 'needsBundling').mockReturnValue(true);
 
       const code = `import * as Dialog from '@radix-ui/react-dialog';
@@ -395,12 +448,14 @@ export default function App() { return <div>Test</div> }`;
     });
 
     it('handles non-retryable bundling errors', async () => {
-      vi.spyOn(bundlerModule, 'bundleArtifact').mockResolvedValue({
-        success: false,
-        error: 'Invalid dependency version',
-        details: 'Package not found on npm',
-        retryable: false
-      });
+      vi.spyOn(bundlerModule, 'bundleArtifactWithProgress').mockImplementation(
+        async () => ({
+          success: false,
+          error: 'Invalid dependency version',
+          details: 'Package not found on npm',
+          retryable: false
+        })
+      );
       vi.spyOn(bundlerModule, 'needsBundling').mockReturnValue(true);
 
       const code = `import * as Dialog from '@radix-ui/react-dialog';
@@ -427,15 +482,23 @@ export default function App() { return <div>Test</div> }`;
 
   describe('Artifact state updates', () => {
     it('updates artifact with bundleUrl on success', async () => {
-      vi.spyOn(bundlerModule, 'bundleArtifact').mockResolvedValue({
-        success: true,
-        bundleUrl: 'https://signed-url.com/bundle.html',
-        bundleTime: 2500,
-        dependencies: ['@radix-ui/react-dialog', 'framer-motion'],
-        bundleSize: 54321,
-        expiresAt: new Date().toISOString(),
-        requestId: 'test-request-id'
-      });
+      vi.spyOn(bundlerModule, 'bundleArtifactWithProgress').mockImplementation(
+        async (_code, _artifactId, _sessionId, _title, onProgress) => {
+          if (onProgress) {
+            onProgress({ stage: 'installing', currentPackage: '@radix-ui/react-dialog' });
+          }
+
+          return {
+            success: true,
+            bundleUrl: 'https://signed-url.com/bundle.html',
+            bundleTime: 2500,
+            dependencies: ['@radix-ui/react-dialog', 'framer-motion'],
+            bundleSize: 54321,
+            expiresAt: new Date().toISOString(),
+            requestId: 'test-request-id'
+          };
+        }
+      );
       vi.spyOn(bundlerModule, 'needsBundling').mockReturnValue(true);
 
       const code = `import * as Dialog from '@radix-ui/react-dialog';
@@ -458,12 +521,14 @@ export default function App() { return <div>Test</div> }`;
     });
 
     it('updates artifact with error state on failure', async () => {
-      vi.spyOn(bundlerModule, 'bundleArtifact').mockResolvedValue({
-        success: false,
-        error: 'Bundling timeout',
-        details: 'Server took too long to respond',
-        retryable: true
-      });
+      vi.spyOn(bundlerModule, 'bundleArtifactWithProgress').mockImplementation(
+        async () => ({
+          success: false,
+          error: 'Bundling timeout',
+          details: 'Server took too long to respond',
+          retryable: true
+        })
+      );
       vi.spyOn(bundlerModule, 'needsBundling').mockReturnValue(true);
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -490,15 +555,23 @@ export default function App() { return <div>Test</div> }`;
     });
 
     it('logs bundling success details to console', async () => {
-      vi.spyOn(bundlerModule, 'bundleArtifact').mockResolvedValue({
-        success: true,
-        bundleUrl: 'https://signed-url.com',
-        bundleTime: 1500,
-        dependencies: ['@radix-ui/react-dialog'],
-        bundleSize: 12345,
-        expiresAt: new Date().toISOString(),
-        requestId: 'test-request-id'
-      });
+      vi.spyOn(bundlerModule, 'bundleArtifactWithProgress').mockImplementation(
+        async (_code, _artifactId, _sessionId, _title, onProgress) => {
+          if (onProgress) {
+            onProgress({ stage: 'installing', currentPackage: '@radix-ui/react-dialog' });
+          }
+
+          return {
+            success: true,
+            bundleUrl: 'https://signed-url.com',
+            bundleTime: 1500,
+            dependencies: ['@radix-ui/react-dialog'],
+            bundleSize: 12345,
+            expiresAt: new Date().toISOString(),
+            requestId: 'test-request-id'
+          };
+        }
+      );
       vi.spyOn(bundlerModule, 'needsBundling').mockReturnValue(true);
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
@@ -523,11 +596,13 @@ export default function App() { return <div>Test</div> }`;
     });
 
     it('logs bundling failure details to console', async () => {
-      vi.spyOn(bundlerModule, 'bundleArtifact').mockResolvedValue({
-        success: false,
-        error: 'Network error',
-        details: 'Failed to reach bundling service'
-      });
+      vi.spyOn(bundlerModule, 'bundleArtifactWithProgress').mockImplementation(
+        async () => ({
+          success: false,
+          error: 'Network error',
+          details: 'Failed to reach bundling service'
+        })
+      );
       vi.spyOn(bundlerModule, 'needsBundling').mockReturnValue(true);
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 

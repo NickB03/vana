@@ -25,7 +25,7 @@ export function FroggerDemoVideo({
   autoPlay = true,
   muted = true,
   loop = true,
-  poster = '/Demos/hero-demo-poster.jpg',
+  poster, // Removed default - asset missing
   onVideoEnd
 }: FroggerDemoVideoProps = {}) {
   const videoRef = useRef<HTMLVideoElement>(null);
