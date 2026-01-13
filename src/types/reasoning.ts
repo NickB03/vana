@@ -23,7 +23,7 @@ const trimAllWhitespace = (s: string): string =>
  * **Frontend Validation Behavior**: The frontend uses strict Zod validation (line 48)
  * without normalization. Invalid icons are rejected, causing `parseReasoningSteps()`
  * to return `null` for the entire reasoning object. This is intentional - it forces
- * the GLM API to send valid icons instead of silently accepting bad data.
+ * the LLM API to send valid icons instead of silently accepting bad data.
  *
  * Icon is optional; if omitted, `getIconComponent()` returns `null` and the UI
  * renders without an icon.

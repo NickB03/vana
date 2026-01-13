@@ -194,7 +194,7 @@ When artifacts contain npm imports, they're automatically bundled via the `bundl
 
 **Function**: `normalizeDefaultExportToApp()` in `bundle-artifact/index.ts`
 
-Replaces the previous fragile regex chain with structured pattern matching. Handles all 9 GLM-generated export patterns:
+Replaces the previous fragile regex chain with structured pattern matching. Handles all 9 AI-generated export patterns:
 
 | Pattern | Input | Output |
 |---------|-------|--------|
@@ -212,7 +212,7 @@ Replaces the previous fragile regex chain with structured pattern matching. Hand
 
 ### Export Pattern Normalization Flow
 
-The `normalizeDefaultExportToApp()` function maps all 9 GLM-generated export patterns to a consistent output:
+The `normalizeDefaultExportToApp()` function maps all 9 AI-generated export patterns to a consistent output:
 
 ```mermaid
 flowchart LR

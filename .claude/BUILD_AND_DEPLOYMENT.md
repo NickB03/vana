@@ -291,7 +291,7 @@ supabase stop && supabase start
 
 **Verify Loaded**:
 ```bash
-docker exec supabase_edge_runtime_* printenv | grep -iE "OPENROUTER|GLM|TAVILY"
+docker exec supabase_edge_runtime_* printenv | grep -iE "OPENROUTER|GEMINI|TAVILY"
 ```
 
 ## Performance Targets

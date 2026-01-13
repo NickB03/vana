@@ -2,7 +2,7 @@
  * Tool Definitions for Unified Chat Architecture
  *
  * This module defines the canonical tool catalog for the chat system.
- * It provides TypeScript interfaces and GLM-compatible tool definitions
+ * It provides TypeScript interfaces and Gemini-compatible tool definitions
  * for all supported tools (artifact generation, image generation, web search).
  *
  * SECURITY NOTE: This is a DATA-ONLY module. Security concerns (validation,
@@ -60,14 +60,13 @@ export interface ToolDefinition {
 }
 
 /**
- * GLM-compatible tool definition format (flat structure).
- * Used when sending tools to the GLM API via glm-client.ts.
+ * Gemini-compatible tool definition format (OpenAI structure).
+ * Used when sending tools to the Gemini API via gemini-client.ts.
  *
- * NOTE: This uses the flat format expected by glm-client.ts, NOT the nested
- * OpenAI format (type: 'function', function: {...}). The flat format matches
- * how GLM_SEARCH_TOOL is defined in glm-client.ts.
+ * NOTE: This uses the OpenAI-compatible format that Gemini supports via OpenRouter.
+ * The structure includes name, description, and parameters as a JSON schema.
  */
-export interface GLMToolDefinition {
+export interface GeminiToolDefinition {
   name: string;
   description: string;
   parameters: {
@@ -101,7 +100,7 @@ export const TOOL_CATALOG = {
     required: ['type', 'prompt'],
     execution: {
       handler: 'artifact',
-      model: MODELS.GLM_4_7,
+      model: MODELS.GEMINI_3_FLASH,
       streaming: true,
     },
   },
@@ -163,24 +162,24 @@ For EDIT mode: Set mode="edit" and include baseImage with the URL of the image t
 } as const satisfies Record<string, ToolDefinition>;
 
 /**
- * Transforms the tool catalog into GLM-compatible format.
+ * Transforms the tool catalog into Gemini-compatible format.
  *
  * This function converts our internal ToolDefinition format to the
- * JSON Schema format expected by GLM's function calling API.
+ * JSON Schema format expected by Gemini's function calling API.
  *
- * @returns Array of GLM tool definitions
+ * @returns Array of Gemini tool definitions
  *
  * @example
  * ```typescript
- * const tools = getGLMToolDefinitions();
- * const response = await glmClient.chat({
+ * const tools = getGeminiToolDefinitions();
+ * const response = await geminiClient.chat({
  *   messages: [...],
  *   tools: tools,
  * });
  * ```
  */
-export function getGLMToolDefinitions(): readonly GLMToolDefinition[] {
-  return Object.values(TOOL_CATALOG).map((tool): GLMToolDefinition => ({
+export function getGeminiToolDefinitions(): readonly GeminiToolDefinition[] {
+  return Object.values(TOOL_CATALOG).map((tool): GeminiToolDefinition => ({
     name: tool.name,
     description: tool.description,
     parameters: {

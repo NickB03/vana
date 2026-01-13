@@ -3,7 +3,7 @@
  *
  * These tests make REAL API calls to verify the complete artifact generation pipeline:
  * - Input validation (prompt, artifactType, etc.)
- * - GLM-4.7 artifact generation
+ * - Artifact generation via LLM
  * - Pre-validation and auto-fixing
  * - Response structure and metadata
  * - Error handling (missing prompt, invalid type, etc.)
@@ -11,13 +11,13 @@
  * To run:
  * ```bash
  * cd supabase/functions
- * GLM_API_KEY=your_key \
+ * OPENROUTER_GEMINI_FLASH_KEY=your_key \
  * SUPABASE_URL=http://127.0.0.1:54321 \
  * SUPABASE_ANON_KEY=your_local_anon_key \
  * deno test --allow-net --allow-env _shared/__tests__/artifact-endpoint-integration.test.ts
  * ```
  *
- * Cost per run: ~$0.03-0.05 (GLM-4.7 is more expensive than GLM-4.5-Air)
+ * Cost per run: ~$0.03-0.05 (includes Gemini API calls)
  *
  * NOTE: These are API-level integration tests, NOT E2E browser tests.
  * They verify the Edge Function endpoint behavior in isolation.
@@ -26,7 +26,7 @@
 import { assert, assertEquals, assertExists } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
 // Environment variables
-const GLM_API_KEY = Deno.env.get("GLM_API_KEY");
+const OPENROUTER_GEMINI_FLASH_KEY = Deno.env.get("OPENROUTER_GEMINI_FLASH_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "http://127.0.0.1:54321";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 
@@ -81,7 +81,7 @@ async function callArtifactEndpoint(
 
 Deno.test({
   name: "Artifact Integration - Generate Simple React Component",
-  ignore: !GLM_API_KEY || !SUPABASE_ANON_KEY,
+  ignore: !OPENROUTER_GEMINI_FLASH_KEY || !SUPABASE_ANON_KEY,
   async fn() {
     console.log("\n🎨 Testing React component generation...");
 
@@ -144,7 +144,7 @@ Deno.test({
 
 Deno.test({
   name: "Artifact Integration - Generate HTML Artifact",
-  ignore: !GLM_API_KEY || !SUPABASE_ANON_KEY,
+  ignore: !OPENROUTER_GEMINI_FLASH_KEY || !SUPABASE_ANON_KEY,
   async fn() {
     console.log("\n📄 Testing HTML artifact generation...");
 
@@ -174,7 +174,7 @@ Deno.test({
     );
 
     // HTML artifacts may contain DOCTYPE, html, head, body tags
-    // OR they may be pure HTML fragments depending on GLM's interpretation
+    // OR they may be pure HTML fragments depending on LLM's interpretation
     assert(
       code.includes("<") && code.includes(">"),
       "Code should contain HTML tags",
@@ -191,7 +191,7 @@ Deno.test({
 
 Deno.test({
   name: "Artifact Integration - Error Handling: Missing Prompt",
-  ignore: !GLM_API_KEY || !SUPABASE_ANON_KEY,
+  ignore: !OPENROUTER_GEMINI_FLASH_KEY || !SUPABASE_ANON_KEY,
   async fn() {
     console.log("\n❌ Testing missing prompt error handling...");
 
@@ -226,7 +226,7 @@ Deno.test({
 
 Deno.test({
   name: "Artifact Integration - Error Handling: Invalid Artifact Type",
-  ignore: !GLM_API_KEY || !SUPABASE_ANON_KEY,
+  ignore: !OPENROUTER_GEMINI_FLASH_KEY || !SUPABASE_ANON_KEY,
   async fn() {
     console.log("\n❌ Testing invalid artifact type error handling...");
 
@@ -260,7 +260,7 @@ Deno.test({
 
 Deno.test({
   name: "Artifact Integration - Error Handling: Prompt Too Long",
-  ignore: !GLM_API_KEY || !SUPABASE_ANON_KEY,
+  ignore: !OPENROUTER_GEMINI_FLASH_KEY || !SUPABASE_ANON_KEY,
   async fn() {
     console.log("\n❌ Testing prompt length validation...");
 
@@ -297,7 +297,7 @@ Deno.test({
 
 Deno.test({
   name: "Artifact Integration - Response Metadata Verification",
-  ignore: !GLM_API_KEY || !SUPABASE_ANON_KEY,
+  ignore: !OPENROUTER_GEMINI_FLASH_KEY || !SUPABASE_ANON_KEY,
   async fn() {
     console.log("\n📊 Testing response metadata...");
 
@@ -345,7 +345,7 @@ Deno.test({
 
 Deno.test({
   name: "Artifact Integration - Generate SVG Artifact",
-  ignore: !GLM_API_KEY || !SUPABASE_ANON_KEY,
+  ignore: !OPENROUTER_GEMINI_FLASH_KEY || !SUPABASE_ANON_KEY,
   async fn() {
     console.log("\n🎨 Testing SVG artifact generation...");
 
@@ -390,7 +390,7 @@ Deno.test({
 
 Deno.test({
   name: "Artifact Integration - Rate Limiting Headers",
-  ignore: !GLM_API_KEY || !SUPABASE_ANON_KEY,
+  ignore: !OPENROUTER_GEMINI_FLASH_KEY || !SUPABASE_ANON_KEY,
   async fn() {
     console.log("\n🔒 Testing rate limiting headers...");
 
@@ -438,7 +438,7 @@ Deno.test({
 
 Deno.test({
   name: "Artifact Integration - CORS Headers",
-  ignore: !GLM_API_KEY || !SUPABASE_ANON_KEY,
+  ignore: !OPENROUTER_GEMINI_FLASH_KEY || !SUPABASE_ANON_KEY,
   async fn() {
     console.log("\n🌐 Testing CORS headers...");
 
@@ -471,7 +471,7 @@ Deno.test({
 
 Deno.test({
   name: "Artifact Integration - Reasoning Data",
-  ignore: !GLM_API_KEY || !SUPABASE_ANON_KEY,
+  ignore: !OPENROUTER_GEMINI_FLASH_KEY || !SUPABASE_ANON_KEY,
   async fn() {
     console.log("\n🧠 Testing reasoning data inclusion...");
 
@@ -490,7 +490,7 @@ Deno.test({
 
     const data = await response.json();
 
-    // Reasoning may or may not be present depending on GLM-4.7's thinking mode
+    // Reasoning may or may not be present depending on LLM thinking mode
     // We just verify the field exists (can be null or string)
     assert(
       "reasoning" in data,
@@ -502,7 +502,7 @@ Deno.test({
       console.log(`  ✓ Reasoning data present`);
       console.log(`  Reasoning length: ${data.reasoning.length} characters`);
     } else {
-      console.log(`  ⚠️ No reasoning data (GLM may not have provided it)`);
+      console.log(`  ⚠️ No reasoning data (LLM may not have provided it)`);
     }
 
     // ReasoningSteps should be null (structured parsing removed per code comments)
@@ -519,5 +519,5 @@ console.log("Artifact Endpoint Integration Tests");
 console.log("=".repeat(70));
 console.log("Testing /generate-artifact Edge Function");
 console.log("Endpoint: " + ARTIFACT_ENDPOINT);
-console.log("Cost per full run: ~$0.03-0.05 (GLM-4.7 model)");
+console.log("Cost per full run: ~$0.03-0.05 (includes Gemini API calls)");
 console.log("=".repeat(70) + "\n");

@@ -8,12 +8,41 @@
 
 ```typescript
 export const MODELS = {
-  GEMINI_FLASH: 'google/gemini-2.5-flash-lite',
-  GLM_4_6: 'zhipu/glm-4.6',
-  GEMINI_FLASH_IMAGE: 'google/gemini-2.5-flash-image',
-  GLM_4_5_AIR: 'zhipu/glm-4.5-air'
+  GEMINI_3_FLASH: 'google/gemini-3-flash-preview',  // Primary model
+  GEMINI_FLASH: 'google/gemini-2.5-flash-lite',     // Fallback (circuit breaker)
+  GEMINI_FLASH_IMAGE: 'google/gemini-2.5-flash-image' // Image generation
 } as const;
 ```
+
+### Model Specifications
+
+#### Gemini 3 Flash (Primary)
+| Specification | Value |
+|---------------|-------|
+| Model ID | `google/gemini-3-flash-preview` |
+| Context Window | 1M tokens (1,048,576) |
+| Max Output | 65K tokens (65,536) |
+| Input Price | $0.50 per million tokens |
+| Output Price | $3.00 per million tokens |
+| Reasoning | `reasoning.effort` levels (minimal, low, medium, high) |
+| Tool Calling | Full OpenAI-compatible support |
+| Media Resolution | `low`, `medium`, `high`, `ultra_high` |
+
+**Used for**: Artifacts, titles, summaries, query rewriting, chat (via tool-calling)
+
+#### Gemini 2.5 Flash Lite (Fallback)
+| Specification | Value |
+|---------------|-------|
+| Model ID | `google/gemini-2.5-flash-lite` |
+| Purpose | Circuit breaker fallback only |
+
+**Note**: Only used when primary model fails; not for regular operations.
+
+#### Gemini 2.5 Flash Image
+| Specification | Value |
+|---------------|-------|
+| Model ID | `google/gemini-2.5-flash-image` |
+| Purpose | Image generation |
 
 ### CRITICAL Rule
 
@@ -28,11 +57,11 @@ export const MODELS = {
 
 ```typescript
 // ❌ WRONG - CI/CD FAILS
-const model = "google/gemini-2.5-flash-lite";
+const model = "google/gemini-3-flash-preview";
 
 // ✅ CORRECT
 import { MODELS } from '../_shared/config.ts';
-const model = MODELS.GEMINI_FLASH;
+const model = MODELS.GEMINI_3_FLASH;
 ```
 
 ### Updating Models Intentionally
@@ -102,40 +131,59 @@ await updateSetting('landing_page_enabled', { enabled: true });
 
 **Location**: `supabase/functions/_shared/config.ts` and environment variables
 
-#### USE_REASONING_PROVIDER
+#### RATE_LIMIT_DISABLED
 
-**Purpose**: Enable semantic status generation during artifact creation
+**Purpose**: Disable all rate limiting checks for local development
 
-**Default**: `true`
+**Default**: `false`
 
-**Environment Variable**: `USE_REASONING_PROVIDER`
+**Environment Variable**: `RATE_LIMIT_DISABLED`
 
 **Behavior**:
-- `true` — Use ReasoningProvider (LLM-powered semantic status messages)
-- `false` — No status updates (shows "Thinking..." only)
+- `false` — Normal rate limiting enabled
+- `true` — Bypass all rate limits (development only)
+
+**WARNING**: Never enable in production!
 
 **Configuration**:
 ```bash
-# Disable (not recommended)
-supabase secrets set USE_REASONING_PROVIDER=false
+# Enable for local development only
+RATE_LIMIT_DISABLED=true supabase functions serve
 ```
 
-#### USE_GLM_THINKING_FOR_CHAT
+#### DEBUG_PREMADE_CARDS
 
-**Purpose**: Enable GLM-4.6 thinking mode for chat messages
+**Purpose**: Enable enhanced debug logging for premade card artifact generation
 
-**Default**: `true`
+**Default**: `false`
 
-**Environment Variable**: `USE_GLM_THINKING_FOR_CHAT`
+**Environment Variable**: `DEBUG_PREMADE_CARDS`
 
 **Behavior**:
-- `true` — GLM streams reasoning chunks (visible as status updates)
-- `false` — GLM responds directly without thinking mode
+- `false` — Normal logging
+- `true` — Detailed execution traces for troubleshooting premade cards
 
 **Configuration**:
 ```bash
-# Disable thinking mode
-supabase secrets set USE_GLM_THINKING_FOR_CHAT=false
+supabase secrets set DEBUG_PREMADE_CARDS=true
+```
+
+#### AUTO_FIX_ARTIFACTS
+
+**Purpose**: Automatically attempt an AI fix pass when artifact validation fails
+
+**Default**: `true`
+
+**Environment Variable**: `AUTO_FIX_ARTIFACTS`
+
+**Behavior**:
+- `true` — AI attempts to fix validation errors automatically
+- `false` — Validation errors returned immediately without fix attempt
+
+**Configuration**:
+```bash
+# Disable auto-fix (not recommended)
+supabase secrets set AUTO_FIX_ARTIFACTS=false
 ```
 
 #### TAVILY_ALWAYS_SEARCH
@@ -191,19 +239,17 @@ VITE_ENABLE_ANALYTICS=true
 
 ```bash
 # AI API Keys
-OPENROUTER_GEMINI_FLASH_KEY=sk-...     # Chat, titles, summaries
-OPENROUTER_GEMINI_IMAGE_KEY=sk-...     # Image generation
-GLM_API_KEY=...                        # Artifact generation (Z.ai)
+OPENROUTER_GEMINI_FLASH_KEY=sk-...     # All LLM operations (Gemini 3 Flash, Flash Lite)
+OPENROUTER_GEMINI_IMAGE_KEY=sk-...     # Image generation (Gemini Flash Image)
 TAVILY_API_KEY=tvly-...                # Web search
 
 # CORS Configuration
 ALLOWED_ORIGINS=https://your-site.com,https://*.preview-site.pages.dev
 
 # Feature Flags (optional)
-USE_REASONING_PROVIDER=true
-USE_GLM_THINKING_FOR_CHAT=true
 TAVILY_ALWAYS_SEARCH=false
 RATE_LIMIT_WARNINGS=true
+AUTO_FIX_ARTIFACTS=true
 ```
 
 **Setting Secrets (Production)**:
@@ -218,6 +264,29 @@ supabase secrets set --env-file supabase/functions/.env
 **Local Development**:
 - Secrets auto-loaded from `supabase/functions/.env`
 - Restart required after changes: `supabase stop && supabase start`
+
+### Gemini API Timeout Configuration
+
+**Location**: `supabase/functions/_shared/config.ts` (GEMINI_CONFIG)
+
+Controls timeout limits for Gemini API requests to prevent hanging connections:
+
+```bash
+# Non-streaming request timeout (default: 60s)
+GEMINI_REQUEST_TIMEOUT_MS=60000
+
+# Streaming request timeout (default: 4min for Gemini 3 Flash with thinking)
+GEMINI_STREAM_TIMEOUT_MS=240000
+
+# Timeout between stream chunks (default: 30s)
+GEMINI_CHUNK_TIMEOUT_MS=30000
+```
+
+**Example: Increase timeouts for complex artifacts**:
+```bash
+supabase secrets set GEMINI_REQUEST_TIMEOUT_MS=90000
+supabase secrets set GEMINI_STREAM_TIMEOUT_MS=300000
+```
 
 ### Rate Limiting Configuration
 
@@ -317,7 +386,8 @@ return new Response(body, {
 ## References
 
 - **Model Config**: `supabase/functions/_shared/config.ts`
+- **Gemini Client**: `supabase/functions/_shared/gemini-client.ts`
 - **Feature Flags**: `src/lib/featureFlags.ts`
 - **App Settings**: `src/hooks/useAppSettings.ts`
 - **CORS Config**: `supabase/functions/_shared/cors-config.ts`
-- **Rate Limits**: `supabase/functions/_shared/config.ts` (RATE_LIMIT_CONFIG)
+- **Rate Limits**: `supabase/functions/_shared/config.ts` (RATE_LIMITS)

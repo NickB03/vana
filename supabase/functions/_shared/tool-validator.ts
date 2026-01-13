@@ -165,7 +165,7 @@ function validateOnlyExpectedKeys(
 /**
  * Normalize artifact type from MIME format to short form
  *
- * GLM-4.7 sometimes outputs full MIME types like "application/vnd.ant.react"
+ * AI models sometimes output full MIME types like "application/vnd.ant.react"
  * instead of short forms like "react". This function normalizes both formats.
  */
 function normalizeArtifactType(type: string): string {
@@ -248,7 +248,7 @@ export class ToolParameterValidator {
       throw new ToolValidationError('type', 'Must be a string', 'TYPE_ERROR');
     }
 
-    // GLM-4.7 FIX: Normalize MIME types to short form
+    // NORMALIZATION: Normalize MIME types to short form
     // e.g., "application/vnd.ant.react" -> "react"
     const type = normalizeArtifactType(rawType);
 

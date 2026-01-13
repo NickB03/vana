@@ -3,7 +3,7 @@
  *
  * These tests verify that the template matching fix works correctly:
  * - Templates are matched in the chat handler
- * - Template guidance is passed to the GLM system prompt
+ * - Template guidance is passed to the LLM system prompt
  * - Complex artifacts succeed with template guidance
  * - Simple artifacts work with or without templates
  * - Fallback works when no template matches
@@ -19,7 +19,7 @@
  * - Supabase local instance running (supabase start)
  * - Edge functions deployed locally (supabase functions serve)
  *
- * Cost per run: ~$0.10 (includes multiple GLM API calls)
+ * Cost per run: ~$0.10 (includes multiple Gemini API calls)
  */
 
 import { assert, assertEquals, assertExists } from "https://deno.land/std@0.224.0/assert/mod.ts";
@@ -567,7 +567,7 @@ console.log("\n📋 Template Matching Integration Tests");
 console.log("======================================");
 console.log("Tests verify that template matching works correctly:");
 console.log("  - Templates match complex requests (dashboard, game, landing page)");
-console.log("  - Template guidance is passed to GLM system prompt");
+console.log("  - Template guidance is passed to LLM system prompt");
 console.log("  - Complex artifacts succeed with template guidance");
 console.log("  - Simple artifacts work with or without templates");
 console.log("  - Fallback works when no template matches");

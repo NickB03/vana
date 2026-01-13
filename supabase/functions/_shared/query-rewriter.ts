@@ -10,12 +10,12 @@
  * - Extracts core search intent
  * - Handles context from conversation
  *
- * Uses GLM-4.5-Air for fast, low-cost inference.
+ * Uses Gemini 3 Flash for fast, low-cost inference.
  *
  * @module query-rewriter
  */
 
-import { callGLM45AirWithRetry, extractTextFromGLM45Air } from './glm-client.ts';
+import { rewriteQuery } from './gemini-client.ts';
 import { getCurrentYear } from './config.ts';
 
 /**
@@ -49,7 +49,7 @@ export interface RewriteResult {
 /**
  * Rewrite user query for optimal search results
  *
- * Uses GLM-4.5-Air to transform natural language queries
+ * Uses Gemini 3 Flash to transform natural language queries
  * into search-optimized queries. Returns original query if rewriting fails.
  *
  * @param query - The original user query
@@ -86,63 +86,18 @@ export async function rewriteSearchQuery(
     };
   }
 
-  // Build the rewrite prompt
-  const currentYear = getCurrentYear();
-  const prompt = `Rewrite this for web search. Be concise. Output ONLY the search query, nothing else.
-
-User query: "${query}"
-${conversationContext ? `Context: ${conversationContext}` : ''}
-
-Rules:
-- Remove conversational filler (please, can you, I want to, tell me)
-- Keep specific names, dates, technical terms exactly as written
-- Add year (${currentYear}) only if asking about "latest", "current", or "recent"
-- Don't add year for historical or timeless questions
-- Maximum 10 words
-- No quotes or special formatting in output
-
-Search query:`;
-
   try {
-    const httpResponse = await callGLM45AirWithRetry(
-      [{ role: 'user', content: prompt }],
-      {
-        max_tokens: maxTokens,
-        temperature: 0, // Deterministic for consistent results
-        requestId
-      }
-    );
-
-    if (!httpResponse.ok) {
-      console.warn(
-        `[${requestId}] Query rewrite API error (${httpResponse.status}), using original`
-      );
-      // CRITICAL: Drain response body to prevent resource leak
-      // Unconsumed response bodies hold onto network resources and memory
-      try {
-        await httpResponse.text();
-      } catch {
-        // Ignore drain errors
-      }
-      return {
-        originalQuery: query,
-        rewrittenQuery: query,
-        latencyMs: Date.now() - startTime
-      };
-    }
-
-    const responseData = await httpResponse.json();
-    let rewrittenQuery = extractTextFromGLM45Air(responseData, requestId)?.trim() || query;
+    const rewrittenQuery = await rewriteQuery(query, conversationContext, requestId);
 
     // Clean up any artifacts from the LLM response
-    rewrittenQuery = cleanupRewrittenQuery(rewrittenQuery);
+    const cleanedQuery = cleanupRewrittenQuery(rewrittenQuery);
 
     const latencyMs = Date.now() - startTime;
 
     // Log the transformation
-    if (rewrittenQuery !== query) {
+    if (cleanedQuery !== query) {
       console.log(
-        `[${requestId}] 📝 Query rewritten in ${latencyMs}ms: "${query}" → "${rewrittenQuery}"`
+        `[${requestId}] 📝 Query rewritten in ${latencyMs}ms: "${query}" → "${cleanedQuery}"`
       );
     } else {
       console.log(
@@ -152,7 +107,7 @@ Search query:`;
 
     return {
       originalQuery: query,
-      rewrittenQuery,
+      rewrittenQuery: cleanedQuery,
       latencyMs
     };
   } catch (error) {

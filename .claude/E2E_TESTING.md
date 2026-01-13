@@ -17,7 +17,7 @@ We use a **three-tier testing strategy** to balance speed, coverage, and confide
 ├─────────────────────────────────────────────────────────────┤
 │  TIER 2: Integration Tests (Real APIs)          ~5 min     │
 │  ├─ Database: Hooks with real local Supabase               │
-│  ├─ API: Real calls to GLM, OpenRouter, Tavily             │
+│  ├─ API: Real calls to OpenRouter, Gemini, Tavily          │
 │  ├─ Endpoints: /chat, /generate-image, /generate-title     │
 │  ├─ Resilience: Circuit breaker, fallback behavior         │
 │  └─ Run on: Before merge, locally                           │
@@ -35,7 +35,7 @@ We use a **three-tier testing strategy** to balance speed, coverage, and confide
 |------|---------|
 | **Unit tests** | `npm run test` |
 | **Integration tests (all)** | `npm run test:integration` |
-| **API integration (GLM)** | `GLM_API_KEY=xxx deno test --allow-net --allow-env --allow-read _shared/__tests__/glm-integration.test.ts` |
+| **API integration (Gemini)** | `OPENROUTER_GEMINI_FLASH_KEY=xxx deno test --allow-net --allow-env --allow-read _shared/__tests__/gemini-integration.test.ts` |
 | **API integration (OpenRouter)** | `OPENROUTER_GEMINI_FLASH_KEY=xxx deno test --allow-net --allow-env --allow-read _shared/__tests__/openrouter-integration.test.ts` |
 | **E2E (local)** | `npm run test:e2e:headed` |
 | **E2E (GitHub)** | `gh workflow run e2e-manual.yml` |
@@ -79,7 +79,7 @@ Integration tests verify **real API behavior** against actual services - both lo
    - Run with Vitest
 
 2. **API Integration Tests** (`supabase/functions/_shared/__tests__/*-integration.test.ts`)
-   - Make real API calls to GLM, OpenRouter, Tavily
+   - Make real API calls to OpenRouter, Gemini, Tavily
    - Test Edge Function endpoints
    - Run with Deno
 
@@ -150,10 +150,10 @@ Located in `supabase/functions/_shared/__tests__/`, these tests make **real API 
 
 | Test File | What It Tests | Cost |
 |-----------|---------------|------|
-| `glm-integration.test.ts` | GLM-4.7 chat, tool calling, thinking mode | ~$0.02 |
+| `gemini-integration.test.ts` | Gemini 3 Flash chat, tool calling, reasoning | ~$0.02 |
 | `openrouter-integration.test.ts` | Gemini Flash chat, image generation | ~$0.05 |
 | `chat-endpoint-integration.test.ts` | /chat endpoint: streaming, tool calls, validation | ~$0.05 |
-| `circuit-breaker-integration.test.ts` | Fallback behavior, GLM → OpenRouter routing | ~$0.05 |
+| `circuit-breaker-integration.test.ts` | Fallback behavior, primary → backup routing | ~$0.05 |
 | `image-endpoint-integration.test.ts` | /generate-image endpoint validation | ~$0.05 |
 | `title-endpoint-integration.test.ts` | /generate-title endpoint, title quality | ~$0.005 |
 | `artifact-endpoint-integration.test.ts` | /generate-artifact endpoint, validation, metadata | ~$0.05 |
@@ -169,8 +169,8 @@ npm run test:integration
 # Run from supabase/functions directory with individual files
 cd supabase/functions
 
-# GLM API tests
-GLM_API_KEY=xxx deno test --allow-net --allow-env --allow-read _shared/__tests__/glm-integration.test.ts
+# Gemini API tests
+OPENROUTER_GEMINI_FLASH_KEY=xxx deno test --allow-net --allow-env --allow-read _shared/__tests__/gemini-integration.test.ts
 
 # OpenRouter tests
 OPENROUTER_GEMINI_FLASH_KEY=xxx OPENROUTER_GEMINI_IMAGE_KEY=xxx \
@@ -181,7 +181,7 @@ SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_ANON_KEY=xxx \
   deno test --allow-net --allow-env --allow-read _shared/__tests__/chat-endpoint-integration.test.ts
 
 # Circuit breaker tests
-GLM_API_KEY=xxx OPENROUTER_GEMINI_FLASH_KEY=xxx \
+OPENROUTER_GEMINI_FLASH_KEY=xxx \
   deno test --allow-net --allow-env --allow-read _shared/__tests__/circuit-breaker-integration.test.ts
 
 # Rate limiting RPC tests (requires local Supabase)
@@ -196,8 +196,7 @@ TAVILY_API_KEY=xxx deno test --allow-net --allow-env --allow-read _shared/__test
 
 | Variable | Used By | Purpose |
 |----------|---------|---------|
-| `GLM_API_KEY` | GLM, chat, title, artifact, circuit breaker | Z.ai API access |
-| `OPENROUTER_GEMINI_FLASH_KEY` | OpenRouter, chat, circuit breaker | Chat fallback |
+| `OPENROUTER_GEMINI_FLASH_KEY` | Gemini tests, chat, artifact, circuit breaker | OpenRouter API access for Gemini 3 Flash |
 | `OPENROUTER_GEMINI_IMAGE_KEY` | OpenRouter, image endpoint | Image generation |
 | `TAVILY_API_KEY` | Tavily tests | Web search |
 | `SUPABASE_URL` | Endpoint tests | Local: `http://127.0.0.1:54321` |

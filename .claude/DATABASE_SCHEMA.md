@@ -34,7 +34,7 @@ Stores individual messages within sessions.
 - `session_id` (UUID, FK → chat_sessions) — Parent session
 - `role` (TEXT) — `user` | `assistant` | `system`
 - `content` (TEXT) — Message text content
-- `reasoning` (TEXT, nullable) — GLM-4.6 thinking/reasoning output
+- `reasoning` (TEXT, nullable) — AI thinking/reasoning output (from models with reasoning capability)
 - `reasoning_steps` (JSONB, nullable) — Structured reasoning steps
 - `search_results` (JSONB, nullable) — Tavily web search results
 - `token_count` (INT) — Token count for context management
@@ -120,7 +120,7 @@ Tracks global API throttling (prevents abuse of external APIs).
 
 **Columns**:
 - `id` (UUID, PK) — Record identifier
-- `api_name` (TEXT, UNIQUE) — API name: `openrouter`, `glm`, `tavily`
+- `api_name` (TEXT, UNIQUE) — API name: `openrouter`, `gemini`, `tavily`
 - `request_count` (INT) — Requests in current window
 - `window_start` (TIMESTAMPTZ) — Window start timestamp
 - `last_request` (TIMESTAMPTZ) — Last request timestamp

@@ -44,19 +44,19 @@ Roadmap files document planned features, architectural decisions, and implementa
 
 ---
 
-#### GLM Reasoning UI Guide
-**File**: `claude_style_reasoning_guide/glm-reasoning-ui-guide.md`
+#### Gemini Reasoning UI Guide
+**File**: `claude_style_reasoning_guide/glm-reasoning-ui-guide.md` (legacy filename)
 
 **Status**: ✅ Implemented (2025-11-15)
 
 **Implementation**:
 - Frontend component: `src/components/ReasoningDisplay.tsx`
-- Backend support: `supabase/functions/chat/` with GLM-4.6 reasoning mode
+- Backend support: `supabase/functions/chat/` with Gemini 3 Flash thinking mode
 - Documentation: `docs/REASONING_UI_ARCHITECTURE.md`
 - Tests: `src/components/__tests__/ReasoningDisplay*.test.tsx`
 
 **Features**:
-- Real-time reasoning display with GLM-4.6 native thinking mode
+- Real-time reasoning display with Gemini 3 Flash native thinking mode
 - Semantic status updates via ReasoningProvider
 - Collapsible reasoning panels with shimmer effects
 - Tool execution status tracking
@@ -100,19 +100,17 @@ Roadmap files document planned features, architectural decisions, and implementa
 
 **Priority**: High
 
-**Summary**: Implement a comprehensive deep research experience using Z.ai MCP tools (Web Search Prime, Web Reader, Vision) and GLM-4.6 reasoning for multi-source research synthesis.
+**Summary**: Implement a comprehensive deep research experience using Tavily and OpenRouter APIs with Gemini 3 Flash thinking mode for multi-source research synthesis.
 
 **Implementation Status**: Demo pages exist (`src/pages/DeepResearchDemo*.tsx`) but no backend Edge Function or database schema.
 
 **Key Missing Components**:
 - Backend Edge Function: `supabase/functions/generate-research/` (does not exist)
 - Database schema: `research_data` column in `chat_messages` table
-- Z.ai MCP client: `supabase/functions/_shared/zai-mcp-client.ts`
-- Quota tracking: `zai_quota_tracking` table and RPC functions
+- Tavily client integration for web search and content extraction
+- Usage tracking for API calls
 
-**Cost Benefits**: Switching to Z.ai MCP saves ~$35/month at 500 research queries (4,000 free calls/month with Coding Max plan).
-
-**Version**: v2.0 (updated 2025-12-01 to use Z.ai MCP instead of Tavily as primary backend)
+**Version**: v3.0 (updated 2026-01-12 to use Gemini 3 Flash via OpenRouter + Tavily)
 
 ---
 
@@ -140,7 +138,7 @@ Roadmap files document planned features, architectural decisions, and implementa
 4. Test multiple artifacts in single session
 
 **Why Not Integrated**: Deprioritized for 11+ months in favor of:
-- GLM-4.6 migration (Q4 2024)
+- Gemini 3 Flash migration (Q4 2024 - Q1 2026)
 - Reasoning UI implementation (Nov 2024)
 - Unified tool-calling architecture (Dec 2024)
 
@@ -157,7 +155,7 @@ Roadmap files document planned features, architectural decisions, and implementa
 ├── mcp-ui-integration.md                  # 📋 Planned - MCP UI widget support
 ├── DEEP_RESEARCH_IMPLEMENTATION_PLAN.md   # 📋 Planned - Deep research feature
 └── claude_style_reasoning_guide/
-    └── glm-reasoning-ui-guide.md          # ✅ Implemented - Reasoning UI
+    └── glm-reasoning-ui-guide.md          # ✅ Implemented - Gemini Reasoning UI (legacy filename)
 ```
 
 ## How to Use This Documentation
@@ -231,5 +229,5 @@ For questions about roadmap items:
 
 ---
 
-**Last Updated**: 2025-12-28
+**Last Updated**: 2026-01-12
 **Maintained By**: Development team + AI assistants

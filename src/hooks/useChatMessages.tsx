@@ -334,16 +334,25 @@ export function useChatMessages(
       // Phase 1: Set isLoading after throttle completes
       setIsLoading(true);
 
-      // Get actual auth status from server (not client flags)
+      // Get session for access token (but trust isGuest prop as source of truth)
+      // Note: getSession() returns cached data and may be stale - don't use it to determine guest status
       const { data: { session } } = await supabase.auth.getSession();
-      const isAuthenticated = !!session;
+
+      // BUG FIX: Use the hook's isGuest prop (passed from Home.tsx) as source of truth
+      // Previously used !session which could be stale/invalid, causing auth mismatch errors
+      const isAuthenticated = !isGuest && !!session;
+
+      // Log auth state for debugging session mismatches
+      if (!isGuest && !session) {
+        console.warn("[useChatMessages] Auth mismatch: isGuest=false but no session found");
+      }
 
       // Save user message ONLY on first attempt (not on retries to avoid duplicates)
       if (retryCount === 0) {
         if (isAuthenticated && sessionId) {
           // Authenticated user: save to database
           await saveMessage("user", userMessage);
-        } else if (!isAuthenticated) {
+        } else if (isGuest) {
           // Guest user: save to local state only (sessionId may exist for artifact bundling)
           await saveMessage("user", userMessage);
         }
@@ -377,7 +386,9 @@ export function useChatMessages(
 
       console.log("🚀 [useChatMessages.streamChat] Sending request:", {
         toolChoice,
-        sessionId: isAuthenticated ? sessionId : 'guest'
+        sessionId: isAuthenticated ? sessionId : 'guest',
+        isGuest,
+        hasSession: !!session,
       });
 
       const response = await fetch(
@@ -386,7 +397,8 @@ export function useChatMessages(
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(session ? { Authorization: `Bearer ${session.access_token}` } : {})
+            // Only send auth header if authenticated (both isGuest=false AND session exists)
+            ...(isAuthenticated && session ? { Authorization: `Bearer ${session.access_token}` } : {})
           },
           body: JSON.stringify(requestBody),
           signal: abortSignal,
@@ -968,7 +980,12 @@ export function useChatMessages(
     } catch (error: unknown) {
       // Handle stream cancellation gracefully (don't show error toast)
       if (error instanceof Error && error.name === 'AbortError') {
-        console.log("Stream cancelled by user");
+        // Log with context to help distinguish legitimate cancellation from bugs
+        console.log("Stream cancelled", {
+          artifactDetected,
+          tokenCount,
+          hadContent: fullResponse.length > 0,
+        });
         // Phase 1: Clear isLoading on cancellation
         setIsLoading(false);
         onDone();

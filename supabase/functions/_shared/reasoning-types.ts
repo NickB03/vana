@@ -5,8 +5,8 @@
  * Frontend has independent Zod-based definitions in src/types/reasoning.ts
  *
  * Extracted from deprecated reasoning-generator.ts (Dec 2025) as part of
- * Phase 4 cleanup of the GLM Thinking Migration. The reasoning generation
- * logic is now handled by GLM-4.7's native thinking mode via streaming.
+ * the Gemini 3 Flash migration. The reasoning generation logic is now
+ * handled by Gemini 3 Flash's native thinking mode via streaming.
  *
  * ## Exports
  *

@@ -1,15 +1,15 @@
 /**
  * Tool Executor Service
  *
- * Executes tool calls from GLM-4.7 and returns formatted results.
+ * Executes tool calls from Gemini 3 Flash and returns formatted results.
  * Supports browser.search, generate_artifact, and generate_image tools.
  *
  * Key Features:
  * - Routes tool calls to appropriate handlers
  * - Wraps Tavily client for web search
- * - Integrates artifact generation via GLM-4.7
+ * - Integrates artifact generation via Gemini 3 Flash
  * - Integrates image generation via Gemini Flash Image
- * - Formats results in GLM's expected format
+ * - Formats results in Gemini's expected format
  * - Logs tool execution for analytics
  * - Handles errors gracefully without throwing
  *
@@ -36,7 +36,7 @@ import {
   logTavilyUsage,
   type TavilySearchResponse
 } from './tavily-client.ts';
-import type { ToolCall } from './glm-client.ts';
+import type { ToolCall } from './gemini-client.ts';
 import { rewriteSearchQuery } from './query-rewriter.ts';
 import { executeArtifactGeneration, isValidArtifactType, type GeneratableArtifactType } from './artifact-executor.ts';
 import { executeImageGeneration, isValidImageMode, type ImageMode } from './image-executor.ts';
@@ -98,7 +98,7 @@ export interface ToolExecutionResult {
     artifactType?: string;
     /** Title for the artifact */
     artifactTitle?: string;
-    /** Reasoning text from GLM */
+    /** Reasoning text from Gemini */
     artifactReasoning?: string;
     // Image generation fields
     /** Base64 data URL for immediate display */
@@ -136,12 +136,12 @@ function isSupportedTool(toolName: string): toolName is SupportedTool {
 }
 
 /**
- * Execute a tool call from GLM-4.7
+ * Execute a tool call from Gemini 3 Flash
  *
  * Routes the tool call to the appropriate handler based on tool name.
  * Logs execution for analytics and handles errors gracefully.
  *
- * @param toolCall - Parsed tool call from GLM response
+ * @param toolCall - Parsed tool call from Gemini response
  * @param context - Execution context with requestId, userId, etc.
  * @returns Tool execution result with success/failure status
  *
@@ -500,9 +500,9 @@ async function executeSearchTool(
 }
 
 /**
- * Execute generate_artifact tool using GLM-4.7
+ * Execute generate_artifact tool using Gemini 3 Flash
  *
- * Generates artifacts (React, HTML, SVG, etc.) using GLM-4.7 thinking mode.
+ * Generates artifacts (React, HTML, SVG, etc.) using Gemini 3 Flash thinking mode.
  * Includes validation and auto-fixing of generated code.
  *
  * @param type - Artifact type to generate
@@ -723,7 +723,7 @@ async function executeImageTool(
 }
 
 /**
- * Get the content string for a tool result to send back to GLM.
+ * Get the content string for a tool result to send back to Gemini.
  *
  * RFC-001: Tool Result Format Refactor
  *

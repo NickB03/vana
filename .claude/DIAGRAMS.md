@@ -18,7 +18,7 @@ The architecture is organized into five key visualization layers:
 
 ## 1. Input Processing Pipeline
 
-This diagram shows the complete flow from user input through three normalization/validation layers before reaching the GLM API.
+This diagram shows the complete flow from user input through three normalization/validation layers before reaching the AI API.
 
 ```mermaid
 flowchart TB
@@ -48,8 +48,8 @@ flowchart TB
         V1c["Object Freezing"]
     end
 
-    subgraph API["GLM API"]
-        GLM["GLM-4.7 Model"]
+    subgraph API["AI API"]
+        AIAPI["Gemini 3 Flash Model"]
     end
 
     UI --> N1
@@ -58,12 +58,12 @@ flowchart TB
     S1 --> S1a --> S1b --> S1c
     S1c --> V1
     V1 --> V1a --> V1b --> V1c
-    V1c --> GLM
+    V1c --> AIAPI
 
     style N1 fill:#e1f5fe
     style S1 fill:#fff3e0
     style V1 fill:#e8f5e9
-    style GLM fill:#c8e6c9
+    style AIAPI fill:#c8e6c9
 ```
 
 ### Flow Description
@@ -82,17 +82,17 @@ flowchart TB
   - JSON schema validation
   - Length limit enforcement
   - Object immutability (Object.freeze)
-- **API**: Cleaned input sent to GLM-4.7
+- **API**: Cleaned input sent to Gemini 3 Flash
 
 ---
 
 ## 2. Output Processing & Display
 
-This diagram shows how GLM responses branch into two distinct paths: artifact rendering or chat display.
+This diagram shows how AI responses branch into two distinct paths: artifact rendering or chat display.
 
 ```mermaid
 flowchart TB
-    subgraph GLM["GLM Response"]
+    subgraph AIRESP["AI Response"]
         R["Model Output<br/>(with type field)"]
     end
 
@@ -144,7 +144,7 @@ This diagram shows all 9 export patterns that `normalizeDefaultExportToApp()` ha
 
 ```mermaid
 flowchart LR
-    subgraph Input["GLM Generated Export Patterns"]
+    subgraph Input["AI Generated Export Patterns"]
         I1["export default function App()"]
         I2["export default function Calc()"]
         I3["export default function()"]

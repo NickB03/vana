@@ -299,7 +299,7 @@ supabase/.env.local
 
 2. **Verify Secrets Loaded**:
 ```bash
-docker exec supabase_edge_runtime_* printenv | grep -iE "OPENROUTER|GLM|TAVILY"
+docker exec supabase_edge_runtime_* printenv | grep -iE "OPENROUTER|GEMINI|TAVILY"
 ```
 
 3. **Restart Supabase**:
@@ -379,9 +379,10 @@ import debounce from 'lodash/debounce';
 # Check conversation_summary in chat_sessions table
 ```
 
-3. **Disable Thinking Mode** (not recommended):
+3. **Disable Reasoning Mode** (not recommended):
 ```bash
-supabase secrets set USE_GLM_THINKING_FOR_CHAT=false
+# Note: This feature flag may not exist in current configuration
+# Reasoning is enabled by default for Gemini 3 Flash
 ```
 
 ## Browser Compatibility

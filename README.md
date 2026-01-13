@@ -37,7 +37,7 @@
 
 ## 🌟 Overview
 
-**Vana** is an AI-powered development assistant that transforms natural language into production-ready code, interactive React components, diagrams, and more. Powered by multiple AI models including Google's Gemini 2.5 Flash Lite (via OpenRouter) and GLM-4.6 (via Z.ai), Vana provides a seamless chat interface where every conversation can generate interactive artifacts—fully functional components rendered in real-time alongside your chat.
+**Vana** is an AI-powered development assistant that transforms natural language into production-ready code, interactive React components, diagrams, and more. Powered by Google's Gemini 3 Flash (via OpenRouter) with 1M token context window, Vana provides a seamless chat interface where every conversation can generate interactive artifacts—fully functional components rendered in real-time alongside your chat.
 
 ### Why Vana?
 
@@ -67,7 +67,7 @@
 - 📊 **Execution Tracking**: Resource exhaustion protection (max 3 tools/request), timing metrics
 
 **December 15, 2025 - Hybrid ReasoningProvider (Issue #339):**
-- 🧠 **LLM+Fallback Hybrid**: GLM-4.5-Air provides semantic status summaries with template fallback
+- 🧠 **LLM+Fallback Hybrid**: Semantic status summaries with template fallback (Note: Removed in Gemini migration, Jan 2026)
 - 🔄 **Circuit Breaker**: 3 failures → 30s cooldown → auto-reset for resilient operation
 - ⏱️ **Anti-Flicker**: 1.5s cooldown between updates, 8s idle heartbeat
 - 📡 **Phase Detection**: analyzing → planning → implementing → styling → finalizing
@@ -78,17 +78,17 @@
 - 🎨 **Improved UX**: Hover cards display title, snippet, and relevance score
 
 **December 1, 2025 - SSE Streaming for Artifact Generation:**
-- 🎯 **Native GLM Streaming**: Single SSE endpoint replaces parallel dual-endpoint approach
+- 🎯 **Native Streaming**: Single SSE endpoint replaces parallel dual-endpoint approach
 - 🧠 **Claude-Style Reasoning Display**: Progressive ticker pill shows "Thinking..." → "Analyzing..." → status updates
 - 📡 **Real-time SSE Events**: `reasoning_chunk`, `content_chunk`, `artifact_complete` event types
 - 🐛 **Bug Fix**: Artifact code no longer streams to chat UI during generation
 - ⏱️ **Timer Persistence**: Elapsed reasoning time displays after generation completes
 - ⏹️ **Stop Button**: Cancel artifact generation mid-stream
 
-**November 28, 2025 - GLM-4.6 Reasoning Display:**
-- 🧠 **Real-time Reasoning Streaming**: GLM-4.6 reasoning displays immediately via SSE streaming
+**November 28, 2025 - AI Model Reasoning Display:**
+- 🧠 **Real-time Reasoning Streaming**: Model reasoning displays immediately via SSE streaming
 - 🐛 **Duplicate Key Fix**: Resolved React warning for duplicate message keys during streaming
-- 📦 **New GLM Client**: Added `glm-client.ts` with streaming support and `glm-reasoning-parser.ts`
+- 📦 **Unified Client**: Streaming support with structured reasoning parsing
 
 **November 27, 2025 - Smart Context Management & Bug Fixes:**
 - 🧠 **Smart Context Management**: Token-aware context windowing for optimized AI responses
@@ -99,9 +99,9 @@
 - 🔄 **State Machine Architecture**: Conversation state tracking in `_shared/state-machine.ts`
 - ⚡ **1,048 Tests**: Comprehensive test coverage across 90+ test files
 
-**November 28, 2025 - GLM-4.6 Migration:**
-- 🚀 **Enhanced Artifact Generation**: Migrated to GLM-4.6 (Z.ai) with advanced reasoning capabilities
-- ⚡ **Improved Reliability**: Eliminated timeout issues with high-performance model
+**November 28, 2025 - AI Model Enhancement:**
+- 🚀 **Enhanced Artifact Generation**: Advanced reasoning capabilities for artifact creation
+- ⚡ **Improved Reliability**: Eliminated timeout issues with high-performance models
 - 🔄 **Enhanced UI**: Gemini-style sidebar auto-collapse with manual toggle control
 - 🎯 **Better Navigation**: Fixed artifact card Open button and image generation card behaviors
 
@@ -242,8 +242,7 @@ Experience Vana in action: [View Demo](https://llm-chat-site.pages.dev)
 | Service | Purpose |
 |---------|---------|
 | **Supabase** | PostgreSQL database, authentication, edge functions |
-| **OpenRouter** | Chat, titles, summaries, fast reasoning (Gemini 2.5 Flash Lite), image generation (Gemini 2.5 Flash Image) - single API key for each service |
-| **Z.ai** | Artifact generation & fixing (GLM-4.6 with thinking mode) - single API key |
+| **OpenRouter** | All AI operations (Gemini 3 Flash for artifacts/titles/summaries/query rewriting, Gemini Flash Lite for chat fallback, Gemini Flash Image for images) |
 
 ### Key Libraries
 
@@ -285,19 +284,18 @@ graph TB
     end
 
     subgraph "Edge Functions"
-        L[chat - Gemini Flash Lite]
-        LA[generate-artifact - GLM-4.6]
+        L[chat - Gemini 3 Flash]
+        LA[generate-artifact - Gemini 3 Flash]
         LB[bundle-artifact]
-        LC[generate-artifact-fix - GLM-4.6]
-        M[generate-title - Gemini Flash Lite]
+        LC[generate-artifact-fix - Gemini 3 Flash]
+        M[generate-title - Gemini 3 Flash]
         N[generate-image - Gemini Flash Image]
-        O[summarize-conversation - Gemini Flash Lite]
+        O[summarize-conversation - Gemini 3 Flash]
         P[cache-manager]
     end
 
     subgraph "External Services"
-        Q[OpenRouter<br/>Gemini Flash Lite & Flash Image]
-        QA[Z.ai API<br/>GLM-4.6]
+        Q[OpenRouter<br/>Gemini 3 Flash, Flash Lite, Flash Image]
     end
 
     A --> B
@@ -323,9 +321,11 @@ graph TB
     J --> P
 
     L --> Q
-    LA --> QA
-    LC --> QA
+    LA --> Q
+    LC --> Q
+    M --> Q
     N --> Q
+    O --> Q
     L --> H
     M --> H
     O --> H
@@ -426,7 +426,7 @@ graph LR
 
     C --> F[Stream Chat API]
     F --> G[Edge Function: chat]
-    G --> H[Google Gemini 2.5]
+    G --> H[Google Gemini 3 Flash]
     H --> I[Stream Response]
 
     I --> J[Parse Artifacts]
@@ -584,12 +584,12 @@ llm-chat-site/
 │   └── main.tsx            # Entry point
 ├── supabase/
 │   ├── functions/          # Edge Functions
-│   │   ├── chat/           # Main chat streaming (Gemini 2.5 Flash Lite via OpenRouter)
-│   │   ├── generate-artifact/ # Artifact generation (GLM-4.6 via Z.ai)
-│   │   ├── generate-artifact-fix/ # Artifact error fixing (GLM-4.6 via Z.ai)
-│   │   ├── generate-title/ # Auto-generate session titles (Gemini 2.5 Flash Lite via OpenRouter)
+│   │   ├── chat/           # Main chat streaming (Gemini 3 Flash via OpenRouter)
+│   │   ├── generate-artifact/ # Artifact generation (Gemini 3 Flash via OpenRouter)
+│   │   ├── generate-artifact-fix/ # Artifact error fixing (Gemini 3 Flash via OpenRouter)
+│   │   ├── generate-title/ # Auto-generate session titles (Gemini 3 Flash via OpenRouter)
 │   │   ├── generate-image/ # AI image generation (Gemini Flash Image via OpenRouter)
-│   │   ├── summarize-conversation/ # Context summarization (Gemini 2.5 Flash Lite via OpenRouter)
+│   │   ├── summarize-conversation/ # Context summarization (Gemini 3 Flash via OpenRouter)
 │   │   ├── cache-manager/  # Redis cache management
 │   │   ├── admin-analytics/ # Usage analytics dashboard
 │   ├── migrations/         # Database migrations
@@ -628,7 +628,7 @@ llm-chat-site/
 | `supabase/functions/chat/index.ts` | Main chat API endpoint | ~400 |
 | `supabase/functions/chat/handlers/tool-calling-chat.ts` | Tool-calling orchestrator | ~600 |
 | `supabase/functions/_shared/tool-executor.ts` | Tool execution engine | 903 |
-| `supabase/functions/_shared/glm-client.ts` | GLM-4.6 client with streaming | 1,188 |
+| `supabase/functions/_shared/gemini-client.ts` | Gemini 3 Flash client with streaming | 1,188 |
 | **State Management** | | |
 | `src/contexts/MultiArtifactContext.tsx` | Multi-artifact state provider | 312 |
 | `src/hooks/use-multi-artifact.ts` | Multi-artifact context hook | ~50 |
@@ -877,7 +877,7 @@ sequenceDiagram
     participant C as ChatInterface
     participant H as useChatMessages Hook
     participant E as Edge Function
-    participant AI as Google Gemini 2.5
+    participant AI as Google Gemini 3 Flash
 
     U->>C: Send Message
     C->>H: streamChat()
@@ -1101,11 +1101,8 @@ supabase functions deploy cache-manager
 
 ```bash
 # OpenRouter API Keys
-supabase secrets set OPENROUTER_GEMINI_FLASH_KEY=sk-or-v1-...  # Gemini 2.5 Flash Lite (chat, titles, summaries)
-supabase secrets set OPENROUTER_GEMINI_IMAGE_KEY=sk-or-v1-...  # Gemini 2.5 Flash Image (image generation)
-
-# Z.ai API Key (for artifact generation with GLM-4.6)
-supabase secrets set GLM_API_KEY=...  # GLM-4.6 via Z.ai
+supabase secrets set OPENROUTER_GEMINI_FLASH_KEY=sk-or-v1-...  # Gemini 3 Flash (artifacts, titles, summaries, query rewriting, chat fallback)
+supabase secrets set OPENROUTER_GEMINI_IMAGE_KEY=sk-or-v1-...  # Gemini Flash Image (image generation)
 
 # Optional: Set production CORS origins (comma-separated)
 supabase secrets set ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
@@ -1113,17 +1110,16 @@ supabase secrets set ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdoma
 
 **Get API Keys:**
 - **OpenRouter:** [https://openrouter.ai/keys](https://openrouter.ai/keys)
-- **Z.ai (GLM):** [https://open.bigmodel.cn](https://open.bigmodel.cn)
 
 **Current Architecture:**
-- **Chat/Summaries/Titles/Fast Reasoning**: OpenRouter Gemini 2.5 Flash Lite (single API key)
-- **Artifact Generation**: GLM-4.6 via Z.ai API (single API key, thinking mode enabled)
-- **Artifact Error Fixing**: GLM-4.6 via Z.ai API (deep reasoning for debugging)
-- **Images**: OpenRouter Gemini 2.5 Flash Image (single API key)
+- **Artifacts/Titles/Summaries/Query Rewriting**: OpenRouter Gemini 3 Flash (1M context window, thinking mode with effort levels)
+- **Artifact Error Fixing**: Gemini 3 Flash (deep reasoning for debugging)
+- **Chat Fallback**: OpenRouter Gemini Flash Lite (circuit breaker fallback only)
+- **Images**: OpenRouter Gemini Flash Image
 
 **Key Management:**
-- All services use single API keys for simplicity and reliability
-- No key rotation required - OpenRouter and Z.ai provide unlimited capacity
+- All AI operations use OpenRouter for simplicity and reliability
+- No key rotation required - OpenRouter provides unlimited capacity
 
 This architecture provides excellent reliability and eliminates timeout issues for artifact generation.
 

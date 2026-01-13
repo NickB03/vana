@@ -2,7 +2,7 @@
  * Tests for normalizePromptForApi()
  *
  * Function Purpose:
- * - Normalize user input for API transmission to GLM models
+ * - Normalize user input for API transmission to LLM models
  * - NOT for HTML rendering - preserves all visible characters
  * - Security is handled separately by: PromptInjectionDefense, ReactMarkdown, iframe sandbox
  */

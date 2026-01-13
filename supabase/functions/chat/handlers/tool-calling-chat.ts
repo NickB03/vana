@@ -1,12 +1,12 @@
 /**
  * Tool-Calling Chat Handler
  *
- * Orchestrates GLM-4.7 tool-calling for chat with web search integration.
+ * Orchestrates Gemini 3 Flash tool-calling for chat with web search integration.
  *
  * Flow:
- * 1. Send user message to GLM with tools enabled
- * 2. Stream GLM response, detecting native tool_calls in response
- * 3. If tool call detected: execute tool, inject results, continue GLM response
+ * 1. Send user message to Gemini with tools enabled
+ * 2. Stream Gemini response, detecting native tool_calls in response
+ * 3. If tool call detected: execute tool, inject results, continue Gemini response
  * 4. Stream final response to client with SSE events for tool execution
  *
  * SSE Events Emitted:
@@ -16,27 +16,25 @@
  * - content_chunk: Regular content chunks (OpenAI-compatible format)
  *
  * Architecture:
- * - Uses getGLMToolDefinitions() from tool-definitions.ts for tool catalog
- * - Uses processGLMStream for native tool call detection
+ * - Uses getGeminiToolDefinitions() from tool-definitions.ts for tool catalog
+ * - Uses processGeminiStream for native tool call detection
  * - Uses executeTool from tool-executor.ts for tool execution
- * - Uses callGLMWithToolResult for continuation with tool results
+ * - Uses callGeminiWithToolResult for continuation with tool results
  * - Maintains OpenAI-compatible SSE format for frontend compatibility
  */
 
 import {
-  callGLMWithRetry,
-  processGLMStream,
-  callGLMWithToolResult,
-  type ToolCall,
-  type NativeToolCall,
-} from '../../_shared/glm-client.ts';
+  callGeminiWithRetry,
+  processGeminiStream,
+  callGeminiWithToolResult,
+} from '../../_shared/gemini-client.ts';
 import {
   executeTool,
   getToolResultContent,
   type ToolContext,
 } from '../../_shared/tool-executor.ts';
 import {
-  getGLMToolDefinitions,
+  getGeminiToolDefinitions,
 } from '../../_shared/tool-definitions.ts';
 import { ToolParameterValidator } from '../../_shared/tool-validator.ts';
 import { ToolRateLimiter } from '../../_shared/tool-rate-limiter.ts';
@@ -46,12 +44,24 @@ import { SafeErrorHandler } from '../../_shared/safe-error-handler.ts';
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.75.1';
 import { getSystemInstruction } from '../../_shared/system-prompt-inline.ts';
 import { getMatchingTemplate } from '../../_shared/artifact-rules/template-matcher.ts';
-import {
-  createReasoningProvider,
-  createNoOpReasoningProvider,
-  type IReasoningProvider
-} from '../../_shared/reasoning-provider.ts';
-import { FEATURE_FLAGS, USE_REASONING_PROVIDER, DEFAULT_MODEL_PARAMS } from '../../_shared/config.ts';
+import { FEATURE_FLAGS, DEFAULT_MODEL_PARAMS } from '../../_shared/config.ts';
+
+// Tool call types - define inline for tool call handling
+// Used for processing native tool calls from Gemini API
+interface ToolCall {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+}
+
+interface NativeToolCall {
+  id: string;
+  type: 'function';
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
 
 /**
  * Helper function to log detailed debug information for premade card failures
@@ -129,13 +139,13 @@ function parseToolArguments(
 }
 
 /**
- * Handle tool-calling chat with GLM-4.7
+ * Handle tool-calling chat with Gemini 3 Flash
  *
  * Orchestrates the full tool-calling flow:
- * 1. Call GLM with tools enabled (browser.search)
+ * 1. Call Gemini with tools enabled (browser.search, generate_artifact, generate_image)
  * 2. Stream response while detecting tool calls
  * 3. Execute tools when detected
- * 4. Continue GLM response with tool results
+ * 4. Continue Gemini response with tool results
  * 5. Stream final response to client
  *
  * @param params - Handler parameters
@@ -207,13 +217,13 @@ export async function handleToolCallingChat(
   const logPrefix = `[${requestId}]`;
 
   console.log(
-    `${logPrefix} 🔧 Starting unified tool-calling chat with GLM-4.7 ` +
+    `${logPrefix} 🔧 Starting unified tool-calling chat with Gemini 3 Flash ` +
     `(modeHint=${modeHint}, toolChoice=${toolChoice})`
   );
 
   // Get all tool definitions for unified handler
-  // Spread into mutable array to satisfy GLM client's type requirements
-  const allTools = [...getGLMToolDefinitions()];
+  // Spread into mutable array to satisfy Gemini client's type requirements
+  const allTools = [...getGeminiToolDefinitions()];
   const toolNames = allTools.map(t => t.name).join(', ');
   console.log(`${logPrefix} 🔧 Tools available: ${toolNames}`);
 
@@ -273,8 +283,16 @@ export async function handleToolCallingChat(
     return sanitizedModeHint;
   };
 
-  const buildConversationMessages = (systemPrompt: string) => ([
-    { role: 'system', content: systemPrompt },
+  const convertToolChoice = (currentToolChoice: ToolChoice): "auto" | { type: "function"; function: { name: string } } => {
+    if (currentToolChoice === 'auto') return 'auto';
+    return {
+      type: 'function',
+      function: { name: currentToolChoice }
+    };
+  };
+
+  const buildConversationMessages = (systemPrompt: string): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> => ([
+    { role: 'system' as const, content: systemPrompt },
     ...messages
       .filter(m => {
         // Keep all user messages
@@ -290,7 +308,7 @@ export async function handleToolCallingChat(
         return true;
       })
       .map(m => ({
-        role: m.role as 'user' | 'assistant',
+        role: (m.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
         content: m.content
       }))
   ]);
@@ -354,25 +372,7 @@ export async function handleToolCallingChat(
         });
       }
 
-      // Initialize ReasoningProvider for semantic status generation
-      let reasoningProvider: IReasoningProvider;
-
-      if (USE_REASONING_PROVIDER) {
-        reasoningProvider = createReasoningProvider(requestId, async (event) => {
-          // Emit reasoning status via SSE
-          sendEvent({
-            type: event.type,
-            content: event.message,
-            phase: event.phase,
-            source: event.metadata.source,
-            timestamp: event.metadata.timestamp,
-          });
-        });
-        await reasoningProvider.start();
-        console.log(`${logPrefix} ReasoningProvider started`);
-      } else {
-        reasoningProvider = createNoOpReasoningProvider();
-      }
+      // ReasoningProvider removed - no longer generating LLM-based status messages
 
       const toolRateLimiter = FEATURE_FLAGS.RATE_LIMIT_DISABLED
         ? null
@@ -434,7 +434,7 @@ export async function handleToolCallingChat(
 
           const sanitizedToolCall: ToolCall = {
             ...toolCallForExecution,
-            arguments: validatedArgs as Record<string, unknown>,
+            arguments: validatedArgs as unknown as Record<string, unknown>,
           };
 
           logPremadeDebug(requestId, 'Executing tool via executionTracker', {
@@ -505,11 +505,10 @@ export async function handleToolCallingChat(
           const conversationMessages = buildConversationMessages(systemPrompt);
 
           // ========================================
-          // STEP 1: Call GLM with native function calling
+          // STEP 1: Call Gemini with native function calling
           // ========================================
-          const glmResponse = await callGLMWithRetry(
-            systemPrompt,
-            userPrompt,
+          const geminiResponse = await callGeminiWithRetry(
+            conversationMessages,
             {
               requestId,
               userId: userId || undefined,
@@ -518,19 +517,17 @@ export async function handleToolCallingChat(
               stream: true,
               enableThinking: true, // Reasoning enabled for better tool selection
               tools: allTools,
-              toolChoice: currentToolChoice,
+              toolChoice: convertToolChoice(currentToolChoice),
               temperature: 0.7,
               max_tokens: DEFAULT_MODEL_PARAMS.CHAT_MAX_TOKENS,
-              // BUG FIX: Pass full conversation history for multi-turn context
-              conversationMessages,
             }
           );
 
-          if (!glmResponse.ok) {
-            const errorText = await glmResponse.text();
-            console.error(`${logPrefix} ❌ GLM API error:`, glmResponse.status, errorText);
-            sendSafeError(new Error('GLM API error'), {
-              status: glmResponse.status,
+          if (!geminiResponse.ok) {
+            const errorText = await geminiResponse.text();
+            console.error(`${logPrefix} ❌ Gemini API error:`, geminiResponse.status, errorText);
+            sendSafeError(new Error('Gemini API error'), {
+              status: geminiResponse.status,
               errorText,
             });
             return;
@@ -546,81 +543,59 @@ export async function handleToolCallingChat(
           let fullReasoningAccumulated = '';
 
           // Process stream with native tool call detection
-          // GLM now uses OpenAI-compatible tool_calls in response instead of XML
-          const streamResult = await processGLMStream(
-            glmResponse,
-            {
-              onReasoningChunk: async (chunk: string) => {
-                // Accumulate reasoning text for context
-                fullReasoningAccumulated += chunk;
+          // Gemini uses OpenAI-compatible tool_calls in response
+          for await (const chunk of processGeminiStream(geminiResponse, requestId)) {
+            if (chunk.type === 'content') {
+              // Forward content directly to client
+              sendContentChunk(chunk.data);
+            } else if (chunk.type === 'reasoning') {
+              // Accumulate reasoning text for context
+              fullReasoningAccumulated += chunk.data;
 
-                // FIX (2025-12-22): Forward reasoning chunks to frontend for live display
-                sendEvent({
-                  type: 'reasoning_chunk',
-                  chunk: chunk,
-                });
-
-                // Process through ReasoningProvider for semantic status generation
-                await reasoningProvider.processReasoningChunk(chunk);
-              },
-
-              onContentChunk: async (chunk: string) => {
-                // With native tool calling, content is clean (no XML to strip)
-                // Forward directly to client
-                sendContentChunk(chunk);
-              },
-
-              onNativeToolCall: async (toolCall: NativeToolCall) => {
+              // Forward reasoning chunks to frontend for live display
+              sendEvent({
+                type: 'reasoning_chunk',
+                chunk: chunk.data,
+              });
+            } else if (chunk.type === 'tool_call') {
+              // Tool calls detected
+              const toolCalls = chunk.data;
+              if (toolCalls && toolCalls.length > 0) {
                 nativeToolCallDetected = true;
-                detectedNativeToolCall = toolCall;
-
-                // Parse arguments from JSON string
-                const parsedArgs = parseToolArguments(
-                  toolCall.function.arguments,
-                  logPrefix
-                );
+                detectedNativeToolCall = {
+                  id: toolCalls[0].id,
+                  type: 'function',
+                  function: {
+                    name: toolCalls[0].name,
+                    arguments: JSON.stringify(toolCalls[0].arguments)
+                  }
+                };
 
                 console.log(
-                  `${logPrefix} 🔧 Native tool call detected: ${toolCall.function.name} with args:`,
-                  parsedArgs
+                  `${logPrefix} 🔧 Native tool call detected: ${toolCalls[0].name} with args:`,
+                  toolCalls[0].arguments
                 );
 
                 // Notify client that tool call started
                 sendEvent({
                   type: 'tool_call_start',
-                  toolName: toolCall.function.name,
-                  arguments: parsedArgs,
+                  toolName: toolCalls[0].name,
+                  arguments: toolCalls[0].arguments,
                   timestamp: Date.now(),
                 });
-              },
-
-              onComplete: async (fullReasoning: string, fullContent: string) => {
-                console.log(
-                  `${logPrefix} ✅ GLM stream complete: reasoning=${fullReasoning.length}chars, content=${fullContent.length}chars`
-                );
-              },
-
-              onError: async (error: Error) => {
-                console.error(`${logPrefix} ❌ Stream error:`, error);
-                sendSafeError(error, { stage: 'glm-stream' });
-              },
-            },
-            requestId
-          );
-
-          // Check if we got native tool calls from the stream result
-          if (streamResult.nativeToolCalls && streamResult.nativeToolCalls.length > 0 && !nativeToolCallDetected) {
-            // TODO: Support multiple tool calls in parallel (currently only first is processed)
-            if (streamResult.nativeToolCalls.length > 1) {
-              console.warn(`${logPrefix} ⚠️ Multiple tool calls detected (${streamResult.nativeToolCalls.length}), only processing first`);
+              }
+            } else if (chunk.type === 'error') {
+              console.error(`${logPrefix} ❌ Stream error:`, chunk.data);
+              sendSafeError(chunk.data, { stage: 'gemini-stream' });
             }
-            // Tool calls were detected in stream processing
-            nativeToolCallDetected = true;
-            detectedNativeToolCall = streamResult.nativeToolCalls[0];
           }
 
+          console.log(
+            `${logPrefix} ✅ Gemini stream complete: reasoning=${fullReasoningAccumulated.length}chars`
+          );
+
           // NOTE: With native function calling, retry logic is no longer needed
-          // GLM properly completes tool calls via the API instead of XML in content
+          // Gemini properly completes tool calls via the API
 
           // ========================================
           // STEP 3: Execute tool if detected (using native tool call)
@@ -754,7 +729,7 @@ export async function handleToolCallingChat(
             }
 
             // ========================================
-            // STEP 4: Continue GLM with tool results
+            // STEP 4: Continue Gemini with tool results
             // ========================================
             if (toolResult.success) {
               // RFC-001: Use getToolResultContent which handles ALL tool types correctly
@@ -762,57 +737,31 @@ export async function handleToolCallingChat(
               const resultContent = getToolResultContent(toolResult);
 
               console.log(
-                `${logPrefix} 🔧 Continuing GLM with tool result: ${toolResult.toolName} (${resultContent.length} chars)`
+                `${logPrefix} 🔧 Continuing Gemini with tool result: ${toolResult.toolName} (${resultContent.length} chars)`
               );
 
               // Track continuation reasoning for context
               let continuationReasoningText = '';
 
               // BUG FIX (2025-12-20): Pass the assistant's tool_calls to the continuation
-              // This ensures GLM has the proper conversation context and returns a real response
+              // This ensures Gemini has the proper conversation context and returns a real response
               // instead of a blank response
-              const previousAssistantToolCalls = streamResult.nativeToolCalls || [];
+              const previousAssistantToolCalls: ToolCall[] = detectedNativeToolCall ? [{
+                id: detectedNativeToolCall.id,
+                name: detectedNativeToolCall.function.name,
+                arguments: JSON.parse(detectedNativeToolCall.function.arguments)
+              }] : [];
 
-              // BUG FIX (2025-12-21): Wrap GLM continuation in a timeout as safety measure
-              // If continuation hangs for 90s (beyond GLM's internal 60s chunk timeout),
-              // we still ensure the stream completes rather than hanging indefinitely.
-              const GLM_CONTINUATION_TIMEOUT_MS = 90000; // 90 seconds
+              // BUG FIX (2025-12-21): Wrap Gemini continuation in a timeout as safety measure
+              // If continuation hangs for 90s, ensure the stream completes rather than hanging indefinitely.
+              const GEMINI_CONTINUATION_TIMEOUT_MS = 90000; // 90 seconds
 
-              const continuationPromise = callGLMWithToolResult(
+              const continuationResponse = await callGeminiWithToolResult(
                 systemPrompt,
                 userPrompt,
                 toolCallForExecution,
                 resultContent,  // FIX: Now works for all tool types!
-                {
-                  onReasoningChunk: async (chunk: string) => {
-                    // Accumulate reasoning for context
-                    continuationReasoningText += chunk;
-
-                    // FIX (2025-12-22): Forward continuation reasoning chunks to frontend
-                    sendEvent({
-                      type: 'reasoning_chunk',
-                      chunk: chunk,
-                    });
-
-                    // Process through ReasoningProvider for semantic status generation
-                    await reasoningProvider.processReasoningChunk(chunk);
-                  },
-
-                  onContentChunk: async (chunk: string) => {
-                    sendContentChunk(chunk);
-                  },
-
-                  onComplete: async (fullReasoning: string, fullContent: string) => {
-                    console.log(
-                      `${logPrefix} ✅ GLM continuation complete: content=${fullContent.length}chars`
-                    );
-                  },
-
-                  onError: async (error: Error) => {
-                    console.error(`${logPrefix} ❌ Continuation error:`, error);
-                    sendSafeError(error, { stage: 'glm-continuation' });
-                  },
-                },
+                previousAssistantToolCalls,  // BUG FIX: Pass tool_calls for context!
                 {
                   requestId,
                   userId: userId || undefined,
@@ -821,22 +770,40 @@ export async function handleToolCallingChat(
                   stream: true,
                   enableThinking: true,
                   tools: allTools,
-                  toolChoice: currentToolChoice,
-                  // BUG FIX: Pass full conversation history for tool continuation context
-                  conversationMessages,
-                },
-                previousAssistantToolCalls  // BUG FIX: Pass tool_calls for context!
+                  toolChoice: convertToolChoice(currentToolChoice),
+                }
               );
 
               const timeoutPromise = new Promise<never>((_, reject) => {
-                setTimeout(() => reject(new Error('GLM continuation timeout')), GLM_CONTINUATION_TIMEOUT_MS);
+                setTimeout(() => reject(new Error('Gemini continuation timeout')), GEMINI_CONTINUATION_TIMEOUT_MS);
               });
 
+              const continuationStreamPromise = (async () => {
+                // Process continuation stream
+                for await (const chunk of processGeminiStream(continuationResponse, requestId)) {
+                  if (chunk.type === 'content') {
+                    sendContentChunk(chunk.data);
+                  } else if (chunk.type === 'reasoning') {
+                    continuationReasoningText += chunk.data;
+                    sendEvent({
+                      type: 'reasoning_chunk',
+                      chunk: chunk.data,
+                    });
+                  } else if (chunk.type === 'error') {
+                    console.error(`${logPrefix} ❌ Continuation stream error:`, chunk.data);
+                    sendSafeError(chunk.data, { stage: 'gemini-continuation' });
+                  }
+                }
+                console.log(
+                  `${logPrefix} ✅ Gemini continuation complete`
+                );
+              })();
+
               try {
-                await Promise.race([continuationPromise, timeoutPromise]);
+                await Promise.race([continuationStreamPromise, timeoutPromise]);
               } catch (continuationError) {
                 // Log the error but continue to [DONE] - don't let continuation issues block stream completion
-                console.error(`${logPrefix} ❌ GLM continuation failed/timeout:`, continuationError);
+                console.error(`${logPrefix} ❌ Gemini continuation failed/timeout:`, continuationError);
                 sendContentChunk('\n\n(The response was interrupted. Please try again if incomplete.)');
               }
 
@@ -886,13 +853,6 @@ export async function handleToolCallingChat(
         // STEP 5: Finalize stream
         // ========================================
 
-        // Cleanup ReasoningProvider
-        if (reasoningProvider) {
-          await reasoningProvider.finalize('response');
-          reasoningProvider.destroy();
-          console.log(`${logPrefix} ReasoningProvider finalized`);
-        }
-
         executionTracker.destroy();
 
         console.log(`${logPrefix} ✅ Tool-calling chat stream complete`);
@@ -906,12 +866,6 @@ export async function handleToolCallingChat(
           error instanceof Error ? error.message : String(error);
 
         console.error(`${logPrefix} ❌ Tool-calling chat error:`, errorMessage);
-
-        // Cleanup ReasoningProvider on error
-        if (reasoningProvider) {
-          reasoningProvider.destroy();
-          console.log(`${logPrefix} ReasoningProvider destroyed (error path)`);
-        }
 
         executionTracker.destroy();
 

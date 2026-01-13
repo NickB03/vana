@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { callGLM45AirWithRetry, extractTextFromGLM45Air, type GLM45AirMessage } from "../_shared/glm-client.ts";
+import { generateSummary } from "../_shared/gemini-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 import { ErrorResponseBuilder } from "../_shared/error-handler.ts";
 
@@ -105,37 +105,13 @@ serve(async (req) => {
       .map(m => `${m.role}: ${m.content}`)
       .join("\n\n");
 
-    const systemContent = session.conversation_summary
-      ? `Previous summary: ${session.conversation_summary}\n\nCreate a concise summary that builds on the previous summary and incorporates the new conversation below. Focus on key topics, decisions, and important information.`
-      : "Create a concise summary of the following conversation. Focus on key topics, decisions, and important information.";
+    const conversationHistory = session.conversation_summary
+      ? `Previous summary: ${session.conversation_summary}\n\nNew messages:\n${conversationText}`
+      : conversationText;
 
-    console.log("Calling GLM-4.5-Air for summarization...");
+    console.log("Calling Gemini 2.5 Flash Lite for summarization...");
 
-    const messages: GLM45AirMessage[] = [
-      {
-        role: "system",
-        content: systemContent
-      },
-      {
-        role: "user",
-        content: conversationText
-      }
-    ];
-
-    const response = await callGLM45AirWithRetry(messages, {
-      temperature: 0.7,
-      max_tokens: 1000,
-      requestId
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("GLM-4.5-Air error:", response.status, errorText);
-      throw new Error("Failed to generate summary");
-    }
-
-    const data = await response.json();
-    const summary = extractTextFromGLM45Air(data);
+    const summary = await generateSummary(conversationHistory, requestId);
 
     if (!summary) {
       throw new Error("No summary generated");

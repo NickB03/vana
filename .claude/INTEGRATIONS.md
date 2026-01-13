@@ -106,12 +106,12 @@ Before queries reach Tavily, they pass through an LLM-powered optimization layer
 
 **How It Works**:
 1. **Skip Detection**: Checks if query is already optimized (short, URL, code block)
-2. **LLM Rewriting**: Sends conversational queries to GLM-4.5-Air
+2. **LLM Rewriting**: Sends conversational queries to Gemini 3 Flash
 3. **Temporal Enhancement**: Adds current year for time-sensitive queries
 4. **Cleanup**: Removes LLM artifacts (quotes, prefixes)
 5. **Fallback**: Returns original query on failure
 
-**Model**: GLM-4.5-Air via Z.ai API
+**Model**: Gemini 3 Flash via OpenRouter API
 - Temperature: 0 (deterministic)
 - Max tokens: 50 (concise output)
 - Latency: ~300ms

@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { callGLM45AirWithRetry, extractTextFromGLM45Air, type GLM45AirMessage } from "../_shared/glm-client.ts";
+import { generateTitle } from "../_shared/gemini-client.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-config.ts";
 import { createLogger } from "../_shared/logger.ts";
 import { ErrorResponseBuilder } from "../_shared/error-handler.ts";
@@ -25,7 +25,7 @@ serve(async (req) => {
     logger.request(req.method, '/generate-title');
 
     requestBody = await req.json();
-    const { message } = requestBody;
+    const { message } = requestBody || {};
 
     logger.debug('request_received', {
       messageType: typeof message,
@@ -86,41 +86,15 @@ serve(async (req) => {
       messagePreview: message.substring(0, 50)
     });
 
-    const messages: GLM45AirMessage[] = [
-      {
-        role: "system",
-        content: "You are a title generator. Generate a short, concise title (max 6 words) for the conversation based on the user's first message. Return ONLY the title, nothing else."
-      },
-      {
-        role: "user",
-        content: message
-      }
-    ];
-
     const apiStartTime = Date.now();
-    userLogger.aiCall('z.ai', 'glm-4.5-air', {
-      messageCount: messages.length,
+    userLogger.aiCall('openrouter', 'gemini-2.5-flash-lite', {
       temperature: 0.7,
       maxTokens: 50
     });
 
-    const response = await callGLM45AirWithRetry(messages, {
-      temperature: 0.7,
-      max_tokens: 50,
-      requestId
-    });
+    const title = await generateTitle(message, requestId);
 
     const apiDuration = Date.now() - apiStartTime;
-
-    if (!response.ok) {
-      userLogger.externalApi('z.ai', '/chat/completions', response.status, apiDuration, {
-        success: false
-      });
-      return await errors.apiError(response, "GLM-4.5-Air title generation");
-    }
-
-    const data = await response.json();
-    const title = extractTextFromGLM45Air(data).trim() || "New Chat";
 
     userLogger.info('title_generated', {
       title,
@@ -139,7 +113,7 @@ serve(async (req) => {
   } catch (e) {
     logger.error('title_generation_failed', e as Error, {
       hasMessage: !!requestBody?.message,
-      errorName: e?.name
+      errorName: (e as Error)?.name
     });
 
     const totalDuration = Date.now() - startTime;

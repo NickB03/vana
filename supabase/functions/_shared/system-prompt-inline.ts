@@ -20,12 +20,12 @@ interface SystemPromptParams {
   fullArtifactContext?: string;
   currentDate?: string;
   alwaysSearchEnabled?: boolean;
-  useToolCalling?: boolean;  // Enable GLM native tool-calling
+  useToolCalling?: boolean;  // Enable native tool-calling
   matchedTemplate?: string;  // Injected template guidance from template-matcher.ts
 }
 
 /**
- * Tool definitions for GLM-4.7 native tool-calling
+ * Tool definitions for native tool-calling
  * These replace the automatic search injection when tool-calling is enabled
  */
 export const TOOL_CALLING_SECTION = `

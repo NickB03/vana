@@ -12,7 +12,8 @@ export const BUNDLING_GUIDANCE = `
 
 [HIGH - AFFECTS USER EXPERIENCE]
 
-Artifacts support TWO rendering methods with different performance characteristics:
+Artifacts support TWO rendering methods with different performance characteristics.
+See core-restrictions.ts for the tiered import strategy (Tier 1: pre-loaded CDN, Tier 2: npm packages).
 
 ### ⚡ Client-Side Sucrase (Default - Use for 90% of artifacts)
 

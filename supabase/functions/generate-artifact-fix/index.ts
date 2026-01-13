@@ -1,12 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { callGLMWithRetryTracking, extractTextAndReasoningFromGLM, extractGLMTokenUsage, calculateGLMCost, logGLMUsage, handleGLMError } from "../_shared/glm-client.ts";
+import { generateArtifact, extractText, extractReasoning, extractTokenUsage, calculateCost, logGeminiUsage } from "../_shared/gemini-client.ts";
 import { getCorsHeaders } from "../_shared/cors-config.ts";
 import { MODELS, RATE_LIMITS, DEFAULT_MODEL_PARAMS } from "../_shared/config.ts";
 import { getRelevantPatterns, getTypeSpecificGuidance } from "../_shared/artifact-rules/error-patterns.ts";
 
 serve(async (req) => {
-  const corsHeaders = getCorsHeaders(req);
+  const origin = req.headers.get("Origin");
+  const corsHeaders = getCorsHeaders(origin);
 
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -88,7 +89,7 @@ serve(async (req) => {
     // ============================================================================
     // Parallelize API throttle and guest/user rate limit checks for faster response
     // This prevents:
-    // 1. API abuse (unlimited expensive GLM-4.7 requests)
+    // 1. API abuse (unlimited expensive Gemini 3 Flash requests)
     // 2. Service degradation (overwhelming external APIs)
     // 3. Rate-limit bypass via fake auth tokens (now fixed!)
     // ============================================================================
@@ -96,9 +97,9 @@ serve(async (req) => {
       { data: apiThrottleResult, error: apiThrottleError },
       rateLimitResult
     ] = await Promise.all([
-      // Check GLM-4.7 API throttle (10 RPM for artifact generation - stricter than chat)
+      // Check Gemini 3 Flash API throttle (10 RPM for artifact generation - stricter than chat)
       serviceClient.rpc("check_api_throttle", {
-        p_api_name: "glm-4.7",
+        p_api_name: "gemini-3-flash",
         p_max_requests: RATE_LIMITS.ARTIFACT.API_THROTTLE.MAX_REQUESTS,
         p_window_seconds: RATE_LIMITS.ARTIFACT.API_THROTTLE.WINDOW_SECONDS
       }),
@@ -151,7 +152,7 @@ serve(async (req) => {
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-ID": requestId } }
       );
     } else if (apiThrottleResult && !apiThrottleResult.allowed) {
-      console.warn(`[${requestId}] 🚨 API throttle exceeded for GLM-4.7 artifact fix`);
+      console.warn(`[${requestId}] 🚨 API throttle exceeded for Gemini 3 Flash artifact fix`);
       return new Response(
         JSON.stringify({
           error: "API rate limit exceeded. Please try again in a moment.",
@@ -271,7 +272,7 @@ ${typeGuidance}
     // Token reduction: ~650 tokens → ~200 tokens (68% reduction)
     // Quality improvement: Focused fixes, less over-engineering
 
-    // Prepare user prompt for GLM-4.7 (thinking mode enabled)
+    // Prepare user prompt for Gemini 3 Flash (thinking mode enabled)
     const userPrompt = `Fix this ${type} artifact that has the following error:
 
 ERROR: ${errorMessage}
@@ -281,25 +282,94 @@ ${content}
 
 Return ONLY the fixed code without any explanations or markdown formatting.`;
 
-    // Call GLM-4.7 via Z.ai API with retry logic and tracking
-    console.log(`[${requestId}] 🚀 Routing to GLM-4.7 for artifact fix (reasoning model)`);
-    const { response, retryCount } = await callGLMWithRetryTracking(
+    // Call Gemini 3 Flash via OpenRouter with retry logic and tracking
+    console.log(`[${requestId}] 🚀 Routing to Gemini 3 Flash for artifact fix (reasoning model)`);
+    const response = await generateArtifact(
       systemPrompt,
       userPrompt,
       {
-        temperature: 0.6, // Lower temperature for more deterministic fixes (GLM scale)
-        max_tokens: DEFAULT_MODEL_PARAMS.ARTIFACT_MAX_TOKENS,
+        enableThinking: true, // Enable reasoning for better debugging
+        thinkingLevel: 'medium',
         requestId,
-        enableThinking: true // Enable reasoning for better debugging
       }
     );
 
     if (!response.ok) {
-      return await handleGLMError(response, requestId, corsHeaders);
+      const error = await response.text();
+      console.error(`[${requestId}] Gemini API error (${response.status}):`, error);
+      return new Response(
+        JSON.stringify({
+          error: `Gemini API error: ${response.status}`,
+          requestId,
+          retryable: true
+        }),
+        {
+          status: response.status,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+            "X-Request-ID": requestId
+          }
+        }
+      );
     }
 
-    const data = await response.json();
-    const { text: extractedCode, reasoning: glmReasoning } = extractTextAndReasoningFromGLM(data, requestId);
+    // Process the streaming response to collect all data
+    let extractedCode = '';
+    let geminiReasoning: string | null = null;
+    let tokenUsageData: { inputTokens: number; outputTokens: number; totalTokens: number } | null = null;
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('Response body is null');
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.trim() || line.startsWith(':')) continue;
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+
+              // Extract content
+              const content = extractText(parsed, requestId);
+              if (content) {
+                extractedCode += content;
+              }
+
+              // Extract reasoning
+              const reasoning = extractReasoning(parsed, requestId);
+              if (reasoning && !geminiReasoning) {
+                geminiReasoning = reasoning;
+              }
+
+              // Extract token usage
+              if (parsed?.usage) {
+                tokenUsageData = extractTokenUsage(parsed);
+              }
+            } catch (e) {
+              // Ignore parse errors
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
 
     if (!extractedCode) {
       throw new Error("No fixed code returned from AI");
@@ -312,8 +382,8 @@ Return ONLY the fixed code without any explanations or markdown formatting.`;
     const fixedCode = extractedCode.replace(/^```[\w]*\n/, '').replace(/\n```$/, '').trim();
 
     // Extract token usage for cost tracking
-    const tokenUsage = extractGLMTokenUsage(data);
-    const estimatedCost = calculateGLMCost(tokenUsage.inputTokens, tokenUsage.outputTokens);
+    const tokenUsage = tokenUsageData || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+    const estimatedCost = calculateCost(tokenUsage.inputTokens, tokenUsage.outputTokens);
 
     console.log(`[${requestId}] Generated fix, original length: ${content.length}, fixed length: ${fixedCode.length}`);
     console.log(`[${requestId}] 💰 Token usage:`, {
@@ -325,12 +395,10 @@ Return ONLY the fixed code without any explanations or markdown formatting.`;
 
     // Log usage to database for admin dashboard (fire-and-forget, non-blocking)
     const latencyMs = Date.now() - startTime;
-    logGLMUsage({
+    logGeminiUsage({
       requestId,
       functionName: 'generate-artifact-fix',
-      provider: 'z.ai',
-      model: MODELS.GLM_4_7,
-      userId: isGuest ? null : user!.id,
+      userId: isGuest ? undefined : user!.id,
       isGuest,
       inputTokens: tokenUsage.inputTokens,
       outputTokens: tokenUsage.outputTokens,
@@ -338,7 +406,7 @@ Return ONLY the fixed code without any explanations or markdown formatting.`;
       latencyMs,
       statusCode: 200,
       estimatedCost,
-      retryCount,
+      retryCount: 0,
       promptPreview: errorMessage.substring(0, 200),
       responseLength: fixedCode.length
     }).catch(err => console.error(`[${requestId}] Failed to log usage:`, err));
@@ -346,7 +414,7 @@ Return ONLY the fixed code without any explanations or markdown formatting.`;
 
     return new Response(JSON.stringify({
       fixedCode,
-      reasoning: glmReasoning,
+      reasoning: geminiReasoning,
       reasoningSteps: reasoningSteps
     }), {
       headers: {

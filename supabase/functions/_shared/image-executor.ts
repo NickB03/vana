@@ -396,11 +396,17 @@ function buildMessages(
 function extractImageFromResponse(data: unknown, requestId: string): string | null {
   // Type-safe access to nested properties
   const dataObj = data as Record<string, unknown> | null;
-  const choices = dataObj?.choices as Array<{ message?: Record<string, unknown> }> | undefined;
-  const message = choices?.[0]?.message;
+  const choices = dataObj?.choices as Array<{
+    message?: Record<string, unknown>;
+    delta?: Record<string, unknown>;
+  }> | undefined;
+
+  // Check both streaming (delta) and non-streaming (message) formats
+  // Note: Image generation is typically non-streaming, but we check both for consistency
+  const message = choices?.[0]?.delta || choices?.[0]?.message;
 
   if (!message) {
-    console.error(`[${requestId}] ❌ No message in API response`);
+    console.error(`[${requestId}] ❌ No message or delta in API response`);
     return null;
   }
 

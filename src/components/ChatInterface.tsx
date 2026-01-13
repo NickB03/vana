@@ -408,7 +408,10 @@ export function ChatInterface({
     setImageMode(false);
     setArtifactMode(false);
     // Note: initializedSessionRef is managed separately in the initialPrompt effect
-  }, [sessionId, cancelStream, onArtifactChange]);
+    // onArtifactChange intentionally excluded - this effect should only run on session change,
+    // not when the callback reference changes (which would cause unwanted stream cancellations)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, cancelStream]);
 
   // Timer effect: Start timer when streaming begins, capture final time when streaming ends
   useEffect(() => {

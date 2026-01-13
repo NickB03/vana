@@ -1,6 +1,6 @@
 # API Reference - Vana Edge Functions
 
-**Last Updated**: 2025-12-27
+**Last Updated**: 2026-01-12
 **Base URL**: `https://vznhbocnuykdmjvujaka.supabase.co/functions/v1`
 
 ---
@@ -167,7 +167,7 @@ The chat API uses **ReasoningProvider** to generate semantic status updates duri
 
 **Event Types**:
 
-1. **Reasoning Status Event** (LLM-powered semantic status):
+1. **Reasoning Status Event** (Gemini thinking mode):
 ```json
 {
   "type": "reasoning_status",
@@ -175,31 +175,31 @@ The chat API uses **ReasoningProvider** to generate semantic status updates duri
   "phase": "planning",
   "metadata": {
     "requestId": "req_123",
-    "timestamp": "2025-12-22T10:30:00Z",
+    "timestamp": "2026-01-12T10:30:00Z",
     "source": "llm",
-    "provider": "z.ai",
-    "model": "glm-4.5-air",
+    "provider": "openrouter",
+    "model": "google/gemini-3-flash-preview",
     "circuitBreakerOpen": false
   }
 }
 ```
-- **Source**: ReasoningProvider with GLM-4.5-Air semantic summarization
-- **Frequency**: Periodic updates during reasoning (respects `minUpdateIntervalMs`)
+- **Source**: Gemini 3 Flash with native thinking mode
+- **Frequency**: Periodic updates during reasoning
 - **Reliability**: Circuit breaker fallback to phase templates on LLM failure
 - **Phases**: `analyzing`, `planning`, `implementing`, `refining`, `completing`
 - **Metadata Fields**:
   - `requestId`: Unique identifier for request correlation
   - `timestamp`: ISO 8601 timestamp
   - `source`: `llm` (LLM-generated) or `template` (fallback)
-  - `provider`: AI provider used (e.g., `z.ai`)
+  - `provider`: AI provider used (e.g., `openrouter`)
   - `model`: Specific model used for status generation
   - `circuitBreakerOpen`: Circuit breaker state for monitoring
 
 **Status Update Flow**:
 ```
-Chat Request → GLM-4.6 Reasoning Stream
+Chat Request → Gemini 3 Flash (with thinking mode)
     ↓
-ReasoningProvider (GLM-4.5-Air)
+Reasoning extracted from thinking tokens
     ↓
 reasoning_status events → Client UI
 ```
@@ -398,10 +398,13 @@ while (true) {
 
 #### AI Model
 
-- **Model**: Gemini 2.5 Flash Lite (via OpenRouter)
+- **Primary Model**: Gemini 3 Flash Preview (`google/gemini-3-flash-preview`) via OpenRouter
+- **Fallback Model**: Gemini 2.5 Flash Lite (`google/gemini-2.5-flash-lite`) via OpenRouter
 - **Provider**: OpenRouter
 - **Streaming**: Yes
-- **Max Tokens**: 8,000
+- **Max Tokens**: 16,000
+- **Thinking Mode**: Enabled (provides reasoning content via `reasoning.effort`)
+- **Context Window**: 1M tokens (1,048,576)
 
 ---
 
@@ -467,11 +470,12 @@ interface ArtifactResponse {
 
 #### AI Model
 
-- **Model**: GLM-4.6 (via Z.ai API)
-- **Provider**: Z.ai (zhipu.ai)
+- **Model**: Gemini 3 Flash Preview (`google/gemini-3-flash-preview`) via OpenRouter
+- **Provider**: OpenRouter
 - **Streaming**: Yes (with reasoning)
-- **Max Tokens**: 8,000
-- **Thinking Mode**: Enabled (provides reasoning content)
+- **Max Tokens**: 16,000
+- **Thinking Mode**: Enabled (provides reasoning content via `reasoning.effort`)
+- **Context Window**: 1M tokens (1,048,576)
 
 #### Supported Artifact Types
 
@@ -554,10 +558,11 @@ Fix errors in generated artifacts automatically.
 
 #### AI Model
 
-- **Model**: GLM-4.6 (via Z.ai API)
-- **Provider**: Z.ai (zhipu.ai)
-- **Max Tokens**: 8,000
+- **Model**: Gemini 3 Flash Preview (`google/gemini-3-flash-preview`) via OpenRouter
+- **Provider**: OpenRouter
+- **Max Tokens**: 16,000
 - **Thinking Mode**: Enabled for deep reasoning during debugging
+- **Context Window**: 1M tokens (1,048,576)
 
 ---
 
@@ -596,7 +601,7 @@ Generate AI images using Google's Gemini Flash Image model.
 
 #### AI Model
 
-- **Model**: Gemini 2.5 Flash Image
+- **Model**: Gemini 2.5 Flash Image (`google/gemini-2.5-flash-image`) via OpenRouter
 - **Provider**: OpenRouter
 - **API Key**: Single `OPENROUTER_GEMINI_IMAGE_KEY` (no rotation)
   - Note: All AI operations (chat, artifacts, images) use single OpenRouter keys for simplicity
@@ -635,7 +640,7 @@ Auto-generate conversational titles from chat history.
 
 #### AI Model
 
-- **Model**: Gemini 2.5 Flash Lite (via OpenRouter)
+- **Model**: Gemini 3 Flash Preview (`google/gemini-3-flash-preview`) via OpenRouter
 - **Provider**: OpenRouter
 - **Max Tokens**: 50
 
@@ -675,7 +680,7 @@ Summarize long conversations for context management.
 
 #### AI Model
 
-- **Model**: Gemini 2.5 Flash Lite (via OpenRouter)
+- **Model**: Gemini 3 Flash Preview (`google/gemini-3-flash-preview`) via OpenRouter
 - **Provider**: OpenRouter
 - **Max Tokens**: 1,000
 
@@ -715,7 +720,7 @@ Retrieve usage analytics and metrics (admin-only).
   ],
   "breakdownByModel": [
     {
-      "model": "gemini-2.5-flash-lite",
+      "model": "google/gemini-3-flash-preview",
       "requests": 850,
       "cost": 2.34,
       "tokens": 125000
@@ -879,6 +884,16 @@ if (remaining && parseInt(remaining) < 5) {
 
 ## Changelog
 
+### 2026-01-12
+- **Gemini 3 Flash Migration**
+  - Migrated all AI operations from GLM to Gemini 3 Flash (`google/gemini-3-flash-preview`)
+  - Primary model for chat, artifacts, titles, summaries, and query rewriting
+  - Fallback model: Gemini 2.5 Flash Lite (`google/gemini-2.5-flash-lite`)
+  - Image generation: Gemini 2.5 Flash Image (`google/gemini-2.5-flash-image`)
+  - Native thinking mode via `reasoning.effort` parameter
+  - 1M context window (1,048,576 tokens)
+  - Max output tokens increased to 16,000
+
 ### 2025-12-22
 - **Dual SSE Event System Documentation**
   - Comprehensive documentation of parallel status update mechanisms
@@ -898,15 +913,13 @@ if (remaining && parseInt(remaining) < 5) {
 - **Issue #339**: Hybrid ReasoningProvider with LLM+fallback
   - Added `reasoning_status` SSE events with phase detection
   - Circuit breaker pattern for resilient operation
-  - GLM-4.5-Air model for semantic status summarization
 
 ### 2025-12-14
 - **Issue #335**: Inline citation badges for web search results
   - Added source attribution in `web_search` events
 
 ### 2025-11-28
-- Migrated artifact generation from Kimi K2 to GLM-4.6 (Z.ai API)
-- GLM reasoning parser for structured reasoning output
+- Migrated artifact generation from Kimi K2 to GLM-4.6 (Z.ai API) [now deprecated, see 2026-01-12]
 
 ### 2025-11-27
 - Added smart context management with token-aware windowing
@@ -914,7 +927,7 @@ if (remaining && parseInt(remaining) < 5) {
 - React instance unification via import map shims
 
 ### 2025-11-17
-- Migrated artifact generation to Kimi K2-Thinking (now deprecated)
+- Migrated artifact generation to Kimi K2-Thinking [now deprecated]
 - Added `includeReasoning` parameter to chat endpoint
 - Updated rate limits: 20 requests/5h for guests
 

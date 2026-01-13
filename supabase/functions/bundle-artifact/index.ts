@@ -4,7 +4,6 @@ import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors-conf
 import { ErrorResponseBuilder } from "../_shared/error-handler.ts";
 import { RATE_LIMITS } from "../_shared/config.ts";
 import { uploadWithRetry } from "../_shared/storage-retry.ts";
-import { fixOrphanedMethodChains } from "../_shared/artifact-validator.ts";
 import { getPrebuiltBundles } from "../_shared/prebuilt-bundles.ts";
 import { getWorkingCdnUrl } from "../_shared/cdn-fallback.ts";
 import {
@@ -252,10 +251,6 @@ function transformBundleCode(
   // FIX: Fix unquoted package names
   transformedCode = transformedCode.replace(/from\s+React\s*;/g, "from 'react';");
   transformedCode = transformedCode.replace(/from\s+ReactDOM\s*;/g, "from 'react-dom';");
-
-  // FIX: Repair orphaned method chains
-  const chainFixResult = fixOrphanedMethodChains(transformedCode, requestId);
-  transformedCode = chainFixResult.fixed;
 
   // Replace npm package imports with esm.sh CDN URLs
   for (const [pkg, version] of Object.entries(dependencies)) {

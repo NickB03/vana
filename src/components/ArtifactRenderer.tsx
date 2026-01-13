@@ -1157,6 +1157,7 @@ export const ArtifactRenderer = memo(({
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind CDN: Intentional for artifact sandboxing. Console warning is expected. -->
   <script src="https://cdn.tailwindcss.com"></script>
   ${injectedCDNs}
   ${generateCompleteIframeStyles()}
@@ -1518,6 +1519,7 @@ ${artifact.content}
   <script type="importmap">
     ${IMPORT_MAP_JSON}
   </script>
+  <!-- Tailwind CDN: Intentional for artifact sandboxing. Console warning is expected. -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
   <script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>

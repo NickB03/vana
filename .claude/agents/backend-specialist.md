@@ -58,7 +58,7 @@ supabase/functions/
 │   ├── gemini-client.ts  # Google AI Studio client
 │   └── openrouter-client.ts # OpenRouter client
 ├── chat/                 # Chat streaming (MODELS.GEMINI_FLASH)
-├── generate-artifact/    # Code generation (MODELS.GLM_4_6)
+├── generate-artifact/    # Code generation (MODELS.GEMINI_3_FLASH)
 ├── generate-image/       # Image generation (MODELS.GEMINI_FLASH_IMAGE)
 ├── generate-title/       # Title generation (MODELS.GEMINI_FLASH)
 ├── summarize-conversation/ # Summaries (MODELS.GEMINI_FLASH)

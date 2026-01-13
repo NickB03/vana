@@ -41,36 +41,7 @@ export const FEATURE_FLAGS = {
   AUTO_FIX_ARTIFACTS: Deno.env.get('AUTO_FIX_ARTIFACTS') !== 'false',
 } as const;
 
-// =============================================================================
-// ReasoningProvider Feature Flag
-// =============================================================================
-
-/**
- * Enable ReasoningProvider for semantic status generation during artifact creation.
- * When enabled, uses GLM-4.5-Air to summarize reasoning into human-friendly status messages.
- * When disabled, status updates are disabled entirely (shows "Thinking..." only).
- *
- * Set via environment variable: USE_REASONING_PROVIDER=true
- * Default: true (enabled)
- *
- * ## Rollback Procedure
- *
- * **Option 1: Disable status updates (immediate)**
- * ```bash
- * supabase secrets set USE_REASONING_PROVIDER=false
- * ```
- * ⚠️ This disables status updates entirely, NOT restore the old [STATUS:] marker system.
- *
- * **Option 2: Full rollback (requires deployment)**
- * ```bash
- * git revert <commit-hash>  # Revert the ReasoningProvider activation commit
- * ./scripts/deploy-simple.sh prod
- * ```
- * This restores the full [STATUS:] marker parsing system.
- *
- * @see .claude/plans/reasoning-provider-activation.md for implementation details
- */
-export const USE_REASONING_PROVIDER = Deno.env.get('USE_REASONING_PROVIDER') !== 'false';
+// Status generation removed - no longer needed with Gemini 3 Flash migration
 
 /**
  * Safely parse an integer from environment variable with validation
@@ -162,7 +133,7 @@ export const RATE_LIMITS = {
     GEMINI_RPM: getEnvInt('RATE_LIMIT_API_THROTTLE_RPM', 15, 1),
     WINDOW_SECONDS: getEnvInt('RATE_LIMIT_API_THROTTLE_WINDOW', 60, 1)
   },
-  /** Artifact generation rate limits (more restrictive due to expensive GLM-4.7 model) */
+  /** Artifact generation rate limits (more restrictive due to expensive Gemini 3 Flash model) */
   ARTIFACT: {
     /** API throttle for artifact generation (stricter than chat) */
     API_THROTTLE: {
@@ -275,23 +246,20 @@ export const API_ENDPOINTS = {
  * Model configurations
  */
 export const MODELS = {
-  /** Gemini 2.5 Flash Lite for chat/summaries/titles */
+  /** Gemini 2.5 Flash Lite for titles, summaries, and chat fallback (fast, cheap) */
   GEMINI_FLASH: 'google/gemini-2.5-flash-lite',
-  /** GLM-4.7 for artifact generation and fixing - via Z.ai Coding API
+  /** Gemini 3 Flash for chat, artifacts, and query rewrite (reasoning capabilities)
    *
-   * Upgraded from GLM-4.6 (2025-12-28):
-   * - 200K context window (up from 128K)
-   * - 128K max output tokens (up from 8K)
-   * - +5.8% on SWE-bench, +12.9% on SWE-bench Multilingual
-   * - Enhanced tool calling (+12.2% on τ²-Bench)
-   * - Streaming tool calls via tool_stream
-   * - Preserved thinking across turns
+   * Specifications:
+   * - 1M context window (1,048,576 tokens)
+   * - 65K max output tokens (65,536)
+   * - Reasoning mode: reasoning.effort levels (minimal, low, medium, high)
+   * - Full OpenAI-compatible tool calling
+   * - Pricing: $0.50/M input, $3/M output
    *
-   * @see https://docs.z.ai/guides/llm/glm-4.7
+   * @see https://openrouter.ai/google/gemini-3-flash-preview
    */
-  GLM_4_7: 'zhipu/glm-4.7',
-  /** GLM-4.5-Air for ultra-fast reasoning summarization (sidecar commentator) - via Z.ai API */
-  GLM_4_5_AIR: 'zhipu/glm-4.5-air',
+  GEMINI_3_FLASH: 'google/gemini-3-flash-preview',
   /** Gemini Flash Image for image generation */
   GEMINI_FLASH_IMAGE: 'google/gemini-2.5-flash-image'
 } as const;
@@ -299,7 +267,7 @@ export const MODELS = {
 /**
  * Default AI model parameters
  *
- * GLM-4.7 supports up to 128K output tokens, increased from GLM-4.6's 8K limit.
+ * Gemini 3 Flash supports up to 65K output tokens (65,536) with 1M context window.
  * Using generous limits for maximum quality on this demo site.
  */
 export const DEFAULT_MODEL_PARAMS = {
@@ -436,26 +404,26 @@ export function getSearchRecencyPhrase(offset: number = 1): string {
 }
 
 /**
- * GLM API timeout configuration
- * Controls timeout limits for GLM API requests to prevent hanging connections
+ * Gemini API timeout configuration
+ * Controls timeout limits for Gemini API requests to prevent hanging connections
  *
  * Environment Variables:
- * - GLM_REQUEST_TIMEOUT_MS: Non-streaming request timeout (default: 60000 / 60s)
- * - GLM_STREAM_TIMEOUT_MS: Streaming request timeout (default: 120000 / 2min)
- * - GLM_CHUNK_TIMEOUT_MS: Timeout between stream chunks (default: 30000 / 30s)
+ * - GEMINI_REQUEST_TIMEOUT_MS: Non-streaming request timeout (default: 60000 / 60s)
+ * - GEMINI_STREAM_TIMEOUT_MS: Streaming request timeout (default: 120000 / 2min)
+ * - GEMINI_CHUNK_TIMEOUT_MS: Timeout between stream chunks (default: 30000 / 30s)
  *
  * @example
  * ```bash
- * # Increase timeout for complex artifact generation (GLM-4.7 with thinking mode)
- * supabase secrets set GLM_REQUEST_TIMEOUT_MS=90000
- * supabase secrets set GLM_STREAM_TIMEOUT_MS=240000
+ * # Increase timeout for complex artifact generation (Gemini 3 Flash with thinking mode)
+ * supabase secrets set GEMINI_REQUEST_TIMEOUT_MS=90000
+ * supabase secrets set GEMINI_STREAM_TIMEOUT_MS=240000
  * ```
  */
-export const GLM_CONFIG = {
-  /** Timeout for non-streaming GLM requests in milliseconds (default: 60s) */
-  REQUEST_TIMEOUT_MS: getEnvInt('GLM_REQUEST_TIMEOUT_MS', 60000, 1),
-  /** Timeout for streaming GLM requests in milliseconds (default: 4min for GLM-4.7) */
-  STREAM_TIMEOUT_MS: getEnvInt('GLM_STREAM_TIMEOUT_MS', 240000, 1),
+export const GEMINI_CONFIG = {
+  /** Timeout for non-streaming Gemini requests in milliseconds (default: 60s) */
+  REQUEST_TIMEOUT_MS: getEnvInt('GEMINI_REQUEST_TIMEOUT_MS', 60000, 1),
+  /** Timeout for streaming Gemini requests in milliseconds (default: 4min for Gemini 3 Flash) */
+  STREAM_TIMEOUT_MS: getEnvInt('GEMINI_STREAM_TIMEOUT_MS', 240000, 1),
   /** Timeout between stream chunks in milliseconds (default: 30s) */
-  CHUNK_TIMEOUT_MS: getEnvInt('GLM_CHUNK_TIMEOUT_MS', 30000, 1),
+  CHUNK_TIMEOUT_MS: getEnvInt('GEMINI_CHUNK_TIMEOUT_MS', 30000, 1),
 } as const;

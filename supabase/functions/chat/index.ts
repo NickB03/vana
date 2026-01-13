@@ -202,16 +202,16 @@ serve(async (req) => {
     const lastUserContent = lastUserMessage?.content || "";
 
     // ========================================
-    // STEP 5: Reasoning (handled by GLM thinking mode in streaming)
+    // STEP 5: Reasoning (handled by Gemini thinking mode in streaming)
     // ========================================
     if (includeReasoning) {
-      console.log(`[${requestId}] 🧠 Reasoning will come from GLM thinking mode (SSE stream)`);
+      console.log(`[${requestId}] 🧠 Reasoning will come from Gemini thinking mode (SSE stream)`);
     }
 
     // ========================================
     // STEP 6: Tool Calling (LLM-driven intent)
     // ========================================
-    // All intent decisions (artifact/image/search) are handled by GLM tool-calling.
+    // All intent decisions (artifact/image/search) are handled by Gemini tool-calling.
     // The UI can still override via toolChoice, but we do not use regex/embedding routing.
 
     // ========================================
@@ -238,7 +238,7 @@ serve(async (req) => {
     console.log(`🎯 Intent handled by tool-calling (toolChoice=${toolChoice})`);
 
     // Tool-calling is the primary path (LLM decides intent/tools).
-    console.log(`[${requestId}] 🔧 Using GLM tool-calling (LLM intent)`);
+    console.log(`[${requestId}] 🔧 Using Gemini tool-calling (LLM intent)`);
 
       // ========================================
       // Smart Context Management (Issue #127)

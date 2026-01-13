@@ -1,10 +1,9 @@
 {
   "description": "Golden snapshot of production model configuration",
-  "version": "2025-12-28",
+  "version": "2026-01-12",
   "models": {
     "GEMINI_FLASH": "google/gemini-2.5-flash-lite",
-    "GLM_4_7": "zhipu/glm-4.7",
-    "GLM_4_5_AIR": "zhipu/glm-4.5-air",
+    "GEMINI_3_FLASH": "google/gemini-3-flash-preview",
     "GEMINI_FLASH_IMAGE": "google/gemini-2.5-flash-image"
   },
   "instructions": {

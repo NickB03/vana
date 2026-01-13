@@ -7,7 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased] - 2025-12-27
+## [Unreleased] - 2026-01-12
+
+### Added
+- Comprehensive Gemini 3 Flash developer guide (`docs/GEMINI_3_FLASH_GUIDE.md`)
+- Implementation analysis document (`docs/GEMINI_3_FLASH_IMPLEMENTATION_ANALYSIS.md`)
+- Thought signature support in tool calling for Gemini 3 extended thinking
+- Media resolution parameter for multimodal input quality control
+- GitHub Issue #522 for tracking cost optimization features
+
+### Changed
+- Standardized temperature to 1.0 for all Gemini 3 Flash operations (titles, summaries, queries)
+- Updated token limits from 32K to 65K max output (matching Gemini 3 Flash spec)
+- Updated documentation across CLAUDE.md, CONFIGURATION.md, API_REFERENCE.md, ARCHITECTURE.md
+
+### Fixed
+- Bundle artifact streaming test (moved streaming param from URL to request body)
 
 ### Removed
 - **BREAKING**: Legacy `[STATUS:]` marker system
@@ -247,5 +262,5 @@ This project follows [Semantic Versioning](https://semver.org/):
 ---
 
 **Maintained by**: Vana Development Team
-**Last Updated**: 2025-12-24
+**Last Updated**: 2026-01-12
 **Status**: Active Development

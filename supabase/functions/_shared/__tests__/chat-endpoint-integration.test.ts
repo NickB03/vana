@@ -15,7 +15,7 @@
  * - Supabase local instance running (supabase start)
  * - Edge functions deployed locally (supabase functions serve)
  *
- * Cost per run: ~$0.05 (includes GLM API calls)
+ * Cost per run: ~$0.05 (includes Gemini API calls)
  */
 
 import { assert, assertEquals, assertExists } from "https://deno.land/std@0.224.0/assert/mod.ts";

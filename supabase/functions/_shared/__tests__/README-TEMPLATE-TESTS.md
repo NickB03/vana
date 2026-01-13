@@ -2,7 +2,7 @@
 
 ## Overview
 
-These tests verify that the template matching fix works correctly. The fix ensures that when a user requests a complex artifact (e.g., dashboard, game), the matched template guidance is passed to GLM-4.7's system prompt for better artifact generation.
+These tests verify that the template matching fix works correctly. The fix ensures that when a user requests a complex artifact (e.g., dashboard, game), the matched template guidance is passed to Gemini 3 Flash's system prompt for better artifact generation.
 
 ## Test Coverage
 
@@ -61,8 +61,8 @@ deno test --no-check --allow-net --allow-env --allow-read \
 - 10 passed
 - 0 failed
 - 0 ignored
-- Duration: ~30-60 seconds (includes GLM API calls)
-- Cost: ~$0.10 (GLM API usage)
+- Duration: ~30-60 seconds (includes Gemini API calls)
+- Cost: ~$0.10 (Gemini API usage)
 
 ## What the Tests Verify
 
@@ -78,8 +78,8 @@ deno test --no-check --allow-net --allow-env --allow-read \
    - Injects template guidance via `{{MATCHED_TEMPLATE}}` placeholder
    - System prompt includes template structure and examples
 
-3. **GLM Artifact Generation**
-   - GLM receives system prompt with template guidance
+3. **Gemini Artifact Generation**
+   - Gemini receives system prompt with template guidance
    - Generates artifact following template structure
    - Complex artifacts (dashboard, game) have better success rate
 
@@ -137,7 +137,7 @@ deno test --no-check --allow-net --allow-env --allow-read \
 
 ### Tests Timeout or Fail with API Errors
 **Possible causes:**
-- GLM API key not set in Supabase secrets
+- Gemini API key not set in Supabase secrets
 - Rate limiting (wait 60 seconds between runs)
 - Supabase edge functions not running
 
@@ -180,7 +180,7 @@ These tests are designed to run in CI/CD pipelines:
 ## Cost Considerations
 
 - **Unit tests only:** $0 (no API calls)
-- **Full E2E suite:** ~$0.10 per run (GLM API usage)
+- **Full E2E suite:** ~$0.10 per run (Gemini API usage)
 - **Recommended:** Run unit tests on every commit, E2E tests on PR merge
 
 ## Related Files

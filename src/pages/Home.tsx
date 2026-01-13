@@ -79,6 +79,12 @@ const Home = () => {
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [showTourDialog, setShowTourDialog] = useState(false);
 
+  // Ref for autoOpenCanvas to avoid re-creating handleArtifactChange callback
+  const autoOpenCanvasRef = useRef(autoOpenCanvas);
+  useEffect(() => {
+    autoOpenCanvasRef.current = autoOpenCanvas;
+  }, [autoOpenCanvas]);
+
   // Guest session
   const guestSession = useGuestSession(isAuthenticated);
   const [showLimitDialog, setShowLimitDialog] = useState(false);
@@ -461,17 +467,22 @@ const Home = () => {
   /**
    * Updates artifact state when content changes
    * Auto-opens canvas if triggered from suggestion click
+   *
+   * Uses autoOpenCanvasRef to avoid re-creating this callback on every render,
+   * which helps prevent unnecessary re-renders and stream cancellation issues.
    */
   const handleArtifactChange = useCallback((hasContent: boolean) => {
     setHasArtifact(hasContent);
     if (!hasContent) {
       setIsCanvasOpen(false);
-    } else if (autoOpenCanvas) {
+    } else if (autoOpenCanvasRef.current) {
       // Auto-open canvas when artifact is detected (from suggestion click)
       setIsCanvasOpen(true);
-      setAutoOpenCanvas(false); // Reset flag after opening
+      autoOpenCanvasRef.current = false; // Sync ref immediately for rapid calls
+      setAutoOpenCanvas(false); // Also update state
     }
-  }, [autoOpenCanvas]);
+    // Empty dependency array - uses ref pattern for stable callback identity
+  }, []);
 
   return (
     <PageLayout

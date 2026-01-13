@@ -1,29 +1,28 @@
 > **STATUS**: 📋 Planned
-> **Last Updated**: 2025-12-23
+> **Last Updated**: 2026-01-12
 > **Priority**: High
 > **Implementation**: Demo pages exist (DeepResearchDemo*.tsx) but no backend Edge Function
-> **Version**: 2.0 | **Created**: 2025-12-01 | **Updated**: 2025-12-01 | **Status**: Planning
+> **Version**: 3.0 | **Created**: 2025-12-01 | **Updated**: 2026-01-12 | **Status**: Planning
 >
 > **Goal**: Implement a high-quality deep research experience similar to Gemini Deep Research, Claude's Extended Thinking, and ChatGPT's Deep Research mode.
 >
-> **Key Change in v2.0**: Switched from Tavily to **Z.ai MCP tools** as primary search/extraction backend (4,000 free calls/month with Coding Max plan), with Tavily as fallback.
+> **Key Change in v3.0**: Updated to use **Gemini 3 Flash via OpenRouter** for reasoning/synthesis and **Tavily** for web search/extraction, matching the current production stack.
 
 ## Executive Summary
 
-This plan outlines the implementation of a **Deep Research** feature that provides comprehensive, multi-source research capabilities. The feature will be triggered via a clickable option (similar to artifacts), perform multi-step web research using **Z.ai MCP tools** (Web Search Prime, Web Reader, Vision) and GLM-4.6's reasoning capabilities, and present results in an interactive, progressive disclosure UI.
+This plan outlines the implementation of a **Deep Research** feature that provides comprehensive, multi-source research capabilities. The feature will be triggered via a clickable option (similar to artifacts), perform multi-step web research using **Tavily** for search/extraction and **Gemini 3 Flash's thinking mode** for reasoning and synthesis, presenting results in an interactive, progressive disclosure UI.
 
-### Key Architecture Decision: Z.ai MCP vs Tavily
+### Key Architecture Decision: Technology Stack
 
-| Aspect | Z.ai MCP (Primary) | Tavily (Fallback) |
-|--------|-------------------|-------------------|
-| **Cost** | **$0** (included in Coding Max) | $0.001/search + extraction |
-| **Monthly quota** | 4,000 searches + readers | Pay per use |
-| **Web Search** | Web Search Prime | Search API |
-| **Content Extraction** | Web Reader MCP | Extract API |
-| **Vision/OCR** | Vision MCP (5h pool) | ❌ Not available |
-| **API Key** | Same as GLM_API_KEY | Separate TAVILY_API_KEY |
+| Component | Technology | Notes |
+|-----------|------------|-------|
+| **Web Search** | Tavily Search API | Real-time web search |
+| **Content Extraction** | Tavily Extract API | Full page content |
+| **Reasoning/Synthesis** | Gemini 3 Flash (OpenRouter) | Thinking mode for deep analysis |
+| **Vision/OCR** | Gemini 3 Flash (OpenRouter) | Multimodal capabilities |
+| **API Keys** | `OPENROUTER_GEMINI_FLASH_KEY`, `TAVILY_API_KEY` | Separate keys per service |
 
-**Estimated savings**: ~$35/month at 500 research queries (eliminates Tavily search/extraction costs)
+**Cost Model**: Pay-per-use via OpenRouter and Tavily APIs
 
 ---
 
@@ -53,7 +52,7 @@ Deep Research is an AI-powered research assistant that:
 - **Synthesizes findings** into structured, actionable insights
 - **Shows its work** with live progress updates, source citations, and reasoning
 - **Produces a research report** with key findings, analysis, and recommendations
-- **Analyzes images/PDFs** using Z.ai Vision MCP (unique capability)
+- **Analyzes images/PDFs** using Gemini 3 Flash multimodal capabilities
 
 ### 1.2 User Flow
 
@@ -61,21 +60,21 @@ Deep Research is an AI-powered research assistant that:
 User Types Question → Clicks "Research" Button → Research Begins
     ↓
 Phase 1: Query Analysis (2-3s)
-- GLM analyzes query complexity
+- Gemini 3 Flash analyzes query complexity
 - Generates search strategy (5-10 sub-queries)
 - Estimates research scope
     ↓
 Phase 2: Web Research (10-30s)
-- Z.ai Web Search Prime executes searches in parallel
+- Tavily Search executes searches in parallel
 - Deduplicates and ranks findings
-- [Optional] Z.ai Vision analyzes images/PDFs
+- [Optional] Gemini 3 Flash analyzes images/PDFs
     ↓
 Phase 3: Content Extraction (5-15s)
-- Z.ai Web Reader extracts full content from top sources
+- Tavily Extract extracts full content from top sources
 - Structured data parsing + markdown formatting
     ↓
 Phase 4: Synthesis (5-10s)
-- GLM synthesizes findings with deep reasoning
+- Gemini 3 Flash synthesizes findings with thinking mode
 - Generates structured report
 - Creates citations and source list
     ↓
@@ -89,9 +88,9 @@ Phase 5: Presentation
 
 | Feature | Gemini Deep Research | Claude Extended Thinking | ChatGPT Deep Research | **Vana Deep Research** |
 |---------|---------------------|-------------------------|----------------------|----------------------|
-| Multi-source search | ✅ Google Search | ❌ No web search | ✅ Bing Search | ✅ Z.ai Web Search |
-| Content extraction | ❌ Limited | ❌ None | ✅ Bing | ✅ Z.ai Web Reader |
-| Vision/OCR | ✅ Gemini Vision | ✅ Claude Vision | ✅ GPT-4V | ✅ **Z.ai Vision MCP** |
+| Multi-source search | ✅ Google Search | ❌ No web search | ✅ Bing Search | ✅ Tavily Search |
+| Content extraction | ❌ Limited | ❌ None | ✅ Bing | ✅ Tavily Extract |
+| Vision/OCR | ✅ Gemini Vision | ✅ Claude Vision | ✅ GPT-4V | ✅ **Gemini 3 Flash** |
 | Live progress | ✅ Step cards | ✅ Thinking dots | ✅ Progress bar | ✅ Reasoning display |
 | Source citations | ✅ Inline | ✅ Footnotes | ✅ Numbered | ✅ Interactive cards |
 | Report format | Long-form | Conversational | Structured | **Interactive artifact** |
@@ -100,12 +99,11 @@ Phase 5: Presentation
 
 ### 1.4 Differentiators
 
-1. **Cost Efficiency**: Z.ai MCP tools included in Coding Max plan (4,000 calls/month free)
-2. **Speed**: Parallel search execution + aggressive caching = faster results
-3. **Interactivity**: Research report is an interactive artifact (expandable sections, source previews)
-4. **Transparency**: Full reasoning chain visible, not just final output
-5. **Vision Integration**: Analyze PDFs, images, and documents with Z.ai Vision MCP
-6. **Unified Stack**: Same API key for search, extraction, vision, and GLM synthesis
+1. **Speed**: Parallel search execution + aggressive caching = faster results
+2. **Interactivity**: Research report is an interactive artifact (expandable sections, source previews)
+3. **Transparency**: Full reasoning chain visible via Gemini 3 Flash thinking mode
+4. **Vision Integration**: Analyze PDFs, images, and documents with Gemini 3 Flash multimodal
+5. **Unified Reasoning**: Same model for query analysis, synthesis, and vision tasks
 
 ---
 
@@ -133,35 +131,33 @@ Phase 5: Presentation
 │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐    │    │
 │  │  │ Query       │  │ Search      │  │ Synthesis           │    │    │
 │  │  │ Analyzer    │──▶│ Orchestrator│──▶│ Engine              │    │    │
-│  │  │ (GLM)       │  │ (Z.ai MCP)  │  │ (GLM + reasoning)   │    │    │
+│  │  │ (Gemini)    │  │ (Tavily)    │  │ (Gemini + thinking) │    │    │
 │  │  └─────────────┘  └─────────────┘  └─────────────────────┘    │    │
 │  └────────────────────────────────────────────────────────────────┘    │
 │                                                                         │
 │  ┌────────────────┐  ┌────────────────┐  ┌────────────────────────┐   │
 │  │ _shared/       │  │ _shared/       │  │ _shared/               │   │
-│  │ zai-mcp-       │  │ tavily-        │  │ glm-client.ts          │   │
+│  │ tavily-        │  │ openrouter-    │  │ gemini-client.ts       │   │
 │  │ client.ts      │  │ client.ts      │  │                        │   │
-│  │ (PRIMARY)      │  │ (FALLBACK)     │  │                        │   │
+│  │ (SEARCH)       │  │ (LLM)          │  │                        │   │
 │  └────────────────┘  └────────────────┘  └────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────┘
                                │
                                ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                         Z.AI MCP SERVICES                                │
+│                         EXTERNAL SERVICES                                │
 ├─────────────────────────────────────────────────────────────────────────┤
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────┐    │
-│  │ Web Search      │  │ Web Reader      │  │ Vision              │    │
-│  │ Prime MCP       │  │ MCP             │  │ MCP                 │    │
+│  │ Tavily          │  │ Tavily          │  │ OpenRouter          │    │
+│  │ Search API      │  │ Extract API     │  │ (Gemini 3 Flash)    │    │
 │  │                 │  │                 │  │                     │    │
-│  │ webSearchPrime  │  │ webReader       │  │ visionAnalyze       │    │
-│  │ - titles        │  │ - full content  │  │ - image analysis    │    │
-│  │ - URLs          │  │ - markdown      │  │ - PDF OCR           │    │
-│  │ - summaries     │  │ - structured    │  │ - document parsing  │    │
-│  │ - icons         │  │ - cache control │  │                     │    │
+│  │ - titles        │  │ - full content  │  │ - thinking mode     │    │
+│  │ - URLs          │  │ - markdown      │  │ - multimodal        │    │
+│  │ - summaries     │  │ - structured    │  │ - 1M context        │    │
+│  │ - scores        │  │                 │  │                     │    │
 │  └─────────────────┘  └─────────────────┘  └─────────────────────┘    │
 │                                                                         │
-│  Quota: 4,000 combined searches + readers / month (Coding Max)         │
-│  Vision: 5-hour maximum prompt resource pool                            │
+│  Keys: TAVILY_API_KEY, OPENROUTER_GEMINI_FLASH_KEY                      │
 └─────────────────────────────────────────────────────────────────────────┘
                                │
                                ▼
@@ -171,7 +167,6 @@ Phase 5: Presentation
 │  chat_messages (research_data JSONB)                                    │
 │  research_cache (query deduplication)                                   │
 │  ai_usage_logs (cost tracking)                                          │
-│  zai_quota_tracking (MCP usage monitoring)                              │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -182,21 +177,19 @@ Phase 5: Presentation
 2. Frontend sends POST to /generate-research with researchMode=true
 3. Edge function establishes SSE stream
 4. Phase 1: Query Analysis
-   - GLM analyzes query → generates search strategy
+   - Gemini 3 Flash analyzes query → generates search strategy
    - Stream: { event: "analysis", data: { queries: [...], scope: "..." } }
-5. Phase 2: Web Research (Z.ai Web Search Prime)
+5. Phase 2: Web Research (Tavily Search)
    - Execute searches in parallel batches (3-5 concurrent)
    - Stream: { event: "search", data: { completed: 2, total: 8, results: [...] } }
-   - [If quota exhausted] Fallback to Tavily
-6. Phase 3: Content Extraction (Z.ai Web Reader)
+6. Phase 3: Content Extraction (Tavily Extract)
    - Extract full content from top URLs
    - Stream: { event: "extract", data: { source: {...}, content: "..." } }
-   - [If quota exhausted] Fallback to Tavily Extract
-7. Phase 4: Vision Analysis (Optional - Z.ai Vision MCP)
-   - If user provided images/PDFs, analyze with Vision
+7. Phase 4: Vision Analysis (Optional - Gemini 3 Flash)
+   - If user provided images/PDFs, analyze with multimodal
    - Stream: { event: "vision", data: { analysis: "..." } }
 8. Phase 5: Synthesis
-   - GLM synthesizes with reasoning mode
+   - Gemini 3 Flash synthesizes with thinking mode
    - Stream: { event: "reasoning", data: { text: "..." } }
    - Stream: { event: "content", data: { section: "...", text: "..." } }
 9. Phase 6: Complete
@@ -211,17 +204,15 @@ Phase 5: Presentation
 type ResearchEvent =
   | { event: 'analysis_start'; data: { query: string } }
   | { event: 'analysis_complete'; data: ResearchAnalysis }
-  | { event: 'search_start'; data: { queryIndex: number; query: string; provider: 'zai' | 'tavily' } }
+  | { event: 'search_start'; data: { queryIndex: number; query: string } }
   | { event: 'search_complete'; data: { queryIndex: number; results: SearchResult[] } }
-  | { event: 'extract_start'; data: { url: string; provider: 'zai' | 'tavily' } }
+  | { event: 'extract_start'; data: { url: string } }
   | { event: 'extract_complete'; data: { url: string; content: string } }
   | { event: 'vision_start'; data: { type: 'image' | 'pdf'; filename: string } }
   | { event: 'vision_complete'; data: { analysis: string } }
   | { event: 'synthesis_start'; data: { totalSources: number } }
   | { event: 'reasoning_chunk'; data: { text: string } }
   | { event: 'content_chunk'; data: { section: string; text: string } }
-  | { event: 'quota_warning'; data: { remaining: number; type: 'search' | 'reader' | 'vision' } }
-  | { event: 'fallback_activated'; data: { reason: string; provider: 'tavily' } }
   | { event: 'complete'; data: ResearchReport }
   | { event: 'error'; data: { message: string; recoverable: boolean } };
 
@@ -231,7 +222,7 @@ interface ResearchAnalysis {
   researchScope: 'focused' | 'broad' | 'comprehensive';
   estimatedTime: number; // seconds
   topics: string[];
-  hasImages: boolean; // If true, will use Vision MCP
+  hasImages: boolean; // If true, will use Gemini multimodal
 }
 
 interface ResearchReport {
@@ -241,13 +232,8 @@ interface ResearchReport {
   sources: Source[];
   keyFindings: string[];
   reasoning: string;
-  visionAnalysis?: string; // From Vision MCP if applicable
+  visionAnalysis?: string; // From Gemini multimodal if applicable
   generatedAt: string;
-  providerUsed: {
-    search: 'zai' | 'tavily';
-    extraction: 'zai' | 'tavily';
-    vision?: 'zai';
-  };
 }
 ```
 
@@ -261,463 +247,62 @@ interface ResearchReport {
 ```
 supabase/functions/generate-research/
 ├── index.ts                  # Main handler + SSE streaming
-├── query-analyzer.ts         # Query analysis with GLM
-├── search-orchestrator.ts    # Parallel search with Z.ai MCP + Tavily fallback
-├── content-extractor.ts      # URL content extraction with Z.ai Web Reader
-├── vision-analyzer.ts        # Image/PDF analysis with Z.ai Vision (NEW)
-├── synthesizer.ts            # Report synthesis with GLM
-├── quota-tracker.ts          # Z.ai MCP quota monitoring (NEW)
+├── query-analyzer.ts         # Query analysis with Gemini 3 Flash
+├── search-orchestrator.ts    # Parallel search with Tavily
+├── content-extractor.ts      # URL content extraction with Tavily Extract
+├── vision-analyzer.ts        # Image/PDF analysis with Gemini 3 Flash multimodal
+├── synthesizer.ts            # Report synthesis with Gemini 3 Flash thinking mode
 └── types.ts                  # Research-specific types
 ```
 
-### 3.2 New Shared Client: `_shared/zai-mcp-client.ts`
+### 3.2 Shared Clients
 
-**Z.ai MCP Client for Web Search, Web Reader, and Vision:**
+The research feature uses existing shared clients:
+
+**Tavily Client** (`_shared/tavily-client.ts`):
+- Already implemented for web search tool
+- Provides `searchTavily()` and `extractUrls()` functions
+- Handles retry logic and error handling
+
+**Gemini Client** (`_shared/gemini-client.ts`):
+- Uses OpenRouter API with `OPENROUTER_GEMINI_FLASH_KEY`
+- Supports thinking mode via `thinking` parameter
+- Supports multimodal inputs for vision analysis
+
+**Key Types:**
 
 ```typescript
-/**
- * Z.ai MCP Client
- *
- * Provides access to Z.ai MCP services for Deep Research:
- * - Web Search Prime: Real-time web search with titles, URLs, summaries
- * - Web Reader: Full-page content extraction with markdown formatting
- * - Vision: Image and PDF analysis
- *
- * All services use the same GLM_API_KEY and are included in Coding Max plan.
- * Quota: 4,000 combined searches + readers / month
- *
- * MCP Endpoints:
- * - Search: https://api.z.ai/api/mcp/web_search_prime/mcp
- * - Reader: https://api.z.ai/api/mcp/web_reader/mcp
- * - Vision: https://api.z.ai/api/mcp/vision/mcp
- */
-
-const GLM_API_KEY = Deno.env.get("GLM_API_KEY");
-
-// MCP endpoint URLs
-const MCP_ENDPOINTS = {
-  SEARCH: "https://api.z.ai/api/mcp/web_search_prime/mcp",
-  READER: "https://api.z.ai/api/mcp/web_reader/mcp",
-  VISION: "https://api.z.ai/api/mcp/vision/mcp",
-} as const;
-
-// ============================================================================
-// TYPES
-// ============================================================================
-
-export interface ZaiSearchResult {
+// Tavily search result
+export interface TavilySearchResult {
   title: string;
   url: string;
-  summary: string;
-  siteName?: string;
-  icon?: string;
+  content: string;
+  score: number;
 }
 
-export interface ZaiSearchResponse {
-  results: ZaiSearchResult[];
-  query: string;
-  responseTime?: number;
-}
-
-export interface ZaiReaderResponse {
+// Tavily extract result
+export interface TavilyExtractResult {
   url: string;
-  content: string;           // Full page content in markdown
-  title?: string;
-  metadata?: Record<string, unknown>;
+  raw_content: string;
 }
 
-export interface ZaiVisionResponse {
-  analysis: string;
-  confidence?: number;
-  extractedText?: string;    // For OCR
-}
-
-export interface ZaiMCPOptions {
-  requestId?: string;
-  timeout?: number;          // ms, default 30000
-}
-
-// ============================================================================
-// MCP RPC HELPER
-// ============================================================================
-
-async function callMCPTool<T>(
-  endpoint: string,
-  toolName: string,
-  args: Record<string, unknown>,
-  options?: ZaiMCPOptions
-): Promise<T> {
-  const { requestId = crypto.randomUUID(), timeout = 30000 } = options || {};
-
-  if (!GLM_API_KEY) {
-    throw new Error("GLM_API_KEY not configured - required for Z.ai MCP services");
-  }
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-  try {
-    console.log(`[${requestId}] 🔌 Calling Z.ai MCP: ${toolName}`);
-
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${GLM_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        method: "tools/call",
-        params: {
-          name: toolName,
-          arguments: args,
-        },
-        id: requestId,
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[${requestId}] ❌ Z.ai MCP error (${response.status}):`, errorText.substring(0, 200));
-      throw new ZaiMCPError(
-        `Z.ai MCP error: ${response.status}`,
-        response.status,
-        errorText
-      );
-    }
-
-    const data = await response.json();
-
-    // Handle MCP RPC errors
-    if (data.error) {
-      throw new ZaiMCPError(
-        data.error.message || "MCP tool call failed",
-        data.error.code || 500,
-        JSON.stringify(data.error)
-      );
-    }
-
-    console.log(`[${requestId}] ✅ Z.ai MCP ${toolName} completed`);
-    return data.result as T;
-
-  } catch (error) {
-    clearTimeout(timeoutId);
-
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new ZaiMCPError(
-        `Z.ai MCP request timed out after ${timeout}ms`,
-        408,
-        "timeout"
-      );
-    }
-
-    throw error;
-  }
-}
-
-// ============================================================================
-// ERROR CLASS
-// ============================================================================
-
-export class ZaiMCPError extends Error {
-  constructor(
-    message: string,
-    public readonly statusCode: number,
-    public readonly responseBody?: string
-  ) {
-    super(message);
-    this.name = "ZaiMCPError";
-  }
-
-  get isQuotaExceeded(): boolean {
-    return this.statusCode === 429 || this.message.includes("quota");
-  }
-
-  get isRetryable(): boolean {
-    return this.statusCode === 429 || this.statusCode === 503 || this.statusCode === 408;
-  }
-}
-
-// ============================================================================
-// WEB SEARCH PRIME
-// ============================================================================
-
-/**
- * Search the web using Z.ai Web Search Prime MCP
- *
- * @param query - Search query string
- * @param options - Request options
- * @returns Search results with titles, URLs, summaries
- *
- * @example
- * ```ts
- * const results = await searchWebPrime("React performance optimization");
- * // Returns: { results: [{ title, url, summary, siteName, icon }], query }
- * ```
- */
-export async function searchWebPrime(
-  query: string,
-  options?: ZaiMCPOptions
-): Promise<ZaiSearchResponse> {
-  const result = await callMCPTool<{ results: ZaiSearchResult[] }>(
-    MCP_ENDPOINTS.SEARCH,
-    "webSearchPrime",
-    { query },
-    options
-  );
-
-  return {
-    results: result.results || [],
-    query,
-  };
-}
-
-/**
- * Search with retry and fallback support
- */
-export async function searchWebPrimeWithRetry(
-  query: string,
-  options?: ZaiMCPOptions,
-  retryCount = 0
-): Promise<ZaiSearchResponse> {
-  const maxRetries = 2;
-  const requestId = options?.requestId || crypto.randomUUID();
-
-  try {
-    return await searchWebPrime(query, { ...options, requestId });
-  } catch (error) {
-    if (error instanceof ZaiMCPError) {
-      // If quota exceeded, don't retry - let caller handle fallback
-      if (error.isQuotaExceeded) {
-        throw error;
-      }
-
-      // Retry for transient errors
-      if (error.isRetryable && retryCount < maxRetries) {
-        const delayMs = Math.min(1000 * Math.pow(2, retryCount), 5000);
-        console.log(`[${requestId}] Z.ai search retry ${retryCount + 1}/${maxRetries} after ${delayMs}ms`);
-        await new Promise(resolve => setTimeout(resolve, delayMs));
-        return searchWebPrimeWithRetry(query, options, retryCount + 1);
-      }
-    }
-
-    throw error;
-  }
-}
-
-// ============================================================================
-// WEB READER
-// ============================================================================
-
-/**
- * Read and extract content from a URL using Z.ai Web Reader MCP
- *
- * @param url - URL to extract content from
- * @param options - Request options including format preferences
- * @returns Extracted content in markdown format
- *
- * @example
- * ```ts
- * const content = await readWebPage("https://react.dev/learn");
- * // Returns: { url, content: "# React Learn\n...", title }
- * ```
- */
-export async function readWebPage(
-  url: string,
-  options?: ZaiMCPOptions & {
-    format?: "markdown" | "text" | "html";
-    includeImages?: boolean;
-    useCachе?: boolean;
-  }
-): Promise<ZaiReaderResponse> {
-  const { format = "markdown", includeImages = false, useCachе = true, ...mcpOptions } = options || {};
-
-  const result = await callMCPTool<ZaiReaderResponse>(
-    MCP_ENDPOINTS.READER,
-    "webReader",
-    {
-      url,
-      format,
-      includeImages,
-      useCache: useCachе,
-    },
-    mcpOptions
-  );
-
-  return result;
-}
-
-/**
- * Read multiple URLs in parallel with batching
- */
-export async function readWebPagesBatch(
-  urls: string[],
-  options?: ZaiMCPOptions & { batchSize?: number }
-): Promise<ZaiReaderResponse[]> {
-  const { batchSize = 5, ...mcpOptions } = options || {};
-  const results: ZaiReaderResponse[] = [];
-
-  for (let i = 0; i < urls.length; i += batchSize) {
-    const batch = urls.slice(i, i + batchSize);
-    const batchResults = await Promise.allSettled(
-      batch.map(url => readWebPage(url, mcpOptions))
-    );
-
-    for (const result of batchResults) {
-      if (result.status === "fulfilled") {
-        results.push(result.value);
-      }
-    }
-  }
-
-  return results;
-}
-
-// ============================================================================
-// VISION
-// ============================================================================
-
-/**
- * Analyze an image or PDF using Z.ai Vision MCP
- *
- * @param input - Base64 encoded image or PDF URL
- * @param prompt - Analysis prompt
- * @param options - Request options
- * @returns Vision analysis result
- *
- * @example
- * ```ts
- * const analysis = await analyzeWithVision(base64Image, "Describe this diagram");
- * // Returns: { analysis: "This is a system architecture diagram showing..." }
- * ```
- */
-export async function analyzeWithVision(
-  input: string,
-  prompt: string,
-  options?: ZaiMCPOptions & {
-    inputType?: "base64" | "url";
-    mediaType?: "image" | "pdf";
-  }
-): Promise<ZaiVisionResponse> {
-  const { inputType = "base64", mediaType = "image", ...mcpOptions } = options || {};
-
-  const result = await callMCPTool<ZaiVisionResponse>(
-    MCP_ENDPOINTS.VISION,
-    "visionAnalyze",
-    {
-      input,
-      inputType,
-      mediaType,
-      prompt,
-    },
-    mcpOptions
-  );
-
-  return result;
-}
-
-// ============================================================================
-// QUOTA TRACKING
-// ============================================================================
-
-export interface ZaiQuotaStatus {
-  searchesUsed: number;
-  searchesRemaining: number;
-  readersUsed: number;
-  readersRemaining: number;
-  visionMinutesUsed: number;
-  visionMinutesRemaining: number;
-  resetDate: string;
-}
-
-/**
- * Get current Z.ai MCP quota status
- * Note: This requires tracking usage locally since MCP doesn't expose quota API
- */
-export async function getQuotaStatus(supabase: any): Promise<ZaiQuotaStatus> {
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-  // Query usage from our tracking table
-  const { data: usage, error } = await supabase
-    .from("zai_quota_tracking")
-    .select("*")
-    .gte("created_at", monthStart.toISOString())
-    .single();
-
-  if (error || !usage) {
-    // Default to full quota if no tracking data
-    return {
-      searchesUsed: 0,
-      searchesRemaining: 4000,
-      readersUsed: 0,
-      readersRemaining: 4000, // Combined with searches
-      visionMinutesUsed: 0,
-      visionMinutesRemaining: 300, // 5 hours
-      resetDate: new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString(),
-    };
-  }
-
-  const totalUsed = (usage.searches_count || 0) + (usage.readers_count || 0);
-  const remaining = Math.max(0, 4000 - totalUsed);
-
-  return {
-    searchesUsed: usage.searches_count || 0,
-    searchesRemaining: remaining,
-    readersUsed: usage.readers_count || 0,
-    readersRemaining: remaining,
-    visionMinutesUsed: usage.vision_minutes || 0,
-    visionMinutesRemaining: Math.max(0, 300 - (usage.vision_minutes || 0)),
-    resetDate: new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString(),
-  };
-}
-
-/**
- * Log Z.ai MCP usage for quota tracking
- */
-export async function logZaiUsage(
-  supabase: any,
-  type: "search" | "reader" | "vision",
-  count: number = 1
-): Promise<void> {
-  const now = new Date();
-  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-
-  try {
-    await supabase.rpc("increment_zai_usage", {
-      p_month_key: monthKey,
-      p_type: type,
-      p_count: count,
-    });
-  } catch (error) {
-    console.error("Failed to log Z.ai usage:", error);
-    // Non-blocking - don't fail the request
-  }
+// Gemini thinking mode response
+export interface GeminiThinkingResponse {
+  thinking: string;
+  content: string;
 }
 ```
 
-### 3.3 Search Orchestrator with Z.ai Primary + Tavily Fallback
+### 3.3 Search Orchestrator
 
-**Updated `search-orchestrator.ts`:**
+**`search-orchestrator.ts`:**
 
 ```typescript
-import {
-  searchWebPrimeWithRetry,
-  ZaiMCPError,
-  logZaiUsage,
-  getQuotaStatus
-} from "../_shared/zai-mcp-client.ts";
 import { searchTavilyWithRetry } from "../_shared/tavily-client.ts";
 import { SearchResult, SearchProgress, ResearchConfig } from "./types.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 
 export interface SearchOrchestratorResult {
   results: SearchResult[];
-  providerUsed: "zai" | "tavily";
-  fallbackReason?: string;
 }
 
 export async function orchestrateSearch(
@@ -726,24 +311,6 @@ export async function orchestrateSearch(
   onProgress: (progress: SearchProgress) => void,
   requestId: string
 ): Promise<SearchOrchestratorResult> {
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-  );
-
-  // Check Z.ai quota before starting
-  const quota = await getQuotaStatus(supabase);
-  const queriesNeeded = queries.length;
-
-  // Determine which provider to use
-  let useZai = quota.searchesRemaining >= queriesNeeded;
-  let fallbackReason: string | undefined;
-
-  if (!useZai) {
-    fallbackReason = `Z.ai quota low (${quota.searchesRemaining} remaining, need ${queriesNeeded})`;
-    console.log(`[${requestId}] ⚠️ ${fallbackReason} - using Tavily fallback`);
-  }
-
   const allResults: SearchResult[] = [];
   const seenUrls = new Set<string>();
 
@@ -760,42 +327,8 @@ export async function orchestrateSearch(
           query,
           completed: queryIndex,
           total: queries.length,
-          provider: useZai ? "zai" : "tavily",
         });
 
-        if (useZai) {
-          try {
-            // Try Z.ai Web Search Prime
-            const response = await searchWebPrimeWithRetry(query, { requestId });
-
-            // Log usage
-            await logZaiUsage(supabase, "search", 1);
-
-            return {
-              queryIndex,
-              query,
-              results: response.results.map(r => ({
-                title: r.title,
-                url: r.url,
-                content: r.summary,
-                score: 1.0, // Z.ai doesn't return scores, default to 1.0
-                siteName: r.siteName,
-              })),
-              provider: "zai" as const,
-            };
-          } catch (error) {
-            if (error instanceof ZaiMCPError && error.isQuotaExceeded) {
-              // Switch to Tavily for remaining queries
-              useZai = false;
-              fallbackReason = "Z.ai quota exceeded mid-research";
-              console.log(`[${requestId}] ⚠️ ${fallbackReason} - switching to Tavily`);
-            } else {
-              throw error;
-            }
-          }
-        }
-
-        // Tavily fallback
         const response = await searchTavilyWithRetry(query, {
           requestId,
           maxResults: config.maxSourcesPerQuery,
@@ -812,7 +345,6 @@ export async function orchestrateSearch(
             score: r.score,
           })),
           answer: response.answer,
-          provider: "tavily" as const,
         };
       })
     );
@@ -838,40 +370,26 @@ export async function orchestrateSearch(
       completed: Math.min(i + config.parallelSearches, queries.length),
       total: queries.length,
       resultsCount: allResults.length,
-      provider: useZai ? "zai" : "tavily",
     });
   }
 
   // Sort by relevance score
   const sortedResults = allResults.sort((a, b) => (b.score || 0) - (a.score || 0));
 
-  return {
-    results: sortedResults,
-    providerUsed: useZai ? "zai" : "tavily",
-    fallbackReason,
-  };
+  return { results: sortedResults };
 }
 ```
 
-### 3.4 Content Extractor with Z.ai Web Reader
+### 3.4 Content Extractor
 
-**Updated `content-extractor.ts`:**
+**`content-extractor.ts`:**
 
 ```typescript
-import {
-  readWebPagesBatch,
-  ZaiMCPError,
-  logZaiUsage,
-  getQuotaStatus
-} from "../_shared/zai-mcp-client.ts";
 import { extractUrlsWithRetry } from "../_shared/tavily-client.ts";
 import { ExtractedContent, ExtractProgress, SearchResult } from "./types.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 
 export interface ContentExtractorResult {
   content: ExtractedContent[];
-  providerUsed: "zai" | "tavily";
-  fallbackReason?: string;
 }
 
 export async function extractContent(
@@ -879,79 +397,17 @@ export async function extractContent(
   onProgress: (progress: ExtractProgress) => void,
   requestId: string
 ): Promise<ContentExtractorResult> {
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-  );
-
   const urls = sources.map(s => s.url);
-
-  // Check Z.ai quota
-  const quota = await getQuotaStatus(supabase);
-  let useZai = quota.readersRemaining >= urls.length;
-  let fallbackReason: string | undefined;
-
-  if (!useZai) {
-    fallbackReason = `Z.ai quota low (${quota.readersRemaining} remaining, need ${urls.length})`;
-    console.log(`[${requestId}] ⚠️ ${fallbackReason} - using Tavily fallback`);
-  }
 
   onProgress({
     phase: "extracting",
     completed: 0,
     total: urls.length,
-    provider: useZai ? "zai" : "tavily",
   });
 
   const allContent: ExtractedContent[] = [];
 
-  if (useZai) {
-    try {
-      // Use Z.ai Web Reader
-      const results = await readWebPagesBatch(urls, {
-        requestId,
-        batchSize: 5,
-      });
-
-      // Log usage
-      await logZaiUsage(supabase, "reader", results.length);
-
-      for (const result of results) {
-        const source = sources.find(s => s.url === result.url);
-        if (source && result.content) {
-          allContent.push({
-            url: result.url,
-            title: result.title || source.title,
-            content: truncateContent(result.content, 3000),
-            score: source.score,
-            fromQuery: source.fromQuery,
-          });
-        }
-      }
-
-      onProgress({
-        phase: "extracting",
-        completed: urls.length,
-        total: urls.length,
-        provider: "zai",
-      });
-
-      return {
-        content: allContent,
-        providerUsed: "zai",
-      };
-    } catch (error) {
-      if (error instanceof ZaiMCPError && error.isQuotaExceeded) {
-        useZai = false;
-        fallbackReason = "Z.ai quota exceeded during extraction";
-        console.log(`[${requestId}] ⚠️ ${fallbackReason} - falling back to Tavily`);
-      } else {
-        throw error;
-      }
-    }
-  }
-
-  // Tavily fallback - batch extraction
+  // Tavily batch extraction
   const batchSize = 10;
   for (let i = 0; i < urls.length; i += batchSize) {
     const batch = urls.slice(i, i + batchSize);
@@ -984,15 +440,10 @@ export async function extractContent(
       phase: "extracting",
       completed: Math.min(i + batchSize, urls.length),
       total: urls.length,
-      provider: "tavily",
     });
   }
 
-  return {
-    content: allContent,
-    providerUsed: "tavily",
-    fallbackReason,
-  };
+  return { content: allContent };
 }
 
 function truncateContent(content: string, maxLength: number): string {
@@ -1007,13 +458,14 @@ function truncateContent(content: string, maxLength: number): string {
 }
 ```
 
-### 3.5 Vision Analyzer (NEW)
+### 3.5 Vision Analyzer
 
-**New file: `vision-analyzer.ts`**
+**`vision-analyzer.ts`:**
+
+Uses Gemini 3 Flash multimodal capabilities via OpenRouter.
 
 ```typescript
-import { analyzeWithVision, logZaiUsage, getQuotaStatus } from "../_shared/zai-mcp-client.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
+import { callGeminiWithVision } from "../_shared/gemini-client.ts";
 
 export interface VisionInput {
   type: "image" | "pdf";
@@ -1031,18 +483,6 @@ export async function analyzeVisionContent(
   researchContext: string,
   requestId: string
 ): Promise<VisionAnalysisResult[]> {
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-  );
-
-  // Check vision quota
-  const quota = await getQuotaStatus(supabase);
-  if (quota.visionMinutesRemaining <= 0) {
-    console.log(`[${requestId}] ⚠️ Z.ai Vision quota exhausted - skipping vision analysis`);
-    return [];
-  }
-
   const results: VisionAnalysisResult[] = [];
 
   for (const input of inputs) {
@@ -1055,21 +495,15 @@ Please provide:
 3. Any data, statistics, or facts that should be included in the report
 ${input.type === "pdf" ? "4. Extract and summarize any important text" : ""}`;
 
-      const response = await analyzeWithVision(
-        input.data,
+      const response = await callGeminiWithVision({
         prompt,
-        {
-          requestId,
-          inputType: input.data.startsWith("http") ? "url" : "base64",
-          mediaType: input.type,
-        }
-      );
-
-      // Log usage (estimate 1 minute per analysis)
-      await logZaiUsage(supabase, "vision", 1);
+        imageData: input.data,
+        imageType: input.data.startsWith("http") ? "url" : "base64",
+        requestId,
+      });
 
       results.push({
-        analysis: response.analysis,
+        analysis: response.content,
         extractedText: response.extractedText,
       });
     } catch (error) {
@@ -1082,9 +516,9 @@ ${input.type === "pdf" ? "4. Extract and summarize any important text" : ""}`;
 }
 ```
 
-### 3.6 Main Handler Update
+### 3.6 Main Handler
 
-**Updated `index.ts` excerpt:**
+**`index.ts` excerpt:**
 
 ```typescript
 // ... imports ...
@@ -1105,12 +539,12 @@ serve(async (req) => {
         };
 
         try {
-          // Phase 1: Query Analysis
+          // Phase 1: Query Analysis (Gemini 3 Flash)
           sendEvent({ event: "analysis_start", data: { query } });
           const analysis = await analyzeQuery(query, requestId);
           sendEvent({ event: "analysis_complete", data: analysis });
 
-          // Phase 2: Web Research (Z.ai primary, Tavily fallback)
+          // Phase 2: Web Research (Tavily)
           const searchResult = await orchestrateSearch(
             analysis.searchQueries,
             config,
@@ -1118,15 +552,7 @@ serve(async (req) => {
             requestId
           );
 
-          // Notify if fallback was used
-          if (searchResult.fallbackReason) {
-            sendEvent({
-              event: "fallback_activated",
-              data: { reason: searchResult.fallbackReason, provider: "tavily" }
-            });
-          }
-
-          // Phase 3: Content Extraction (Z.ai primary, Tavily fallback)
+          // Phase 3: Content Extraction (Tavily)
           const topSources = selectTopSources(searchResult.results, config.maxContentExtractions);
           const extractResult = await extractContent(
             topSources,
@@ -1134,14 +560,7 @@ serve(async (req) => {
             requestId
           );
 
-          if (extractResult.fallbackReason) {
-            sendEvent({
-              event: "fallback_activated",
-              data: { reason: extractResult.fallbackReason, provider: "tavily" }
-            });
-          }
-
-          // Phase 4: Vision Analysis (if applicable)
+          // Phase 4: Vision Analysis (if applicable - Gemini 3 Flash multimodal)
           let visionAnalysis: VisionAnalysisResult[] = [];
           if (visionInputs && visionInputs.length > 0) {
             sendEvent({
@@ -1163,7 +582,7 @@ serve(async (req) => {
             }
           }
 
-          // Phase 5: Synthesis
+          // Phase 5: Synthesis (Gemini 3 Flash thinking mode)
           sendEvent({ event: "synthesis_start", data: { totalSources: extractResult.content.length } });
           const report = await synthesizeReport(
             query,
@@ -1173,13 +592,6 @@ serve(async (req) => {
             (chunk) => sendEvent({ event: "reasoning_chunk", data: { text: chunk } }),
             (section, text) => sendEvent({ event: "content_chunk", data: { section, text } })
           );
-
-          // Add provider info to report
-          report.providerUsed = {
-            search: searchResult.providerUsed,
-            extraction: extractResult.providerUsed,
-            vision: visionAnalysis.length > 0 ? "zai" : undefined,
-          };
 
           // Complete
           sendEvent({ event: "complete", data: report });
@@ -1219,89 +631,72 @@ serve(async (req) => {
 
 ### 4.7 Additional: Provider Badge in Progress UI
 
-Add provider indicator to `ResearchProgress.tsx`:
+Add progress indicator to `ResearchProgress.tsx`:
 
 ```tsx
 // In ResearchProgress.tsx, add to progress display:
-{progress.provider && (
-  <Badge variant="outline" className="ml-2 text-xs">
-    {progress.provider === "zai" ? "Z.ai MCP" : "Tavily"}
-  </Badge>
-)}
+<Badge variant="outline" className="ml-2 text-xs">
+  {progress.phase === "searching" ? "Tavily Search" :
+   progress.phase === "extracting" ? "Tavily Extract" :
+   progress.phase === "synthesizing" ? "Gemini 3 Flash" : "Processing"}
+</Badge>
 ```
 
 ---
 
 ## 5. Database Schema
 
-### 5.1 Schema Updates (Updated for Z.ai tracking)
+### 5.1 Schema Updates
 
 ```sql
--- Add research_data column to chat_messages (unchanged)
+-- Add research_data column to chat_messages
 ALTER TABLE public.chat_messages
 ADD COLUMN IF NOT EXISTS research_data JSONB;
 
--- ... (existing constraints and indexes unchanged) ...
-
--- NEW: Create Z.ai quota tracking table
-CREATE TABLE IF NOT EXISTS public.zai_quota_tracking (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  month_key TEXT NOT NULL UNIQUE,  -- Format: "2025-12"
-  searches_count INTEGER DEFAULT 0,
-  readers_count INTEGER DEFAULT 0,
-  vision_minutes INTEGER DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+-- Add constraint to validate research_data structure
+ALTER TABLE public.chat_messages
+ADD CONSTRAINT valid_research_data CHECK (
+  research_data IS NULL OR (
+    research_data ? 'version' AND
+    research_data ? 'title' AND
+    research_data ? 'sections'
+  )
 );
 
--- Index for quick lookups
-CREATE INDEX IF NOT EXISTS idx_zai_quota_month_key
-ON public.zai_quota_tracking(month_key);
+-- Index for querying research messages
+CREATE INDEX IF NOT EXISTS idx_chat_messages_research
+ON public.chat_messages((research_data IS NOT NULL))
+WHERE research_data IS NOT NULL;
 
--- Function to increment Z.ai usage
-CREATE OR REPLACE FUNCTION increment_zai_usage(
-  p_month_key TEXT,
-  p_type TEXT,  -- 'search', 'reader', or 'vision'
-  p_count INTEGER DEFAULT 1
-)
+-- Research cache table for query deduplication
+CREATE TABLE IF NOT EXISTS public.research_cache (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  query_hash TEXT NOT NULL UNIQUE,
+  query_text TEXT NOT NULL,
+  result JSONB NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  expires_at TIMESTAMP WITH TIME ZONE DEFAULT (now() + interval '24 hours')
+);
+
+-- Index for cache lookups
+CREATE INDEX IF NOT EXISTS idx_research_cache_hash
+ON public.research_cache(query_hash);
+
+-- Cleanup expired cache entries
+CREATE OR REPLACE FUNCTION cleanup_research_cache()
 RETURNS void AS $$
 BEGIN
-  INSERT INTO public.zai_quota_tracking (month_key, searches_count, readers_count, vision_minutes)
-  VALUES (p_month_key, 0, 0, 0)
-  ON CONFLICT (month_key) DO NOTHING;
-
-  IF p_type = 'search' THEN
-    UPDATE public.zai_quota_tracking
-    SET searches_count = searches_count + p_count, updated_at = now()
-    WHERE month_key = p_month_key;
-  ELSIF p_type = 'reader' THEN
-    UPDATE public.zai_quota_tracking
-    SET readers_count = readers_count + p_count, updated_at = now()
-    WHERE month_key = p_month_key;
-  ELSIF p_type = 'vision' THEN
-    UPDATE public.zai_quota_tracking
-    SET vision_minutes = vision_minutes + p_count, updated_at = now()
-    WHERE month_key = p_month_key;
-  END IF;
+  DELETE FROM public.research_cache WHERE expires_at < now();
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public, pg_temp;
-
--- RLS for quota tracking (service role only)
-ALTER TABLE public.zai_quota_tracking ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Service role can manage quota tracking"
-ON public.zai_quota_tracking FOR ALL
-TO service_role
-USING (true)
-WITH CHECK (true);
 ```
 
-### 5.2 Research Data Schema (Updated)
+### 5.2 Research Data Schema
 
 ```typescript
 interface StoredResearchData {
-  version: "2.0";  // Updated version
+  version: "3.0";  // Updated for Gemini 3 Flash
   title: string;
   summary: string;
   sections: Array<{
@@ -1316,8 +711,8 @@ interface StoredResearchData {
     relevance?: number;
   }>;
   keyFindings: string[];
-  reasoning?: string;
-  visionAnalysis?: string[];  // NEW: From Z.ai Vision
+  reasoning?: string;  // From Gemini 3 Flash thinking mode
+  visionAnalysis?: string[];  // From Gemini 3 Flash multimodal
   analysis: {
     originalQuery: string;
     searchQueries: string[];
@@ -1334,14 +729,6 @@ interface StoredResearchData {
       output: number;
     };
   };
-  // NEW: Provider tracking
-  providers: {
-    search: "zai" | "tavily";
-    extraction: "zai" | "tavily";
-    vision?: "zai";
-    fallbackUsed: boolean;
-    fallbackReason?: string;
-  };
   generatedAt: string;
 }
 ```
@@ -1352,7 +739,7 @@ interface StoredResearchData {
 
 *(Mostly unchanged - see v1.0)*
 
-### 6.1 Request Format (Updated)
+### 6.1 Request Format
 
 ```typescript
 POST /functions/v1/generate-research
@@ -1362,7 +749,7 @@ Authorization: Bearer <jwt_token> (optional)
 {
   "query": string,           // Required: Research query (max 2000 chars)
   "sessionId": string,       // Optional: Chat session ID
-  "visionInputs": [          // NEW: Optional vision inputs
+  "visionInputs": [          // Optional: Images/PDFs for multimodal analysis
     {
       "type": "image" | "pdf",
       "data": string,        // Base64 or URL
@@ -1370,10 +757,9 @@ Authorization: Bearer <jwt_token> (optional)
     }
   ],
   "config": {
-    "maxSearchQueries": number,
-    "maxSourcesPerQuery": number,
-    "maxContentExtractions": number,
-    "preferZai": boolean,    // NEW: Default true, set false to prefer Tavily
+    "maxSearchQueries": number,       // Default: 8
+    "maxSourcesPerQuery": number,     // Default: 5
+    "maxContentExtractions": number,  // Default: 10
   }
 }
 ```
@@ -1396,290 +782,255 @@ Authorization: Bearer <jwt_token> (optional)
 | Authenticated | 20 | 100 | 1 min after limit |
 | Premium (future) | 50 | 500 | No cooldown |
 
-### 8.2 Cost Breakdown per Research Query (UPDATED)
+### 8.2 Cost Breakdown per Research Query
 
-| Service | Operations | Z.ai Cost | Tavily Cost (Fallback) |
-|---------|------------|-----------|------------------------|
-| Web Search | 8 queries | **$0** (included) | $0.008 |
-| Content Extraction | 10 URLs | **$0** (included) | $0.002 |
-| Vision Analysis | 0-2 images | **$0** (included) | N/A |
-| GLM Analysis | 1 call | ~$0.01 | ~$0.01 |
-| GLM Synthesis | 1 call | ~$0.05 | ~$0.05 |
-| **Total (Z.ai)** | | **~$0.06** | |
-| **Total (Tavily)** | | | ~$0.07 |
+| Service | Operations | Est. Cost |
+|---------|------------|-----------|
+| Tavily Search | 8 queries | ~$0.008 |
+| Tavily Extract | 10 URLs | ~$0.002 |
+| Gemini 3 Flash Analysis | 1 call | ~$0.01 |
+| Gemini 3 Flash Synthesis | 1 call (thinking mode) | ~$0.05 |
+| Gemini 3 Flash Vision | 0-2 images (optional) | ~$0.02 |
+| **Total** | | **~$0.07-0.09** |
 
-### 8.3 Z.ai MCP Quota Management
+### 8.3 Cost Optimization Strategies
 
-| Plan | Monthly Quota | Estimated Research Queries |
-|------|---------------|---------------------------|
-| Lite | 100 combined | ~5-10 researches |
-| Pro | 1,000 combined | ~50-100 researches |
-| **Max** | **4,000 combined** | **~200-500 researches** |
-
-**Quota Strategy:**
-1. Track usage in `zai_quota_tracking` table
-2. Check quota before each research
-3. Automatic fallback to Tavily when Z.ai quota is low (<20%)
-4. Alert users when quota is running low
-5. Reset tracking monthly
-
-### 8.4 Cost Optimization Strategies (Updated)
-
-1. **Z.ai First**: Always try Z.ai MCP first (free with plan)
-2. **Smart Fallback**: Only use Tavily when Z.ai quota exhausted
-3. **Query Caching**: Cache research results for 24 hours
-4. **Progressive Depth**: Start with basic search, only expand if needed
-5. **Source Deduplication**: Skip URLs already seen in session
-6. **Content Truncation**: Limit extracted content to 3000 chars
-7. **Vision Batching**: Combine multiple images into single analysis when possible
+1. **Query Caching**: Cache research results for 24 hours
+2. **Progressive Depth**: Start with basic search, only expand if needed
+3. **Source Deduplication**: Skip URLs already seen in session
+4. **Content Truncation**: Limit extracted content to 3000 chars
+5. **Batch Vision**: Combine multiple images into single analysis when possible
+6. **Smart Query Generation**: Generate focused sub-queries to minimize search calls
 
 ---
 
 ## 9. Testing Strategy
 
-### 9.1 Unit Tests (Updated)
+### 9.1 Unit Tests
 
 ```typescript
-// test/research/zai-mcp-client.test.ts
-describe("Z.ai MCP Client", () => {
-  describe("searchWebPrime", () => {
-    it("returns search results with titles and summaries", async () => {
-      const results = await searchWebPrime("React hooks");
+// test/research/tavily-client.test.ts
+describe("Tavily Client", () => {
+  describe("searchTavily", () => {
+    it("returns search results with titles and content", async () => {
+      const results = await searchTavily("React hooks");
       expect(results.results.length).toBeGreaterThan(0);
       expect(results.results[0]).toHaveProperty("title");
       expect(results.results[0]).toHaveProperty("url");
-      expect(results.results[0]).toHaveProperty("summary");
+      expect(results.results[0]).toHaveProperty("content");
     });
 
-    it("handles quota exceeded error", async () => {
-      // Mock quota exceeded response
-      mockZaiQuotaExceeded();
-
-      await expect(searchWebPrime("test")).rejects.toThrow(ZaiMCPError);
-      await expect(searchWebPrime("test")).rejects.toHaveProperty("isQuotaExceeded", true);
+    it("handles rate limiting with retry", async () => {
+      mockTavilyRateLimit();
+      const results = await searchTavilyWithRetry("test");
+      expect(results.results).toBeDefined();
     });
   });
 
-  describe("readWebPage", () => {
-    it("extracts content in markdown format", async () => {
-      const result = await readWebPage("https://react.dev");
-      expect(result.content).toBeDefined();
-      expect(result.content.length).toBeGreaterThan(100);
-    });
-  });
-
-  describe("analyzeWithVision", () => {
-    it("analyzes images and returns description", async () => {
-      const result = await analyzeWithVision(
-        mockBase64Image,
-        "Describe this image"
-      );
-      expect(result.analysis).toBeDefined();
-      expect(result.analysis.length).toBeGreaterThan(50);
+  describe("extractUrls", () => {
+    it("extracts content from URLs", async () => {
+      const result = await extractUrls(["https://react.dev"]);
+      expect(result.results[0].raw_content).toBeDefined();
+      expect(result.results[0].raw_content.length).toBeGreaterThan(100);
     });
   });
 });
 
 // test/research/search-orchestrator.test.ts
 describe("Search Orchestrator", () => {
-  it("uses Z.ai when quota available", async () => {
-    mockZaiQuotaAvailable(1000);
-
+  it("executes searches in parallel batches", async () => {
     const result = await orchestrateSearch(
-      ["React hooks", "React state"],
+      ["React hooks", "React state", "React context"],
+      { ...defaultConfig, parallelSearches: 2 },
+      () => {},
+      "test-request"
+    );
+
+    expect(result.results.length).toBeGreaterThan(0);
+  });
+
+  it("deduplicates results by URL", async () => {
+    const result = await orchestrateSearch(
+      ["React hooks tutorial", "React hooks guide"],
       defaultConfig,
       () => {},
       "test-request"
     );
 
-    expect(result.providerUsed).toBe("zai");
-    expect(result.fallbackReason).toBeUndefined();
+    const urls = result.results.map(r => r.url);
+    const uniqueUrls = [...new Set(urls)];
+    expect(urls.length).toBe(uniqueUrls.length);
   });
 
-  it("falls back to Tavily when Z.ai quota exhausted", async () => {
-    mockZaiQuotaAvailable(0);
-
-    const result = await orchestrateSearch(
-      ["React hooks"],
-      defaultConfig,
-      () => {},
-      "test-request"
-    );
-
-    expect(result.providerUsed).toBe("tavily");
-    expect(result.fallbackReason).toContain("quota");
-  });
-
-  it("switches to Tavily mid-research if Z.ai quota runs out", async () => {
-    mockZaiQuotaAvailable(2); // Only 2 searches available
-    const queries = ["q1", "q2", "q3", "q4", "q5"];
-
+  it("reports progress during search", async () => {
     const progressUpdates: SearchProgress[] = [];
-    const result = await orchestrateSearch(
-      queries,
-      { ...defaultConfig, parallelSearches: 1 },
+    await orchestrateSearch(
+      ["q1", "q2", "q3"],
+      defaultConfig,
       (p) => progressUpdates.push(p),
       "test-request"
     );
 
-    // Should have started with Z.ai and switched to Tavily
-    expect(progressUpdates.some(p => p.provider === "zai")).toBe(true);
-    expect(progressUpdates.some(p => p.provider === "tavily")).toBe(true);
+    expect(progressUpdates.length).toBeGreaterThan(0);
+    expect(progressUpdates.some(p => p.phase === "searching")).toBe(true);
   });
 });
 ```
 
 ---
 
-## 10. Implementation Phases (Updated)
+## 10. Implementation Phases
 
-### Phase 1: Z.ai MCP Integration (Week 1-2)
-
-**Deliverables:**
-- [ ] Create `_shared/zai-mcp-client.ts` with Web Search Prime, Web Reader, Vision
-- [ ] Create `zai_quota_tracking` database table and RPC functions
-- [ ] Update `generate-research/` to use Z.ai MCP as primary
-- [ ] Implement fallback logic to Tavily
-- [ ] Add quota monitoring and alerting
-- [ ] Write unit tests for Z.ai MCP client
-- [ ] Test fallback scenarios
-
-**Success Criteria:**
-- Z.ai MCP calls work correctly
-- Fallback to Tavily works when quota exhausted
-- Quota tracking is accurate
-
-### Phase 2: Backend Foundation (Week 2-3)
+### Phase 1: Backend Foundation (Week 1-2)
 
 **Deliverables:**
-- [ ] Complete `generate-research/` Edge Function structure
-- [ ] Implement query analyzer with GLM
-- [ ] Implement search orchestrator with Z.ai + Tavily fallback
-- [ ] Implement content extractor with Z.ai Web Reader + Tavily fallback
-- [ ] Implement vision analyzer with Z.ai Vision
-- [ ] Implement report synthesizer
+- [ ] Create `generate-research/` Edge Function structure
+- [ ] Implement query analyzer with Gemini 3 Flash
+- [ ] Implement search orchestrator with Tavily
+- [ ] Implement content extractor with Tavily Extract
+- [ ] Implement report synthesizer with Gemini 3 Flash thinking mode
 - [ ] Add SSE streaming for all events
 - [ ] Add rate limiting
 
 **Success Criteria:**
 - Full research flow works end-to-end
 - All phases complete in < 90 seconds
-- Vision analysis works for images and PDFs
+- SSE events stream correctly
+
+### Phase 2: Vision & Multimodal (Week 2-3)
+
+**Deliverables:**
+- [ ] Implement vision analyzer with Gemini 3 Flash multimodal
+- [ ] Support image uploads in research requests
+- [ ] Support PDF analysis
+- [ ] Integrate vision results into synthesis
+
+**Success Criteria:**
+- Images analyzed and included in reports
+- PDFs parsed and text extracted
+- Vision context improves report quality
 
 ### Phase 3: Frontend Components (Week 3-4)
 
-*(Same as v1.0)*
+**Deliverables:**
+- [ ] Research button and trigger UI
+- [ ] ResearchProgress component with phase tracking
+- [ ] ResearchArtifact interactive report viewer
+- [ ] Source citation cards
+- [ ] Export/share functionality
+
+**Success Criteria:**
+- Smooth UX from trigger to completion
+- Progressive disclosure works well
+- Sources are easy to explore
 
 ### Phase 4: Database & Caching (Week 4-5)
 
-*(Same as v1.0, plus quota tracking)*
+**Deliverables:**
+- [ ] Database schema migration
+- [ ] Research result caching
+- [ ] Query deduplication
+- [ ] Usage logging integration
 
-### Phase 5: Polish & Optimization (Week 5-6)
+**Success Criteria:**
+- Results persist correctly
+- Cache hit rate > 20%
+- Usage tracked for cost analysis
 
-*(Same as v1.0)*
+### Phase 5: Polish & Launch (Week 5-6)
 
-### Phase 6: Launch & Monitoring (Week 6-7)
-
-**Additional deliverables:**
-- [ ] Z.ai quota dashboard
-- [ ] Fallback rate monitoring
-- [ ] Cost comparison analytics (Z.ai vs Tavily usage)
+**Deliverables:**
+- [ ] Error handling and recovery
+- [ ] Loading states and animations
+- [ ] Performance optimization
+- [ ] Documentation
+- [ ] Monitoring and alerting
 
 ---
 
 ## 11. Success Metrics
 
-*(Mostly unchanged - see v1.0)*
-
-### 11.4 Cost Metrics (Updated)
+### 11.1 User Experience Metrics
 
 | Metric | Target | Measurement |
 |--------|--------|-------------|
-| Z.ai Usage Rate | > 90% | Z.ai requests / total requests |
-| Fallback Rate | < 10% | Tavily requests / total requests |
-| Cost per Research | < $0.07 | Total API costs / research count |
-| Monthly Z.ai Savings | > $30 | (Tavily equivalent cost - actual cost) |
+| Time to First Result | < 15s | Time from click to first search result |
+| Total Research Time | < 90s | Time from start to complete report |
+| User Satisfaction | > 4.2/5 | Post-research feedback |
+
+### 11.2 Quality Metrics
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| Source Relevance | > 80% | User ratings of source quality |
+| Report Accuracy | > 90% | Fact-check sampling |
+| Citation Rate | 100% | All claims have sources |
+
+### 11.3 Cost Metrics
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| Cost per Research | < $0.10 | Total API costs / research count |
+| Cache Hit Rate | > 20% | Cached results / total requests |
 
 ---
 
-## 12. Risk Mitigation (Updated)
+## 12. Risk Mitigation
 
 ### 12.1 Technical Risks
 
 | Risk | Impact | Probability | Mitigation |
 |------|--------|-------------|------------|
-| Z.ai MCP outage | High | Low | Automatic fallback to Tavily |
-| Z.ai quota exceeded | Medium | Medium | Proactive monitoring + Tavily fallback |
-| Tavily API outage | Medium | Low | Cache + error message |
-| GLM rate limiting | Medium | Medium | Queue + exponential backoff |
-| Vision quota exhausted | Low | Medium | Skip vision, continue with text research |
+| Tavily API outage | High | Low | Cache results + graceful error message |
+| OpenRouter rate limiting | Medium | Medium | Queue + exponential backoff |
+| Long research times | Medium | Medium | Timeout limits + progressive results |
+| Large context overflow | Low | Low | Content truncation + chunking |
 
 ### 12.2 Cost Risks
 
 | Risk | Impact | Probability | Mitigation |
 |------|--------|-------------|------------|
-| Unexpected Tavily costs | Medium | Low | Z.ai first policy + budget alerts |
-| Z.ai quota runs out early | Medium | Medium | Usage forecasting + throttling |
+| High API costs | Medium | Medium | Rate limiting + caching |
 | Cache misses | Low | Low | Fuzzy query matching + longer TTL |
+| Abuse/spam | Medium | Low | User rate limits + authentication |
 
 ---
 
-## Appendix A: Z.ai MCP Configuration
+## Appendix A: Environment Configuration
 
-### Claude Code MCP Setup (for local development)
-
-Add to `.mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "web-search-prime": {
-      "type": "http",
-      "url": "https://api.z.ai/api/mcp/web_search_prime/mcp",
-      "headers": {
-        "Authorization": "Bearer ${GLM_API_KEY}"
-      }
-    },
-    "web-reader": {
-      "type": "http",
-      "url": "https://api.z.ai/api/mcp/web_reader/mcp",
-      "headers": {
-        "Authorization": "Bearer ${GLM_API_KEY}"
-      }
-    },
-    "vision": {
-      "type": "http",
-      "url": "https://api.z.ai/api/mcp/vision/mcp",
-      "headers": {
-        "Authorization": "Bearer ${GLM_API_KEY}"
-      }
-    }
-  }
-}
-```
-
-### Environment Variables
+### Required Environment Variables
 
 ```bash
 # Supabase secrets (Edge Functions)
-GLM_API_KEY=your-zai-api-key        # Used for both GLM and MCP
-TAVILY_API_KEY=tvly-your-key        # Fallback only
+OPENROUTER_GEMINI_FLASH_KEY=sk-or-...  # For Gemini 3 Flash (analysis, synthesis, vision)
+TAVILY_API_KEY=tvly-...                 # For web search and content extraction
+```
 
-# No separate Z.ai MCP key needed - uses GLM_API_KEY
+### Supabase Secret Setup
+
+```bash
+# Set secrets for Edge Functions
+supabase secrets set OPENROUTER_GEMINI_FLASH_KEY=sk-or-your-key
+supabase secrets set TAVILY_API_KEY=tvly-your-key
 ```
 
 ---
 
-## Appendix B: API Cost Comparison (Updated)
+## Appendix B: API Cost Reference
 
-| Provider | Search Cost | Extract Cost | Vision | Notes |
-|----------|-------------|--------------|--------|-------|
-| **Z.ai MCP** | **$0** | **$0** | **$0** | Included in Coding Max (4,000/mo) |
-| Tavily | $0.001/search | $0.001/5 URLs | ❌ | Pay per use |
-| SerpAPI | $0.002/search | N/A | ❌ | No extraction |
-| Bing Search | $0.003/search | N/A | ❌ | Requires Azure |
+### Tavily Pricing
+| Operation | Cost |
+|-----------|------|
+| Search | ~$0.001/query |
+| Extract | ~$0.001/5 URLs |
 
-**Decision**: Z.ai MCP as primary (free), Tavily as fallback (pay per use)
+### OpenRouter Gemini 3 Flash Pricing
+| Operation | Input | Output |
+|-----------|-------|--------|
+| Standard | $0.15/M tokens | $0.60/M tokens |
+| Thinking mode | $0.15/M tokens | $0.60/M tokens |
+
+**Note**: Costs are estimates based on typical usage patterns.
 
 ---
 
@@ -1687,18 +1038,19 @@ TAVILY_API_KEY=tvly-your-key        # Fallback only
 
 1. **Academic Search**: Add Google Scholar / Semantic Scholar integration
 2. **News Search**: Add news-specific search for current events
-3. **Image Research**: Leverage Z.ai Vision for image-based research
-4. **PDF Analysis**: Full PDF document analysis with Z.ai Vision
+3. **Image Research**: Leverage Gemini 3 Flash multimodal for image-based research
+4. **PDF Analysis**: Full PDF document analysis with Gemini 3 Flash
 5. **Follow-up Questions**: Enable iterative research refinement
 6. **Collaborative Research**: Share and collaborate on research reports
 7. **Research Templates**: Pre-defined templates for common research types
 8. **Multi-language**: Research in and translate from multiple languages
-9. **Z.ai Quota Dashboard**: Real-time quota monitoring in admin panel
+9. **Research History**: Track and revisit past research sessions
 
 ---
 
 *This plan is a living document. Update as implementation progresses.*
 
 **Changelog:**
+- v3.0 (2026-01-12): Updated to use Gemini 3 Flash via OpenRouter + Tavily (matching production stack)
 - v2.0 (2025-12-01): Switched to Z.ai MCP as primary search/extraction backend
 - v1.0 (2025-12-01): Initial plan with Tavily

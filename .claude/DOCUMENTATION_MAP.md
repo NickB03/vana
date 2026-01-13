@@ -1,6 +1,6 @@
 # Documentation Map
 
-**Last Updated**: 2025-12-29
+**Last Updated**: 2026-01-12
 **Purpose**: Quick reference for finding documentation across the project
 
 ---
@@ -35,16 +35,19 @@
 ### Architecture & Systems
 | File | Purpose |
 |------|---------|
+| `GEMINI_3_FLASH_GUIDE.md` | **Comprehensive Gemini 3 Flash developer guide** |
+| `GEMINI_3_FLASH_IMPLEMENTATION_ANALYSIS.md` | Implementation analysis vs best practices |
 | `REASONING_UI_ARCHITECTURE.md` | Reasoning display system design |
 | `TOOL_SYSTEM_DEEP_DIVE.md` | Tool calling architecture |
 | `UNIFIED_TOOL_ARCHITECTURE.md` | Unified tool system |
 | `TRANSPILATION.md` | Sucrase transpiler documentation |
 
 ### API References
-| File | Purpose |
-|------|---------|
-| `GLM-4.6-API-REFERENCE.md` | GLM-4.6 API details |
-| `GLM-4.7-MIGRATION-GUIDE.md` | GLM-4.7 migration guide |
+| File | Purpose | Status |
+|------|---------|--------|
+| `GEMINI_3_FLASH_GUIDE.md` | Current Gemini 3 Flash API reference | Active |
+| `GLM-4.6-API-REFERENCE.md` | GLM-4.6 API details | Archived (migrated to Gemini) |
+| `GLM-4.7-MIGRATION-GUIDE.md` | GLM-4.7 migration guide | Archived (migrated to Gemini) |
 
 ### Historical/Reference
 | File | Purpose | Status |
@@ -94,6 +97,7 @@ Example code and reference screenshots:
 | `INTEGRATIONS.md` | External integrations |
 | `TOOL_CALLING_SYSTEM.md` | Tool calling reference |
 | `TROUBLESHOOTING.md` | AI-focused troubleshooting (compact) |
+| `MIGRATION-STATUS.md` | Gemini 3 Flash migration progress |
 | `artifact-import-restrictions.md` | Import restrictions for artifacts |
 
 ### Subdirectories
@@ -141,8 +145,7 @@ Archived historical reports:
 - `pr-390-reports/` - PR #390 analysis suite (Dec 24)
 
 #### `.claude/docs/`
-Additional technical documentation:
-- `GLM-4.6-CAPABILITIES.md` - GLM capabilities reference
+Additional technical documentation (see `.claude/archive/` for historical GLM docs)
 
 ---
 
@@ -170,11 +173,19 @@ Additional technical documentation:
 - **`/.claude`**: AI assistant reference (more compact, implementation-focused)
 - **Root**: High-level project documentation
 
+### Gemini 3 Flash Migration (Jan 2026)
+The project completed migration from GLM to Gemini 3 Flash via OpenRouter:
+- **Primary Docs**: `docs/GEMINI_3_FLASH_GUIDE.md` (comprehensive developer guide)
+- **Implementation Analysis**: `docs/GEMINI_3_FLASH_IMPLEMENTATION_ANALYSIS.md`
+- **Migration Status**: `.claude/MIGRATION-STATUS.md` (100% complete)
+- **Tracking**: GitHub Issue #522
+
 ### Historical Documents
 These documents are kept for reference but describe completed work:
 - `docs/BUG-FIX-TOOL-CALL-FAILURE.md` - Fixed bug documentation
 - `docs/RFC-001-TOOL-RESULT-FORMAT-REFACTOR.md` - Implemented RFC
 - `.claude/plans/sucrase-migration-plan.md` - Completed migration
+- `docs/archive/GLM-*.md` - Archived GLM documentation (superseded by Gemini)
 
 ### Future Considerations
 1. Consider creating `docs/archive/` for historical bug fixes and RFCs

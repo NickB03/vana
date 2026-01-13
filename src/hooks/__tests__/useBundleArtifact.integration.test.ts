@@ -411,7 +411,7 @@ describe('Bundle Artifact Integration', () => {
     const controller = new AbortController();
     const artifactId = crypto.randomUUID();
 
-    const response = await fetch(`${BUNDLE_ENDPOINT}?streaming=true`, {
+    const response = await fetch(BUNDLE_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -424,6 +424,7 @@ describe('Bundle Artifact Integration', () => {
         dependencies: TEST_DEPENDENCIES,
         bundleReact: true,
         title: 'Test Component',
+        streaming: true,
       }),
       signal: controller.signal,
     });

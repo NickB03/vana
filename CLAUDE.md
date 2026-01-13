@@ -1,4 +1,4 @@
-<!-- CLAUDE.md | Last updated: 2026-01-01 -->
+<!-- CLAUDE.md | Last updated: 2026-01-12 -->
 
 # CLAUDE.md
 
@@ -103,8 +103,8 @@ See [BUILD_AND_DEPLOYMENT.md](./.claude/BUILD_AND_DEPLOYMENT.md) for CI/CD detai
 ## Quick Architecture Reference
 
 **AI Models** ([full architecture](./.claude/ARCHITECTURE.md)):
-- **Titles/Summaries/Query Rewrite**: GLM-4.5-Air (Z.ai, fast mode)
-- **Artifact Generation**: GLM-4.7 (Z.ai, thinking mode enabled)
+- **Chat/Artifacts/Query Rewrite**: Gemini 3 Flash (OpenRouter, 1M context)
+- **Titles/Summaries**: Gemini 2.5 Flash Lite (OpenRouter, fast & cheap)
 - **Image Generation**: Gemini 2.5 Flash Image (OpenRouter)
 - **Chat Fallback**: Gemini 2.5 Flash Lite (OpenRouter, circuit breaker only)
 
@@ -114,7 +114,7 @@ See [BUILD_AND_DEPLOYMENT.md](./.claude/BUILD_AND_DEPLOYMENT.md) for CI/CD detai
 - **Validation**: 5-layer system with structured error codes
 
 **Tool Calling** ([details](./.claude/TOOL_CALLING_SYSTEM.md)):
-- `generate_artifact` → GLM-4.7
+- `generate_artifact` → Gemini 3 Flash
 - `generate_image` → Gemini Flash Image
 - `browser.search` → Tavily
 
@@ -159,9 +159,8 @@ Prefer `tap({ id: "accessibilityId" })` or `tap({ label: "Button Text" })` over 
 **Environment setup**: [CONFIGURATION.md](./.claude/CONFIGURATION.md)
 
 **Key secrets** (Supabase):
-- `OPENROUTER_GEMINI_FLASH_KEY` (chat)
+- `OPENROUTER_GEMINI_FLASH_KEY` (artifacts, chat, titles, summaries)
 - `OPENROUTER_GEMINI_IMAGE_KEY` (images)
-- `GLM_API_KEY` (artifacts)
 - `TAVILY_API_KEY` (search)
 
 **Feature flags**: [CONFIGURATION.md](./.claude/CONFIGURATION.md#feature-flags)
@@ -220,13 +219,13 @@ supabase/
 - [TROUBLESHOOTING.md](./.claude/TROUBLESHOOTING.md) — Debugging guide
 - [E2E_TESTING.md](./.claude/E2E_TESTING.md) — Testing strategy, E2E & integration tests
 - [artifact-import-restrictions.md](./.claude/artifact-import-restrictions.md) — Import rules for artifacts
-- [docs/GLM-4.6-CAPABILITIES.md](./.claude/docs/GLM-4.6-CAPABILITIES.md) — GLM model features
 
 **Existing guides**:
 - [Chrome MCP Commands](./.claude/CHROME_MCP_COMMANDS.md)
 - [Transpilation Architecture](docs/TRANSPILATION.md) — Sucrase transpiler, error handling, benchmarks
+- [Gemini 3 Flash Guide](docs/GEMINI_3_FLASH_GUIDE.md) — Model specs, thinking modes, tool calling
 
 **External**:
 - [Supabase Docs](https://supabase.com/docs)
 - [OpenRouter Docs](https://openrouter.ai/docs)
-- [Z.ai Docs](https://docs.z.ai)
+- [Gemini API Docs](https://ai.google.dev/gemini-api/docs)

@@ -13,17 +13,35 @@ export const CORE_RESTRICTIONS = `
 
 Follow these patterns EXACTLY to ensure your artifact works:
 
-1. **USE NPM PACKAGES** (MANDATORY)
+1. **IMPORT STRATEGY** (MANDATORY)
 
-   ALWAYS use direct npm package imports for UI components and utilities:
+   Choose the right import strategy based on component needs:
+
+   **⚡ Tier 1: Pre-loaded Libraries (DEFAULT - instant rendering)**
+   Use for 90%+ of artifacts. These are globally available via CDN:
    \`\`\`jsx
-   import * as Dialog from '@radix-ui/react-dialog';
+   // React hooks - destructure from global React
+   const { useState, useEffect, useCallback, useMemo, useRef } = React;
+
+   // Icons - use lucide-react (pre-loaded)
    import { Check, X, ArrowRight } from 'lucide-react';
-   import { clsx } from 'clsx';
+
+   // Charts - use Recharts (pre-loaded)
+   import { LineChart, BarChart, PieChart, Cell } from 'recharts';
+
+   // Animations - use Framer Motion (pre-loaded)
+   import { motion, AnimatePresence } from 'framer-motion';
    \`\`\`
 
-   Copy these patterns exactly. The sandbox has no access to local project files.
+   **🐢 Tier 2: npm Packages (ONLY when needed - 2-5s delay)**
+   Use ONLY for complex accessible primitives not achievable with Tailwind:
+   \`\`\`jsx
+   // Dialog, Dropdown, Select, Popover - use Radix UI
+   import * as Dialog from '@radix-ui/react-dialog';
+   import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+   \`\`\`
 
+   ⚠️ npm imports trigger server bundling (2-5s delay, rate limits apply)
    ⚠️ These will FAIL: \`import { Button } from "@/components/ui/button"\`, \`import { cn } from "@/lib/utils"\`
 
 2. **USE REACT STATE** (MANDATORY)
@@ -109,7 +127,7 @@ Verify your artifact has ALL of these:
 ✓ Started with: const { useState, useEffect } = React;
 ✓ Wrapped in: <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
 ✓ Ended with: export default function App() { ... }
-✓ Used npm packages (lucide-react, @radix-ui/*, clsx)
+✓ Used pre-loaded CDN libraries (lucide-react, recharts, framer-motion) OR npm packages (@radix-ui/*)
 ✓ Used React state (const [value, setValue] = useState(...))
 ✓ Each import name appears only once
 ✓ No code after the component export

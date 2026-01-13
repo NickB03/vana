@@ -10,14 +10,14 @@
  *
  * To run:
  * cd supabase/functions
- * GLM_API_KEY=your_key SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_ANON_KEY=your_key deno task test:integration:title
+ * OPENROUTER_GEMINI_FLASH_KEY=your_key SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_ANON_KEY=your_key deno task test:integration:title
  *
  * Cost per run: ~$0.005 (5 tests × ~$0.001 each)
  */
 
 import { assert, assertEquals, assertExists } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
-const GLM_API_KEY = Deno.env.get("GLM_API_KEY");
+const OPENROUTER_GEMINI_FLASH_KEY = Deno.env.get("OPENROUTER_GEMINI_FLASH_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "http://127.0.0.1:54321";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 
@@ -42,7 +42,7 @@ console.log("=".repeat(70) + "\n");
 
 Deno.test({
   name: "Title Endpoint - Generate title from conversation",
-  ignore: !GLM_API_KEY || !SUPABASE_ANON_KEY,
+  ignore: !OPENROUTER_GEMINI_FLASH_KEY || !SUPABASE_ANON_KEY,
   async fn() {
     console.log("\n💬 Testing title generation from conversation...");
 
@@ -108,7 +108,7 @@ Deno.test({
 
 Deno.test({
   name: "Title Endpoint - Missing message field",
-  ignore: !GLM_API_KEY || !SUPABASE_ANON_KEY,
+  ignore: !OPENROUTER_GEMINI_FLASH_KEY || !SUPABASE_ANON_KEY,
   async fn() {
     console.log("\n⚠️ Testing missing message field...");
 
@@ -146,7 +146,7 @@ Deno.test({
 
 Deno.test({
   name: "Title Endpoint - Empty message",
-  ignore: !GLM_API_KEY || !SUPABASE_ANON_KEY,
+  ignore: !OPENROUTER_GEMINI_FLASH_KEY || !SUPABASE_ANON_KEY,
   async fn() {
     console.log("\n⚠️ Testing empty message...");
 
@@ -184,7 +184,7 @@ Deno.test({
 
 Deno.test({
   name: "Title Endpoint - Title quality across conversation types",
-  ignore: !GLM_API_KEY || !SUPABASE_ANON_KEY,
+  ignore: !OPENROUTER_GEMINI_FLASH_KEY || !SUPABASE_ANON_KEY,
   async fn() {
     console.log("\n🎯 Testing title quality across different conversation types...");
 
@@ -265,7 +265,7 @@ Deno.test({
 
 Deno.test({
   name: "Title Endpoint - Response headers and structure",
-  ignore: !GLM_API_KEY || !SUPABASE_ANON_KEY,
+  ignore: !OPENROUTER_GEMINI_FLASH_KEY || !SUPABASE_ANON_KEY,
   async fn() {
     console.log("\n📋 Testing response headers and structure...");
 
@@ -320,7 +320,7 @@ Deno.test({
 
 Deno.test({
   name: "Title Endpoint - Guest user access (no auth required)",
-  ignore: !GLM_API_KEY,
+  ignore: !OPENROUTER_GEMINI_FLASH_KEY,
   async fn() {
     console.log("\n👤 Testing guest user access (no auth)...");
 
@@ -355,7 +355,7 @@ Deno.test({
 
 Deno.test({
   name: "Title Endpoint - Message length validation",
-  ignore: !GLM_API_KEY || !SUPABASE_ANON_KEY,
+  ignore: !OPENROUTER_GEMINI_FLASH_KEY || !SUPABASE_ANON_KEY,
   async fn() {
     console.log("\n📏 Testing message length validation...");
 
@@ -397,7 +397,7 @@ Deno.test({
 
 Deno.test({
   name: "Title Endpoint - Performance (fast response)",
-  ignore: !GLM_API_KEY || !SUPABASE_ANON_KEY,
+  ignore: !OPENROUTER_GEMINI_FLASH_KEY || !SUPABASE_ANON_KEY,
   async fn() {
     console.log("\n⚡ Testing title generation performance...");
 
@@ -421,7 +421,7 @@ Deno.test({
     const data = await response.json();
     assertExists(data.title, "Response should have title");
 
-    // Title generation should be fast (< 5 seconds for GLM-4.5-Air)
+    // Title generation should be fast (< 5 seconds)
     // This includes network latency, so we're generous with the timeout
     assert(
       duration < 5000,

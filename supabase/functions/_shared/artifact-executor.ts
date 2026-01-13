@@ -6,7 +6,7 @@
  *
  * RESPONSIBILITIES:
  * - Construct prompts based on artifact type
- * - Call GLM API with retry logic
+ * - Call Gemini API with retry logic
  * - Parse and validate responses
  * - Auto-fix common issues
  * - Track token usage and costs
@@ -23,15 +23,16 @@
  */
 
 import {
-  callGLMWithRetryTracking,
-  extractTextAndReasoningFromGLM,
-  extractGLMTokenUsage,
-  calculateGLMCost,
-} from './glm-client.ts';
+  generateArtifact,
+  extractText,
+  extractReasoning,
+  extractTokenUsage,
+  calculateCost,
+  processGeminiStream,
+} from './gemini-client.ts';
 import {
   validateArtifactCode,
   autoFixArtifactCode,
-  preValidateAndFixGlmSyntax,
   VALIDATION_ERROR_CODES,
   type ValidationIssue,
   type ValidationErrorCode,
@@ -210,12 +211,11 @@ ${code}
 Return ONLY the fixed code without any additional text.`;
 
   try {
-    const { response } = await callGLMWithRetryTracking(systemPrompt, userPrompt, {
-      temperature: 0.6,
-      max_tokens: DEFAULT_MODEL_PARAMS.ARTIFACT_MAX_TOKENS,
-      requestId,
+    // Use Gemini 3 Flash for artifact fixing
+    const response = await generateArtifact(systemPrompt, userPrompt, {
       enableThinking: true,
-      timeoutMs: 170000,
+      thinkingLevel: 'medium',
+      requestId,
     });
 
     if (!response.ok) {
@@ -223,9 +223,53 @@ Return ONLY the fixed code without any additional text.`;
       return null;
     }
 
-    const data = await response.json();
-    const finishReason = data?.choices?.[0]?.finish_reason ?? null;
-    const { text: extractedCode } = extractTextAndReasoningFromGLM(data, requestId);
+    // For non-streaming use, we need to consume the stream and collect the result
+    let extractedCode = '';
+    const reader = response.body?.getReader();
+    if (!reader) {
+      console.warn(`[${requestId}] ⚠️  AI fix response has no body`);
+      return null;
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let finishReason: string | null = null;
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.trim() || line.startsWith(':')) continue;
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              const content = extractText(parsed, requestId);
+              if (content) {
+                extractedCode += content;
+              }
+
+              // Check finish reason
+              if (parsed?.choices?.[0]?.finish_reason) {
+                finishReason = parsed.choices[0].finish_reason;
+              }
+            } catch (e) {
+              // Ignore parse errors
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
 
     if (finishReason === 'length') {
       console.warn(`[${requestId}] ⚠️  AI fix output truncated (finish_reason="length")`);
@@ -293,7 +337,7 @@ export interface ArtifactExecutorParams {
   requestId: string;
 
   /**
-   * Enable GLM thinking mode for better reasoning
+   * Enable Gemini thinking mode for better reasoning
    * @default true
    */
   enableThinking?: boolean;
@@ -316,7 +360,7 @@ export interface ArtifactExecutorResult {
   artifactCode: string;
 
   /**
-   * Raw reasoning text from GLM (null if thinking disabled)
+   * Raw reasoning text from Gemini (null if thinking disabled)
    */
   reasoning: string | null;
 
@@ -447,12 +491,12 @@ function validateParams(params: ArtifactExecutorParams, safeRequestId: string): 
 /**
  * Construct the user prompt based on artifact type
  *
- * CRITICAL: GLM-4.7 tends to generate full HTML documents for React artifacts.
- * This prompt explicitly instructs it to return ONLY pure JSX/React code.
+ * CRITICAL: AI models sometimes generate full HTML documents for React artifacts.
+ * This prompt explicitly instructs them to return ONLY pure JSX/React code.
  *
  * @param prompt - User's description of what to create
  * @param type - Type of artifact to generate
- * @returns Formatted prompt for GLM
+ * @returns Formatted prompt for Gemini
  */
 function constructUserPrompt(prompt: string, type: GeneratableArtifactType): string {
   if (type === 'react') {
@@ -516,10 +560,10 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
 /**
  * Strip HTML document structure from React artifacts
  *
- * GLM-4.7 sometimes appends full HTML documents after the React code.
+ * AI models sometimes append full HTML documents after the React code.
  * This causes Sucrase transpilation to fail with "Unexpected token '<'".
  *
- * @param code - Raw artifact code from GLM
+ * @param code - Raw artifact code from Gemini
  * @param type - Artifact type
  * @param requestId - Request ID for logging
  * @returns Cleaned artifact code
@@ -639,49 +683,43 @@ export async function executeArtifactGeneration(
     userPromptPreview: userPrompt.substring(0, 200),
   });
 
-  // Call GLM-4.7 with retry logic
-  console.log(`[${requestId}] 🤖 Calling GLM-4.7 via Z.ai API`);
+  // Call Gemini 3 Flash with retry logic
+  console.log(`[${requestId}] 🤖 Calling Gemini 3 Flash via OpenRouter`);
   let response;
-  let retryCount;
 
   try {
-    logPremadeDebug(requestId, 'Calling callGLMWithRetryTracking', {
+    logPremadeDebug(requestId, 'Calling generateArtifact', {
       temperature: 1.0,
-      max_tokens: 16000,
+      max_tokens: 32000,
       enableThinking,
+      thinkingLevel: 'medium',
       timeoutMs: 120000,
     });
 
-    const result = await callGLMWithRetryTracking(systemPrompt, userPrompt, {
-      temperature: 1.0, // GLM recommends 1.0 for general evaluations
-      max_tokens: 16000, // Doubled from 8000 to handle complex artifacts
-      requestId,
+    response = await generateArtifact(systemPrompt, userPrompt, {
       enableThinking, // Enable reasoning for better artifact generation
-      timeoutMs: 170000, // ~3min timeout for GLM-4.7 thinking mode (must be < 180s tool limit)
+      thinkingLevel: 'medium',
+      requestId,
     });
 
-    response = result.response;
-    retryCount = result.retryCount;
-
-    logPremadeDebug(requestId, 'GLM API call succeeded', {
+    logPremadeDebug(requestId, 'Gemini API call succeeded', {
       responseStatus: response.status,
       responseOk: response.ok,
-      retryCount,
     });
   } catch (error) {
     const err = toError(error);
     const sanitizedMsg = sanitizeErrorMessage(err.message);
 
-    console.error(`[${requestId}] ❌ GLM API call failed:`, sanitizedMsg);
+    console.error(`[${requestId}] ❌ Gemini API call failed:`, sanitizedMsg);
 
-    logPremadeDebug(requestId, 'GLM API call failed', {
+    logPremadeDebug(requestId, 'Gemini API call failed', {
       error: sanitizedMsg,
       errorType: err.constructor.name,
       stack: err.stack,
     });
 
     throw new ArtifactExecutionError(
-      'Failed to call GLM API',
+      'Failed to call Gemini API',
       ErrorCode.AI_ERROR,
       requestId,
       err
@@ -690,10 +728,10 @@ export async function executeArtifactGeneration(
 
   // Check response status
   if (!response.ok) {
-    const errorMsg = `GLM API returned error status: ${response.status}`;
+    const errorMsg = `Gemini API returned error status: ${response.status}`;
     console.error(`[${requestId}] ❌ ${errorMsg}`);
 
-    logPremadeDebug(requestId, 'GLM API non-OK response', {
+    logPremadeDebug(requestId, 'Gemini API non-OK response', {
       status: response.status,
       statusText: response.statusText,
     });
@@ -705,31 +743,90 @@ export async function executeArtifactGeneration(
     );
   }
 
-  // Parse response
-  let data;
+  // Process streaming response
+  let rawArtifactCode = '';
+  let geminiReasoning: string | null = null;
+  let finishReason: string | null = null;
+  let tokenUsageData: { inputTokens: number; outputTokens: number; totalTokens: number } | null = null;
+
   try {
-    logPremadeDebug(requestId, 'Parsing GLM response JSON', {});
+    logPremadeDebug(requestId, 'Processing Gemini streaming response', {});
 
-    data = await response.json();
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('Response body is null');
+    }
 
-    logPremadeDebug(requestId, 'GLM response parsed successfully', {
-      hasChoices: !!data?.choices,
-      choicesLength: data?.choices?.length || 0,
-      hasUsage: !!data?.usage,
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.trim() || line.startsWith(':')) continue;
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+
+              // Extract content
+              const content = extractText(parsed, requestId);
+              if (content) {
+                rawArtifactCode += content;
+              }
+
+              // Extract reasoning
+              const reasoning = extractReasoning(parsed, requestId);
+              if (reasoning && !geminiReasoning) {
+                geminiReasoning = reasoning;
+              }
+
+              // Extract finish reason
+              if (parsed?.choices?.[0]?.finish_reason) {
+                finishReason = parsed.choices[0].finish_reason;
+              }
+
+              // Extract token usage
+              if (parsed?.usage) {
+                tokenUsageData = extractTokenUsage(parsed);
+              }
+            } catch (e) {
+              // Ignore parse errors for individual chunks
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    logPremadeDebug(requestId, 'Gemini stream processed successfully', {
+      rawArtifactCodeLength: rawArtifactCode.length,
+      hasReasoning: !!geminiReasoning,
+      finishReason,
     });
   } catch (error) {
     const err = toError(error);
     const sanitizedMsg = sanitizeErrorMessage(err.message);
 
-    console.error(`[${requestId}] ❌ Failed to parse GLM response:`, sanitizedMsg);
+    console.error(`[${requestId}] ❌ Failed to process Gemini stream:`, sanitizedMsg);
 
-    logPremadeDebug(requestId, 'Failed to parse GLM response JSON', {
+    logPremadeDebug(requestId, 'Failed to process Gemini stream', {
       error: sanitizedMsg,
       errorType: err.constructor.name,
     });
 
     throw new ArtifactExecutionError(
-      'Failed to parse GLM response JSON',
+      'Failed to process Gemini streaming response',
       ErrorCode.AI_ERROR,
       requestId,
       err
@@ -737,40 +834,31 @@ export async function executeArtifactGeneration(
   }
 
   // Log finish_reason for debugging token limit issues
-  const finishReason = data?.choices?.[0]?.finish_reason;
   console.log(`[${requestId}] 📊 Generation complete: finish_reason="${finishReason}"`);
 
   if (finishReason === 'length') {
-    console.warn(`[${requestId}] ⚠️  HIT TOKEN LIMIT - Response truncated at ${data?.usage?.completion_tokens || 'unknown'} output tokens`);
+    console.warn(`[${requestId}] ⚠️  HIT TOKEN LIMIT - Response truncated at ${tokenUsageData?.outputTokens || 'unknown'} output tokens`);
     console.warn(`[${requestId}] ⚠️  Consider: 1) Simplifying prompt, 2) Increasing max_tokens further, 3) Using model with higher limits`);
   }
-
-  // Extract text and reasoning from response
-  logPremadeDebug(requestId, 'Extracting text and reasoning from GLM response', {});
-
-  const { text: rawArtifactCode, reasoning: glmReasoning } = extractTextAndReasoningFromGLM(
-    data,
-    requestId
-  );
 
   logPremadeDebug(requestId, 'Extracted artifact code and reasoning', {
     rawArtifactCodeLength: rawArtifactCode?.length || 0,
     hasRawArtifactCode: !!rawArtifactCode,
     rawArtifactCodePreview: rawArtifactCode?.substring(0, 200),
-    glmReasoningLength: glmReasoning?.length || 0,
-    hasGlmReasoning: !!glmReasoning,
+    geminiReasoningLength: geminiReasoning?.length || 0,
+    hasGlmReasoning: !!geminiReasoning,
   });
 
   if (!rawArtifactCode || rawArtifactCode.trim().length === 0) {
     console.error(`[${requestId}] ❌ Empty artifact code returned from API`);
 
-    logPremadeDebug(requestId, 'Empty artifact code from GLM', {
+    logPremadeDebug(requestId, 'Empty artifact code from Gemini', {
       rawArtifactCode,
-      dataChoices: data?.choices,
+      finishReason,
     });
 
     throw new ArtifactExecutionError(
-      'GLM returned empty artifact code',
+      'Gemini returned empty artifact code',
       ErrorCode.AI_ERROR,
       requestId
     );
@@ -783,16 +871,10 @@ export async function executeArtifactGeneration(
   let artifactCode = stripHtmlDocumentStructure(rawArtifactCode, type, requestId);
 
   // ============================================================================
-  // PRE-VALIDATION: Fix GLM syntax issues BEFORE validation
+  // PRE-VALIDATION: GLM-specific syntax fixes removed (Gemini 3 Flash doesn't have these issues)
   // ============================================================================
-  // This is the FIRST line of defense - catches GLM syntax bugs (const * as,
-  // unquoted imports, orphaned chains) before they reach the client.
-  // Prevents bundling failures and client-side rendering errors.
-  const preValidation = preValidateAndFixGlmSyntax(artifactCode, requestId);
-  if (preValidation.issues.length > 0) {
-    console.log(`[${requestId}] 🔧 Pre-validation fixed ${preValidation.issues.length} GLM syntax issue(s)`);
-    artifactCode = preValidation.fixed;
-  }
+  // Note: GLM-specific syntax issues (const * as, unquoted imports, orphaned chains)
+  // were removed. Gemini 3 Flash generates cleaner code that doesn't require these fixes.
 
   // ============================================================================
   // POST-GENERATION VALIDATION & AUTO-FIX
@@ -959,12 +1041,6 @@ export async function executeArtifactGeneration(
         const aiFinishReason = aiFixedResult.finishReason;
         artifactCode = stripHtmlDocumentStructure(aiFixedResult.code, type, requestId);
 
-        const aiPreValidation = preValidateAndFixGlmSyntax(artifactCode, requestId);
-        if (aiPreValidation.issues.length > 0) {
-          console.log(`[${requestId}] 🔧 AI fix pre-validation corrected ${aiPreValidation.issues.length} issue(s)`);
-          artifactCode = aiPreValidation.fixed;
-        }
-
         const aiAutoFix = autoFixArtifactCode(artifactCode);
         if (aiAutoFix.changes.length > 0) {
           console.log(`[${requestId}] 🔧 AI fix auto-applied ${aiAutoFix.changes.length} change(s):`, aiAutoFix.changes);
@@ -1004,7 +1080,7 @@ export async function executeArtifactGeneration(
     console.log(`[${requestId}] ✅ Artifact code validated successfully (no issues)`);
 
     // Even when validation passes, run autoFixArtifactCode to handle TypeScript stripping
-    // GLM sometimes generates TypeScript annotations that pass validation but fail in Sucrase
+    // AI models sometimes generate TypeScript annotations that pass validation but fail in Sucrase
     const { fixed, changes } = autoFixArtifactCode(artifactCode);
     if (changes.length > 0) {
       console.log(`[${requestId}] 🔧 Applied ${changes.length} pre-processing fix(es):`, changes);
@@ -1013,8 +1089,8 @@ export async function executeArtifactGeneration(
   }
 
   // Extract token usage for cost tracking
-  const tokenUsage = extractGLMTokenUsage(data);
-  const estimatedCost = calculateGLMCost(tokenUsage.inputTokens, tokenUsage.outputTokens);
+  const tokenUsage = tokenUsageData || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+  const estimatedCost = calculateCost(tokenUsage.inputTokens, tokenUsage.outputTokens);
 
   console.log(`[${requestId}] 💰 Token usage:`, {
     input: tokenUsage.inputTokens,
@@ -1026,11 +1102,11 @@ export async function executeArtifactGeneration(
   // Calculate total latency
   const latencyMs = Date.now() - startTime;
 
-  console.log(`[${requestId}] ✅ Artifact generation complete: ${artifactCode.length} chars in ${latencyMs}ms (${retryCount} retries)`);
+  console.log(`[${requestId}] ✅ Artifact generation complete: ${artifactCode.length} chars in ${latencyMs}ms`);
 
   return {
     artifactCode,
-    reasoning: glmReasoning,
+    reasoning: geminiReasoning,
     reasoningSteps,
     tokenUsage,
     estimatedCost,

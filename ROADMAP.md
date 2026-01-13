@@ -22,13 +22,13 @@
 
 **Status**: ✅ Fully implemented and deployed to production
 
-**What it does**: Displays GLM-4.6's reasoning process in an expandable panel with live status updates, similar to Claude's "thinking" feature. Users can see the AI's thought process in real-time during artifact generation.
+**What it does**: Displays Gemini 3 Flash's reasoning process in an expandable panel with live status updates, similar to Claude's "thinking" feature. Users can see the AI's thought process in real-time during artifact generation.
 
 **Implementation**:
 - ✅ Frontend: `src/components/ReasoningDisplay.tsx` (collapsible panel with status ticker)
-- ✅ Backend: `supabase/functions/chat/` with GLM reasoning support
-- ✅ ReasoningProvider: Semantic status updates via GLM-4.5-Air with circuit breaker fallback
-- ✅ Documentation: `docs/REASONING_UI_ARCHITECTURE.md`
+- ✅ Backend: `supabase/functions/chat/` with Gemini reasoning support
+- ✅ Unified gemini-client.ts: Handles all LLM operations with configurable thinking levels
+- ✅ Documentation: `docs/REASONING_UI_ARCHITECTURE.md`, `docs/GEMINI_3_FLASH_GUIDE.md`
 
 **Features**:
 - Real-time reasoning stream with status updates ("Analyzing requirements...", "Designing structure...")
@@ -38,12 +38,12 @@
 - Preserved reasoning in message history
 
 **Technical Details**:
-- GLM-4.6 thinking mode enabled by default (`thinking: { type: "enabled" }`)
-- SSE streaming of `delta.reasoning_content` chunks
+- Gemini 3 Flash thinking mode with configurable levels (`reasoning: { effort: 'medium' }`)
+- SSE streaming of reasoning_content chunks via OpenRouter
 - Status extraction via regex patterns + LLM-powered semantic generation
 - Circuit breaker fallback for status generation failures
 
-**Reference**: `.claude/roadmap/claude_style_reasoning_guide/glm-reasoning-ui-guide.md`
+**Reference**: `docs/GEMINI_3_FLASH_GUIDE.md`, `.claude/roadmap/claude_style_reasoning_guide/`
 
 ---
 

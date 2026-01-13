@@ -50,8 +50,8 @@ export class ResourceExhaustionError extends Error {
 
 export const DEFAULT_EXECUTION_LIMITS: ExecutionLimits = {
   maxToolCallsPerRequest: 3,      // Max tools per request
-  maxTotalExecutionMs: 300000,    // 300s total request timeout (allows GLM-4.7 thinking mode)
-  maxSingleToolMs: 240000,        // 240s per tool (GLM-4.7 with comprehensive artifacts can take ~200s)
+  maxTotalExecutionMs: 300000,    // 300s total request timeout (allows Gemini 3 Flash thinking mode)
+  maxSingleToolMs: 240000,        // 240s per tool (Gemini 3 Flash with comprehensive artifacts can take ~200s)
 };
 
 // =============================================================================

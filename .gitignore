@@ -39,7 +39,6 @@ supabase/.branches/
 # Archive directories for temporary documentation and development artifacts
 /archive/
 .claude/archive/
-docs/archive/
 docs/issue-updates.md
 
 # Archive directory for temporary files

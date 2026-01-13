@@ -45,11 +45,11 @@ export const MODEL_BUDGETS: Record<string, TokenBudget> = {
     reservedForResponse: 4096,
     safetyMargin: 0.1 // 10% safety margin
   },
-  [MODELS.GLM_4_7]: {
-    model: MODELS.GLM_4_7,
-    maxContextTokens: 200000, // GLM-4.7 increased from 128K to 200K
-    reservedForResponse: 16000, // Increased for 4.7's higher output capacity
-    safetyMargin: 0.15 // 15% safety margin (reasoning tokens overhead)
+  [MODELS.GEMINI_3_FLASH]: {
+    model: MODELS.GEMINI_3_FLASH,
+    maxContextTokens: 1048576, // 1M token context window (1,048,576 tokens)
+    reservedForResponse: 65536, // 65K max output tokens per Gemini 3 Flash spec
+    safetyMargin: 0.1 // 10% safety margin
   }
 } as const;
 

@@ -16,7 +16,7 @@ The chat function uses a unified tool-calling architecture that enables AI to in
 const TOOL_CATALOG = {
   generate_artifact: {
     handler: 'artifact',
-    model: MODELS.GLM_4_6,
+    model: MODELS.GEMINI_3_FLASH,
     streaming: true
   },
   generate_image: {
@@ -26,6 +26,7 @@ const TOOL_CATALOG = {
   },
   'browser.search': {
     handler: 'search',
+    model: 'tavily',
     streaming: false
   }
 };
@@ -35,34 +36,34 @@ const TOOL_CATALOG = {
 
 **Purpose**: Generate React components, HTML pages, or other artifacts
 
-**Model**: GLM-4.6 (Z.ai) with thinking mode enabled
+**Model**: Gemini 3 Flash (OpenRouter) with reasoning enabled
 
 **Parameters**:
-- `type`: Artifact type (`react`, `html`, `svg`, `mermaid`, etc.)
-- `title`: Artifact title
-- `code`: Source code content
+- `type`: Artifact type (`react`, `html`, `svg`, `code`, `mermaid`, `markdown`)
+- `prompt`: Detailed description of what to generate
 
 **Validation**: See `tool-validator.ts` for Zod schemas
 
 ### generate_image
 
-**Purpose**: Generate AI images from text prompts
+**Purpose**: Generate or edit AI images from text prompts
 
 **Model**: Gemini 2.5 Flash Image (OpenRouter)
 
 **Parameters**:
-- `prompt`: Image description
-- `style`: Optional style guidance
+- `prompt`: Image description (for generate) or edit instructions (for edit mode)
+- `mode`: Operation mode (`generate` or `edit`, default: `generate`)
+- `baseImage`: URL of image to modify (required for edit mode)
+- `aspectRatio`: Aspect ratio (`1:1`, `16:9`, `9:16`, default: `1:1`)
 
 ### browser.search
 
 **Purpose**: Web search via Tavily API
 
-**Model**: N/A (direct API call, but query rewriting uses GLM-4.5-Air)
+**Model**: N/A (direct API call, but query rewriting uses Gemini 3 Flash)
 
 **Parameters**:
 - `query`: Search query
-- `max_results`: Number of results (default: 5)
 
 **Query Rewriting**:
 
@@ -72,11 +73,11 @@ Before sending queries to Tavily, the system optimizes them using LLM-powered qu
 
 **Purpose**: Transform conversational queries into search-optimized queries for better results
 
-**Model**: GLM-4.5-Air via Z.ai API (~300ms latency)
+**Model**: Gemini 3 Flash via OpenRouter API (~300ms latency)
 
 **Process**:
 1. **Smart Skip Logic**: Short queries (≤3 words), URLs, and code blocks skip rewriting
-2. **LLM Optimization**: Conversational queries sent to GLM-4.5-Air for rewriting
+2. **LLM Optimization**: Conversational queries sent to Gemini 3 Flash for rewriting
 3. **Temporal Context**: Adds current year for "latest", "current", "recent" queries
 4. **Fallback**: Returns original query if rewriting fails
 
@@ -107,7 +108,7 @@ Before sending queries to Tavily, the system optimizes them using LLM-powered qu
 ## SSE Event Flow
 
 ```
-User Message → GLM Decides to Use Tool
+User Message → AI Decides to Use Tool
     ↓
 tool_call_start event (SSE)
     ↓
@@ -132,7 +133,7 @@ done event (SSE)
 - Handles SSE streaming for tool lifecycle events
 
 **Executors**:
-- `artifact-executor.ts` — Artifact generation (GLM-4.6)
+- `artifact-executor.ts` — Artifact generation (Gemini 3 Flash)
 - `image-executor.ts` — Image generation (Gemini Flash Image)
 - `tavily-client.ts` — Web search (Tavily API)
 
@@ -284,10 +285,10 @@ try {
 
 **Flow**:
 1. User sends message to `/chat` endpoint
-2. GLM analyzes message and decides to call tool (or respond directly)
+2. AI analyzes message and decides to call tool (or respond directly)
 3. If tool call: `tool-executor.ts` runs appropriate executor
 4. Executor streams progress via SSE events
-5. Tool result returned to GLM for final response generation
+5. Tool result returned to AI for final response generation
 
 **SSE Event Types**:
 - `tool_call_start` — Tool execution starting
