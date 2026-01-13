@@ -101,7 +101,7 @@ export const ChatLayout = React.memo(({
       {/* Heading - centered in the space above content */}
       <div
         data-chat-heading
-        className="flex-1 flex items-center justify-center px-4"
+        className="flex-1 flex items-center justify-center px-4 md:max-h-[58%]"
       >
         <h1 className="bg-gradient-to-r from-indigo-200 via-white to-indigo-200 bg-clip-text text-[clamp(1.75rem,min(4vw,5vh),3rem)] font-bold text-transparent">
           {heading}
@@ -113,7 +113,7 @@ export const ChatLayout = React.memo(({
       {/* Switches to mobile layout when viewport height < 600px OR width < 768px */}
       <div
         data-chat-content
-        className="flex flex-col justify-start p-[clamp(1rem,2vh,2rem)] pb-[calc(2.75rem+env(safe-area-inset-bottom))] md:pb-[clamp(1rem,2vh,2rem)]"
+        className="flex flex-col justify-start p-[clamp(1rem,2vh,2rem)] pb-[calc(2.75rem+env(safe-area-inset-bottom))] md:p-2 md:pb-2"
       >
         {/* Mobile Suggestions - ABOVE input on mobile */}
         {/* Slower speed (0.25) for more leisurely browsing */}

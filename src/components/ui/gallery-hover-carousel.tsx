@@ -160,7 +160,7 @@ export default function GalleryHoverCarousel({
                     onClick={() => !isLoading && onItemClick?.(item)}
                     className={`group block relative w-full h-[clamp(90px,12vh,130px)] ${isLoading ? 'cursor-wait' : 'cursor-pointer'}`}
                   >
-                    <Card className={`overflow-hidden rounded-3xl h-full w-full transition-all duration-300 hover:scale-105 ${isLoading ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
+                    <Card className={`overflow-hidden rounded-xl h-full w-full transition-all duration-300 hover:scale-105 ${isLoading ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
                       {/* Image */}
                       <div className="relative h-full w-full transition-all duration-500 h-1/2">
                         <img
@@ -187,9 +187,9 @@ export default function GalleryHoverCarousel({
                       </div>
 
                       {/* Text Section */}
-                      <div className="absolute bottom-0 left-0 w-full h-1/2 px-1.5 sm:px-2 transition-all duration-500 flex flex-col justify-center bg-background/95 backdrop-blur-sm opacity-100 rounded-b-3xl">
-                        <h3 className="text-[10px] font-medium sm:text-xs">{item.title}</h3>
-                        <p className="text-muted-foreground text-[8px] sm:text-[10px] line-clamp-2">
+                      <div className="absolute bottom-0 left-0 w-full h-1/2 px-1.5 sm:px-2 transition-all duration-500 flex flex-col justify-center bg-muted/40 backdrop-blur-sm opacity-100 rounded-b-xl">
+                        <h3 className="text-[10px] font-medium sm:text-xs truncate">{item.title}</h3>
+                        <p className="text-foreground/70 text-[8px] sm:text-[10px] line-clamp-2">
                           {item.summary}
                         </p>
                         <Button
