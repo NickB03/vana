@@ -576,6 +576,24 @@ export async function handleToolCallingChat(
                   toolCalls[0].arguments
                 );
 
+                // Send semantic status update for ticker display
+                const toolStatusMessage = (() => {
+                  switch (toolCalls[0].name) {
+                    case 'generate_artifact':
+                      return 'Planning your interactive component...';
+                    case 'generate_image':
+                      return 'Preparing to create your image...';
+                    case 'browser.search':
+                      return 'Searching the web for relevant information...';
+                    default:
+                      return `Preparing to use ${toolCalls[0].name}...`;
+                  }
+                })();
+                sendEvent({
+                  type: 'status_update',
+                  status: toolStatusMessage,
+                });
+
                 // Notify client that tool call started
                 sendEvent({
                   type: 'tool_call_start',
@@ -614,6 +632,28 @@ export async function handleToolCallingChat(
             };
 
             console.log(`${logPrefix} 🔧 Executing tool: ${toolCallForExecution.name}`);
+
+            // Send execution status update for ticker display
+            const executionStatusMessage = (() => {
+              switch (toolCallForExecution.name) {
+                case 'generate_artifact': {
+                  // Try to extract artifact type from arguments for more specific messaging
+                  const args = toolCallForExecution.arguments as { artifactType?: string };
+                  const artifactType = args.artifactType || 'component';
+                  return `Building your ${artifactType}...`;
+                }
+                case 'generate_image':
+                  return 'Creating your image with AI...';
+                case 'browser.search':
+                  return 'Fetching search results...';
+                default:
+                  return `Executing ${toolCallForExecution.name}...`;
+              }
+            })();
+            sendEvent({
+              type: 'status_update',
+              status: executionStatusMessage,
+            });
 
             // Enhanced logging for premade card debugging
             logPremadeDebug(requestId, 'Tool execution started', {
@@ -675,6 +715,12 @@ export async function handleToolCallingChat(
                       },
                     });
                     console.log(`${logPrefix} 📤 Sent web_search event with ${tavilyResults.results.length} sources`);
+
+                    // Send completion status update
+                    sendEvent({
+                      type: 'status_update',
+                      status: `Found ${tavilyResults.results.length} relevant sources`,
+                    });
                   }
                   break;
                 }
@@ -682,6 +728,13 @@ export async function handleToolCallingChat(
                 case 'generate_artifact': {
                   // Send artifact result to client
                   if (toolResult.data?.artifactCode) {
+                    // Send completion status update
+                    const artifactTitle = toolResult.data.artifactTitle || 'your component';
+                    sendEvent({
+                      type: 'status_update',
+                      status: `Completed ${artifactTitle}`,
+                    });
+
                     sendEvent({
                       type: 'artifact_complete',
                       artifactCode: toolResult.data.artifactCode,
@@ -709,6 +762,12 @@ export async function handleToolCallingChat(
                 case 'generate_image': {
                   // Send image result to client
                   if (toolResult.data?.imageUrl || toolResult.data?.imageData) {
+                    // Send completion status update
+                    sendEvent({
+                      type: 'status_update',
+                      status: 'Image created successfully',
+                    });
+
                     sendEvent({
                       type: 'image_complete',
                       imageUrl: toolResult.data.imageUrl,
