@@ -204,10 +204,10 @@ export const ChatMessage = React.memo(function ChatMessage({
                 />
               </ReasoningErrorBoundary>
 
-              {/* Phase 3: Sequential rendering - content and tool skeleton can coexist */}
-              {/* Show content whenever it exists (unless pure message skeleton state) */}
-              {!shouldShowMessageSkeleton && message.content && (
-                <div className="chat-markdown">
+              {/* CRITICAL FIX: Always show content wrapper to maintain visual connection with ReasoningDisplay */}
+              {/* This prevents ReasoningDisplay from appearing as a separate message item */}
+              <div className="chat-markdown">
+                {message.content ? (
                   <MessageWithArtifacts
                     content={message.content}
                     messageId={message.id}
@@ -216,13 +216,12 @@ export const ChatMessage = React.memo(function ChatMessage({
                     artifactOverrides={artifactOverrides}
                     searchResults={streamProgress.searchResults}
                   />
-                </div>
-              )}
+                ) : shouldShowMessageSkeleton ? (
+                  <MessageSkeleton />
+                ) : null}
+              </div>
 
-              {/* Show message skeleton ONLY when no content and no tool */}
-              {shouldShowMessageSkeleton && <MessageSkeleton />}
-
-              {/* Show tool skeleton BELOW content when tool is executing */}
+              {/* Show tool skeleton BELOW content wrapper when tool is executing */}
               {shouldShowToolSkeleton && (
                 <ToolExecutionSkeleton
                   toolName={streamProgress.toolExecution?.toolName}

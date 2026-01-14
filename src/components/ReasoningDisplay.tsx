@@ -169,6 +169,25 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
       }
     }
 
+    // THIRD PRIORITY: Extract status from streaming reasoning text
+    // Look for markdown headers like "**Determining the Sum**" or first sentence
+    if (streamingReasoningText && isStreaming) {
+      // Try to extract markdown bold header (e.g., "**Analyzing the Question**")
+      const headerMatch = streamingReasoningText.match(/\*\*([^*]+)\*\*/);
+      if (headerMatch) {
+        const header = headerMatch[1].trim();
+        // Truncate long headers
+        return header.length > 30 ? header.substring(0, 27) + '...' : header + '...';
+      }
+
+      // Fallback: Use first line or sentence (up to 30 chars)
+      const firstLine = streamingReasoningText.split('\n')[0].trim();
+      if (firstLine.length > 5) {
+        const truncated = firstLine.length > 30 ? firstLine.substring(0, 27) + '...' : firstLine;
+        return truncated;
+      }
+    }
+
     // Generic fallback
     return "Thinking...";
   };
@@ -199,13 +218,21 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
     return "Thought process";
   };
 
-  // Don't render if no displayable content and not streaming
-  const hasAnyReasoningData = reasoning || streamingReasoningText || finalElapsedTime || parentElapsedTime;
-  if (!isStreaming && !hasAnyReasoningData) {
+  // CRITICAL FIX: Don't hide the component just because streaming stopped!
+  // Show the component if:
+  // 1. Currently streaming (always show during active thinking)
+  // 2. Has any reasoning data to display (text, status, or timer)
+  // 3. Has a timer value (means reasoning happened, even if text is missing)
+  const hasAnyReasoningData = reasoning || streamingReasoningText || reasoningStatus || finalElapsedTime || parentElapsedTime;
+  const hasTimer = Boolean(parentElapsedTime || (isStreaming ? elapsedTime : finalElapsedTime));
+
+  // Show component if streaming OR has data OR has timer
+  if (!isStreaming && !hasAnyReasoningData && !hasTimer) {
     return null;
   }
 
-  const hasContent = sanitizedReasoning || sanitizedStreamingText;
+  // Include reasoningStatus as content fallback for expanded view
+  const hasContent = sanitizedReasoning || sanitizedStreamingText || (reasoningStatus && reasoningStatus !== "Thinking...");
   // Show spinner when streaming OR when artifact hasn't rendered yet
   const showThinkingBar = isStreaming || (!isStreaming && !artifactRendered);
   const showShimmer = isStreaming || (!isStreaming && !artifactRendered);
@@ -360,10 +387,18 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
             <div className="whitespace-pre-wrap text-sm text-muted-foreground leading-relaxed">
               {sanitizedReasoning}
             </div>
+          ) : reasoningStatus && reasoningStatus !== "Thinking..." ? (
+            /* Display status update as fallback when no reasoning text is available */
+            <div className="text-sm text-muted-foreground">
+              <p className="italic">{reasoningStatus}</p>
+              {isStreaming && (
+                <span className="inline-block w-1.5 h-4 ml-0.5 bg-orange-500/60 animate-pulse" />
+              )}
+            </div>
           ) : (
             /* No data fallback */
-            <p className="text-sm text-muted-foreground">
-              No reasoning data available.
+            <p className="text-sm text-muted-foreground italic">
+              Processing your request...
             </p>
           )}
         </div>

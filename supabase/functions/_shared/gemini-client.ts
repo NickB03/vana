@@ -639,8 +639,12 @@ export function extractReasoning(data: any, requestId?: string): string | null {
 
   try {
     // Concatenate all reasoning steps
+    // Support both formats:
+    // - OpenRouter/Gemini: step.text (e.g., "reasoning.text" type)
+    // - Other providers: step.content
     const reasoning = reasoningDetails
-      .map((step: any) => step.content || '')
+      .filter((step: any) => step.type !== 'reasoning.encrypted') // Skip encrypted reasoning
+      .map((step: any) => step.text || step.content || '')
       .filter((content: string) => content.length > 0)
       .join('\n\n');
 
@@ -867,9 +871,21 @@ export async function* processGeminiStream(
           try {
             const parsed = JSON.parse(data);
 
-            // Extract content chunks
-            const content = parsed?.choices?.[0]?.delta?.content;
+            // DEBUG: Log the parsed structure to understand the API response format
+            console.log(`[${requestId}] 📦 Chunk structure:`, JSON.stringify({
+              hasChoices: !!parsed?.choices,
+              hasCandidates: !!parsed?.candidates,
+              choicesDelta: parsed?.choices?.[0]?.delta,
+              candidatesContent: parsed?.candidates?.[0]?.content?.parts?.[0],
+            }));
+
+            // Extract content chunks - support both Gemini and OpenAI formats
+            // Gemini format: candidates[0].content.parts[0].text
+            // OpenAI format: choices[0].delta.content
+            const content = parsed?.candidates?.[0]?.content?.parts?.[0]?.text ||
+                           parsed?.choices?.[0]?.delta?.content;
             if (content) {
+              console.log(`[${requestId}] ✅ Content extracted: ${content.substring(0, 50)}...`);
               yield { type: 'content', data: content };
             }
 
