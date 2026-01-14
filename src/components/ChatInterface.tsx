@@ -923,7 +923,6 @@ export function ChatInterface({
             onArtifactUpdate={handleArtifactUpdate}
             artifactOverrides={artifactOverrides}
             streamProgress={streamProgress}
-            onCancelStream={cancelStream}
             artifactRenderStatus={artifactRenderStatus}
             className="flex-1 min-h-0"
             scrollRef={messageListRef}
