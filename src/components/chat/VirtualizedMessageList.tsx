@@ -29,7 +29,6 @@ interface VirtualizedMessageListProps {
   className?: string;
   // Streaming-specific props
   streamProgress?: StreamProgress;
-  onCancelStream?: () => void;
   artifactRenderStatus?: 'pending' | 'rendered' | 'error';
   scrollRef?: React.RefObject<HTMLDivElement>;
 }
@@ -84,7 +83,6 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
   artifactOverrides,
   className,
   streamProgress,
-  onCancelStream,
   artifactRenderStatus,
   scrollRef,
 }: VirtualizedMessageListProps) {
@@ -212,7 +210,6 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
                 onArtifactOpen={onArtifactOpen}
                 artifactOverrides={artifactOverrides}
                 streamProgress={isStreamingThisMessage ? streamProgress : undefined}
-                onCancel={isStreamingThisMessage ? onCancelStream : undefined}
                 artifactRenderStatus={isStreamingThisMessage ? artifactRenderStatus : undefined}
               />
             </div>

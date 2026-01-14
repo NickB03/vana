@@ -10,7 +10,7 @@ import { ReasoningErrorBoundary } from '@/components/ReasoningErrorBoundary';
 import { MessageSkeleton } from '@/components/ui/message-skeleton';
 import { ArtifactCardSkeleton } from '@/components/ArtifactCardSkeleton';
 import { Button } from '@/components/ui/button';
-import { Copy, RotateCw, Pencil, Sparkles, XCircle } from 'lucide-react';
+import { Copy, RotateCw, Pencil, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CHAT_SPACING } from '@/utils/spacingConstants';
 import { ArtifactData } from '@/components/ArtifactContainer';
@@ -34,7 +34,18 @@ function ToolExecutionSkeleton({ toolName, status }: ToolExecutionSkeletonProps)
   }
 
   if (toolName === 'generate_image') {
-    return <div className="w-full aspect-square bg-muted/30 rounded-lg animate-pulse" />;
+    return (
+      <div className="my-4 max-w-[240px]">
+        <div className="relative rounded-xl overflow-hidden border-2 border-border">
+          <div className="w-full aspect-square bg-muted/30 animate-pulse" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-sm text-muted-foreground bg-background/80 backdrop-blur-sm px-4 py-2 rounded-lg">
+              Generating image...
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return null;
@@ -105,7 +116,6 @@ interface ChatMessageProps {
   artifactOverrides?: Record<string, Partial<ArtifactData>>;
   // Streaming-specific props (only passed to streaming message)
   streamProgress?: StreamProgress;
-  onCancel?: () => void;
   artifactRenderStatus?: 'pending' | 'rendered' | 'error';
 }
 
@@ -134,7 +144,6 @@ export const ChatMessage = React.memo(function ChatMessage({
   onArtifactOpen,
   artifactOverrides,
   streamProgress,
-  onCancel,
   artifactRenderStatus,
 }: ChatMessageProps) {
   const isAssistant = message.role === 'assistant';
@@ -219,21 +228,6 @@ export const ChatMessage = React.memo(function ChatMessage({
                   toolName={streamProgress.toolExecution?.toolName}
                   status={streamProgress.toolExecution?.success !== undefined ? 'complete' : 'pending'}
                 />
-              )}
-
-              {/* Cancel button */}
-              {onCancel && (
-                <div className="flex justify-end">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={onCancel}
-                    className="gap-2 text-muted-foreground hover:text-foreground"
-                  >
-                    <XCircle className="h-4 w-4" />
-                    Cancel
-                  </Button>
-                </div>
               )}
             </>
           ) : (

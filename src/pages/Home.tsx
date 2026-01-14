@@ -397,6 +397,9 @@ const Home = () => {
       setArtifactMode(true);
       // Set flag to auto-open canvas when artifact is detected
       setAutoOpenCanvas(true);
+    } else {
+      // For image generation cards, enable imageMode
+      setImageMode(true);
     }
 
     // Check guest limit
@@ -590,6 +593,10 @@ const Home = () => {
                             // Clear pending prompts only after they have been sent
                             setGuestInitialPrompt(undefined);
                             setPendingAuthPrompt(undefined);
+                            // Reset modes after initial prompt is sent
+                            setImageMode(false);
+                            setArtifactMode(false);
+                            setAutoOpenCanvas(false);
                           }}
                           isGuest={!isAuthenticated}
                           guestMessageCount={guestSession.messageCount}

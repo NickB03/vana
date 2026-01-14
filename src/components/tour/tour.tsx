@@ -822,48 +822,51 @@ function DesktopTourDialog({
           </div>
 
           <div className="space-y-4 flex-1">
-            {/* Current Release Features */}
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-foreground uppercase tracking-wider opacity-80 flex items-center gap-2">
-                <Sparkles className="w-4 h-4" />
-                Current Release
-              </h4>
-              <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <span className="text-primary mt-[2px] leading-none">•</span>
-                  <span><strong className="text-foreground">LLM chat</strong> with conversation history</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary mt-[2px] leading-none">•</span>
-                  <span><strong className="text-foreground">Search</strong> powered by Tavily</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary mt-[2px] leading-none">•</span>
-                  <span><strong className="text-foreground">Artifacts</strong> for interactive code generation</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary mt-[2px] leading-none">•</span>
-                  <span><strong className="text-foreground">Images</strong> via Gemini 2.5 Flash</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary mt-[2px] leading-none">•</span>
-                  <span><strong className="text-foreground">Reasoning</strong> mode for complex tasks</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary mt-[2px] leading-none">•</span>
-                  <span><strong className="text-foreground">Safety</strong> with content moderation</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Built With Section */}
+            {/* Project Information Section */}
             <div className="space-y-2">
               <h4 className="text-sm font-semibold text-foreground uppercase tracking-wider opacity-80 flex items-center gap-2">
                 <Code2 className="w-4 h-4" />
-                Built With
+                Project Information
               </h4>
 
               <Accordion type="single" collapsible className="w-full">
+                {/* Current Release Features */}
+                <AccordionItem value="release" className="border-border/40">
+                  <AccordionTrigger className="py-2 text-sm hover:no-underline">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                      <span>Current Release</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground pt-1 pb-2">
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-[2px] leading-none">•</span>
+                        <span><strong className="text-foreground">LLM chat</strong> with conversation history</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-[2px] leading-none">•</span>
+                        <span><strong className="text-foreground">Search</strong> powered by Tavily</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-[2px] leading-none">•</span>
+                        <span><strong className="text-foreground">Artifacts</strong> for interactive code generation</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-[2px] leading-none">•</span>
+                        <span><strong className="text-foreground">Images</strong> via Gemini 2.5 Flash</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-[2px] leading-none">•</span>
+                        <span><strong className="text-foreground">Reasoning</strong> mode for complex tasks</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-[2px] leading-none">•</span>
+                        <span><strong className="text-foreground">Safety</strong> with content moderation</span>
+                      </li>
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
                 <AccordionItem value="frontend" className="border-border/40">
                   <AccordionTrigger className="py-2 text-sm hover:no-underline">
                     <div className="flex items-center gap-2">
@@ -908,9 +911,9 @@ function DesktopTourDialog({
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="grid grid-cols-2 gap-2 pt-1 pb-2">
-                      <div className="text-xs px-2 py-1.5 rounded bg-muted/50 border border-border/20">GLM 4.7</div>
-                      <div className="text-xs px-2 py-1.5 rounded bg-muted/50 border border-border/20">GLM 4.5 Air</div>
-                      <div className="text-xs px-2 py-1.5 rounded bg-muted/50 border border-border/20">Gemini Flash 2.5 Image</div>
+                      <div className="text-xs px-2 py-1.5 rounded bg-muted/50 border border-border/20">Gemini 3 Flash</div>
+                      <div className="text-xs px-2 py-1.5 rounded bg-muted/50 border border-border/20">Gemini 2.5 Flash Lite</div>
+                      <div className="text-xs px-2 py-1.5 rounded bg-muted/50 border border-border/20">Gemini 2.5 Flash Image</div>
                     </div>
                   </AccordionContent>
                 </AccordionItem>
@@ -923,11 +926,11 @@ function DesktopTourDialog({
           </div>
 
           <div className="flex gap-3 mt-4">
+            <Button onClick={onSkip} variant="ghost" className="flex-1 h-11 font-medium bg-muted/50 hover:bg-muted transition-colors">
+              Skip
+            </Button>
             <Button onClick={onStartTour} className="flex-1 h-11 font-medium bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all">
               Start the Tour
-            </Button>
-            <Button onClick={onSkip} variant="ghost" className="h-11 px-6 font-medium bg-muted/50 hover:bg-muted transition-colors">
-              Skip for now
             </Button>
           </div>
         </div>
@@ -1039,124 +1042,121 @@ function MobileTourDialog({
           </p>
         </div>
 
-        {/* Actions - Moved up per mockup */}
-        <div className="shrink-0 px-4 mb-6 space-y-3">
+        {/* Content Lists */}
+        <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto px-4 pb-4">
+
+          {/* All Sections as Accordion */}
+          <Accordion type="single" collapsible className="w-full">
+            {/* Current Release Section */}
+            <AccordionItem value="release" className="border-border/40">
+              <AccordionTrigger className="py-2 text-xs hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Current Release</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <ul className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground pt-1 pb-2">
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-[2px] leading-none">•</span>
+                    <span><strong className="text-foreground">LLM chat</strong> with conversation history</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-[2px] leading-none">•</span>
+                    <span><strong className="text-foreground">Search</strong> powered by Tavily</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-[2px] leading-none">•</span>
+                    <span><strong className="text-foreground">Artifacts</strong> for interactive code generation</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-[2px] leading-none">•</span>
+                    <span><strong className="text-foreground">Images</strong> via Gemini 2.5 Flash</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-[2px] leading-none">•</span>
+                    <span><strong className="text-foreground">Reasoning</strong> mode for complex tasks</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-[2px] leading-none">•</span>
+                    <span><strong className="text-foreground">Safety</strong> with content moderation</span>
+                  </li>
+                </ul>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Frontend Section */}
+            <AccordionItem value="frontend" className="border-border/40">
+              <AccordionTrigger className="py-2 text-xs hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <Palette className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Frontend</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="grid grid-cols-2 gap-2 pt-1 pb-2">
+                  <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">React 18</div>
+                  <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">TypeScript</div>
+                  <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">Tailwind CSS</div>
+                  <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">Vite</div>
+                  <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">Framer Motion</div>
+                  <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">Radix UI</div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Backend Section */}
+            <AccordionItem value="backend" className="border-border/40">
+              <AccordionTrigger className="py-2 text-xs hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <Server className="w-3.5 h-3.5 text-green-400" />
+                  <span>Backend</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="grid grid-cols-2 gap-2 pt-1 pb-2">
+                  <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">Supabase</div>
+                  <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">Edge Functions</div>
+                  <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">PostgreSQL</div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* AI Models Section */}
+            <AccordionItem value="ai" className="border-border/40 border-b-0">
+              <AccordionTrigger className="py-2 text-xs hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <Cpu className="w-3.5 h-3.5 text-purple-400" />
+                  <span>AI Models</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="grid grid-cols-1 gap-2 pt-1 pb-2">
+                  <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">Gemini 3 Flash</div>
+                  <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">Gemini 2.5 Flash Lite</div>
+                  <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">Gemini 2.5 Flash Image</div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+
+        </div>
+
+        {/* Actions - Bottom, side by side (Skip left, Start right) */}
+        <div className="shrink-0 px-4 pb-4 pt-2 flex gap-3">
+          <Button
+            onClick={onSkip}
+            variant="ghost"
+            className="flex-1 h-12 text-base font-medium bg-muted/50 hover:bg-muted rounded-full transition-colors"
+          >
+            Skip
+          </Button>
           <Button
             onClick={onStartTour}
-            className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 rounded-full transition-all"
+            className="flex-1 h-12 text-base font-semibold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 rounded-full transition-all"
           >
             Start the Tour
           </Button>
-          <button
-            onClick={onSkip}
-            className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Skip for now
-          </button>
-        </div>
-
-        {/* Content Lists */}
-        <div className="flex-1 min-h-0 flex flex-col gap-6 overflow-y-auto px-4 pb-4">
-
-          {/* Current Release Section */}
-          <div className="space-y-2">
-            <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-              <Sparkles className="w-3 h-3" />
-              Current Release
-            </h4>
-            <ul className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <span className="text-primary mt-[2px] leading-none">•</span>
-                <span><strong className="text-foreground">LLM chat</strong> with conversation history</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary mt-[2px] leading-none">•</span>
-                <span><strong className="text-foreground">Search</strong> powered by Tavily</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary mt-[2px] leading-none">•</span>
-                <span><strong className="text-foreground">Artifacts</strong> for interactive code generation</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary mt-[2px] leading-none">•</span>
-                <span><strong className="text-foreground">Images</strong> via Gemini 2.5 Flash</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary mt-[2px] leading-none">•</span>
-                <span><strong className="text-foreground">Reasoning</strong> mode for complex tasks</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary mt-[2px] leading-none">•</span>
-                <span><strong className="text-foreground">Safety</strong> with content moderation</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Built With Section (Accordion) */}
-          <div className="space-y-2">
-            <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-              <Code2 className="w-3 h-3" />
-              Built With
-            </h4>
-
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="frontend" className="border-border/40">
-                <AccordionTrigger className="py-2 text-xs hover:no-underline">
-                  <div className="flex items-center gap-2">
-                    <Palette className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Frontend</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="grid grid-cols-2 gap-2 pt-1 pb-2">
-                    <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">React 18</div>
-                    <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">TypeScript</div>
-                    <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">Tailwind CSS</div>
-                    <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">Vite</div>
-                    <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">Framer Motion</div>
-                    <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">Radix UI</div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="backend" className="border-border/40">
-                <AccordionTrigger className="py-2 text-xs hover:no-underline">
-                  <div className="flex items-center gap-2">
-                    <Server className="w-3.5 h-3.5 text-green-400" />
-                    <span>Backend</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="grid grid-cols-2 gap-2 pt-1 pb-2">
-                    <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">Supabase</div>
-                    <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">Edge Functions</div>
-                    <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">PostgreSQL</div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="ai" className="border-border/40 border-b-0">
-                <AccordionTrigger className="py-2 text-xs hover:no-underline">
-                  <div className="flex items-center gap-2">
-                    <Cpu className="w-3.5 h-3.5 text-purple-400" />
-                    <span>AI Models</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="grid grid-cols-1 gap-2 pt-1 pb-2">
-                    <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">GLM 4.7</div>
-                    <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">GLM 4.5 Air</div>
-                    <div className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border/20">Gemini Flash 2.5 Image</div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </div>
-
-          <p className="text-[10px] text-muted-foreground/60 text-center leading-relaxed mt-2">
-            This is a living project, and I'm still improving it. You may run into bugs — thanks for checking it out!
-          </p>
-
         </div>
 
 
