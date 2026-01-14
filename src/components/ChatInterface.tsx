@@ -94,6 +94,22 @@ export function ChatInterface({
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [imageMode, setImageMode] = useState(initialImageMode);
   const [artifactMode, setArtifactMode] = useState(initialArtifactMode);
+
+  // Sync initialArtifactMode prop to state when it changes (for carousel clicks while mounted)
+  // Only sync when prop is true to avoid interfering with reset logic after message send
+  useEffect(() => {
+    if (initialArtifactMode) {
+      setArtifactMode(true);
+    }
+  }, [initialArtifactMode]);
+
+  // Sync initialImageMode prop to state when it changes (for carousel clicks while mounted)
+  useEffect(() => {
+    if (initialImageMode) {
+      setImageMode(true);
+    }
+  }, [initialImageMode]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
