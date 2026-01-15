@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useEffect, useMemo } from 'react';
+import React, { useRef, useCallback, useEffect, useMemo, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ChatMessage } from './ChatMessage';
 import { ArtifactData } from '@/components/ArtifactContainer';
@@ -88,6 +88,7 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
 }: VirtualizedMessageListProps) {
   const internalRef = useRef<HTMLDivElement>(null);
   const parentRef = scrollRef ?? internalRef;
+  const [isAtBottom, setIsAtBottom] = useState(true);
 
   // Estimate size based on message content
   const estimateSize = useCallback((index: number) => {
@@ -108,9 +109,15 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
     // Base heights differ by role
     const baseHeight = message.role === 'assistant' ? 150 : 80;
 
-    // Estimate additional height based on content length
-    const contentLength = message.content?.length || 0;
-    const estimatedLines = Math.ceil(contentLength / 80);
+    // Estimate additional height based on visible content length (strip artifact XML)
+    const rawContent = message.content || '';
+    const contentWithoutArtifacts = rawContent
+      .replace(/<artifact\b[^>]*>[\s\S]*?<\/artifact>/gi, '')
+      .replace(/<artifact\b[^>]*>[\s\S]*$/gi, '')
+      .trim();
+
+    const contentLength = contentWithoutArtifacts.length;
+    const estimatedLines = Math.min(40, Math.ceil(contentLength / 80));
     const contentHeight = estimatedLines * 24; // ~24px per line
 
     // Add extra height for reasoning or search results
@@ -120,6 +127,13 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
     }
     if (message.search_results) {
       extraHeight += 80;
+    }
+
+    // Add estimated height for artifact cards without counting XML length
+    const artifactMatches = rawContent.match(/<artifact\b/gi);
+    const artifactCount = artifactMatches ? artifactMatches.length : 0;
+    if (artifactCount > 0) {
+      extraHeight += artifactCount * 260;
     }
 
     return Math.max(baseHeight, baseHeight + contentHeight + extraHeight);
@@ -145,32 +159,78 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
     }
   }, [virtualizer, messages.length]);
 
-  // Auto-scroll to bottom when messages change
+  const hasArtifactMessages = useMemo(() => {
+    return messages.some((message) => /<artifact\b/i.test(message.content));
+  }, [messages]);
+
+  // Track changes in list identity even when length is unchanged (e.g., streaming-temp replaced by saved message)
+  const lastMessageKey = messages[messages.length - 1]?.id ?? 'none';
+  const scrollVersion = `${messages.length}-${lastMessageKey}-${totalSize}`;
+
+  // Track whether user is at the bottom to avoid forcing scroll when they scroll up
   useEffect(() => {
-    if (messages.length > 0 && parentRef.current) {
-      try {
-        parentRef.current.scrollTo({
-          top: parentRef.current.scrollHeight,
-          behavior: 'smooth',
-        });
-      } catch (scrollError) {
-        // Fallback to instant scroll
+    const container = parentRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      setIsAtBottom(distanceFromBottom <= 32);
+    };
+
+    handleScroll();
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [parentRef]);
+
+  // Auto-scroll/clamp when messages change (including replacements), respecting user scroll position
+  useEffect(() => {
+    const container = parentRef.current;
+    if (!container) return;
+
+    const clampAndMaybeScroll = () => {
+      const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+
+      // Clamp if the list shrank after streaming ends or item replacement
+      if (container.scrollTop > maxScrollTop) {
+        container.scrollTop = maxScrollTop;
+      }
+
+      // Lock to bottom when streaming or when user is at bottom
+      if (isStreaming || isAtBottom) {
         try {
-          parentRef.current.scrollTop = parentRef.current.scrollHeight;
-        } catch (fallbackError) {
-          logError(fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError)), {
-            errorId: ERROR_IDS.MESSAGE_LIST_SCROLL_FAILED,
-            sessionId: '', // TODO: Get sessionId from props if needed
-            metadata: {
-              messagesLength: messages.length,
-              scrollHeight: parentRef.current?.scrollHeight,
-              clientHeight: parentRef.current?.clientHeight,
-            },
+          container.scrollTo({
+            top: maxScrollTop,
+            behavior: 'smooth',
           });
+        } catch (scrollError) {
+          try {
+            container.scrollTop = maxScrollTop;
+          } catch (fallbackError) {
+            logError(fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError)), {
+              errorId: ERROR_IDS.MESSAGE_LIST_SCROLL_FAILED,
+              sessionId: '', // TODO: Get sessionId from props if needed
+              metadata: {
+                messagesLength: messages.length,
+                scrollHeight: container.scrollHeight,
+                clientHeight: container.clientHeight,
+              },
+            });
+          }
         }
       }
-    }
-  }, [messages.length]);
+    };
+
+    // Double RAF to ensure layout/measure updates from virtualization settle before clamping
+    let innerRaf: number | null = null;
+    const raf = requestAnimationFrame(() => {
+      innerRaf = requestAnimationFrame(clampAndMaybeScroll);
+    });
+
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      if (innerRaf) cancelAnimationFrame(innerRaf);
+    };
+  }, [scrollVersion, isStreaming, isAtBottom]);
 
   return (
     <div
@@ -182,53 +242,81 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
         contain: 'strict',
       }}
     >
-      <div
-        style={{
-          height: `${totalSize}px`,
-          width: '100%',
-          position: 'relative',
-        }}
-      >
-        {virtualizer.getVirtualItems().map((virtualRow) => {
-          const message = messages[virtualRow.index];
-          if (!message) return null;
+      {hasArtifactMessages ? (
+        <div className="flex flex-col">
+          {messages.map((message, index) => {
+            const isLastMessage = index === messages.length - 1;
+            const isStreamingThisMessage = message.id === 'streaming-temp' && streamProgress;
 
-          const isLastMessage = virtualRow.index === messages.length - 1;
-          // Only pass streaming props to the streaming message
-          const isStreamingThisMessage = message.id === 'streaming-temp' && streamProgress;
+            return (
+              <div key={message.id}>
+                <ChatMessage
+                  message={message}
+                  isLastMessage={isLastMessage}
+                  isStreaming={isStreaming && isLastMessage}
+                  isLoading={isLoading}
+                  lastMessageElapsedTime={isLastMessage ? lastMessageElapsedTime : undefined}
+                  onRetry={onRetry}
+                  onCopy={onCopy}
+                  onEdit={onEdit}
+                  onArtifactOpen={onArtifactOpen}
+                  artifactOverrides={artifactOverrides}
+                  streamProgress={isStreamingThisMessage ? streamProgress : undefined}
+                  artifactRenderStatus={isStreamingThisMessage ? artifactRenderStatus : undefined}
+                />
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div
+          style={{
+            height: `${totalSize}px`,
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+          {virtualizer.getVirtualItems().map((virtualRow) => {
+            const message = messages[virtualRow.index];
+            if (!message) return null;
 
-          return (
-            <div
-              key={message.id}
-              data-index={virtualRow.index}
-              ref={virtualizer.measureElement}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                transform: `translateY(${virtualRow.start}px)`,
-              }}
-            >
-              {/* Animation is handled internally by ChatMessage via MESSAGE_ANIMATION */}
-              <ChatMessage
-                message={message}
-                isLastMessage={isLastMessage}
-                isStreaming={isStreaming && isLastMessage}
-                isLoading={isLoading}
-                lastMessageElapsedTime={isLastMessage ? lastMessageElapsedTime : undefined}
-                onRetry={onRetry}
-                onCopy={onCopy}
-                onEdit={onEdit}
-                onArtifactOpen={onArtifactOpen}
-                artifactOverrides={artifactOverrides}
-                streamProgress={isStreamingThisMessage ? streamProgress : undefined}
-                artifactRenderStatus={isStreamingThisMessage ? artifactRenderStatus : undefined}
-              />
-            </div>
-          );
-        })}
-      </div>
+            const isLastMessage = virtualRow.index === messages.length - 1;
+            // Only pass streaming props to the streaming message
+            const isStreamingThisMessage = message.id === 'streaming-temp' && streamProgress;
+
+            return (
+              <div
+                key={message.id}
+                data-index={virtualRow.index}
+                ref={virtualizer.measureElement}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                {/* Animation is handled internally by ChatMessage via MESSAGE_ANIMATION */}
+                <ChatMessage
+                  message={message}
+                  isLastMessage={isLastMessage}
+                  isStreaming={isStreaming && isLastMessage}
+                  isLoading={isLoading}
+                  lastMessageElapsedTime={isLastMessage ? lastMessageElapsedTime : undefined}
+                  onRetry={onRetry}
+                  onCopy={onCopy}
+                  onEdit={onEdit}
+                  onArtifactOpen={onArtifactOpen}
+                  artifactOverrides={artifactOverrides}
+                  streamProgress={isStreamingThisMessage ? streamProgress : undefined}
+                  artifactRenderStatus={isStreamingThisMessage ? artifactRenderStatus : undefined}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }, (prevProps, nextProps) => {

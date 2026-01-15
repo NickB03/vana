@@ -33,6 +33,8 @@ export interface StreamProgress {
   message: string;
   artifactDetected: boolean;
   percentage: number;
+  artifactInProgress?: boolean;
+  imageInProgress?: boolean;
   reasoningSteps?: StructuredReasoning; // Structured reasoning for streaming
   streamingReasoningText?: string; // Raw reasoning text being streamed (GLM native thinking)
   reasoningStatus?: string; // Semantic status update from GLM-4.5-Air
@@ -326,6 +328,10 @@ export function useChatMessages(
     // Note: Caller should have already set isStreaming for instant UI feedback
     setArtifactRenderStatus('pending');
 
+    let fullResponse = "";
+    let tokenCount = 0;
+    let artifactDetected = false;
+
     try {
       // Client-side throttling: silently wait for token (protects API from burst requests)
       // NOTE: Caller has already set isStreaming=true, so UI shows feedback during this wait
@@ -451,10 +457,12 @@ export function useChatMessages(
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let textBuffer = "";
-      let fullResponse = "";
-      let tokenCount = 0;
-      let artifactDetected = false;
+      fullResponse = "";
+      tokenCount = 0;
+      artifactDetected = false;
       let artifactClosed = false;
+      let artifactInProgress = toolChoice === 'generate_artifact';
+      let imageInProgress = toolChoice === 'generate_image';
       let reasoningSteps: StructuredReasoning | undefined; // Store reasoning data
       let reasoningText: string | undefined; // Store raw reasoning text for fallback display
       let searchResults: WebSearchResults | undefined; // Store web search results
@@ -507,6 +515,8 @@ export function useChatMessages(
           message,
           artifactDetected,
           percentage: Math.min(99, Math.round(percentage)),
+          artifactInProgress: artifactInProgress || (artifactDetected && !artifactClosed),
+          imageInProgress,
           reasoningSteps, // Include reasoning in progress updates
           searchResults, // Include search results in progress updates
           reasoningStatus: lastReasoningStatus, // Preserve status for ticker display
@@ -699,6 +709,14 @@ export function useChatMessages(
                 arguments: toolArgs,
                 timestamp,
               };
+
+              if (toolName === 'generate_artifact') {
+                artifactInProgress = true;
+              }
+              if (toolName === 'generate_image') {
+                imageInProgress = true;
+              }
+
               const progress = updateProgress();
               onDelta('', progress);
 
@@ -725,6 +743,14 @@ export function useChatMessages(
                 latencyMs,
                 timestamp,
               };
+
+              if (toolName === 'generate_artifact' && success === false) {
+                artifactInProgress = false;
+              }
+              if (toolName === 'generate_image' && success === false) {
+                imageInProgress = false;
+              }
+
               const progress = updateProgress();
               onDelta('', progress);
 
@@ -835,6 +861,7 @@ export function useChatMessages(
                 fullResponse = artifactXml + (fullResponse ? '\n\n' + fullResponse : '');
                 artifactDetected = true;
                 artifactClosed = true;
+                artifactInProgress = false;
 
                 // Store reasoning if provided
                 if (artifactReasoning && !reasoningText) {
@@ -872,6 +899,7 @@ export function useChatMessages(
                 fullResponse = imageXml + (fullResponse ? '\n\n' + fullResponse : '');
                 artifactDetected = true;
                 artifactClosed = true;
+                imageInProgress = false;
 
                 console.log(`[StreamProgress] Image added to fullResponse, length=${fullResponse.length}`);
 
@@ -884,6 +912,8 @@ export function useChatMessages(
                 // BUG FIX (2025-12-21): If image data is missing but event was received,
                 // still mark response as complete to prevent infinite retry loop
                 console.warn(`[StreamProgress] image_complete event received but no imageUrl or imageData`);
+
+                imageInProgress = false;
 
                 // Add placeholder to prevent empty response error
                 const placeholderXml = '<artifact type="image" title="Generated Image">\n[Image generation completed but image data unavailable]\n</artifact>';
@@ -975,6 +1005,10 @@ export function useChatMessages(
       flushSync(() => {
         setIsLoading(false);
       });
+
+      artifactInProgress = false;
+      imageInProgress = false;
+      onDelta('', updateProgress());
 
       onDone();
     } catch (error: unknown) {

@@ -973,16 +973,21 @@ describe('TourAlertDialog Component', () => {
     expect(githubLink).toHaveAttribute('rel', 'noopener noreferrer');
 
     // Feature lists verification
-    expect(screen.getByText(/Current Release/i)).toBeInTheDocument();
-    expect(screen.getByText(/LLM chat/i)).toBeInTheDocument();
-    expect(screen.getByText(/^Search$/i)).toBeInTheDocument();
+    expect(screen.getByText(/Project Information/i)).toBeInTheDocument();
+
+    const currentReleaseTrigger = screen.getByRole('button', { name: /Current Release/i });
+    fireEvent.click(currentReleaseTrigger);
+
+    await waitFor(() => {
+      expect(screen.getByText(/LLM chat/i)).toBeInTheDocument();
+    });
+
     expect(screen.getByText(/^Search$/i)).toBeInTheDocument();
     expect(screen.getByText(/Artifacts/i)).toBeInTheDocument();
     expect(screen.getByText(/Images/i)).toBeInTheDocument();
     expect(screen.getByText(/Reasoning/i)).toBeInTheDocument();
     expect(screen.getByText(/Safety/i)).toBeInTheDocument();
 
-    expect(screen.getByText(/Built With/i)).toBeInTheDocument();
     // Accordion headers should be present
     expect(screen.getByText('Frontend')).toBeInTheDocument();
     expect(screen.getByText('Backend')).toBeInTheDocument();
@@ -1505,7 +1510,6 @@ describe('Mobile View Consolidation', () => {
 
     // 2. Verify Lists
     expect(screen.getByText(/Current Release/i)).toBeInTheDocument();
-    expect(screen.getByText(/Built With/i)).toBeInTheDocument();
 
     // Check for Accordion Triggers
     expect(screen.getByText(/^Frontend$/i)).toBeInTheDocument();
@@ -1514,7 +1518,7 @@ describe('Mobile View Consolidation', () => {
 
     // 3. Verify Actions (Start Tour and Skip only)
     expect(screen.getByRole('button', { name: /Start the Tour/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Skip for now/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Skip$/i })).toBeInTheDocument();
 
     // 4. Verify Pagination is GONE
     expect(screen.queryByRole('button', { name: /Next/i })).not.toBeInTheDocument();
@@ -1705,16 +1709,21 @@ describe('Desktop View Layout', () => {
       expect(screen.getByText(/Welcome to Vana/i)).toBeInTheDocument();
     });
 
+    const currentReleaseTrigger = screen.getByRole('button', { name: /Current Release/i });
+    fireEvent.click(currentReleaseTrigger);
+
+    await waitFor(() => {
+      expect(screen.getByText(/LLM chat/i)).toBeInTheDocument();
+    });
+
     // Verify feature cards are present
-    expect(screen.getByText(/LLM chat/i)).toBeInTheDocument();
     expect(screen.getByText(/^Search$/i)).toBeInTheDocument();
     expect(screen.getByText(/Artifacts/i)).toBeInTheDocument();
     expect(screen.getByText(/Images/i)).toBeInTheDocument();
     expect(screen.getByText(/Reasoning/i)).toBeInTheDocument();
     expect(screen.getByText(/Safety/i)).toBeInTheDocument();
 
-    // Verify Built With accordion is present
-    expect(screen.getByText(/Built With/i)).toBeInTheDocument();
+    // Verify accordion sections are present
     expect(screen.getByText('Frontend')).toBeInTheDocument();
     expect(screen.getByText('Backend')).toBeInTheDocument();
     expect(screen.getByText('AI Models')).toBeInTheDocument();
@@ -1753,7 +1762,7 @@ describe('Desktop View Layout', () => {
 
     // Desktop should show the same action buttons as mobile
     expect(screen.getByRole('button', { name: /Start the Tour/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Skip for now/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Skip$/i })).toBeInTheDocument();
 
     unmount();
   });

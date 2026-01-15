@@ -86,7 +86,9 @@ export function ChatInterface({
     stage: "analyzing",
     message: "Analyzing request...",
     artifactDetected: false,
-    percentage: 0
+    percentage: 0,
+    artifactInProgress: false,
+    imageInProgress: false,
   });
   // CRITICAL FIX: Preserve completed stream progress for display after streaming ends
   // This prevents reasoning box from disappearing during the race condition between
@@ -368,8 +370,10 @@ export function ChatInterface({
       message: "Analyzing request...",
       artifactDetected: false,
       percentage: 0,
-      toolExecution: toolChoice === "generate_artifact"
-        ? { toolName: "generate_artifact", timestamp: Date.now() }
+      artifactInProgress: toolChoice === "generate_artifact",
+      imageInProgress: toolChoice === "generate_image",
+      toolExecution: toolChoice === "generate_artifact" || toolChoice === "generate_image"
+        ? { toolName: toolChoice, timestamp: Date.now() }
         : undefined,
     });
     // NOTE: setImageMode/setArtifactMode moved to useEffect below to prevent render phase updates

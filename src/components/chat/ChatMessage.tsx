@@ -34,13 +34,17 @@ function ToolExecutionSkeleton({ toolName, status }: ToolExecutionSkeletonProps)
   }
 
   if (toolName === 'generate_image') {
+    const statusLabel = status === 'complete'
+      ? 'Finalizing image...'
+      : 'Generating image...';
+
     return (
       <div className="my-4 max-w-[240px]">
         <div className="relative rounded-xl overflow-hidden border-2 border-border">
           <div className="w-full aspect-square bg-muted/30 animate-pulse" />
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-sm text-muted-foreground bg-background/80 backdrop-blur-sm px-4 py-2 rounded-lg">
-              Generating image...
+              {statusLabel}
             </div>
           </div>
         </div>
@@ -160,9 +164,23 @@ export const ChatMessage = React.memo(function ChatMessage({
   } : {};
 
   // Phase 2: Consolidated skeleton logic - determine which skeleton to show (if any)
-  const shouldShowToolSkeleton = isStreamingMessage &&
-    streamProgress?.toolExecution?.toolName &&
-    artifactRenderStatus === 'pending';
+  const shouldShowArtifactSkeleton = isStreamingMessage &&
+    streamProgress?.artifactInProgress;
+
+  const shouldShowImageSkeleton = isStreamingMessage &&
+    streamProgress?.imageInProgress;
+
+  const shouldShowToolSkeleton = shouldShowArtifactSkeleton || shouldShowImageSkeleton;
+
+  const toolSkeletonName = shouldShowArtifactSkeleton
+    ? 'generate_artifact'
+    : shouldShowImageSkeleton
+      ? 'generate_image'
+      : undefined;
+
+  const toolSkeletonStatus = streamProgress?.toolExecution?.success !== undefined
+    ? 'complete'
+    : 'pending';
 
   const shouldShowMessageSkeleton = isStreamingMessage &&
     !message.content &&
@@ -222,10 +240,10 @@ export const ChatMessage = React.memo(function ChatMessage({
               </div>
 
               {/* Show tool skeleton BELOW content wrapper when tool is executing */}
-              {shouldShowToolSkeleton && (
+              {shouldShowToolSkeleton && toolSkeletonName && (
                 <ToolExecutionSkeleton
-                  toolName={streamProgress.toolExecution?.toolName}
-                  status={streamProgress.toolExecution?.success !== undefined ? 'complete' : 'pending'}
+                  toolName={toolSkeletonName}
+                  status={toolSkeletonStatus}
                 />
               )}
             </>
