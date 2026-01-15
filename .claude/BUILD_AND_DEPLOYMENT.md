@@ -4,6 +4,21 @@
 
 **Location**: `.github/workflows/`
 
+### Required GitHub Actions Secrets
+
+The following secrets must be configured in GitHub repository settings (Settings → Secrets and variables → Actions):
+
+| Secret | Purpose | How to Obtain |
+|--------|---------|---------------|
+| `SUPABASE_ACCESS_TOKEN` | API authentication for Supabase CLI | Supabase Dashboard → Account → Access Tokens |
+| `SUPABASE_PROJECT_ID` | Production project reference ID | Supabase Dashboard → Project Settings (e.g., `vznhbocnuykdmjvujaka`) |
+| `SUPABASE_DB_PASSWORD` | Database password for migrations | Supabase Dashboard → Settings → Database → Connection string |
+
+**Verify secrets are set**:
+```bash
+gh secret list --repo NickB03/llm-chat-site
+```
+
 ### Automated Workflows
 
 | Workflow | Trigger | Purpose |
@@ -318,8 +333,20 @@ docker exec supabase_edge_runtime_* printenv | grep -iE "OPENROUTER|GEMINI|TAVIL
 - Foreign key constraint violation
 - Duplicate migration timestamp
 - Schema drift (local ≠ production)
+- Authentication errors (missing SUPABASE_DB_PASSWORD)
 
-**Fix**:
+**Authentication Error Fix**:
+If you see `failed to connect as temp role` or `password authentication failed`:
+```bash
+# The workflow needs SUPABASE_DB_PASSWORD secret
+# Get password from: Supabase Dashboard → Settings → Database → Connection string
+gh secret set SUPABASE_DB_PASSWORD --repo NickB03/llm-chat-site
+
+# Verify secret is set
+gh secret list --repo NickB03/llm-chat-site | grep SUPABASE_DB_PASSWORD
+```
+
+**Migration Fix**:
 ```bash
 # Check migration status
 supabase migration list
