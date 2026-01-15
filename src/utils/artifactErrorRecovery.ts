@@ -302,3 +302,50 @@ export function generateErrorDisplay(error: ArtifactError, isRecovering: boolean
 
   return display;
 }
+
+/**
+ * Central error handler for all artifact types.
+ * Classifies error, updates state, and returns error object for rendering.
+ *
+ * @param errorMessage - The error message from the artifact
+ * @param onPreviewErrorChange - Callback to update error state
+ * @param onErrorCategoryChange - Optional callback to update error category
+ * @param options - Additional options (artifact type, console logging, etc.)
+ * @returns Classified ArtifactError object ready for ArtifactErrorRecovery component
+ */
+export function handleArtifactTypeError(
+  errorMessage: string,
+  onPreviewErrorChange: (error: string | null) => void,
+  onErrorCategoryChange?: (category: 'syntax' | 'runtime' | 'import' | 'unknown') => void,
+  options?: {
+    logPrefix?: string;
+    artifactType?: string;
+  }
+): ArtifactError {
+  const { logPrefix = '[ArtifactRenderer]', artifactType = 'unknown' } = options || {};
+
+  // Log error for debugging
+  console.error(`${logPrefix} ${artifactType} error:`, errorMessage);
+
+  // Classify error using existing system
+  const classifiedError = classifyError(errorMessage);
+
+  // Update parent state
+  onPreviewErrorChange(errorMessage);
+
+  // Update error category if callback provided
+  if (onErrorCategoryChange) {
+    const categoryMap: Record<ErrorType, 'syntax' | 'runtime' | 'import' | 'unknown'> = {
+      syntax: 'syntax',
+      runtime: 'runtime',
+      import: 'import',
+      bundling: 'import',
+      timeout: 'runtime',
+      react: 'runtime',
+      unknown: 'unknown',
+    };
+    onErrorCategoryChange(categoryMap[classifiedError.type]);
+  }
+
+  return classifiedError;
+}

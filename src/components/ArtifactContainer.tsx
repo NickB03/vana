@@ -76,10 +76,14 @@ export const ArtifactContainer = ({
     ensureMermaidInit();
   }, []);
 
-  // Watch for theme changes
+  // Watch for theme changes (throttled to prevent excessive re-renders)
   useEffect(() => {
+    let timeout: NodeJS.Timeout;
     const observer = new MutationObserver(() => {
-      setThemeRefreshKey(prev => prev + 1);
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        setThemeRefreshKey(prev => prev + 1);
+      }, 100); // 100ms throttle
     });
 
     if (document.documentElement) {
@@ -90,6 +94,7 @@ export const ArtifactContainer = ({
     }
 
     return () => {
+      clearTimeout(timeout);
       observer?.disconnect();
     };
   }, []);

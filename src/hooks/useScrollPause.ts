@@ -37,14 +37,11 @@ export function useScrollPause(debounceMs: number = 150) {
 
   useEffect(() => {
     // Listen to scroll on window and any scrollable containers
+    // Note: scroll event fires after touch gestures, so touchmove listener is redundant
     window.addEventListener('scroll', handleScroll, { passive: true });
-
-    // Also listen to touchmove for mobile scroll detection
-    window.addEventListener('touchmove', handleScroll, { passive: true });
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('touchmove', handleScroll);
       if (timeoutRef.current) {
         window.clearTimeout(timeoutRef.current);
       }

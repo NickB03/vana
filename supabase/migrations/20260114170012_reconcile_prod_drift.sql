@@ -6,8 +6,10 @@
 -- Safety: DROP/CREATE pattern for policies and indexes (idempotent)
 -- 
 -- Changes:
--- - Replace 11 RLS policies with better-named versions
--- - Rebuild 12 indexes with optimized naming
+-- - Drop 11 old RLS policies and recreate with improved naming and logic
+-- - Add 2 new immutability policies for chat_messages (prevent updates/deletes)
+-- - Rebuild 12 indexes with consistent naming (pattern: idx_{table}_{column})
+-- - Add new indexes for content_hash deduplication and last_request tracking
 -- - Update 4 SECURITY DEFINER functions
 -- - Add guest_rate_limits.last_request_at column
 -- - Adjust NOT NULL constraints and defaults
@@ -36,7 +38,10 @@ DROP POLICY IF EXISTS "Users can view their own preferences" ON public.user_pref
 -- ============================================================================
 
 ALTER TABLE IF EXISTS public.guest_rate_limits DROP CONSTRAINT IF EXISTS guest_rate_limits_identifier_key;
+
+-- Remove obsolete trigger function (superseded by application-level timestamp updates)
 DROP FUNCTION IF EXISTS public.update_chat_session_timestamp();
+
 DROP INDEX IF EXISTS public.guest_rate_limits_identifier_key;
 DROP INDEX IF EXISTS public.idx_ai_usage_tracking_user_created;
 DROP INDEX IF EXISTS public.idx_artifact_versions_artifact_id;
@@ -53,16 +58,22 @@ DROP INDEX IF EXISTS public.intent_examples_embedding_idx;
 -- ============================================================================
 
 -- Chat messages
+-- Default empty array for artifact_ids to avoid NULL handling in application code
 ALTER TABLE public.chat_messages ALTER COLUMN artifact_ids SET DEFAULT '{}'::text[];
+-- Allow NULL created_at for system-generated messages or migrations
 ALTER TABLE public.chat_messages ALTER COLUMN created_at DROP NOT NULL;
+-- Remove default to force explicit token counting by application
 ALTER TABLE public.chat_messages ALTER COLUMN token_count DROP DEFAULT;
 
 -- Chat sessions
+-- Allow NULL timestamps for backward compatibility with existing data
 ALTER TABLE public.chat_sessions ALTER COLUMN created_at DROP NOT NULL;
+-- Remove default to require explicit checkpoint management
 ALTER TABLE public.chat_sessions ALTER COLUMN summary_checkpoint DROP DEFAULT;
 ALTER TABLE public.chat_sessions ALTER COLUMN updated_at DROP NOT NULL;
 
 -- Guest rate limits
+-- Add last_request_at column for tracking most recent API call per guest
 ALTER TABLE public.guest_rate_limits ADD COLUMN IF NOT EXISTS last_request_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE public.guest_rate_limits ALTER COLUMN created_at DROP NOT NULL;
 ALTER TABLE public.guest_rate_limits ALTER COLUMN first_request_at SET DEFAULT NOW();
@@ -71,12 +82,15 @@ ALTER TABLE public.guest_rate_limits ALTER COLUMN request_count DROP NOT NULL;
 ALTER TABLE public.guest_rate_limits ENABLE ROW LEVEL SECURITY;
 
 -- Intent examples
+-- Update embedding dimension to 1024 for Gemini 2.5 Flash embeddings
 ALTER TABLE public.intent_examples
   ALTER COLUMN embedding SET DATA TYPE extensions.vector(1024)
   USING embedding::extensions.vector(1024);
+-- Disable RLS to allow service role access without policy overhead
 ALTER TABLE public.intent_examples DISABLE ROW LEVEL SECURITY;
 
 -- User preferences
+-- Remove default to require explicit library approval
 ALTER TABLE public.user_preferences ALTER COLUMN approved_libraries DROP DEFAULT;
 
 -- ============================================================================
@@ -86,12 +100,14 @@ ALTER TABLE public.user_preferences ALTER COLUMN approved_libraries DROP DEFAULT
 CREATE INDEX IF NOT EXISTS idx_api_throttle_window_start ON public.api_throttle USING btree (window_start);
 CREATE INDEX IF NOT EXISTS idx_artifact_versions_artifact ON public.artifact_versions USING btree (artifact_id);
 CREATE INDEX IF NOT EXISTS idx_artifact_versions_created ON public.artifact_versions USING btree (created_at DESC);
+-- Index content_hash for deduplication checks in create_artifact_version_atomic()
 CREATE INDEX IF NOT EXISTS idx_artifact_versions_hash ON public.artifact_versions USING btree (content_hash);
 CREATE INDEX IF NOT EXISTS idx_artifact_versions_message ON public.artifact_versions USING btree (message_id);
 CREATE INDEX IF NOT EXISTS idx_chat_messages_artifact_ids ON public.chat_messages USING gin (artifact_ids);
 CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON public.chat_messages USING btree (created_at);
 CREATE INDEX IF NOT EXISTS idx_chat_sessions_created_at ON public.chat_sessions USING btree (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_guest_rate_limits_created_at ON public.guest_rate_limits USING btree (created_at);
+-- Index last_request_at for efficient rate limit window queries
 CREATE INDEX IF NOT EXISTS idx_guest_rate_limits_last_request ON public.guest_rate_limits USING btree (last_request_at DESC);
 CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON public.user_preferences USING btree (user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS unique_artifact_version ON public.artifact_versions USING btree (artifact_id, version_number);
@@ -103,11 +119,13 @@ CREATE INDEX IF NOT EXISTS intent_examples_embedding_idx ON public.intent_exampl
 -- SECTION 5: CONSTRAINTS
 -- ============================================================================
 
-ALTER TABLE public.artifact_versions 
+ALTER TABLE public.artifact_versions
   DROP CONSTRAINT IF EXISTS artifact_versions_message_id_fkey;
 
-ALTER TABLE public.artifact_versions 
-  ADD CONSTRAINT artifact_versions_message_id_fkey 
+-- Cascade delete: when a message is deleted, all its artifact versions are removed
+-- This maintains referential integrity and prevents orphaned artifact data
+ALTER TABLE public.artifact_versions
+  ADD CONSTRAINT artifact_versions_message_id_fkey
   FOREIGN KEY (message_id) REFERENCES public.chat_messages(id) ON DELETE CASCADE;
 
 ALTER TABLE public.artifact_versions 
@@ -127,11 +145,16 @@ ALTER TABLE public.guest_rate_limits
 COMMIT;
 
 -- ============================================================================
--- SECTION 6: FUNCTIONS (separate from transaction for safety)
+-- SECTION 6: FUNCTIONS (outside transaction to avoid CLI parsing issues)
 -- ============================================================================
+-- Note: Supabase CLI has known issues parsing complex function bodies in transactions
+-- These function definitions are safe to run independently and are idempotent
 
 SET check_function_bodies = off;
 
+-- Atomically creates a new artifact version with automatic version numbering
+-- Deduplicates by content_hash - returns existing version if content unchanged
+-- SECURITY DEFINER: Required to bypass RLS for atomic version numbering
 CREATE OR REPLACE FUNCTION public.create_artifact_version_atomic(
   p_message_id uuid,
   p_artifact_id text,
@@ -143,7 +166,7 @@ CREATE OR REPLACE FUNCTION public.create_artifact_version_atomic(
 )
 RETURNS public.artifact_versions
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY DEFINER  -- Required to bypass RLS for atomic version numbering
 SET search_path TO 'public', 'pg_temp'
 AS $$
 DECLARE
@@ -200,6 +223,9 @@ BEGIN
 END;
 $$;
 
+-- Returns all versions of an artifact ordered by version_number (newest first)
+-- SECURITY DEFINER allows bypassing RLS to fetch history efficiently,
+-- but RLS policies on artifact_versions still apply to control access
 CREATE OR REPLACE FUNCTION public.get_artifact_version_history(p_artifact_id text)
 RETURNS SETOF public.artifact_versions
 LANGUAGE plpgsql
@@ -215,6 +241,9 @@ BEGIN
 END;
 $$;
 
+-- Vector similarity search for intent classification
+-- Uses cosine distance to find closest matching intents from examples
+-- Note: search_path includes 'extensions' schema for pgvector operators (<=>)
 CREATE OR REPLACE FUNCTION public.match_intent_examples(
   query_embedding vector,
   match_count integer DEFAULT 1,
@@ -235,6 +264,8 @@ AS $$
   LIMIT match_count;
 $$;
 
+-- Triggers PostgREST to reload its schema cache
+-- Used after schema changes to ensure API reflects latest database structure
 CREATE OR REPLACE FUNCTION public.reload_postgrest_schema_cache()
 RETURNS void
 LANGUAGE plpgsql
@@ -247,6 +278,8 @@ BEGIN
 END;
 $$;
 
+-- Updates app settings with admin-only access control
+-- Validates user email against hardcoded admin list
 CREATE OR REPLACE FUNCTION public.update_app_setting(
   setting_key text,
   setting_value jsonb

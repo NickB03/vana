@@ -170,6 +170,9 @@ export default defineConfig(({ mode }) => ({
             "@radix-ui/react-scroll-area",
             "@radix-ui/react-avatar",
           ],
+          "vendor-animations": ["framer-motion"],
+          "vendor-charts": ["recharts"],
+          "vendor-icons": ["lucide-react"],
           "vendor-markdown": ["react-markdown", "remark-gfm"],
           "vendor-query": ["@tanstack/react-query"],
           "vendor-supabase": ["@supabase/supabase-js"],
@@ -189,7 +192,15 @@ export default defineConfig(({ mode }) => ({
     sourcemap: mode === "production" ? "hidden" : true,
   },
   optimizeDeps: {
-    include: ["react", "react-dom", "react-router-dom"],
+    include: [
+      "react",
+      "react-dom",
+      "react-router-dom",
+      "mermaid",
+      "framer-motion",
+      "recharts",
+      "lucide-react",
+    ],
   },
   define: {
     // Inject build hash as environment variable for cache busting

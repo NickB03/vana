@@ -13,7 +13,7 @@ import { Download, Edit } from "lucide-react";
 import { ValidationResult, categorizeError } from "@/utils/artifactValidator";
 import { detectNpmImports } from '@/utils/npmDetection';
 import { lazy } from "react";
-import { classifyError, shouldAttemptRecovery, getFallbackRenderer, ArtifactError } from "@/utils/artifactErrorRecovery";
+import { classifyError, shouldAttemptRecovery, getFallbackRenderer, ArtifactError, handleArtifactTypeError } from "@/utils/artifactErrorRecovery";
 import { ArtifactErrorRecovery } from "./ArtifactErrorRecovery";
 import { transpileCode } from '@/utils/sucraseTranspiler';
 import * as sucraseTranspiler from '@/utils/sucraseTranspiler';
@@ -25,6 +25,7 @@ import {
   REACT_EXPORT_NAMES,
   REACT_SHIM,
 } from "@/utils/reactShims";
+import { useCircuitBreaker } from "@/hooks/useCircuitBreaker";
 
 // Lazy load Sandpack component for code splitting
 const SandpackArtifactRenderer = lazy(() =>
@@ -90,13 +91,64 @@ const BundledArtifactFrame = memo(({
 }: BundledArtifactFrameProps) => {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [classifiedError, setClassifiedError] = useState<ArtifactError | null>(null);
   const fetchStartTimeRef = useRef<number>(Date.now());
+
+  // Circuit breaker to prevent cascading failures during outages
+  const {
+    shouldAllowRequest,
+    recordSuccess,
+    recordFailure,
+    state: circuitState,
+    getTimeUntilRetry
+  } = useCircuitBreaker({
+    maxFailures: 3,
+    resetTimeout: 60000, // 1 minute
+    onStateChange: (state) => {
+      console.log(`[BundledArtifactFrame] Circuit breaker state changed to: ${state}`);
+      Sentry.addBreadcrumb({
+        category: 'artifact.circuit-breaker',
+        message: `Circuit breaker state: ${state}`,
+        level: state === 'open' ? 'warning' : 'info',
+        data: { bundleUrl },
+      });
+    }
+  });
 
   useEffect(() => {
     let isMounted = true;
     let objectUrl: string | null = null;
 
     const fetchBundle = async () => {
+      // Check circuit breaker before attempting fetch
+      if (!shouldAllowRequest()) {
+        const timeUntilRetry = getTimeUntilRetry();
+        const secondsUntilRetry = Math.ceil(timeUntilRetry / 1000);
+        const errorMessage = `Service temporarily unavailable. The artifact bundling service is experiencing issues. Please try again in ${secondsUntilRetry} seconds.`;
+
+        console.warn('[BundledArtifactFrame] Circuit breaker is open, blocking request');
+
+        setFetchError(errorMessage);
+        onLoadingChange(false);
+
+        const circuitOpenError = classifyError(errorMessage);
+        setClassifiedError({
+          ...circuitOpenError,
+          type: 'timeout',
+          canAutoFix: false,
+          retryStrategy: 'none',
+          userMessage: `The artifact service is temporarily unavailable. Automatic retry in ${secondsUntilRetry}s.`
+        });
+        onPreviewErrorChange(errorMessage);
+
+        toast.error('Service temporarily unavailable', {
+          description: `Too many failed requests. Waiting ${secondsUntilRetry}s before retry.`,
+          duration: 5000,
+        });
+
+        return;
+      }
+
       try {
         console.log('[BundledArtifactFrame] Fetching bundle from:', bundleUrl);
         fetchStartTimeRef.current = Date.now();
@@ -104,7 +156,7 @@ const BundledArtifactFrame = memo(({
           category: 'artifact.loading',
           message: 'Bundle fetch started',
           level: 'info',
-          data: { bundleUrl },
+          data: { bundleUrl, circuitState },
         });
         onLoadingChange(true);
         setFetchError(null);
@@ -132,23 +184,30 @@ const BundledArtifactFrame = memo(({
           }
         }
 
-        // Fix: Transform "const * as X from 'pkg'" to "import * as X from 'pkg'"
-        // Note: The pattern may be escaped differently in the HTML template string
+        // Fix: Transform syntax errors in a single pass for better performance
+        // 1. "const * as X from 'pkg'" -> "import * as X from 'pkg'"
+        // 2. "from React;" -> "from 'react';"
+        // 3. "from ReactDOM;" -> "from 'react-dom';"
         const beforeReplace = htmlContent;
         htmlContent = htmlContent.replace(
-          /const\s*\*\s*as\s+(\w+)\s+from\s+(['"][^'"]+['"])\s*;?/g,
-          'import * as $1 from $2;'
+          /const\s*\*\s*as\s+(\w+)\s+from\s+(['"][^'"]+['"])\s*;?|from\s+(React|ReactDOM)\s*;/g,
+          (match, varName, pkgPath, unquotedPkg) => {
+            if (varName) {
+              // Match 1: const * as pattern
+              return `import * as ${varName} from ${pkgPath};`;
+            } else if (unquotedPkg) {
+              // Match 2 & 3: Unquoted React/ReactDOM
+              return unquotedPkg === 'React' ? "from 'react';" : "from 'react-dom';";
+            }
+            return match;
+          }
         );
 
         if (beforeReplace !== htmlContent) {
-          console.log('[BundledArtifactFrame] Successfully transformed const * as patterns');
+          console.log('[BundledArtifactFrame] Successfully transformed import syntax patterns');
         } else if (constStarMatches) {
           console.log('[BundledArtifactFrame] WARNING: Found patterns but replacement did not match');
         }
-
-        // Also fix unquoted package names: "from React;" -> "from 'react';"
-        htmlContent = htmlContent.replace(/from\s+React\s*;/g, "from 'react';");
-        htmlContent = htmlContent.replace(/from\s+ReactDOM\s*;/g, "from 'react-dom';");
 
         // CLIENT-SIDE FIX: Inject missing libraries and globals into bundles created before server fix
         // Framer Motion UMD uses window.React which is set by the UMD React script.
@@ -550,6 +609,9 @@ ${REACT_GLOBAL_ASSIGNMENTS}
           });
           setBlobUrl(objectUrl);
           onLoadingChange(false);
+
+          // Record success in circuit breaker
+          recordSuccess();
         }
       } catch (error) {
         console.error('[BundledArtifactFrame] Failed to fetch bundle:', error);
@@ -557,11 +619,28 @@ ${REACT_GLOBAL_ASSIGNMENTS}
           const elapsed = Date.now() - fetchStartTimeRef.current;
           const errorMessage = error instanceof Error ? error.message : 'Failed to load bundle';
 
+          // Determine if this is a transient error that should trigger circuit breaker
+          const isTransientError = errorMessage.includes('429') || // Rate limit
+                                    errorMessage.includes('500') || // Server error
+                                    errorMessage.includes('502') || // Bad gateway
+                                    errorMessage.includes('503') || // Service unavailable
+                                    errorMessage.includes('504') || // Gateway timeout
+                                    errorMessage.includes('network') ||
+                                    errorMessage.includes('timeout') ||
+                                    errorMessage.includes('Failed to fetch');
+
+          if (isTransientError) {
+            console.warn('[BundledArtifactFrame] Transient error detected, recording failure in circuit breaker');
+            recordFailure();
+          }
+
           // Capture exception, not just breadcrumb
           Sentry.captureException(error, {
             tags: {
               component: 'BundledArtifactFrame',
               action: 'fetch-bundle',
+              isTransientError: String(isTransientError),
+              circuitState,
             },
             extra: {
               elapsed,
@@ -571,8 +650,15 @@ ${REACT_GLOBAL_ASSIGNMENTS}
             },
           });
 
+          // Classify error using central recovery system
+          const classified = handleArtifactTypeError(
+            errorMessage,
+            onPreviewErrorChange,
+            undefined, // No category change callback for bundled artifacts
+            { logPrefix: '[BundledArtifactFrame]', artifactType: 'Bundled React' }
+          );
+          setClassifiedError(classified);
           setFetchError(errorMessage);
-          onPreviewErrorChange(errorMessage);
           onLoadingChange(false);
 
           // Show prominent error toast
@@ -598,7 +684,7 @@ ${REACT_GLOBAL_ASSIGNMENTS}
         URL.revokeObjectURL(objectUrl);
       }
     };
-  }, [bundleUrl, onLoadingChange, onPreviewErrorChange, onAIFix]);
+  }, [bundleUrl, onLoadingChange, onPreviewErrorChange, onAIFix, shouldAllowRequest, recordSuccess, recordFailure, getTimeUntilRetry, circuitState]);
 
   return (
     <div className="w-full h-full relative flex flex-col">
@@ -608,42 +694,27 @@ ${REACT_GLOBAL_ASSIGNMENTS}
             <ArtifactSkeleton type="react" />
           </div>
         )}
-        {(previewError || fetchError) && !isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/95 backdrop-blur-sm z-20">
-            <div className="bg-destructive/10 border border-destructive text-destructive p-6 rounded-lg flex flex-col gap-4 max-w-lg mx-4 shadow-lg">
-              <div className="flex flex-col gap-2">
-                <h3 className="font-semibold text-base flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5" />
-                  Component Error
-                </h3>
-                <p className="text-sm break-words font-mono bg-destructive/5 p-3 rounded">
-                  {previewError || fetchError}
-                </p>
+        {classifiedError && (previewError || fetchError) && !isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/95 backdrop-blur-sm z-20 p-4">
+            <ArtifactErrorRecovery
+              error={classifiedError}
+              isRecovering={false}
+              canRetry={circuitState !== 'open'}
+              canUseFallback={false}
+              onRetry={() => {
+                setClassifiedError(null);
+                setFetchError(null);
+                onPreviewErrorChange(null);
+                window.location.reload();
+              }}
+              onUseFallback={() => {}}
+              onAskAIFix={onAIFix || (() => {})}
+            />
+            {circuitState === 'open' && (
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-xs px-3 py-2 rounded-lg">
+                Circuit breaker active. Retry available in {Math.ceil(getTimeUntilRetry() / 1000)}s
               </div>
-              <div className="flex gap-2 justify-end">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs"
-                  onClick={() => {
-                    navigator.clipboard.writeText(previewError || fetchError || '');
-                    toast.success("Error copied to clipboard");
-                  }}
-                >
-                  Copy Error
-                </Button>
-                {onAIFix && (
-                  <Button
-                    size="sm"
-                    variant="default"
-                    className="text-xs"
-                    onClick={onAIFix}
-                  >
-                    Ask AI to Fix
-                  </Button>
-                )}
-              </div>
-            </div>
+            )}
           </div>
         )}
         {dependencies && dependencies.length > 0 && (
@@ -663,10 +734,18 @@ ${REACT_GLOBAL_ASSIGNMENTS}
             window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
             }}
             onError={(e) => {
+              const errorMsg = 'Failed to render bundled artifact';
               console.error('[BundledArtifactFrame] iframe error:', e);
-              onPreviewErrorChange('Failed to render bundled artifact');
+              const classified = handleArtifactTypeError(
+                errorMsg,
+                onPreviewErrorChange,
+                undefined,
+                { logPrefix: '[BundledArtifactFrame]', artifactType: 'Bundled React iframe' }
+              );
+              setClassifiedError(classified);
+              setFetchError(errorMsg);
               onLoadingChange(false);
-              window.postMessage({ type: 'artifact-rendered-complete', success: false, error: 'Failed to render bundled artifact' }, '*');
+              window.postMessage({ type: 'artifact-rendered-complete', success: false, error: errorMsg }, '*');
             }}
           />
         )}
@@ -854,6 +933,12 @@ export const ArtifactRenderer = memo(({
   const [recoveryAttempts, setRecoveryAttempts] = useState(0);
   const [currentError, setCurrentError] = useState<ArtifactError | null>(null);
   const [isRecovering, setIsRecovering] = useState(false);
+
+  // Artifact-specific error states for unified recovery UI
+  const [svgError, setSvgError] = useState<ArtifactError | null>(null);
+  const [imageError, setImageError] = useState<ArtifactError | null>(null);
+  const [markdownError, setMarkdownError] = useState<ArtifactError | null>(null);
+
   // Renderer selection: 'bundle' for server-bundled, 'sandpack' for npm imports or fallback
   // Note: 'babel' renderer was removed in December 2025 (Sucrase-only architecture)
   const [currentRenderer, setCurrentRenderer] = useState<'bundle' | 'sandpack'>(
@@ -1097,6 +1182,8 @@ export const ArtifactRenderer = memo(({
       const renderMermaid = async () => {
         try {
           onLoadingChange(true);
+          const { ensureMermaidInit } = await import('../utils/mermaidInit');
+          ensureMermaidInit();
           const mermaid = (await import("mermaid")).default;
           const id = `mermaid-${Date.now()}`;
           const { svg } = await mermaid.render(id, artifact.content);
@@ -1259,7 +1346,24 @@ ${artifact.content}
   // Markdown rendering
   if (artifact.type === "markdown") {
     return (
-      <div className="w-full h-full flex flex-col">
+      <div className="w-full h-full flex flex-col relative">
+        {markdownError && previewError && !isEditingCode && (
+          <div className="absolute top-2 left-2 right-2 z-10">
+            <ArtifactErrorRecovery
+              error={markdownError}
+              isRecovering={isFixingError}
+              canRetry={true}
+              canUseFallback={false}
+              onRetry={() => {
+                setMarkdownError(null);
+                onPreviewErrorChange(null);
+                onRefresh();
+              }}
+              onUseFallback={() => {}}
+              onAskAIFix={onAIFix}
+            />
+          </div>
+        )}
         {isEditingCode ? (
           <div className="flex-1 overflow-auto p-4 bg-muted">
             <textarea
@@ -1295,16 +1399,49 @@ ${artifact.content}
     const svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgContent)}`;
 
     return (
-      <div className="w-full h-full overflow-auto p-4 bg-background flex items-center justify-center">
+      <div className="w-full h-full overflow-auto p-4 bg-background flex items-center justify-center relative">
+        {svgError && previewError && (
+          <div className="absolute top-2 left-2 right-2 z-10">
+            <ArtifactErrorRecovery
+              error={svgError}
+              isRecovering={isFixingError}
+              canRetry={true}
+              canUseFallback={false}
+              onRetry={() => {
+                setSvgError(null);
+                onPreviewErrorChange(null);
+                onRefresh();
+              }}
+              onUseFallback={() => {}}
+              onAskAIFix={onAIFix}
+            />
+          </div>
+        )}
         <img
           src={svgDataUrl}
           alt={artifact.title}
           loading="lazy"
           decoding="async"
           className="max-w-full max-h-full object-contain"
+          onLoad={() => {
+            setSvgError(null);
+            onPreviewErrorChange(null);
+          }}
           onError={(e) => {
-            console.error('[ArtifactRenderer] SVG rendering error:', artifact.content);
-            onPreviewErrorChange?.('The SVG image failed to render. The image data may be corrupted or contain invalid syntax.');
+            const errorMsg = 'The SVG image failed to render. The image data may be corrupted or contain invalid syntax.';
+            const error = handleArtifactTypeError(
+              errorMsg,
+              onPreviewErrorChange,
+              onErrorCategoryChange,
+              { logPrefix: '[ArtifactRenderer]', artifactType: 'SVG' }
+            );
+            setSvgError(error);
+            onLoadingChange(false);
+            window.postMessage({
+              type: 'artifact-rendered-complete',
+              success: false,
+              error: errorMsg
+            }, '*');
           }}
         />
       </div>
@@ -1330,7 +1467,24 @@ ${artifact.content}
   // Image rendering
   if (artifact.type === "image") {
     return (
-      <div className="w-full h-full overflow-auto p-6 bg-muted/30 flex flex-col items-center justify-center gap-4">
+      <div className="w-full h-full overflow-auto p-6 bg-muted/30 flex flex-col items-center justify-center gap-4 relative">
+        {imageError && previewError && (
+          <div className="absolute top-2 left-2 right-2 z-10">
+            <ArtifactErrorRecovery
+              error={imageError}
+              isRecovering={isFixingError}
+              canRetry={true}
+              canUseFallback={false}
+              onRetry={() => {
+                setImageError(null);
+                onPreviewErrorChange(null);
+                onRefresh();
+              }}
+              onUseFallback={() => {}}
+              onAskAIFix={onAIFix}
+            />
+          </div>
+        )}
         <img
           src={artifact.content}
           alt={artifact.title}
@@ -1338,14 +1492,23 @@ ${artifact.content}
           decoding="async"
           className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
           onLoad={() => {
+            setImageError(null);
+            onPreviewErrorChange(null);
             onLoadingChange(false);
             // Signal to parent that image has finished loading
             window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
           }}
           onError={(e) => {
-            console.error('[ImageArtifact] Image load error:', e);
+            const errorMsg = 'The image failed to load. This may be due to an invalid URL, network issue, or unsupported format.';
+            const error = handleArtifactTypeError(
+              errorMsg,
+              onPreviewErrorChange,
+              onErrorCategoryChange,
+              { logPrefix: '[ArtifactRenderer]', artifactType: 'Image' }
+            );
+            setImageError(error);
             onLoadingChange(false);
-            window.postMessage({ type: 'artifact-rendered-complete', success: false, error: 'Failed to load image' }, '*');
+            window.postMessage({ type: 'artifact-rendered-complete', success: false, error: errorMsg }, '*');
           }}
         />
         <div className="flex gap-2">

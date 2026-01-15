@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useEffect } from 'react';
+import React, { useRef, useCallback, useEffect, useMemo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ChatMessage } from './ChatMessage';
 import { ArtifactData } from '@/components/ArtifactContainer';
@@ -132,6 +132,19 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
     overscan: 5, // Render 5 extra items above/below viewport for smooth scrolling
   });
 
+  // Cache total size to prevent flushSync warnings during render
+  // The virtualizer.getTotalSize() call can trigger synchronous updates,
+  // so we compute it once per render cycle and memoize it
+  const totalSize = useMemo(() => {
+    // Access getTotalSize in a safe context
+    try {
+      return virtualizer.getTotalSize();
+    } catch {
+      // Fallback to estimated size if getTotalSize fails
+      return messages.length * 200;
+    }
+  }, [virtualizer, messages.length]);
+
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (messages.length > 0 && parentRef.current) {
@@ -171,7 +184,7 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
     >
       <div
         style={{
-          height: `${virtualizer.getTotalSize()}px`,
+          height: `${totalSize}px`,
           width: '100%',
           position: 'relative',
         }}

@@ -82,21 +82,8 @@ describe('useScrollPause', () => {
     expect(result.current.isScrolling).toBe(false)
   })
 
-  it('should detect touchmove events', () => {
-    const { result } = renderHook(() => useScrollPause())
-
-    act(() => {
-      window.dispatchEvent(new Event('touchmove'))
-    })
-
-    expect(result.current.isScrolling).toBe(true)
-
-    act(() => {
-      vi.advanceTimersByTime(150)
-    })
-
-    expect(result.current.isScrolling).toBe(false)
-  })
+  // Note: touchmove listener was removed as scroll event fires after touch gestures
+  // This test is no longer relevant as we only listen to scroll events
 
   it('should cleanup event listeners on unmount', () => {
     const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener')
@@ -105,7 +92,7 @@ describe('useScrollPause', () => {
     unmount()
 
     expect(removeEventListenerSpy).toHaveBeenCalledWith('scroll', expect.any(Function))
-    expect(removeEventListenerSpy).toHaveBeenCalledWith('touchmove', expect.any(Function))
+    // touchmove listener was removed as redundant (scroll fires after touch gestures)
   })
 
   it('should respect custom debounce time', () => {

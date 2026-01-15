@@ -288,6 +288,162 @@ function transformBundleCode(
 }
 
 /**
+ * Inject required libraries that artifacts commonly use.
+ * Detects usage patterns and adds script tags for: PropTypes, Framer Motion, Lucide, Canvas Confetti
+ *
+ * This is a server-side HTML transformation that ensures libraries are pre-injected
+ * before the bundle is uploaded to storage. Replaces ~50 lines of client-side code in ArtifactRenderer.
+ *
+ * @param html - Generated HTML template
+ * @param code - Original React component code
+ * @returns HTML with library script tags injected
+ */
+function ensureLibraryInjection(html: string, code: string): string {
+  const libs = {
+    'prop-types': {
+      test: /recharts|PropTypes/i,
+      script: '<script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>\n<script>if (typeof PropTypes !== "undefined") { window.PropTypes = PropTypes; }</script>'
+    },
+    'framer-motion': {
+      test: /\bmotion\b|\bMotion\b/,
+      script: '<script src="https://esm.sh/framer-motion@10.18.0/dist/framer-motion.js"></script>'
+    },
+    'lucide-react': {
+      test: /lucide-react/,
+      script: '<script src="https://esm.sh/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>\n<script>if (typeof lucideReact !== "undefined") { Object.entries(lucideReact).forEach(([name, icon]) => { if (typeof window[name] === "undefined") window[name] = icon; }); window.LucideIcons = lucideReact; }</script>'
+    },
+    'canvas-confetti': {
+      test: /confetti/i,
+      script: '<script src="https://esm.sh/canvas-confetti@1.9.3/dist/confetti.browser.js"></script>'
+    }
+  };
+
+  for (const [libName, config] of Object.entries(libs)) {
+    if (config.test.test(code) && !html.includes(libName)) {
+      // Inject after ReactDOM script or before </head>
+      const reactDomMatch = html.match(/(<script[^>]*react-dom[^>]*\.js[^>]*><\/script>)/i);
+      if (reactDomMatch) {
+        html = html.replace(reactDomMatch[1], reactDomMatch[1] + '\n' + config.script);
+      } else {
+        html = html.replace('</head>', config.script + '\n</head>');
+      }
+    }
+  }
+
+  return html;
+}
+
+/**
+ * Fix invalid import syntax that GLM sometimes generates.
+ * - "const * as X from 'pkg'" → "import * as X from 'pkg'"
+ * - "from React;" → "from 'react';"
+ *
+ * This is a server-side HTML transformation applied before upload.
+ * Replaces ~20 lines of client-side code in ArtifactRenderer.
+ *
+ * @param html - Generated HTML template
+ * @returns HTML with normalized import syntax
+ */
+function normalizeExports(html: string): string {
+  return html.replace(
+    /const\s*\*\s*as\s+(\w+)\s+from\s+(['"][^'"]+['"])\s*;?|from\s+(React|ReactDOM)\s*;/g,
+    (match, varName, pkgPath, unquotedPkg) => {
+      if (varName) {
+        return `import * as ${varName} from ${pkgPath};`;
+      } else if (unquotedPkg) {
+        return unquotedPkg === 'React' ? "from 'react';" : "from 'react-dom';";
+      }
+      return match;
+    }
+  );
+}
+
+/**
+ * Fix dual React instance problem with esm.sh packages.
+ * - Changes ?deps=react,react-dom to ?external=react,react-dom
+ * - Updates CSP to allow data: URLs for import map shims
+ *
+ * This is a server-side HTML transformation applied before upload.
+ * Replaces ~150 lines of client-side code in ArtifactRenderer.
+ *
+ * @param html - Generated HTML template
+ * @returns HTML with dual React instance fixes applied
+ */
+function fixDualReactInstance(html: string): string {
+  if (!html.includes('esm.sh')) return html;
+
+  // Step 1: Replace ?deps= with ?external=
+  html = html.replace(
+    /(https:\/\/esm\.sh\/[^'"?\s]+)\?deps=react@[\d.]+,react-dom@[\d.]+/g,
+    '$1?external=react,react-dom'
+  );
+
+  // Step 2: Add ?external to esm.sh URLs without query params
+  html = html.replace(
+    /(https:\/\/esm\.sh\/@[^'"?\s]+)(['"\s>])/g,
+    (match, url, ending) => {
+      if (url.includes('?')) return match;
+      return `${url}?external=react,react-dom${ending}`;
+    }
+  );
+
+  // Step 3: Update CSP to allow data: URLs
+  const cspMatch = html.match(/<meta[^>]*Content-Security-Policy[^>]*content="([^"]*)"/i);
+  if (cspMatch) {
+    const csp = cspMatch[1];
+    if (csp.includes('blob:') && !csp.includes('data:')) {
+      const newCsp = csp.replace(/(script-src[^;]*blob:)/i, '$1 data:');
+      html = html.replace(csp, newCsp);
+    }
+  }
+
+  // Step 4: Update import map with React shims
+  const importMapMatch = html.match(/<script type="importmap">([\s\S]*?)<\/script>/);
+  if (importMapMatch) {
+    try {
+      const importMap = JSON.parse(importMapMatch[1]);
+      importMap.imports = importMap.imports || {};
+      importMap.imports['react'] = 'data:text/javascript,export default window.React';
+      importMap.imports['react-dom'] = 'data:text/javascript,export default window.ReactDOM';
+      importMap.imports['react/jsx-runtime'] = 'data:text/javascript,export const jsx=window.React.createElement;export const jsxs=window.React.createElement;export const Fragment=window.React.Fragment';
+
+      const newImportMapScript = `<script type="importmap">${JSON.stringify(importMap, null, 2)}</script>`;
+      html = html.replace(importMapMatch[0], newImportMapScript);
+    } catch (e) {
+      console.error('[bundle-artifact] Failed to parse import map:', e);
+    }
+  }
+
+  return html;
+}
+
+/**
+ * Unescape template literals that were escaped for embedding.
+ * - \` → `
+ * - \$ → $
+ *
+ * This is a server-side HTML transformation applied before upload.
+ * Replaces ~20 lines of client-side code in ArtifactRenderer.
+ *
+ * @param html - Generated HTML template
+ * @returns HTML with unescaped template literals
+ */
+function unescapeTemplateLiterals(html: string): string {
+  if (!html.includes('\\`') && !html.includes('\\$')) return html;
+
+  return html.replace(
+    /(<script type="module">)([\s\S]*?)(<\/script>)/,
+    (match, open, content, close) => {
+      const unescaped = content
+        .replace(/\\`/g, '`')
+        .replace(/\\\$/g, '$')
+        .replace(/\\\\\\\\/g, '\\\\');
+      return open + unescaped + close;
+    }
+  );
+}
+
+/**
  * Generate complete HTML bundle with embedded code and dependencies.
  *
  * @param params - Bundle generation parameters
@@ -499,8 +655,16 @@ ${importMapJson}
 </body>
 </html>`;
 
-  const htmlSize = new TextEncoder().encode(htmlTemplate).length;
-  return { html: htmlTemplate, size: htmlSize };
+  // Apply server-side transformations before uploading
+  // These replace ~300 lines of client-side code in ArtifactRenderer.tsx
+  let finalHtml = htmlTemplate;
+  finalHtml = ensureLibraryInjection(finalHtml, params.code);
+  finalHtml = normalizeExports(finalHtml);
+  finalHtml = fixDualReactInstance(finalHtml);
+  finalHtml = unescapeTemplateLiterals(finalHtml);
+
+  const htmlSize = new TextEncoder().encode(finalHtml).length;
+  return { html: finalHtml, size: htmlSize };
 }
 
 /**
