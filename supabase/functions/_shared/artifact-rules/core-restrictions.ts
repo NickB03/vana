@@ -99,7 +99,30 @@ Follow these patterns EXACTLY to ensure your artifact works:
 
    ⚠️ These will FAIL: \`import { Mail, User, Mail } from 'lucide-react'\`, \`import { useState, useState } from 'react'\`
 
-6. **COMPLETE COMPONENTS** (MANDATORY)
+6. **NO DUPLICATE IMPORTS ACROSS STATEMENTS** (MANDATORY)
+
+   ALWAYS import each identifier ONLY ONCE from each package:
+
+   ✅ CORRECT:
+   \`\`\`jsx
+   import { Mail, User, Settings } from 'lucide-react';
+   import { AreaChart, LineChart } from 'recharts';
+   \`\`\`
+
+   ❌ INCORRECT (runtime error):
+   \`\`\`jsx
+   import { Mail } from 'lucide-react';
+   import { User, Mail } from 'lucide-react';  // ❌ Mail imported twice
+
+   import { AreaChart } from 'recharts';
+   import { AreaChart, LineChart } from 'recharts';  // ❌ AreaChart imported twice
+   \`\`\`
+
+   If you need multiple items from a package, import them together in ONE statement.
+   If you realize you need another import later, ADD it to the existing import line
+   instead of creating a new import statement.
+
+7. **COMPLETE COMPONENTS** (MANDATORY)
 
    ALWAYS export exactly one complete component:
    \`\`\`jsx

@@ -465,14 +465,20 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
           // ============================================================================
           // Gemini generates cleaner code than GLM, so we skip pre-validation
 
-          // Validate and auto-fix artifact code (catches other issues like reserved keywords, mutations)
+          // ALWAYS run autoFixArtifactCode to ensure:
+          // - Duplicate imports are merged (PHASE 0)
+          // - TypeScript is stripped (PHASE 1)
+          // - All auto-fixable issues are proactively fixed (PHASE 2+)
+          const { fixed, changes } = autoFixArtifactCode(artifactCode);
+          if (changes.length > 0) {
+            console.log(`[${requestId}] ✅ Auto-fixed ${changes.length} streaming artifact issue(s): ${changes.join(', ')}`);
+            artifactCode = fixed;
+          }
+
+          // Validate AFTER auto-fix to catch remaining issues
           const validation = validateArtifactCode(artifactCode, artifactType || 'react');
-          if (!validation.valid && validation.canAutoFix) {
-            const { fixed, changes } = autoFixArtifactCode(artifactCode);
-            if (changes.length > 0) {
-              console.log(`[${requestId}] ✅ Auto-fixed ${changes.length} streaming artifact issue(s)`);
-              artifactCode = fixed;
-            }
+          if (!validation.valid) {
+            console.warn(`[${requestId}] ⚠️  Validation issues after auto-fix:`, validation.issues);
           }
 
           // Structured reasoning parsing removed - ReasoningProvider generates semantic status updates
@@ -693,44 +699,24 @@ Include the opening <artifact> tag, the complete code, and the closing </artifac
     // ============================================================================
     // POST-GENERATION VALIDATION & AUTO-FIX
     // ============================================================================
-    // Validate artifact code for common issues:
-    // - Reserved keywords (eval, arguments, etc.)
-    // - Invalid imports (@/components/ui/*)
-    // - Immutability violations (array mutations)
+    // ALWAYS run autoFixArtifactCode to ensure:
+    // - Duplicate imports are merged (PHASE 0)
+    // - TypeScript is stripped (PHASE 1)
+    // - All auto-fixable issues are proactively fixed (PHASE 2+)
+    const { fixed, changes } = autoFixArtifactCode(artifactCode);
+
+    if (changes.length > 0) {
+      console.log(`[${requestId}] ✅ Auto-fixed ${changes.length} issue(s):`, changes);
+      artifactCode = fixed;
+    }
+
+    // Validate AFTER auto-fix to catch remaining issues
     const validation = validateArtifactCode(artifactCode, artifactType || 'react');
 
-    if (!validation.valid && validation.canAutoFix) {
-      console.log(`[${requestId}] ⚠️  Validation issues detected, attempting auto-fix...`);
-
-      // Log specific issue types
-      const issueTypes = {
-        reserved: validation.issues.filter(i => i.message.includes("Reserved keyword")).length,
-        imports: validation.issues.filter(i => i.message.includes("import")).length,
-        immutability: validation.issues.filter(i => i.message.includes("mutate") || i.message.includes("Direct array assignment")).length
-      };
-
-      if (issueTypes.reserved > 0) console.log(`[${requestId}] 🔧 Reserved keyword issues: ${issueTypes.reserved}`);
-      if (issueTypes.imports > 0) console.log(`[${requestId}] 🔧 Import issues: ${issueTypes.imports}`);
-      if (issueTypes.immutability > 0) console.log(`[${requestId}] 🔧 Immutability violations: ${issueTypes.immutability}`);
-
-      const { fixed, changes } = autoFixArtifactCode(artifactCode);
-
-      if (changes.length > 0) {
-        console.log(`[${requestId}] ✅ Auto-fixed ${changes.length} issue(s):`, changes);
-        artifactCode = fixed;
-
-        // Re-validate after fixes
-        const revalidation = validateArtifactCode(artifactCode, artifactType || 'react');
-        if (!revalidation.valid) {
-          console.warn(`[${requestId}] ⚠️  Some issues remain after auto-fix:`, revalidation.issues);
-        } else {
-          console.log(`[${requestId}] ✅ All issues resolved after auto-fix`);
-        }
-      }
-    } else if (!validation.valid) {
-      console.warn(`[${requestId}] ⚠️  Validation issues detected (cannot auto-fix):`, validation.issues);
+    if (!validation.valid) {
+      console.warn(`[${requestId}] ⚠️  Validation issues after auto-fix:`, validation.issues);
     } else {
-      console.log(`[${requestId}] ✅ Artifact code validated successfully (no issues)`);
+      console.log(`[${requestId}] ✅ Artifact code validated successfully`);
     }
 
     // Extract token usage for cost tracking

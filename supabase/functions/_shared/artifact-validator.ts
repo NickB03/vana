@@ -349,16 +349,137 @@ function removeDuplicateImports(code: string): { code: string; duplicatesRemoved
 }
 
 /**
+ * Merges duplicate import statements from the same source using enhanced regex.
+ * Handles cross-statement duplicates that single-statement deduplication misses.
+ *
+ * Example:
+ *   import { A } from 'pkg';
+ *   import { B, A } from 'pkg';
+ * Becomes:
+ *   import { A, B } from 'pkg';
+ *
+ * LIMITATION: Only handles named imports on single lines. Does not handle:
+ * - Default imports (import React from 'react')
+ * - Namespace imports (import * as X from 'pkg')
+ * - Multi-line imports
+ * - Comments in import statements
+ */
+function mergeImportStatements(code: string): { code: string; mergeCount: number; error?: string } {
+  try {
+    console.log('[mergeImportStatements] Processing code, first 500 chars:', code.substring(0, 500));
+    // Build map of source → { names, locations }
+    const sourceMap = new Map<string, {
+      names: Map<string, string>, // originalName → full import (with alias)
+      locations: Array<{ start: number; end: number; line: string }>
+    }>();
+
+    // Match single-line named imports only
+    const importRegex = /^import\s*\{([^}]+)\}\s*from\s*(['"][^'"]+['"])\s*;?\s*$/gm;
+    let match;
+
+    while ((match = importRegex.exec(code)) !== null) {
+      const source = match[2];
+      const importsStr = match[1];
+      const fullMatch = match[0];
+
+      if (!sourceMap.has(source)) {
+        sourceMap.set(source, { names: new Map(), locations: [] });
+      }
+
+      const entry = sourceMap.get(source)!;
+      entry.locations.push({
+        start: match.index,
+        end: match.index + fullMatch.length,
+        line: fullMatch
+      });
+
+      // Parse imports, handling aliases
+      const imports = importsStr.split(',').map(s => s.trim()).filter(Boolean);
+      for (const imp of imports) {
+        const [originalName] = imp.split(/\s+as\s+/);
+        const trimmedOriginal = originalName.trim();
+
+        // First occurrence wins (preserves first alias if multiple)
+        if (!entry.names.has(trimmedOriginal)) {
+          entry.names.set(trimmedOriginal, imp);
+        }
+      }
+    }
+
+    // Identify sources with duplicates (multiple statements)
+    const duplicateSources = Array.from(sourceMap.entries())
+      .filter(([_, data]) => data.locations.length > 1);
+
+    if (duplicateSources.length === 0) {
+      return { code, mergeCount: 0 };
+    }
+
+    // Rebuild code with merged imports (process in reverse order to avoid offset issues)
+    let result = code;
+    let mergeCount = 0;
+
+    for (const [source, data] of duplicateSources) {
+      const { names, locations } = data;
+
+      // Sort locations in reverse order
+      const sortedLocs = [...locations].sort((a, b) => b.start - a.start);
+
+      // Build merged import
+      const nameList = Array.from(names.values()).join(', ');
+      const mergedImport = `import { ${nameList} } from ${source};`;
+
+      // Replace first occurrence (which is last in sortedLocs)
+      const firstLoc = sortedLocs[sortedLocs.length - 1];
+      result = result.substring(0, firstLoc.start) +
+               mergedImport +
+               result.substring(firstLoc.end);
+
+      // Remove subsequent occurrences (process in reverse)
+      for (let i = 0; i < sortedLocs.length - 1; i++) {
+        const loc = sortedLocs[i];
+        result = result.substring(0, loc.start) + result.substring(loc.end);
+      }
+
+      mergeCount += locations.length - 1;
+    }
+
+    return { code: result, mergeCount };
+
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error('[artifact-validator] Import merge failed:', errorMsg);
+    return { code, mergeCount: 0, error: errorMsg };
+  }
+}
+
+/**
  * Attempts to auto-fix common issues in artifact code
  */
 export function autoFixArtifactCode(code: string): { fixed: string; changes: string[] } {
+  console.log('[artifact-validator] 🚨 autoFixArtifactCode CALLED - code length:', code.length);
   let fixed = code;
   const changes: string[] = [];
 
-  // PHASE 1: Strip TypeScript syntax FIRST (before other fixes)
+  // PHASE 0: Merge cross-statement duplicate imports (BEFORE any transpilation)
+  // This MUST run before Sucrase because Sucrase adds `const _jsxFileName = "";`
+  // which breaks the regex pattern that expects `^import` at line start
+  console.log('[artifact-validator] 🔍 Running mergeImportStatements...');
+  const mergeResult = mergeImportStatements(fixed);
+  if (mergeResult.mergeCount > 0) {
+    fixed = mergeResult.code;
+    changes.push(`Merged ${mergeResult.mergeCount} duplicate import statement(s)`);
+    console.log(`[artifact-validator] Merged ${mergeResult.mergeCount} duplicate import(s) across statements`);
+  }
+  if (mergeResult.error) {
+    // Don't fail validation, but log for tracking
+    console.warn('[artifact-validator] Import merge encountered error (continuing):', mergeResult.error);
+  }
+
+  // PHASE 1: Strip TypeScript syntax (after import merging)
   // This is important because Sucrase works best on complete, unmodified code
   // Strategy: Try Sucrase first (AST-based, more reliable), fall back to regex
-  const sucraseResult = stripTypeScriptWithSucrase(code);
+  // Note: We use `fixed` here (not `code`) because Phase 0 may have merged imports
+  const sucraseResult = stripTypeScriptWithSucrase(fixed);
 
   if (sucraseResult.error) {
     console.warn('[artifact-validator] Using regex TypeScript stripping due to Sucrase error:', sucraseResult.error);
@@ -369,7 +490,7 @@ export function autoFixArtifactCode(code: string): { fixed: string; changes: str
     // Sucrase succeeded - use its output and continue with other fixes
     fixed = sucraseResult.code;
     changes.push('Stripped TypeScript syntax using Sucrase (AST-based)');
-  } else if (/:\s*[A-Za-z]|<[A-Z][^<>]*>|interface\s+\w+|type\s+\w+\s*=|\s+as\s+[A-Za-z]/.test(code)) {
+  } else if (/:\s*[A-Za-z]|<[A-Z][^<>]*>|interface\s+\w+|type\s+\w+\s*=|\s+as\s+[A-Za-z]/.test(fixed)) {
     // Sucrase failed but code has TypeScript syntax - fall back to regex patterns
     // Detects: type annotations (: Type or : string), generics (<Type>), interfaces, type aliases, type assertions (as Type)
     let regexStripped = false;

@@ -370,6 +370,14 @@ function normalizeExports(html: string): string {
  * @returns HTML with dual React instance fixes applied
  */
 function fixDualReactInstance(html: string): string {
+  // Prevent DoS via very large HTML input
+  const MAX_HTML_SIZE = 10 * 1024 * 1024; // 10MB
+  if (html.length > MAX_HTML_SIZE) {
+    console.warn('[bundle-artifact] HTML exceeds max size for transformation:', html.length);
+    return html; // Skip transformation for oversized input
+  }
+
+  // Early exit optimization
   if (!html.includes('esm.sh')) return html;
 
   // Step 1: Replace ?deps= with ?external=
@@ -378,11 +386,21 @@ function fixDualReactInstance(html: string): string {
     '$1?external=react,react-dom'
   );
 
-  // Step 2: Add ?external to esm.sh URLs without query params
+  // Step 2: Add ?external to esm.sh URLs without query params (both scoped and non-scoped packages)
+  // SECURITY: Limit URL match length to prevent ReDoS attacks
   html = html.replace(
-    /(https:\/\/esm\.sh\/@[^'"?\s]+)(['"\s>])/g,
+    /(https:\/\/esm\.sh\/[^'"?\s]{1,500})(['"\s>])/g,
     (match, url, ending) => {
       if (url.includes('?')) return match;
+
+      // Security: Validate ending character to prevent attribute injection
+      // Prevents XSS like: <script src="https://esm.sh/pkg"onload="alert(1)">
+      const SAFE_ENDINGS = ['\'', '"', ' ', '>'];
+      if (!SAFE_ENDINGS.includes(ending)) {
+        console.warn('[bundle-artifact] SECURITY: Invalid ending character in esm.sh URL:', ending);
+        return match; // Don't transform potentially malicious input
+      }
+
       return `${url}?external=react,react-dom${ending}`;
     }
   );
@@ -429,10 +447,17 @@ function fixDualReactInstance(html: string): string {
  * @returns HTML with unescaped template literals
  */
 function unescapeTemplateLiterals(html: string): string {
+  // Prevent DoS via very large HTML input
+  const MAX_HTML_SIZE = 10 * 1024 * 1024; // 10MB
+  if (html.length > MAX_HTML_SIZE) {
+    console.warn('[bundle-artifact] HTML exceeds max size for transformation:', html.length);
+    return html;
+  }
+
   if (!html.includes('\\`') && !html.includes('\\$')) return html;
 
   return html.replace(
-    /(<script type="module">)([\s\S]*?)(<\/script>)/,
+    /(<script type="module">)([\s\S]*?)(<\/script>)/g,
     (match, open, content, close) => {
       const unescaped = content
         .replace(/\\`/g, '`')
