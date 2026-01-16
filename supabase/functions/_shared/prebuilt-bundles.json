@@ -1,6 +1,6 @@
 {
-  "version": "2.2.0",
-  "generated": "2025-12-08T13:43:36.417Z",
+  "version": "2.4.0",
+  "generated": "2026-01-15T00:00:00.000Z",
   "packages": [
     {
       "name": "date-fns",
@@ -681,6 +681,72 @@
       "bundleUrl": "https://esm.sh/@react-three/postprocessing@2.16.3?external=react,react-dom",
       "size": 428,
       "fetchTime": 306
+    },
+    {
+      "name": "@radix-ui/react-label",
+      "version": "2.1.10",
+      "compatibleVersions": [
+        "^2.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@radix-ui/react-label@2.1.10?bundle&external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@radix-ui/react-label@2.1.10?bundle&external=react,react-dom",
+      "size": 210,
+      "fetchTime": 50
+    },
+    {
+      "name": "@radix-ui/react-slot",
+      "version": "1.1.10",
+      "compatibleVersions": [
+        "^1.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@radix-ui/react-slot@1.1.10?bundle&external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@radix-ui/react-slot@1.1.10?bundle&external=react,react-dom",
+      "size": 180,
+      "fetchTime": 50
+    },
+    {
+      "name": "@radix-ui/react-toggle",
+      "version": "1.1.10",
+      "compatibleVersions": [
+        "^1.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@radix-ui/react-toggle@1.1.10?bundle&external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@radix-ui/react-toggle@1.1.10?bundle&external=react,react-dom",
+      "size": 320,
+      "fetchTime": 50
+    },
+    {
+      "name": "@radix-ui/react-toggle-group",
+      "version": "1.1.11",
+      "compatibleVersions": [
+        "^1.0.0"
+      ],
+      "esmUrl": "https://esm.sh/@radix-ui/react-toggle-group@1.1.11?bundle&external=react,react-dom",
+      "bundleUrl": "https://esm.sh/@radix-ui/react-toggle-group@1.1.11?bundle&external=react,react-dom",
+      "size": 520,
+      "fetchTime": 50
+    },
+    {
+      "name": "react-router-dom",
+      "version": "7.5.0",
+      "compatibleVersions": [
+        "^7.0.0"
+      ],
+      "esmUrl": "https://esm.sh/react-router-dom@7.5.0?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/react-router-dom@7.5.0?bundle&external=react,react-dom",
+      "size": 450,
+      "fetchTime": 50
+    },
+    {
+      "name": "pixi.js",
+      "version": "8.6.6",
+      "compatibleVersions": [
+        "^8.0.0"
+      ],
+      "esmUrl": "https://esm.sh/pixi.js@8.6.6?external=react,react-dom",
+      "bundleUrl": "https://esm.sh/pixi.js@8.6.6?bundle&external=react,react-dom",
+      "size": 680,
+      "fetchTime": 100
     }
   ]
 }

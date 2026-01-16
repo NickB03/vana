@@ -310,7 +310,7 @@ function ensureLibraryInjection(html: string, code: string): string {
     },
     'lucide-react': {
       test: /lucide-react/,
-      script: '<script src="https://esm.sh/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>\n<script>if (typeof lucideReact !== "undefined") { Object.entries(lucideReact).forEach(([name, icon]) => { if (typeof window[name] === "undefined") window[name] = icon; }); window.LucideIcons = lucideReact; }</script>'
+      script: '<script src="https://esm.sh/lucide-react@0.556.0/dist/umd/lucide-react.js"></script>\n<script>if (typeof lucideReact !== "undefined") { Object.entries(lucideReact).forEach(([name, icon]) => { if (typeof window[name] === "undefined") window[name] = icon; }); window.LucideIcons = lucideReact; }</script>'
     },
     'canvas-confetti': {
       test: /confetti/i,
@@ -477,7 +477,7 @@ function generateBundleHtml(params: {
   <script crossorigin src="https://unpkg.com/framer-motion@10.18.0/dist/framer-motion.js"></script>`;
 
   const lucideScript = bundleReact ? "" : `
-  <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>`;
+  <script src="https://unpkg.com/lucide-react@0.556.0/dist/umd/lucide-react.js"></script>`;
 
   const reactUmdBootstrapScript = bundleReact ? "" : `
   <script>

@@ -163,3 +163,12 @@ export {
   detectAntiPatterns,
   validateQualityStandards,
 } from './design-tokens.ts';
+
+// =============================================================================
+// Pixi.js Game Patterns
+// =============================================================================
+
+export {
+  PIXI_PATTERNS,
+  PIXI_PATTERNS_REMINDER,
+} from './pixi-patterns.ts';

@@ -694,122 +694,221 @@ export default function SettingsPage() {
   {
     id: 'game',
     name: 'Interactive Game',
-    description: 'Tic-tac-toe style game with score tracking',
-    keywords: ['game', 'tic-tac-toe', 'play', 'score', 'winner', 'player', 'board', 'puzzle', 'quiz', 'trivia'],
-    requiredLibraries: [],
+    description: 'Arcade games with canvas, score tracking, and keyboard controls',
+    keywords: ['game', 'frogger', 'arcade', 'canvas', 'pixi', 'pixi.js', 'snake', 'pong', 'breakout', 'space invaders', 'mario', 'platformer', 'asteroids', 'pacman', 'brick breaker', 'chase', 'avoid', 'obstacle', 'maze', 'race', 'shooter', 'invaders', 'snake', 'tetris', 'flappy', 'bird', 'doodle', 'jump', 'endless', 'runner'],
+    requiredLibraries: ['pixi.js'],
     systemPromptGuidance: `
-Create an interactive game with Tailwind CSS:
+Create a 2D arcade game using pixi.js with proper DOM mounting:
+
+## CRITICAL: PIXI.JS SETUP
+1. Mount canvas to DOM: \`containerRef.current.appendChild(app.canvas)\`
+2. Set size: \`resizeTo: containerRef.current\`
+3. Use keyboard events: \`window.addEventListener('keydown', ...)\`
+4. Use PIXI.Text for score/lives (not DOM elements)
+5. Cleanup: \`app.destroy(true, { children: true })\`
+
+## Complete Pattern:
+\`\`\`jsx
+const { useState, useEffect, useRef } = React;
+
+export default function Game() {
+  const containerRef = useRef(null);
+  const [gameOver, setGameOver] = useState(false);
+  
+  useEffect(() => {
+    let app;
+    const keys = {};
+    
+    async function initGame() {
+      app = new PIXI.Application();
+      await app.init({ 
+        background: '#228b22',
+        resizeTo: containerRef.current,
+        preference: 'webgpu'
+      });
+      
+      // CRITICAL: Mount canvas
+      containerRef.current.appendChild(app.canvas);
+      
+      // Create player (green rectangle)
+      const player = new PIXI.Graphics()
+        .rect(0, 0, 30, 30)
+        .fill(0x00ff00);
+      player.x = 200;
+      player.y = 500;
+      app.stage.addChild(player);
+      
+      // Score text
+      const scoreText = new PIXI.Text({
+        text: 'Score: 0',
+        style: { fontSize: 24, fill: 0xffffff }
+      });
+      scoreText.x = 10;
+      scoreText.y = 10;
+      app.stage.addChild(scoreText);
+      
+      // Keyboard handlers
+      window.addEventListener('keydown', (e) => keys[e.key] = true);
+      window.addEventListener('keyup', (e) => keys[e.key] = false);
+      
+      // Game loop
+      app.ticker.add(() => {
+        if (keys['ArrowUp']) player.y -= 3;
+        if (keys['ArrowDown']) player.y += 3;
+        if (keys['ArrowLeft']) player.x -= 3;
+        if (keys['ArrowRight']) player.x += 3;
+      });
+    }
+    
+    initGame();
+    
+    return () => {
+      window.removeEventListener('keydown', () => {});
+      window.removeEventListener('keyup', () => {});
+      if (app) app.destroy(true, { children: true });
+    };
+  }, []);
+  
+  return (
+    <div ref={containerRef} className="w-full h-96 rounded-lg overflow-hidden" />
+  );
+}
+\`\`\`
+
+## Requirements:
 - Complete game loop (start → play → end → restart)
-- Score tracking with visual feedback
-- Winner detection and celebration
-- Clear game board/interface
-- Reset and new game buttons
-- Responsive design for all screen sizes
-- Use lucide-react for icons (RotateCcw, Trophy, etc.)
-- Use ONLY Tailwind CSS for styling (NO local component imports)
+- Score tracking and lives
+- Keyboard controls (Arrow keys)
+- Collision detection
+- Game over screen
+- Use PIXI.Graphics for shapes, PIXI.Text for UI
+- No pointer events - use keyboard only
 `,
     exampleStructure: `
-import { RotateCcw, Trophy } from 'lucide-react';
+const { useState, useEffect, useRef } = React;
 
-const { useState } = React;
-
-export default function App() {
-  const [board, setBoard] = useState(Array(9).fill(null));
-  const [isXNext, setIsXNext] = useState(true);
-  const [scores, setScores] = useState({ X: 0, O: 0, draws: 0 });
+export default function FroggerGame() {
+  const containerRef = useRef(null);
   const [gameOver, setGameOver] = useState(false);
-
-  const calculateWinner = (squares) => {
-    const lines = [
-      [0, 1, 2], [3, 4, 5], [6, 7, 8],
-      [0, 3, 6], [1, 4, 7], [2, 5, 8],
-      [0, 4, 8], [2, 4, 6],
-    ];
-    for (const [a, b, c] of lines) {
-      if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-        return { winner: squares[a], line: [a, b, c] };
+  const [score, setScore] = useState(0);
+  const [lives, setLives] = useState(3);
+  
+  useEffect(() => {
+    let app;
+    let frog;
+    const cars = [];
+    let scoreVal = 0;
+    let livesVal = 3;
+    const keys = {};
+    
+    async function initGame() {
+      app = new PIXI.Application();
+      await app.init({ 
+        background: '#228b22',
+        resizeTo: containerRef.current,
+        preference: 'webgpu'
+      });
+      
+      containerRef.current.appendChild(app.canvas);
+      
+      // Create frog
+      frog = new PIXI.Graphics()
+        .rect(0, 0, 30, 30)
+        .fill(0x00ff00);
+      frog.x = 200;
+      frog.y = 500;
+      app.stage.addChild(frog);
+      
+      // Score text
+      const scoreText = new PIXI.Text({
+        text: 'Score: 0',
+        style: { fontSize: 20, fill: 0xffffff }
+      });
+      scoreText.x = 10;
+      scoreText.y = 10;
+      app.stage.addChild(scoreText);
+      
+      // Lives text
+      const livesText = new PIXI.Text({
+        text: 'Lives: 3',
+        style: { fontSize: 20, fill: 0xffffff }
+      });
+      livesText.x = 10;
+      livesText.y = 35;
+      app.stage.addChild(livesText);
+      
+      // Create cars
+      for (let i = 0; i < 4; i++) {
+        const car = new PIXI.Graphics()
+          .rect(0, 0, 60, 30)
+          .fill(0xff0000);
+        car.x = i * 150;
+        car.y = 400 - i * 80;
+        app.stage.addChild(car);
+        cars.push({ sprite: car, speed: 2 + i * 0.5 });
       }
+      
+      // Keyboard handlers
+      window.addEventListener('keydown', (e) => keys[e.key] = true);
+      window.addEventListener('keyup', (e) => keys[e.key] = false);
+      
+      // Game loop
+      app.ticker.add(() => {
+        if (keys['ArrowUp']) frog.y -= 3;
+        if (keys['ArrowDown']) frog.y += 3;
+        if (keys['ArrowLeft']) frog.x -= 3;
+        if (keys['ArrowRight']) frog.x += 3;
+        
+        // Clamp position
+        frog.x = Math.max(0, Math.min(400, frog.x));
+        frog.y = Math.max(0, Math.min(550, frog.y));
+        
+        // Move cars
+        cars.forEach(car => {
+          car.sprite.x += car.speed;
+          if (car.sprite.x > 450) car.sprite.x = -60;
+          
+          // Collision
+          if (Math.abs(car.sprite.x - frog.x) < 50 && 
+              Math.abs(car.sprite.y - frog.y) < 30) {
+            frog.x = 200;
+            frog.y = 500;
+            livesVal--;
+            livesText.text = \`Lives: \${livesVal}\`;
+            if (livesVal <= 0) {
+              setGameOver(true);
+              app.destroy();
+            }
+          }
+        });
+      });
     }
-    return null;
-  };
-
-  const handleClick = (index) => {
-    if (board[index] || gameOver) return;
-    // ✅ CORRECT: Immutable update
-    const newBoard = [...board];
-    newBoard[index] = isXNext ? 'X' : 'O';
-    setBoard(newBoard);
-
-    const result = calculateWinner(newBoard);
-    if (result) {
-      setGameOver(true);
-      setScores({ ...scores, [result.winner]: scores[result.winner] + 1 });
-    } else if (newBoard.every(s => s !== null)) {
-      setGameOver(true);
-      setScores({ ...scores, draws: scores.draws + 1 });
-    } else {
-      setIsXNext(!isXNext);
-    }
-  };
-
-  const resetGame = () => {
-    setBoard(Array(9).fill(null));
-    setIsXNext(true);
-    setGameOver(false);
-  };
-
-  const winnerInfo = calculateWinner(board);
-
+    
+    initGame();
+    
+    return () => {
+      window.removeEventListener('keydown', () => {});
+      window.removeEventListener('keyup', () => {});
+      if (app) app.destroy(true, { children: true });
+    };
+  }, []);
+  
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full">
-        <h1 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-4">Tic-Tac-Toe</h1>
-
-        {/* Score Board */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-blue-100 dark:bg-blue-900/30 rounded-lg p-3 text-center">
-            <div className="text-2xl font-bold text-blue-600">{scores.X}</div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">Player X</div>
-          </div>
-          <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 text-center">
-            <div className="text-2xl font-bold text-gray-600">{scores.draws}</div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">Draws</div>
-          </div>
-          <div className="bg-pink-100 dark:bg-pink-900/30 rounded-lg p-3 text-center">
-            <div className="text-2xl font-bold text-pink-600">{scores.O}</div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">Player O</div>
-          </div>
-        </div>
-
-        {/* Game Board */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          {board.map((square, index) => (
-            <button
-              key={index}
-              onClick={() => handleClick(index)}
-              className={\`aspect-square text-4xl font-bold rounded-lg transition-all \${
-                square ? (square === 'X' ? 'bg-blue-500 text-white' : 'bg-pink-500 text-white')
-                : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200'
-              }\`}
-              disabled={!!square || gameOver}
+    <div className="flex flex-col items-center">
+      <div ref={containerRef} className="w-[450px] h-[600px] rounded-lg overflow-hidden" />
+      {gameOver && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+          <div className="bg-white p-6 rounded-lg text-center">
+            <h2 className="text-2xl font-bold mb-4">Game Over!</h2>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded"
             >
-              {square}
+              Play Again
             </button>
-          ))}
-        </div>
-
-        {winnerInfo && (
-          <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 rounded-lg p-4 mb-4 flex items-center gap-3">
-            <Trophy className="w-6 h-6 text-green-600" />
-            <p className="text-green-800 dark:text-green-200 font-medium">Player {winnerInfo.winner} wins!</p>
           </div>
-        )}
-
-        <button onClick={resetGame} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2">
-          <RotateCcw className="w-5 h-5" />
-          New Game
-        </button>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

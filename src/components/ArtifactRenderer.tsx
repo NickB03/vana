@@ -1381,7 +1381,7 @@ ${artifact.content}
   </script>
   <!-- Tailwind CDN: Intentional for artifact sandboxing. Console warning is expected. -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
+  <script src="https://unpkg.com/lucide-react@0.556.0/dist/umd/lucide-react.js"></script>
   <script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/recharts@2.5.0/umd/Recharts.js"></script>
   <script src="https://unpkg.com/framer-motion@10.18.0/dist/framer-motion.js"></script>
