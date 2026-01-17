@@ -310,7 +310,7 @@ function ensureLibraryInjection(html: string, code: string): string {
     },
     'lucide-react': {
       test: /lucide-react/,
-      script: '<script src="https://esm.sh/lucide-react@0.556.0/dist/umd/lucide-react.js"></script>\n<script>if (typeof lucideReact !== "undefined") { Object.entries(lucideReact).forEach(([name, icon]) => { if (typeof window[name] === "undefined") window[name] = icon; }); window.LucideIcons = lucideReact; }</script>'
+      script: '<script src="https://esm.sh/lucide-react@0.556.0/dist/umd/lucide-react.js"></script>\n<script>var _LucideIcons = (typeof LucideReact !== "undefined" ? LucideReact : (typeof lucideReact !== "undefined" ? lucideReact : null)); if (_LucideIcons) { Object.entries(_LucideIcons).forEach(([name, icon]) => { if (typeof window[name] === "undefined") window[name] = icon; }); window.LucideIcons = _LucideIcons; window.LucideReact = _LucideIcons; window.lucideReact = _LucideIcons; }</script>'
     },
     'canvas-confetti': {
       test: /confetti/i,
@@ -538,12 +538,17 @@ ${reactGlobalAssignments}
       window.canvasConfetti = { create: confetti.create || confetti, reset: confetti.reset };
       window.confetti = confetti;
     }
-    if (typeof LucideReact !== 'undefined') {
+    // Handle both UMD global names: unpkg.com exports as LucideReact, esm.sh exports as lucideReact
+    const LucideIcons = (typeof LucideReact !== 'undefined' ? LucideReact : (typeof lucideReact !== 'undefined' ? lucideReact : null));
+    if (LucideIcons) {
       console.log('Lucide React loaded successfully');
-      window.Lucide = LucideReact;
-      Object.keys(LucideReact).forEach(iconName => {
+      window.Lucide = LucideIcons;
+      window.LucideReact = LucideIcons;
+      window.lucideReact = LucideIcons;
+      window.LucideIcons = LucideIcons;
+      Object.keys(LucideIcons).forEach(iconName => {
         if (typeof window[iconName] === 'undefined') {
-          window[iconName] = LucideReact[iconName];
+          window[iconName] = LucideIcons[iconName];
         }
       });
     }
@@ -588,7 +593,7 @@ ${reactGlobalAssignments}`
                  script-src 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://esm.sh https://esm.run https://cdn.jsdelivr.net blob: data:;
                  style-src 'unsafe-inline' https://cdn.tailwindcss.com;
                  img-src 'self' data: https:;
-                 connect-src 'self' https://esm.sh https://*.esm.sh https://esm.run https://cdn.jsdelivr.net;">
+                 connect-src 'self' https://esm.sh https://*.esm.sh https://esm.run https://cdn.jsdelivr.net https://unpkg.com https://*.unpkg.com;">
   <title>${sanitizedTitle}</title>
   ${reactUmdScripts}
   <script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>

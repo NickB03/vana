@@ -783,6 +783,7 @@ export default function Game() {
 - Game over screen
 - Use PIXI.Graphics for shapes, PIXI.Text for UI
 - No pointer events - use keyboard only
+- CRITICAL: End EVERY statement with a semicolon (e.g., \`const fn = () => { };\`)
 `,
     exampleStructure: `
 const { useState, useEffect, useRef } = React;

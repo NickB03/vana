@@ -139,7 +139,42 @@ Follow these patterns EXACTLY to ensure your artifact works:
 
    ⚠️ These will FAIL: Orphan tags like \`</div></body></html>\` after component, multiple HTML documents in one file
 
-WHY: Artifacts run in sandboxed iframes for security. Local imports and browser storage APIs are intentionally blocked. The Sucrase transpiler has strict syntax requirements.
+8. **STATEMENT TERMINATION** (MANDATORY)
+
+   ALWAYS end every statement with a semicolon. This is CRITICAL for the Sucrase transpiler:
+   \`\`\`jsx
+   // ✅ CORRECT - semicolons after every statement
+   const { useState, useEffect, useRef } = React;
+
+   const gameLoop = () => {
+     // game logic
+   };  // ← SEMICOLON REQUIRED after function expression
+
+   const handleClick = (e) => {
+     console.log('clicked');
+   };  // ← SEMICOLON REQUIRED
+
+   useEffect(() => {
+     const interval = setInterval(update, 16);
+     return () => clearInterval(interval);
+   }, []);  // ← SEMICOLON after useEffect
+   \`\`\`
+
+   ❌ INCORRECT (transpilation error):
+   \`\`\`jsx
+   const gameLoop = () => {
+     // game logic
+   }  // ❌ MISSING SEMICOLON - causes "Unexpected token, expected ';'" error
+   gameLoop()
+   \`\`\`
+
+   Copy the correct pattern. The Sucrase transpiler requires explicit semicolons after:
+   - Variable declarations: \`const x = 1;\`
+   - Function expressions: \`const fn = () => { };\`
+   - Arrow functions assigned to variables: \`const handler = (e) => { };\`
+   - Hook calls: \`useEffect(() => { }, []);\`
+
+WHY: Artifacts run in sandboxed iframes for security. Local imports and browser storage APIs are intentionally blocked. The Sucrase transpiler has strict syntax requirements and does not perform automatic semicolon insertion.
 `;
 
 export const CORE_RESTRICTIONS_REMINDER = `
@@ -154,4 +189,5 @@ Verify your artifact has ALL of these:
 ✓ Used React state (const [value, setValue] = useState(...))
 ✓ Each import name appears only once
 ✓ No code after the component export
+✓ Every statement ends with a semicolon (especially: const fn = () => { };)
 `;

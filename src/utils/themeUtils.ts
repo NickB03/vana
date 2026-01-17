@@ -252,12 +252,13 @@ export function generateIframeBaseStyles(): string {
 
 /**
  * Generates complete iframe styles with theme synchronization
+ * The data-theme-vars attribute allows dynamic theme updates via postMessage
  */
 export function generateCompleteIframeStyles(): string {
   const themeCSS = generateThemeCSS();
   const baseStyles = generateIframeBaseStyles();
 
-  return `<style>
+  return `<style data-theme-vars>
 ${themeCSS}
 ${baseStyles}
   </style>`;

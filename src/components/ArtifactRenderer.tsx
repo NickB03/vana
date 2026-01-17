@@ -576,6 +576,20 @@ const ERROR_HANDLING_SCRIPT = `
     window.addEventListener('load', () => {
       window.parent.postMessage({ type: 'artifact-ready' }, '*');
     });
+
+    // Theme update listener - allows dynamic theme changes without iframe remount
+    window.addEventListener('message', (e) => {
+      if (e.data?.type === 'theme-update' && e.data?.themeCSS) {
+        // Extract CSS variable declarations from the new theme CSS
+        const styleEl = document.querySelector('style[data-theme-vars]');
+        if (styleEl && e.data.themeCSS) {
+          // Update just the theme variables, preserve base styles
+          const baseStyles = styleEl.textContent.split('/* Base styles')[1];
+          styleEl.textContent = e.data.themeCSS + (baseStyles ? '/* Base styles' + baseStyles : '');
+          console.log('[Artifact] Theme updated dynamically');
+        }
+      }
+    });
 `;
 
 interface ArtifactRendererProps {
@@ -585,7 +599,7 @@ interface ArtifactRendererProps {
   errorCategory: 'syntax' | 'runtime' | 'import' | 'unknown';
   validation: ValidationResult | null;
   injectedCDNs: string;
-  themeRefreshKey: number;
+  refreshTimestamp: number;
   isEditingCode: boolean;
   editedContent: string;
   isFixingError: boolean;
@@ -608,7 +622,7 @@ export const ArtifactRenderer = memo(({
   errorCategory,
   validation,
   injectedCDNs,
-  themeRefreshKey,
+  refreshTimestamp,
   isEditingCode,
   editedContent,
   isFixingError,
@@ -1025,10 +1039,10 @@ ${artifact.content}
               />
             </div>
           )}
-          <WebPreview key={`webpreview-${themeRefreshKey}`} className="rounded-none border-0">
+          <WebPreview className="rounded-none border-0">
             <WebPreviewBody
               srcDoc={previewContent}
-              key={`${injectedCDNs}-${themeRefreshKey}`}
+              key={`${artifact.id}-${refreshTimestamp}`}
               loading={isLoading ? <ArtifactSkeleton type={artifact.type} /> : undefined}
               className="w-full h-full border-0 bg-background"
               title={artifact.title}
@@ -1645,10 +1659,10 @@ ${ERROR_HANDLING_SCRIPT}
               />
             </div>
           )}
-          <WebPreview key={`webpreview-react-${themeRefreshKey}`} className="rounded-none border-0">
+          <WebPreview className="rounded-none border-0">
             <WebPreviewBody
               srcDoc={reactPreviewContent}
-              key={`${injectedCDNs}-${themeRefreshKey}`}
+              key={`${artifact.id}-${refreshTimestamp}`}
               loading={isLoading ? <ArtifactSkeleton type={artifact.type} /> : undefined}
               className="w-full h-full border-0 bg-background"
               title={artifact.title}

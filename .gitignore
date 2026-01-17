@@ -154,3 +154,4 @@ backups/
 supabase/functions/.env
 
 worktrees/
+supabase/functions/coverage_html/

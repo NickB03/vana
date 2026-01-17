@@ -53,6 +53,10 @@ export const VALIDATION_ERROR_CODES = {
   IMMUTABILITY_ARRAY_POP: 'IMMUTABILITY_ARRAY_POP',
   IMMUTABILITY_ARRAY_SHIFT: 'IMMUTABILITY_ARRAY_SHIFT',
   IMMUTABILITY_ARRAY_UNSHIFT: 'IMMUTABILITY_ARRAY_UNSHIFT',
+
+  // Syntax violations (BLOCKING - code cannot be parsed/transpiled)
+  // These are critical errors that prevent artifacts from rendering at all
+  SYNTAX_PARSE_ERROR: 'SYNTAX_PARSE_ERROR',
 } as const;
 
 export type ValidationErrorCode = typeof VALIDATION_ERROR_CODES[keyof typeof VALIDATION_ERROR_CODES];
@@ -292,6 +296,86 @@ function stripTypeScriptWithSucrase(code: string): { code: string; stripped: boo
       code,
       stripped: false,
       error: errorMessage,
+    };
+  }
+}
+
+/**
+ * Syntax Validation Result
+ * Returned by validateJavaScriptSyntax to indicate whether code is parseable
+ */
+export interface SyntaxValidationResult {
+  /** True if code has valid JavaScript/JSX syntax */
+  valid: boolean;
+  /** Error message if syntax is invalid */
+  error?: string;
+  /** Line number where error occurred (if available) */
+  line?: number;
+  /** Column number where error occurred (if available) */
+  column?: number;
+}
+
+/**
+ * Validates JavaScript/JSX syntax using Sucrase parser.
+ *
+ * This function performs SYNTAX VALIDATION ONLY - it does not transform the code.
+ * It catches errors that Sucrase's transform would throw, allowing us to detect
+ * invalid AI-generated code BEFORE it reaches the client.
+ *
+ * Common syntax errors this catches:
+ * - Missing colons in object properties: { backgroundColor] } instead of { backgroundColor: value }
+ * - Unclosed JSX tags
+ * - Malformed template literals
+ * - Invalid import/export syntax
+ * - Unexpected tokens
+ *
+ * @param code - The artifact code to validate
+ * @returns SyntaxValidationResult with valid=true or valid=false with error details
+ */
+export function validateJavaScriptSyntax(code: string): SyntaxValidationResult {
+  try {
+    // Use Sucrase to parse the code - if it fails, syntax is invalid
+    // We use the same transforms as stripTypeScriptWithSucrase for consistency
+    transform(code, {
+      transforms: ['typescript', 'jsx'],
+      disableESTransforms: true,
+      jsxPragma: 'React.createElement',
+      jsxFragmentPragma: 'React.Fragment',
+    });
+
+    return { valid: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    // Parse line/column from Sucrase error message
+    // Sucrase errors look like: "Unexpected token (85:12)" or "Error at line 85, column 12"
+    let line: number | undefined;
+    let column: number | undefined;
+
+    // Match patterns like "(85:12)" or "line 85" or "column 12"
+    const lineColMatch = errorMessage.match(/\((\d+):(\d+)\)/);
+    if (lineColMatch) {
+      line = parseInt(lineColMatch[1], 10);
+      column = parseInt(lineColMatch[2], 10);
+    } else {
+      const lineMatch = errorMessage.match(/line\s+(\d+)/i);
+      const colMatch = errorMessage.match(/column\s+(\d+)/i);
+      if (lineMatch) line = parseInt(lineMatch[1], 10);
+      if (colMatch) column = parseInt(colMatch[1], 10);
+    }
+
+    console.error('[artifact-validator] Syntax validation failed:', {
+      error: errorMessage,
+      line,
+      column,
+      codePreview: code.substring(0, 200),
+    });
+
+    return {
+      valid: false,
+      error: errorMessage,
+      line,
+      column,
     };
   }
 }
@@ -937,6 +1021,14 @@ const CHAINABLE_METHODS = [
 
 /**
  * Main validation function - checks artifact code for common issues
+ *
+ * VALIDATION ORDER (fail-fast approach):
+ * 1. Syntax validation (Sucrase parser) - catches unparseable code
+ * 2. Reserved keywords detection - catches strict mode violations
+ * 3. Problematic patterns - catches import/storage issues
+ * 4. Immutability violations - catches React strict mode warnings
+ *
+ * Syntax errors are BLOCKING and cannot be auto-fixed - they require AI retry.
  */
 export function validateArtifactCode(code: string, artifactType: string = 'react'): ValidationResult {
   const issues: ValidationIssue[] = [];
@@ -946,19 +1038,43 @@ export function validateArtifactCode(code: string, artifactType: string = 'react
     return { valid: true, issues: [], canAutoFix: false };
   }
 
-  // Check for reserved keywords
+  // STEP 1: Syntax validation (CRITICAL - catches unparseable AI-generated code)
+  // This is the first line of defense against invalid code like "backgroundColor]"
+  // Syntax errors CANNOT be auto-fixed - they require AI regeneration
+  if (['react', 'html', 'code'].includes(artifactType)) {
+    const syntaxResult = validateJavaScriptSyntax(code);
+    if (!syntaxResult.valid) {
+      issues.push({
+        severity: 'error',
+        message: `Syntax error: ${syntaxResult.error}`,
+        line: syntaxResult.line,
+        suggestion: 'The code has invalid syntax and cannot be parsed. Regenerate with corrected syntax.',
+        code: VALIDATION_ERROR_CODES.SYNTAX_PARSE_ERROR,
+      });
+
+      // FAIL FAST: Syntax errors are fatal - no point checking other issues
+      // The code cannot be transpiled or executed at all
+      return {
+        valid: false,
+        issues,
+        canAutoFix: false, // Syntax errors require AI regeneration, not auto-fix
+      };
+    }
+  }
+
+  // STEP 2: Check for reserved keywords
   issues.push(...detectReservedKeywords(code));
 
-  // Check for problematic patterns
+  // STEP 3: Check for problematic patterns
   issues.push(...detectProblematicPatterns(code));
 
-  // Check for immutability violations (NEW)
+  // STEP 4: Check for immutability violations
   issues.push(...detectMutationPatterns(code));
 
   // Determine if code has critical errors
   const hasErrors = issues.some(issue => issue.severity === 'error');
 
-  // Check if issues can be auto-fixed
+  // Check if issues can be auto-fixed (syntax errors already handled above with canAutoFix: false)
   const canAutoFix = issues.some(issue =>
     issue.message.includes("'eval'") ||
     issue.message.includes("'arguments'") ||

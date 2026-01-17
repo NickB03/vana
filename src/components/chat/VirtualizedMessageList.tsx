@@ -90,6 +90,12 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
   const parentRef = scrollRef ?? internalRef;
   const [isAtBottom, setIsAtBottom] = useState(true);
 
+  // Check for artifact messages FIRST - this determines whether virtualization is enabled
+  // Must be computed before virtualizer to pass enabled option
+  const hasArtifactMessages = useMemo(() => {
+    return messages.some((message) => /<artifact\b/i.test(message.content));
+  }, [messages]);
+
   // Estimate size based on message content
   const estimateSize = useCallback((index: number) => {
     const message = messages[index];
@@ -139,11 +145,15 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
     return Math.max(baseHeight, baseHeight + contentHeight + extraHeight);
   }, [messages]);
 
+  // Disable virtualizer when artifacts are present to avoid measureElement warnings
+  // TanStack Virtual's measureElement expects data-index on measured elements,
+  // but the non-virtualized path doesn't include this attribute
   const virtualizer = useVirtualizer({
     count: messages.length,
     getScrollElement: () => parentRef.current,
     estimateSize,
     overscan: 5, // Render 5 extra items above/below viewport for smooth scrolling
+    enabled: !hasArtifactMessages, // Disable when using non-virtualized rendering
   });
 
   // Cache total size to prevent flushSync warnings during render
@@ -158,10 +168,6 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
       return messages.length * 200;
     }
   }, [virtualizer, messages.length]);
-
-  const hasArtifactMessages = useMemo(() => {
-    return messages.some((message) => /<artifact\b/i.test(message.content));
-  }, [messages]);
 
   // Track changes in list identity even when length is unchanged (e.g., streaming-temp replaced by saved message)
   const lastMessageKey = messages[messages.length - 1]?.id ?? 'none';
