@@ -9,7 +9,7 @@ import { ArtifactErrorBoundary } from "./ArtifactErrorBoundary";
 import { ArtifactRenderer } from "./ArtifactRenderer";
 import { ArtifactToolbar } from "./ArtifactToolbar";
 import { ArtifactCodeEditor } from "./ArtifactCodeEditor";
-import { generateCompleteIframeStyles } from "@/utils/themeUtils";
+import { generateCompleteIframeStyles, generateThemeCSS } from "@/utils/themeUtils";
 import { ArtifactViewToggle } from "./ArtifactViewToggle";
 import { RefreshCw } from "lucide-react";
 import { useMinimumLoadingTime } from "@/hooks/use-minimum-loading-time";
@@ -57,8 +57,8 @@ export const ArtifactContainer = ({
   const [validation, setValidation] = useState<ValidationResult | null>(null);
   const [isEditingCode, setIsEditingCode] = useState(false);
   const [editedContent, setEditedContent] = useState(artifact.content);
-  const [themeRefreshKey, setThemeRefreshKey] = useState(0);
   const [isFixingError, setIsFixingError] = useState(false);
+  const [refreshTimestamp, setRefreshTimestamp] = useState(Date.now());
 
   // Ensure skeleton shows for minimum 300ms to prevent flash on fast loads
   const showLoadingSkeleton = useMinimumLoadingTime(isLoading, 300);
@@ -76,13 +76,24 @@ export const ArtifactContainer = ({
     ensureMermaidInit();
   }, []);
 
-  // Watch for theme changes (throttled to prevent excessive re-renders)
+  // Watch for theme changes and notify iframes via postMessage (no remount needed)
   useEffect(() => {
     let timeout: NodeJS.Timeout;
     const observer = new MutationObserver(() => {
       clearTimeout(timeout);
       timeout = setTimeout(() => {
-        setThemeRefreshKey(prev => prev + 1);
+        // Send theme update to all iframes instead of remounting them
+        const iframes = document.querySelectorAll('iframe[data-testid="artifact-iframe"]');
+        iframes.forEach((iframe) => {
+          const iframeWindow = (iframe as HTMLIframeElement).contentWindow;
+          if (iframeWindow) {
+            const themeCSS = generateThemeCSS();
+            iframeWindow.postMessage({
+              type: 'theme-update',
+              themeCSS
+            }, '*');
+          }
+        });
       }, 100); // 100ms throttle
     });
 
@@ -174,7 +185,9 @@ ${artifact.content}
 
   // Helper functions
   const handleRefresh = useCallback(() => {
-    setThemeRefreshKey(prev => prev + 1);
+    // Force iframe reload by updating refresh timestamp
+    // This ensures a clean re-render without theme-based race conditions
+    setRefreshTimestamp(Date.now());
     toast.success("Preview refreshed");
   }, []);
 
@@ -269,7 +282,7 @@ ${artifact.content}
         errorCategory={errorCategory}
         validation={validation}
         injectedCDNs={injectedCDNs}
-        themeRefreshKey={themeRefreshKey}
+        refreshTimestamp={refreshTimestamp}
         isEditingCode={isEditingCode}
         editedContent={editedContent}
         isFixingError={isFixingError}
