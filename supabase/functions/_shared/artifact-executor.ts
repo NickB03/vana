@@ -33,9 +33,11 @@ import {
 import {
   validateArtifactCode,
   autoFixArtifactCode,
+  validateJavaScriptSyntax,
   VALIDATION_ERROR_CODES,
   type ValidationIssue,
   type ValidationErrorCode,
+  type SyntaxValidationResult,
 } from './artifact-validator.ts';
 import { getStructuralIssues } from './artifact-structure.ts';
 import { getRelevantPatterns, getTypeSpecificGuidance } from './artifact-rules/error-patterns.ts';
@@ -293,6 +295,169 @@ Return ONLY the fixed code without any additional text.`;
 }
 
 /**
+ * Check if validation failed due to a syntax error.
+ * Syntax errors require AI regeneration as they cannot be auto-fixed.
+ */
+function hasSyntaxError(issues: ValidationIssue[]): boolean {
+  return issues.some(issue => issue.code === VALIDATION_ERROR_CODES.SYNTAX_PARSE_ERROR);
+}
+
+/**
+ * Extract the syntax error message from validation issues.
+ */
+function getSyntaxErrorMessage(issues: ValidationIssue[]): string {
+  const syntaxIssue = issues.find(issue => issue.code === VALIDATION_ERROR_CODES.SYNTAX_PARSE_ERROR);
+  return syntaxIssue?.message || 'Unknown syntax error';
+}
+
+/**
+ * Attempt to regenerate artifact when syntax validation fails.
+ *
+ * This is a specialized retry for syntax errors that provides targeted guidance
+ * to the AI model about what went wrong and how to fix it.
+ *
+ * Strategy:
+ * 1. Include the original prompt (user's intent)
+ * 2. Include the broken code (so AI knows what it generated)
+ * 3. Include the specific syntax error (so AI knows what to fix)
+ * 4. Ask for corrected code with explicit syntax validation guidance
+ */
+async function attemptSyntaxErrorRetry(params: {
+  code: string;
+  type: GeneratableArtifactType;
+  originalPrompt: string;
+  syntaxError: string;
+  requestId: string;
+}): Promise<ArtifactAutoFixResult | null> {
+  const { code, type, originalPrompt, syntaxError, requestId } = params;
+
+  console.log(`[${requestId}] 🔧 Attempting syntax error retry...`);
+  console.log(`[${requestId}] 🔧 Syntax error: ${syntaxError}`);
+
+  const systemPrompt = `You are an expert JavaScript/React debugger specializing in fixing syntax errors.
+
+[CRITICAL - ORIGINAL REQUEST]
+${originalPrompt}
+
+[CRITICAL - SYNTAX ERROR]
+The previously generated code has a SYNTAX ERROR that prevents it from being parsed:
+${syntaxError}
+
+[COMMON SYNTAX ERROR PATTERNS]
+1. Missing colons in object properties: { backgroundColor] } should be { backgroundColor: value }
+2. Unclosed JSX tags: <div> without </div>
+3. Missing commas in object/array literals
+4. Unbalanced brackets, braces, or parentheses
+5. Invalid template literal syntax
+6. Missing quotes around string values
+
+[OUTPUT REQUIREMENTS]
+- Return ONLY the complete, corrected artifact code
+- Ensure ALL syntax is valid JavaScript/JSX
+- Preserve ALL the original functionality and features
+- Do NOT add explanations or markdown fences
+- Do NOT include any trailing HTML like <!DOCTYPE html>
+- End with "export default ComponentName;" for React artifacts`;
+
+  const userPrompt = `The following code has a syntax error. Fix it while preserving all functionality.
+
+SYNTAX ERROR:
+${syntaxError}
+
+BROKEN CODE:
+${code}
+
+Return ONLY the corrected code without any additional text.`;
+
+  try {
+    const response = await generateArtifact(systemPrompt, userPrompt, {
+      enableThinking: true,
+      thinkingLevel: 'medium',
+      requestId,
+    });
+
+    if (!response.ok) {
+      console.warn(`[${requestId}] ⚠️  Syntax error retry failed with status ${response.status}`);
+      return null;
+    }
+
+    // Consume the stream and extract the fixed code
+    let extractedCode = '';
+    const reader = response.body?.getReader();
+    if (!reader) {
+      console.warn(`[${requestId}] ⚠️  Syntax error retry response has no body`);
+      return null;
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let finishReason: string | null = null;
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.trim() || line.startsWith(':')) continue;
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              const content = extractText(parsed, requestId);
+              if (content) {
+                extractedCode += content;
+              }
+
+              if (parsed?.choices?.[0]?.finish_reason) {
+                finishReason = parsed.choices[0].finish_reason;
+              }
+            } catch (e) {
+              // Ignore parse errors
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    if (finishReason === 'length') {
+      console.warn(`[${requestId}] ⚠️  Syntax error retry output truncated (finish_reason="length")`);
+    }
+
+    if (!extractedCode || extractedCode.trim().length === 0) {
+      console.warn(`[${requestId}] ⚠️  Syntax error retry returned empty code`);
+      return null;
+    }
+
+    const fixedCode = extractedCode
+      .replace(/^```[\w]*\n/, '')
+      .replace(/\n```$/, '')
+      .trim();
+
+    // Validate the fixed code still has valid syntax
+    const syntaxCheck = validateJavaScriptSyntax(fixedCode);
+    if (!syntaxCheck.valid) {
+      console.warn(`[${requestId}] ⚠️  Syntax error retry still has syntax errors: ${syntaxCheck.error}`);
+      return null;
+    }
+
+    console.log(`[${requestId}] ✅ Syntax error retry successful - code now parses correctly`);
+    return { code: fixedCode, finishReason };
+  } catch (error) {
+    console.warn(`[${requestId}] ⚠️  Syntax error retry attempt failed:`, error);
+    return null;
+  }
+}
+
+/**
  * Maximum request ID length to prevent log injection
  */
 const MAX_REQUEST_ID_LENGTH = 64;
@@ -390,6 +555,8 @@ export interface ArtifactExecutorResult {
     valid: boolean;
     autoFixed: boolean;
     issueCount: number;
+    /** True if syntax errors were detected and AI retry was attempted */
+    syntaxRetried?: boolean;
   };
 
   /**
@@ -908,6 +1075,54 @@ export async function executeArtifactGeneration(
     issues: validation.issues,
   });
 
+  // ============================================================================
+  // SYNTAX ERROR RETRY (NEW)
+  // ============================================================================
+  // Syntax errors are CRITICAL and cannot be auto-fixed - they require AI regeneration.
+  // This catches errors like "backgroundColor]" which would fail at client-side transpilation.
+  // We retry ONCE with the syntax error context to give the AI a chance to fix its mistake.
+  let syntaxRetried = false;
+
+  if (!validation.valid && hasSyntaxError(validation.issues)) {
+    console.log(`[${requestId}] 🚨 SYNTAX ERROR DETECTED - attempting AI retry...`);
+
+    const syntaxErrorMessage = getSyntaxErrorMessage(validation.issues);
+    const syntaxRetryResult = await attemptSyntaxErrorRetry({
+      code: artifactCode,
+      type,
+      originalPrompt: prompt,
+      syntaxError: syntaxErrorMessage,
+      requestId,
+    });
+
+    if (syntaxRetryResult) {
+      syntaxRetried = true;
+      const syntaxFinishReason = syntaxRetryResult.finishReason;
+      artifactCode = stripHtmlDocumentStructure(syntaxRetryResult.code, type, requestId);
+
+      // Re-validate the fixed code
+      validation = validateArtifactCode(artifactCode, type);
+      const syntaxRetryStructuralIssues = getStructuralIssues({
+        code: artifactCode,
+        artifactType: type,
+        finishReason: syntaxFinishReason,
+      });
+      if (syntaxRetryStructuralIssues.length > 0) {
+        validation = mergeValidationIssues(validation, syntaxRetryStructuralIssues);
+      }
+
+      if (validation.valid) {
+        console.log(`[${requestId}] ✅ Syntax error retry succeeded - code is now valid`);
+      } else if (hasSyntaxError(validation.issues)) {
+        console.warn(`[${requestId}] ⚠️  Syntax error retry failed - still has syntax errors`);
+      } else {
+        console.log(`[${requestId}] ⚠️  Syntax error fixed, but other validation issues remain`);
+      }
+    } else {
+      console.warn(`[${requestId}] ⚠️  Syntax error retry failed - no valid code returned`);
+    }
+  }
+
   if (!validation.valid && validation.canAutoFix) {
     console.log(`[${requestId}] ⚠️  Validation issues detected, attempting auto-fix...`);
 
@@ -1114,6 +1329,7 @@ export async function executeArtifactGeneration(
       valid: validation.valid,
       autoFixed: autoFixed || aiFixed,
       issueCount: validation.issues.length,
+      syntaxRetried,
     },
     latencyMs,
   };

@@ -1003,3 +1003,213 @@ export default function App() {
   assertEquals(fixed.includes('Mail, User, Settings, Mail'), false);
   assertEquals(fixed.includes('Button, Input, Button'), false);
 });
+
+// ============================================================================
+// JavaScript Syntax Validation Tests (SYNTAX_PARSE_ERROR)
+// ============================================================================
+// These tests verify that validateJavaScriptSyntax catches various syntax errors
+// that would cause client-side transpilation to fail.
+
+import { validateJavaScriptSyntax } from "../artifact-validator.ts";
+
+Deno.test("validateJavaScriptSyntax - valid JSX component passes", () => {
+  const code = `
+const { useState } = React;
+
+function App() {
+  const [count, setCount] = useState(0);
+  return (
+    <div className="p-4">
+      <h1>Count: {count}</h1>
+      <button onClick={() => setCount(c => c + 1)}>Increment</button>
+    </div>
+  );
+}
+
+export default App;`;
+  const result = validateJavaScriptSyntax(code);
+
+  assertEquals(result.valid, true);
+  assertEquals(result.error, undefined);
+});
+
+Deno.test("validateJavaScriptSyntax - detects missing colon in object property", () => {
+  // This is the exact error pattern from the sales dashboard bug: "backgroundColor]" instead of "backgroundColor: COLORS[i]"
+  const code = `
+const data = {
+  backgroundColor]  // Missing colon
+};
+`;
+  const result = validateJavaScriptSyntax(code);
+
+  assertEquals(result.valid, false);
+  assertExists(result.error);
+  assertStringIncludes(result.error.toLowerCase(), 'unexpected');
+});
+
+Deno.test("validateJavaScriptSyntax - detects unclosed JSX tag", () => {
+  const code = `
+function App() {
+  return (
+    <div>
+      <span>Hello
+    </div>
+  );
+}`;
+  const result = validateJavaScriptSyntax(code);
+
+  assertEquals(result.valid, false);
+  assertExists(result.error);
+});
+
+Deno.test("validateJavaScriptSyntax - detects missing closing brace", () => {
+  const code = `
+function App() {
+  const data = {
+    name: "test",
+    value: 42
+  // Missing closing brace
+}`;
+  const result = validateJavaScriptSyntax(code);
+
+  assertEquals(result.valid, false);
+  assertExists(result.error);
+});
+
+Deno.test("validateJavaScriptSyntax - detects invalid template literal", () => {
+  const code = `
+const message = \`Hello \${name}
+// Unclosed template literal
+`;
+  const result = validateJavaScriptSyntax(code);
+
+  assertEquals(result.valid, false);
+  assertExists(result.error);
+});
+
+Deno.test("validateJavaScriptSyntax - detects invalid import syntax", () => {
+  const code = `
+import { useState from 'react';  // Missing closing brace
+`;
+  const result = validateJavaScriptSyntax(code);
+
+  assertEquals(result.valid, false);
+  assertExists(result.error);
+});
+
+Deno.test("validateJavaScriptSyntax - detects missing comma in object literal", () => {
+  const code = `
+const config = {
+  width: 100
+  height: 200  // Missing comma
+};`;
+  const result = validateJavaScriptSyntax(code);
+
+  assertEquals(result.valid, false);
+  assertExists(result.error);
+});
+
+Deno.test("validateJavaScriptSyntax - reports line number for error", () => {
+  const code = `
+function App() {
+  return <div>;
+}`;  // Invalid JSX on line 3
+  const result = validateJavaScriptSyntax(code);
+
+  assertEquals(result.valid, false);
+  assertExists(result.error);
+  // Error should have line/column info
+  assertEquals(typeof result.line === 'number' || result.line === undefined, true);
+});
+
+Deno.test("validateJavaScriptSyntax - valid TypeScript with types passes", () => {
+  const code = `
+interface User {
+  name: string;
+  age: number;
+}
+
+function App(): JSX.Element {
+  const user: User = { name: "Alice", age: 30 };
+  return <div>{user.name}</div>;
+}
+
+export default App;`;
+  const result = validateJavaScriptSyntax(code);
+
+  // Sucrase handles TypeScript, so this should pass
+  assertEquals(result.valid, true);
+});
+
+Deno.test("validateJavaScriptSyntax - complex chart component passes", () => {
+  // Similar to the sales dashboard that had the bug
+  const code = `
+const { useState, useEffect, useRef } = React;
+
+const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
+
+function SalesDashboard() {
+  const [data, setData] = useState([]);
+  const canvasRef = useRef(null);
+
+  const chartData = data.map((item, i) => ({
+    label: item.name,
+    value: item.sales,
+    backgroundColor: COLORS[i % COLORS.length]
+  }));
+
+  return (
+    <div className="p-4">
+      <h1>Sales Dashboard</h1>
+      <canvas ref={canvasRef} />
+    </div>
+  );
+}
+
+export default SalesDashboard;`;
+  const result = validateJavaScriptSyntax(code);
+
+  assertEquals(result.valid, true);
+});
+
+// ============================================================================
+// Integration: validateArtifactCode with Syntax Validation
+// ============================================================================
+
+Deno.test("validateArtifactCode - catches syntax errors before other validations", () => {
+  const code = `
+const data = {
+  backgroundColor]  // Syntax error
+};`;
+  const result = validateArtifactCode(code, 'react');
+
+  assertEquals(result.valid, false);
+  assertEquals(result.canAutoFix, false); // Syntax errors can't be auto-fixed
+  assertEquals(result.issues.some(i => i.message.includes('Syntax error')), true);
+  assertEquals(result.issues.some(i => i.code === 'SYNTAX_PARSE_ERROR'), true);
+});
+
+Deno.test("validateArtifactCode - syntax validation skipped for markdown artifacts", () => {
+  const code = `
+This is markdown content.
+It doesn't need JavaScript syntax validation.
+{ This would be invalid JS but valid markdown }
+`;
+  const result = validateArtifactCode(code, 'markdown');
+
+  // Markdown skips all validation
+  assertEquals(result.valid, true);
+  assertEquals(result.issues.length, 0);
+});
+
+Deno.test("validateArtifactCode - syntax validation skipped for SVG artifacts", () => {
+  const code = `
+<svg viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="40" />
+</svg>`;
+  const result = validateArtifactCode(code, 'svg');
+
+  // SVG skips all validation
+  assertEquals(result.valid, true);
+  assertEquals(result.issues.length, 0);
+});
