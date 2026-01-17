@@ -493,10 +493,10 @@ const IMPORT_MAP_JSON = JSON.stringify(REACT_IMPORT_MAP, null, 2);
 
 // Library setup script - exposes UMD libraries as globals
 const LIBRARY_SETUP_SCRIPT = `
-    const { ${REACT_GLOBAL_EXPORTS} } = React;
+    var { ${REACT_GLOBAL_EXPORTS} } = React;
 
-    const LucideIcons = window.LucideReact || window.lucideReact || {};
-    const {
+    var LucideIcons = window.LucideReact || window.lucideReact || {};
+    var {
       Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
       ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
       Plus, Minus, Edit, Trash, Save, Download, Upload,
@@ -515,8 +515,8 @@ const LIBRARY_SETUP_SCRIPT = `
       }
     });
 
-    const Recharts = window.Recharts || {};
-    const {
+    var Recharts = window.Recharts || {};
+    var {
       BarChart, LineChart, PieChart, AreaChart, ScatterChart, RadarChart, RadialBarChart, ComposedChart, Treemap,
       Bar, Line, Pie, Area, Scatter, Cell, Radar, RadialBar, Sector, Funnel,
       XAxis, YAxis, ZAxis, CartesianGrid, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -524,8 +524,8 @@ const LIBRARY_SETUP_SCRIPT = `
       Label, LabelList
     } = Recharts;
 
-    const FramerMotion = window.Motion || {};
-    const { motion, AnimatePresence } = FramerMotion;
+    var FramerMotion = window.Motion || {};
+    var { motion, AnimatePresence } = FramerMotion;
 
     Object.keys(FramerMotion).forEach(exportName => {
       if (typeof window[exportName] === 'undefined') {
