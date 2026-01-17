@@ -63,7 +63,7 @@ jobs:
 
       - name: Start Supabase
         run: |
-          npx supabase start
+          npx supabase@2.67.1 start
           echo "Supabase started on http://127.0.0.1:54321"
 
       - name: Wait for Supabase to be ready
