@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: 'f08fd19780bf5ae9e71a7bdd6b04f2ef0bafaa9d',
-    short: 'f08fd19',
-    branch: 'main',
-    message: 'fix: split migration to resolve SQLSTATE 42601 parser error (#552)',
+    hash: '449d385222db206be7e1c673de5ffb5f42a919ee',
+    short: '449d385',
+    branch: 'fix/artifact-jsx-extension',
+    message: 'fix: schema-qualify vector type to resolve SQLSTATE 42704 (#553)',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-19 18:15:56 UTC',
-    date: new Date('2026-01-19T18:15:56.161Z'),
+    timestamp: '2026-01-19 18:47:26 UTC',
+    date: new Date('2026-01-19T18:47:26.599Z'),
   },
 
   // Environment detection
