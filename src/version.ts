@@ -13,16 +13,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: '79ec65f818de3267d06b78bb0070ae3c53441419',
-    short: '79ec65f',
+    hash: '61299f80f879d7c5f58d30d175c465ff65f10e32',
+    short: '61299f8',
     branch: 'main',
-    message: 'fix: resolve multiple critical UI and authentication bugs',
+    message: 'feat: Implement simplified artifact generation (Phase 3) (#541)',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2025-10-30 01:50:29 UTC',
-    date: new Date('2025-10-30T01:50:29.196Z'),
+    timestamp: '2026-01-19 18:07:24 UTC',
+    date: new Date('2026-01-19T18:07:24.192Z'),
     // Build hash injected at build time - unique per build for cache busting
     hash: typeof __BUILD_HASH__ !== 'undefined' ? __BUILD_HASH__ : 'dev-' + Date.now(),
   },
@@ -34,7 +34,7 @@ export const APP_VERSION = {
   features: {
     imageFixDeployed: true,
     stableArtifactIds: true,
-    publicStorageUrls: false,  // Disabled: Using signed URLs instead
+    publicStorageUrls: false,
   },
 };
 
