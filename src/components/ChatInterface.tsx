@@ -19,7 +19,6 @@ import { useStreamCancellation } from "@/hooks/useStreamCancellation";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ArtifactContainer as Artifact, ArtifactData } from "@/components/ArtifactContainer";
 import { parseArtifacts, generateStableId } from "@/utils/artifactParser";
-import { bundleArtifact } from "@/utils/artifactBundler";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SystemMessage } from "@/components/ui/system-message";
 import { RateLimitPopup } from "@/components/RateLimitPopup";
@@ -120,7 +119,6 @@ export function ChatInterface({
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
-  const bundleReactFallbackAttemptsRef = useRef<Set<string>>(new Set());
   // Ref to store handleSend for stable access in effects (prevents re-triggering initialPrompt effect)
   const handleSendRef = useRef<((message?: string) => Promise<void>) | null>(null);
   // Track which session+prompt combination has been initialized (using ref to avoid stale closure issues)
@@ -129,23 +127,22 @@ export function ChatInterface({
   const streamingTimestampRef = useRef<string | null>(null);
 
   /**
-   * BUG FIX: Display messages with proper streaming state detection
+   * Display messages with proper streaming state detection
    *
-   * Issues fixed:
+   * Key behaviors:
    * 1. Use isStreaming flag instead of streamingMessage to prevent stale closures
    *    - streamingMessage object reference changes on every update
    *    - Checking its truthiness caused useMemo to miss updates
    *    - isStreaming is a stable boolean that triggers re-renders correctly
    *
-   * 2. Strip artifact XML from streaming content (prevents raw tags showing)
-   *    - XML stripping happens in message processing pipeline
-   *    - This useMemo ensures streaming message included in display array
-   *
-   * 3. CRITICAL: Show completed stream progress until saved message appears
+   * 2. Show completed stream progress until saved message appears
    *    - When streaming ends, there's a race between isStreaming=false and the saved message
    *      being added to the messages array
    *    - During this gap, show the streaming temp message with completedStreamProgress data
    *    - This prevents the reasoning box from disappearing during the transition
+   *
+   * Note: No XML stripping is needed - artifacts are delivered via tool_complete events
+   * and rendered in the canvas, not embedded as XML in messages.
    *
    * Dependencies:
    * - isStreaming: Prevents infinite loops from streamingMessage reference changes
@@ -166,22 +163,10 @@ export function ChatInterface({
         streamingTimestampRef.current = new Date().toISOString();
       }
 
-      // CRITICAL FIX: Remove artifact XML tags from streaming display
-      // When artifacts arrive via tool_complete events, they get prepended to fullResponse
-      // but we don't want to show raw XML during streaming - show skeleton instead
-      // The completed message will have the full XML for proper parsing
-      let displayContent = streamingMessage;
-
-      // Strip complete artifact tags: <artifact ...>content</artifact>
-      const completeArtifactRegex = /<artifact\b[^>]*>[\s\S]*?<\/artifact>/gi;
-      displayContent = displayContent.replace(completeArtifactRegex, '');
-
-      // Strip incomplete/partial artifact tags during streaming
-      // Handles cases where closing tag hasn't arrived yet or tag is cut off mid-stream
-      const incompleteArtifactRegex = /<artifact\b[^>]*>[\s\S]*$/gi;
-      displayContent = displayContent.replace(incompleteArtifactRegex, '');
-
-      displayContent = displayContent.trim();
+      // Streaming content is displayed as-is - no XML stripping needed
+      // With the vanilla Sandpack artifact system, artifacts are delivered via tool_complete
+      // events and rendered separately in the canvas, not embedded as XML in the message
+      const displayContent = streamingMessage.trim();
 
       // Use completedStreamProgress if available (race condition window), otherwise live streamProgress
       const progressToDisplay = completedStreamProgress || streamProgress;
@@ -273,72 +258,6 @@ export function ChatInterface({
     setCurrentArtifact(prev => (prev?.id === artifactId ? { ...prev, ...update } : prev));
   }, []);
 
-  const handleBundleReactFallback = useCallback(async (artifact: ArtifactData, errorMessage: string) => {
-    if (!sessionId) {
-      toast({
-        title: "Unable to retry bundling",
-        description: "Session is missing. Please refresh the page.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (artifact.type !== "react" || !artifact.bundleUrl) {
-      return;
-    }
-
-    const attempts = bundleReactFallbackAttemptsRef.current;
-    if (attempts.has(artifact.id)) {
-      return;
-    }
-    attempts.add(artifact.id);
-
-    toast({
-      title: `Retrying ${artifact.title} with ESM React`,
-      description: "This should resolve missing ReactDOM exports.",
-    });
-
-    const result = await bundleArtifact(
-      artifact.content,
-      artifact.id,
-      sessionId,
-      artifact.title,
-      true,
-      true
-    );
-
-    if (result.success) {
-      const update = {
-        bundleUrl: result.bundleUrl,
-        bundleTime: result.bundleTime,
-        dependencies: result.dependencies,
-        bundlingFailed: false,
-        bundleError: undefined,
-        bundleErrorDetails: undefined,
-        bundleStatus: 'success' as const,
-      };
-
-      setArtifactOverrides(prev => ({
-        ...prev,
-        [artifact.id]: {
-          ...prev[artifact.id],
-          ...update,
-        }
-      }));
-
-      setCurrentArtifact(prev => (prev?.id === artifact.id ? { ...prev, ...update } : prev));
-
-      toast({
-        title: `${artifact.title} re-bundled with ESM React`,
-      });
-    } else {
-      toast({
-        title: `ESM React bundling failed for ${artifact.title}`,
-        description: result.details || result.error || errorMessage,
-        variant: "destructive",
-      });
-    }
-  }, [sessionId]);
 
   // Define handleSend early using useCallback to avoid initialization errors
   const handleSend = useCallback(async (message?: string) => {
@@ -477,7 +396,6 @@ export function ChatInterface({
     setLastMessageElapsedTime("");
     setArtifactOverrides({});
     setCompletedStreamProgress(null);
-    bundleReactFallbackAttemptsRef.current.clear();
     onArtifactChange?.(false);
     setMessageSentTracker(0); // Reset tracker
     setImageMode(false);
@@ -1115,7 +1033,6 @@ export function ChatInterface({
                     artifact={currentArtifact}
                     onClose={handleCloseCanvas}
                     onEdit={handleEditArtifact}
-                    onBundleReactFallback={handleBundleReactFallback}
                     onContentChange={(newContent) => {
                       setCurrentArtifact({ ...currentArtifact, content: newContent });
                     }}
@@ -1172,7 +1089,6 @@ export function ChatInterface({
                       artifact={currentArtifact}
                       onClose={handleCloseCanvas}
                       onEdit={handleEditArtifact}
-                      onBundleReactFallback={handleBundleReactFallback}
                       onContentChange={(newContent) => {
                         setCurrentArtifact({ ...currentArtifact, content: newContent });
                       }}

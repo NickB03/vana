@@ -51,6 +51,15 @@
 
 ### Recent Major Improvements
 
+**January 18, 2026 - Vanilla Sandpack Refactor:**
+- 🗑️ **Massive Simplification**: Deleted ~15,000 lines of artifact complexity (artifact-rules/, bundling system, validation layers)
+- 📦 **Vanilla Sandpack**: Client-side rendering via CodeSandbox's Sandpack runtime (zero server bundling)
+- 💾 **Database Persistence**: Artifacts now stored in `artifact_versions` table (replaces XML embedding in messages)
+- 🔧 **Simplified Backend**: New `artifact-tool-v2.ts` (~230 lines) replaces 1,337-line `artifact-executor.ts`
+- 🎯 **Natural Error Handling**: Sandpack console shows errors directly + "Ask AI to Fix" button
+- 📡 **Endpoint Consolidation**: Removed `/generate-artifact`, `/generate-artifact-fix`, `/bundle-artifact` endpoints
+- ✅ **Maintained Coverage**: 78% line coverage (exceeds 55% threshold)
+
 **December 24, 2025 - Code Quality & Documentation Cleanup:**
 - 🧹 **Phase 4 Cleanup**: Extracted types from deprecated `reasoning-generator.ts` (886 line reduction, 70%)
 - 🔒 **Enhanced Type Safety**: Added XSS/DoS protection with readonly modifiers for immutability
@@ -608,34 +617,28 @@ llm-chat-site/
 | File | Purpose | Lines |
 |------|---------|-------|
 | **Frontend Artifact System** | | |
-| `src/components/ArtifactContainer.tsx` | Main wrapper with state, validation, editing | ~600 |
-| `src/components/ArtifactRenderer.tsx` | Rendering engine for all artifact types | ~800 |
-| `src/components/ArtifactToolbar.tsx` | Toolbar with export, edit, theme controls | ~300 |
+| `src/components/ArtifactContainer.tsx` | Main wrapper with state, toolbar, editing | ~600 |
+| `src/components/ArtifactRenderer.tsx` | Rendering engine (vanilla Sandpack) | ~400 |
+| `src/components/SandpackArtifactRenderer.tsx` | Sandpack-specific React renderer | ~200 |
+| `src/components/MessageWithArtifacts.tsx` | Loads artifacts from database | ~200 |
 | `src/components/ArtifactCard.tsx` | Preview cards for artifact selection | ~200 |
 | `src/components/ArtifactErrorBoundary.tsx` | React error boundary | ~150 |
-| `src/components/ArtifactErrorRecovery.tsx` | Auto-recovery with fallbacks | ~250 |
-| `src/components/ArtifactCodeEditor.tsx` | Inline code editor | ~200 |
-| `src/components/ArtifactTabs.tsx` | Tab navigation | ~180 |
-| **Frontend Utilities** | | |
-| `src/utils/artifactParser.ts` | XML-tag extraction from AI responses | ~200 |
-| `src/utils/artifactValidator.ts` | Frontend validation layer | ~300 |
-| `src/utils/sucraseTranspiler.ts` | Sucrase transpiler integration | ~150 |
 | **Backend Artifact System** | | |
-| `supabase/functions/_shared/artifact-executor.ts` | Server-side generation orchestrator | 793 |
-| `supabase/functions/_shared/artifact-validator.ts` | Multi-layer validation engine | 962 |
-| `supabase/functions/_shared/artifact-rules/` | 6 validation rule modules | ~1,600 |
+| `supabase/functions/_shared/artifact-tool-v2.ts` | Simple artifact generation handler | ~230 |
+| `supabase/functions/_shared/artifact-saver.ts` | Database persistence layer | ~240 |
+| `supabase/functions/_shared/system-prompt-inline.ts` | Artifact generation guidance | ~305 |
 | **Chat & Tool System** | | |
 | `supabase/functions/chat/index.ts` | Main chat API endpoint | ~400 |
 | `supabase/functions/chat/handlers/tool-calling-chat.ts` | Tool-calling orchestrator | ~600 |
-| `supabase/functions/_shared/tool-executor.ts` | Tool execution engine | 903 |
-| `supabase/functions/_shared/gemini-client.ts` | Gemini 3 Flash client with streaming | 1,188 |
+| `supabase/functions/_shared/tool-executor.ts` | Tool execution engine | ~800 |
+| `supabase/functions/_shared/gemini-client.ts` | Gemini 3 Flash client with streaming | ~1,200 |
 | **State Management** | | |
-| `src/contexts/MultiArtifactContext.tsx` | Multi-artifact state provider | 312 |
+| `src/contexts/MultiArtifactContext.tsx` | Multi-artifact state provider | ~300 |
 | `src/hooks/use-multi-artifact.ts` | Multi-artifact context hook | ~50 |
 | `src/hooks/useChatMessages.tsx` | Chat messages & streaming | ~400 |
 | **Configuration** | | |
 | `vite.config.ts` | Build config with PWA support | ~300 |
-| `supabase/functions/_shared/config.ts` | Central Edge Function config | 441 |
+| `supabase/functions/_shared/config.ts` | Central Edge Function config | ~450 |
 
 ---
 
@@ -663,29 +666,29 @@ Artifacts are embedded in AI responses using XML-like tags:
 
 ```xml
 <artifact type="application/vnd.ant.react" title="Dashboard Component">
-import { Card } from "@/components/ui/card"
+const { useState } = React;
 
 export default function Dashboard() {
-  return <Card>Hello World</Card>
+  return (
+    <div className="p-4 bg-gray-100 rounded-lg">
+      <h1>Hello World</h1>
+    </div>
+  );
 }
 </artifact>
 ```
 
-#### Import Validation System
+#### Vanilla Sandpack Architecture (January 2026)
 
-**NEW: Multi-layer defense against invalid imports (5 layers)**
+**Simplified System**: The artifact system uses vanilla Sandpack for instant, zero-config rendering.
 
-React artifacts cannot use local project imports like `@/components/ui/*`. The system prevents this through:
+**Key Features**:
+1. **Database Persistence**: Artifacts stored in `artifact_versions` table (replaces XML embedding)
+2. **Package Whitelist**: React, Recharts, Framer Motion, Lucide, Radix UI (auto-bundled by Sandpack)
+3. **Natural Error Handling**: Errors surface in Sandpack console with "Ask AI to Fix" button
+4. **No Server Bundling**: Client renders artifacts directly in Sandpack iframe
 
-1. **System Prompt Prevention**: AI receives prominent warnings during generation
-2. **Template Examples**: All templates use only Radix UI + Tailwind (no local imports)
-3. **Pre-Generation Validation**: Scans user requests for problematic patterns
-4. **Post-Generation Transformation**: Automatically fixes common import mistakes
-5. **Runtime Validation**: Blocks artifacts with critical errors before rendering
-
-This comprehensive approach reduces artifact failures by ~95% and provides helpful error messages when issues occur.
-
-**For Developers**: See `.claude/artifact-import-restrictions.md` for complete import guidelines.
+**For Developers**: Artifacts cannot use `@/` imports - use npm packages like `@radix-ui/react-*` instead. See CLAUDE.md rule #4 for details.
 
 ### Multi-Artifact Context System
 

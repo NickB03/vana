@@ -135,20 +135,30 @@ instances:
 
 ## Deployment
 
-### Deploy to Staging
+**⚠️ CRITICAL**: All production deployments go through PR process.
+
+### Production Deployment
+
 ```bash
-./scripts/deploy-simple.sh staging
+# Create feature branch
+git checkout -b feat/update-health-function
+
+# Test locally
+supabase functions serve health
+curl http://localhost:54321/functions/v1/health
+
+# Run full test suite
+npm run test
+npm run test:integration
+npm run build
+
+# Create PR
+gh pr create --title "Update health function" --body "Description"
+
+# After CI passes and review → Merge → Auto-deploy
 ```
 
-### Deploy to Production
-```bash
-./scripts/deploy-simple.sh prod
-```
-
-### Deploy Individual Function
-```bash
-supabase functions deploy health --project-ref vznhbocnuykdmjvujaka
-```
+See `/docs/CI_CD.md` for full deployment workflow.
 
 ## Security Considerations
 
@@ -202,7 +212,7 @@ const APP_VERSION = '2025-11-24';
 - `/supabase/functions/health/index.ts` - Main implementation
 - `/supabase/functions/_shared/cors-config.ts` - CORS configuration
 - `/supabase/functions/_shared/config.ts` - Shared constants
-- `/scripts/deploy-simple.sh` - Deployment script
+- `/docs/CI_CD.md` - Deployment workflow (PR-based)
 
 ## References
 

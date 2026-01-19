@@ -22,6 +22,8 @@ export interface ValidationResult {
     isGuest: boolean;
     toolChoice: "auto" | "generate_artifact" | "generate_image";
     includeReasoning: boolean;
+    /** Pre-generated UUID for the assistant message (enables artifact DB linking) */
+    assistantMessageId?: string;
   };
   error?: ValidationError;
 }
@@ -42,6 +44,7 @@ export async function validateInput(
       isGuest,
       toolChoice = "auto",
       includeReasoning = false,
+      assistantMessageId,
     } = requestBody;
 
     // Input validation
@@ -148,6 +151,21 @@ export async function validateInput(
       };
     }
 
+    // Validate assistantMessageId if provided (must be valid UUID)
+    if (assistantMessageId !== undefined) {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (typeof assistantMessageId !== "string" || !uuidRegex.test(assistantMessageId)) {
+        console.error(`[${requestId}] Invalid assistantMessageId:`, assistantMessageId);
+        return {
+          ok: false,
+          error: {
+            error: "Invalid assistantMessageId format (must be UUID)",
+            requestId,
+          },
+        };
+      }
+    }
+
     return {
       ok: true,
       data: {
@@ -157,6 +175,7 @@ export async function validateInput(
         isGuest: isGuest || false,
         toolChoice,
         includeReasoning,
+        assistantMessageId,
       },
     };
   } catch (e) {

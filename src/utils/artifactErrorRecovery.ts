@@ -1,351 +1,278 @@
 /**
  * Artifact Error Recovery System
  *
- * Provides error classification, recovery strategies, and fallback options
- * for artifacts that fail to render.
+ * Provides error classification, recovery strategies, and fallback rendering
+ * for artifact display errors. Works with Sandpack's natural error handling.
  */
 
-export type ErrorType = 'syntax' | 'runtime' | 'import' | 'bundling' | 'timeout' | 'react' | 'unknown';
-export type FallbackRenderer = 'sandpack' | 'static-preview';
-export type RetryStrategy = 'immediate' | 'with-fix' | 'different-renderer' | 'none';
+import type { ArtifactType } from "@/components/ArtifactContainer";
 
+/**
+ * Fallback renderer options when primary renderer fails
+ */
+export type FallbackRenderer = 'sandpack' | 'static-preview';
+
+/**
+ * Error types that can occur during artifact rendering
+ */
+export type ArtifactErrorType =
+  | 'syntax'           // Parse/syntax errors in the code
+  | 'import'           // Missing or failed imports
+  | 'runtime'          // Runtime execution errors
+  | 'bundling'         // Server-side bundling failed
+  | 'network'          // Network/fetch failures
+  | 'timeout'          // Operation timeout
+  | 'security'         // Security policy violations
+  | 'unknown';         // Catch-all for unclassified errors
+
+/**
+ * Retry strategy for error recovery
+ */
+export type RetryStrategy = 'immediate' | 'delay' | 'fallback' | 'none';
+
+/**
+ * Classified error with recovery information
+ */
 export interface ArtifactError {
-  type: ErrorType;
-  message: string;
+  type: ArtifactErrorType;
   originalError: string;
   suggestedFix?: string;
   canAutoFix: boolean;
-  fallbackRenderer?: FallbackRenderer;
   retryStrategy: RetryStrategy;
-  userMessage: string;
+  fallbackRenderer?: FallbackRenderer;
+  severity: 'low' | 'medium' | 'high';
 }
 
 /**
- * Error classification rules - patterns and their corresponding error configurations
+ * Error display information for the UI
  */
-interface ErrorRule {
-  patterns: string[];
-  /** For React errors, requires both patterns to match */
-  requiresAll?: boolean;
-  config: Omit<ArtifactError, 'message' | 'originalError'>;
+export interface ErrorDisplay {
+  title: string;
+  description: string;
+  color: 'red' | 'orange' | 'yellow' | 'blue';
 }
 
 /**
- * Error classification rules - patterns and their corresponding error configurations.
- *
- * IMPORTANT: Rules are evaluated in order (first match wins).
- * More specific rules MUST come before generic ones to ensure
- * proper error classification and user-friendly messaging.
- *
- * Example: Duplicate declaration errors contain "syntaxerror" in some messages,
- * so the duplicate-declaration rule must come before the generic syntax rule.
- */
-const ERROR_RULES: ErrorRule[] = [
-  {
-    // Duplicate declaration detection - MUST be before generic syntax error
-    // Covers both import duplicates AND variable redeclarations
-    // Engine-specific patterns:
-    // - Safari: "Cannot declare a lexical variable twice: 'X'"
-    // - Chrome: "Identifier 'X' has already been declared"
-    // - Firefox: "redeclaration of let X"
-    patterns: [
-      'cannot declare a lexical variable twice',  // Safari/JSC
-      'has already been declared',                // Chrome/V8
-      'redeclaration of let',                     // Firefox let
-      'redeclaration of const',                   // Firefox const
-      'duplicate identifier',                     // TypeScript
-    ],
-    config: {
-      type: 'syntax',
-      suggestedFix: 'Remove the duplicate declaration. For imports: each name should appear once. For variables: rename or remove the duplicate.',
-      canAutoFix: true,
-      retryStrategy: 'with-fix',
-      userMessage: 'Duplicate declaration detected. AI can fix this.',
-    },
-  },
-  {
-    patterns: ['syntaxerror', 'unexpected token'],
-    config: {
-      type: 'syntax',
-      suggestedFix: 'The code has a syntax error. Check for missing brackets, quotes, or semicolons.',
-      canAutoFix: true,
-      retryStrategy: 'with-fix',
-      userMessage: 'The code contains a syntax error. AI can automatically fix this.',
-    },
-  },
-  {
-    patterns: ['failed to resolve', 'module not found', 'cannot find module', 'import error'],
-    config: {
-      type: 'import',
-      suggestedFix: 'Try using a different rendering method that supports npm packages.',
-      canAutoFix: false,
-      fallbackRenderer: 'sandpack',
-      retryStrategy: 'different-renderer',
-      userMessage: 'This artifact needs npm packages. Switching to a different renderer.',
-    },
-  },
-  {
-    patterns: ['invalid hook call', 'hooks can only be called', 'rendered more hooks than', 'rendered fewer hooks than'],
-    config: {
-      type: 'react',
-      suggestedFix: 'This is usually caused by React instance conflicts or incorrect hook usage.',
-      canAutoFix: true,
-      retryStrategy: 'with-fix',
-      userMessage: 'React hook error detected. AI can fix hook usage issues.',
-    },
-  },
-  {
-    // Special case: requires BOTH patterns to match
-    patterns: ['cannot read properties of null', 'useref'],
-    requiresAll: true,
-    config: {
-      type: 'react',
-      suggestedFix: 'This is usually caused by React instance conflicts or incorrect hook usage.',
-      canAutoFix: true,
-      retryStrategy: 'with-fix',
-      userMessage: 'React hook error detected. AI can fix hook usage issues.',
-    },
-  },
-  {
-    patterns: ['timeout', 'bundle timeout'],
-    config: {
-      type: 'timeout',
-      suggestedFix: 'Try using a simpler rendering method without server bundling.',
-      canAutoFix: false,
-      fallbackRenderer: 'sandpack',
-      retryStrategy: 'different-renderer',
-      userMessage: 'Loading timed out. Switching to faster rendering method.',
-    },
-  },
-  {
-    patterns: ['bundling failed', 'bundle error', 'failed to fetch bundle'],
-    config: {
-      type: 'bundling',
-      suggestedFix: 'Server bundling failed. Try a different rendering approach.',
-      canAutoFix: false,
-      fallbackRenderer: 'sandpack',
-      retryStrategy: 'different-renderer',
-      userMessage: 'Server bundling failed. Trying alternative renderer.',
-    },
-  },
-  {
-    patterns: ['typeerror', 'referenceerror', 'is not defined', 'is not a function', 'cannot read property', 'cannot read properties of undefined'],
-    config: {
-      type: 'runtime',
-      suggestedFix: 'The code has a runtime error. Variables or functions may be undefined.',
-      canAutoFix: true,
-      retryStrategy: 'with-fix',
-      userMessage: 'Runtime error detected. AI can fix undefined variables or incorrect function calls.',
-    },
-  },
-];
-
-const UNKNOWN_ERROR_CONFIG: Omit<ArtifactError, 'message' | 'originalError'> = {
-  type: 'unknown',
-  suggestedFix: 'An unexpected error occurred. AI will attempt to fix it.',
-  canAutoFix: true,
-  retryStrategy: 'with-fix',
-  userMessage: 'An error occurred. AI can attempt to fix this.',
-};
-
-/**
- * Classifies an error message into a specific error type with recovery options
+ * Classifies an error message into a structured ArtifactError
  */
 export function classifyError(errorMessage: string): ArtifactError {
-  // Validate input - handle null, undefined, empty
-  if (!errorMessage || typeof errorMessage !== 'string' || errorMessage.trim() === '') {
-    console.warn('[artifactErrorRecovery] classifyError called with empty/invalid message');
+  const lower = errorMessage.toLowerCase();
+
+  // Import/module resolution errors
+  if (lower.includes('cannot find module') ||
+      lower.includes('module not found') ||
+      lower.includes('failed to resolve') ||
+      lower.includes('import')) {
     return {
-      type: 'unknown',
-      message: 'An error occurred but no details were provided',
-      originalError: String(errorMessage || ''),
-      suggestedFix: 'Try refreshing the page or regenerating the artifact.',
-      canAutoFix: false,  // Don't auto-fix without context
-      retryStrategy: 'none',
-      userMessage: 'An error occurred. Please try again.',
+      type: 'import',
+      originalError: errorMessage,
+      suggestedFix: 'Check that all imports reference valid npm packages or use relative paths.',
+      canAutoFix: true,
+      retryStrategy: 'fallback',
+      fallbackRenderer: 'sandpack',
+      severity: 'medium',
     };
   }
 
-  const msg = errorMessage.toLowerCase();
-
-  for (const rule of ERROR_RULES) {
-    const matches = rule.requiresAll
-      ? rule.patterns.every(pattern => msg.includes(pattern))
-      : rule.patterns.some(pattern => msg.includes(pattern));
-
-    if (matches) {
-      return {
-        message: errorMessage,
-        originalError: errorMessage,
-        ...rule.config,
-      };
-    }
+  // Syntax errors
+  if (lower.includes('syntax') ||
+      lower.includes('unexpected token') ||
+      lower.includes('parsing error') ||
+      lower.includes('unterminated')) {
+    return {
+      type: 'syntax',
+      originalError: errorMessage,
+      suggestedFix: 'Check for missing brackets, quotes, or other syntax issues.',
+      canAutoFix: true,
+      retryStrategy: 'none',
+      severity: 'high',
+    };
   }
 
+  // Runtime errors
+  if (lower.includes('undefined') ||
+      lower.includes('null') ||
+      lower.includes('typeerror') ||
+      lower.includes('referenceerror')) {
+    return {
+      type: 'runtime',
+      originalError: errorMessage,
+      suggestedFix: 'Ensure all variables and functions are properly defined before use.',
+      canAutoFix: true,
+      retryStrategy: 'immediate',
+      severity: 'medium',
+    };
+  }
+
+  // Bundling errors
+  if (lower.includes('bundl') || lower.includes('esbuild') || lower.includes('transpil')) {
+    return {
+      type: 'bundling',
+      originalError: errorMessage,
+      suggestedFix: 'The bundling service encountered an issue. Try refreshing or simplifying the code.',
+      canAutoFix: false,
+      retryStrategy: 'fallback',
+      fallbackRenderer: 'sandpack',
+      severity: 'medium',
+    };
+  }
+
+  // Network errors
+  if (lower.includes('network') ||
+      lower.includes('fetch') ||
+      lower.includes('failed to load') ||
+      lower.includes('cors')) {
+    return {
+      type: 'network',
+      originalError: errorMessage,
+      suggestedFix: 'Check your network connection and try again.',
+      canAutoFix: false,
+      retryStrategy: 'delay',
+      severity: 'low',
+    };
+  }
+
+  // Timeout errors
+  if (lower.includes('timeout') || lower.includes('timed out')) {
+    return {
+      type: 'timeout',
+      originalError: errorMessage,
+      suggestedFix: 'The operation took too long. Try simplifying the code or refreshing.',
+      canAutoFix: false,
+      retryStrategy: 'delay',
+      severity: 'low',
+    };
+  }
+
+  // Security errors
+  if (lower.includes('security') ||
+      lower.includes('csp') ||
+      lower.includes('cross-origin') ||
+      lower.includes('blocked')) {
+    return {
+      type: 'security',
+      originalError: errorMessage,
+      suggestedFix: 'The code may be violating browser security policies.',
+      canAutoFix: false,
+      retryStrategy: 'none',
+      severity: 'high',
+    };
+  }
+
+  // Unknown/catch-all
   return {
-    message: errorMessage,
+    type: 'unknown',
     originalError: errorMessage,
-    ...UNKNOWN_ERROR_CONFIG,
+    suggestedFix: 'An unexpected error occurred. Try refreshing or modifying the code.',
+    canAutoFix: true,
+    retryStrategy: 'immediate',
+    severity: 'medium',
   };
 }
 
 /**
- * Determines if automatic recovery should be attempted based on error type and attempt count
+ * Determines if automatic recovery should be attempted
  */
 export function shouldAttemptRecovery(
   error: ArtifactError,
-  attemptCount: number,
-  maxAttempts: number = 2
+  currentAttempts: number,
+  maxAttempts: number
 ): boolean {
-  // Never retry more than max attempts
-  if (attemptCount >= maxAttempts) {
-    return false;
-  }
+  // Don't retry if max attempts reached
+  if (currentAttempts >= maxAttempts) return false;
 
-  // Import and bundling errors need renderer switch, not retry
-  if (error.type === 'import' || error.type === 'bundling' || error.type === 'timeout') {
-    return attemptCount === 0; // Only try once to switch renderer
-  }
+  // Don't retry if strategy is 'none'
+  if (error.retryStrategy === 'none') return false;
 
-  // Auto-fixable errors can retry
-  return error.canAutoFix;
+  // Retry for recoverable error types
+  return error.retryStrategy !== 'none';
 }
 
 /**
- * Fallback renderer mapping by error type
- * Key: error type, Value: map of current renderer to fallback
- * Note: 'babel' renderer was removed in December 2025 (Sucrase-only architecture)
- */
-const FALLBACK_RENDERERS: Partial<Record<ErrorType, Partial<Record<'bundle' | 'sandpack', FallbackRenderer>>>> = {
-  timeout: { bundle: 'sandpack' },
-  bundling: { bundle: 'sandpack' },
-  import: { bundle: 'sandpack' },
-  react: { bundle: 'sandpack' },
-};
-
-/**
- * Determines the best fallback renderer based on error type and current renderer
+ * Gets the fallback renderer for an error
  */
 export function getFallbackRenderer(
-  error: ArtifactError,
-  currentRenderer: 'bundle' | 'sandpack'
+  error: ArtifactError | null,
+  currentRenderer: string
 ): FallbackRenderer | null {
-  // If error suggests a specific fallback, use it (unless we're already on it)
-  if (error.fallbackRenderer && error.fallbackRenderer !== currentRenderer) {
-    return error.fallbackRenderer;
+  if (!error) return null;
+
+  // If already using sandpack and it failed, try static preview
+  if (currentRenderer === 'sandpack' && error.fallbackRenderer === 'sandpack') {
+    return 'static-preview';
   }
 
-  // Look up fallback from mapping
-  return FALLBACK_RENDERERS[error.type]?.[currentRenderer] ?? null;
+  return error.fallbackRenderer || null;
 }
 
 /**
- * Generates user-friendly error display content
+ * Generates user-friendly error display information
  */
-export function generateErrorDisplay(error: ArtifactError, isRecovering: boolean): {
-  title: string;
-  description: string;
-  emoji: string;
-  color: 'red' | 'orange' | 'yellow' | 'blue';
-} {
-  const baseDisplay = {
-    syntax: {
-      title: 'Syntax Error',
-      emoji: '🔴',
-      color: 'red' as const,
-      description: error.userMessage,
-    },
-    runtime: {
-      title: 'Runtime Error',
-      emoji: '🟠',
-      color: 'orange' as const,
-      description: error.userMessage,
-    },
-    import: {
-      title: 'Import Error',
-      emoji: '🟡',
-      color: 'yellow' as const,
-      description: error.userMessage,
-    },
-    bundling: {
-      title: 'Bundling Error',
-      emoji: '⚙️',
-      color: 'blue' as const,
-      description: error.userMessage,
-    },
-    timeout: {
-      title: 'Timeout Error',
-      emoji: '⏱️',
-      color: 'yellow' as const,
-      description: error.userMessage,
-    },
-    react: {
-      title: 'React Error',
-      emoji: '⚛️',
-      color: 'orange' as const,
-      description: error.userMessage,
-    },
-    unknown: {
-      title: 'Rendering Error',
-      emoji: '⚠️',
-      color: 'orange' as const,
-      description: error.userMessage,
-    },
+export function generateErrorDisplay(
+  error: ArtifactError,
+  isRecovering: boolean
+): ErrorDisplay {
+  if (isRecovering) {
+    return {
+      title: 'Attempting Recovery',
+      description: 'Trying to fix the issue automatically...',
+      color: 'blue',
+    };
+  }
+
+  const titles: Record<ArtifactErrorType, string> = {
+    syntax: 'Code Syntax Issue',
+    import: 'Import Problem',
+    runtime: 'Runtime Error',
+    bundling: 'Bundling Issue',
+    network: 'Connection Problem',
+    timeout: 'Request Timed Out',
+    security: 'Security Restriction',
+    unknown: 'Something Went Wrong',
   };
 
-  const display = baseDisplay[error.type];
+  const colors: Record<ArtifactErrorType, ErrorDisplay['color']> = {
+    syntax: 'red',
+    import: 'orange',
+    runtime: 'orange',
+    bundling: 'yellow',
+    network: 'yellow',
+    timeout: 'yellow',
+    security: 'red',
+    unknown: 'yellow',
+  };
 
-  // Add recovery status to description
-  if (isRecovering) {
-    display.description = `Attempting to fix... ${display.description}`;
-  }
-
-  return display;
+  return {
+    title: titles[error.type],
+    description: error.suggestedFix || 'Please try again or modify the code.',
+    color: colors[error.type],
+  };
 }
 
 /**
- * Central error handler for all artifact types.
- * Classifies error, updates state, and returns error object for rendering.
- *
- * @param errorMessage - The error message from the artifact
- * @param onPreviewErrorChange - Callback to update error state
- * @param onErrorCategoryChange - Optional callback to update error category
- * @param options - Additional options (artifact type, console logging, etc.)
- * @returns Classified ArtifactError object ready for ArtifactErrorRecovery component
+ * Creates an ArtifactError for a specific artifact type error
  */
 export function handleArtifactTypeError(
   errorMessage: string,
-  onPreviewErrorChange: (error: string | null) => void,
-  onErrorCategoryChange?: (category: 'syntax' | 'runtime' | 'import' | 'unknown') => void,
-  options?: {
-    logPrefix?: string;
-    artifactType?: string;
-  }
+  artifactType: ArtifactType
 ): ArtifactError {
-  const { logPrefix = '[ArtifactRenderer]', artifactType = 'unknown' } = options || {};
+  const baseError = classifyError(errorMessage);
 
-  // Log error for debugging
-  console.error(`${logPrefix} ${artifactType} error:`, errorMessage);
-
-  // Classify error using existing system
-  const classifiedError = classifyError(errorMessage);
-
-  // Update parent state
-  onPreviewErrorChange(errorMessage);
-
-  // Update error category if callback provided
-  if (onErrorCategoryChange) {
-    const categoryMap: Record<ErrorType, 'syntax' | 'runtime' | 'import' | 'unknown'> = {
-      syntax: 'syntax',
-      runtime: 'runtime',
-      import: 'import',
-      bundling: 'import',
-      timeout: 'runtime',
-      react: 'runtime',
-      unknown: 'unknown',
-    };
-    onErrorCategoryChange(categoryMap[classifiedError.type]);
+  // Type-specific enhancements
+  switch (artifactType) {
+    case 'react':
+      if (baseError.type === 'import') {
+        baseError.suggestedFix = 'React components must use valid npm packages. Avoid @/ or relative imports to non-existent files.';
+      }
+      break;
+    case 'mermaid':
+      baseError.suggestedFix = 'Check Mermaid diagram syntax. Ensure proper diagram type declaration.';
+      baseError.canAutoFix = true;
+      break;
+    case 'svg':
+      baseError.suggestedFix = 'Ensure SVG syntax is valid with proper namespaces and attributes.';
+      break;
   }
 
-  return classifiedError;
+  return baseError;
 }

@@ -1,27 +1,34 @@
-import { memo, useState, useEffect, useMemo, useDeferredValue } from "react";
+import { memo, useMemo, useDeferredValue } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Markdown } from "@/components/ui/markdown";
 import { InlineImage } from "@/components/InlineImage";
 import { ArtifactCard } from "@/components/ArtifactCard";
-import { ArtifactCardSkeleton } from "@/components/ArtifactCardSkeleton";
-import { parseArtifacts } from "@/utils/artifactParser";
-import { ArtifactData } from "@/components/ArtifactContainer";
-import { bundleArtifact, needsBundling, bundleArtifactWithProgress } from "@/utils/artifactBundler";
-import { toast } from "sonner";
+import { ArtifactData, ArtifactType } from "@/components/ArtifactContainer";
 import { WebSearchResults as WebSearchResultsType } from "@/types/webSearch";
 import { MessageErrorBoundary } from "@/components/MessageErrorBoundary";
 import { CitationSource, stripCitationMarkers } from "@/utils/citationParser";
 import { InlineCitation } from "@/components/ui/inline-citation";
-import type { BundleProgress } from "@/types/bundleProgress";
+import { supabase } from "@/integrations/supabase/client";
+
+/** Direct artifact data from DB or streaming - preferred over XML parsing */
+export interface DirectArtifactData {
+  id: string;
+  type: string;
+  title: string;
+  content: string;
+  language?: string;
+}
 
 interface MessageWithArtifactsProps {
   content: string;
   messageId?: string;
-  sessionId: string;  // CRITICAL: Used for server-side bundling, not messageId
   onArtifactOpen: (artifact: ArtifactData) => void;
   artifactOverrides?: Record<string, Partial<ArtifactData>>;
   searchResults?: WebSearchResultsType | null;
   citationSources?: Map<number, CitationSource[]>;
   className?: string;
+  /** Direct artifact data (from DB or streaming) - preferred over parsing */
+  artifactData?: DirectArtifactData[];
 }
 
 /**
@@ -52,14 +59,40 @@ function webSearchToCitationSources(
 }
 
 /**
- * Reusable component for rendering message content with parsed artifacts.
+ * Convert DirectArtifactData to ArtifactData
+ * Maps the simplified interface to the full ArtifactData type
+ */
+function convertToArtifactData(direct: DirectArtifactData): ArtifactData {
+  return {
+    id: direct.id,
+    type: direct.type as ArtifactType,
+    title: direct.title,
+    content: direct.content,
+    language: direct.language,
+  };
+}
+
+/**
+ * Strip artifact XML tags from content to get clean display text
+ * Used when artifacts are provided directly (not parsed from content)
+ */
+function stripArtifactTags(content: string): string {
+  // Remove complete artifact blocks: <artifact ...>...</artifact>
+  return content.replace(/<artifact[^>]*>[\s\S]*?<\/artifact>/g, '').trim();
+}
+
+/**
+ * Reusable component for rendering message content with artifacts.
  *
  * Handles:
- * - Parsing artifact tags from message content
  * - Rendering clean content (text without artifact tags)
  * - Displaying inline images
  * - Showing artifact cards for interactive components
  * - Inline citations from web search results
+ *
+ * Artifact Data Sources (in priority order):
+ * 1. artifactData prop - Direct data from DB or streaming (preferred)
+ * 2. Database query - Fetched from artifact_versions table by message_id
  *
  * Used by both saved messages and streaming messages to ensure
  * consistent rendering behavior.
@@ -67,19 +100,85 @@ function webSearchToCitationSources(
 export const MessageWithArtifacts = memo(({
   content,
   messageId,
-  sessionId,
   onArtifactOpen,
   artifactOverrides,
   searchResults,
   citationSources,
-  className = ""
+  className = "",
+  artifactData
 }: MessageWithArtifactsProps) => {
-  const [artifacts, setArtifacts] = useState<ArtifactData[]>([]);
-  const [cleanContent, setCleanContent] = useState(content);
-  const [bundlingStatus, setBundlingStatus] = useState<Record<string, 'idle' | 'bundling' | 'success' | 'error'>>({});
-  const [bundleProgress, setBundleProgress] = useState<Record<string, BundleProgress | null>>({});
-  const [inProgressCount, setInProgressCount] = useState(0);
+  // Defer content parsing to reduce computation during rapid streaming updates
+  const deferredContent = useDeferredValue(content);
 
+  // ============================================================================
+  // ARTIFACT DATA SOURCES (Priority Order)
+  // ============================================================================
+
+  // 1. Check if artifactData prop is provided (from streaming or parent component)
+  const hasDirectArtifactData = artifactData && artifactData.length > 0;
+
+  // 2. Query artifact_versions table by message_id (only if no direct data)
+  const { data: dbArtifacts } = useQuery({
+    queryKey: ['message-artifacts', messageId],
+    queryFn: async () => {
+      if (!messageId) return [];
+
+      const { data, error } = await supabase
+        .from('artifact_versions')
+        .select('artifact_id, artifact_type, artifact_title, artifact_content, artifact_language')
+        .eq('message_id', messageId)
+        .order('version_number', { ascending: false });
+
+      if (error) {
+        console.error('[MessageWithArtifacts] Failed to fetch artifacts from DB:', error);
+        return [];
+      }
+
+      // Deduplicate by artifact_id (keep latest version)
+      const seen = new Set<string>();
+      const uniqueArtifacts: DirectArtifactData[] = [];
+      for (const row of data) {
+        if (!seen.has(row.artifact_id)) {
+          seen.add(row.artifact_id);
+          uniqueArtifacts.push({
+            id: row.artifact_id,
+            type: row.artifact_type,
+            title: row.artifact_title,
+            content: row.artifact_content,
+            language: row.artifact_language ?? undefined,
+          });
+        }
+      }
+
+      return uniqueArtifacts;
+    },
+    // Only fetch from DB if no direct artifactData and we have a messageId
+    enabled: !!messageId && !hasDirectArtifactData,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+
+  const hasDbArtifacts = dbArtifacts && dbArtifacts.length > 0;
+
+  // ============================================================================
+  // RESOLVE FINAL ARTIFACTS (Priority: prop > DB)
+  // ============================================================================
+  const artifacts = useMemo(() => {
+    // Priority 1: Direct artifactData prop (from streaming or parent)
+    if (hasDirectArtifactData && artifactData) {
+      return artifactData.map(convertToArtifactData);
+    }
+
+    // Priority 2: Artifacts from database query
+    if (hasDbArtifacts && dbArtifacts) {
+      return dbArtifacts.map(convertToArtifactData);
+    }
+
+    // No artifacts found
+    return [];
+  }, [hasDirectArtifactData, artifactData, hasDbArtifacts, dbArtifacts]);
+
+  // Apply artifact overrides (e.g., bundle status updates)
   const mergedArtifacts = useMemo(() => {
     if (!artifactOverrides || Object.keys(artifactOverrides).length === 0) {
       return artifacts;
@@ -91,8 +190,10 @@ export const MessageWithArtifacts = memo(({
     });
   }, [artifacts, artifactOverrides]);
 
-  // Defer content parsing to reduce computation during rapid streaming updates
-  const deferredContent = useDeferredValue(content);
+  // Strip artifact tags from content for display
+  const cleanContent = useMemo(() => {
+    return stripArtifactTags(deferredContent);
+  }, [deferredContent]);
 
   // Convert web search results to citation sources map
   // Use provided citationSources if available, otherwise convert from searchResults
@@ -108,249 +209,6 @@ export const MessageWithArtifacts = memo(({
     const { cleanContent: stripped, allSources } = stripCitationMarkers(cleanContent, citationSourcesMap);
     return { contentWithoutCitations: stripped, aggregatedSources: allSources };
   }, [cleanContent, citationSourcesMap]);
-
-  // Parse artifacts asynchronously (now uses crypto hash for stable IDs)
-  // Uses deferredContent to defer expensive parsing during rapid updates
-  useEffect(() => {
-    parseArtifacts(deferredContent)
-      .then(({ artifacts: parsedArtifacts, cleanContent: parsed, inProgressCount: inProgress }) => {
-        setArtifacts(parsedArtifacts);
-        setCleanContent(parsed);
-        setInProgressCount(inProgress);
-      })
-      .catch((error) => {
-        console.error('[MessageWithArtifacts] Failed to parse artifacts:', error);
-        // Set safe defaults so UI doesn't hang
-        setArtifacts([]);
-        setCleanContent(deferredContent);
-        setInProgressCount(0);
-      });
-  }, [deferredContent]);
-
-  // Handle server-side bundling for artifacts with npm imports
-  useEffect(() => {
-    let isMounted = true;
-
-    async function handleBundling() {
-      for (const artifact of mergedArtifacts) {
-        // Check if component is still mounted before processing each artifact
-        if (!isMounted) return;
-
-        // Skip if already bundled or bundling
-        if (artifact.bundleUrl || bundlingStatus[artifact.id] !== undefined) {
-          continue;
-        }
-
-        // Check if artifact needs bundling
-        const shouldBundle = needsBundling(artifact.content, artifact.type);
-        console.log(`[MessageWithArtifacts] Artifact ${artifact.id} (${artifact.title}) needsBundling:`, shouldBundle);
-
-        if (!shouldBundle) {
-          console.log(`[MessageWithArtifacts] Skipping bundling for ${artifact.id} - no npm imports detected`);
-          continue;
-        }
-
-        console.log(`[MessageWithArtifacts] Starting server-side bundling for ${artifact.id}...`);
-
-        // Validate sessionId before bundling (CRITICAL: prevent bundling with invalid session)
-        if (!sessionId || sessionId.length === 0) {
-          console.error(`[MessageWithArtifacts] Cannot bundle ${artifact.id} - invalid session ID`);
-
-          if (!isMounted) return;
-          setArtifacts(prev =>
-            prev.map(a =>
-              a.id === artifact.id
-                ? {
-                    ...a,
-                    bundlingFailed: true,
-                    bundleError: "Session expired",
-                    bundleErrorDetails: "Please refresh the page to restore your session",
-                    bundleStatus: 'error'
-                  }
-                : a
-            )
-          );
-
-          toast.error("Unable to bundle artifact", {
-            description: "Your session may have expired. Please refresh the page.",
-            duration: 10000
-          });
-
-          if (!isMounted) return;
-          setBundlingStatus(prev => ({ ...prev, [artifact.id]: 'error' }));
-          continue;
-        }
-
-        // Mark as bundling
-        if (!isMounted) return;
-        setBundlingStatus(prev => ({ ...prev, [artifact.id]: 'bundling' }));
-
-        // Show bundling toast
-        toast.info(`Bundling ${artifact.title} with npm dependencies...`, {
-          id: `bundle-${artifact.id}`,
-          duration: 30000 // Long duration since bundling takes time
-        });
-
-        // Attempt to bundle with streaming progress (FIXED: Use sessionId, not messageId)
-        try {
-          const result = await bundleArtifactWithProgress(
-            artifact.content,
-            artifact.id,
-            sessionId,
-            artifact.title,
-            (progress) => {
-              // Update progress state for this specific artifact
-              if (!isMounted) return;
-              setBundleProgress(prev => ({
-                ...prev,
-                [artifact.id]: progress
-              }));
-            }
-          );
-
-          // Clear progress after completion
-          if (!isMounted) return;
-          setBundleProgress(prev => {
-            const next = { ...prev };
-            delete next[artifact.id];
-            return next;
-          });
-
-          if (result.success) {
-            // Update artifact with bundle URL
-            if (!isMounted) return;
-            setArtifacts(prev =>
-              prev.map(a =>
-                a.id === artifact.id
-                  ? {
-                      ...a,
-                      bundleUrl: result.bundleUrl,
-                      bundleTime: result.bundleTime,
-                      dependencies: result.dependencies
-                    }
-                  : a
-              )
-            );
-
-            if (!isMounted) return;
-            setBundlingStatus(prev => ({ ...prev, [artifact.id]: 'success' }));
-
-            toast.success(`${artifact.title} bundled successfully!`, {
-              id: `bundle-${artifact.id}`,
-              duration: 3000
-            });
-
-            console.log(`[MessageWithArtifacts] Bundled ${artifact.id} in ${result.bundleTime}ms with ${result.dependencies.length} packages`);
-          } else {
-            // Bundling failed - check if artifact has npm imports
-            const hasNpmImports = needsBundling(artifact.content, artifact.type);
-
-            if (hasNpmImports) {
-              // Mark artifact as unbundleable - show bundling error UI
-              if (!isMounted) return;
-              setArtifacts(prev =>
-                prev.map(a =>
-                  a.id === artifact.id
-                    ? {
-                        ...a,
-                        bundlingFailed: true,
-                        bundleError: result.error,
-                        bundleErrorDetails: result.details,
-                        bundleStatus: 'error'
-                      }
-                    : a
-                )
-              );
-
-              // Show error toast with appropriate message
-              if (result.retryable) {
-                toast.error(`Bundling failed for ${artifact.title}`, {
-                  id: `bundle-${artifact.id}`,
-                  description: `${result.error}. You can try again.`,
-                  duration: 7000
-                });
-              } else if (result.requiresAuth) {
-                toast.error(result.error, {
-                  id: `bundle-${artifact.id}`,
-                  description: result.details || "Please refresh the page",
-                  duration: 10000
-                });
-              } else if (result.retryAfter) {
-                toast.error(result.error, {
-                  id: `bundle-${artifact.id}`,
-                  description: result.details,
-                  duration: 10000
-                });
-              } else {
-                toast.error(`Bundling failed for ${artifact.title}`, {
-                  id: `bundle-${artifact.id}`,
-                  description: result.details || result.error,
-                  duration: 7000
-                });
-              }
-
-              console.error(`[MessageWithArtifacts] Bundle failed for ${artifact.id}:`, result.error, result.details);
-            } else {
-              // No npm imports - can render with client-side Sucrase transpilation
-              toast.warning(`Bundling failed for ${artifact.title}, using client-side renderer`, {
-                id: `bundle-${artifact.id}`,
-                description: "Artifact will render with limited features",
-                duration: 5000
-              });
-
-              console.warn(`[MessageWithArtifacts] Bundle failed for ${artifact.id}, using client-side renderer:`, result.error);
-            }
-
-            if (!isMounted) return;
-            setBundlingStatus(prev => ({ ...prev, [artifact.id]: 'error' }));
-          }
-        } catch (error) {
-          console.error(`[MessageWithArtifacts] Unexpected bundling error for ${artifact.id}:`, error);
-
-          const errorMessage = error instanceof Error ? error.message : String(error);
-
-          // Clear progress on error
-          if (!isMounted) return;
-          setBundleProgress(prev => {
-            const next = { ...prev };
-            delete next[artifact.id];
-            return next;
-          });
-
-          if (!isMounted) return;
-          setArtifacts(prev =>
-            prev.map(a =>
-              a.id === artifact.id
-                ? {
-                    ...a,
-                    bundlingFailed: true,
-                    bundleError: "Bundling failed unexpectedly",
-                    bundleErrorDetails: errorMessage,
-                    bundleStatus: 'error'
-                  }
-                : a
-            )
-          );
-
-          if (!isMounted) return;
-          setBundlingStatus(prev => ({ ...prev, [artifact.id]: 'error' }));
-
-          toast.error(`Failed to bundle ${artifact.title}`, {
-            id: `bundle-${artifact.id}`,
-            description: "An unexpected error occurred. Please try refreshing the page.",
-            duration: 10000
-          });
-        }
-      }
-    }
-
-    handleBundling();
-
-    return () => {
-      isMounted = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mergedArtifacts, sessionId]);
 
   // Separate image artifacts from interactive artifacts
   const imageArtifacts = mergedArtifacts.filter(a => a.type === 'image');
@@ -393,14 +251,7 @@ export const MessageWithArtifacts = memo(({
           artifact={artifact}
           onOpen={() => onArtifactOpen(artifact)}
           className="mt-3"
-          isBundling={bundlingStatus[artifact.id] === 'bundling'}
-          bundleProgress={bundleProgress[artifact.id] || null}
         />
-      ))}
-
-      {/* Render skeleton cards for in-progress artifacts (streaming) */}
-      {inProgressCount > 0 && Array.from({ length: inProgressCount }, (_, i) => (
-        <ArtifactCardSkeleton key={`skeleton-${i}`} className="mt-3" />
       ))}
     </MessageErrorBoundary>
   );

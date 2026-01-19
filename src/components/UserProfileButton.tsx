@@ -87,16 +87,16 @@ export function UserProfileButton({ collapsed = false }: UserProfileButtonProps)
         <Button
           variant="ghost"
           className={cn(
-            "w-full justify-start gap-3 h-auto px-3 py-2.5 hover:bg-accent/50 transition-colors",
-            collapsed && "justify-center px-2"
+            "justify-start gap-3 h-auto p-0 hover:bg-transparent transition-colors focus-visible:ring-0 focus-visible:ring-offset-0",
+            collapsed ? "justify-center w-auto" : "w-full px-3 py-2.5"
           )}
           aria-label="User account menu"
           aria-haspopup="true"
           aria-expanded={isOpen}
         >
-          <Avatar className="h-8 w-8 shrink-0">
+          <Avatar className="h-10 w-10 shrink-0 transition-opacity hover:opacity-80">
             <AvatarImage src={undefined} alt={user.name} />
-            <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+            <AvatarFallback className="!bg-white/20 text-white/90 text-sm font-medium">
               {getInitials(user.name || 'U')}
             </AvatarFallback>
           </Avatar>
@@ -125,7 +125,7 @@ export function UserProfileButton({ collapsed = false }: UserProfileButtonProps)
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10">
               <AvatarImage src={undefined} alt={user.name} />
-              <AvatarFallback className="bg-primary/10 text-primary">
+              <AvatarFallback className="!bg-white/20 text-white/90">
                 {getInitials(user.name || 'U')}
               </AvatarFallback>
             </Avatar>

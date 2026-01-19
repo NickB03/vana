@@ -43,7 +43,7 @@
 - Status extraction via regex patterns + LLM-powered semantic generation
 - Circuit breaker fallback for status generation failures
 
-**Reference**: `docs/GEMINI_3_FLASH_GUIDE.md`, `.claude/roadmap/claude_style_reasoning_guide/`
+**Reference**: `docs/GEMINI_3_FLASH_GUIDE.md`
 
 ---
 
@@ -160,7 +160,7 @@ AI:   ┌───────────────────────�
 - [ ] Mobile-friendly widget layouts
 - [ ] Cost < $0.01 per tool call
 
-**Feasibility**: ✅ Confirmed (2025-11-26) - Implementation plan at `.claude/plans/mcp-ui-integration.md`
+**Feasibility**: ✅ Confirmed (2025-11-26)
 
 ---
 
@@ -214,8 +214,6 @@ AI:   ┌───────────────────────�
 - [ ] All existing functionality preserved (copy, export, etc.)
 - [ ] Dark mode styling consistent
 - [ ] Server-bundled artifacts render correctly
-
-**Reference**: `.claude/roadmap/canvas-ui-redesign.md`
 
 ---
 

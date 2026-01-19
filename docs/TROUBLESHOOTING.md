@@ -1,6 +1,6 @@
 # Troubleshooting Guide - Vana
 
-**Last Updated**: 2025-12-26
+**Last Updated**: 2026-01-18
 
 Comprehensive troubleshooting guide for common issues in Vana AI Development Assistant.
 
@@ -171,48 +171,32 @@ Sometimes cached data causes issues:
 
 ### Artifact Generation Issues
 
-#### Validation Error Codes
-
-Artifacts use **structured error codes** for validation failures. See [ERROR_CODES.md](ERROR_CODES.md) for complete reference.
-
-**Common Error Codes**:
-
-| Error Code | Category | Blocking? | Description | Fix |
-|------------|----------|-----------|-------------|-----|
-| `IMPORT_LOCAL_PATH` | Import | ✅ Yes | Using `@/` imports | Use npm packages like `@radix-ui/react-dialog` |
-| `RESERVED_KEYWORD_EVAL` | Syntax | ✅ Yes | Variable named `eval` | Rename to `score`, `value`, or `evaluation` |
-| `STORAGE_LOCAL_STORAGE` | API | ✅ Yes | Using `localStorage` | Replace with React `useState` |
-| `IMMUTABILITY_ARRAY_ASSIGNMENT` | Mutation | ❌ No | Direct array mutation | Use spread: `const newArr = [...arr]` |
-
-**Non-Blocking Errors**: All `IMMUTABILITY_*` errors only cause React warnings but don't prevent rendering.
-
 #### Issue: Artifacts not rendering
 
 **Symptoms**:
-- "Artifact failed to render" error
 - Blank artifact canvas
-- Console errors about imports
+- Red error overlay in Sandpack preview
+- Console errors about imports or syntax
 
 **Solutions**:
 
-1. **Check validation error code**:
-   - Review error message for specific error code (e.g., `IMPORT_LOCAL_PATH`)
-   - See [ERROR_CODES.md](ERROR_CODES.md) for detailed fix instructions
+1. **Check Sandpack console**:
+   - Errors display naturally in the Sandpack preview console
+   - Syntax errors show red overlay with line numbers
+   - Import errors show "Could not resolve 'package-name'"
 
-2. **Check artifact type**:
+2. **Use "Ask AI to Fix" button**:
+   - Captures error message and code automatically
+   - AI generates corrected code and re-renders
+
+3. **Check artifact type**:
    - Ensure you requested a supported type: `react`, `html`, `svg`, `code`, `mermaid`, `markdown`
 
-3. **Review error message**:
-   - Click "Show Details" on error
-   - Common causes:
-     - Invalid imports (using `@/components/ui/*`) → `IMPORT_LOCAL_PATH`
-     - Reserved keywords (`eval`, `arguments`) → `RESERVED_KEYWORD_*`
-     - Browser storage APIs → `STORAGE_*`
-     - Syntax errors
-
-4. **Use "Fix Artifact" button**:
-   - AI will automatically fix common errors using error codes
-   - Regenerate if fix doesn't work
+4. **Common error causes**:
+   - Invalid imports (using `@/components/ui/*`)
+   - Package not in whitelist
+   - Syntax errors (missing brackets, invalid JSX)
+   - State mutations (React strict mode)
 
 5. **Try regenerating**:
    - Rephrase your request
@@ -221,14 +205,19 @@ Artifacts use **structured error codes** for validation failures. See [ERROR_COD
 #### Issue: React artifacts showing import errors
 
 **Symptoms**:
-- Error: "Cannot find module '@/components/ui/...'"
+- Error: "Could not resolve '@/components/ui/...'"
 - Artifact won't run
-- "Invalid import" warnings
+- "Could not resolve 'package-name'" in console
 
 **Root Cause**:
-Artifacts run in isolated sandbox and cannot access local project imports.
+Artifacts run in isolated Sandpack iframes and cannot access local project imports. Only whitelisted npm packages are available.
 
-> **Reference**: See `.claude/artifact-import-restrictions.md` for detailed import rules and allowed packages.
+**Package Whitelist**:
+- `react`, `react-dom` - Available globally
+- `recharts` - Charts and data visualization
+- `framer-motion` - Animations and transitions
+- `lucide-react` - Icon library
+- `@radix-ui/react-*` - Accessible UI primitives
 
 **Solution**:
 
@@ -237,24 +226,25 @@ Artifacts run in isolated sandbox and cannot access local project imports.
 
 2. **Valid imports for artifacts**:
    ```javascript
-   // ✅ CORRECT - Use Radix UI
-   import * as Dialog from '@radix-ui/react-dialog';
-   import * as Button from '@radix-ui/react-button';
+   // ✅ CORRECT - Whitelisted npm packages
+   import { LineChart } from "recharts";
+   import { motion } from "framer-motion";
+   import { Heart } from "lucide-react";
+   import * as Dialog from "@radix-ui/react-dialog";
 
-   // ❌ WRONG - Don't use local imports
+   // ❌ WRONG - Local imports never work
    import { Button } from '@/components/ui/button';
    ```
 
-3. **Use global React**:
+3. **React hooks pattern**:
    ```javascript
-   // ✅ CORRECT
-   export default function MyComponent() {
-     const { useState, useEffect } = React;
+   // Destructure from global React object
+   const { useState, useEffect, useCallback } = React;
+
+   export default function App() {
+     const [count, setCount] = useState(0);
      // ...
    }
-
-   // ❌ WRONG
-   import { useState } from 'react';
    ```
 
 #### Issue: Artifacts showing "Cannot use localStorage"
@@ -560,17 +550,19 @@ The prompt injection defense system (Issue #340 Phase 0) uses 5-layer protection
 3. Try with simpler/shorter prompt
 4. Check network stability
 
-### "Artifact validation failed"
+### "Artifact failed to render"
 
-**Meaning**: Generated artifact has security or syntax issues
+**Meaning**: Generated artifact has syntax or runtime errors
 
 **Solutions**:
-1. Click "Fix Artifact" button for automatic repair
-2. Review artifact code for:
+1. Check Sandpack console for specific error message
+2. Click "Ask AI to Fix" button for automatic repair
+3. Review artifact code for:
    - Invalid imports (@/components/ui/*)
-   - localStorage usage
+   - Packages not in whitelist
    - Syntax errors
-3. Regenerate with clearer requirements
+   - State mutations
+4. Regenerate with clearer requirements
 
 ### "Tool rate limit exceeded"
 
@@ -792,6 +784,6 @@ navigator.serviceWorker.getRegistrations()
 
 ---
 
-**Last Updated**: 2025-12-26
+**Last Updated**: 2026-01-18
 
 Found a bug? Please report it at: https://github.com/NickB03/llm-chat-site/issues

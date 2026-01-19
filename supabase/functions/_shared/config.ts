@@ -118,9 +118,9 @@ function getEnvInt(key: string, defaultValue: number, min: number = 0): number {
  * ```
  */
 export const RATE_LIMITS = {
-  /** Guest user limits (IP-based) */
+  /** Guest user limits (IP-based) - 3x increase for dev testing */
   GUEST: {
-    MAX_REQUESTS: getEnvInt('RATE_LIMIT_GUEST_MAX', 20, 1),
+    MAX_REQUESTS: getEnvInt('RATE_LIMIT_GUEST_MAX', 60, 1),
     WINDOW_HOURS: getEnvInt('RATE_LIMIT_GUEST_WINDOW', 5, 1)
   },
   /** Authenticated user limits */
@@ -140,9 +140,9 @@ export const RATE_LIMITS = {
       MAX_REQUESTS: getEnvInt('RATE_LIMIT_ARTIFACT_API_MAX', 10, 1),
       WINDOW_SECONDS: getEnvInt('RATE_LIMIT_ARTIFACT_API_WINDOW', 60, 1)
     },
-    /** Guest user limits for artifacts (very restrictive to encourage sign-up) */
+    /** Guest user limits for artifacts - 3x increase for dev testing */
     GUEST: {
-      MAX_REQUESTS: getEnvInt('RATE_LIMIT_ARTIFACT_GUEST_MAX', 5, 1),
+      MAX_REQUESTS: getEnvInt('RATE_LIMIT_ARTIFACT_GUEST_MAX', 15, 1),
       WINDOW_HOURS: getEnvInt('RATE_LIMIT_ARTIFACT_GUEST_WINDOW', 5, 1)
     },
     /** Authenticated user limits for artifacts (lower than chat due to cost) */
@@ -158,9 +158,9 @@ export const RATE_LIMITS = {
       MAX_REQUESTS: getEnvInt('RATE_LIMIT_IMAGE_API_MAX', 15, 1),
       WINDOW_SECONDS: getEnvInt('RATE_LIMIT_IMAGE_API_WINDOW', 60, 1)
     },
-    /** Guest user limits for images (restrictive to prevent abuse) */
+    /** Guest user limits for images - 3x increase for dev testing */
     GUEST: {
-      MAX_REQUESTS: getEnvInt('RATE_LIMIT_IMAGE_GUEST_MAX', 20, 1),
+      MAX_REQUESTS: getEnvInt('RATE_LIMIT_IMAGE_GUEST_MAX', 60, 1),
       WINDOW_HOURS: getEnvInt('RATE_LIMIT_IMAGE_GUEST_WINDOW', 5, 1)
     },
     /** Authenticated user limits for images (higher for registered users) */
@@ -176,9 +176,9 @@ export const RATE_LIMITS = {
       MAX_REQUESTS: getEnvInt('RATE_LIMIT_TAVILY_API_MAX', 10, 1),
       WINDOW_SECONDS: getEnvInt('RATE_LIMIT_TAVILY_API_WINDOW', 60, 1)
     },
-    /** Guest user limits for searches (restrictive to prevent abuse) */
+    /** Guest user limits for searches - 3x increase for dev testing */
     GUEST: {
-      MAX_REQUESTS: getEnvInt('RATE_LIMIT_TAVILY_GUEST_MAX', 10, 1),
+      MAX_REQUESTS: getEnvInt('RATE_LIMIT_TAVILY_GUEST_MAX', 30, 1),
       WINDOW_HOURS: getEnvInt('RATE_LIMIT_TAVILY_GUEST_WINDOW', 5, 1)
     },
     /** Authenticated user limits for searches */

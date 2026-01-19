@@ -45,6 +45,8 @@ import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.75.1
 import { getSystemInstruction } from '../../_shared/system-prompt-inline.ts';
 import { getMatchingTemplate } from '../../_shared/artifact-rules/template-matcher.ts';
 import { FEATURE_FLAGS, DEFAULT_MODEL_PARAMS } from '../../_shared/config.ts';
+import { saveArtifact } from '../../_shared/artifact-saver.ts';
+import { saveMessageStub } from '../../_shared/message-stub-saver.ts';
 
 // Tool call types - define inline for tool call handling
 // Used for processing native tool calls from Gemini API
@@ -97,6 +99,8 @@ export interface ToolCallingChatParams {
   urlExtractContext: string;
   /** User ID for logging (null for guests) */
   userId: string | null;
+  /** Session ID for message association */
+  sessionId: string | undefined;
   /** Whether the user is a guest */
   isGuest: boolean;
   /** Request ID for observability */
@@ -115,6 +119,8 @@ export interface ToolCallingChatParams {
   serviceClient: SupabaseClient;
   /** Client IP for tool-specific guest rate limiting */
   clientIp: string;
+  /** Pre-generated UUID for the assistant message (enables artifact DB linking) */
+  assistantMessageId?: string;
 }
 
 /**
@@ -203,6 +209,7 @@ export async function handleToolCallingChat(
     searchContext,
     urlExtractContext,
     userId,
+    sessionId,
     isGuest,
     requestId,
     corsHeaders,
@@ -212,6 +219,7 @@ export async function handleToolCallingChat(
     supabaseClient,
     serviceClient,
     clientIp,
+    assistantMessageId,
   } = params;
 
   const logPrefix = `[${requestId}]`;
@@ -735,16 +743,74 @@ export async function handleToolCallingChat(
                       status: `Completed ${artifactTitle}`,
                     });
 
+                    // Save artifact to database if we have a message ID and valid session
+                    // Guest sessions don't have DB records, so generate client-side ID for them
+                    let savedArtifactId: string | undefined;
+
+                    if (isGuest) {
+                      // GUEST MODE: Generate a content-based artifact ID for client-side rendering
+                      // Guest artifacts are not persisted to DB (no session FK), but the frontend
+                      // needs an ID to render the artifact card during streaming
+                      const contentHash = await crypto.subtle.digest(
+                        'SHA-256',
+                        new TextEncoder().encode(toolResult.data.artifactCode || '')
+                      );
+                      const hashHex = Array.from(new Uint8Array(contentHash))
+                        .map(b => b.toString(16).padStart(2, '0'))
+                        .join('');
+                      savedArtifactId = `guest-art-${hashHex.substring(0, 16)}`;
+                      console.log(`${logPrefix} 🎭 Generated guest artifact ID: ${savedArtifactId} (not persisted)`);
+                    } else if (assistantMessageId && serviceClient && sessionId) {
+                      // AUTHENTICATED MODE: Persist to database
+                      // CRITICAL: Create message stub first to satisfy FK constraint
+                      // The frontend will update this message with full content after streaming
+                      const stubResult = await saveMessageStub(
+                        serviceClient,
+                        assistantMessageId,
+                        sessionId,
+                        isGuest,
+                        requestId
+                      );
+
+                      if (!stubResult.success) {
+                        console.warn(`${logPrefix} ⚠️ Failed to create message stub: ${stubResult.error}`);
+                        console.warn(`${logPrefix} ⚠️ Artifact save will likely fail due to FK constraint`);
+                      }
+
+                      const saveResult = await saveArtifact(
+                        serviceClient,
+                        {
+                          messageId: assistantMessageId,
+                          artifactType: toolResult.data.artifactType || 'react',
+                          artifactTitle: toolResult.data.artifactTitle || 'Untitled Artifact',
+                          artifactContent: toolResult.data.artifactCode,
+                        },
+                        requestId
+                      );
+
+                      if (saveResult.success) {
+                        savedArtifactId = saveResult.artifactId;
+                        console.log(`${logPrefix} 💾 Artifact saved to DB: ${savedArtifactId}`);
+                      } else {
+                        console.warn(`${logPrefix} ⚠️ Failed to save artifact to DB: ${saveResult.error}`);
+                        // Continue anyway - artifact will still be sent to client
+                      }
+                    } else {
+                      console.log(`${logPrefix} ℹ️ Skipping artifact DB save (no assistantMessageId, serviceClient, or sessionId)`);
+                    }
+
                     sendEvent({
                       type: 'artifact_complete',
                       artifactCode: toolResult.data.artifactCode,
                       artifactType: toolResult.data.artifactType,
                       artifactTitle: toolResult.data.artifactTitle,
+                      artifactId: savedArtifactId, // Include the saved artifact ID
+                      persisted: !!savedArtifactId, // Indicates if artifact was durably stored in DB
                       reasoning: toolResult.data.artifactReasoning,
                       timestamp: Date.now(),
                       latencyMs: toolResult.latencyMs,
                     });
-                    console.log(`${logPrefix} 📤 Sent artifact_complete event (type=${toolResult.data.artifactType})`);
+                    console.log(`${logPrefix} 📤 Sent artifact_complete event (type=${toolResult.data.artifactType}, artifactId=${savedArtifactId || 'not-saved'}, persisted=${!!savedArtifactId})`);
 
                     // FIX (2025-12-22): Send accumulated reasoning to frontend for display
                     if (fullReasoningAccumulated) {
@@ -768,16 +834,34 @@ export async function handleToolCallingChat(
                       status: 'Image created successfully',
                     });
 
+                    // Generate artifact ID for image display
+                    // For guests: Generate client-side ID since no DB persistence
+                    // For authenticated: Use storage-based ID if available
+                    let imageArtifactId: string | undefined;
+                    if (isGuest) {
+                      const imageContent = toolResult.data.imageUrl || toolResult.data.imageData || '';
+                      const contentHash = await crypto.subtle.digest(
+                        'SHA-256',
+                        new TextEncoder().encode(imageContent.substring(0, 1000)) // Hash first 1KB for performance
+                      );
+                      const hashHex = Array.from(new Uint8Array(contentHash))
+                        .map(b => b.toString(16).padStart(2, '0'))
+                        .join('');
+                      imageArtifactId = `guest-img-${hashHex.substring(0, 16)}`;
+                      console.log(`${logPrefix} 🎭 Generated guest image artifact ID: ${imageArtifactId}`);
+                    }
+
                     sendEvent({
                       type: 'image_complete',
                       imageUrl: toolResult.data.imageUrl,
                       imageData: toolResult.data.imageData,
                       storageSucceeded: toolResult.data.storageSucceeded,
                       degradedMode: toolResult.data.degradedMode,
+                      artifactId: imageArtifactId, // Include artifact ID for frontend rendering
                       timestamp: Date.now(),
                       latencyMs: toolResult.latencyMs,
                     });
-                    console.log(`${logPrefix} 📤 Sent image_complete event (storage=${toolResult.data.storageSucceeded})`);
+                    console.log(`${logPrefix} 📤 Sent image_complete event (storage=${toolResult.data.storageSucceeded}, artifactId=${imageArtifactId || 'none'})`);
                   }
                   break;
                 }

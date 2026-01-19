@@ -85,6 +85,7 @@ serve(async (req) => {
       isGuest,
       toolChoice,
       includeReasoning,
+      assistantMessageId,
     } = validationResult.data!;
 
     console.log(`[${requestId}] Processing request:`, {
@@ -332,6 +333,7 @@ Treat this as an iterative improvement of the existing artifact.`;
         searchContext: '',
         urlExtractContext: urlExtractResult.extractedContext || '',
         userId: user?.id || null,
+        sessionId,
         isGuest,
         requestId,
         corsHeaders,
@@ -341,6 +343,7 @@ Treat this as an iterative improvement of the existing artifact.`;
         supabaseClient: supabase,
         serviceClient,
         clientIp,
+        assistantMessageId,
       });
   } catch (e) {
     // Generate request ID if not already created (error happened before request ID generation)

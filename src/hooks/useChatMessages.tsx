@@ -40,6 +40,14 @@ export interface StreamProgress {
   reasoningStatus?: string; // Semantic status update from GLM-4.5-Air
   searchResults?: WebSearchResults; // Web search results for streaming
   toolExecution?: ToolExecution; // Tool execution status for real-time display
+  // Artifact data collected during streaming for immediate display
+  streamingArtifacts?: Array<{
+    id: string;
+    type: string;
+    title: string;
+    content: string;
+    language?: string;
+  }>;
 }
 
 export interface RateLimitHeaders {
@@ -216,7 +224,13 @@ export function useChatMessages(
     content: string,
     reasoning?: string,
     reasoningSteps?: StructuredReasoning,
-    searchResults?: WebSearchResults
+    searchResults?: WebSearchResults,
+    /** Pre-generated message ID (for linking artifacts saved in DB) */
+    messageId?: string,
+    /** Artifact IDs to associate with this message */
+    artifactIds?: string[],
+    /** Full artifact data for guest users (stored in localStorage, not DB) */
+    artifacts?: Array<{ id: string; type: string; title: string; content: string; language?: string }>
   ) => {
     // Validate reasoning steps before saving - will return null if invalid
     // This prevents 400 errors from database constraint violations
@@ -234,13 +248,15 @@ export function useChatMessages(
     // This prevents 401 errors when guest sessions have a UUID for artifact bundling
     if (isGuest || !sessionId) {
       const guestMessage: ChatMessage = {
-        id: crypto.randomUUID(),
+        id: messageId || crypto.randomUUID(), // Use pre-generated ID if provided
         session_id: sessionId || "guest", // Use provided sessionId for artifact bundling, or "guest" fallback
         role,
         content,
         reasoning: reasoning || null,
         reasoning_steps: validatedReasoningSteps, // FIX: Use validated reasoning steps
         search_results: searchResults || null,
+        artifact_ids: artifactIds || null, // Include artifact IDs
+        artifacts: artifacts || null, // Include full artifact data for localStorage persistence
         created_at: new Date().toISOString(),
       };
 
@@ -252,15 +268,28 @@ export function useChatMessages(
 
     // For authenticated users, save to database
     try {
+      const insertData: Record<string, unknown> = {
+        session_id: sessionId,
+        role,
+        content,
+        reasoning,
+        reasoning_steps: validatedReasoningSteps,
+        search_results: searchResults || null,
+        artifact_ids: artifactIds || null,
+      };
+
+      // Use pre-generated ID if provided (for linking artifacts)
+      if (messageId) {
+        insertData.id = messageId;
+      }
+
+      // CRITICAL FIX: Use upsert instead of insert to handle message stubs created by backend
+      // The backend creates a stub message during streaming to satisfy FK constraints for artifacts.
+      // This upsert will UPDATE the stub with full content, or INSERT if no stub exists.
       const { data, error } = await supabase
         .from("chat_messages")
-        .insert({
-          session_id: sessionId,
-          role,
-          content,
-          reasoning,
-          reasoning_steps: validatedReasoningSteps,
-          search_results: searchResults || null,
+        .upsert(insertData, {
+          onConflict: 'id', // Update existing message with same ID
         })
         .select()
         .single();
@@ -331,6 +360,18 @@ export function useChatMessages(
     let fullResponse = "";
     let tokenCount = 0;
     let artifactDetected = false;
+    // Pre-generate assistant message ID for artifact DB linking
+    const assistantMessageId = crypto.randomUUID();
+    // Track artifact IDs collected during streaming
+    const collectedArtifactIds: string[] = [];
+    // Track full artifact data for immediate streaming display (not just IDs)
+    const collectedArtifacts: Array<{
+      id: string;
+      type: string;
+      title: string;
+      content: string;
+      language?: string;
+    }> = [];
 
     try {
       // Client-side throttling: silently wait for token (protects API from burst requests)
@@ -364,30 +405,21 @@ export function useChatMessages(
         }
       }
 
-      // Helper function to sanitize image artifacts before sending to backend
-      // Prevents 400 errors when base64 image data exceeds 100k char limit
-      const sanitizeImageArtifacts = (content: string): string => {
-        // Match <artifact ...type="image"...>BASE64_DATA</artifact>
-        // Handles attributes in any order (type before or after title)
-        // Handles both single and double quotes around "image"
-        // BUG FIX: Added \s* to handle newlines/whitespace around the data URL
-        // (image artifacts are created with \n around the content at line 1456)
-        // Only replaces base64 data URLs, keeps regular storage URLs untouched
-        return content.replace(
-          /<artifact\s+([^>]*?)type=["']image["']([^>]*?)>\s*(data:image\/[^<]+)\s*<\/artifact>/gi,
-          '<artifact $1type="image"$2>[Image generated - see above]</artifact>'
-        );
-      };
+      // NOTE: sanitizeImageArtifacts helper removed - no longer needed since
+      // artifacts are now persisted in artifact_versions table and linked via artifact_ids.
+      // Messages contain only text markers like "[Artifact: Title]" instead of XML.
 
       const requestBody = {
         messages: messages
           .concat([{ role: "user", content: userMessage } as ChatMessage])
-          .map((m) => ({ role: m.role, content: sanitizeImageArtifacts(m.content) })),
+          .map((m) => ({ role: m.role, content: m.content })),
         sessionId: isAuthenticated ? sessionId : undefined,
         currentArtifact,
         isGuest: !isAuthenticated,
         toolChoice,
         includeReasoning: true, // Enable Chain of Thought reasoning
+        // Pre-generated ID for artifact DB linking (backend uses this as message_id FK)
+        assistantMessageId,
       };
 
       console.log("🚀 [useChatMessages.streamChat] Sending request:", {
@@ -522,6 +554,7 @@ export function useChatMessages(
           reasoningStatus: lastReasoningStatus, // Preserve status for ticker display
           streamingReasoningText: reasoningText, // Preserve raw text for fallback
           toolExecution: currentToolExecution, // Preserve tool execution state
+          streamingArtifacts: collectedArtifacts.length > 0 ? collectedArtifacts : undefined, // Include artifact data for streaming display
         };
       };
 
@@ -825,40 +858,46 @@ export function useChatMessages(
 
             // ========================================
             // ARTIFACT COMPLETE: Handle artifact from tool-calling chat
-            // BUG FIX (2025-12-20): Tool-calling chat emits artifact_complete events
-            // but the chat stream parser was not handling them, causing blank responses.
+            // Artifacts are now persisted to artifact_versions table and linked via artifact_ids.
+            // Message content contains only a text marker, not XML.
             // ========================================
             if (parsed.type === 'artifact_complete') {
               const artifactCode = parsed.artifactCode as string;
               const artifactType = parsed.artifactType as string;
               const artifactTitle = parsed.artifactTitle as string;
               const artifactReasoning = parsed.reasoning as string | undefined;
+              const artifactId = parsed.artifactId as string | undefined;
 
-              console.log(`[StreamProgress] Received artifact_complete from tool-calling: type=${artifactType}, length=${artifactCode?.length || 0}`);
+              console.log(`[StreamProgress] Received artifact_complete from tool-calling: type=${artifactType}, artifactId=${artifactId || 'none'}, length=${artifactCode?.length || 0}`);
+
+              // Generate temporary ID for guest artifacts (not persisted to DB)
+              // Guest artifacts don't have a DB artifact_id, so we create a local ID
+              const effectiveArtifactId = artifactId || `guest-art-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+              // Collect artifact ID for DB-persisted artifacts only
+              if (artifactId) {
+                collectedArtifactIds.push(artifactId);
+              }
 
               if (artifactCode) {
-                const trimmedCode = artifactCode.trim();
-                const hasArtifactTag = /<artifact\b[^>]*>[\s\S]*<\/artifact>/i.test(trimmedCode);
+                // ALWAYS collect artifact data for streaming display (guest and authenticated users)
+                // For guest users: artifact is only in memory (localStorage), never persisted to DB
+                // For authenticated users: artifact is in DB, but we collect here for immediate display
+                collectedArtifacts.push({
+                  id: effectiveArtifactId,
+                  type: artifactType,
+                  title: artifactTitle,
+                  content: artifactCode,
+                  language: undefined, // Language can be inferred from type
+                });
+                console.log(`[StreamProgress] Collected artifact data for streaming display: ${effectiveArtifactId}${!artifactId ? ' (guest)' : ''}`);
 
-                // Map artifact type to MIME type format expected by MessageWithArtifacts
-                const mimeType = artifactType === 'react'
-                  ? 'application/vnd.ant.react'
-                  : `application/vnd.ant.${artifactType}`;
+                // Add simple text marker instead of XML - artifacts are loaded from DB via artifact_ids
+                const displayTitle = artifactTitle || 'Generated Artifact';
+                const textMarker = `[Artifact: ${displayTitle}]`;
 
-                // Escape special characters in title to prevent XML parsing issues
-                const safeTitle = (artifactTitle || 'Generated Artifact')
-                  .replace(/&/g, '&amp;')
-                  .replace(/</g, '&lt;')
-                  .replace(/>/g, '&gt;')
-                  .replace(/"/g, '&quot;');
-
-                // Wrap artifact in XML tags for MessageWithArtifacts parser
-                const artifactXml = hasArtifactTag
-                  ? trimmedCode
-                  : `<artifact type="${mimeType}" title="${safeTitle}">\n${trimmedCode}\n</artifact>`;
-
-                // Prepend artifact to response (artifact comes before GLM's continuation text)
-                fullResponse = artifactXml + (fullResponse ? '\n\n' + fullResponse : '');
+                // Prepend marker to response (artifact comes before continuation text)
+                fullResponse = textMarker + (fullResponse ? '\n\n' + fullResponse : '');
                 artifactDetected = true;
                 artifactClosed = true;
                 artifactInProgress = false;
@@ -868,11 +907,9 @@ export function useChatMessages(
                   reasoningText = artifactReasoning;
                 }
 
-                // BUG FIX: Pass artifact XML to onDelta so ChatInterface can strip it for display
-                // Without this, raw XML appears in chat during streaming
-                // ChatInterface.tsx lines 120-126 will strip the tags for clean display
+                // Pass text marker to onDelta for streaming display
                 const progress = updateProgress();
-                onDelta(artifactXml + '\n\n', progress);
+                onDelta(textMarker + '\n\n', progress);
               }
 
               continue;
@@ -880,49 +917,66 @@ export function useChatMessages(
 
             // ========================================
             // IMAGE COMPLETE: Handle image from tool-calling chat
-            // BUG FIX (2025-12-20): Same issue as artifact_complete - events were ignored.
+            // Images are now persisted to artifact_versions table and linked via artifact_ids.
+            // Message content contains only a text marker, not XML.
             // ========================================
             if (parsed.type === 'image_complete') {
               const imageUrl = parsed.imageUrl as string;
               const imageData = parsed.imageData as string;
               const storageSucceeded = parsed.storageSucceeded as boolean;
+              const imageArtifactId = parsed.artifactId as string | undefined;
 
-              console.log(`[StreamProgress] Received image_complete from tool-calling: storage=${storageSucceeded}`);
+              console.log(`[StreamProgress] Received image_complete from tool-calling: storage=${storageSucceeded}, artifactId=${imageArtifactId || 'none'}`);
+
+              // Collect artifact ID for message association (backend saved it to artifact_versions table)
+              if (imageArtifactId) {
+                collectedArtifactIds.push(imageArtifactId);
+              }
 
               // Use storage URL if available, otherwise fall back to base64 data
               const displayUrl = imageUrl || imageData;
               if (displayUrl) {
-                // Wrap image in artifact XML tags for MessageWithArtifacts parser
-                const imageXml = `<artifact type="image" title="Generated Image">\n${displayUrl}\n</artifact>`;
+                // Collect full image artifact data for immediate streaming display
+                if (imageArtifactId && displayUrl) {
+                  collectedArtifacts.push({
+                    id: imageArtifactId,
+                    type: 'image',
+                    title: 'Generated Image',
+                    content: displayUrl, // URL or base64
+                    language: undefined,
+                  });
+                  console.log(`[StreamProgress] Collected image artifact data for streaming display: ${imageArtifactId}`);
+                }
 
-                // Prepend image to response
-                fullResponse = imageXml + (fullResponse ? '\n\n' + fullResponse : '');
+                // Add simple text marker instead of XML - images are loaded from DB via artifact_ids
+                const textMarker = '[Image: Generated Image]';
+
+                // Prepend marker to response
+                fullResponse = textMarker + (fullResponse ? '\n\n' + fullResponse : '');
                 artifactDetected = true;
                 artifactClosed = true;
                 imageInProgress = false;
 
-                console.log(`[StreamProgress] Image added to fullResponse, length=${fullResponse.length}`);
+                console.log(`[StreamProgress] Image marker added to fullResponse, length=${fullResponse.length}`);
 
-                // BUG FIX: Pass image XML to onDelta so ChatInterface can strip it for display
-                // Without this, raw XML appears in chat during streaming
-                // ChatInterface.tsx lines 120-126 will strip the tags for clean display
+                // Pass text marker to onDelta for streaming display
                 const progress = updateProgress();
-                onDelta(imageXml + '\n\n', progress);
+                onDelta(textMarker + '\n\n', progress);
               } else {
-                // BUG FIX (2025-12-21): If image data is missing but event was received,
+                // If image data is missing but event was received,
                 // still mark response as complete to prevent infinite retry loop
                 console.warn(`[StreamProgress] image_complete event received but no imageUrl or imageData`);
 
                 imageInProgress = false;
 
                 // Add placeholder to prevent empty response error
-                const placeholderXml = '<artifact type="image" title="Generated Image">\n[Image generation completed but image data unavailable]\n</artifact>';
+                const placeholderMarker = '[Image: Generated Image (unavailable)]';
                 if (!fullResponse) {
-                  fullResponse = placeholderXml;
+                  fullResponse = placeholderMarker;
                 }
 
                 const progress = updateProgress();
-                onDelta(placeholderXml + '\n\n', progress);
+                onDelta(placeholderMarker + '\n\n', progress);
               }
 
               continue;
@@ -986,8 +1040,19 @@ export function useChatMessages(
       // This prevents a race condition where streamingMessage is cleared before the saved message appears
       // FIX: Pass reasoningText for fallback display when no structured steps are available
       // BUG FIX (2025-12-21): Add timeout to prevent indefinite hang if Supabase is slow
+      // Pass pre-generated ID and collected artifact IDs for proper DB linking
+      // FIX: Include full artifact data for guest users (stored in localStorage, not DB)
       const SAVE_MESSAGE_TIMEOUT_MS = 10000; // 10 second timeout
-      const savePromise = saveMessage("assistant", fullResponse, reasoningText, reasoningSteps, searchResults);
+      const savePromise = saveMessage(
+        "assistant",
+        fullResponse,
+        reasoningText,
+        reasoningSteps,
+        searchResults,
+        assistantMessageId,
+        collectedArtifactIds.length > 0 ? collectedArtifactIds : undefined,
+        collectedArtifacts.length > 0 ? collectedArtifacts : undefined
+      );
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Message save timeout')), SAVE_MESSAGE_TIMEOUT_MS)
       );

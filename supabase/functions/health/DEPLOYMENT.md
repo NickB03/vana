@@ -29,30 +29,36 @@ No additional environment variables needed.
 
 ## Deployment Steps
 
-### Option 1: Deploy with Simple Script (Recommended)
+### Production Deployment (PR-Based)
 
-**Staging:**
+**⚠️ CRITICAL**: ALL production deployments must go through PR process.
+
 ```bash
-cd /Users/nick/Projects/llm-chat-site
-./scripts/deploy-simple.sh staging
+# 1. Create feature branch
+git checkout -b feat/update-health-function
+
+# 2. Make changes and test locally
+supabase functions serve health
+curl http://localhost:54321/functions/v1/health
+
+# 3. Run tests
+npm run test
+npm run test:integration
+
+# 4. Create Pull Request
+gh pr create --title "Update health function" --body "Description of changes"
+
+# 5. Automated CI checks run (tests, build verification)
+# 6. Code review by team
+# 7. Merge to main → Auto-deploy via deploy-edge-functions.yml
 ```
 
-**Production:**
-```bash
-cd /Users/nick/Projects/llm-chat-site
-./scripts/deploy-simple.sh prod
-```
+### Local Testing Only
 
-### Option 2: Deploy Individual Function
-
-**Staging:**
 ```bash
-supabase functions deploy health --project-ref <staging-ref>
-```
-
-**Production:**
-```bash
-supabase functions deploy health --project-ref vznhbocnuykdmjvujaka
+# Test function locally (NOT production deployment)
+supabase functions serve health
+curl http://localhost:54321/functions/v1/health
 ```
 
 ## Post-Deployment Verification

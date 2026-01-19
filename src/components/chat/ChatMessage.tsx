@@ -229,10 +229,10 @@ export const ChatMessage = React.memo(function ChatMessage({
                   <MessageWithArtifacts
                     content={message.content}
                     messageId={message.id}
-                    sessionId={message.session_id}
                     onArtifactOpen={onArtifactOpen}
                     artifactOverrides={artifactOverrides}
                     searchResults={streamProgress.searchResults}
+                    artifactData={streamProgress.streamingArtifacts}
                   />
                 ) : shouldShowMessageSkeleton ? (
                   <MessageSkeleton />
@@ -266,10 +266,10 @@ export const ChatMessage = React.memo(function ChatMessage({
                 <MessageWithArtifacts
                   content={message.content}
                   messageId={message.id}
-                  sessionId={message.session_id}
                   onArtifactOpen={onArtifactOpen}
                   artifactOverrides={artifactOverrides}
                   searchResults={message.search_results}
+                  artifactData={message.artifacts ?? undefined}
                 />
               </div>
 

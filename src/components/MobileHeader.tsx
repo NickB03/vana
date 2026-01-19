@@ -4,6 +4,7 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { TOUR_STEP_IDS } from "@/components/tour";
 import { useNavigate } from "react-router-dom";
+import { UserProfileButton } from "./UserProfileButton";
 
 interface MobileHeaderProps {
   className?: string;
@@ -71,17 +72,18 @@ export function MobileHeader({ className, showLogo = true, isAuthenticated = fal
         )}
       </div>
 
-      {/* Right side: Sign in button (only when not authenticated) */}
-      {!isAuthenticated && (
+      {/* Right side: Sign in button or user profile button */}
+      {isAuthenticated ? (
+        <UserProfileButton collapsed={true} />
+      ) : (
         <Button
           variant="ghost"
           size="default"
           onClick={() => navigate("/auth")}
           className={cn(
-            "px-4 rounded-full",
-            "bg-white/5 hover:bg-white/10",
-            "border border-white/10",
-            "text-white/80 hover:text-white",
+            "h-10 px-4 rounded-full",
+            "bg-white/20 hover:bg-transparent hover:opacity-80",
+            "text-white/90",
             "transition-all duration-200",
             "text-sm font-medium"
           )}

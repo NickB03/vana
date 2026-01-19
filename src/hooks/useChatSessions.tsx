@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ensureValidSession } from "@/utils/authHelpers";
 
 export interface ChatSession {
   id: string;
@@ -51,8 +52,9 @@ export function useChatSessions() {
 
   const createSession = async (firstMessage: string): Promise<string | null> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      // Ensure we have a valid session with fresh JWT token
+      const session = await ensureValidSession();
+      if (!session) {
         toast({
           title: "Authentication required",
           description: "Please log in to start a chat",
@@ -62,10 +64,10 @@ export function useChatSessions() {
       }
 
       // Create session with temporary title
-      const { data: session, error: sessionError } = await supabase
+      const { data: chatSession, error: sessionError } = await supabase
         .from("chat_sessions")
         .insert({
-          user_id: user.id,
+          user_id: session.user.id,
           title: "New Chat...",
           first_message: firstMessage,
         })
@@ -75,10 +77,10 @@ export function useChatSessions() {
       if (sessionError) throw sessionError;
 
       // Generate title in background
-      generateTitle(session.id, firstMessage);
+      generateTitle(chatSession.id, firstMessage);
 
-      setSessions((prev) => [session, ...prev]);
-      return session.id;
+      setSessions((prev) => [chatSession, ...prev]);
+      return chatSession.id;
     } catch (error: unknown) {
       console.error("Error creating session:", error);
       toast({

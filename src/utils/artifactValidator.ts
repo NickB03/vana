@@ -1,361 +1,116 @@
-// Phase 4: Artifact Quality Validation
+/**
+ * Minimal artifact validation utilities.
+ *
+ * This is a simplified version that provides basic validation for artifacts.
+ * Complex validation is handled by Sandpack's built-in error handling.
+ */
+
+import type { ArtifactType } from "@/components/ArtifactContainer";
 
 export interface ValidationResult {
   isValid: boolean;
-  errors: ValidationError[];
-  warnings: ValidationWarning[];
-}
-
-export interface ValidationError {
-  type: 'syntax' | 'structure' | 'security';
-  message: string;
-  severity: 'critical' | 'high';
-}
-
-export interface ValidationWarning {
-  type: 'best-practice' | 'accessibility' | 'performance' | 'security';
-  message: string;
-  suggestion?: string;
+  errors: string[];
+  warnings: string[];
 }
 
 /**
- * Validates HTML artifact structure and syntax
+ * Validates artifact content based on type.
+ * Returns basic validation - detailed errors come from Sandpack at runtime.
  */
-export function validateHTML(content: string): ValidationResult {
-  const errors: ValidationError[] = [];
-  const warnings: ValidationWarning[] = [];
+export function validateArtifact(content: string, type: ArtifactType): ValidationResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
 
-  // Check for basic HTML structure
-  if (!content.trim()) {
-    errors.push({
-      type: 'structure',
-      message: 'Artifact content is empty',
-      severity: 'critical'
-    });
+  // Basic empty content check
+  if (!content || content.trim().length === 0) {
+    errors.push("Artifact content is empty");
     return { isValid: false, errors, warnings };
   }
 
-  // Check for unclosed tags
-  const tagPattern = /<\/?([a-z][a-z0-9]*)\b[^>]*>/gi;
-  const tags = content.match(tagPattern) || [];
-  const stack: string[] = [];
-  const selfClosingTags = ['img', 'br', 'hr', 'input', 'meta', 'link', 'area', 'base', 'col', 'embed', 'param', 'source', 'track', 'wbr'];
-
-  for (const tag of tags) {
-    const isClosing = tag.startsWith('</');
-    const isSelfClosing = tag.endsWith('/>') || selfClosingTags.some(t => tag.toLowerCase().includes(`<${t}`));
-    const tagName = tag.replace(/<\/?|>|\//g, '').split(/\s/)[0].toLowerCase();
-
-    if (isSelfClosing) continue;
-
-    if (isClosing) {
-      if (stack.length === 0 || stack[stack.length - 1] !== tagName) {
-        errors.push({
-          type: 'syntax',
-          message: `Unclosed or mismatched tag: ${tagName}`,
-          severity: 'high'
-        });
-      } else {
-        stack.pop();
-      }
-    } else {
-      stack.push(tagName);
-    }
-  }
-
-  if (stack.length > 0) {
-    errors.push({
-      type: 'syntax',
-      message: `Unclosed tags: ${stack.join(', ')}`,
-      severity: 'high'
-    });
-  }
-
-  // Check for inline event handlers (security concern)
-  const inlineEventPattern = /on\w+\s*=\s*["'][^"']*["']/gi;
-  if (inlineEventPattern.test(content)) {
-    warnings.push({
-      type: 'security',
-      message: 'Inline event handlers detected',
-      suggestion: 'Consider using addEventListener or React event handlers'
-    });
-  }
-
-  // Check for accessibility - alt attributes on images
-  const imgWithoutAlt = /<img(?![^>]*alt=)[^>]*>/gi;
-  if (imgWithoutAlt.test(content)) {
-    warnings.push({
-      type: 'accessibility',
-      message: 'Images missing alt attributes',
-      suggestion: 'Add alt text to all images for accessibility'
-    });
-  }
-
-  // Check for viewport meta tag in full HTML documents
-  if (content.includes('<html') && !content.includes('viewport')) {
-    warnings.push({
-      type: 'best-practice',
-      message: 'Missing viewport meta tag',
-      suggestion: 'Add <meta name="viewport" content="width=device-width, initial-scale=1.0"> for responsive design'
-    });
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-    warnings
-  };
-}
-
-/**
- * Validates JavaScript/React code structure
- */
-export function validateJavaScript(content: string): ValidationResult {
-  const errors: ValidationError[] = [];
-  const warnings: ValidationWarning[] = [];
-
-  if (!content.trim()) {
-    errors.push({
-      type: 'structure',
-      message: 'Code content is empty',
-      severity: 'critical'
-    });
-    return { isValid: false, errors, warnings };
-  }
-
-  // Check for balanced braces
-  const braceCount = (content.match(/{/g) || []).length - (content.match(/}/g) || []).length;
-  if (braceCount !== 0) {
-    errors.push({
-      type: 'syntax',
-      message: 'Unbalanced curly braces',
-      severity: 'high'
-    });
-  }
-
-  // Check for balanced parentheses
-  const parenCount = (content.match(/\(/g) || []).length - (content.match(/\)/g) || []).length;
-  if (parenCount !== 0) {
-    errors.push({
-      type: 'syntax',
-      message: 'Unbalanced parentheses',
-      severity: 'high'
-    });
-  }
-
-  // Check for eval usage (security concern)
-  if (/\beval\s*\(/.test(content)) {
-    warnings.push({
-      type: 'security',
-      message: 'Usage of eval() detected',
-      suggestion: 'Avoid eval() for security reasons'
-    });
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-    warnings
-  };
-}
-
-/**
- * Phase 2: Enhanced React-specific validation
- */
-export function validateReact(content: string): ValidationResult {
-  const errors: ValidationError[] = [];
-  const warnings: ValidationWarning[] = [];
-
-  if (!content.trim()) {
-    errors.push({
-      type: 'structure',
-      message: 'React component content is empty',
-      severity: 'critical'
-    });
-    return { isValid: false, errors, warnings };
-  }
-
-  // Check for React hooks without import
-  const usesHooks = /\b(useState|useEffect|useContext|useReducer|useCallback|useMemo|useRef)\s*\(/.test(content);
-  const hasReactImport = /import\s+.*\bReact\b.*from\s+['"]react['"]/.test(content);
-  const hasHookImports = /import\s+\{[^}]*(useState|useEffect|useContext|useReducer|useCallback|useMemo|useRef)[^}]*\}\s+from\s+['"]react['"]/.test(content);
-  
-  if (usesHooks && !hasReactImport && !hasHookImports) {
-    warnings.push({
-      type: 'best-practice',
-      message: 'React hooks used without importing from "react"',
-      suggestion: 'Add: import { useState } from "react"'
-    });
-  }
-
-  // Check for component naming convention
-  const componentPattern = /(?:function|const)\s+([a-z][a-zA-Z0-9]*)\s*(?:=|[(])/g;
-  let match;
-  while ((match = componentPattern.exec(content)) !== null) {
-    const componentName = match[1];
-    if (componentName && componentName[0] === componentName[0].toLowerCase() && content.includes(`<${componentName}`)) {
-      warnings.push({
-        type: 'best-practice',
-        message: `Component "${componentName}" should start with uppercase letter`,
-        suggestion: `Rename to "${componentName.charAt(0).toUpperCase() + componentName.slice(1)}"`
-      });
-    }
-  }
-
-  // Check for map without key
-  if (/\.map\s*\([^)]*=>\s*</.test(content) && !/<[^>]+key=/.test(content)) {
-    warnings.push({
-      type: 'best-practice',
-      message: 'Array.map() used without key prop on elements',
-      suggestion: 'Add unique key prop to each mapped element'
-    });
-  }
-
-  // Check for localStorage/sessionStorage usage
-  if (/\b(localStorage|sessionStorage)\b/.test(content)) {
-    errors.push({
-      type: 'structure',
-      message: 'Browser storage APIs (localStorage/sessionStorage) are not supported',
-      severity: 'critical'
-    });
-    warnings.push({
-      type: 'best-practice',
-      message: 'Use React state (useState/useReducer) instead of browser storage',
-      suggestion: 'Replace localStorage with useState hooks'
-    });
-  }
-
-  // Check for unclosed JSX tags
-  const jsxOpenTags = content.match(/<([A-Z][a-zA-Z0-9]*)[^/>]*>/g) || [];
-  const jsxCloseTags = content.match(/<\/([A-Z][a-zA-Z0-9]*)>/g) || [];
-  
-  if (jsxOpenTags.length !== jsxCloseTags.length) {
-    warnings.push({
-      type: 'best-practice',
-      message: 'Possible unclosed JSX tags detected',
-      suggestion: 'Verify all JSX tags are properly closed'
-    });
-  }
-
-  // Check for default export
-  if (!content.includes('export default')) {
-    warnings.push({
-      type: 'best-practice',
-      message: 'React component should have a default export',
-      suggestion: 'Add: export default YourComponent'
-    });
-  }
-
-  // Check for shadcn/ui imports - these CANNOT work in artifacts (sandbox limitation)
-  const shadcnPattern = /import\s+\{[^}]+\}\s+from\s+['"]@\/components\/ui\/([^'"]+)['"]/g;
-  let shadcnMatch;
-
-  while ((shadcnMatch = shadcnPattern.exec(content)) !== null) {
-    const componentPath = shadcnMatch[1];
-    errors.push({
-      type: 'structure',
-      message: `Cannot import '@/components/ui/${componentPath}' in artifacts - local imports are not available in sandbox environment`,
-      severity: 'critical'
-    });
-    warnings.push({
-      type: 'best-practice',
-      message: `Use Radix UI primitives instead of shadcn/ui for ${componentPath}`,
-      suggestion: `Replace with @radix-ui/react-${componentPath} and Tailwind CSS classes. See .claude/artifacts.md for examples`
-    });
-  }
-
-  // Check for any local path imports (@/)
-  const localImportPattern = /import\s+.*from\s+['"]@\/[^'"]+['"]/g;
-  const localImports = content.match(localImportPattern);
-  if (localImports) {
-    localImports.forEach(imp => {
-      if (!imp.includes('@/components/ui/')) { // Already caught above
-        errors.push({
-          type: 'structure',
-          message: `Local import detected: ${imp.match(/['"]@\/[^'"]+['"]/)?.[0]} - artifacts cannot access local files`,
-          severity: 'critical'
-        });
-      }
-    });
-  }
-
-  // Run standard JS validation
-  const jsValidation = validateJavaScript(content);
-  
-  return {
-    isValid: errors.length === 0 && jsValidation.isValid,
-    errors: [...errors, ...jsValidation.errors],
-    warnings: [...warnings, ...jsValidation.warnings]
-  };
-}
-
-/**
- * Main validation function that routes to specific validators
- */
-export function validateArtifact(content: string, type: string): ValidationResult {
+  // Type-specific basic validation
   switch (type) {
-    case 'html':
-      return validateHTML(content);
-    case 'code':
-      return validateJavaScript(content);
-    case 'react':
-      return validateReact(content);
-    case 'markdown':
-      // Markdown is generally safe, minimal validation needed
-      return {
-        isValid: true,
-        errors: [],
-        warnings: content.trim() === '' ? [{
-          type: 'best-practice',
-          message: 'Markdown content is empty',
-          suggestion: 'Add some content to the markdown'
-        }] : []
-      };
-    default:
-      return { isValid: true, errors: [], warnings: [] };
+    case "react": {
+      // Check for basic export
+      if (!content.includes("export default") && !content.includes("export {")) {
+        warnings.push("No default export found - component may not render correctly");
+      }
+      break;
+    }
+    case "html": {
+      // Basic HTML check
+      if (!content.includes("<") || !content.includes(">")) {
+        warnings.push("Content doesn't appear to contain HTML tags");
+      }
+      break;
+    }
+    case "svg": {
+      if (!content.includes("<svg")) {
+        errors.push("SVG content must include an <svg> element");
+      }
+      break;
+    }
+    case "mermaid": {
+      // Mermaid diagrams need specific syntax
+      const mermaidTypes = ["graph", "flowchart", "sequenceDiagram", "classDiagram", "stateDiagram", "erDiagram", "journey", "gantt", "pie", "mindmap", "timeline"];
+      const hasValidType = mermaidTypes.some(t => content.includes(t));
+      if (!hasValidType) {
+        warnings.push("Mermaid diagram type not detected");
+      }
+      break;
+    }
   }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+  };
 }
 
 /**
- * Phase 3: Categorize error messages for better UX
+ * Categorizes an error message for better UX display.
  */
 export function categorizeError(errorMessage: string): {
   category: 'syntax' | 'runtime' | 'import' | 'unknown';
-  severity: 'critical' | 'high' | 'medium';
   suggestion?: string;
 } {
-  const lowerMsg = errorMessage.toLowerCase();
-  
-  // Syntax errors
-  if (lowerMsg.includes('syntaxerror') || lowerMsg.includes('unexpected token') || lowerMsg.includes('unexpected end of input')) {
-    return {
-      category: 'syntax',
-      severity: 'critical',
-      suggestion: 'Check for missing brackets, parentheses, or semicolons'
-    };
-  }
-  
+  const lowerError = errorMessage.toLowerCase();
+
   // Import/module errors
-  if (lowerMsg.includes('import') || lowerMsg.includes('module') || lowerMsg.includes('cannot find')) {
+  if (lowerError.includes("cannot find module") ||
+      lowerError.includes("module not found") ||
+      lowerError.includes("failed to resolve") ||
+      lowerError.includes("import")) {
     return {
-      category: 'import',
-      severity: 'high',
-      suggestion: 'Verify all imports are from available libraries'
+      category: "import",
+      suggestion: "Check that all imports use valid npm packages or relative paths.",
     };
   }
-  
+
+  // Syntax errors
+  if (lowerError.includes("syntax") ||
+      lowerError.includes("unexpected token") ||
+      lowerError.includes("parsing error") ||
+      lowerError.includes("unterminated")) {
+    return {
+      category: "syntax",
+      suggestion: "Check for missing brackets, quotes, or syntax errors.",
+    };
+  }
+
   // Runtime errors
-  if (lowerMsg.includes('referenceerror') || lowerMsg.includes('typeerror') || lowerMsg.includes('is not defined')) {
+  if (lowerError.includes("undefined") ||
+      lowerError.includes("null") ||
+      lowerError.includes("typeerror") ||
+      lowerError.includes("referenceerror")) {
     return {
-      category: 'runtime',
-      severity: 'high',
-      suggestion: 'Check variable names and ensure all dependencies are loaded'
+      category: "runtime",
+      suggestion: "Check that all variables and functions are properly defined.",
     };
   }
-  
+
   return {
-    category: 'unknown',
-    severity: 'medium',
-    suggestion: 'Review the error details and check your code'
+    category: "unknown",
+    suggestion: "An unexpected error occurred. Try refreshing or modifying the code.",
   };
 }

@@ -49,15 +49,21 @@ Deno.test("getToolResultContent - artifact success with code and reasoning", () 
     toolName: 'generate_artifact',
     data: {
       artifactCode: 'const x = 1;',
-      artifactReasoning: 'Simple variable declaration'
+      artifactReasoning: 'Simple variable declaration',
+      artifactType: 'react',
+      artifactTitle: 'Simple Component'
     },
     latencyMs: 2000
   };
 
   const content = getToolResultContent(result);
-  assertEquals(content.includes('const x = 1;'), true);
-  assertEquals(content.includes('Simple variable declaration'), true);
-  assertEquals(content.includes('Artifact generated successfully'), true);
+  // NEW BEHAVIOR: Returns concise summary instead of full code
+  assertEquals(content.includes('Successfully created'), true);
+  assertEquals(content.includes('react'), true);
+  assertEquals(content.includes('Simple Component'), true);
+  assertEquals(content.includes('explain to the user'), true);
+  // Code should NOT be in the response
+  assertEquals(content.includes('const x = 1;'), false);
 });
 
 Deno.test("getToolResultContent - artifact success with code only", () => {
@@ -65,14 +71,20 @@ Deno.test("getToolResultContent - artifact success with code only", () => {
     success: true,
     toolName: 'generate_artifact',
     data: {
-      artifactCode: 'function hello() { return "world"; }'
+      artifactCode: 'function hello() { return "world"; }',
+      artifactType: 'javascript',
+      artifactTitle: 'Hello Function'
     },
     latencyMs: 2000
   };
 
   const content = getToolResultContent(result);
-  assertEquals(content.includes('function hello()'), true);
-  assertEquals(content.includes('Reasoning'), false);
+  // NEW BEHAVIOR: Returns concise summary instead of full code
+  assertEquals(content.includes('Successfully created'), true);
+  assertEquals(content.includes('javascript'), true);
+  assertEquals(content.includes('Hello Function'), true);
+  // Code should NOT be in the response
+  assertEquals(content.includes('function hello()'), false);
 });
 
 Deno.test("getToolResultContent - artifact success with empty data", () => {
@@ -84,7 +96,10 @@ Deno.test("getToolResultContent - artifact success with empty data", () => {
   };
 
   const content = getToolResultContent(result);
-  assertEquals(content.includes('Artifact generated successfully'), true);
+  // NEW BEHAVIOR: Returns concise summary with defaults for missing data
+  assertEquals(content.includes('Successfully created'), true);
+  assertEquals(content.includes('artifact'), true); // Default type
+  assertEquals(content.includes('Untitled'), true); // Default title
 });
 
 // ============================================================================
@@ -105,7 +120,10 @@ Deno.test("getToolResultContent - image success with storage", () => {
   const content = getToolResultContent(result);
   assertEquals(content.includes('https://example.com/img.png'), true);
   assertEquals(content.includes('mode="edit"'), true);
-  assertEquals(content.includes('Image generated successfully'), true);
+  assertEquals(content.includes('Successfully generated an image'), true);
+  // NEW BEHAVIOR: Should prompt Gemini to explain what was created
+  assertEquals(content.includes('describe to the user what you created'), true);
+  assertEquals(content.includes('subject, style, and key visual elements'), true);
 });
 
 Deno.test("getToolResultContent - image success without storage", () => {
@@ -121,7 +139,10 @@ Deno.test("getToolResultContent - image success without storage", () => {
 
   const content = getToolResultContent(result);
   assertEquals(content.includes('rendered directly (temporary)'), true);
-  assertEquals(content.includes('Image generated successfully'), true);
+  assertEquals(content.includes('Successfully generated an image'), true);
+  // NEW BEHAVIOR: Should prompt Gemini to explain what was created
+  assertEquals(content.includes('describe to the user what you created'), true);
+  assertEquals(content.includes('subject, style, and key visual elements'), true);
 });
 
 // ============================================================================
@@ -220,12 +241,20 @@ function render() {
   const result: ToolExecutionResult = {
     success: true,
     toolName: 'generate_artifact',
-    data: { artifactCode: codeWithSpecialChars },
+    data: {
+      artifactCode: codeWithSpecialChars,
+      artifactType: 'react',
+      artifactTitle: 'Render Component'
+    },
     latencyMs: 2000
   };
 
   const content = getToolResultContent(result);
-  // Angle brackets preserved - not escaped like in XML
-  assertEquals(content.includes('<div className="test">'), true);
-  assertEquals(content.includes('<span key={i}>'), true);
+  // NEW BEHAVIOR: Returns concise summary instead of full code
+  assertEquals(content.includes('Successfully created'), true);
+  assertEquals(content.includes('react'), true);
+  assertEquals(content.includes('Render Component'), true);
+  // Code with special characters should NOT be in the response
+  assertEquals(content.includes('<div className="test">'), false);
+  assertEquals(content.includes('<span key={i}>'), false);
 });

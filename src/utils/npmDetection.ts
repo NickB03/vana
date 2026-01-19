@@ -173,10 +173,22 @@ function getPackageVersion(pkg: string): string {
     'zustand': '^4.5.0',
     'jotai': '^2.6.0',
     
-    // UI Libraries
+    // UI Libraries - Radix UI
     '@radix-ui/react-dialog': '^1.0.5',
     '@radix-ui/react-dropdown-menu': '^2.0.6',
+    '@radix-ui/react-popover': '^1.0.7',
+    '@radix-ui/react-tabs': '^1.0.4',
     '@radix-ui/react-select': '^2.0.0',
+    '@radix-ui/react-slider': '^1.1.2',
+    '@radix-ui/react-switch': '^1.0.3',
+    '@radix-ui/react-tooltip': '^1.0.7',
+    '@radix-ui/react-accordion': '^1.1.2',
+    '@radix-ui/react-checkbox': '^1.0.4',
+    '@radix-ui/react-radio-group': '^1.1.3',
+    '@radix-ui/react-scroll-area': '^1.0.5',
+    '@radix-ui/react-avatar': '^1.0.4',
+    '@radix-ui/react-progress': '^1.0.3',
+    '@radix-ui/react-separator': '^1.0.3',
     
     // Forms
     'react-hook-form': '^7.49.0',
@@ -198,16 +210,143 @@ function getPackageVersion(pkg: string): string {
 export function isSafePackage(pkg: string): boolean {
   // Block known malicious patterns
   const blocklist = ['eval', 'exec', 'child_process', 'fs', 'net', 'http'];
-  
+
   if (blocklist.some(blocked => pkg.includes(blocked))) {
     return false;
   }
-  
+
   // Allow scoped packages (@org/package)
   if (pkg.startsWith('@')) {
     return /^@[a-z0-9-]+\/[a-z0-9-]+$/.test(pkg);
   }
-  
+
   // Allow standard package names
   return /^[a-z0-9-]+$/.test(pkg);
+}
+
+/**
+ * Checks if a package is in the whitelist for artifact rendering.
+ * Whitelisted packages can be used in artifacts without causing errors.
+ * @param pkg - Package name to check
+ * @returns true if the package is whitelisted
+ */
+export function isPackageWhitelisted(pkg: string): boolean {
+  // React core packages are always allowed
+  if (REACT_CORE_PACKAGES.has(pkg)) {
+    return true;
+  }
+
+  // Runtime allowlist packages are available via CDN
+  if (RUNTIME_ALLOWLIST.has(pkg)) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Gets the list of whitelisted packages for display to users
+ * @returns Array of whitelisted package names (excluding React core)
+ */
+export function getWhitelistedPackages(): string[] {
+  return Array.from(RUNTIME_ALLOWLIST).sort();
+}
+
+/**
+ * Result of package validation
+ */
+export interface PackageValidationResult {
+  isValid: boolean;
+  disallowedPackages: string[];
+  errorMessage: string | null;
+}
+
+/**
+ * Validates all package imports in code against the whitelist.
+ * Returns detailed information about any disallowed packages.
+ * @param code - The code to validate
+ * @returns Validation result with error messages
+ */
+export function validatePackageImports(code: string): PackageValidationResult {
+  const deps = extractNpmDependencies(code);
+  const disallowed: string[] = [];
+
+  for (const pkg of Object.keys(deps)) {
+    if (!isPackageWhitelisted(pkg)) {
+      disallowed.push(pkg);
+    }
+  }
+
+  if (disallowed.length === 0) {
+    return {
+      isValid: true,
+      disallowedPackages: [],
+      errorMessage: null,
+    };
+  }
+
+  // Generate helpful error message
+  const whitelisted = getWhitelistedPackages();
+  const packageList = disallowed.map(p => `"${p}"`).join(', ');
+  const suggestedAlternatives = getSuggestedAlternatives(disallowed);
+
+  let errorMessage = `The following packages are not supported in artifacts: ${packageList}.\n\n`;
+  errorMessage += `Supported packages include: ${whitelisted.slice(0, 5).join(', ')}${whitelisted.length > 5 ? ', and more' : ''}.\n\n`;
+
+  if (suggestedAlternatives.length > 0) {
+    errorMessage += `Suggestions:\n${suggestedAlternatives.join('\n')}`;
+  }
+
+  return {
+    isValid: false,
+    disallowedPackages: disallowed,
+    errorMessage,
+  };
+}
+
+/**
+ * Gets suggested alternatives for disallowed packages
+ */
+function getSuggestedAlternatives(disallowedPackages: string[]): string[] {
+  const suggestions: string[] = [];
+
+  const alternativeMap: Record<string, string> = {
+    // HTTP clients - not needed in browser artifacts
+    'axios': '- Instead of "axios", use the browser\'s built-in fetch() API',
+    'node-fetch': '- Instead of "node-fetch", use the browser\'s built-in fetch() API',
+    'got': '- Instead of "got", use the browser\'s built-in fetch() API',
+
+    // Complex charting - use recharts instead
+    'd3': '- Instead of "d3", use "recharts" for charts and data visualization',
+    'chart.js': '- Instead of "chart.js", use "recharts" for charts',
+    'victory': '- Instead of "victory", use "recharts" for charts',
+    'nivo': '- Instead of "nivo", use "recharts" for charts',
+
+    // shadcn/ui - use Radix UI primitives directly
+    '@shadcn/ui': '- Instead of "@shadcn/ui", use Radix UI primitives directly (@radix-ui/react-dialog, etc.)',
+    'shadcn': '- shadcn/ui components are not available. Use Radix UI primitives directly (@radix-ui/react-dialog, @radix-ui/react-tabs, etc.)',
+
+    // Other UI libraries
+    'antd': '- Instead of "antd", use Radix UI primitives with Tailwind CSS',
+    'material-ui': '- Instead of "material-ui", use Radix UI primitives with Tailwind CSS',
+    '@mui/material': '- Instead of "@mui/material", use Radix UI primitives with Tailwind CSS',
+    'chakra-ui': '- Instead of "chakra-ui", use Radix UI primitives with Tailwind CSS',
+
+    // Animation alternatives
+    'gsap': '- Instead of "gsap", use "framer-motion" for animations',
+    'anime.js': '- Instead of "anime.js", use "framer-motion" for animations',
+
+    // Icons
+    'react-icons': '- Instead of "react-icons", use "lucide-react" for icons',
+    '@heroicons/react': '- Instead of "@heroicons/react", use "lucide-react" for icons',
+    'fontawesome': '- Instead of "fontawesome", use "lucide-react" for icons',
+  };
+
+  for (const pkg of disallowedPackages) {
+    if (alternativeMap[pkg]) {
+      suggestions.push(alternativeMap[pkg]);
+    }
+  }
+
+  return suggestions;
 }

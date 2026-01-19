@@ -8,7 +8,9 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     include: [
       'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'src/**/*.{test,spec}.performance.{ts,tsx}'
+      'src/**/*.{test,spec}.performance.{ts,tsx}',
+      // E2E tests for artifact generation (uses mocked AI responses)
+      'supabase/functions/_shared/__tests__/artifact-generation-e2e.test.ts'
     ],
     testTimeout: 5000, // Increased from default 1000ms for async operations
     teardownTimeout: 10000, // Allow 10s for cleanup

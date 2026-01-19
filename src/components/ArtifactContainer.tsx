@@ -206,8 +206,8 @@ ${artifact.content}
     setIsEditingCode(false);
   }, [artifact.content]);
 
-  // CRITICAL: useCallback prevents BundledArtifactFrame's useEffect from re-running
-  // on every parent render, which was causing blob URLs to be revoked prematurely
+  // CRITICAL: useCallback prevents child component's useEffect from re-running
+  // on every parent render, which could cause unnecessary re-renders
   const handleAIFix = useCallback(async () => {
     if (!previewError) return;
 

@@ -8,8 +8,6 @@
  * - Replace: import { fadeInUp } from '@/utils/animationConstants'
  * - With: import { MOTION_VARIANTS } from '@/utils/animationSystem'
  * - Then use: MOTION_VARIANTS.fadeIn
- *
- * See .claude/ANIMATION_MIGRATION_GUIDE.md for full migration guide.
  */
 
 // Re-export everything from the new animation system

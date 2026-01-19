@@ -799,6 +799,26 @@ All colors MUST be HSL.
     }
   }
 
+  /* Sandpack iframe height fix - ensure iframe fills full container height */
+  /* Target both the semantic class names and the generated CSS-in-JS classes */
+  .sp-layout,
+  .sp-stack,
+  .sp-preview,
+  .sp-preview-container,
+  [class*="sp-c-"][class*="sp-stack"],
+  [class*="sp-c-"][class*="sp-preview"] {
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: none !important;
+  }
+
+  .sp-preview-iframe,
+  [class*="sp-c-"][class*="sp-preview-iframe"] {
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: none !important;
+  }
+
   /* ChatLayout flow-based positioning */
   [data-chat-layout] {
     display: flex;

@@ -13,12 +13,11 @@
 - [Endpoints](#endpoints)
   - [Chat](#post-chat)
     - [SSE Status Update System](#sse-status-update-system)
-  - [Generate Artifact](#post-generate-artifact)
-  - [Generate Artifact Fix](#post-generate-artifact-fix)
   - [Generate Image](#post-generate-image)
   - [Generate Title](#post-generate-title)
   - [Summarize Conversation](#post-summarize-conversation)
   - [Admin Analytics](#get-admin-analytics)
+- [Removed Endpoints](#removed-endpoints)
 - [Code Examples](#code-examples)
 - [Best Practices](#best-practices)
 - [Changelog](#changelog)
@@ -408,164 +407,6 @@ while (true) {
 
 ---
 
-### POST /generate-artifact
-
-Generate interactive artifacts (React components, HTML, SVG, etc.) from user prompts.
-
-#### Request
-
-**Endpoint**: `POST /generate-artifact`
-
-**Body**:
-```json
-{
-  "prompt": "Create a Todo list component with add/delete functionality",
-  "artifactType": "react",
-  "currentArtifact": null
-}
-```
-
-**Parameters**:
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `prompt` | `string` | Yes | User's artifact generation request |
-| `artifactType` | `string` | Yes | Type of artifact (`react`, `html`, `svg`, `code`, `mermaid`, `markdown`) |
-| `currentArtifact` | `object \| null` | No | Existing artifact for modification |
-
-#### Response
-
-```json
-{
-  "artifact": {
-    "type": "react",
-    "title": "Todo List Component",
-    "content": "export default function TodoList() { ... }",
-    "language": "javascript"
-  },
-  "usage": {
-    "inputTokens": 120,
-    "outputTokens": 580,
-    "totalTokens": 700
-  }
-}
-```
-
-**Response Schema**:
-```typescript
-interface ArtifactResponse {
-  artifact: {
-    type: string;
-    title: string;
-    content: string;
-    language?: string;
-  };
-  usage: {
-    inputTokens: number;
-    outputTokens: number;
-    totalTokens: number;
-  };
-}
-```
-
-#### AI Model
-
-- **Model**: Gemini 3 Flash Preview (`google/gemini-3-flash-preview`) via OpenRouter
-- **Provider**: OpenRouter
-- **Streaming**: Yes (with reasoning)
-- **Max Tokens**: 16,000
-- **Thinking Mode**: Enabled (provides reasoning content via `reasoning.effort`)
-- **Context Window**: 1M tokens (1,048,576)
-
-#### Supported Artifact Types
-
-| Type | Description | Example Use Case |
-|------|-------------|------------------|
-| `react` | React component | Interactive UI components |
-| `html` | Standalone HTML | Landing pages, email templates |
-| `svg` | SVG graphics | Icons, illustrations |
-| `code` | Code snippets | Functions, utilities |
-| `mermaid` | Mermaid diagrams | Flowcharts, architecture diagrams |
-| `markdown` | Markdown documents | Documentation, notes |
-
-#### Artifact Validation
-
-Generated artifacts undergo **5-layer validation** with structured error codes:
-
-- **Error Codes**: Validation uses type-safe error codes (e.g., `RESERVED_KEYWORD_EVAL`, `IMPORT_LOCAL_PATH`)
-- **Auto-Fix**: Common issues (reserved keywords, TypeScript syntax, imports) are automatically fixed
-- **Non-Blocking Errors**: Immutability violations (`IMMUTABILITY_*`) don't prevent rendering
-- **Complete Reference**: See [ERROR_CODES.md](ERROR_CODES.md) for all validation error codes
-
-**Validation Response Fields**:
-```typescript
-{
-  validation: {
-    valid: boolean;        // Overall validation status
-    autoFixed: boolean;    // Whether auto-fixes were applied
-    issueCount: number;    // Number of validation issues found
-  }
-}
-```
-
----
-
-### POST /generate-artifact-fix
-
-Fix errors in generated artifacts automatically.
-
-#### Request
-
-**Endpoint**: `POST /generate-artifact-fix`
-
-**Body**:
-```json
-{
-  "artifact": {
-    "type": "react",
-    "title": "Button Component",
-    "content": "export default function Button() { ... }"
-  },
-  "errorMessage": "SyntaxError: Unexpected token"
-}
-```
-
-**Parameters**:
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `artifact` | `object` | Yes | The artifact with errors |
-| `errorMessage` | `string` | Yes | Error message to fix |
-
-#### Response
-
-```json
-{
-  "fixedArtifact": {
-    "type": "react",
-    "title": "Button Component (Fixed)",
-    "content": "export default function Button() { ... }",
-    "language": "javascript"
-  },
-  "explanation": "Fixed syntax error by adding missing semicolon and closing brace.",
-  "usage": {
-    "inputTokens": 200,
-    "outputTokens": 180,
-    "totalTokens": 380
-  }
-}
-```
-
-#### AI Model
-
-- **Model**: Gemini 3 Flash Preview (`google/gemini-3-flash-preview`) via OpenRouter
-- **Provider**: OpenRouter
-- **Max Tokens**: 16,000
-- **Thinking Mode**: Enabled for deep reasoning during debugging
-- **Context Window**: 1M tokens (1,048,576)
-
----
-
 ### POST /generate-image
 
 Generate AI images using Google's Gemini Flash Image model.
@@ -780,29 +621,28 @@ async function sendChatMessage(message: string, sessionId: string) {
 }
 ```
 
-#### Generate Artifact
+#### Generate Artifact via Chat Tool Calling
+
+Artifacts are now generated through the `/chat` endpoint's tool calling system:
 
 ```typescript
-async function generateArtifact(prompt: string, type: string) {
-  const response = await fetch('https://vznhbocnuykdmjvujaka.supabase.co/functions/v1/generate-artifact', {
+async function generateArtifact(prompt: string) {
+  const response = await fetch('https://vznhbocnuykdmjvujaka.supabase.co/functions/v1/chat', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${supabaseToken}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      prompt,
-      artifactType: type
+      messages: [{ role: 'user', content: `Create a ${prompt}` }],
+      sessionId: crypto.randomUUID(),
+      toolChoice: 'generate_artifact'  // Force artifact generation
     })
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message);
-  }
-
-  const data = await response.json();
-  return data.artifact;
+  // Handle SSE stream - artifact comes via 'artifact_complete' event
+  const reader = response.body?.getReader();
+  // ... process stream for artifact_complete events
 }
 ```
 
@@ -882,7 +722,53 @@ if (remaining && parseInt(remaining) < 5) {
 
 ---
 
+## Removed Endpoints
+
+The following endpoints have been removed as part of the Vanilla Sandpack refactor (January 2026):
+
+### ~~POST /generate-artifact~~ (REMOVED)
+
+**Removed in**: `refactor/vanilla-sandpack-artifacts` branch (January 2026)
+
+**Reason**: Artifact generation is now handled entirely through the `/chat` endpoint's tool calling system. The standalone endpoint added unnecessary complexity.
+
+**Migration**:
+- Use `/chat` with `toolChoice: "generate_artifact"` to force artifact generation
+- Artifacts are now persisted in the `artifact_versions` database table
+- Listen for `artifact_complete` SSE events to receive generated artifacts
+
+### ~~POST /generate-artifact-fix~~ (REMOVED)
+
+**Removed in**: `refactor/vanilla-sandpack-artifacts` branch (January 2026)
+
+**Reason**: Error fixing is now handled client-side via the "Ask AI to Fix" button, which sends the error back through the standard chat flow.
+
+**Migration**:
+- When a Sandpack error occurs, send the error message as a chat message
+- The AI will generate corrected code through the standard artifact generation flow
+
+### ~~POST /bundle-artifact~~ (REMOVED)
+
+**Removed in**: `refactor/vanilla-sandpack-artifacts` branch (January 2026)
+
+**Reason**: Server-side bundling has been replaced by vanilla Sandpack client-side rendering.
+
+**Migration**:
+- Artifacts now render directly in Sandpack without server preprocessing
+- No bundling step required
+
+---
+
 ## Changelog
+
+### 2026-01-18
+- **Vanilla Sandpack Refactor**
+  - Removed `/generate-artifact`, `/generate-artifact-fix`, `/bundle-artifact` endpoints
+  - Artifact generation now uses tool calling via `/chat` endpoint
+  - Database persistence: Artifacts stored in `artifact_versions` table (replaces XML embedding)
+  - New files: `artifact-saver.ts`, `artifact-tool-v2.ts`
+  - Deleted: ~15,000 lines of artifact complexity (artifact-rules/, bundling system, validation layers)
+  - Client renders artifacts via vanilla Sandpack (no server preprocessing)
 
 ### 2026-01-12
 - **Gemini 3 Flash Migration**

@@ -38,10 +38,27 @@ import {
 } from './tavily-client.ts';
 import type { ToolCall } from './gemini-client.ts';
 import { rewriteSearchQuery } from './query-rewriter.ts';
-import { executeArtifactGeneration, isValidArtifactType, type GeneratableArtifactType } from './artifact-executor.ts';
 import { executeImageGeneration, isValidImageMode, type ImageMode } from './image-executor.ts';
+import { executeArtifactGenerationV2 } from './artifact-tool-v2.ts';
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { FEATURE_FLAGS } from './config.ts';
+
+/**
+ * Artifact type validation and type definition
+ *
+ * REFACTOR NOTE: This was previously imported from artifact-executor.ts which has been deleted
+ * as part of the vanilla Sandpack refactor. Phase 3 will create artifact-tool-v2.ts as the
+ * proper replacement. For now, we provide inline stubs.
+ */
+const VALID_ARTIFACT_TYPES = ['react', 'html', 'svg', 'code', 'mermaid', 'markdown'] as const;
+export type GeneratableArtifactType = typeof VALID_ARTIFACT_TYPES[number];
+
+/**
+ * Validate artifact type against whitelist
+ */
+export function isValidArtifactType(type: string): type is GeneratableArtifactType {
+  return VALID_ARTIFACT_TYPES.includes(type as GeneratableArtifactType);
+}
 
 /**
  * Helper function to log detailed debug information for premade card failures
@@ -500,136 +517,41 @@ async function executeSearchTool(
 }
 
 /**
- * Execute generate_artifact tool using Gemini 3 Flash
+ * Execute generate_artifact tool using artifact-tool-v2.ts
  *
- * Generates artifacts (React, HTML, SVG, etc.) using Gemini 3 Flash thinking mode.
- * Includes validation and auto-fixing of generated code.
+ * Uses the simplified Gemini 3 Flash-based artifact generation:
+ * 1. Calls Gemini with artifact generation instructions
+ * 2. Parses <artifact> XML tags from response
+ * 3. Basic validation (has default export, valid React/HTML/etc.)
+ * 4. Returns raw code - vanilla Sandpack handles rendering and errors
  *
  * @param type - Artifact type to generate
  * @param prompt - User's description of what to create
  * @param context - Execution context
- * @returns Tool execution result with artifact code and reasoning
- *
- * @example
- * ```typescript
- * const result = await executeArtifactTool(
- *   "react",
- *   "Create a counter component",
- *   { requestId: "req-123", isGuest: false }
- * );
- * ```
+ * @returns Tool execution result with artifact code and metadata
  */
 async function executeArtifactTool(
   type: GeneratableArtifactType,
   prompt: string,
   context: ToolContext
 ): Promise<ToolExecutionResult> {
-  const startTime = Date.now();
-  const { requestId, userMessage } = context;
+  const { requestId } = context;
 
-  console.log(`[${requestId}] 🎨 Executing generate_artifact: type=${type}`);
+  console.log(`[${requestId}] 🎨 generate_artifact called: type=${type}`);
 
-  if (!userMessage) {
-    console.warn(
-      `[${requestId}] ⚠️ Template matching may be suboptimal: userMessage not provided in ToolContext ` +
-      `(consider passing original user message for better template matching)`
-    );
-  }
-
-  logPremadeDebug(requestId, 'executeArtifactTool started', {
+  logPremadeDebug(requestId, 'executeArtifactTool - calling artifact-tool-v2', {
     type,
     promptLength: prompt.length,
     promptPreview: prompt.substring(0, 100),
-    hasUserMessage: !!userMessage,
   });
 
-  try {
-    logPremadeDebug(requestId, 'Calling executeArtifactGeneration', {
-      type,
-      enableThinking: true,
-      hasUserMessage: !!userMessage,
-    });
-
-    const result = await executeArtifactGeneration({
-      type,
-      prompt,
-      requestId,
-      enableThinking: true, // Enable reasoning for better artifacts
-      userMessage, // Pass user message for template matching
-    });
-
-    logPremadeDebug(requestId, 'executeArtifactGeneration returned', {
-      artifactCodeLength: result.artifactCode.length,
-      hasReasoning: !!result.reasoning,
-      reasoningLength: result.reasoning?.length || 0,
-      validation: result.validation,
-      tokenUsage: result.tokenUsage,
-    });
-
-    // 🔒 Defense-in-depth: Verify validation status before sending to user
-    if (!result.validation.valid) {
-      console.error(`[${requestId}] ❌ Artifact validation failed:`, result.validation);
-
-      logPremadeDebug(requestId, 'Artifact validation failed', {
-        validation: result.validation,
-        artifactCodePreview: result.artifactCode.substring(0, 200),
-      });
-
-      throw new Error(`Generated artifact failed validation: ${result.validation.issueCount} issues`);
-    }
-
-    const latencyMs = Date.now() - startTime;
-
-    console.log(
-      `[${requestId}] ✅ generate_artifact completed: ${result.artifactCode.length} chars in ${latencyMs}ms`
-    );
-
-    // Generate a title from the prompt (first 50 chars or full prompt if shorter)
-    const generatedTitle = prompt.length > 50
-      ? prompt.substring(0, 47) + '...'
-      : prompt;
-
-    logPremadeDebug(requestId, 'executeArtifactTool success', {
-      artifactCodeLength: result.artifactCode.length,
-      artifactType: type,
-      generatedTitle,
-      latencyMs,
-    });
-
-    return {
-      success: true,
-      toolName: 'generate_artifact',
-      data: {
-        artifactCode: result.artifactCode,
-        artifactType: type,
-        artifactTitle: generatedTitle,
-        artifactReasoning: result.reasoning || undefined
-      },
-      latencyMs
-    };
-  } catch (error) {
-    const latencyMs = Date.now() - startTime;
-    const errorMessage = error instanceof Error ? error.message : String(error);
-
-    console.error(
-      `[${requestId}] ❌ generate_artifact failed after ${latencyMs}ms:`,
-      errorMessage
-    );
-
-    logPremadeDebug(requestId, 'executeArtifactTool error', {
-      error: errorMessage,
-      errorType: error instanceof Error ? error.constructor.name : typeof error,
-      latencyMs,
-      stack: error instanceof Error ? error.stack : undefined,
-    });
-
-    return {
-      success: false,
-      toolName: 'generate_artifact',
-      error: errorMessage,
-      latencyMs
-    };
-  }
+  // Delegate to artifact-tool-v2.ts for actual generation
+  return executeArtifactGenerationV2({
+    type,
+    prompt,
+    context,
+    existingCode: undefined, // For new artifacts; edits pass existing code via context
+  });
 }
 
 /**
@@ -751,13 +673,13 @@ export function getToolResultContent(result: ToolExecutionResult): string {
       return result.data?.formattedContext || 'No search results found';
 
     case 'generate_artifact': {
-      const code = result.data?.artifactCode || '';
-      const reasoning = result.data?.artifactReasoning || '';
-      let content = `Artifact generated successfully:\n\n${code}`;
-      if (reasoning) {
-        content += `\n\nReasoning:\n${reasoning}`;
-      }
-      return content;
+      const type = result.data?.artifactType || 'artifact';
+      const title = result.data?.artifactTitle || 'Untitled';
+
+      // IMPORTANT: Return a concise summary instead of full code
+      // This prompts Gemini to explain what it created to the user
+      // The artifact itself is already sent to the client via artifact_complete event
+      return `Successfully created a ${type} artifact titled "${title}". Now explain to the user what you created, highlight its key features, and provide any relevant usage tips. Be conversational and helpful (2-3 sentences).`;
     }
 
     case 'generate_image': {
@@ -777,14 +699,14 @@ export function getToolResultContent(result: ToolExecutionResult): string {
       if (stored && !isBase64) {
         // Storage succeeded - include URL ONLY in system instruction for edit operations
         // The AI model needs this URL for edits, but shouldn't echo it in chat responses
-        // By embedding it in an instruction rather than stating it as a fact, we reduce
-        // the likelihood of the AI including it in markdown format
-        return `Image generated successfully! The image is now displayed to the user.
+        // IMPORTANT: Prompt Gemini to explain what was created (similar to generate_artifact)
+        return `Successfully generated an image${stored ? ' and saved it to storage' : ''}. The image is now displayed to the user. Now describe to the user what you created, including the subject, style, and key visual elements. Be descriptive and engaging (2-3 sentences).
 
 If the user requests modifications to this image, use generate_image with mode="edit" and baseImage="${url}"`;
       } else {
         // Storage failed - edit mode won't work without a persistent URL
-        return `Image generated successfully! The image is displayed to the user.
+        // IMPORTANT: Prompt Gemini to explain what was created (similar to generate_artifact)
+        return `Successfully generated an image. The image is displayed to the user. Now describe to the user what you created, including the subject, style, and key visual elements. Be descriptive and engaging (2-3 sentences).
 
 Note: This image was rendered directly (temporary). If the user wants to edit it, a new image will need to be generated instead since the original isn't stored.`;
       }

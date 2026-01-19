@@ -25,8 +25,10 @@ This project uses a **two-environment** deployment model:
 | Task | Command |
 |------|---------|
 | Start local Supabase | `supabase start` |
-| Deploy to production | `./scripts/deploy-simple.sh prod` |
+| Test Edge Functions locally | `supabase functions serve <function-name>` |
+| Deploy to production | **PR to `main`** → Auto-deploy via CI/CD |
 | View production logs | `supabase functions logs --project-ref vznhbocnuykdmjvujaka` |
+| Emergency hotfix | Create `hotfix/*` branch → PR with `[HOTFIX]` prefix |
 
 ---
 
@@ -114,14 +116,37 @@ npm run build
 
 ### 3. Deploy to Production
 
+**⚠️ CRITICAL**: ALL production deployments go through PR process.
+
 ```bash
-# Create PR: feat/my-feature → main
-# Get review, merge PR
+# Create feature branch
+git checkout -b feat/my-feature
 
-# Deploy Edge Functions to production
-./scripts/deploy-simple.sh prod
+# Make changes and test locally
+npm run test
+npm run test:integration
+npm run build
 
-# Cloudflare auto-deploys main branch to production
+# Commit changes
+git add .
+git commit -m "feat: add new feature"
+
+# Push and create PR
+git push origin feat/my-feature
+gh pr create --title "Add new feature" --body "Description of changes"
+
+# Automated CI checks run:
+# - Unit tests
+# - Integration tests
+# - E2E critical tests
+# - Build verification
+
+# Get code review from team
+
+# Merge PR → Auto-deploy triggers:
+# - Database migrations (if supabase/migrations/** changed)
+# - Edge Functions (if supabase/functions/** changed)
+# - Frontend (Cloudflare auto-deploys main branch)
 ```
 
 ---
@@ -152,16 +177,36 @@ supabase start
 supabase functions serve
 ```
 
-### Q: What if I accidentally deploy broken code to production?
+### Q: What if broken code reaches production?
 
-1. **Rollback Edge Functions**: Re-deploy from a known-good commit
+**Frontend Rollback** (Cloudflare Pages):
+- Dashboard → Deployments → Click on previous deployment → "Rollback"
+
+**Edge Functions/Database Rollback**:
+1. Create hotfix branch from last known good commit:
    ```bash
-   git checkout <good-commit>
-   ./scripts/deploy-simple.sh prod
+   git checkout main
+   git pull
+   git checkout -b hotfix/revert-broken-changes
+   git revert <bad-commit>  # Or cherry-pick fixes
    ```
 
-2. **Rollback Frontend**: Cloudflare Pages has automatic rollbacks
-   - Dashboard → Deployments → Click on previous deployment → "Rollback"
+2. Test locally:
+   ```bash
+   npm run test
+   npm run test:integration
+   npm run build
+   ```
+
+3. Create emergency hotfix PR:
+   ```bash
+   gh pr create --title "[HOTFIX] Revert broken deployment" \
+                --body "Reverts commit <hash> that caused production issue"
+   ```
+
+4. Fast-track review → Merge → Auto-deploy
+
+**Note**: Direct production deployments are prohibited. All fixes go through PR process.
 
 ### Q: How do I test against production database locally?
 
