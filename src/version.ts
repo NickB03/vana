@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: '449d385222db206be7e1c673de5ffb5f42a919ee',
-    short: '449d385',
+    hash: 'fb0fa300aaf2fde6d3d5b3eea1b4eca7c3b1453b',
+    short: 'fb0fa30',
     branch: 'fix/artifact-jsx-extension',
-    message: 'fix: schema-qualify vector type to resolve SQLSTATE 42704 (#553)',
+    message: 'fix: use .jsx extension in Sandpack artifact files for proper JSX transpilation',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-19 18:47:26 UTC',
-    date: new Date('2026-01-19T18:47:26.599Z'),
+    timestamp: '2026-01-19 18:50:48 UTC',
+    date: new Date('2026-01-19T18:50:48.221Z'),
   },
 
   // Environment detection
