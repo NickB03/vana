@@ -3,8 +3,6 @@
  *
  * This file is automatically updated on commits via pre-commit hook.
  * Used to verify code synchronization between GitHub and production environments.
- *
- * Build hash is injected at build time by Vite to enable cache busting.
  */
 
 export const APP_VERSION = {
@@ -13,18 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: '61299f80f879d7c5f58d30d175c465ff65f10e32',
-    short: '61299f8',
+    hash: 'f08fd19780bf5ae9e71a7bdd6b04f2ef0bafaa9d',
+    short: 'f08fd19',
     branch: 'main',
-    message: 'feat: Implement simplified artifact generation (Phase 3) (#541)',
+    message: 'fix: split migration to resolve SQLSTATE 42601 parser error (#552)',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-19 18:07:24 UTC',
-    date: new Date('2026-01-19T18:07:24.192Z'),
-    // Build hash injected at build time - unique per build for cache busting
-    hash: typeof __BUILD_HASH__ !== 'undefined' ? __BUILD_HASH__ : 'dev-' + Date.now(),
+    timestamp: '2026-01-19 18:15:56 UTC',
+    date: new Date('2026-01-19T18:15:56.161Z'),
   },
 
   // Environment detection
@@ -34,7 +30,7 @@ export const APP_VERSION = {
   features: {
     imageFixDeployed: true,
     stableArtifactIds: true,
-    publicStorageUrls: false,
+    publicStorageUrls: true,
   },
 };
 
@@ -84,43 +80,4 @@ export function isLatestVersion(): boolean {
   // This would need to fetch from GitHub API in production
   // For now, just return true if on main branch
   return APP_VERSION.commit.branch === 'main';
-}
-
-/**
- * Get the build hash for cache busting verification
- */
-export function getBuildHash(): string {
-  return APP_VERSION.build.hash;
-}
-
-/**
- * Check if a different build hash is available (new deployment)
- * Compares stored build hash with current one
- */
-export function hasNewBuildAvailable(): boolean {
-  try {
-    const stored = sessionStorage.getItem('app-build-hash');
-    const current = getBuildHash();
-
-    if (!stored) {
-      sessionStorage.setItem('app-build-hash', current);
-      return false;
-    }
-
-    return stored !== current;
-  } catch (error) {
-    console.error('Error checking build hash:', error);
-    return false;
-  }
-}
-
-/**
- * Update stored build hash to current version
- */
-export function updateStoredBuildHash(): void {
-  try {
-    sessionStorage.setItem('app-build-hash', getBuildHash());
-  } catch (error) {
-    console.error('Error updating build hash:', error);
-  }
 }

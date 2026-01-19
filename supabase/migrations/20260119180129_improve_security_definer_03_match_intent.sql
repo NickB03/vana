@@ -7,7 +7,7 @@
 -- Converted from SQL to plpgsql for error handling capabilities
 
 CREATE OR REPLACE FUNCTION public.match_intent_examples(
-  query_embedding vector,
+  query_embedding extensions.vector,
   match_count integer DEFAULT 1,
   similarity_threshold double precision DEFAULT 0.5
 )
