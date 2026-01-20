@@ -127,7 +127,7 @@ export function BareSandpackTest({ code, title, onAIFix }: BareSandpackTestProps
           key={key}
           template="react"
           files={{
-            "/App.js": code,
+            "/App.jsx": code,  // Must use .jsx for Sandpack's Babel to transpile JSX
           }}
           customSetup={{
             dependencies: ALLOWED_DEPENDENCIES,

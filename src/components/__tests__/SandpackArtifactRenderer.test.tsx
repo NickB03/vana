@@ -207,15 +207,15 @@ describe('SandpackArtifactRenderer', () => {
       const provider = screen.getByTestId('sandbox-provider');
       const files = JSON.parse(provider.getAttribute('data-files') || '{}');
 
-      // Check that App.js contains the counter code
-      expect(files['/App.js']).toBeDefined();
-      expect(files['/App.js'].code).toContain('useState');
-      expect(files['/App.js'].code).toContain('Counter');
+      // Check that App.jsx contains the counter code (must use .jsx for JSX transpilation)
+      expect(files['/App.jsx']).toBeDefined();
+      expect(files['/App.jsx'].code).toContain('useState');
+      expect(files['/App.jsx'].code).toContain('Counter');
 
-      // Check that index.js entry point exists
-      expect(files['/index.js']).toBeDefined();
-      expect(files['/index.js'].code).toContain('createRoot');
-      expect(files['/index.js'].code).toContain("import App from './App'");
+      // Check that index.jsx entry point exists
+      expect(files['/index.jsx']).toBeDefined();
+      expect(files['/index.jsx'].code).toContain('createRoot');
+      expect(files['/index.jsx'].code).toContain("import App from './App.jsx'");
     });
 
     it('renders SandboxPreview in default mode (no editor)', async () => {
@@ -592,7 +592,7 @@ export default function App() {
 
       const provider = screen.getByTestId('sandbox-provider');
       const files = JSON.parse(provider.getAttribute('data-files') || '{}');
-      expect(files['/App.js'].code).toContain('Special chars');
+      expect(files['/App.jsx'].code).toContain('Special chars');
     });
 
     it('cleans up timer on unmount', async () => {

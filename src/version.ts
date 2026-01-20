@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: 'f08fd19780bf5ae9e71a7bdd6b04f2ef0bafaa9d',
-    short: 'f08fd19',
-    branch: 'main',
-    message: 'fix: split migration to resolve SQLSTATE 42601 parser error (#552)',
+    hash: 'fb0fa300aaf2fde6d3d5b3eea1b4eca7c3b1453b',
+    short: 'fb0fa30',
+    branch: 'fix/artifact-jsx-extension',
+    message: 'fix: use .jsx extension in Sandpack artifact files for proper JSX transpilation',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-19 18:15:56 UTC',
-    date: new Date('2026-01-19T18:15:56.161Z'),
+    timestamp: '2026-01-19 18:50:48 UTC',
+    date: new Date('2026-01-19T18:50:48.221Z'),
   },
 
   // Environment detection

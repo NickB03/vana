@@ -32,14 +32,15 @@ export const SandpackArtifactRenderer = ({
   const dependencies = extractNpmDependencies(code);
 
   // Create files object for Sandpack
+  // IMPORTANT: Use .jsx extension so Sandpack's Babel transpiler processes JSX syntax
   const files = {
-    '/App.js': {
+    '/App.jsx': {
       code: code,
     },
-    '/index.js': {
+    '/index.jsx': {
       code: `import React from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App';
+import App from './App.jsx';
 
 const root = createRoot(document.getElementById('root'));
 root.render(<App />);`,
