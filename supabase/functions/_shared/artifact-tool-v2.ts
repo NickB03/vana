@@ -127,6 +127,13 @@ export async function executeArtifactGenerationV2(
     const titleMatch = assistantMessage.match(/<artifact[^>]*title="([^"]+)"/i);
     const title = titleMatch ? titleMatch[1] : `${type.charAt(0).toUpperCase() + type.slice(1)} Artifact`;
 
+    // DEBUG: Log extracted artifact content
+    console.log(`[${requestId}] 🔍 Artifact extracted from XML:`, {
+      codeLength: artifactCode.length,
+      codePreview: artifactCode.substring(0, 150),
+      title
+    });
+
     // Extract type from artifact tag attributes (for validation)
     const typeMatch = assistantMessage.match(/<artifact[^>]*type="([^"]+)"/i);
     const declaredType = typeMatch ? typeMatch[1] : null;

@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: 'c3794333cce8ead28e978f7e804921c02a0433c2',
-    short: 'c379433',
-    branch: 'fix/refactor-audit-fixes-8-issues',
-    message: 'fix: address PR review findings from code analysis',
+    hash: 'eb7a7b3fd3120830d144ef066f2d78e1a1ab7f6c',
+    short: 'eb7a7b3',
+    branch: 'fix/artifact-rendering-hello-world',
+    message: 'fix: resolve React artifacts displaying "Hello world" instead of actual component',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-20 03:48:33 UTC',
-    date: new Date('2026-01-20T03:48:33.463Z'),
+    timestamp: '2026-01-20 23:25:34 UTC',
+    date: new Date('2026-01-20T23:25:34.538Z'),
   },
 
   // Environment detection

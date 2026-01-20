@@ -28,6 +28,29 @@ export const SandpackArtifactRenderer = ({
   const [isInitializing, setIsInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // DEBUG: Log code received for rendering
+  console.log('[Sandpack] 🎨 Rendering artifact:');
+  console.log('  - Title:', title);
+  console.log('  - Code length:', code?.length ?? 0);
+  console.log('  - Code is empty:', !code || code.trim() === '');
+  console.log('  - Code type:', typeof code);
+  console.log('  - Code preview:', code?.substring(0, 150));
+
+  // VALIDATION: Check for empty code
+  if (!code || code.trim() === '') {
+    console.error('[Sandpack] ❌ Empty code provided to renderer');
+    return (
+      <div className="w-full h-full flex items-center justify-center p-4">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            No code provided for this artifact. The artifact content is empty.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   // Generate a stable key from code content to force Sandpack remount on code changes
   // This ensures the sandbox fully reloads when code is updated (cache busting)
   const sandpackKey = useMemo(() => {
@@ -45,18 +68,11 @@ export const SandpackArtifactRenderer = ({
   const dependencies = extractNpmDependencies(code);
 
   // Create files object for Sandpack
-  // IMPORTANT: Use .jsx extension so Sandpack's Babel transpiler processes JSX syntax
+  // CRITICAL: Use /App.js (not .jsx) to override the template's default App.js file
   const files = {
-    '/App.jsx': {
+    '/App.js': {
       code: code,
-    },
-    '/index.jsx': {
-      code: `import React from 'react';
-import { createRoot } from 'react-dom/client';
-import App from './App.jsx';
-
-const root = createRoot(document.getElementById('root'));
-root.render(<App />);`,
+      active: true,
     },
   };
 
@@ -108,6 +124,13 @@ root.render(<App />);`,
       </div>
     );
   }
+
+  // DEBUG: Log files object before passing to Sandpack
+  console.log('[Sandpack] 📁 Files object:', {
+    fileKeys: Object.keys(files),
+    appJsLength: files['/App.js']?.code?.length,
+    appJsPreview: files['/App.js']?.code?.substring(0, 200),
+  });
 
   return (
     <div className="w-full h-full">

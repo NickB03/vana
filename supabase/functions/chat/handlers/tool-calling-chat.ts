@@ -777,6 +777,12 @@ export async function handleToolCallingChat(
                         console.warn(`${logPrefix} ⚠️ Artifact save will likely fail due to FK constraint`);
                       }
 
+                      // DEBUG: Log artifact before saving to DB
+                      console.log(`${logPrefix} 💾 Saving artifact to DB:`, {
+                        artifactContentLength: toolResult.data.artifactCode?.length ?? 0,
+                        artifactContentPreview: toolResult.data.artifactCode?.substring(0, 100)
+                      });
+
                       const saveResult = await saveArtifact(
                         serviceClient,
                         {

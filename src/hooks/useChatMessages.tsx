@@ -892,6 +892,13 @@ export function useChatMessages(
                 });
                 console.log(`[StreamProgress] Collected artifact data for streaming display: ${effectiveArtifactId}${!artifactId ? ' (guest)' : ''}`);
 
+                // DEBUG: Log collected artifact details
+                console.log(`[StreamProgress] 📦 Artifact collected:`, {
+                  id: effectiveArtifactId,
+                  contentLength: artifactCode?.length ?? 0,
+                  contentPreview: artifactCode?.substring(0, 100)
+                });
+
                 // Add simple text marker instead of XML - artifacts are loaded from DB via artifact_ids
                 const displayTitle = artifactTitle || 'Generated Artifact';
                 const textMarker = `[Artifact: ${displayTitle}]`;

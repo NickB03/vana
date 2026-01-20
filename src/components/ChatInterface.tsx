@@ -276,11 +276,16 @@ export function ChatInterface({
     setCompletedStreamProgress(null);
     // Respect explicit modes: force the corresponding tool when the user opts in.
     // Artifact mode should bias the backend and avoid plain-text replies.
-    const toolChoice = getToolChoice(imageMode, artifactMode);
+    // If the user is editing an existing artifact, ALWAYS force artifact tool.
+    const isArtifactEdit = !!(currentArtifact && isEditingArtifact);
+    const toolChoice = isArtifactEdit
+      ? "generate_artifact"
+      : getToolChoice(imageMode, artifactMode);
     console.log("🎯 [ChatInterface.handleSend] Tool choice:", {
       imageMode,
       artifactMode,
       toolChoice,
+      isArtifactEdit,
     });
     // Initialize progress with "analyzing" state for immediate feedback
     // If an artifact is explicitly requested, show the artifact skeleton ASAP.

@@ -140,6 +140,14 @@ export const MessageWithArtifacts = memo(({
       for (const row of data) {
         if (!seen.has(row.artifact_id)) {
           seen.add(row.artifact_id);
+
+          // DEBUG: Log artifact from DB query
+          console.log('[MessageWithArtifacts] 🔍 Artifact from DB:', {
+            id: row.artifact_id,
+            contentLength: row.artifact_content?.length ?? 0,
+            contentPreview: row.artifact_content?.substring(0, 100)
+          });
+
           uniqueArtifacts.push({
             id: row.artifact_id,
             type: row.artifact_type,
@@ -152,8 +160,8 @@ export const MessageWithArtifacts = memo(({
 
       return uniqueArtifacts;
     },
-    // Only fetch from DB if no direct artifactData and we have a messageId
-    enabled: !!messageId && !hasDirectArtifactData,
+    // Only fetch from DB if no direct artifactData and we have a VALID messageId (not streaming-temp)
+    enabled: !!messageId && messageId !== 'streaming-temp' && !hasDirectArtifactData,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
