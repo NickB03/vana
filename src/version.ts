@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: 'fb0fa300aaf2fde6d3d5b3eea1b4eca7c3b1453b',
-    short: 'fb0fa30',
-    branch: 'fix/artifact-jsx-extension',
-    message: 'fix: use .jsx extension in Sandpack artifact files for proper JSX transpilation',
+    hash: '16813369ab7824ab9604897812ed0840ba6ef4fb',
+    short: '1681336',
+    branch: 'fix/sandpack-cache-busting',
+    message: 'fix: use verifyDeployment() for proper site cache busting',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-19 18:50:48 UTC',
-    date: new Date('2026-01-19T18:50:48.221Z'),
+    timestamp: '2026-01-20 00:35:33 UTC',
+    date: new Date('2026-01-20T00:35:33.942Z'),
   },
 
   // Environment detection

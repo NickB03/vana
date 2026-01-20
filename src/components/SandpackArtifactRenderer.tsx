@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { 
-  SandboxProvider, 
-  SandboxLayout, 
-  SandboxPreview, 
-  SandboxCodeEditor 
+import { useState, useEffect, useMemo } from 'react';
+import {
+  SandboxProvider,
+  SandboxLayout,
+  SandboxPreview,
+  SandboxCodeEditor
 } from '@/components/kibo-ui/sandbox';
 import { extractNpmDependencies } from '@/utils/npmDetection';
 import { ArtifactSkeleton } from '@/components/ui/artifact-skeleton';
@@ -27,6 +27,19 @@ export const SandpackArtifactRenderer = ({
 }: SandpackArtifactRendererProps) => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Generate a stable key from code content to force Sandpack remount on code changes
+  // This ensures the sandbox fully reloads when code is updated (cache busting)
+  const sandpackKey = useMemo(() => {
+    // Simple hash function for generating unique key from code
+    let hash = 0;
+    for (let i = 0; i < code.length; i++) {
+      const char = code.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return `sandpack-${hash}`;
+  }, [code]);
 
   // Extract dependencies from code
   const dependencies = extractNpmDependencies(code);
@@ -99,6 +112,7 @@ root.render(<App />);`,
   return (
     <div className="w-full h-full">
       <SandboxProvider
+        key={sandpackKey}
         template="react"
         files={files}
         customSetup={customSetup}

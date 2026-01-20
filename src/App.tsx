@@ -10,7 +10,7 @@ import { AnimatePresence } from "motion/react";
 import { AnimatedRoute } from "@/components/AnimatedRoute";
 import { AnimationErrorBoundary } from "@/components/AnimationErrorBoundary";
 import { UpdateNotification } from "@/components/UpdateNotification";
-import { storeVersionInfo, logCacheBustingInfo, isNewVersionAvailable, clearAllCaches } from "@/utils/cacheBusting";
+import { storeVersionInfo, logCacheBustingInfo, verifyDeployment, clearAllCaches } from "@/utils/cacheBusting";
 import { usePreventOverscroll } from "@/hooks/usePreventOverscroll";
 import { useIOSViewportHeight } from "@/hooks/useIOSViewportHeight";
 import { logError } from "@/utils/errorLogging";
@@ -131,10 +131,16 @@ const App = () => {
         logVersionInfo();
         storeVersionInfo();
         logCacheBustingInfo();
-        if (isNewVersionAvailable()) {
-          console.log('A new version is available, clearing cache and reloading...');
+
+        // Fetch fresh index.html from server to detect new deployments
+        // This works even if the JS bundle is cached because it bypasses cache
+        const hasNewVersion = await verifyDeployment();
+        if (hasNewVersion) {
+          console.log('🚀 New deployment detected, clearing cache and reloading...');
           await clearAllCaches();
           window.location.reload();
+        } else {
+          console.log('✅ Version verified - running latest build');
         }
       } catch (error) {
         logError(error instanceof Error ? error : new Error(String(error)), {
