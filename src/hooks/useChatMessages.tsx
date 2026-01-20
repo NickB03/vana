@@ -701,9 +701,9 @@ export function useChatMessages(
             }
 
             // COMPATIBILITY: Handle batch 'reasoning' event format from /chat endpoint.
-            // The /chat endpoint sends reasoning as a single event (all steps at once),
-            // while /generate-artifact streams individual reasoning_step events.
-            // Both formats must be supported for graceful degradation during deployments.
+            // The /chat endpoint sends reasoning as a single event (all steps at once).
+            // NOTE: The /generate-artifact endpoint is DEPRECATED and no longer called by frontend.
+            // This comment preserved for historical context only.
             if (parsed.type === 'reasoning') {
               // Check sequence number to prevent out-of-order AND duplicate updates
               // Use <= to skip duplicates (same sequence processed twice)

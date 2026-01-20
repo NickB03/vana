@@ -143,7 +143,7 @@ if (!session) { navigate("/auth"); return; }
 
 **Creating artifacts**:
 ```xml
-<artifact type="application/vnd.ant.react" title="Component Name">
+<artifact type="react" title="Component Name">
 export default function App() { ... }
 </artifact>
 ```

@@ -7,7 +7,12 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 
 // Middleware
-import { validateInput } from "./middleware/validation.ts";
+import {
+  validateInput,
+  validateCumulativeContextSize,
+  truncateArtifactContext,
+  truncateUrlExtractContext,
+} from "./middleware/validation.ts";
 import { authenticateUser, verifySessionOwnership } from "./middleware/auth.ts";
 import {
   checkApiThrottle,
@@ -316,9 +321,62 @@ Treat this as an iterative improvement of the existing artifact.`;
       }
 
       // Combine artifact guidance with context
-      const fullArtifactContext = (artifactContext || artifactGuidance)
+      let fullArtifactContext = (artifactContext || artifactGuidance)
         ? artifactContext + (artifactGuidance ? `\n\n${artifactGuidance}` : '')
         : '';
+
+      // Get URL extract context (may need truncation)
+      let urlExtractContext = urlExtractResult.extractedContext || '';
+
+      // ========================================
+      // STEP 8: Cumulative Context Size Validation
+      // ========================================
+      // Truncate oversized context components before validation
+      const artifactTruncation = truncateArtifactContext(fullArtifactContext, requestId);
+      const urlTruncation = truncateUrlExtractContext(urlExtractContext, requestId);
+
+      fullArtifactContext = artifactTruncation.content;
+      urlExtractContext = urlTruncation.content;
+
+      // Log truncation feedback for user visibility
+      if (artifactTruncation.wasTruncated) {
+        console.log(
+          `[${requestId}] 📝 Artifact context truncated: ${artifactTruncation.originalLength?.toLocaleString()} → ${artifactTruncation.truncatedLength?.toLocaleString()} chars`
+        );
+      }
+      if (urlTruncation.wasTruncated) {
+        console.log(
+          `[${requestId}] 🔗 URL extract context truncated: ${urlTruncation.originalLength?.toLocaleString()} → ${urlTruncation.truncatedLength?.toLocaleString()} chars`
+        );
+      }
+
+      // Validate cumulative context size (messages + artifact + search + URL extracts)
+      const cumulativeValidation = validateCumulativeContextSize({
+        messages: contextMessages,
+        artifactContext: fullArtifactContext,
+        searchContext: '', // Search context is added by tool-calling, currently empty
+        urlExtractContext,
+      }, requestId);
+
+      if (!cumulativeValidation.ok) {
+        console.error(`[${requestId}] ❌ Cumulative context validation failed`);
+        return new Response(
+          JSON.stringify({
+            error: cumulativeValidation.error!.userMessage,
+            errorCode: 'CONTEXT_SIZE_EXCEEDED',
+            requestId,
+            breakdown: cumulativeValidation.breakdown,
+          }),
+          {
+            status: 400,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+              "X-Request-ID": requestId,
+            },
+          }
+        );
+      }
 
       // Derive mode hint from frontend flags
       const modeHint: ModeHint = toolChoice === 'generate_image'
@@ -331,7 +389,7 @@ Treat this as an iterative improvement of the existing artifact.`;
         messages: contextMessages,
         fullArtifactContext,
         searchContext: '',
-        urlExtractContext: urlExtractResult.extractedContext || '',
+        urlExtractContext, // Already truncated if needed
         userId: user?.id || null,
         sessionId,
         isGuest,

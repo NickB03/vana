@@ -1,3 +1,40 @@
+/**
+ * ============================================================================
+ * DEPRECATED: Standalone Artifact Generation Endpoint
+ * ============================================================================
+ *
+ * STATUS: DEPRECATED - DO NOT USE
+ * TODO: Remove this endpoint in a future release (target: Q2 2026)
+ *
+ * REASON FOR DEPRECATION:
+ * This endpoint is a legacy code path that is NO LONGER CALLED by the frontend.
+ * The main chat flow (`/chat` endpoint) now handles artifact generation via:
+ *   - supabase/functions/_shared/tool-executor.ts (routes `generate_artifact` tool calls)
+ *   - supabase/functions/_shared/artifact-tool-v2.ts (simplified Gemini 3 Flash generation)
+ *
+ * KEY DIFFERENCES FROM MAIN FLOW:
+ * 1. This file uses the old `artifact-validator.ts` (now stubbed)
+ * 2. This file uses `generateArtifact()` from gemini-client.ts directly
+ * 3. The main flow uses `executeArtifactGenerationV2()` from artifact-tool-v2.ts
+ * 4. The main flow integrates with tool calling and streaming in the chat context
+ *
+ * WHY IT STILL EXISTS:
+ * - Left in place for potential rollback scenarios
+ * - May be useful for standalone artifact generation API in the future
+ * - Removal requires verifying no external integrations depend on it
+ *
+ * MIGRATION PATH:
+ * All artifact generation should go through the `/chat` endpoint with the
+ * `generate_artifact` tool call. See artifact-tool-v2.ts for implementation.
+ *
+ * RELATED FILES:
+ * - supabase/functions/_shared/artifact-tool-v2.ts (current implementation)
+ * - supabase/functions/_shared/tool-executor.ts (tool routing)
+ * - supabase/functions/chat/index.ts (main entry point)
+ *
+ * ============================================================================
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import {
@@ -16,6 +53,9 @@ import { getSystemInstruction } from "../_shared/system-prompt-inline.ts";
 // NOTE: Retry logic handled in gemini-client.ts
 // generateArtifact() uses callGeminiWithRetry() for exponential backoff
 
+// DEPRECATION WARNING: Log when this endpoint is called to track any unexpected usage
+console.warn('[DEPRECATED] generate-artifact endpoint loaded. This endpoint is deprecated - use /chat with generate_artifact tool instead.');
+
 // Use shared system prompt for artifact generation
 const ARTIFACT_SYSTEM_PROMPT = getSystemInstruction({ currentDate: new Date().toLocaleDateString() });
 
@@ -31,6 +71,12 @@ serve(async (req) => {
   try {
     // Generate unique request ID for tracking
     const requestId = crypto.randomUUID();
+
+    // DEPRECATION: Log all requests to this endpoint for monitoring
+    // This helps track any unexpected usage before removal
+    console.warn(`[${requestId}] [DEPRECATED] /generate-artifact endpoint called. ` +
+      `Origin: ${origin || 'unknown'}. ` +
+      `This endpoint is deprecated - use /chat with generate_artifact tool instead.`);
 
     const requestBody = await req.json();
     const { prompt, artifactType, sessionId, stream = false } = requestBody;

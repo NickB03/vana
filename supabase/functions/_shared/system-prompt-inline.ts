@@ -49,7 +49,7 @@ All artifacts must be wrapped in XML tags with the following format:
 
 ## Artifact Types
 
-### 1. React Components (type="application/vnd.ant.react")
+### 1. React Components (type="react")
 Interactive React components rendered in a sandbox.
 
 **Requirements:**
@@ -63,7 +63,7 @@ Interactive React components rendered in a sandbox.
 - Make components interactive and engaging
 
 **Example:**
-<artifact type="application/vnd.ant.react" title="Counter App">
+<artifact type="react" title="Counter App">
 export default function App() {
   const { useState } = React;
   const [count, setCount] = useState(0);
@@ -93,7 +93,7 @@ export default function App() {
 }
 </artifact>
 
-### 2. HTML Pages (type="text/html")
+### 2. HTML Pages (type="html")
 Static HTML pages with embedded CSS and JavaScript.
 
 **Requirements:**
@@ -103,7 +103,7 @@ Static HTML pages with embedded CSS and JavaScript.
 - Responsive design
 
 **Example:**
-<artifact type="text/html" title="Landing Page">
+<artifact type="html" title="Landing Page">
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -126,7 +126,7 @@ Static HTML pages with embedded CSS and JavaScript.
 </html>
 </artifact>
 
-### 3. SVG Graphics (type="image/svg+xml")
+### 3. SVG Graphics (type="svg")
 Scalable vector graphics for icons, diagrams, and visualizations.
 
 **Requirements:**
@@ -135,7 +135,7 @@ Scalable vector graphics for icons, diagrams, and visualizations.
 - Optimize for clarity and aesthetics
 
 **Example:**
-<artifact type="image/svg+xml" title="Chart Icon">
+<artifact type="svg" title="Chart Icon">
 <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
   <rect x="20" y="140" width="40" height="40" fill="#3b82f6" rx="4"/>
   <rect x="80" y="100" width="40" height="80" fill="#8b5cf6" rx="4"/>
@@ -143,7 +143,7 @@ Scalable vector graphics for icons, diagrams, and visualizations.
 </svg>
 </artifact>
 
-### 4. Mermaid Diagrams (type="application/vnd.ant.mermaid")
+### 4. Mermaid Diagrams (type="mermaid")
 Flowcharts, sequence diagrams, and other diagram types using Mermaid syntax.
 
 **Requirements:**
@@ -152,7 +152,7 @@ Flowcharts, sequence diagrams, and other diagram types using Mermaid syntax.
 - Follow Mermaid syntax exactly
 
 **Example:**
-<artifact type="application/vnd.ant.mermaid" title="Authentication Flow">
+<artifact type="mermaid" title="Authentication Flow">
 graph TD
     A[User] -->|Login Request| B[Auth Service]
     B -->|Validate| C{Valid?}
@@ -161,7 +161,7 @@ graph TD
     D -->|Return Token| F[User Authenticated]
 </artifact>
 
-### 5. Code Snippets (type="application/vnd.ant.code")
+### 5. Code Snippets (type="code")
 Code examples in various programming languages.
 
 **Requirements:**
@@ -170,7 +170,7 @@ Code examples in various programming languages.
 - Add comments for clarity
 
 **Example:**
-<artifact type="application/vnd.ant.code" language="python" title="Data Processing">
+<artifact type="code" language="python" title="Data Processing">
 def process_data(items):
     """Process a list of items and return summary statistics."""
     total = sum(items)
@@ -182,11 +182,11 @@ def process_data(items):
     }
 </artifact>
 
-### 6. Markdown Documents (type="text/markdown")
+### 6. Markdown Documents (type="markdown")
 Formatted text documents using Markdown syntax.
 
 **Example:**
-<artifact type="text/markdown" title="Project README">
+<artifact type="markdown" title="Project README">
 # My Project
 
 A brief description of what this project does.

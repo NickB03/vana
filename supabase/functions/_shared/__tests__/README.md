@@ -21,7 +21,7 @@ Unlike unit tests that mock external dependencies, the integration tests validat
 | `circuit-breaker-integration.test.ts` | Resilience layer - fallback behavior | ~$0.03 |
 | `image-endpoint-integration.test.ts` | /generate-image Edge Function | ~$0.05 |
 | `title-endpoint-integration.test.ts` | /generate-title Edge Function | ~$0.005 |
-| `artifact-endpoint-integration.test.ts` | /generate-artifact Edge Function | ~$0.02 |
+| `artifact-endpoint-integration.test.ts` | /generate-artifact Edge Function (DEPRECATED - endpoint not in use) | ~$0.02 |
 | `rate-limiting-integration.test.ts` | Rate limiting RPC functions (disabled) | ~$0.00 |
 | `tavily-integration.test.ts` | Tavily search API | ~$0.01 |
 
@@ -85,8 +85,8 @@ deno test --allow-net --allow-env _shared/__tests__/image-endpoint-integration.t
 # Title endpoint tests
 deno test --allow-net --allow-env _shared/__tests__/title-endpoint-integration.test.ts
 
-# Artifact endpoint tests
-deno test --allow-net --allow-env _shared/__tests__/artifact-endpoint-integration.test.ts
+# Artifact endpoint tests (DEPRECATED - test file does not exist, endpoint not in use)
+# deno test --allow-net --allow-env _shared/__tests__/artifact-endpoint-integration.test.ts
 
 # Rate limiting tests
 deno test --allow-net --allow-env _shared/__tests__/rate-limiting-integration.test.ts
@@ -239,7 +239,7 @@ __tests__/
 ├── openrouter-integration.test.ts        # OpenRouter API tests
 ├── tavily-integration.test.ts            # Tavily search API tests
 ├── chat-endpoint-integration.test.ts     # /chat endpoint tests
-├── artifact-endpoint-integration.test.ts # /generate-artifact endpoint tests
+├── artifact-endpoint-integration.test.ts # /generate-artifact endpoint tests (DEPRECATED - file does not exist)
 ├── image-endpoint-integration.test.ts    # /generate-image endpoint tests
 ├── title-endpoint-integration.test.ts    # /generate-title endpoint tests
 ├── circuit-breaker-integration.test.ts   # Resilience/fallback tests

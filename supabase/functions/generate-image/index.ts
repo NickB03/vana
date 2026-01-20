@@ -35,7 +35,7 @@ serve(async (req) => {
       );
     }
 
-    const { prompt, mode, baseImage, sessionId } = requestBody;
+    const { prompt, mode, aspectRatio, baseImage, sessionId } = requestBody;
 
     console.log(`🎨 [${requestId}] Request received: mode=${mode}, prompt length=${prompt?.length}`);
 
@@ -54,8 +54,23 @@ serve(async (req) => {
       return errors.validation("Mode must be 'generate' or 'edit'");
     }
 
-    if (mode === "edit" && (!baseImage || !baseImage.startsWith("data:image/"))) {
-      return errors.validation("Edit mode requires valid base64 image");
+    // Validate aspectRatio if provided (default to "1:1")
+    const validAspectRatios = ["1:1", "16:9", "9:16"];
+    const resolvedAspectRatio = aspectRatio || "1:1";
+    if (aspectRatio && !validAspectRatios.includes(aspectRatio)) {
+      return errors.validation(`Invalid aspectRatio. Must be one of: ${validAspectRatios.join(", ")}`);
+    }
+
+    // Validate baseImage for edit mode - accepts both data URLs and HTTP URLs
+    if (mode === "edit") {
+      if (!baseImage || typeof baseImage !== "string") {
+        return errors.validation("Edit mode requires baseImage parameter");
+      }
+      const isDataUrl = baseImage.startsWith("data:image/");
+      const isHttpUrl = baseImage.startsWith("http://") || baseImage.startsWith("https://");
+      if (!isDataUrl && !isHttpUrl) {
+        return errors.validation("Edit mode requires valid base64 image or HTTP URL");
+      }
     }
 
     // Support both authenticated and guest users (similar to chat function)
@@ -216,7 +231,7 @@ serve(async (req) => {
     }
 
     const userType = user ? `user ${user.id}` : "guest";
-    console.log(`🎨 [${requestId}] Image ${mode} request from ${userType}:`, prompt.substring(0, 100));
+    console.log(`🎨 [${requestId}] Image ${mode} request (${resolvedAspectRatio}) from ${userType}:`, prompt.substring(0, 100));
 
     // Build OpenRouter message format
     let messages;
@@ -256,7 +271,7 @@ serve(async (req) => {
         temperature: 0.7,
         max_tokens: 1024,
         image_config: {
-          aspect_ratio: "1:1"  // Square images by default
+          aspect_ratio: resolvedAspectRatio
         }
       })
     });

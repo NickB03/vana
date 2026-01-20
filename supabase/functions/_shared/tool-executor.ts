@@ -38,10 +38,11 @@ import {
 } from './tavily-client.ts';
 import type { ToolCall } from './gemini-client.ts';
 import { rewriteSearchQuery } from './query-rewriter.ts';
-import { executeImageGeneration, isValidImageMode, type ImageMode } from './image-executor.ts';
+import { executeImageGeneration, isValidImageMode, isValidAspectRatio, type ImageMode, type AspectRatio } from './image-executor.ts';
 import { executeArtifactGenerationV2 } from './artifact-tool-v2.ts';
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { FEATURE_FLAGS } from './config.ts';
+import { createLogger } from './logger.ts';
 
 /**
  * Artifact type validation and type definition
@@ -314,6 +315,7 @@ export async function executeTool(
       case 'generate_image': {
         const prompt = toolCall.arguments.prompt as string;
         const modeArg = toolCall.arguments.mode as string | undefined;
+        const aspectRatioArg = toolCall.arguments.aspectRatio as string | undefined;
         const baseImage = toolCall.arguments.baseImage as string | undefined;
 
         if (!prompt || typeof prompt !== 'string') {
@@ -330,9 +332,24 @@ export async function executeTool(
         const mode: ImageMode = modeArg && isValidImageMode(modeArg) ? modeArg : 'generate';
 
         if (modeArg && !isValidImageMode(modeArg)) {
-          console.warn(
-            `[${requestId}] ⚠️ Invalid image mode "${modeArg}", defaulting to "generate"`
-          );
+          const logger = createLogger({ requestId });
+          logger.warn('Invalid image mode, using fallback', {
+            invalidMode: modeArg,
+            fallbackMode: 'generate',
+            toolName: 'generate_image'
+          });
+        }
+
+        // SECURITY: Validate aspectRatio parameter with default fallback
+        const aspectRatio: AspectRatio = aspectRatioArg && isValidAspectRatio(aspectRatioArg) ? aspectRatioArg : '1:1';
+
+        if (aspectRatioArg && !isValidAspectRatio(aspectRatioArg)) {
+          const logger = createLogger({ requestId });
+          logger.warn('Invalid aspect ratio, using fallback', {
+            invalidAspectRatio: aspectRatioArg,
+            fallbackAspectRatio: '1:1',
+            toolName: 'generate_image'
+          });
         }
 
         if (!context.supabaseClient) {
@@ -344,7 +361,7 @@ export async function executeTool(
           };
         }
 
-        return await executeImageTool(prompt, mode, baseImage, context);
+        return await executeImageTool(prompt, mode, aspectRatio, baseImage, context);
       }
 
       default: {
@@ -418,8 +435,13 @@ async function executeSearchTool(
       );
     }
   } catch (rewriteError) {
-    // Silently fall back to original query if rewriting fails
-    console.warn(`[${requestId}] Query rewrite failed, using original:`, rewriteError);
+    // Fall back to original query if rewriting fails, but log for visibility
+    const logger = createLogger({ requestId });
+    const error = rewriteError instanceof Error ? rewriteError : new Error(String(rewriteError));
+    logger.error('Query rewrite failed, using original query', error, {
+      originalQuery: query,
+      toolName: 'browser.search'
+    });
     searchQuery = query;
   }
 
@@ -562,7 +584,8 @@ async function executeArtifactTool(
  *
  * @param prompt - Image description or edit instructions
  * @param mode - Generation mode (generate or edit)
- * @param baseImage - Base64 image for edit mode (optional)
+ * @param aspectRatio - Aspect ratio for the image (1:1, 16:9, 9:16)
+ * @param baseImage - Base64 image or HTTP URL for edit mode (optional)
  * @param context - Execution context
  * @returns Tool execution result with image data and URLs
  *
@@ -571,6 +594,7 @@ async function executeArtifactTool(
  * const result = await executeImageTool(
  *   "A sunset over mountains",
  *   "generate",
+ *   "16:9",
  *   undefined,
  *   { requestId: "req-123", userId: "user-456", supabaseClient: supabase }
  * );
@@ -579,13 +603,14 @@ async function executeArtifactTool(
 async function executeImageTool(
   prompt: string,
   mode: ImageMode,
+  aspectRatio: AspectRatio,
   baseImage: string | undefined,
   context: ToolContext
 ): Promise<ToolExecutionResult> {
   const startTime = Date.now();
   const { requestId, userId, supabaseClient } = context;
 
-  console.log(`[${requestId}] 🖼️ Executing generate_image: mode=${mode}`);
+  console.log(`[${requestId}] 🖼️ Executing generate_image: mode=${mode}, aspectRatio=${aspectRatio}`);
 
   if (!supabaseClient) {
     const latencyMs = Date.now() - startTime;
@@ -599,14 +624,39 @@ async function executeImageTool(
   }
 
   try {
-    const result = await executeImageGeneration({
-      prompt,
-      mode,
-      baseImage,
-      requestId,
-      userId,
-      supabaseClient
-    });
+    // SECURITY: Validate baseImage for edit mode BEFORE building params
+    // Defense-in-depth: Don't pass undefined to image-executor expecting it to catch this
+    if (mode === 'edit' && (!baseImage || typeof baseImage !== 'string')) {
+      return {
+        success: false,
+        toolName: 'generate_image',
+        error: 'Edit mode requires a valid baseImage parameter (data URL or HTTP URL)',
+        latencyMs: Date.now() - startTime
+      };
+    }
+
+    // Build discriminated union params based on mode
+    // Note: baseImage is validated above for edit mode
+    const imageParams = mode === "edit"
+      ? {
+          prompt,
+          mode: "edit" as const,
+          aspectRatio,
+          baseImage: baseImage, // Safe: validated above for edit mode
+          requestId,
+          userId,
+          supabaseClient
+        }
+      : {
+          prompt,
+          mode: "generate" as const,
+          aspectRatio,
+          requestId,
+          userId,
+          supabaseClient
+        };
+
+    const result = await executeImageGeneration(imageParams);
 
     const latencyMs = Date.now() - startTime;
 

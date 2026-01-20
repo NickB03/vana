@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: '16813369ab7824ab9604897812ed0840ba6ef4fb',
-    short: '1681336',
-    branch: 'fix/sandpack-cache-busting',
-    message: 'fix: use verifyDeployment() for proper site cache busting',
+    hash: 'c3794333cce8ead28e978f7e804921c02a0433c2',
+    short: 'c379433',
+    branch: 'fix/refactor-audit-fixes-8-issues',
+    message: 'fix: address PR review findings from code analysis',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-20 00:35:33 UTC',
-    date: new Date('2026-01-20T00:35:33.942Z'),
+    timestamp: '2026-01-20 03:48:33 UTC',
+    date: new Date('2026-01-20T03:48:33.463Z'),
   },
 
   // Environment detection

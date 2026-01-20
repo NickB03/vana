@@ -118,8 +118,16 @@ const OPENROUTER_GEMINI_IMAGE_KEY = Deno.env.get("OPENROUTER_GEMINI_IMAGE_KEY")
  */
 export type ImageMode = "generate" | "edit";
 
+/**
+ * Valid aspect ratios for image generation
+ */
+export type AspectRatio = "1:1" | "16:9" | "9:16";
+
 /** Valid image generation modes */
 const VALID_IMAGE_MODES = new Set<ImageMode>(['generate', 'edit']);
+
+/** Valid aspect ratios */
+const VALID_ASPECT_RATIOS = new Set<AspectRatio>(['1:1', '16:9', '9:16']);
 
 /**
  * Validate if a string is a valid image generation mode
@@ -133,17 +141,25 @@ export function isValidImageMode(mode: string): mode is ImageMode {
 }
 
 /**
- * Parameters for image generation execution
+ * Validate if a string is a valid aspect ratio
+ * Used for defense-in-depth input validation in tool-executor
+ *
+ * @param ratio - String to validate
+ * @returns True if ratio is a valid AspectRatio
  */
-export interface ImageExecutorParams {
+export function isValidAspectRatio(ratio: string): ratio is AspectRatio {
+  return VALID_ASPECT_RATIOS.has(ratio as AspectRatio);
+}
+
+/**
+ * Base parameters shared by all image generation modes
+ */
+interface BaseImageParams {
   /** Text description of desired image or edit */
   prompt: string;
 
-  /** Generation mode (generate or edit) */
-  mode: ImageMode;
-
-  /** Base64 data URL of image to edit (required for edit mode) */
-  baseImage?: string;
+  /** Aspect ratio for generated image (default: "1:1") */
+  aspectRatio?: AspectRatio;
 
   /** Request ID for tracing and logging */
   requestId: string;
@@ -154,6 +170,37 @@ export interface ImageExecutorParams {
   /** Supabase client for storage operations */
   supabaseClient: SupabaseClient;
 }
+
+/**
+ * Parameters for generating a new image from text prompt
+ */
+interface GenerateImageParams extends BaseImageParams {
+  /** Generation mode */
+  mode: "generate";
+
+  /** Base image is not allowed in generate mode */
+  baseImage?: never;
+}
+
+/**
+ * Parameters for editing an existing image based on prompt
+ */
+interface EditImageParams extends BaseImageParams {
+  /** Edit mode */
+  mode: "edit";
+
+  /** Base64 data URL or HTTP URL of image to edit (required for edit mode) */
+  baseImage: string;
+}
+
+/**
+ * Parameters for image generation execution
+ *
+ * Discriminated union that enforces:
+ * - generate mode: Cannot have baseImage
+ * - edit mode: Must have baseImage
+ */
+export type ImageExecutorParams = GenerateImageParams | EditImageParams;
 
 /**
  * Result of image generation execution
@@ -509,10 +556,10 @@ export async function executeImageGeneration(
     // Validate parameters (fail-fast)
     validateParams(params, safeRequestId);
 
-    const { prompt, mode, baseImage, userId, supabaseClient } = params;
+    const { prompt, mode, aspectRatio = "1:1", baseImage, userId, supabaseClient } = params;
 
     console.log(
-      `[${safeRequestId}] 🎨 Image ${mode} request: "${prompt.substring(0, 100)}..."`
+      `[${safeRequestId}] 🎨 Image ${mode} request (${aspectRatio}): "${prompt.substring(0, 100)}..."`
     );
 
     // Check API key is configured
@@ -567,7 +614,7 @@ export async function executeImageGeneration(
           temperature: 0.7,
           max_tokens: 1024,
           image_config: {
-            aspect_ratio: "1:1" // Square images by default
+            aspect_ratio: aspectRatio
           }
         }),
         signal: controller.signal

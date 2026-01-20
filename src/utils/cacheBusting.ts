@@ -149,11 +149,34 @@ export async function refreshResource(url: string): Promise<Response | null> {
 }
 
 /**
+ * Session storage key for tracking reload attempts
+ * Prevents infinite reload loops when cache busting fails
+ */
+const CACHE_BUST_ATTEMPTED_KEY = 'cache-bust-attempted';
+
+/**
  * Verify deployment by checking if new assets are available
  * Returns true if new assets are detected
+ *
+ * IMPORTANT: Includes guard against infinite reload loops.
+ * If we've already attempted a cache bust this session, we skip
+ * to prevent the scenario where:
+ * 1. Old JS bundle is served from HTTP/CDN cache
+ * 2. verifyDeployment() detects mismatch
+ * 3. clearAllCaches() only clears Cache API (not HTTP cache)
+ * 4. Reload still gets old bundle → infinite loop
  */
 export async function verifyDeployment(): Promise<boolean> {
   try {
+    // GUARD: Prevent infinite reload loops
+    // If we've already attempted a cache bust this session, don't retry
+    // The user can manually hard-refresh (Ctrl+Shift+R) if needed
+    const hasAttemptedReload = sessionStorage.getItem(CACHE_BUST_ATTEMPTED_KEY);
+    if (hasAttemptedReload) {
+      console.log('⏭️ Skipping cache bust check (already attempted this session)');
+      return false;
+    }
+
     // Fetch index.html with no-cache to get latest version
     const response = await fetch('/index.html', {
       cache: 'no-store',
@@ -168,12 +191,20 @@ export async function verifyDeployment(): Promise<boolean> {
     }
 
     const html = await response.text();
-    
+
     // Check if new build hash is present in HTML
     const buildHashMatch = html.match(/data-build-hash="([^"]+)"/);
     const currentHash = (window as { __BUILD_HASH__?: string }).__BUILD_HASH__;
 
     if (buildHashMatch && buildHashMatch[1] !== currentHash) {
+      // Mark that we're attempting a reload BEFORE returning true
+      // This prevents infinite loops if the reload doesn't update the bundle
+      try {
+        sessionStorage.setItem(CACHE_BUST_ATTEMPTED_KEY, Date.now().toString());
+      } catch {
+        // Safari private mode - continue anyway, worst case is one extra reload
+      }
+
       console.log('✅ New deployment detected');
       console.log(`   Previous hash: ${currentHash}`);
       console.log(`   New hash: ${buildHashMatch[1]}`);

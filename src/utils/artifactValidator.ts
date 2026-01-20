@@ -30,9 +30,13 @@ export function validateArtifact(content: string, type: ArtifactType): Validatio
   // Type-specific basic validation
   switch (type) {
     case "react": {
-      // Check for basic export
+      // React artifacts must have a default export for Sandpack to render them.
+      // Both syntaxes are valid JavaScript for default exports:
+      // - `export default function App() {}` or `export default App`
+      // - `export { App as default }` (named export syntax)
+      // This check mirrors supabase/functions/_shared/artifact-tool-v2.ts for consistency.
       if (!content.includes("export default") && !content.includes("export {")) {
-        warnings.push("No default export found - component may not render correctly");
+        warnings.push('No default export found - use "export default" or "export { X as default }"');
       }
       break;
     }

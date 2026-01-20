@@ -196,9 +196,13 @@ function validateArtifact(type: GeneratableArtifactType, code: string): string[]
   // Type-specific validation
   switch (type) {
     case 'react':
-      // React artifacts must have a default export
-      if (!code.includes('export default')) {
-        errors.push('React artifacts must have a default export');
+      // React artifacts must have a default export for Sandpack to render them.
+      // Both syntaxes are valid JavaScript for default exports:
+      // - `export default function App() {}` or `export default App`
+      // - `export { App as default }` (named export syntax)
+      // This check mirrors src/utils/artifactValidator.ts for consistency.
+      if (!code.includes('export default') && !code.includes('export {')) {
+        errors.push('React artifacts must have a default export (use "export default" or "export { X as default }")');
       }
       break;
 

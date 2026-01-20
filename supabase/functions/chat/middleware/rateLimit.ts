@@ -4,7 +4,7 @@
  */
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { FEATURE_FLAGS } from "../../_shared/config.ts";
+import { FEATURE_FLAGS, RATE_LIMITS } from "../../_shared/config.ts";
 
 export interface RateLimitResult {
   ok: boolean;
@@ -36,8 +36,8 @@ export async function checkApiThrottle(
   const { data: apiThrottleResult, error: apiThrottleError } =
     await serviceClient.rpc("check_api_throttle", {
       p_api_name: "gemini",
-      p_max_requests: 15,
-      p_window_seconds: 60,
+      p_max_requests: RATE_LIMITS.API_THROTTLE.GEMINI_RPM,
+      p_window_seconds: RATE_LIMITS.API_THROTTLE.WINDOW_SECONDS,
     });
 
   // Handle API throttle check results
@@ -58,7 +58,18 @@ export async function checkApiThrottle(
     };
   }
 
-  if (apiThrottleResult && !apiThrottleResult.allowed) {
+  // SECURITY: Explicit null check to prevent bypass
+  if (!apiThrottleResult) {
+    console.error(`[${requestId}] CRITICAL: API throttle returned null/undefined`);
+    return {
+      ok: false,
+      headers: {},
+      status: 503,
+      error: { error: "Rate limiting check failed", requestId, retryable: true },
+    };
+  }
+
+  if (!apiThrottleResult.allowed) {
     return {
       ok: false,
       headers: {
@@ -98,16 +109,21 @@ export async function checkGuestRateLimit(
 
   // Get client IP address (trusted headers set by Supabase Edge infrastructure)
   // X-Forwarded-For is sanitized by Supabase proxy to prevent spoofing
-  const clientIp =
+  let clientIp =
     req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
     req.headers.get("x-real-ip") ||
-    "unknown";
+    "";
+
+  // SECURITY: Generate unique ID instead of shared "unknown" bucket
+  if (!clientIp) {
+    clientIp = `no-ip_${Date.now()}_${crypto.randomUUID().substring(0, 8)}`;
+  }
 
   const { data: rateLimitResult, error: rateLimitError } =
     await serviceClient.rpc("check_guest_rate_limit", {
       p_identifier: clientIp,
-      p_max_requests: 20,
-      p_window_hours: 5,
+      p_max_requests: RATE_LIMITS.GUEST.MAX_REQUESTS,
+      p_window_hours: RATE_LIMITS.GUEST.WINDOW_HOURS,
     });
 
   if (rateLimitError) {
@@ -127,7 +143,18 @@ export async function checkGuestRateLimit(
     };
   }
 
-  if (rateLimitResult && !rateLimitResult.allowed) {
+  // SECURITY: Explicit null check to prevent bypass
+  if (!rateLimitResult) {
+    console.error(`[${requestId}] CRITICAL: Guest rate limit returned null/undefined`);
+    return {
+      ok: false,
+      headers: {},
+      status: 503,
+      error: { error: "Rate limiting check failed", requestId, retryable: true },
+    };
+  }
+
+  if (!rateLimitResult.allowed) {
     return {
       ok: false,
       headers: {
@@ -148,15 +175,14 @@ export async function checkGuestRateLimit(
   }
 
   // Add rate limit headers to successful responses
-  const headers = rateLimitResult
-    ? {
-        "X-RateLimit-Limit": rateLimitResult.total.toString(),
-        "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
-        "X-RateLimit-Reset": new Date(rateLimitResult.reset_at)
-          .getTime()
-          .toString(),
-      }
-    : {};
+  // Note: rateLimitResult is guaranteed non-null here due to explicit check above
+  const headers = {
+    "X-RateLimit-Limit": rateLimitResult.total.toString(),
+    "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
+    "X-RateLimit-Reset": new Date(rateLimitResult.reset_at)
+      .getTime()
+      .toString(),
+  };
 
   return { ok: true, headers };
 }
@@ -178,8 +204,8 @@ export async function checkUserRateLimit(
   const { data: userRateLimitResult, error: userRateLimitError } =
     await serviceClient.rpc("check_user_rate_limit", {
       p_user_id: userId,
-      p_max_requests: 100,
-      p_window_hours: 5,
+      p_max_requests: RATE_LIMITS.AUTHENTICATED.MAX_REQUESTS,
+      p_window_hours: RATE_LIMITS.AUTHENTICATED.WINDOW_HOURS,
     });
 
   if (userRateLimitError) {
@@ -199,7 +225,18 @@ export async function checkUserRateLimit(
     };
   }
 
-  if (userRateLimitResult && !userRateLimitResult.allowed) {
+  // SECURITY: Explicit null check to prevent bypass
+  if (!userRateLimitResult) {
+    console.error(`[${requestId}] CRITICAL: User rate limit returned null/undefined`);
+    return {
+      ok: false,
+      headers: {},
+      status: 503,
+      error: { error: "Rate limiting check failed", requestId, retryable: true },
+    };
+  }
+
+  if (!userRateLimitResult.allowed) {
     return {
       ok: false,
       headers: {
@@ -219,15 +256,14 @@ export async function checkUserRateLimit(
   }
 
   // Add rate limit headers to successful responses
-  const headers = userRateLimitResult
-    ? {
-        "X-RateLimit-Limit": userRateLimitResult.total.toString(),
-        "X-RateLimit-Remaining": userRateLimitResult.remaining.toString(),
-        "X-RateLimit-Reset": new Date(userRateLimitResult.reset_at)
-          .getTime()
-          .toString(),
-      }
-    : {};
+  // Note: userRateLimitResult is guaranteed non-null here due to explicit check above
+  const headers = {
+    "X-RateLimit-Limit": userRateLimitResult.total.toString(),
+    "X-RateLimit-Remaining": userRateLimitResult.remaining.toString(),
+    "X-RateLimit-Reset": new Date(userRateLimitResult.reset_at)
+      .getTime()
+      .toString(),
+  };
 
   return { ok: true, headers };
 }

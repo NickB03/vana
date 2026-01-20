@@ -191,6 +191,27 @@ export const RATE_LIMITS = {
 
 /**
  * Input validation limits to prevent abuse and ensure data integrity
+ *
+ * CUMULATIVE CONTEXT VALIDATION
+ * -----------------------------
+ * Individual message validation (100k chars) happens at request parsing.
+ * However, artifact context, search results, and URL extractions are added AFTER
+ * initial validation. The cumulative limit ensures the total request stays within
+ * Gemini's context window while leaving room for the system prompt and response.
+ *
+ * Budget allocation (for Gemini 3 Flash with 1M token context):
+ * - System prompt: ~10K tokens (~40K chars)
+ * - Response reservation: 65K tokens (~260K chars)
+ * - Safety margin: 10% of context = ~100K tokens (~400K chars)
+ * - Available for user content: ~825K tokens (~3.3M chars)
+ *
+ * Note: Character counts are estimates assuming ~4 chars/token average.
+ * Actual ratios vary: code tends toward ~3 chars/token, prose toward ~4-5.
+ *
+ * We use a conservative 500K character limit (~125K tokens) to:
+ * 1. Prevent unexpectedly large requests
+ * 2. Leave generous headroom for edge cases
+ * 3. Ensure consistent performance across all conversations
  */
 export const VALIDATION_LIMITS = {
   /** Maximum messages per conversation to prevent memory issues */
@@ -200,7 +221,29 @@ export const VALIDATION_LIMITS = {
   /** Maximum prompt length for image generation */
   MAX_PROMPT_LENGTH: 2000,
   /** Maximum image title length */
-  MAX_IMAGE_TITLE_LENGTH: 50
+  MAX_IMAGE_TITLE_LENGTH: 50,
+  /**
+   * Maximum cumulative context size (characters) for the entire request.
+   * This is validated AFTER all context is assembled (messages + artifact context + search + URL extracts).
+   * Set to 500K chars (~125K tokens) to stay well within Gemini 3 Flash's 1M token context window.
+   */
+  MAX_CUMULATIVE_CONTEXT_CHARS: 500000,
+  /**
+   * Buffer reserved for additional context (artifact editing, search results, URL extracts).
+   * Individual messages are validated at (MAX_MESSAGE_CONTENT_LENGTH - CONTEXT_BUFFER_CHARS)
+   * to ensure room for context additions.
+   */
+  CONTEXT_BUFFER_CHARS: 50000,
+  /**
+   * Maximum artifact editing context size (characters).
+   * Large artifacts may need truncation to fit within cumulative limits.
+   */
+  MAX_ARTIFACT_CONTEXT_CHARS: 100000,
+  /**
+   * Maximum URL extraction context size (characters).
+   * Limits total content from extracted URLs.
+   */
+  MAX_URL_EXTRACT_CONTEXT_CHARS: 50000
 } as const;
 
 /**

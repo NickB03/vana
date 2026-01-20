@@ -592,6 +592,40 @@ The prompt injection defense system (Issue #340 Phase 0) uses 5-layer protection
 3. For web search: verify internet connection
 4. Check tool rate limits haven't been exceeded
 
+### "Context size exceeded" / "Request too large to process"
+
+**Meaning**: The total context (conversation history + artifact being edited + URL content) exceeds the 500K character limit
+
+**Error Code**: `CONTEXT_SIZE_EXCEEDED`
+
+**Why this happens**:
+- Very long conversations accumulate context over time
+- Large artifacts (complex code) take up significant space
+- Multiple URL extractions add extracted content
+- Combination of the above exceeds safe limits
+
+**Solutions**:
+1. **Start a new conversation**: Fresh conversations have no history
+2. **Edit smaller artifacts**: Large artifacts use more context
+3. **Limit URL sharing**: Share fewer URLs or smaller pages
+4. **Shorten your messages**: Long messages consume context
+
+**Technical Details**:
+- Individual message limit: 100K characters
+- Cumulative context limit: 500K characters (~125K tokens)
+- The error response includes a `breakdown` field showing:
+  - `messagesChars`: Total conversation history size
+  - `artifactContextChars`: Size of artifact being edited
+  - `urlExtractContextChars`: Size of extracted URL content
+  - `searchContextChars`: Size of search results context
+  - `percentUsed`: How much of the limit was exceeded
+
+**Context Budget Allocation** (Gemini 3 Flash with 1M token context):
+- System prompt: ~10K tokens (~40K chars)
+- Response reservation: 65K tokens (~260K chars)
+- Safety margin: 10% (~100K tokens)
+- User content budget: ~825K tokens (~3.3M chars theoretical, limited to 500K for safety)
+
 ---
 
 ## Performance Issues
