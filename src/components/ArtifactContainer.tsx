@@ -142,14 +142,22 @@ export const ArtifactContainer = ({
       return;
     }
 
+    // DEBUG: Log ref state
+    console.log('[PopOut] Artifact type:', artifact.type);
+    console.log('[PopOut] previewContentRef.current exists:', !!previewContentRef.current);
+    console.log('[PopOut] previewContentRef.current length:', previewContentRef.current?.length);
+    console.log('[PopOut] previewContentRef preview:', previewContentRef.current?.substring(0, 200));
+
     // Use the pre-generated preview content from ArtifactRenderer if available
     // This is essential for React artifacts which need transpilation
     let popoutContent: string;
 
     if (previewContentRef.current) {
       // Use the properly generated preview HTML (includes React, transpiled code, etc.)
+      console.log('[PopOut] Using previewContentRef for pop-out');
       popoutContent = previewContentRef.current;
     } else {
+      console.log('[PopOut] Falling back to raw artifact.content');
       // Fallback for artifacts where preview content isn't available yet
       const isFullHTML = artifact.content.includes("<!DOCTYPE");
       popoutContent = isFullHTML

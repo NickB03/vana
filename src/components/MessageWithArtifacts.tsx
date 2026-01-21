@@ -75,12 +75,25 @@ function convertToArtifactData(direct: DirectArtifactData): ArtifactData {
 }
 
 /**
- * Strip artifact XML tags from content to get clean display text
+ * Strip artifact XML tags and text markers from content to get clean display text
  * Used when artifacts are provided directly (not parsed from content)
+ *
+ * Preserves paragraph structure by maintaining double newlines for markdown parsing
  */
 function stripArtifactTags(content: string): string {
   // Remove complete artifact blocks: <artifact ...>...</artifact>
-  return content.replace(/<artifact[^>]*>[\s\S]*?<\/artifact>/g, '').trim();
+  // Preserve newlines around artifacts to maintain paragraph breaks
+  let cleaned = content.replace(/<artifact[^>]*>[\s\S]*?<\/artifact>/g, '\n\n');
+
+  // Remove text markers: [Artifact: Title] and [Image: Title]
+  // These are added during streaming but should not be displayed to users
+  cleaned = cleaned.replace(/^\[(?:Artifact|Image):[^\]]+\]\s*/gm, '');
+
+  // Clean up excessive newlines (more than 2) while preserving paragraph breaks
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+
+  // Trim only leading/trailing newlines, not internal formatting
+  return cleaned.replace(/^\s+|\s+$/g, '');
 }
 
 /**

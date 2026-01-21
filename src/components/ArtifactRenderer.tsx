@@ -265,6 +265,7 @@ export const ArtifactRenderer = memo(({
             code={artifact.content}
             title={artifact.title}
             showEditor={false}
+            previewContentRef={previewContentRef}
             onError={(error) => {
               onPreviewErrorChange(error);
               onLoadingChange(false);
