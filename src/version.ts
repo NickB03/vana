@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: '75f298359a775c22a9b6cf0210fad3820bbf4b58',
-    short: '75f2983',
+    hash: 'da661372f79db1fcb9b74acbb990c8c8e275b206',
+    short: 'da66137',
     branch: 'fix/artifact-card-generation-race-condition',
-    message: 'fix: resolve artifact card race condition with session_id fallback',
+    message: 'fix: improve artifact explanation compliance and pop-out window support',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-21 13:13:08 UTC',
-    date: new Date('2026-01-21T13:13:08.064Z'),
+    timestamp: '2026-01-21 13:30:18 UTC',
+    date: new Date('2026-01-21T13:30:18.842Z'),
   },
 
   // Environment detection
