@@ -16,8 +16,10 @@ import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
  * Artifact data to save
  */
 export interface ArtifactToSave {
-  /** Message ID this artifact belongs to */
-  messageId: string;
+  /** Session ID this artifact belongs to (REQUIRED for two-phase save) */
+  sessionId: string;
+  /** Message ID this artifact belongs to (optional during tool execution, required after) */
+  messageId?: string;
   /** Artifact type: react, html, svg, code, mermaid, markdown */
   artifactType: string;
   /** User-friendly title */
@@ -149,11 +151,12 @@ export async function saveArtifact(
       }
     }
 
-    // Insert new version
+    // Insert new version with session_id (two-phase save pattern)
     const { data, error } = await supabase
       .from('artifact_versions')
       .insert({
-        message_id: artifact.messageId,
+        session_id: artifact.sessionId, // REQUIRED for two-phase save
+        message_id: artifact.messageId || null, // Optional during tool execution
         artifact_id: artifactId,
         version_number: versionNumber,
         artifact_type: artifact.artifactType,
