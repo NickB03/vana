@@ -786,7 +786,8 @@ export async function handleToolCallingChat(
                       const saveResult = await saveArtifact(
                         serviceClient,
                         {
-                          messageId: assistantMessageId,
+                          sessionId: sessionId, // REQUIRED for two-phase save
+                          messageId: assistantMessageId, // Link to message (optional during streaming)
                           artifactType: toolResult.data.artifactType || 'react',
                           artifactTitle: toolResult.data.artifactTitle || 'Untitled Artifact',
                           artifactContent: toolResult.data.artifactCode,

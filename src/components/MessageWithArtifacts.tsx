@@ -22,6 +22,8 @@ export interface DirectArtifactData {
 interface MessageWithArtifactsProps {
   content: string;
   messageId?: string;
+  /** Session ID for fallback query when message_id lookup fails */
+  sessionId?: string;
   onArtifactOpen: (artifact: ArtifactData) => void;
   artifactOverrides?: Record<string, Partial<ArtifactData>>;
   searchResults?: WebSearchResultsType | null;
@@ -100,6 +102,7 @@ function stripArtifactTags(content: string): string {
 export const MessageWithArtifacts = memo(({
   content,
   messageId,
+  sessionId,
   onArtifactOpen,
   artifactOverrides,
   searchResults,
@@ -168,8 +171,68 @@ export const MessageWithArtifacts = memo(({
 
   const hasDbArtifacts = dbArtifacts && dbArtifacts.length > 0;
 
+  // 3. Fallback: Query by session_id for artifacts not yet linked to message
+  // This handles the race condition where artifacts are saved during streaming
+  // but haven't been linked to the message yet
+  const { data: sessionArtifacts } = useQuery({
+    queryKey: ['session-artifacts', sessionId, messageId],
+    queryFn: async () => {
+      if (!sessionId) return [];
+
+      // Query for recent artifacts in this session (last 30 seconds)
+      // This gives a reasonable time window for artifacts created during streaming
+      const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
+
+      const { data, error } = await supabase
+        .from('artifact_versions')
+        .select('artifact_id, artifact_type, artifact_title, artifact_content, artifact_language, created_at')
+        .eq('session_id', sessionId)
+        .gte('created_at', thirtySecondsAgo)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('[MessageWithArtifacts] Failed to fetch session artifacts:', error);
+        return [];
+      }
+
+      // Deduplicate by artifact_id (keep latest version)
+      const seen = new Set<string>();
+      const uniqueArtifacts: DirectArtifactData[] = [];
+      for (const row of data) {
+        if (!seen.has(row.artifact_id)) {
+          seen.add(row.artifact_id);
+
+          console.log('[MessageWithArtifacts] 🔍 Session artifact fallback:', {
+            id: row.artifact_id,
+            createdAt: row.created_at,
+            contentLength: row.artifact_content?.length ?? 0,
+          });
+
+          uniqueArtifacts.push({
+            id: row.artifact_id,
+            type: row.artifact_type,
+            title: row.artifact_title,
+            content: row.artifact_content,
+            language: row.artifact_language ?? undefined,
+          });
+        }
+      }
+
+      return uniqueArtifacts;
+    },
+    // Only use session fallback if:
+    // 1. We have a sessionId
+    // 2. No direct artifactData provided
+    // 3. messageId query returned no results (use dependency on hasDbArtifacts)
+    enabled: !!sessionId && !hasDirectArtifactData && !hasDbArtifacts,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+
+  const hasSessionArtifacts = sessionArtifacts && sessionArtifacts.length > 0;
+
   // ============================================================================
-  // RESOLVE FINAL ARTIFACTS (Priority: prop > DB)
+  // RESOLVE FINAL ARTIFACTS (Priority: prop > DB by message_id > DB by session_id)
   // ============================================================================
   const artifacts = useMemo(() => {
     // Priority 1: Direct artifactData prop (from streaming or parent)
@@ -177,14 +240,20 @@ export const MessageWithArtifacts = memo(({
       return artifactData.map(convertToArtifactData);
     }
 
-    // Priority 2: Artifacts from database query
+    // Priority 2: Artifacts from database query by message_id
     if (hasDbArtifacts && dbArtifacts) {
       return dbArtifacts.map(convertToArtifactData);
     }
 
+    // Priority 3: Artifacts from database query by session_id (fallback)
+    if (hasSessionArtifacts && sessionArtifacts) {
+      console.log('[MessageWithArtifacts] Using session fallback for artifacts');
+      return sessionArtifacts.map(convertToArtifactData);
+    }
+
     // No artifacts found
     return [];
-  }, [hasDirectArtifactData, artifactData, hasDbArtifacts, dbArtifacts]);
+  }, [hasDirectArtifactData, artifactData, hasDbArtifacts, dbArtifacts, hasSessionArtifacts, sessionArtifacts]);
 
   // Apply artifact overrides (e.g., bundle status updates)
   const mergedArtifacts = useMemo(() => {

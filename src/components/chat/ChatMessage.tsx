@@ -229,6 +229,7 @@ export const ChatMessage = React.memo(function ChatMessage({
                   <MessageWithArtifacts
                     content={message.content}
                     messageId={message.id}
+                    sessionId={message.session_id}
                     onArtifactOpen={onArtifactOpen}
                     artifactOverrides={artifactOverrides}
                     searchResults={streamProgress.searchResults}
@@ -266,6 +267,7 @@ export const ChatMessage = React.memo(function ChatMessage({
                 <MessageWithArtifacts
                   content={message.content}
                   messageId={message.id}
+                  sessionId={message.session_id}
                   onArtifactOpen={onArtifactOpen}
                   artifactOverrides={artifactOverrides}
                   searchResults={message.search_results}
