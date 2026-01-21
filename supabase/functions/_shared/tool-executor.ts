@@ -729,7 +729,11 @@ export function getToolResultContent(result: ToolExecutionResult): string {
       // IMPORTANT: Return a concise summary instead of full code
       // This prompts Gemini to explain what it created to the user
       // The artifact itself is already sent to the client via artifact_complete event
-      return `Successfully created a ${type} artifact titled "${title}". Now explain to the user what you created, highlight its key features, and provide any relevant usage tips. Be conversational and helpful (2-3 sentences).`;
+      //
+      // CRITICAL: This message MUST trigger the explanation protocol from the system prompt.
+      // The system prompt defines the exact format (3-5 sentences, template structure).
+      // This tool result just confirms success and triggers the response.
+      return `✅ Artifact created successfully: "${title}" (${type})\n\n**YOU MUST NOW RESPOND WITH YOUR EXPLANATION** following the CRITICAL BEHAVIOR RULE #1 from your system instructions. This is NOT optional - explain what you created to the user immediately.`;
     }
 
     case 'generate_image': {
@@ -750,13 +754,15 @@ export function getToolResultContent(result: ToolExecutionResult): string {
         // Storage succeeded - include URL ONLY in system instruction for edit operations
         // The AI model needs this URL for edits, but shouldn't echo it in chat responses
         // IMPORTANT: Prompt Gemini to explain what was created (similar to generate_artifact)
-        return `Successfully generated an image${stored ? ' and saved it to storage' : ''}. The image is now displayed to the user. Now describe to the user what you created, including the subject, style, and key visual elements. Be descriptive and engaging (2-3 sentences).
+        // CRITICAL: Reference system prompt rules instead of conflicting sentence counts
+        return `✅ Image generated successfully and saved to storage. The image is now displayed to the user.\n\n**YOU MUST NOW RESPOND WITH YOUR EXPLANATION** following the CRITICAL BEHAVIOR RULE #1 from your system instructions. Describe what you created including the subject, style, and key visual elements. This is NOT optional.
 
 If the user requests modifications to this image, use generate_image with mode="edit" and baseImage="${url}"`;
       } else {
         // Storage failed - edit mode won't work without a persistent URL
         // IMPORTANT: Prompt Gemini to explain what was created (similar to generate_artifact)
-        return `Successfully generated an image. The image is displayed to the user. Now describe to the user what you created, including the subject, style, and key visual elements. Be descriptive and engaging (2-3 sentences).
+        // CRITICAL: Reference system prompt rules instead of conflicting sentence counts
+        return `✅ Image generated successfully. The image is displayed to the user.\n\n**YOU MUST NOW RESPOND WITH YOUR EXPLANATION** following the CRITICAL BEHAVIOR RULE #1 from your system instructions. Describe what you created including the subject, style, and key visual elements. This is NOT optional.
 
 Note: This image was rendered directly (temporary). If the user wants to edit it, a new image will need to be generated instead since the original isn't stored.`;
       }

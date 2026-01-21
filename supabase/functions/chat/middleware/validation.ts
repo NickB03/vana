@@ -30,6 +30,7 @@ export interface ValidationResult {
     };
     isGuest: boolean;
     toolChoice: "auto" | "generate_artifact" | "generate_image";
+    modeHint: "auto" | "artifact" | "image";
     includeReasoning: boolean;
     /** Pre-generated UUID for the assistant message (enables artifact DB linking) */
     assistantMessageId?: string;
@@ -52,6 +53,7 @@ export async function validateInput(
       currentArtifact,
       isGuest,
       toolChoice = "auto",
+      modeHint = "auto",
       includeReasoning = false,
       assistantMessageId,
     } = requestBody;
@@ -160,6 +162,21 @@ export async function validateInput(
       };
     }
 
+    const allowedModeHints = ["auto", "artifact", "image"];
+    if (
+      typeof modeHint !== "string" ||
+      !allowedModeHints.includes(modeHint)
+    ) {
+      console.error(`[${requestId}] Invalid modeHint:`, modeHint);
+      return {
+        ok: false,
+        error: {
+          error: "Invalid modeHint value",
+          requestId,
+        },
+      };
+    }
+
     // Validate assistantMessageId if provided (must be valid UUID)
     if (assistantMessageId !== undefined) {
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -183,6 +200,7 @@ export async function validateInput(
         currentArtifact,
         isGuest: isGuest || false,
         toolChoice,
+        modeHint,
         includeReasoning,
         assistantMessageId,
       },

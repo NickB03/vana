@@ -9,6 +9,8 @@ import { extractNpmDependencies } from '@/utils/npmDetection';
 import { ArtifactSkeleton } from '@/components/ui/artifact-skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { useSandpackBundle } from '@/hooks/useSandpackBundle';
+import { generateStandaloneReactHTML } from '@/utils/generateStandaloneReactHTML';
 
 interface SandpackArtifactRendererProps {
   code: string;
@@ -16,6 +18,73 @@ interface SandpackArtifactRendererProps {
   showEditor?: boolean;
   onError?: (error: string) => void;
   onReady?: () => void;
+  previewContentRef?: React.MutableRefObject<string | null>;
+  onBundleError?: (error: Error) => void;
+}
+
+interface BundleExtractorProps {
+  title: string;
+  dependencies: Record<string, string>;
+  previewContentRef?: React.MutableRefObject<string | null>;
+  onBundleError?: (error: Error) => void;
+}
+
+/**
+ * Internal component that extracts the transpiled bundle from Sandpack
+ * and generates standalone HTML for pop-out windows.
+ *
+ * MUST be rendered inside SandboxProvider to access Sandpack context.
+ */
+function BundleExtractor({
+  title,
+  dependencies,
+  previewContentRef,
+  onBundleError,
+}: BundleExtractorProps) {
+  const { bundle, isReady } = useSandpackBundle();
+
+  // DEBUG: Log bundle state changes
+  useEffect(() => {
+    console.log('[BundleExtractor] State update:', {
+      isReady,
+      bundleLength: bundle.length,
+      hasRef: !!previewContentRef,
+      bundlePaths: bundle.map(m => m.path),
+    });
+  }, [isReady, bundle, previewContentRef]);
+
+  useEffect(() => {
+    console.log('[BundleExtractor] Checking conditions:', {
+      isReady,
+      bundleLength: bundle.length,
+      hasRef: !!previewContentRef,
+      willGenerate: isReady && bundle.length > 0 && !!previewContentRef,
+    });
+
+    if (isReady && bundle.length > 0 && previewContentRef) {
+      try {
+        const html = generateStandaloneReactHTML({
+          title,
+          modules: bundle,
+          dependencies,
+        });
+        previewContentRef.current = html;
+        if (import.meta.env.DEV) {
+          console.log('[BundleExtractor] Generated standalone HTML:', {
+            title,
+            modulesCount: bundle.length,
+            htmlLength: html.length,
+          });
+        }
+      } catch (error) {
+        console.error('[BundleExtractor] Failed to generate standalone HTML:', error);
+        previewContentRef.current = null;
+        onBundleError?.(error instanceof Error ? error : new Error(String(error)));
+      }
+    }
+  }, [isReady, bundle, title, dependencies, previewContentRef, onBundleError]);
+
+  return null; // This component is invisible, just extracts data
 }
 
 export const SandpackArtifactRenderer = ({
@@ -24,17 +93,21 @@ export const SandpackArtifactRenderer = ({
   showEditor = false,
   onError,
   onReady,
+  previewContentRef,
+  onBundleError,
 }: SandpackArtifactRendererProps) => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // DEBUG: Log code received for rendering
-  console.log('[Sandpack] 🎨 Rendering artifact:');
-  console.log('  - Title:', title);
-  console.log('  - Code length:', code?.length ?? 0);
-  console.log('  - Code is empty:', !code || code.trim() === '');
-  console.log('  - Code type:', typeof code);
-  console.log('  - Code preview:', code?.substring(0, 150));
+  if (import.meta.env.DEV) {
+    console.log('[Sandpack] 🎨 Rendering artifact:');
+    console.log('  - Title:', title);
+    console.log('  - Code length:', code?.length ?? 0);
+    console.log('  - Code is empty:', !code || code.trim() === '');
+    console.log('  - Code type:', typeof code);
+    console.log('  - Code preview:', code?.substring(0, 150));
+  }
 
   // VALIDATION: Check for empty code
   if (!code || code.trim() === '') {
@@ -126,11 +199,13 @@ export const SandpackArtifactRenderer = ({
   }
 
   // DEBUG: Log files object before passing to Sandpack
-  console.log('[Sandpack] 📁 Files object:', {
-    fileKeys: Object.keys(files),
-    appJsLength: files['/App.js']?.code?.length,
-    appJsPreview: files['/App.js']?.code?.substring(0, 200),
-  });
+  if (import.meta.env.DEV) {
+    console.log('[Sandpack] 📁 Files object:', {
+      fileKeys: Object.keys(files),
+      appJsLength: files['/App.js']?.code?.length,
+      appJsPreview: files['/App.js']?.code?.substring(0, 200),
+    });
+  }
 
   return (
     <div className="w-full h-full">
@@ -141,6 +216,14 @@ export const SandpackArtifactRenderer = ({
         customSetup={customSetup}
         options={options}
       >
+        {/* Extract bundle for pop-out windows (invisible component) */}
+        <BundleExtractor
+          title={title}
+          dependencies={dependencies}
+          previewContentRef={previewContentRef}
+          onBundleError={onBundleError}
+        />
+
         <SandboxLayout>
           {showEditor ? (
             <SandboxCodeEditor

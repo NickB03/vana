@@ -343,6 +343,7 @@ export function useChatMessages(
     onDone: () => void,
     currentArtifact?: { title: string; type: string; content: string },
     toolChoice: ToolChoice = "auto",
+    modeHint: "auto" | "artifact" | "image" = "auto",
     retryCount = 0,
     abortSignal?: AbortSignal
   ) => {
@@ -417,6 +418,7 @@ export function useChatMessages(
         currentArtifact,
         isGuest: !isAuthenticated,
         toolChoice,
+        modeHint, // NEW: Send mode hint to backend for prompt nudging
         includeReasoning: true, // Enable Chain of Thought reasoning
         // Pre-generated ID for artifact DB linking (backend uses this as message_id FK)
         assistantMessageId,
@@ -424,6 +426,7 @@ export function useChatMessages(
 
       console.log("🚀 [useChatMessages.streamChat] Sending request:", {
         toolChoice,
+        modeHint,
         sessionId: isAuthenticated ? sessionId : 'guest',
         isGuest,
         hasSession: !!session,
@@ -1028,7 +1031,7 @@ export function useChatMessages(
           });
           // Small delay before retry to avoid hammering the API
           await new Promise(resolve => setTimeout(resolve, 500));
-          return streamChat(userMessage, onDelta, onDone, currentArtifact, toolChoice, retryCount + 1, abortSignal);
+          return streamChat(userMessage, onDelta, onDone, currentArtifact, toolChoice, modeHint, retryCount + 1, abortSignal);
         }
 
         console.error("[useChatMessages] Empty chat response after retries - not saving blank message");
@@ -1133,7 +1136,7 @@ export function useChatMessages(
         // Recursive retry with incremented count
         // Don't clear isLoading - the nested call maintains the loading state
         // When the final retry completes/fails, IT will clear isLoading
-        return streamChat(userMessage, onDelta, onDone, currentArtifact, toolChoice, retryCount + 1, abortSignal);
+        return streamChat(userMessage, onDelta, onDone, currentArtifact, toolChoice, modeHint, retryCount + 1, abortSignal);
       }
 
       // Non-retryable error - clear loading and show error

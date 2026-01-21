@@ -89,6 +89,7 @@ serve(async (req) => {
       currentArtifact,
       isGuest,
       toolChoice,
+      modeHint,
       includeReasoning,
       assistantMessageId,
     } = validationResult.data!;
@@ -99,6 +100,7 @@ serve(async (req) => {
       isGuest,
       hasArtifact: !!currentArtifact,
       toolChoice,
+      modeHint,
     });
 
     // ========================================
@@ -378,13 +380,8 @@ Treat this as an iterative improvement of the existing artifact.`;
         );
       }
 
-      // Derive mode hint from frontend flags
-      const modeHint: ModeHint = toolChoice === 'generate_image'
-        ? 'image'
-        : toolChoice === 'generate_artifact'
-          ? 'artifact'
-          : 'auto';
-
+      // Use mode hint from frontend (extracted from request body)
+      // Frontend now sends explicit modeHint as nudge, not forced toolChoice
       return handleToolCallingChat({
         messages: contextMessages,
         fullArtifactContext,

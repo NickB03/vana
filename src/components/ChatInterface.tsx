@@ -14,7 +14,7 @@ import {
   PromptInputTextarea,
 } from "@/components/prompt-kit/prompt-input";
 import { PromptInputControls } from "@/components/prompt-kit/prompt-input-controls";
-import { useChatMessages, ChatMessage, type StreamProgress, type StreamingArtifact } from "@/hooks/useChatMessages";
+import { useChatMessages, ChatMessage, type StreamProgress } from "@/hooks/useChatMessages";
 import { useStreamCancellation } from "@/hooks/useStreamCancellation";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ArtifactContainer as Artifact, ArtifactData } from "@/components/ArtifactContainer";
@@ -27,7 +27,7 @@ import { TOUR_STEP_IDS } from "@/components/tour";
 import { VirtualizedMessageList } from "@/components/chat/VirtualizedMessageList";
 import { ERROR_IDS } from "@/constants/errorIds";
 import { logError } from "@/utils/errorLogging";
-import { getToolChoice } from "@/utils/toolChoice";
+import { getToolChoice, getModeHint } from "@/utils/toolChoice";
 
 interface ChatInterfaceProps {
   sessionId?: string;
@@ -274,17 +274,18 @@ export function ChatInterface({
     setStreamingMessage("");
     // Clear completedStreamProgress when starting new stream
     setCompletedStreamProgress(null);
-    // Respect explicit modes: force the corresponding tool when the user opts in.
-    // Artifact mode should bias the backend and avoid plain-text replies.
-    // If the user is editing an existing artifact, ALWAYS force artifact tool.
+    // Respect explicit modes: nudge the model towards tools when user opts in
+    // If the user is editing an existing artifact, FORCE artifact tool (only exception)
     const isArtifactEdit = !!(currentArtifact && isEditingArtifact);
     const toolChoice = isArtifactEdit
-      ? "generate_artifact"
-      : getToolChoice(imageMode, artifactMode);
-    console.log("🎯 [ChatInterface.handleSend] Tool choice:", {
+      ? "generate_artifact"  // Only forced case: editing existing artifacts
+      : getToolChoice(imageMode, artifactMode);  // Always returns 'auto' now
+    const modeHint = getModeHint(imageMode, artifactMode);  // 'artifact', 'image', or 'auto'
+    console.log("🎯 [ChatInterface.handleSend] Tool selection:", {
       imageMode,
       artifactMode,
       toolChoice,
+      modeHint,
       isArtifactEdit,
     });
     // Initialize progress with "analyzing" state for immediate feedback
@@ -347,6 +348,7 @@ export function ChatInterface({
         },
         currentArtifact && isEditingArtifact ? currentArtifact : undefined,
         toolChoice,
+        modeHint,  // NEW: Pass mode hint to backend for prompt nudging
         0, // retryCount
         abortController.signal
       );
@@ -830,7 +832,8 @@ export function ChatInterface({
           completeStream();
         },
         currentArtifact && isEditingArtifact ? currentArtifact : undefined,
-        "auto",
+        "auto", // toolChoice
+        "auto", // modeHint - let model decide for retries
         0, // retryCount
         abortController.signal
       );
