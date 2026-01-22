@@ -15,6 +15,8 @@ import { RefreshCw } from "lucide-react";
 import { useMinimumLoadingTime } from "@/hooks/use-minimum-loading-time";
 import { motion } from "motion/react";
 import { ARTIFACT_ANIMATION } from "@/utils/animationSystem";
+import { generateSandpackPopoutHTML } from "@/utils/generateSandpackPopoutHTML";
+import { extractNpmDependencies } from "@/utils/npmDetection";
 
 export type ArtifactType = "code" | "markdown" | "html" | "svg" | "mermaid" | "react" | "image";
 
@@ -142,27 +144,31 @@ export const ArtifactContainer = ({
       return;
     }
 
-    // DEBUG: Log ref state
     console.log('[PopOut] Artifact type:', artifact.type);
-    console.log('[PopOut] previewContentRef.current exists:', !!previewContentRef.current);
-    console.log('[PopOut] previewContentRef.current length:', previewContentRef.current?.length);
-    console.log('[PopOut] previewContentRef preview:', previewContentRef.current?.substring(0, 200));
 
-    // Use the pre-generated preview content from ArtifactRenderer if available
-    // This is essential for React artifacts which need transpilation
     let popoutContent: string;
 
-    if (previewContentRef.current) {
-      // Use the properly generated preview HTML (includes React, transpiled code, etc.)
-      console.log('[PopOut] Using previewContentRef for pop-out');
-      popoutContent = previewContentRef.current;
+    // For React artifacts, use Sandpack-based popout for guaranteed compatibility
+    // This re-renders Sandpack in the new window, ensuring identical behavior
+    if (artifact.type === 'react') {
+      console.log('[PopOut] Using Sandpack-based popout for React artifact');
+      const dependencies = extractNpmDependencies(artifact.content);
+      popoutContent = generateSandpackPopoutHTML({
+        title: artifact.title,
+        code: artifact.content,
+        dependencies,
+      });
     } else {
-      console.log('[PopOut] Falling back to raw artifact.content');
-      // Fallback for artifacts where preview content isn't available yet
-      const isFullHTML = artifact.content.includes("<!DOCTYPE");
-      popoutContent = isFullHTML
-        ? artifact.content
-        : `<!DOCTYPE html>
+      // For non-React artifacts (HTML, code), use the pre-generated preview content
+      // or fall back to wrapping raw content
+      console.log('[PopOut] Using standard popout for', artifact.type);
+      if (previewContentRef.current) {
+        popoutContent = previewContentRef.current;
+      } else {
+        const isFullHTML = artifact.content.includes("<!DOCTYPE");
+        popoutContent = isFullHTML
+          ? artifact.content
+          : `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -183,13 +189,14 @@ export const ArtifactContainer = ({
 ${artifact.content}
 </body>
 </html>`;
+      }
     }
 
     newWindow.document.open();
     newWindow.document.write(popoutContent);
     newWindow.document.close();
     toast.success("Opened in new window");
-  }, [artifact.content, artifact.title, injectedCDNs]);
+  }, [artifact.content, artifact.title, artifact.type, injectedCDNs]);
 
   // Helper functions
   const handleRefresh = useCallback(() => {
