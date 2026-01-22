@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: 'da661372f79db1fcb9b74acbb990c8c8e275b206',
-    short: 'da66137',
-    branch: 'fix/artifact-card-generation-race-condition',
-    message: 'fix: improve artifact explanation compliance and pop-out window support',
+    hash: 'c21a66a2323d896c21cdf502f9368d15f79f25c4',
+    short: 'c21a66a',
+    branch: 'feat/sandpack-popout-and-docs',
+    message: 'Merge pull request #560 from NickB03/fix/artifact-card-generation-race-condition',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-21 13:30:18 UTC',
-    date: new Date('2026-01-21T13:30:18.842Z'),
+    timestamp: '2026-01-22 00:11:14 UTC',
+    date: new Date('2026-01-22T00:11:14.808Z'),
   },
 
   // Environment detection
