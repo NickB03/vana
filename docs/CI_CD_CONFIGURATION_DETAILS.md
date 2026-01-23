@@ -73,7 +73,7 @@ Only runs if supabase/functions/** changed
 ```
 
 **For Vanilla Sandpack Refactor**:
-- Will trigger because `artifact-tool-v2.ts` is new
+- Will trigger because `artifact-generator-structured.ts` is new
 - Will trigger because deleted artifacts removed
 - Tests must pass (90% coverage threshold)
 
@@ -207,7 +207,7 @@ on:
 4. Deploy all Edge Functions
 
 **For Vanilla Sandpack Refactor**:
-- Triggered when `chat/index.ts` updated (artifact-tool-v2 integrated)
+- Triggered when `chat/index.ts` updated (artifact-generator-structured integrated)
 - No migrations needed (this refactor code-only)
 - Functions deployed automatically
 
@@ -367,9 +367,10 @@ src/                    ← Components, utilities, hooks
 
 **For Vanilla Sandpack**:
 ```
-SimpleArtifactRenderer.tsx  ← Should be ≥80% (new)
-ArtifactErrorBoundary.tsx   ← Should be ≥70% (new)
-artifact-tool-v2.ts         ← Should be ≥80% (new)
+SimpleArtifactRenderer.tsx       ← Should be ≥80% (new)
+ArtifactErrorBoundary.tsx        ← Should be ≥70% (new)
+artifact-generator-structured.ts ← Should be ≥80% (new)
+artifact-complexity.ts           ← Should be ≥80% (new)
 ```
 
 **How Coverage Works**:
@@ -417,10 +418,15 @@ artifact-generation-e2e.test.ts
 ├─ Tests: Generation → compile → no errors
 └─ Validates: Gemini 3 Flash output quality
 
-artifact-tool-v2.ts
+artifact-generator-structured.ts
 ├─ Coverage: ≥80% minimum
-├─ Tests: Parse → extract → return artifact
-└─ Validates: Tool handler logic
+├─ Tests: Generate → validate (Zod) → return artifact
+└─ Validates: JSON schema structured output flow
+
+artifact-complexity.ts
+├─ Coverage: ≥80% minimum
+├─ Tests: Analyze → classify → return complexity result
+└─ Validates: Complexity detection for routing
 ```
 
 **Strict Requirement**:
@@ -491,7 +497,7 @@ gh secret set SUPABASE_ACCESS_TOKEN --repo NickB03/llm-chat-site
 **For Refactor**:
 - No new secrets needed
 - Existing secrets work with Edge Functions
-- artifact-tool-v2.ts uses same Gemini API keys
+- artifact-generator-structured.ts uses same Gemini API keys
 
 ---
 
@@ -572,8 +578,10 @@ paths:
 For refactor:
 ```
 Modified paths:
-├─ supabase/functions/chat/index.ts (uses artifact-tool-v2)
-├─ supabase/functions/_shared/artifact-tool-v2.ts (NEW)
+├─ supabase/functions/chat/index.ts (uses artifact-generator-structured)
+├─ supabase/functions/_shared/artifact-generator-structured.ts (NEW)
+├─ supabase/functions/_shared/artifact-complexity.ts (NEW)
+├─ supabase/functions/_shared/schemas/artifact-schema.ts (NEW)
 └─ (many other functions/* files)
 ↓
 deploy-edge-functions.yml TRIGGERS

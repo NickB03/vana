@@ -761,12 +761,21 @@ The following endpoints have been removed as part of the Vanilla Sandpack refact
 
 ## Changelog
 
+### 2026-01-22
+- **LLM Integration Modernization**
+  - Migrated artifact generation from XML parsing to JSON schema structured outputs
+  - New files: `artifact-generator-structured.ts`, `artifact-complexity.ts`, `circuit-breaker.ts`, `errors.ts`, `schemas/artifact-schema.ts`
+  - Added circuit breaker pattern for API resilience
+  - Added complexity-based routing for artifact generation
+  - Added Zod validation schemas for structured outputs
+  - Consolidated duplicate artifact parsing logic into `artifact-parser-shared.ts`
+
 ### 2026-01-18
 - **Vanilla Sandpack Refactor**
   - Removed `/generate-artifact`, `/generate-artifact-fix`, `/bundle-artifact` endpoints
   - Artifact generation now uses tool calling via `/chat` endpoint
   - Database persistence: Artifacts stored in `artifact_versions` table (replaces XML embedding)
-  - New files: `artifact-saver.ts`, `artifact-tool-v2.ts`
+  - New files: `artifact-saver.ts`
   - Deleted: ~15,000 lines of artifact complexity (artifact-rules/, bundling system, validation layers)
   - Client renders artifacts via vanilla Sandpack (no server preprocessing)
 

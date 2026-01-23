@@ -21,6 +21,8 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { MODELS, RETRY_CONFIG } from './config.ts';
+import { CircuitBreaker, createGeminiCircuitBreaker } from './circuit-breaker.ts';
+import { LLMTimeoutError, LLMQuotaExceededError, isRetryableError } from './errors.ts';
 
 // API configuration
 const OPENROUTER_KEY = Deno.env.get("OPENROUTER_GEMINI_FLASH_KEY");
@@ -33,6 +35,22 @@ if (!OPENROUTER_KEY) {
     "Get your key from: https://openrouter.ai/keys\n" +
     "Set it with: supabase secrets set OPENROUTER_GEMINI_FLASH_KEY=sk-or-v1-..."
   );
+}
+
+// Module-level circuit breaker for Gemini API calls
+// NOTE: State may reset on cold starts in Deno Edge Functions.
+// This provides "soft" resilience within a function's lifetime.
+const geminiCircuitBreaker = createGeminiCircuitBreaker();
+
+// Usage logging failure tracking (for detecting persistent database issues)
+let consecutiveUsageLogFailures = 0;
+const MAX_CONSECUTIVE_USAGE_LOG_FAILURES = 10;
+
+/**
+ * Get the circuit breaker instance for external monitoring/testing.
+ */
+export function getCircuitBreaker(): CircuitBreaker {
+  return geminiCircuitBreaker;
 }
 
 // ============================================================================
@@ -102,6 +120,22 @@ export type ThinkingLevel = 'minimal' | 'low' | 'medium' | 'high';
 /**
  * Options for calling Gemini
  */
+/**
+ * Response format for structured outputs.
+ * Used with OpenRouter's json_schema response format.
+ */
+export interface ResponseFormat {
+  type: 'json_schema';
+  json_schema: {
+    name: string;
+    strict: boolean;
+    schema: Record<string, unknown>;
+  };
+}
+
+/**
+ * Options for calling Gemini
+ */
 export interface CallGeminiOptions {
   model?: string;  // Default: GEMINI_3_FLASH
   temperature?: number;
@@ -118,6 +152,8 @@ export interface CallGeminiOptions {
   toolChoice?: "auto" | { type: "function"; function: { name: string } };
   timeoutMs?: number;
   mediaResolution?: 'low' | 'medium' | 'high' | 'ultra_high';  // Image/video processing quality
+  /** Response format for structured outputs (JSON schema validation) */
+  responseFormat?: ResponseFormat;
 }
 
 // ============================================================================
@@ -146,7 +182,8 @@ export async function callGemini(
     tools,
     toolChoice,
     timeoutMs = 120000,
-    mediaResolution
+    mediaResolution,
+    responseFormat
   } = options || {};
 
   console.log(
@@ -177,6 +214,13 @@ export async function callGemini(
     body.media_resolution = mediaResolution;
   }
 
+  // Add response format for structured outputs
+  // This enables JSON schema validation on the LLM output
+  if (responseFormat) {
+    body.response_format = responseFormat;
+    console.log(`[${requestId}] 📋 Using structured output: ${responseFormat.json_schema.name}`);
+  }
+
   // Add tools if provided
   if (tools && tools.length > 0) {
     body.tools = tools.map(tool => ({
@@ -196,17 +240,39 @@ export async function callGemini(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
+  // Wrap the API call in circuit breaker for resilience
+  // Circuit breaker tracks failures and fails fast when service is unhealthy
   try {
-    const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${OPENROUTER_KEY}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": Deno.env.get("SITE_URL") || Deno.env.get("SUPABASE_URL") || "https://your-domain.com",
-        "X-Title": "AI Chat Assistant"
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal
+    const response = await geminiCircuitBreaker.call(async () => {
+      const fetchResponse = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${OPENROUTER_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": Deno.env.get("SITE_URL") || Deno.env.get("SUPABASE_URL") || "https://your-domain.com",
+          "X-Title": "AI Chat Assistant"
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+
+      // Treat non-OK responses as failures for circuit breaker
+      // This ensures rate limits (429) and server errors (5xx) count as failures
+      if (!fetchResponse.ok && (fetchResponse.status === 429 || fetchResponse.status >= 500)) {
+        // Parse rate limit headers for LLMQuotaExceededError
+        if (fetchResponse.status === 429) {
+          const retryAfter = fetchResponse.headers.get('Retry-After');
+          const resetTime = retryAfter
+            ? new Date(Date.now() + parseInt(retryAfter) * 1000)
+            : new Date(Date.now() + 60000); // Default 1 minute
+          throw new LLMQuotaExceededError(resetTime, 'rate');
+        }
+        // Server error - throw generic error for circuit breaker tracking
+        const errorText = await fetchResponse.text();
+        throw new Error(`Gemini API error ${fetchResponse.status}: ${errorText.substring(0, 200)}`);
+      }
+
+      return fetchResponse;
     });
 
     clearTimeout(timeoutId);
@@ -214,9 +280,13 @@ export async function callGemini(
 
   } catch (error) {
     clearTimeout(timeoutId);
+
+    // Convert AbortError to typed LLMTimeoutError
     if (error instanceof Error && error.name === 'AbortError') {
       console.error(`[${requestId}] ⏱️  Request timeout after ${timeoutMs}ms`);
+      throw new LLMTimeoutError(timeoutMs, 'callGemini');
     }
+
     throw error;
   }
 }
@@ -248,28 +318,53 @@ export async function callGeminiWithRetry(
 
     // Handle rate limiting (429) and service overload (503)
     if (response.status === 429 || response.status === 503) {
-      if (retryCount < RETRY_CONFIG.MAX_RETRIES) {
-        // CRITICAL: Drain response body to prevent resource leak
-        await response.text();
+      // Read response body BEFORE draining (for logging and error details)
+      const responseBody = await response.text();
+      const responsePreview = responseBody.substring(0, 200);
 
-        const delayMs = Math.min(
-          RETRY_CONFIG.INITIAL_DELAY_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, retryCount),
-          RETRY_CONFIG.MAX_DELAY_MS
+      // Calculate reset time from Retry-After header
+      const retryAfter = response.headers.get('Retry-After');
+      const delayMs = Math.min(
+        RETRY_CONFIG.INITIAL_DELAY_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, retryCount),
+        RETRY_CONFIG.MAX_DELAY_MS
+      );
+      const actualDelayMs = retryAfter ? parseInt(retryAfter) * 1000 : delayMs;
+      const resetAt = new Date(Date.now() + actualDelayMs);
+
+      if (retryCount < RETRY_CONFIG.MAX_RETRIES) {
+        const errorType = response.status === 429 ? "Rate limited" : "Service overloaded";
+
+        // LOG AS ERROR IMMEDIATELY - Rate limiting is a critical event
+        console.error(
+          `[${requestId}] ⚠️  ${errorType} (${response.status}). ` +
+          `Retry ${retryCount + 1}/${RETRY_CONFIG.MAX_RETRIES} after ${actualDelayMs}ms. ` +
+          `Reset at: ${resetAt.toISOString()}. ` +
+          `Response preview: ${responsePreview}`
         );
 
-        const retryAfter = response.headers.get('Retry-After');
-        const actualDelayMs = retryAfter ? parseInt(retryAfter) * 1000 : delayMs;
-
-        const errorType = response.status === 429 ? "Rate limited" : "Service overloaded";
+        // Structured JSON event for monitoring/alerting
         console.log(
-          `[${requestId}] ${errorType} (${response.status}). ` +
-          `Retry ${retryCount + 1}/${RETRY_CONFIG.MAX_RETRIES} after ${actualDelayMs}ms`
+          JSON.stringify({
+            event: 'llm_rate_limited',
+            requestId,
+            status: response.status,
+            retryCount: retryCount + 1,
+            maxRetries: RETRY_CONFIG.MAX_RETRIES,
+            delayMs: actualDelayMs,
+            resetAt: resetAt.toISOString(),
+            responsePreview
+          })
         );
 
         await new Promise(resolve => setTimeout(resolve, actualDelayMs));
         return callGeminiWithRetry(messages, options, retryCount + 1);
       } else {
-        console.error(`[${requestId}] Max retries exceeded (status: ${response.status})`);
+        // Retries exhausted - throw LLMQuotaExceededError with proper reset time
+        console.error(
+          `[${requestId}] ⚠️  Max retries exceeded for ${response.status === 429 ? 'rate limit' : 'service overload'}. ` +
+          `Response: ${responsePreview}`
+        );
+        throw new LLMQuotaExceededError(resetAt, response.status === 429 ? 'rate' : 'rate');
       }
     }
 
@@ -610,7 +705,22 @@ export function extractToolCalls(data: any, requestId?: string): ToolCall[] | nu
     return parsed;
 
   } catch (error) {
-    console.error(`${logPrefix} ❌ Failed to parse tool calls:`, error);
+    const errorType = error instanceof SyntaxError ? 'json_syntax' :
+                      error instanceof TypeError ? 'type_error' : 'unknown';
+
+    console.error(`${logPrefix} ❌ Failed to parse tool calls:`, {
+      errorType,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      toolCallsRaw: JSON.stringify(toolCalls).substring(0, 500),
+    });
+
+    console.log(JSON.stringify({
+      event: 'tool_call_parse_failure',
+      errorType,
+      requestId,
+      timestamp: new Date().toISOString()
+    }));
+
     return null;
   }
 }
@@ -747,14 +857,36 @@ export async function logGeminiUsage(logData: {
     });
 
     if (error) {
+      consecutiveUsageLogFailures++;
       console.error(`[${logData.requestId}] Failed to log AI usage:`, error);
+
+      if (consecutiveUsageLogFailures >= MAX_CONSECUTIVE_USAGE_LOG_FAILURES) {
+        console.error(JSON.stringify({
+          event: 'usage_logging_degraded',
+          consecutiveFailures: consecutiveUsageLogFailures,
+          timestamp: new Date().toISOString(),
+          message: 'Usage logging has failed repeatedly - check ai_usage_logs table configuration'
+        }));
+      }
       // Don't throw - logging failures shouldn't break the main flow
     } else {
+      // Reset failure counter on success
+      consecutiveUsageLogFailures = 0;
       console.log(`[${logData.requestId}] 📊 Usage logged to database`);
     }
   } catch (error) {
+    consecutiveUsageLogFailures++;
     console.error(`[${logData.requestId}] Exception logging AI usage:`, error);
-    // Swallow error - logging is best-effort
+
+    // Alert on persistent failures - indicates database misconfiguration or systemic issue
+    if (consecutiveUsageLogFailures >= MAX_CONSECUTIVE_USAGE_LOG_FAILURES) {
+      console.error(JSON.stringify({
+        event: 'usage_logging_degraded',
+        consecutiveFailures: consecutiveUsageLogFailures,
+        timestamp: new Date().toISOString(),
+        message: 'Usage logging has failed repeatedly - check ai_usage_logs table configuration'
+      }));
+    }
   }
 }
 

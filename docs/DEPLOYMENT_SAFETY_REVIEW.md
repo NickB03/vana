@@ -235,7 +235,7 @@ The refactor plan proposes:
 
 2. **Instrument Artifact System**:
    ```typescript
-   // In artifact-tool-v2.ts
+   // In artifact-generator-structured.ts
    captureEvent({
      message: 'Artifact generated',
      tags: { artifact_type: 'react', status: 'success' }

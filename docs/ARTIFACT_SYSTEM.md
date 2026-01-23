@@ -24,9 +24,9 @@ The Artifact System enables AI-generated interactive components (artifacts) to b
 ### Component Flow
 
 ```
-AI generates artifact code
+AI generates artifact via JSON schema structured output
         ↓
-artifact-tool-v2.ts extracts from XML tags
+artifact-generator-structured.ts validates with Zod schema
         ↓
 artifact-saver.ts persists to database
         ↓
@@ -48,9 +48,12 @@ Errors? → Show in Sandpack console + "Ask AI to Fix" button
 - `ArtifactErrorBoundary.tsx` - React error boundary for graceful degradation
 
 **Backend** (`supabase/functions/_shared/`):
-- `artifact-tool-v2.ts` - Simple XML parser, no transformations (~230 lines)
+- `artifact-generator-structured.ts` - JSON schema structured output generation (~710 lines)
+- `artifact-parser-shared.ts` - Shared XML parser for backward compatibility (~185 lines)
+- `artifact-complexity.ts` - Complexity detection for routing (~100 lines)
 - `artifact-saver.ts` - Database persistence layer (~240 lines)
 - `system-prompt-inline.ts` - Artifact generation guidance (~305 lines)
+- `schemas/artifact-schema.ts` - Zod validation schemas (~100 lines)
 
 **Tool Calling**:
 - `chat/handlers/tool-calling-chat.ts` - Integrates artifact generation with chat

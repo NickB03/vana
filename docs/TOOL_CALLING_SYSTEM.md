@@ -133,7 +133,9 @@ done event (SSE)
 - Handles SSE streaming for tool lifecycle events
 
 **Handlers**:
-- `artifact-tool-v2.ts` — Simple XML parser for artifacts (~50 lines, no transformations)
+- `artifact-generator-structured.ts` — JSON schema structured output generation (~710 lines)
+- `artifact-complexity.ts` — Complexity detection for routing decisions (~100 lines)
+- `artifact-parser-shared.ts` — Shared XML parser for backward compatibility (~185 lines)
 - `image-executor.ts` — Image generation (Gemini Flash Image)
 - `tavily-client.ts` — Web search (Tavily API)
 
@@ -161,13 +163,15 @@ done event (SSE)
 
 Artifacts use vanilla Sandpack for React rendering with natural error surfacing:
 
-1. AI generates artifact code via `generate_artifact` tool
-2. Backend parses XML wrapper (`artifact-tool-v2.ts`) - no code transformations
-3. Frontend receives code via SSE `artifact_complete` event
-4. `SimpleArtifactRenderer.tsx` passes code directly to Sandpack
-5. Sandpack bundles and executes in isolated iframe
-6. Errors surface naturally in Sandpack console
-7. "Ask AI to Fix" button captures error for AI-powered fixes
+1. AI generates artifact via `generate_artifact` tool with JSON schema structured output
+2. `artifact-complexity.ts` analyzes request complexity for routing
+3. `artifact-generator-structured.ts` generates and validates artifact with Zod schema
+4. `artifact-saver.ts` persists to `artifact_versions` database table
+5. Frontend receives code via SSE `artifact_complete` event
+6. `SimpleArtifactRenderer.tsx` passes code directly to Sandpack
+7. Sandpack bundles and executes in isolated iframe
+8. Errors surface naturally in Sandpack console
+9. "Ask AI to Fix" button captures error for AI-powered fixes
 
 ## Security Infrastructure (Phase 0)
 
@@ -414,7 +418,9 @@ data: {"type":"done"}
 
 - **Tool Definitions**: `supabase/functions/_shared/tool-definitions.ts`
 - **Tool Executor**: `supabase/functions/_shared/tool-executor.ts`
-- **Artifact Handler**: `supabase/functions/_shared/artifact-tool-v2.ts`
+- **Artifact Generator**: `supabase/functions/_shared/artifact-generator-structured.ts`
+- **Artifact Complexity**: `supabase/functions/_shared/artifact-complexity.ts`
+- **Artifact Schema**: `supabase/functions/_shared/schemas/artifact-schema.ts`
 - **Image Executor**: `supabase/functions/_shared/image-executor.ts`
 - **Artifact Renderer**: `src/components/SimpleArtifactRenderer.tsx`
 - **Security Infrastructure**: `supabase/functions/_shared/tool-*.ts`

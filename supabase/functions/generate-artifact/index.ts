@@ -10,12 +10,12 @@
  * This endpoint is a legacy code path that is NO LONGER CALLED by the frontend.
  * The main chat flow (`/chat` endpoint) now handles artifact generation via:
  *   - supabase/functions/_shared/tool-executor.ts (routes `generate_artifact` tool calls)
- *   - supabase/functions/_shared/artifact-tool-v2.ts (simplified Gemini 3 Flash generation)
+ *   - supabase/functions/_shared/artifact-generator-structured.ts (JSON schema outputs)
  *
  * KEY DIFFERENCES FROM MAIN FLOW:
  * 1. This file uses the old `artifact-validator.ts` (now stubbed)
  * 2. This file uses `generateArtifact()` from gemini-client.ts directly
- * 3. The main flow uses `executeArtifactGenerationV2()` from artifact-tool-v2.ts
+ * 3. The main flow uses structured outputs with JSON schema validation
  * 4. The main flow integrates with tool calling and streaming in the chat context
  *
  * WHY IT STILL EXISTS:
@@ -25,10 +25,10 @@
  *
  * MIGRATION PATH:
  * All artifact generation should go through the `/chat` endpoint with the
- * `generate_artifact` tool call. See artifact-tool-v2.ts for implementation.
+ * `generate_artifact` tool call. See artifact-generator-structured.ts for implementation.
  *
  * RELATED FILES:
- * - supabase/functions/_shared/artifact-tool-v2.ts (current implementation)
+ * - supabase/functions/_shared/artifact-generator-structured.ts (current implementation)
  * - supabase/functions/_shared/tool-executor.ts (tool routing)
  * - supabase/functions/chat/index.ts (main entry point)
  *

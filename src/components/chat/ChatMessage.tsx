@@ -219,6 +219,7 @@ export const ChatMessage = React.memo(function ChatMessage({
                   artifactRendered={artifactRenderStatus === 'rendered'}
                   parentElapsedTime={lastMessageElapsedTime}
                   toolExecution={streamProgress.toolExecution}
+                  elapsedSeconds={streamProgress.elapsedSeconds}
                 />
               </ReasoningErrorBoundary>
 

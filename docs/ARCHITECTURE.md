@@ -35,8 +35,10 @@ All AI operations use Gemini 3 Flash via OpenRouter for unified, high-performanc
 ### Components
 
 **Backend** (`supabase/functions/_shared/`):
-- `artifact-tool-v2.ts` — Simple XML parser that extracts artifact code from AI responses (~50 lines)
-- `system-prompt-v2.ts` — Minimal artifact generation guidance with package whitelist (~200 lines)
+- `artifact-generator-structured.ts` — Generates artifacts using JSON schema structured outputs (~700 lines)
+- `artifact-parser-shared.ts` — Shared XML parser for backward compatibility (~185 lines)
+- `artifact-complexity.ts` — Complexity detection for routing decisions (~100 lines)
+- `system-prompt-inline.ts` — Artifact generation guidance with package whitelist (~305 lines)
 
 **Frontend** (`src/components/`):
 - `SimpleArtifactRenderer.tsx` — Vanilla Sandpack renderer with fixed dependency list (~150 lines)
@@ -52,11 +54,13 @@ All AI operations use Gemini 3 Flash via OpenRouter for unified, high-performanc
 ```
 User requests artifact
     ↓
-Gemini 3 Flash generates code (with thinking mode)
+artifact-complexity.ts analyzes complexity
     ↓
-artifact-tool-v2.ts extracts code from XML tags
+Gemini 3 Flash generates via JSON schema structured output
     ↓
-Raw code sent to client (no transformations)
+artifact-generator-structured.ts validates with Zod schema
+    ↓
+artifact-saver.ts persists to artifact_versions table
     ↓
 SimpleArtifactRenderer displays via Sandpack
     ↓

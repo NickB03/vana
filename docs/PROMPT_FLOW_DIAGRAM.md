@@ -40,9 +40,9 @@ graph TD
     H -->|Text Only| Z[💬 Direct Response<br/>No tool used]
     H -->|Tool Call| I[🔧 Tool Call Detected<br/>generate_artifact]
 
-    I --> J[⚙️ Tool Execution<br/>artifact-tool-v2.ts]
-    J --> J1[Generate Code]
-    J1 --> J2[Validate]
+    I --> J[⚙️ Tool Execution<br/>artifact-generator-structured.ts]
+    J --> J1[Generate via JSON Schema]
+    J1 --> J2[Validate with Zod]
     J2 --> J3[Send to Client via SSE]
     J3 --> K
 

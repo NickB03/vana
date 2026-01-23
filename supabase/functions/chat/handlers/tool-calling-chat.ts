@@ -47,6 +47,8 @@ import { getMatchingTemplate } from '../../_shared/artifact-rules/template-match
 import { FEATURE_FLAGS, DEFAULT_MODEL_PARAMS } from '../../_shared/config.ts';
 import { saveArtifact } from '../../_shared/artifact-saver.ts';
 import { saveMessageStub } from '../../_shared/message-stub-saver.ts';
+import { analyzeArtifactComplexity } from '../../_shared/artifact-complexity.ts';
+import { extractStatusFromReasoning } from '../../_shared/reasoning-status-extractor.ts';
 
 // Tool call types - define inline for tool call handling
 // Used for processing native tool calls from Gemini API
@@ -177,26 +179,49 @@ function parseToolArguments(
  * Biases the model towards using specific tools based on user's mode selection.
  */
 function buildModeHintPrompt(modeHint: ModeHint): string {
+  // Common guidance for when NOT to use tools
+  const noToolGuidance = `
+DO NOT use any tools for:
+- Very short messages (1-3 words) like "test", "skip", "hi", "thanks", "ok"
+- Simple questions that can be answered directly
+- Feedback or acknowledgments from the user
+- Messages asking for clarification or more information
+- Greetings or casual conversation`;
+
   switch (modeHint) {
     case 'artifact':
       return `
 
-IMPORTANT: The user has explicitly selected ARTIFACT MODE. You SHOULD use the generate_artifact tool for this request unless it's clearly just a question or simple chat message. Create interactive React components, HTML, SVG, diagrams, or code as appropriate.`;
+ARTIFACT MODE: The user wants to create something visual or interactive.
+Use generate_artifact when their message describes something to BUILD or CREATE.
+${noToolGuidance}
+
+If the message is a clear creation request (e.g., "make a calculator", "create a chart"), use generate_artifact.
+If unsure whether they want an artifact, ask for clarification instead of generating.`;
 
     case 'image':
       return `
 
-IMPORTANT: The user has explicitly selected IMAGE MODE. You SHOULD use the generate_image tool for this request unless it's clearly just a question or simple chat message. Generate images based on their description.`;
+IMAGE MODE: The user wants to generate an image.
+Use generate_image when their message describes an image to CREATE.
+${noToolGuidance}
+
+If the message is a clear image request (e.g., "draw a cat", "create a logo"), use generate_image.
+If unsure whether they want an image, ask for clarification instead of generating.`;
 
     case 'auto':
     default:
       return `
 
-Analyze the user's request and use appropriate tools when needed:
-- If they want to create something visual, interactive, or code-based, use generate_artifact
-- If they want an image, photo, illustration, or artwork, use generate_image
-- If they need current information, news, or real-time data, use browser.search
-- For general questions, respond directly without using tools`;
+Analyze the user's request carefully before using tools:
+${noToolGuidance}
+
+Only use tools when there's a CLEAR request:
+- generate_artifact: User explicitly wants to CREATE something visual/interactive/code-based
+- generate_image: User explicitly wants an image, photo, illustration, or artwork
+- browser.search: User needs current information, news, or real-time data
+
+When in doubt, respond conversationally and ask what they'd like to create.`;
   }
 }
 
@@ -513,6 +538,16 @@ export async function handleToolCallingChat(
           const conversationMessages = buildConversationMessages(systemPrompt);
 
           // ========================================
+          // State tracking for reasoning status extraction
+          // ========================================
+          let lastEmittedStatus: string | null = null;
+          let lastStatusTime = Date.now();
+          const STATUS_COOLDOWN_MS = 2000; // Prevent flickering
+
+          // Emit initial status
+          sendEvent({ type: 'status_update', status: 'Analyzing your request...' });
+
+          // ========================================
           // STEP 1: Call Gemini with native function calling
           // ========================================
           const geminiResponse = await callGeminiWithRetry(
@@ -559,6 +594,27 @@ export async function handleToolCallingChat(
             } else if (chunk.type === 'reasoning') {
               // Accumulate reasoning text for context
               fullReasoningAccumulated += chunk.data;
+
+              // Try to extract contextual status
+              const now = Date.now();
+              if (now - lastStatusTime >= STATUS_COOLDOWN_MS) {
+                // Extract from recent accumulated text (last 500 chars captures most status phrases)
+                // This prevents missing patterns split across chunk boundaries
+                const recentText = fullReasoningAccumulated.slice(-500);
+                const extraction = extractStatusFromReasoning(recentText);
+                // Only emit if we have a high or medium confidence match
+                if (extraction.status && extraction.status !== lastEmittedStatus &&
+                    (extraction.confidence === 'high' || extraction.confidence === 'medium')) {
+                  sendEvent({
+                    type: 'reasoning_status',
+                    status: extraction.status,
+                    confidence: extraction.confidence,
+                  });
+                  lastEmittedStatus = extraction.status;
+                  lastStatusTime = now;
+                  console.log(`${logPrefix} 📊 Extracted status: "${extraction.status}" (${extraction.confidence} confidence, pattern: ${extraction.pattern})`);
+                }
+              }
 
               // Forward reasoning chunks to frontend for live display
               sendEvent({
@@ -640,6 +696,29 @@ export async function handleToolCallingChat(
             };
 
             console.log(`${logPrefix} 🔧 Executing tool: ${toolCallForExecution.name}`);
+
+            // For artifact generation, analyze and log complexity
+            if (toolCallForExecution.name === 'generate_artifact') {
+              const artifactArgs = toolCallForExecution.arguments as {
+                artifactType?: string;
+                prompt?: string;
+              };
+              const complexity = analyzeArtifactComplexity(
+                artifactArgs.artifactType || 'react',
+                artifactArgs.prompt || ''
+              );
+              console.log(
+                `${logPrefix} 📊 Artifact complexity: ${complexity.reason} ` +
+                `(isComplex=${complexity.isComplex}, tokens=${complexity.estimatedTokens})`
+              );
+              // Log factors for debugging
+              logPremadeDebug(requestId, 'Artifact complexity analysis', {
+                isComplex: complexity.isComplex,
+                reason: complexity.reason,
+                estimatedTokens: complexity.estimatedTokens,
+                factors: complexity.factors,
+              });
+            }
 
             // Send execution status update for ticker display
             const executionStatusMessage = (() => {
@@ -734,6 +813,13 @@ export async function handleToolCallingChat(
                 }
 
                 case 'generate_artifact': {
+                  // TODO: Implement streaming artifact generation with progress events
+                  // Currently artifact generation happens in a single tool execution,
+                  // but artifact-generator-structured.ts supports streaming with:
+                  // - artifact_progress events (analyzing, thinking, generating, validating)
+                  // - artifact_error events (with userFriendlyMessage, technicalError, retryable)
+                  // These events should be forwarded through the SSE stream for better UX.
+
                   // Send artifact result to client
                   if (toolResult.data?.artifactCode) {
                     // Send completion status update
@@ -818,16 +904,6 @@ export async function handleToolCallingChat(
                       latencyMs: toolResult.latencyMs,
                     });
                     console.log(`${logPrefix} 📤 Sent artifact_complete event (type=${toolResult.data.artifactType}, artifactId=${savedArtifactId || 'not-saved'}, persisted=${!!savedArtifactId})`);
-
-                    // FIX (2025-12-22): Send accumulated reasoning to frontend for display
-                    if (fullReasoningAccumulated) {
-                      sendEvent({
-                        type: 'reasoning_complete',
-                        reasoning: fullReasoningAccumulated,
-                        reasoningSteps: null, // ReasoningProvider generates semantic status updates instead
-                      });
-                      console.log(`${logPrefix} 📤 Sent reasoning_complete event (${fullReasoningAccumulated.length} chars)`);
-                    }
                   }
                   break;
                 }
@@ -878,6 +954,16 @@ export async function handleToolCallingChat(
               }
             }
 
+            // Send accumulated reasoning to frontend for display (ALL response types)
+            if (fullReasoningAccumulated) {
+              sendEvent({
+                type: 'reasoning_complete',
+                reasoning: fullReasoningAccumulated,
+                reasoningSteps: null, // ReasoningProvider generates semantic status updates instead
+              });
+              console.log(`${logPrefix} 📤 Sent reasoning_complete event (${fullReasoningAccumulated.length} chars)`);
+            }
+
             // ========================================
             // STEP 4: Continue Gemini with tool results
             // ========================================
@@ -905,6 +991,9 @@ export async function handleToolCallingChat(
               // BUG FIX (2025-12-21): Wrap Gemini continuation in a timeout as safety measure
               // If continuation hangs for 90s, ensure the stream completes rather than hanging indefinitely.
               const GEMINI_CONTINUATION_TIMEOUT_MS = 90000; // 90 seconds
+
+              // Send continuation status update
+              sendEvent({ type: 'status_update', status: 'Analyzing results and formulating response...' });
 
               const continuationResponse = await callGeminiWithToolResult(
                 systemPrompt,

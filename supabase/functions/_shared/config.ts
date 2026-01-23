@@ -41,6 +41,9 @@ export const FEATURE_FLAGS = {
   AUTO_FIX_ARTIFACTS: Deno.env.get('AUTO_FIX_ARTIFACTS') !== 'false',
 } as const;
 
+// NOTE: USE_STRUCTURED_ARTIFACT_GENERATION flag removed in Phase 4 of LLM migration.
+// Structured outputs (JSON schema) are now the only artifact generation method.
+
 // Status generation removed - no longer needed with Gemini 3 Flash migration
 
 /**

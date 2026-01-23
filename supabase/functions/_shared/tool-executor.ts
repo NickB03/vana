@@ -39,7 +39,7 @@ import {
 import type { ToolCall } from './gemini-client.ts';
 import { rewriteSearchQuery } from './query-rewriter.ts';
 import { executeImageGeneration, isValidImageMode, isValidAspectRatio, type ImageMode, type AspectRatio } from './image-executor.ts';
-import { executeArtifactGenerationV2 } from './artifact-tool-v2.ts';
+import { generateArtifactStructured } from './artifact-generator-structured.ts';
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { FEATURE_FLAGS } from './config.ts';
 import { createLogger } from './logger.ts';
@@ -47,9 +47,8 @@ import { createLogger } from './logger.ts';
 /**
  * Artifact type validation and type definition
  *
- * REFACTOR NOTE: This was previously imported from artifact-executor.ts which has been deleted
- * as part of the vanilla Sandpack refactor. Phase 3 will create artifact-tool-v2.ts as the
- * proper replacement. For now, we provide inline stubs.
+ * Artifact generation uses structured outputs (JSON schema) via artifact-generator-structured.ts.
+ * This provides type-safe artifact data without XML parsing.
  */
 const VALID_ARTIFACT_TYPES = ['react', 'html', 'svg', 'code', 'mermaid', 'markdown'] as const;
 export type GeneratableArtifactType = typeof VALID_ARTIFACT_TYPES[number];
@@ -539,13 +538,13 @@ async function executeSearchTool(
 }
 
 /**
- * Execute generate_artifact tool using artifact-tool-v2.ts
+ * Execute generate_artifact tool using structured outputs (JSON schema)
  *
- * Uses the simplified Gemini 3 Flash-based artifact generation:
- * 1. Calls Gemini with artifact generation instructions
- * 2. Parses <artifact> XML tags from response
- * 3. Basic validation (has default export, valid React/HTML/etc.)
- * 4. Returns raw code - vanilla Sandpack handles rendering and errors
+ * Uses Gemini 3 Flash with structured output format:
+ * 1. Calls Gemini with JSON schema response format
+ * 2. Validates response with Zod schema
+ * 3. Returns type-safe artifact data (no XML parsing)
+ * 4. Vanilla Sandpack handles rendering and errors
  *
  * @param type - Artifact type to generate
  * @param prompt - User's description of what to create
@@ -561,14 +560,15 @@ async function executeArtifactTool(
 
   console.log(`[${requestId}] 🎨 generate_artifact called: type=${type}`);
 
-  logPremadeDebug(requestId, 'executeArtifactTool - calling artifact-tool-v2', {
+  logPremadeDebug(requestId, 'executeArtifactTool - using structured generation', {
     type,
     promptLength: prompt.length,
     promptPreview: prompt.substring(0, 100),
   });
 
-  // Delegate to artifact-tool-v2.ts for actual generation
-  return executeArtifactGenerationV2({
+  // Use structured outputs (JSON schema) for type-safe artifact generation
+  console.log(`[${requestId}] 📦 Using structured artifact generation (JSON schema)`);
+  return generateArtifactStructured({
     type,
     prompt,
     context,

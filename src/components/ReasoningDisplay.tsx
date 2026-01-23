@@ -20,6 +20,8 @@ interface ReasoningDisplayProps {
   parentElapsedTime?: string;
   /** Tool execution status for real-time display */
   toolExecution?: ToolExecution | null;
+  /** Time elapsed since stream started (for time-based fallback status) */
+  elapsedSeconds?: number;
 }
 
 /**
@@ -73,6 +75,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   artifactRendered = true, // Default to true for backward compatibility
   parentElapsedTime,
   toolExecution,
+  elapsedSeconds,
 }: ReasoningDisplayProps) {
   // Expand/collapse state
   const [isExpanded, setIsExpanded] = useState(false);
@@ -134,62 +137,70 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
 
   /**
    * Get the streaming status text from available sources
-   * Priority: semantic status > tool execution > fallback
-   * FIX (2025-12-21): Semantic status takes precedence; tool messages are tool-specific
+   * 5-Level Priority System:
+   * P1: Semantic status from backend (reasoning_status events)
+   * P2: Tool execution status (browser.search, generate_artifact, generate_image)
+   * P3: Extract from streaming reasoning text (markdown headers or action phrases)
+   * P4: Time-based fallback (guaranteed progression based on elapsed time)
+   * P5: Generic fallback ("Thinking...")
    */
   const getStreamingStatus = (): string => {
-    // HIGHEST PRIORITY: Semantic status from ReasoningProvider (GLM-4.5-Air)
-    // This gives the most context-aware, human-readable status
-    if (reasoningStatus && reasoningStatus !== "Thinking...") {
+    // P1: Semantic status from backend (reasoning_status events)
+    if (reasoningStatus && reasoningStatus !== 'Thinking...') {
       return reasoningStatus;
     }
 
-    // SECOND PRIORITY: Tool execution status (only for actual tool use)
+    // P2: Tool execution status (always available during tool use)
     if (toolExecution && isStreaming) {
       const { toolName, success, sourceCount } = toolExecution;
-
-      // If we have a result (success is defined), show completion status
       if (success !== undefined) {
         if (success && sourceCount !== undefined) {
           return `Found ${sourceCount} source${sourceCount !== 1 ? 's' : ''}`;
         }
         return success ? `${toolName} completed` : `${toolName} failed`;
       }
-
-      // FIX (2025-12-21): Show tool-specific in-progress status, not hardcoded "Searching web..."
       switch (toolName) {
-        case 'browser.search':
-          return 'Searching web...';
-        case 'generate_artifact':
-          return 'Generating artifact...';
-        case 'generate_image':
-          return 'Generating image...';
-        default:
-          return `Using ${toolName}...`;
+        case 'browser.search': return 'Searching the web...';
+        case 'generate_artifact': return 'Generating artifact...';
+        case 'generate_image': return 'Creating image...';
+        default: return `Using ${toolName}...`;
       }
     }
 
-    // THIRD PRIORITY: Extract status from streaming reasoning text
-    // Look for markdown headers like "**Determining the Sum**" or first sentence
+    // P3: Extract from streaming reasoning text (improved patterns)
     if (streamingReasoningText && isStreaming) {
-      // Try to extract markdown bold header (e.g., "**Analyzing the Question**")
-      const headerMatch = streamingReasoningText.match(/\*\*([^*]+)\*\*/);
+      // Check for markdown headers: **Header Text**
+      const headerMatch = streamingReasoningText.match(/\*\*([^*]{3,40})\*\*/);
       if (headerMatch) {
         const header = headerMatch[1].trim();
-        // Truncate long headers
-        return header.length > 30 ? header.substring(0, 27) + '...' : header + '...';
+        return header.length > 35 ? header.substring(0, 32) + '...' : header + '...';
       }
 
-      // Fallback: Use first line or sentence (up to 30 chars)
-      const firstLine = streamingReasoningText.split('\n')[0].trim();
-      if (firstLine.length > 5) {
-        const truncated = firstLine.length > 30 ? firstLine.substring(0, 27) + '...' : firstLine;
-        return truncated;
+      // Check for action phrases
+      const actionMatch = streamingReasoningText.match(
+        /(?:I (?:will|'ll|should) |Let me )(\w+) (?:the |a |an )?(.{3,25}?)(?:\.|,|$)/i
+      );
+      if (actionMatch) {
+        const verb = actionMatch[1];
+        const object = actionMatch[2].toLowerCase().replace(/[.,;:]+$/, '');
+        const gerund = verb.endsWith('e') ? verb.slice(0, -1) + 'ing' : verb + 'ing';
+        const status = `${gerund.charAt(0).toUpperCase() + gerund.slice(1)} ${object}...`;
+        if (status.length <= 40) return status;
       }
     }
 
-    // Generic fallback
-    return "Thinking...";
+    // P4: Time-based fallback (guaranteed progression)
+    if (typeof elapsedSeconds === 'number' && elapsedSeconds >= 0 && isStreaming) {
+      if (elapsedSeconds < 3) return 'Analyzing your request...';
+      if (elapsedSeconds < 10) return 'Still working on your request...';
+      if (elapsedSeconds < 20) return 'Building a detailed response...';
+      if (elapsedSeconds < 30) return 'Crafting a thorough answer...';
+      if (elapsedSeconds < 45) return 'This is taking longer than usual...';
+      return 'Almost there, finalizing response...';
+    }
+
+    // P5: Generic fallback (should rarely reach here)
+    return 'Thinking...';
   };
 
   /**

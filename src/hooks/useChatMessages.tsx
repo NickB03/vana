@@ -40,6 +40,7 @@ export interface StreamProgress {
   reasoningStatus?: string; // Semantic status update from GLM-4.5-Air
   searchResults?: WebSearchResults; // Web search results for streaming
   toolExecution?: ToolExecution; // Tool execution status for real-time display
+  elapsedSeconds?: number; // Time elapsed since stream started (for time-based fallback status)
   // Artifact data collected during streaming for immediate display
   streamingArtifacts?: Array<{
     id: string;
@@ -358,6 +359,9 @@ export function useChatMessages(
     // Note: Caller should have already set isStreaming for instant UI feedback
     setArtifactRenderStatus('pending');
 
+    // Track stream start time for elapsed seconds calculation
+    const streamStartTime = Date.now();
+
     let fullResponse = "";
     let tokenCount = 0;
     let artifactDetected = false;
@@ -509,6 +513,9 @@ export function useChatMessages(
       const CHAT_STREAM_TIMEOUT_MS = 120000; // 2 minutes max for chat streaming
       let lastDataReceivedTime = Date.now();
 
+      // Track last emitted elapsed seconds to avoid unnecessary updates
+      let lastEmittedElapsedSeconds = -1;
+
       const updateProgress = (): StreamProgress => {
         // Detect artifact tags
         if (!artifactDetected && fullResponse.includes('<artifact')) {
@@ -545,6 +552,15 @@ export function useChatMessages(
           percentage = 40 + Math.min(45, (tokenCount / 1000) * 45);
         }
 
+        // Calculate elapsed time in seconds
+        const elapsedMs = Date.now() - streamStartTime;
+        const currentElapsedSeconds = Math.floor(elapsedMs / 1000);
+
+        // Only update if second boundary actually crossed (optimization to avoid unnecessary re-renders)
+        if (currentElapsedSeconds !== lastEmittedElapsedSeconds) {
+          lastEmittedElapsedSeconds = currentElapsedSeconds;
+        }
+
         return {
           stage,
           message,
@@ -557,6 +573,7 @@ export function useChatMessages(
           reasoningStatus: lastReasoningStatus, // Preserve status for ticker display
           streamingReasoningText: reasoningText, // Preserve raw text for fallback
           toolExecution: currentToolExecution, // Preserve tool execution state
+          elapsedSeconds: lastEmittedElapsedSeconds, // Include elapsed time for time-based fallback status
           streamingArtifacts: collectedArtifacts.length > 0 ? collectedArtifacts : undefined, // Include artifact data for streaming display
         };
       };
@@ -855,6 +872,49 @@ export function useChatMessages(
                 query: searchResults?.query,
                 sourceCount: searchResults?.sources?.length || 0,
               });
+
+              continue; // Skip to next event
+            }
+
+            // ========================================
+            // ARTIFACT PROGRESS: Handle streaming progress updates during artifact generation
+            // These events provide real-time feedback for complex artifacts
+            // ========================================
+            if (parsed.type === 'artifact_progress') {
+              const progressData = parsed.data as {
+                stage: string;
+                percentage: number;
+                message?: string;
+                complexity?: {
+                  isComplex: boolean;
+                  reason: string;
+                  estimatedTokens: number;
+                };
+              };
+
+              console.log(`[StreamProgress] Artifact progress: ${progressData.stage} (${progressData.percentage}%)`);
+
+              // Update progress state with artifact generation progress
+              artifactInProgress = progressData.stage !== 'complete' && progressData.stage !== 'error';
+
+              // Map artifact generation stage to our GenerationStage type
+              const stageMap: Record<string, GenerationStage> = {
+                analyzing: 'analyzing',
+                thinking: 'planning',
+                generating: 'generating',
+                validating: 'finalizing',
+                complete: 'complete',
+                error: 'complete',
+              };
+
+              const progress = updateProgress();
+              progress.stage = stageMap[progressData.stage] || 'generating';
+              progress.percentage = progressData.percentage;
+              progress.message = progressData.message || `${progressData.stage}...`;
+              progress.artifactInProgress = artifactInProgress;
+
+              // Pass progress update to callback
+              onDelta('', progress);
 
               continue; // Skip to next event
             }
