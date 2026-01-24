@@ -118,7 +118,9 @@ export function ChatInterface({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
+  // Scroll state managed by VirtualizedMessageList via callbacks
   const [isAtBottom, setIsAtBottom] = useState(true);
+  const scrollToBottomRef = useRef<(() => void) | null>(null);
   // Ref to store handleSend for stable access in effects (prevents re-triggering initialPrompt effect)
   const handleSendRef = useRef<((message?: string) => Promise<void>) | null>(null);
   // Track which session+prompt combination has been initialized (using ref to avoid stale closure issues)
@@ -217,28 +219,9 @@ export function ChatInterface({
     }
   }, [messages, completedStreamProgress]);
 
-  const updateIsAtBottom = useCallback(() => {
-    const container = messageListRef.current;
-    if (!container) return;
-    const threshold = 32;
-    const distanceFromBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight;
-    setIsAtBottom(distanceFromBottom <= threshold);
-  }, []);
-
-  useEffect(() => {
-    const container = messageListRef.current;
-    if (!container) return;
-    updateIsAtBottom();
-    container.addEventListener("scroll", updateIsAtBottom, { passive: true });
-    return () => {
-      container.removeEventListener("scroll", updateIsAtBottom);
-    };
-  }, [updateIsAtBottom]);
-
-  useEffect(() => {
-    updateIsAtBottom();
-  }, [displayMessages.length, updateIsAtBottom]);
+  // Scroll state (isAtBottom, scrollToBottom) is now managed by VirtualizedMessageList
+  // and communicated to ChatInterface via onAtBottomChange and onScrollToBottomChange callbacks
+  // This enables unified scroll handling for both virtualized and artifact (spring-physics) paths
 
   // Memoized artifact open handler to prevent breaking memoization
   const handleArtifactOpen = useCallback((artifact: ArtifactData) => {
@@ -919,10 +902,12 @@ export function ChatInterface({
             artifactRenderStatus={artifactRenderStatus}
             className="flex-1 min-h-0"
             scrollRef={messageListRef}
+            onAtBottomChange={setIsAtBottom}
+            onScrollToBottomChange={(fn) => { scrollToBottomRef.current = fn; }}
           />
 
           <div className={cn(
-            "absolute bottom-4 right-4 z-10",
+            "absolute bottom-32 left-1/2 -translate-x-1/2 z-10",
             isAtBottom && "pointer-events-none"
           )}>
             <Button
@@ -935,9 +920,9 @@ export function ChatInterface({
                   : "translate-y-0 scale-100 opacity-100"
               )}
               onClick={() => {
-                const container = messageListRef.current;
-                if (!container) return;
-                container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+                // Use unified scrollToBottom from VirtualizedMessageList
+                // This handles both virtualized (manual) and artifact (spring-physics) paths
+                scrollToBottomRef.current?.();
               }}
               aria-label="Scroll to bottom"
             >

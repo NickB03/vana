@@ -25,36 +25,44 @@ export const ArtifactCardSkeleton = memo(({ className }: ArtifactCardSkeletonPro
       role="status"
       aria-label="Loading artifact"
       className={cn(
-        "group flex items-center gap-3 p-3 rounded-xl",
+        // Outer container: flex-col matches ArtifactCard structure
+        "group flex flex-col gap-3 p-3 rounded-xl",
         "bg-muted/50 border border-border/50",
         className
       )}
     >
-      {/* Icon badge skeleton - matches h-12 w-12 from ArtifactCard */}
-      <Skeleton
-        className="h-12 w-12 shrink-0 rounded-lg"
-        aria-hidden="true"
-      />
-
-      {/* Title and type skeleton */}
-      <div className="flex-1 min-w-0 space-y-2">
-        {/* Title skeleton - matches font-medium text-sm */}
+      {/* Card content row - matches the inner flex items-center in ArtifactCard */}
+      <div className="flex items-center gap-3">
+        {/* Icon badge skeleton - matches h-12 w-12 from ArtifactCard */}
         <Skeleton
-          className="h-4 w-3/4"
+          className="h-12 w-12 shrink-0 rounded-lg"
           aria-hidden="true"
         />
-        {/* Type label skeleton - matches text-xs */}
+
+        {/* Title and type skeleton */}
+        <div className="flex-1 min-w-0 space-y-2">
+          {/* Title skeleton - matches font-medium text-sm */}
+          <Skeleton
+            className="h-4 w-3/4"
+            aria-hidden="true"
+          />
+          {/* Type label skeleton - matches text-xs */}
+          <Skeleton
+            className="h-3 w-1/3"
+            aria-hidden="true"
+          />
+        </div>
+
+        {/* Open button skeleton - matches the rounded-full px-4 button */}
         <Skeleton
-          className="h-3 w-1/3"
+          className="h-8 w-20 shrink-0 rounded-full"
           aria-hidden="true"
         />
       </div>
 
-      {/* Open button skeleton - matches the rounded-full px-4 button */}
-      <Skeleton
-        className="h-8 w-20 shrink-0 rounded-full"
-        aria-hidden="true"
-      />
+      {/* NOTE: BundleProgressIndicator not included in skeleton
+          The actual component conditionally renders it only when isBundling=true
+          For skeleton simplicity, we omit this placeholder */}
 
       <span className="sr-only">Loading artifact</span>
     </div>

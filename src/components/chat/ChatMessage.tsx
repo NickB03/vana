@@ -24,13 +24,14 @@ import { logError } from '@/utils/errorLogging';
 interface ToolExecutionSkeletonProps {
   toolName?: string;
   status?: string;
+  className?: string;
 }
 
-function ToolExecutionSkeleton({ toolName, status }: ToolExecutionSkeletonProps): React.ReactElement | null {
+function ToolExecutionSkeleton({ toolName, status, className }: ToolExecutionSkeletonProps): React.ReactElement | null {
   if (!toolName) return null;
 
   if (toolName === 'generate_artifact') {
-    return <ArtifactCardSkeleton />;
+    return <ArtifactCardSkeleton className={className} />;
   }
 
   if (toolName === 'generate_image') {
@@ -39,7 +40,7 @@ function ToolExecutionSkeleton({ toolName, status }: ToolExecutionSkeletonProps)
       : 'Generating image...';
 
     return (
-      <div className="my-4 max-w-[240px]">
+      <div className={cn("my-4 max-w-[240px]", className)}>
         <div className="relative rounded-xl overflow-hidden border-2 border-border">
           <div className="w-full aspect-square bg-muted/30 animate-pulse" />
           <div className="absolute inset-0 flex items-center justify-center">
@@ -235,17 +236,20 @@ export const ChatMessage = React.memo(function ChatMessage({
                     artifactOverrides={artifactOverrides}
                     searchResults={streamProgress.searchResults}
                     artifactData={streamProgress.streamingArtifacts}
+                    isStreaming={true}
                   />
                 ) : shouldShowMessageSkeleton ? (
-                  <MessageSkeleton />
+                  <MessageSkeleton className="mt-3" />
                 ) : null}
               </div>
 
               {/* Show tool skeleton BELOW content wrapper when tool is executing */}
+              {/* mt-3 matches the spacing applied to ArtifactCard in MessageWithArtifacts */}
               {shouldShowToolSkeleton && toolSkeletonName && (
                 <ToolExecutionSkeleton
                   toolName={toolSkeletonName}
                   status={toolSkeletonStatus}
+                  className="mt-3"
                 />
               )}
             </>

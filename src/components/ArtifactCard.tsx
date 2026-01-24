@@ -125,6 +125,8 @@ export function ArtifactCard({ artifact, onOpen, className, isBundling = false, 
         "bg-muted/50 border border-border/50",
         "hover:bg-muted/70 hover:border-border",
         "transition-all duration-200",
+        // Layout containment prevents layout thrashing during streaming
+        "artifact-card-container",
         className
       )}
     >

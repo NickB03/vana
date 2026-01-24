@@ -59,6 +59,68 @@ function sanitizeContent(content: string): string {
 }
 
 /**
+ * Format reasoning text with proper styling
+ * - Converts **bold** markdown to styled pill headers
+ * - Collapses multiple newlines into compact spacing
+ * - Returns React elements for rich formatting
+ */
+function FormattedReasoningText({ text }: { text: string }) {
+  // Split by **header** pattern and process
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+
+  // Group parts into sections (header + content pairs)
+  const sections: Array<{ header?: string; content: string }> = [];
+  let currentSection: { header?: string; content: string } = { content: '' };
+
+  parts.forEach((part) => {
+    const headerMatch = part.match(/^\*\*(.+)\*\*$/);
+    if (headerMatch) {
+      // Save previous section if it has content
+      if (currentSection.content.trim() || currentSection.header) {
+        sections.push(currentSection);
+      }
+      // Start new section with this header
+      currentSection = { header: headerMatch[1], content: '' };
+    } else {
+      // Add to current section content
+      currentSection.content += part;
+    }
+  });
+
+  // Don't forget the last section
+  if (currentSection.content.trim() || currentSection.header) {
+    sections.push(currentSection);
+  }
+
+  return (
+    <div className="space-y-4">
+      {sections.map((section, index) => {
+        const cleanedContent = section.content
+          .replace(/\n{3,}/g, '\n\n')
+          .replace(/^\n+/, '')
+          .replace(/\n+$/, '')
+          .trim();
+
+        return (
+          <div key={index} className="space-y-2">
+            {section.header && (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-foreground/[0.08] text-[11px] font-semibold text-foreground/70 uppercase tracking-wider">
+                {section.header}
+              </span>
+            )}
+            {cleanedContent && (
+              <p className="text-sm text-foreground/80 leading-[1.7] max-w-prose">
+                {cleanedContent}
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
  * ReasoningDisplay component - Simplified ticker pill with "Thought process" expansion
  *
  * Key features:
@@ -373,7 +435,7 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
         <div
           ref={expandedContentRef}
           className={cn(
-            "pt-3 px-4 pb-4",
+            "px-3 py-2.5",
             "rounded-2xl",
             "bg-muted/30",
             "border border-border/40",
@@ -382,29 +444,14 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
         >
           {/* Display streaming text if available */}
           {sanitizedStreamingText ? (
-            <div
-              className={cn(
-                "whitespace-pre-wrap text-sm text-muted-foreground",
-                "leading-relaxed"
-              )}
-            >
-              {sanitizedStreamingText}
-              {isStreaming && (
-                <span className="inline-block w-1.5 h-4 ml-0.5 bg-orange-500/60 animate-pulse" />
-              )}
-            </div>
+            <FormattedReasoningText text={sanitizedStreamingText} />
           ) : sanitizedReasoning ? (
             /* Display fallback reasoning */
-            <div className="whitespace-pre-wrap text-sm text-muted-foreground leading-relaxed">
-              {sanitizedReasoning}
-            </div>
+            <FormattedReasoningText text={sanitizedReasoning} />
           ) : reasoningStatus && reasoningStatus !== "Thinking..." ? (
             /* Display status update as fallback when no reasoning text is available */
             <div className="text-sm text-muted-foreground">
               <p className="italic">{reasoningStatus}</p>
-              {isStreaming && (
-                <span className="inline-block w-1.5 h-4 ml-0.5 bg-orange-500/60 animate-pulse" />
-              )}
             </div>
           ) : (
             /* No data fallback */

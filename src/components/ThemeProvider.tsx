@@ -15,14 +15,7 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   useEffect(() => {
     const root = window.document.documentElement;
 
-    root.classList.remove(
-      "light", "dark",
-      "ocean", "ocean-light",
-      "sunset", "sunset-light",
-      "forest", "forest-light",
-      "gemini", "gemini-light",
-      "charcoal", "charcoal-light"
-    );
+    root.classList.remove("light", "dark");
 
     root.classList.add(ENFORCED_THEME_MODE);
   }, []);

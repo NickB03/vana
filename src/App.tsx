@@ -36,6 +36,7 @@ const CanvasDemo = lazy(() => import("./pages/CanvasDemo"));
 const CanvasLiveDemo = lazy(() => import("./pages/CanvasLiveDemo"));
 const LoadingStatesDemo = lazy(() => import("./pages/LoadingStatesDemo"));
 const SparklesDemo = lazy(() => import("./pages/SparklesDemo"));
+const TypographyTest = lazy(() => import("./pages/TypographyTest"));
 
 // Optimized React Query configuration for mobile
 const queryClient = new QueryClient({
@@ -108,6 +109,7 @@ const AnimatedRoutes = () => {
         <Route path="/canvas-live-demo" element={<AnimatedRoute><CanvasLiveDemo /></AnimatedRoute>} />
         <Route path="/loading-states-demo" element={<AnimatedRoute><LoadingStatesDemo /></AnimatedRoute>} />
         <Route path="/sparkles-demo" element={<AnimatedRoute><SparklesDemo /></AnimatedRoute>} />
+        <Route path="/typography-test" element={<AnimatedRoute><TypographyTest /></AnimatedRoute>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<AnimatedRoute><NotFound /></AnimatedRoute>} />
       </Routes>

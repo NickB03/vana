@@ -1,7 +1,7 @@
 import { createContext } from "react";
 
-export type ThemeMode = "light" | "dark" | "system";
-export type ColorTheme = "default" | "ocean" | "sunset" | "forest" | "gemini" | "charcoal";
+export type ThemeMode = "light" | "dark";
+export type ColorTheme = "default";
 
 export type ThemeProviderState = {
   theme: string; // For backwards compatibility

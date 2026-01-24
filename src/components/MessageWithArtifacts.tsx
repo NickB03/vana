@@ -1,4 +1,4 @@
-import { memo, useMemo, useDeferredValue } from "react";
+import { memo, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Markdown } from "@/components/ui/markdown";
 import { InlineImage } from "@/components/InlineImage";
@@ -9,6 +9,7 @@ import { MessageErrorBoundary } from "@/components/MessageErrorBoundary";
 import { CitationSource, stripCitationMarkers } from "@/utils/citationParser";
 import { InlineCitation } from "@/components/ui/inline-citation";
 import { supabase } from "@/integrations/supabase/client";
+import { useTypewriter } from "@/hooks/useTypewriter";
 
 /** Direct artifact data from DB or streaming - preferred over XML parsing */
 export interface DirectArtifactData {
@@ -31,6 +32,8 @@ interface MessageWithArtifactsProps {
   className?: string;
   /** Direct artifact data (from DB or streaming) - preferred over parsing */
   artifactData?: DirectArtifactData[];
+  /** Whether this message is currently streaming - enables typewriter effect */
+  isStreaming?: boolean;
 }
 
 /**
@@ -121,10 +124,17 @@ export const MessageWithArtifacts = memo(({
   searchResults,
   citationSources,
   className = "",
-  artifactData
+  artifactData,
+  isStreaming = false
 }: MessageWithArtifactsProps) => {
-  // Defer content parsing to reduce computation during rapid streaming updates
-  const deferredContent = useDeferredValue(content);
+  // Apply typewriter effect for streaming content
+  // This reveals text character-by-character for smooth appearance
+  // When not streaming, shows full content immediately
+  const typewriterContent = useTypewriter(content, {
+    charsPerFrame: 1, // Reveal 1 character per frame (~60 chars/sec at 60fps)
+    enabled: isStreaming,
+  });
+  const deferredContent = typewriterContent;
 
   // ============================================================================
   // ARTIFACT DATA SOURCES (Priority Order)
@@ -320,8 +330,13 @@ export const MessageWithArtifacts = memo(({
     <MessageErrorBoundary messageContent={content}>
       {/* Render message text without artifact tags or citation markers */}
       {/* Citations are processed at MESSAGE level - one unified badge at the end */}
+      {/* The transition helps smooth out rapid content updates during streaming */}
       <div
-        className={`flex-1 transition-all duration-150 ${className}`}
+        className={`flex-1 ${className}`}
+        style={{
+          // Smooth height transitions reduce perceived jerkiness during streaming
+          transition: 'min-height 150ms ease-out',
+        }}
       >
         <Markdown
           id={messageId}
