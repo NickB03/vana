@@ -252,7 +252,9 @@ export const ChatMessage = React.memo(function ChatMessage({
           ) : (
             /* COMPLETED STATE - Show completed message UI */
             <>
-              {hasReasoning && (
+              {/* FIX: Show reasoning ticker for last message if we have elapsed time, even without reasoning text
+                  This handles the case where reasoning was displayed during streaming but not saved to DB */}
+              {(hasReasoning || (isLastMessage && lastMessageElapsedTime)) && (
                 <ReasoningErrorBoundary>
                   {/* FIX: Provide streamingReasoningText as fallback for completed messages */}
                   <ReasoningDisplay

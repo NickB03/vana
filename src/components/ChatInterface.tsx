@@ -201,8 +201,10 @@ export function ChatInterface({
         // 1. Saved message has reasoning - it preserved the reasoning data
         // 2. completedStreamProgress has NO reasoning - nothing to preserve anyway
         const savedMessageHasReasoning = lastMessage.reasoning || lastMessage.reasoning_steps;
+        // FIX: reasoningSteps is a StructuredReasoning object with a .steps array, not an array itself
+        // Previously checked .length on the object, which always returned undefined
         const completedHasNoReasoning = !completedStreamProgress.streamingReasoningText &&
-                                        (!completedStreamProgress.reasoningSteps || completedStreamProgress.reasoningSteps.length === 0);
+                                        (!completedStreamProgress.reasoningSteps?.steps || completedStreamProgress.reasoningSteps.steps.length === 0);
 
         if (savedMessageHasReasoning || completedHasNoReasoning) {
           console.log('[ChatInterface] Clearing completedStreamProgress:', {

@@ -117,16 +117,9 @@ export const ChatLayout = React.memo(({
       >
         {/* Mobile Suggestions - ABOVE input on mobile */}
         {/* Slower speed (0.25) for more leisurely browsing */}
+        {/* No skeleton: suggestions load fast (~100ms), empty space is less jarring than mismatched skeletons */}
         <div id={TOUR_STEP_IDS.SUGGESTIONS} className="md:hidden w-screen -mx-4 overflow-hidden mb-3">
-          {loadingSuggestions ? (
-            <div
-              className="flex items-center justify-center px-4"
-              role="status"
-              aria-label="Loading suggestions"
-            >
-              <div className="h-10 w-full max-w-xs bg-muted/20 animate-pulse rounded-full" />
-            </div>
-          ) : (
+          {!loadingSuggestions && (
             <MobileSuggestionCarousel
               items={suggestions.slice(0, 8)}
               onItemClick={onSuggestionClick}
@@ -172,22 +165,9 @@ export const ChatLayout = React.memo(({
         </div>
 
         {/* Desktop Suggestions - BELOW input on desktop only */}
+        {/* No skeleton: suggestions load fast (~100ms), empty space is less jarring than mismatched skeletons */}
         <div id={TOUR_STEP_IDS.SUGGESTIONS} className="hidden md:block w-full max-w-3xl mx-auto py-[clamp(0.25rem,1vh,0.5rem)]">
-          {loadingSuggestions ? (
-            <div
-              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-4"
-              role="status"
-              aria-label="Loading suggestions"
-            >
-              {[...Array(10)].map((_, i) => (
-                <div
-                  key={i}
-                  className="h-48 bg-muted/20 animate-pulse rounded-lg"
-                  aria-hidden="true"
-                />
-              ))}
-            </div>
-          ) : (
+          {!loadingSuggestions && (
             <div className="desktop-carousel overflow-hidden">
               <GalleryHoverCarousel
                 heading=""

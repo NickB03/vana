@@ -297,6 +297,18 @@ export const MessageWithArtifacts = memo(({
       return { contentWithoutCitations: cleanContent, aggregatedSources: [] };
     }
     const { cleanContent: stripped, allSources } = stripCitationMarkers(cleanContent, citationSourcesMap);
+
+    // FIX: Fallback for when AI doesn't include citation markers [1][2] in text
+    // If we have search results but no markers were found in the text,
+    // show ALL sources as a unified badge anyway so users can see the sources used
+    if (allSources.length === 0 && citationSourcesMap.size > 0) {
+      const fallbackSources: CitationSource[] = [];
+      citationSourcesMap.forEach((sources) => {
+        fallbackSources.push(...sources);
+      });
+      return { contentWithoutCitations: stripped, aggregatedSources: fallbackSources };
+    }
+
     return { contentWithoutCitations: stripped, aggregatedSources: allSources };
   }, [cleanContent, citationSourcesMap]);
 

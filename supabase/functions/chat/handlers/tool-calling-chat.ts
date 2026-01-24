@@ -1089,8 +1089,32 @@ export async function handleToolCallingChat(
         await runToolCallingPass(toolChoice, true);
 
         // ========================================
-        // STEP 5: Finalize stream
+        // STEP 5: Hallucination Detection + Finalize stream
         // ========================================
+
+        // Check tool execution tracker for hallucination detection
+        // The executionTracker tracks all tool calls and their success/failure status
+        const executionStats = executionTracker.getStats();
+        const toolExecutions = executionStats.toolExecutions;
+        const artifactToolCalled = toolExecutions.some(s => s.toolName === 'generate_artifact' && s.success);
+        const imageToolCalled = toolExecutions.some(s => s.toolName === 'generate_image' && s.success);
+
+        // Log tool execution summary for observability
+        if (toolExecutions.length > 0) {
+          console.log(`${logPrefix} 📊 Tool execution summary:`, toolExecutions.map(s => ({
+            tool: s.toolName,
+            success: s.success,
+            durationMs: s.durationMs,
+            error: s.error
+          })));
+        }
+
+        // Note: Full content-based hallucination detection would require accumulating
+        // streamed content. For now, we rely on the improved system prompt to prevent
+        // hallucinations, and log tool execution metrics for monitoring.
+        if (!artifactToolCalled && !imageToolCalled && toolExecutions.length === 0) {
+          console.log(`${logPrefix} ℹ️ Response completed without tool calls (conversational response)`);
+        }
 
         executionTracker.destroy();
 

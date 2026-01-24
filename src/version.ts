@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: '5d101efa774d5c32b618d9c3e6194032df680151',
-    short: '5d101ef',
-    branch: 'feat/llm-integration-modernization',
-    message: 'fix: address PR review critical issues with tests and improved error handling',
+    hash: '3d504b9201eb71bbf457606f8454a29719b4224e',
+    short: '3d504b9',
+    branch: 'fix/llm-response-issues',
+    message: 'fix: resolve three LLM response issues (reasoning ticker, sources, artifact hallucination)',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-23 22:50:04 UTC',
-    date: new Date('2026-01-23T22:50:04.136Z'),
+    timestamp: '2026-01-24 01:24:27 UTC',
+    date: new Date('2026-01-24T01:24:27.454Z'),
   },
 
   // Environment detection
