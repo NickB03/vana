@@ -1,6 +1,5 @@
 import React, { useRef, useCallback, useEffect, useMemo, useState } from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
-import { useStickToBottom } from 'use-stick-to-bottom';
+import { useVirtualizer, defaultRangeExtractor, type Range } from '@tanstack/react-virtual';
 import { ChatMessage } from './ChatMessage';
 import { ArtifactData } from '@/components/ArtifactContainer';
 import { StreamProgress } from '@/hooks/useChatMessages';
@@ -31,6 +30,7 @@ interface VirtualizedMessageListProps {
   // Streaming-specific props
   streamProgress?: StreamProgress;
   artifactRenderStatus?: 'pending' | 'rendered' | 'error';
+  streamingMessageId?: string | null;
   scrollRef?: React.RefObject<HTMLDivElement>;
   // Scroll state callbacks - unified interface for both rendering paths
   onAtBottomChange?: (isAtBottom: boolean) => void;
@@ -88,32 +88,61 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
   className,
   streamProgress,
   artifactRenderStatus,
+  streamingMessageId = null,
   scrollRef,
   onAtBottomChange,
   onScrollToBottomChange,
 }: VirtualizedMessageListProps) {
   const internalRef = useRef<HTMLDivElement>(null);
   const parentRef = scrollRef ?? internalRef;
-  // Manual scroll state for virtualized path
+  const contentRef = useRef<HTMLDivElement>(null);
+  // Manual scroll state for the unified list
   const [manualIsAtBottom, setManualIsAtBottom] = useState(true);
 
-  // Spring-physics scroll hook for non-virtualized path (artifact messages)
-  // Always called unconditionally to satisfy React hooks rules
-  const {
-    scrollRef: stbScrollRef,
-    contentRef: stbContentRef,
-    isAtBottom: stbIsAtBottom,
-    scrollToBottom: stbScrollToBottom,
-  } = useStickToBottom({
-    resize: 'smooth',  // Spring physics on content resize
-    initial: 'instant', // Jump to bottom on mount
-  });
-
-  // Check for artifact messages FIRST - this determines whether virtualization is enabled
-  // Must be computed before virtualizer to pass enabled option
+  // Check for artifact messages FIRST - this determines whether we render all items
+  // Must be computed before virtualizer to drive range extraction
   const hasArtifactMessages = useMemo(() => {
     return messages.some((message) => /<artifact\b/i.test(message.content));
   }, [messages]);
+
+  // Keep the streaming message mounted through completion to prevent typewriter resets.
+  const [lastStreamingMessageId, setLastStreamingMessageId] = useState<string | null>(null);
+  const [typewriterComplete, setTypewriterComplete] = useState(true);
+
+  useEffect(() => {
+    if (streamingMessageId) {
+      setLastStreamingMessageId(streamingMessageId);
+      setTypewriterComplete(false);
+    }
+  }, [streamingMessageId]);
+
+  useEffect(() => {
+    if (!lastStreamingMessageId) return;
+    const stillExists = messages.some(message => message.id === lastStreamingMessageId);
+    if (!stillExists) {
+      setLastStreamingMessageId(null);
+      setTypewriterComplete(true);
+    }
+  }, [messages, lastStreamingMessageId]);
+
+  const typewriterTargetId = streamingMessageId ?? lastStreamingMessageId;
+  const holdForTypewriter = Boolean(typewriterTargetId) && !typewriterComplete;
+
+  // Render all items during streaming/typewriter to keep the DOM stable
+  const renderAllItems = hasArtifactMessages || isStreaming || holdForTypewriter;
+
+  const handleTypewriterStatusChange = useCallback((isComplete: boolean) => {
+    setTypewriterComplete((prev) => (prev === isComplete ? prev : isComplete));
+    if (isComplete && !isStreaming) {
+      setLastStreamingMessageId(null);
+    }
+  }, [isStreaming]);
+
+  useEffect(() => {
+    if (!isStreaming && typewriterComplete && lastStreamingMessageId) {
+      setLastStreamingMessageId(null);
+    }
+  }, [isStreaming, typewriterComplete, lastStreamingMessageId]);
 
   // Estimate size based on message content
   const estimateSize = useCallback((index: number) => {
@@ -127,7 +156,7 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
     }
 
     // Use larger fixed height for streaming message to avoid constant re-measurement
-    if (message.id === 'streaming-temp') {
+    if (streamingMessageId && message.id === streamingMessageId) {
       return 400; // Generous estimate for streaming content with reasoning
     }
 
@@ -162,17 +191,26 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
     }
 
     return Math.max(baseHeight, baseHeight + contentHeight + extraHeight);
-  }, [messages]);
+  }, [messages, streamingMessageId]);
 
-  // Disable virtualizer when artifacts are present to avoid measureElement warnings
-  // TanStack Virtual's measureElement expects data-index on measured elements,
-  // but the non-virtualized path doesn't include this attribute
+  const allIndices = useMemo(
+    () => Array.from({ length: messages.length }, (_, index) => index),
+    [messages.length]
+  );
+
+  const rangeExtractor = useCallback((range: Range) => {
+    if (renderAllItems) {
+      return allIndices;
+    }
+    return defaultRangeExtractor(range);
+  }, [renderAllItems, allIndices]);
+
   const virtualizer = useVirtualizer({
     count: messages.length,
     getScrollElement: () => parentRef.current,
     estimateSize,
     overscan: 5, // Render 5 extra items above/below viewport for smooth scrolling
-    enabled: !hasArtifactMessages, // Disable when using non-virtualized rendering
+    rangeExtractor,
   });
 
   // Cache total size to prevent flushSync warnings during render
@@ -188,15 +226,11 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
     }
   }, [virtualizer, messages.length]);
 
-  // Track changes in list identity even when length is unchanged (e.g., streaming-temp replaced by saved message)
+  // Track changes in list identity even when length is unchanged (e.g., streaming content updates)
   const lastMessageKey = messages[messages.length - 1]?.id ?? 'none';
   const scrollVersion = `${messages.length}-${lastMessageKey}-${totalSize}`;
 
-  // Track whether user is at the bottom to avoid forcing scroll when they scroll up
-  // ONLY for virtualized path - artifact path uses useStickToBottom hook
   useEffect(() => {
-    if (hasArtifactMessages) return; // Hook handles this path
-
     const container = parentRef.current;
     if (!container) return;
 
@@ -208,55 +242,39 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
     handleScroll();
     container.addEventListener('scroll', handleScroll, { passive: true });
     return () => container.removeEventListener('scroll', handleScroll);
-  }, [parentRef, hasArtifactMessages]);
+  }, [parentRef]);
 
-  // Continuous auto-scroll during streaming using requestAnimationFrame
-  // ONLY for virtualized path - artifact path uses useStickToBottom hook
-  // This provides smooth scrolling that follows content growth in real-time
+  // IMPORTANT: We use interval-based scrolling instead of RAF to avoid collision
+  // with the typewriter effect which also uses RAF for character-by-character animation
   useEffect(() => {
-    if (hasArtifactMessages) return; // Hook handles this path
     if (!isStreaming && !manualIsAtBottom) return; // Only scroll when streaming or user is at bottom
 
     const container = parentRef.current;
     if (!container) return;
 
-    let rafId: number | null = null;
-    let isRunning = true;
-
-    const scrollLoop = () => {
-      if (!isRunning) return;
-
+    // Use interval instead of RAF to avoid collision with typewriter animation
+    // Scroll every 100ms (10fps) which is smooth enough for following content
+    const scrollInterval = setInterval(() => {
       const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
       const currentScroll = container.scrollTop;
       const distanceToBottom = maxScrollTop - currentScroll;
 
       // Only scroll if we're not already at the bottom (with small threshold)
       if (distanceToBottom > 2) {
-        // Smooth easing: move 15% of remaining distance per frame for natural feel
-        // This creates a spring-like effect without jarring jumps
-        const scrollAmount = Math.max(1, distanceToBottom * 0.15);
+        // Smooth easing: move 20% of remaining distance per tick for natural feel
+        const scrollAmount = Math.max(1, distanceToBottom * 0.2);
         container.scrollTop = currentScroll + scrollAmount;
       }
-
-      // Continue loop during streaming, stop when done
-      if (isStreaming) {
-        rafId = requestAnimationFrame(scrollLoop);
-      }
-    };
-
-    // Start the scroll loop
-    rafId = requestAnimationFrame(scrollLoop);
+    }, 100);
 
     return () => {
-      isRunning = false;
-      if (rafId) cancelAnimationFrame(rafId);
+      clearInterval(scrollInterval);
     };
-  }, [isStreaming, manualIsAtBottom, hasArtifactMessages, parentRef]);
+  }, [isStreaming, manualIsAtBottom, parentRef]);
 
   // One-time scroll to bottom when streaming ends or messages change (non-streaming)
   const scrollTrigger = `${messages.length}-${isStreaming}`;
   useEffect(() => {
-    if (hasArtifactMessages) return;
     if (isStreaming) return; // Handled by continuous loop above
 
     const container = parentRef.current;
@@ -271,13 +289,8 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
         });
       });
     }
-  }, [scrollTrigger, manualIsAtBottom, hasArtifactMessages, parentRef]);
+  }, [scrollTrigger, manualIsAtBottom, parentRef]);
 
-  // Unified scroll interface - picks source based on rendering path
-  // Artifact path: spring-physics hook; Virtualized path: manual state
-  const effectiveIsAtBottom = hasArtifactMessages ? stbIsAtBottom : manualIsAtBottom;
-
-  // Create a stable manual scrollToBottom function for virtualized path
   const manualScrollToBottom = useCallback(() => {
     const container = parentRef.current;
     if (!container) return;
@@ -287,110 +300,96 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
     });
   }, [parentRef]);
 
-  const effectiveScrollToBottom = hasArtifactMessages ? stbScrollToBottom : manualScrollToBottom;
+  useEffect(() => {
+    const container = parentRef.current;
+    const content = contentRef.current;
+    if (!container || !content || typeof ResizeObserver === 'undefined') return;
+
+    const observer = new ResizeObserver(() => {
+      if (!manualIsAtBottom && !isStreaming) return;
+      const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+      container.scrollTop = maxScrollTop;
+    });
+
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, [parentRef, manualIsAtBottom, isStreaming]);
 
   // Notify parent of scroll state changes (unified interface)
   useEffect(() => {
-    onAtBottomChange?.(effectiveIsAtBottom);
-  }, [effectiveIsAtBottom, onAtBottomChange]);
+    onAtBottomChange?.(manualIsAtBottom);
+  }, [manualIsAtBottom, onAtBottomChange]);
 
   useEffect(() => {
-    onScrollToBottomChange?.(effectiveScrollToBottom);
-  }, [effectiveScrollToBottom, onScrollToBottomChange]);
+    onScrollToBottomChange?.(manualScrollToBottom);
+  }, [manualScrollToBottom, onScrollToBottomChange]);
 
   return (
     <div
-      ref={hasArtifactMessages ? stbScrollRef : parentRef}
+      ref={parentRef}
       className={className}
       style={{
         height: '100%',
         overflow: 'auto',
         contain: 'strict',
-        // CSS scroll anchoring: for virtualized path only
-        // Artifact path uses useStickToBottom hook which handles anchoring
-        overflowAnchor: hasArtifactMessages ? 'none' : 'auto',
+        // CSS scroll anchoring: disable while streaming/typewriter is active
+        overflowAnchor: renderAllItems ? 'none' : 'auto',
       }}
     >
-      {hasArtifactMessages ? (
-        <div ref={stbContentRef} className="flex flex-col chat-message-container">
-          {messages.map((message, index) => {
-            const isLastMessage = index === messages.length - 1;
-            const isStreamingThisMessage = message.id === 'streaming-temp' && streamProgress;
+      <div
+        ref={contentRef}
+        className="chat-message-container"
+        style={{
+          height: `${totalSize}px`,
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        {virtualizer.getVirtualItems().map((virtualRow) => {
+          const message = messages[virtualRow.index];
+          if (!message) return null;
 
-            return (
-              <div
-                key={message.id}
-                // CSS scroll anchoring: streaming content should NOT anchor to maintain bottom-stick behavior
-                // Completed messages anchor normally so viewport stays stable when reading history
-                className={isStreamingThisMessage ? 'chat-streaming-content' : 'chat-scroll-anchor'}
-              >
-                <ChatMessage
-                  message={message}
-                  isLastMessage={isLastMessage}
-                  isStreaming={isStreaming && isLastMessage}
-                  isLoading={isLoading}
-                  lastMessageElapsedTime={isLastMessage ? lastMessageElapsedTime : undefined}
-                  onRetry={onRetry}
-                  onCopy={onCopy}
-                  onEdit={onEdit}
-                  onArtifactOpen={onArtifactOpen}
-                  artifactOverrides={artifactOverrides}
-                  streamProgress={isStreamingThisMessage ? streamProgress : undefined}
-                  artifactRenderStatus={isStreamingThisMessage ? artifactRenderStatus : undefined}
-                />
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div
-          style={{
-            height: `${totalSize}px`,
-            width: '100%',
-            position: 'relative',
-          }}
-        >
-          {virtualizer.getVirtualItems().map((virtualRow) => {
-            const message = messages[virtualRow.index];
-            if (!message) return null;
+          const isLastMessage = virtualRow.index === messages.length - 1;
+          const isStreamingThisMessage = Boolean(streamProgress) &&
+            isStreaming &&
+            streamingMessageId !== null &&
+            message.id === streamingMessageId;
+          const isTypewriterTarget = Boolean(typewriterTargetId) && message.id === typewriterTargetId;
 
-            const isLastMessage = virtualRow.index === messages.length - 1;
-            // Only pass streaming props to the streaming message
-            const isStreamingThisMessage = message.id === 'streaming-temp' && streamProgress;
-
-            return (
-              <div
-                key={message.id}
-                data-index={virtualRow.index}
-                ref={virtualizer.measureElement}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  transform: `translateY(${virtualRow.start}px)`,
-                }}
-              >
-                {/* Animation is handled internally by ChatMessage via MESSAGE_ANIMATION */}
-                <ChatMessage
-                  message={message}
-                  isLastMessage={isLastMessage}
-                  isStreaming={isStreaming && isLastMessage}
-                  isLoading={isLoading}
-                  lastMessageElapsedTime={isLastMessage ? lastMessageElapsedTime : undefined}
-                  onRetry={onRetry}
-                  onCopy={onCopy}
-                  onEdit={onEdit}
-                  onArtifactOpen={onArtifactOpen}
-                  artifactOverrides={artifactOverrides}
-                  streamProgress={isStreamingThisMessage ? streamProgress : undefined}
-                  artifactRenderStatus={isStreamingThisMessage ? artifactRenderStatus : undefined}
-                />
-              </div>
-            );
-          })}
-        </div>
-      )}
+          return (
+            <div
+              key={message.id}
+              data-index={virtualRow.index}
+              ref={virtualizer.measureElement}
+              className={isStreamingThisMessage ? 'chat-streaming-content' : 'chat-scroll-anchor'}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                transform: `translateY(${virtualRow.start}px)`,
+              }}
+            >
+              {/* Animation is handled internally by ChatMessage via MESSAGE_ANIMATION */}
+              <ChatMessage
+                message={message}
+                isLastMessage={isLastMessage}
+                isStreaming={isStreaming && isLastMessage}
+                isLoading={isLoading}
+                lastMessageElapsedTime={isLastMessage ? lastMessageElapsedTime : undefined}
+                onRetry={onRetry}
+                onCopy={onCopy}
+                onEdit={onEdit}
+                onArtifactOpen={onArtifactOpen}
+                artifactOverrides={artifactOverrides}
+                streamProgress={isStreamingThisMessage ? streamProgress : undefined}
+                artifactRenderStatus={isStreamingThisMessage ? artifactRenderStatus : undefined}
+                onTypewriterComplete={isTypewriterTarget ? handleTypewriterStatusChange : undefined}
+              />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }, (prevProps, nextProps) => {
@@ -405,7 +404,8 @@ export const VirtualizedMessageList = React.memo(function VirtualizedMessageList
     prevProps.lastMessageElapsedTime === nextProps.lastMessageElapsedTime &&
     prevProps.artifactOverrides === nextProps.artifactOverrides &&
     prevProps.streamProgress === nextProps.streamProgress &&
-    prevProps.artifactRenderStatus === nextProps.artifactRenderStatus
+    prevProps.artifactRenderStatus === nextProps.artifactRenderStatus &&
+    prevProps.streamingMessageId === nextProps.streamingMessageId
   );
 });
 

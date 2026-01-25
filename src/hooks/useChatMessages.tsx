@@ -220,6 +220,36 @@ export function useChatMessages(
     return () => clearTimeout(timeout);
   }, [isLoading, artifactRenderStatus]);
 
+  const upsertMessage = useCallback((nextMessage: ChatMessage) => {
+    setMessages((prev) => {
+      const existingIndex = prev.findIndex((msg) => msg.id === nextMessage.id);
+      if (existingIndex === -1) {
+        return [...prev, nextMessage];
+      }
+      const updated = [...prev];
+      updated[existingIndex] = {
+        ...prev[existingIndex],
+        ...nextMessage,
+      };
+      return updated;
+    });
+  }, []);
+
+  const updateMessagePartial = useCallback((messageId: string, updates: Partial<ChatMessage>) => {
+    setMessages((prev) => {
+      const existingIndex = prev.findIndex((msg) => msg.id === messageId);
+      if (existingIndex === -1) {
+        return prev;
+      }
+      const updated = [...prev];
+      updated[existingIndex] = {
+        ...prev[existingIndex],
+        ...updates,
+      };
+      return updated;
+    });
+  }, []);
+
   const saveMessage = async (
     role: "user" | "assistant",
     content: string,
@@ -262,7 +292,7 @@ export function useChatMessages(
       };
 
       // Update local state - don't persist during render phase
-      setMessages((prev) => [...prev, guestMessage]);
+      upsertMessage(guestMessage);
 
       return guestMessage;
     }
@@ -310,7 +340,7 @@ export function useChatMessages(
         role: data.role as "user" | "assistant"
       };
 
-      setMessages((prev) => [...prev, typedMessage]);
+      upsertMessage(typedMessage);
       return typedMessage;
     } catch (error: unknown) {
       console.error("Error saving message:", error);
@@ -323,8 +353,9 @@ export function useChatMessages(
       // BUG FIX: Still add message to local state even if DB save fails
       // This prevents blank screen when database is unavailable
       // The message won't persist but at least the user can see the response
+      const fallbackId = messageId || crypto.randomUUID();
       const tempMessage: ChatMessage = {
-        id: crypto.randomUUID(),
+        id: fallbackId,
         session_id: sessionId || 'guest',
         role,
         content,
@@ -333,7 +364,7 @@ export function useChatMessages(
         search_results: searchResults || null,
         created_at: new Date().toISOString(),
       };
-      setMessages((prev) => [...prev, tempMessage]);
+      upsertMessage(tempMessage);
       return tempMessage;
     }
   };
@@ -346,10 +377,13 @@ export function useChatMessages(
     toolChoice: ToolChoice = "auto",
     modeHint: "auto" | "artifact" | "image" = "auto",
     retryCount = 0,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
+    assistantMessageIdOverride?: string
   ) => {
     const MAX_RETRIES = 3;
     const RETRY_DELAYS = [2000, 5000, 10000]; // Exponential backoff: 2s, 5s, 10s
+
+    const assistantMessageId = assistantMessageIdOverride || crypto.randomUUID();
 
     // Phase 1: Increment stream session and store ID for cleanup checks
     const streamSessionId = ++streamSessionRef.current;
@@ -365,8 +399,6 @@ export function useChatMessages(
     let fullResponse = "";
     let tokenCount = 0;
     let artifactDetected = false;
-    // Pre-generate assistant message ID for artifact DB linking
-    const assistantMessageId = crypto.randomUUID();
     // Track artifact IDs collected during streaming
     const collectedArtifactIds: string[] = [];
     // Track full artifact data for immediate streaming display (not just IDs)
@@ -377,6 +409,12 @@ export function useChatMessages(
       content: string;
       language?: string;
     }> = [];
+    const streamingMessageCreatedAt = new Date().toISOString();
+    const streamingSessionId = sessionId || "guest";
+    let didFinalizeMessage = false;
+    const removeStreamingMessage = () => {
+      setMessages((prev) => prev.filter((message) => message.id !== assistantMessageId));
+    };
 
     try {
       // Client-side throttling: silently wait for token (protects API from burst requests)
@@ -409,6 +447,27 @@ export function useChatMessages(
           await saveMessage("user", userMessage);
         }
       }
+
+      // Ensure a stable assistant message exists for streaming updates
+      setMessages((prev) => {
+        const exists = prev.some((message) => message.id === assistantMessageId);
+        if (exists) return prev;
+        return [
+          ...prev,
+          {
+            id: assistantMessageId,
+            session_id: streamingSessionId,
+            role: "assistant",
+            content: "",
+            reasoning: null,
+            reasoning_steps: null,
+            search_results: null,
+            artifact_ids: null,
+            artifacts: null,
+            created_at: streamingMessageCreatedAt,
+          },
+        ];
+      });
 
       // NOTE: sanitizeImageArtifacts helper removed - no longer needed since
       // artifacts are now persisted in artifact_versions table and linked via artifact_ids.
@@ -466,6 +525,9 @@ export function useChatMessages(
 
         // Phase 1: Clear isLoading on error exit path
         setIsLoading(false);
+        if (!didFinalizeMessage) {
+          removeStreamingMessage();
+        }
         onDone();
         return;
       }
@@ -968,6 +1030,7 @@ export function useChatMessages(
 
                 // Prepend marker to response (artifact comes before continuation text)
                 fullResponse = textMarker + (fullResponse ? '\n\n' + fullResponse : '');
+                updateMessagePartial(assistantMessageId, { content: fullResponse });
                 artifactDetected = true;
                 artifactClosed = true;
                 artifactInProgress = false;
@@ -1023,6 +1086,7 @@ export function useChatMessages(
 
                 // Prepend marker to response
                 fullResponse = textMarker + (fullResponse ? '\n\n' + fullResponse : '');
+                updateMessagePartial(assistantMessageId, { content: fullResponse });
                 artifactDetected = true;
                 artifactClosed = true;
                 imageInProgress = false;
@@ -1043,6 +1107,7 @@ export function useChatMessages(
                 const placeholderMarker = '[Image: Generated Image (unavailable)]';
                 if (!fullResponse) {
                   fullResponse = placeholderMarker;
+                  updateMessagePartial(assistantMessageId, { content: fullResponse });
                 }
 
                 const progress = updateProgress();
@@ -1061,6 +1126,7 @@ export function useChatMessages(
             if (content) {
               fullResponse += content;
               tokenCount += content.split(/\s+/).length;
+              updateMessagePartial(assistantMessageId, { content: fullResponse });
               const progress = updateProgress();
               onDelta(content, progress);
             }
@@ -1091,7 +1157,7 @@ export function useChatMessages(
           });
           // Small delay before retry to avoid hammering the API
           await new Promise(resolve => setTimeout(resolve, 500));
-          return streamChat(userMessage, onDelta, onDone, currentArtifact, toolChoice, modeHint, retryCount + 1, abortSignal);
+          return streamChat(userMessage, onDelta, onDone, currentArtifact, toolChoice, modeHint, retryCount + 1, abortSignal, assistantMessageId);
         }
 
         console.error("[useChatMessages] Empty chat response after retries - not saving blank message");
@@ -1103,11 +1169,23 @@ export function useChatMessages(
           description: "The AI generated an empty response. Please try again.",
           variant: "destructive",
         });
+        removeStreamingMessage();
         return;
       }
 
+      didFinalizeMessage = true;
+      const shouldStoreArtifactsLocally = !isAuthenticated;
+      updateMessagePartial(assistantMessageId, {
+        content: fullResponse,
+        reasoning: reasoningText || null,
+        reasoning_steps: reasoningSteps || null,
+        search_results: searchResults || null,
+        artifact_ids: collectedArtifactIds.length > 0 ? collectedArtifactIds : null,
+        artifacts: shouldStoreArtifactsLocally && collectedArtifacts.length > 0 ? collectedArtifacts : null,
+      });
+
       // Save assistant message first, then signal completion
-      // This prevents a race condition where streamingMessage is cleared before the saved message appears
+      // This keeps the streamed message in place while the DB save completes
       // FIX: Pass reasoningText for fallback display when no structured steps are available
       // BUG FIX (2025-12-21): Add timeout to prevent indefinite hang if Supabase is slow
       // Pass pre-generated ID and collected artifact IDs for proper DB linking
@@ -1157,6 +1235,9 @@ export function useChatMessages(
         });
         // Phase 1: Clear isLoading on cancellation
         setIsLoading(false);
+        if (!didFinalizeMessage) {
+          removeStreamingMessage();
+        }
         onDone();
         return;
       }
@@ -1169,6 +1250,9 @@ export function useChatMessages(
       if (errorMessage.includes('Stream timeout')) {
         // Phase 1: Clear isLoading on timeout error exit path
         setIsLoading(false);
+        if (!didFinalizeMessage) {
+          removeStreamingMessage();
+        }
         toast({
           title: "Request Timeout",
           description: errorMessage,
@@ -1196,12 +1280,15 @@ export function useChatMessages(
         // Recursive retry with incremented count
         // Don't clear isLoading - the nested call maintains the loading state
         // When the final retry completes/fails, IT will clear isLoading
-        return streamChat(userMessage, onDelta, onDone, currentArtifact, toolChoice, modeHint, retryCount + 1, abortSignal);
+        return streamChat(userMessage, onDelta, onDone, currentArtifact, toolChoice, modeHint, retryCount + 1, abortSignal, assistantMessageId);
       }
 
       // Non-retryable error - clear loading and show error
       // Phase 1: Clear isLoading on error exit path
       setIsLoading(false);
+      if (!didFinalizeMessage) {
+        removeStreamingMessage();
+      }
       const authErrorMessage = getAuthErrorMessage(error);
       toast({
         title: "Error",

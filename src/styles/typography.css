@@ -165,6 +165,36 @@
   overflow-anchor: none;
 }
 
+/* Smooth typewriter animation - subtle transitions for streaming text */
+/* Applied to markdown container during streaming for natural appearance */
+.chat-markdown-streaming {
+  /* Subtle text rendering smoothing during animation */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Smooth height transitions as content grows */
+  transition: opacity 100ms ease-out;
+}
+
+/* Subtle cursor blink indicator at end of streaming text */
+.streaming-cursor::after {
+  content: '▊';
+  display: inline;
+  animation: cursor-blink 1s step-end infinite;
+  color: hsl(var(--primary) / 0.6);
+  font-weight: 300;
+  margin-left: 1px;
+}
+
+@keyframes cursor-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Disable cursor when animation completes */
+.streaming-complete .streaming-cursor::after {
+  display: none;
+}
+
 /* Layout containment for artifact cards - prevents layout thrashing */
 .artifact-card-container {
   contain: layout style;

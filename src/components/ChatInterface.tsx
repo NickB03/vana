@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ChevronDown, Maximize2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -75,8 +75,8 @@ export function ChatInterface({
   const [localInput, setLocalInput] = useState("");
   const input = typeof parentInput === 'string' ? parentInput : localInput;
   const setInput = parentOnInputChange ?? setLocalInput;
-  const [streamingMessage, setStreamingMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   // Track elapsed time for the last streamed message (preserved after streaming ends)
   const [lastMessageElapsedTime, setLastMessageElapsedTime] = useState<string>("");
   const streamingStartTimeRef = useRef<number | null>(null);
@@ -89,10 +89,6 @@ export function ChatInterface({
     artifactInProgress: false,
     imageInProgress: false,
   });
-  // CRITICAL FIX: Preserve completed stream progress for display after streaming ends
-  // This prevents reasoning box from disappearing during the race condition between
-  // when isStreaming becomes false and when the saved message appears in messages array
-  const [completedStreamProgress, setCompletedStreamProgress] = useState<StreamProgress | null>(null);
   const [currentArtifact, setCurrentArtifact] = useState<ArtifactData | null>(null);
   const [artifactOverrides, setArtifactOverrides] = useState<Record<string, Partial<ArtifactData>>>({});
   const [isEditingArtifact, setIsEditingArtifact] = useState(false);
@@ -125,99 +121,7 @@ export function ChatInterface({
   const handleSendRef = useRef<((message?: string) => Promise<void>) | null>(null);
   // Track which session+prompt combination has been initialized (using ref to avoid stale closure issues)
   const initializedSessionRef = useRef<string | null>(null);
-  // Use stable timestamp that doesn't change on every render (prevents VirtualizedMessageList re-measurement loops)
-  const streamingTimestampRef = useRef<string | null>(null);
 
-  /**
-   * Display messages with proper streaming state detection
-   *
-   * Key behaviors:
-   * 1. Use isStreaming flag instead of streamingMessage to prevent stale closures
-   *    - streamingMessage object reference changes on every update
-   *    - Checking its truthiness caused useMemo to miss updates
-   *    - isStreaming is a stable boolean that triggers re-renders correctly
-   *
-   * 2. Show completed stream progress until saved message appears
-   *    - When streaming ends, there's a race between isStreaming=false and the saved message
-   *      being added to the messages array
-   *    - During this gap, show the streaming temp message with completedStreamProgress data
-   *    - This prevents the reasoning box from disappearing during the transition
-   *
-   * Note: No XML stripping is needed - artifacts are delivered via tool_complete events
-   * and rendered in the canvas, not embedded as XML in messages.
-   *
-   * Dependencies:
-   * - isStreaming: Prevents infinite loops from streamingMessage reference changes
-   * - streamingMessage: Updates displayed content as stream progresses
-   * - messages: Base message array to append streaming message to
-   * - completedStreamProgress: Preserves reasoning data during the race condition window
-   */
-  const displayMessages = useMemo(() => {
-    const allMessages = [...messages];
-
-    // Show streaming temp message during active streaming OR during completion race condition
-    // The race condition occurs when isStreaming=false but the saved message hasn't appeared yet
-    const shouldShowStreamingTemp = isStreaming || (completedStreamProgress !== null);
-
-    if (shouldShowStreamingTemp) {
-      // Use stable timestamp that doesn't change on every render
-      if (!streamingTimestampRef.current) {
-        streamingTimestampRef.current = new Date().toISOString();
-      }
-
-      // Streaming content is displayed as-is - no XML stripping needed
-      // With the vanilla Sandpack artifact system, artifacts are delivered via tool_complete
-      // events and rendered separately in the canvas, not embedded as XML in the message
-      const displayContent = streamingMessage.trim();
-
-      // Use completedStreamProgress if available (race condition window), otherwise live streamProgress
-      const progressToDisplay = completedStreamProgress || streamProgress;
-
-      allMessages.push({
-        id: 'streaming-temp',
-        session_id: sessionId || '',
-        role: "assistant" as const,
-        content: displayContent,
-        created_at: streamingTimestampRef.current,
-        // Include streaming data for ReasoningDisplay
-        reasoning: progressToDisplay.streamingReasoningText,
-        reasoning_steps: progressToDisplay.reasoningSteps,
-        search_results: progressToDisplay.searchResults,
-      });
-    } else {
-      // Clear timestamp when streaming ends AND saved message has appeared
-      streamingTimestampRef.current = null;
-    }
-    return allMessages;
-  }, [messages, streamingMessage, sessionId, streamProgress, completedStreamProgress, isStreaming]);
-
-  // CRITICAL: Clear completedStreamProgress once the saved message appears
-  // This closes the race condition window and stops showing the streaming temp message
-  useEffect(() => {
-    if (completedStreamProgress !== null && messages.length > 0) {
-      const lastMessage = messages[messages.length - 1];
-
-      // Check if the last message is an assistant message
-      if (lastMessage.role === 'assistant') {
-        // Two cases to clear completedStreamProgress:
-        // 1. Saved message has reasoning - it preserved the reasoning data
-        // 2. completedStreamProgress has NO reasoning - nothing to preserve anyway
-        const savedMessageHasReasoning = lastMessage.reasoning || lastMessage.reasoning_steps;
-        // FIX: reasoningSteps is a StructuredReasoning object with a .steps array, not an array itself
-        // Previously checked .length on the object, which always returned undefined
-        const completedHasNoReasoning = !completedStreamProgress.streamingReasoningText &&
-                                        (!completedStreamProgress.reasoningSteps?.steps || completedStreamProgress.reasoningSteps.steps.length === 0);
-
-        if (savedMessageHasReasoning || completedHasNoReasoning) {
-          console.log('[ChatInterface] Clearing completedStreamProgress:', {
-            reason: savedMessageHasReasoning ? 'saved message has reasoning' : 'no reasoning to preserve',
-            messageContent: lastMessage.content?.substring(0, 50)
-          });
-          setCompletedStreamProgress(null);
-        }
-      }
-    }
-  }, [messages, completedStreamProgress]);
 
   // Scroll state (isAtBottom, scrollToBottom) is now managed by VirtualizedMessageList
   // and communicated to ChatInterface via onAtBottomChange and onScrollToBottomChange callbacks
@@ -256,9 +160,8 @@ export function ChatInterface({
     // This ensures the reasoning ticker appears instantly, not after throttle wait
     setInput("");
     setIsStreaming(true);
-    setStreamingMessage("");
-    // Clear completedStreamProgress when starting new stream
-    setCompletedStreamProgress(null);
+    const assistantMessageId = crypto.randomUUID();
+    setStreamingMessageId(assistantMessageId);
     // Respect explicit modes: nudge the model towards tools when user opts in
     // If the user is editing an existing artifact, FORCE artifact tool (only exception)
     const isArtifactEdit = !!(currentArtifact && isEditingArtifact);
@@ -297,11 +200,7 @@ export function ChatInterface({
     try {
       await streamChat(
         messageToSend,
-        (chunk, progress) => {
-          // Only append text chunks (ignore empty chunks from reasoning updates)
-          if (chunk) {
-            setStreamingMessage((prev) => prev + chunk);
-          }
+        (_chunk, progress) => {
           // Always update progress (includes reasoning steps)
           setStreamProgress((prev) => ({
             ...progress,
@@ -310,32 +209,24 @@ export function ChatInterface({
           }));
         },
         () => {
-          setStreamingMessage("");
           setIsStreaming(false);
           setIsEditingArtifact(false);
-          // CRITICAL FIX: Preserve reasoning data when streaming completes!
-          // Store the final streamProgress with reasoning data in completedStreamProgress
-          // This prevents the "No reasoning data available" bug where reasoning is lost after generation
-          // The completedStreamProgress will be used to display reasoning until the saved message appears
-          setStreamProgress((prevProgress) => {
-            const finalProgress = {
-              ...prevProgress,
-              stage: "complete" as const,
-              message: "",
-              percentage: 100,
-              // Preserved automatically: reasoningSteps, streamingReasoningText, reasoningStatus, toolExecution, streamingArtifact
-            };
-            // Store final progress for display during race condition window
-            setCompletedStreamProgress(finalProgress);
-            return finalProgress;
-          });
+          setStreamingMessageId(null);
+          setStreamProgress((prevProgress) => ({
+            ...prevProgress,
+            stage: "complete" as const,
+            message: "",
+            percentage: 100,
+            // Preserved automatically: reasoningSteps, streamingReasoningText, reasoningStatus, toolExecution, streamingArtifact
+          }));
           completeStream();
         },
         currentArtifact && isEditingArtifact ? currentArtifact : undefined,
         toolChoice,
         modeHint,  // NEW: Pass mode hint to backend for prompt nudging
         0, // retryCount
-        abortController.signal
+        abortController.signal,
+        assistantMessageId
       );
     } catch (streamError) {
       logError(streamError instanceof Error ? streamError : new Error(String(streamError)), {
@@ -349,10 +240,9 @@ export function ChatInterface({
       });
 
       // Clean up streaming state
-      setStreamingMessage("");
       setIsStreaming(false);
       setIsEditingArtifact(false);
-      setCompletedStreamProgress(null);
+      setStreamingMessageId(null);
       completeStream();
 
       // Inform user
@@ -381,13 +271,12 @@ export function ChatInterface({
   // Reset when session changes
   useEffect(() => {
     cancelStream();
-    setStreamingMessage("");
     setIsStreaming(false);
+    setStreamingMessageId(null);
     setCurrentArtifact(null);
     setIsEditingArtifact(false);
     setLastMessageElapsedTime("");
     setArtifactOverrides({});
-    setCompletedStreamProgress(null);
     onArtifactChange?.(false);
     setMessageSentTracker(0); // Reset tracker
     setImageMode(false);
@@ -471,19 +360,8 @@ export function ChatInterface({
 
   // Parse artifacts from messages (removed auto-open behavior)
   useEffect(() => {
-    const allMessages = [...messages];
-    if (streamingMessage) {
-      allMessages.push({
-        id: 'streaming-temp',
-        session_id: sessionId || '',
-        role: "assistant" as const,
-        content: streamingMessage,
-        created_at: new Date().toISOString()
-      });
-    }
-
     // Get the last assistant message
-    const lastAssistantMsg = [...allMessages].reverse().find(m => m.role === "assistant");
+    const lastAssistantMsg = [...messages].reverse().find(m => m.role === "assistant");
     if (lastAssistantMsg) {
       parseArtifacts(lastAssistantMsg.content).then(({ artifacts }) => {
         if (artifacts.length > 0) {
@@ -497,7 +375,7 @@ export function ChatInterface({
     } else {
       onArtifactChange?.(false);
     }
-  }, [messages, streamingMessage, onArtifactChange, sessionId]);
+  }, [messages, onArtifactChange, sessionId]);
 
   // P0.2: Reconcile artifact ID mismatches between streaming and saved artifacts
   // After P0.1, IDs should match, but this is a safety fallback for timing differences
@@ -508,7 +386,7 @@ export function ChatInterface({
     const parseAllArtifacts = async () => {
       const allArtifacts: ArtifactData[] = [];
 
-      for (const message of displayMessages) {
+      for (const message of messages) {
         if (message.role === "assistant") {
           const { artifacts } = await parseArtifacts(message.content);
           allArtifacts.push(...artifacts);
@@ -546,7 +424,7 @@ export function ChatInterface({
 
     parseAllArtifacts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displayMessages.length, currentArtifact?.id, currentArtifact?.content]);
+  }, [messages.length, currentArtifact?.id, currentArtifact?.content]);
 
   // Auto-open canvas when streaming artifact arrives
   // This provides immediate feedback like ChatGPT/Gemini/Claude - artifact opens in canvas
@@ -786,23 +664,20 @@ export function ChatInterface({
 
       // Regenerate the response by resending the user message
       setIsStreaming(true);
-      setStreamingMessage("");
-      setCompletedStreamProgress(null);
+      const assistantMessageId = crypto.randomUUID();
+      setStreamingMessageId(assistantMessageId);
 
       // Start stream with cancellation support
       const abortController = startStream();
 
       await streamChat(
         userMessage.content,
-        (chunk, progress) => {
-          if (chunk) {
-            setStreamingMessage((prev) => prev + chunk);
-          }
+        (_chunk, progress) => {
           setStreamProgress(progress);
         },
         () => {
-          setStreamingMessage("");
           setIsStreaming(false);
+          setStreamingMessageId(null);
           setStreamProgress((prevProgress) => {
             const finalProgress = {
               ...prevProgress,
@@ -811,7 +686,6 @@ export function ChatInterface({
               artifactDetected: false,
               percentage: 100
             };
-            setCompletedStreamProgress(finalProgress);
             return finalProgress;
           });
           completeStream();
@@ -820,7 +694,8 @@ export function ChatInterface({
         "auto", // toolChoice
         "auto", // modeHint - let model decide for retries
         0, // retryCount
-        abortController.signal
+        abortController.signal,
+        assistantMessageId
       );
 
       toast({
@@ -828,6 +703,10 @@ export function ChatInterface({
         description: "Creating a new response to your message"
       });
     } catch (error) {
+      setIsStreaming(false);
+      setStreamingMessageId(null);
+      completeStream();
+
       logError(error instanceof Error ? error : new Error(String(error)), {
         errorId: ERROR_IDS.MESSAGE_RETRY_FAILED,
         sessionId,
@@ -888,7 +767,7 @@ export function ChatInterface({
         {/* Replaces ChatContainerRoot/ChatContainerContent for 90%+ DOM node reduction */}
         <div className="flex flex-1 flex-col min-h-0 relative">
           <VirtualizedMessageList
-            messages={displayMessages}
+            messages={messages}
             isStreaming={isStreaming}
             isLoading={isLoading}
             lastMessageElapsedTime={lastMessageElapsedTime}
@@ -900,6 +779,7 @@ export function ChatInterface({
             artifactOverrides={artifactOverrides}
             streamProgress={streamProgress}
             artifactRenderStatus={artifactRenderStatus}
+            streamingMessageId={streamingMessageId}
             className="flex-1 min-h-0"
             scrollRef={messageListRef}
             onAtBottomChange={setIsAtBottom}

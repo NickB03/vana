@@ -122,6 +122,7 @@ interface ChatMessageProps {
   // Streaming-specific props (only passed to streaming message)
   streamProgress?: StreamProgress;
   artifactRenderStatus?: 'pending' | 'rendered' | 'error';
+  onTypewriterComplete?: (isComplete: boolean) => void;
 }
 
 /**
@@ -150,19 +151,37 @@ export const ChatMessage = React.memo(function ChatMessage({
   artifactOverrides,
   streamProgress,
   artifactRenderStatus,
+  onTypewriterComplete,
 }: ChatMessageProps) {
   const isAssistant = message.role === 'assistant';
-  const isStreamingMessage = message.id === 'streaming-temp' && streamProgress;
+  const isStreamingMessage = Boolean(streamProgress);
   const hasReasoning = hasValidReasoning(message.reasoning_steps, message.reasoning);
 
+  // SIMPLIFIED: Only use typewriter effect while streamProgress is present
+  // Once streaming ends, show full text immediately and let the typewriter finish in-place
+  const isActuallyStreaming = isStreamingMessage;
+
+  const handleTypewriterComplete = React.useCallback((isComplete: boolean) => {
+    onTypewriterComplete?.(isComplete);
+  }, [onTypewriterComplete]);
+
   // CRITICAL: Only animate NEW messages, not entire chat history (CLAUDE.md requirement)
+  // IMPORTANT: We always use motion.div to prevent element type change which would cause
+  // React to unmount/remount children and reset typewriter state.
+  // When shouldAnimate is false, we skip the animation by not providing initial/animate props.
   const shouldAnimate = MESSAGE_ANIMATION.shouldAnimate(isLastMessage, isStreaming);
 
-  const MotionWrapper = shouldAnimate ? motion.div : 'div';
+  // Always use motion.div to maintain stable component tree
+  // This prevents the typewriter from resetting when streaming ends
   const motionProps = shouldAnimate ? {
-    ...MESSAGE_ANIMATION.variant,
+    initial: MESSAGE_ANIMATION.variant.initial,
+    animate: MESSAGE_ANIMATION.variant.animate,
     transition: MESSAGE_ANIMATION.transition
-  } : {};
+  } : {
+    // No animation - element already in final state
+    initial: false,
+    animate: false,
+  };
 
   // Phase 2: Consolidated skeleton logic - determine which skeleton to show (if any)
   const shouldShowArtifactSkeleton = isStreamingMessage &&
@@ -189,7 +208,7 @@ export const ChatMessage = React.memo(function ChatMessage({
     !streamProgress?.artifactDetected;
 
   return (
-    <MotionWrapper {...motionProps}>
+    <motion.div {...motionProps}>
       <MessageComponent
         className={cn(
           "chat-message mx-auto flex w-full max-w-3xl flex-col items-start",
@@ -236,7 +255,8 @@ export const ChatMessage = React.memo(function ChatMessage({
                     artifactOverrides={artifactOverrides}
                     searchResults={streamProgress.searchResults}
                     artifactData={streamProgress.streamingArtifacts}
-                    isStreaming={true}
+                    isStreaming={isActuallyStreaming}
+                    onTypewriterComplete={handleTypewriterComplete}
                   />
                 ) : shouldShowMessageSkeleton ? (
                   <MessageSkeleton className="mt-3" />
@@ -279,6 +299,8 @@ export const ChatMessage = React.memo(function ChatMessage({
                   artifactOverrides={artifactOverrides}
                   searchResults={message.search_results}
                   artifactData={message.artifacts ?? undefined}
+                  isStreaming={false}
+                  onTypewriterComplete={handleTypewriterComplete}
                 />
               </div>
 
@@ -344,13 +366,13 @@ export const ChatMessage = React.memo(function ChatMessage({
         </div>
       )}
     </MessageComponent>
-    </MotionWrapper>
+    </motion.div>
   );
 }, (prevProps, nextProps) => {
   try {
     // CRITICAL: Exclude streaming message from memoization to ensure live updates
     // Streaming message needs to re-render on every streamProgress change
-    const isStreamingMessage = nextProps.message.id === 'streaming-temp' && nextProps.streamProgress;
+    const isStreamingMessage = Boolean(nextProps.streamProgress);
     if (isStreamingMessage) {
       return false; // Always re-render streaming message
     }

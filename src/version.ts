@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: 'e21b68a085c12aaba9ea390a1d1c03cd99c7ded3',
-    short: 'e21b68a',
-    branch: 'feat/smooth-streaming-scroll',
-    message: 'feat: optimize typography and simplify theme system',
+    hash: 'f3c7dc97ee2441076c5d3ef2db218ce022338b4c',
+    short: 'f3c7dc9',
+    branch: 'fix/typewriter-streaming-completion',
+    message: 'feat: implement smooth streaming scroll with typewriter effect and spring physics (#566)',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-24 20:25:53 UTC',
-    date: new Date('2026-01-24T20:25:53.853Z'),
+    timestamp: '2026-01-25 04:57:24 UTC',
+    date: new Date('2026-01-25T04:57:24.481Z'),
   },
 
   // Environment detection

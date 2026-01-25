@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Markdown } from "@/components/ui/markdown";
 import { InlineImage } from "@/components/InlineImage";
@@ -9,7 +9,7 @@ import { MessageErrorBoundary } from "@/components/MessageErrorBoundary";
 import { CitationSource, stripCitationMarkers } from "@/utils/citationParser";
 import { InlineCitation } from "@/components/ui/inline-citation";
 import { supabase } from "@/integrations/supabase/client";
-import { useTypewriter } from "@/hooks/useTypewriter";
+import { useTypewriterWithStatus } from "@/hooks/useTypewriter";
 
 /** Direct artifact data from DB or streaming - preferred over XML parsing */
 export interface DirectArtifactData {
@@ -34,6 +34,8 @@ interface MessageWithArtifactsProps {
   artifactData?: DirectArtifactData[];
   /** Whether this message is currently streaming - enables typewriter effect */
   isStreaming?: boolean;
+  /** Callback when typewriter completion state changes */
+  onTypewriterComplete?: (isComplete: boolean) => void;
 }
 
 /**
@@ -125,16 +127,26 @@ export const MessageWithArtifacts = memo(({
   citationSources,
   className = "",
   artifactData,
-  isStreaming = false
+  isStreaming = false,
+  onTypewriterComplete
 }: MessageWithArtifactsProps) => {
   // Apply typewriter effect for streaming content
-  // This reveals text character-by-character for smooth appearance
-  // When not streaming, shows full content immediately
-  const typewriterContent = useTypewriter(content, {
-    charsPerFrame: 1, // Reveal 1 character per frame (~60 chars/sec at 60fps)
+  // Time-based pacing keeps the reveal consistent and smooth.
+  const { displayText: typewriterContent, isComplete: typewriterComplete } = useTypewriterWithStatus(content, {
+    charsPerFrame: 2, // Smooth, readable baseline speed
     enabled: isStreaming,
+    mode: 'character', // Most granular reveal
+    catchUpMultiplier: 1.3, // Gentle catch-up without speed spikes
   });
   const deferredContent = typewriterContent;
+
+  // Notify parent when typewriter completion state changes
+  // This allows upstream components to gate virtualization changes deterministically
+  useEffect(() => {
+    if (onTypewriterComplete) {
+      onTypewriterComplete(typewriterComplete);
+    }
+  }, [typewriterComplete, onTypewriterComplete]);
 
   // ============================================================================
   // ARTIFACT DATA SOURCES (Priority Order)
@@ -166,14 +178,6 @@ export const MessageWithArtifacts = memo(({
       for (const row of data) {
         if (!seen.has(row.artifact_id)) {
           seen.add(row.artifact_id);
-
-          // DEBUG: Log artifact from DB query
-          console.log('[MessageWithArtifacts] 🔍 Artifact from DB:', {
-            id: row.artifact_id,
-            contentLength: row.artifact_content?.length ?? 0,
-            contentPreview: row.artifact_content?.substring(0, 100)
-          });
-
           uniqueArtifacts.push({
             id: row.artifact_id,
             type: row.artifact_type,
@@ -186,8 +190,8 @@ export const MessageWithArtifacts = memo(({
 
       return uniqueArtifacts;
     },
-    // Only fetch from DB if no direct artifactData and we have a VALID messageId (not streaming-temp)
-    enabled: !!messageId && messageId !== 'streaming-temp' && !hasDirectArtifactData,
+    // Only fetch from DB if no direct artifactData and we're not streaming
+    enabled: !!messageId && !isStreaming && !hasDirectArtifactData,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
@@ -224,13 +228,6 @@ export const MessageWithArtifacts = memo(({
       for (const row of data) {
         if (!seen.has(row.artifact_id)) {
           seen.add(row.artifact_id);
-
-          console.log('[MessageWithArtifacts] 🔍 Session artifact fallback:', {
-            id: row.artifact_id,
-            createdAt: row.created_at,
-            contentLength: row.artifact_content?.length ?? 0,
-          });
-
           uniqueArtifacts.push({
             id: row.artifact_id,
             type: row.artifact_type,
@@ -247,7 +244,7 @@ export const MessageWithArtifacts = memo(({
     // 1. We have a sessionId
     // 2. No direct artifactData provided
     // 3. messageId query returned no results (use dependency on hasDbArtifacts)
-    enabled: !!sessionId && !hasDirectArtifactData && !hasDbArtifacts,
+    enabled: !!sessionId && !isStreaming && !hasDirectArtifactData && !hasDbArtifacts,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
@@ -270,7 +267,6 @@ export const MessageWithArtifacts = memo(({
 
     // Priority 3: Artifacts from database query by session_id (fallback)
     if (hasSessionArtifacts && sessionArtifacts) {
-      console.log('[MessageWithArtifacts] Using session fallback for artifacts');
       return sessionArtifacts.map(convertToArtifactData);
     }
 
@@ -332,7 +328,7 @@ export const MessageWithArtifacts = memo(({
       {/* Citations are processed at MESSAGE level - one unified badge at the end */}
       {/* The transition helps smooth out rapid content updates during streaming */}
       <div
-        className={`flex-1 ${className}`}
+        className={`flex-1 ${className} ${isStreaming && !typewriterComplete ? 'chat-markdown-streaming' : ''}`}
         style={{
           // Smooth height transitions reduce perceived jerkiness during streaming
           transition: 'min-height 150ms ease-out',
