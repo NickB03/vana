@@ -47,6 +47,64 @@ export interface RewriteResult {
 }
 
 /**
+ * Detect query complexity to determine optimal search depth
+ */
+export function detectQueryComplexity(query: string): {
+  depth: 'basic' | 'advanced';
+  reason: string;
+} {
+  const lowerQuery = query.toLowerCase();
+
+  const complexIndicators = [
+    /\b(architecture|implementation|framework|optimization|scalability)\b/i,
+    /\b(study|research|analysis|paper|thesis|methodology)\b/i,
+    /\?.*\?/,
+    /\b(algorithm|protocol|specification|documentation|api)\b/i,
+    /\b(benchmark|tradeoff|trade-offs|pros and cons|comparison|compare|versus|vs\.? )\b/i
+  ];
+
+  const hasComplexIndicator = complexIndicators.some(regex => regex.test(lowerQuery));
+
+  if (hasComplexIndicator) {
+    return {
+      depth: 'advanced',
+      reason: 'Contains technical or research indicators'
+    };
+  }
+
+  const simpleIndicators = [
+    /\b(what is|what are|who is|where is|when was)\b/i,
+    /^.{3,30}$/
+  ];
+
+  const hasSimpleIndicator = simpleIndicators.some(regex => regex.test(lowerQuery));
+
+  if (hasSimpleIndicator) {
+    return {
+      depth: 'basic',
+      reason: 'Simple factual query'
+    };
+  }
+
+  return {
+    depth: 'basic',
+    reason: 'Default search depth'
+  };
+}
+
+/**
+ * Detect if query requires image results
+ */
+export function detectImageIntent(query: string): boolean {
+  const imageIndicators = [
+    /\b(what does.*look like|show me|image|photo|picture|screenshot)\b/i,
+    /\b(design|ui|interface|layout|visual)\b/i
+  ];
+
+  return imageIndicators.some(regex => regex.test(query));
+}
+
+/**
  * Rewrite user query for optimal search results
  *
  * Uses Gemini 3 Flash to transform natural language queries
@@ -147,6 +205,7 @@ export function shouldRewriteQuery(query: string): ShouldRewriteResult {
   const trimmedQuery = query.trim();
   const lowerTrimmedQuery = trimmedQuery.toLowerCase();
   const words = trimmedQuery.split(/\s+/).length;
+  const abbreviationPattern = /\b(js|ts|py|ai|ml|api)\b/i;
 
   // Skip if it's a URL (case-insensitive check)
   if (lowerTrimmedQuery.startsWith('http://') || lowerTrimmedQuery.startsWith('https://')) {
@@ -174,7 +233,7 @@ export function shouldRewriteQuery(query: string): ShouldRewriteResult {
   }
 
   // Skip very short queries without conversational markers (likely already optimized keywords)
-  if (words <= 3) {
+  if (words <= 3 && !abbreviationPattern.test(trimmedQuery)) {
     return { shouldRewrite: false, reason: 'Query too short (≤3 words)' };
   }
 

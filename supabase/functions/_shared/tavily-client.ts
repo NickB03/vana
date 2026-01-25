@@ -543,6 +543,49 @@ export function formatSearchContext(
 }
 
 /**
+ * Filter and rank search results by relevance
+ * Removes low-quality results and deduplicates content
+ */
+export function filterSearchResults(
+  results: TavilySearchResult[],
+  options?: {
+    minScore?: number;
+    maxResults?: number;
+  }
+): TavilySearchResult[] {
+  const {
+    minScore = 0.3,
+    maxResults = 5
+  } = options || {};
+
+  // Filter by relevance score
+  let filtered = results.filter(result => result.score >= minScore);
+
+  // Deduplicate by URL (keep highest scoring)
+  const urlMap = new Map<string, TavilySearchResult>();
+  for (const result of filtered) {
+    const existing = urlMap.get(result.url);
+    if (!existing || result.score > existing.score) {
+      urlMap.set(result.url, result);
+    }
+  }
+
+  filtered = Array.from(urlMap.values())
+    .sort((a, b) => b.score - a.score)
+    .slice(0, maxResults);
+
+  // Fallback to top results if filtering removes everything
+  if (filtered.length === 0) {
+    return results
+      .slice()
+      .sort((a, b) => b.score - a.score)
+      .slice(0, maxResults);
+  }
+
+  return filtered;
+}
+
+/**
  * Calculate cost for a Tavily API call
  * Pricing (Basic plan): $0.001 per search request
  *

@@ -32,12 +32,13 @@
 import {
   searchTavilyWithRetryTracking,
   formatSearchContext,
+  filterSearchResults,
   calculateTavilyCost,
   logTavilyUsage,
   type TavilySearchResponse
 } from './tavily-client.ts';
 import type { ToolCall } from './gemini-client.ts';
-import { rewriteSearchQuery } from './query-rewriter.ts';
+import { detectImageIntent, detectQueryComplexity, rewriteSearchQuery } from './query-rewriter.ts';
 import { executeImageGeneration, isValidImageMode, isValidAspectRatio, type ImageMode, type AspectRatio } from './image-executor.ts';
 import { generateArtifactStructured } from './artifact-generator-structured.ts';
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
@@ -444,6 +445,15 @@ async function executeSearchTool(
     searchQuery = query;
   }
 
+  const complexity = detectQueryComplexity(query);
+  const includeImages = detectImageIntent(query);
+  console.log(
+    `[${requestId}] 🎯 Search complexity: ${complexity.depth} (${complexity.reason})`
+  );
+  if (includeImages) {
+    console.log(`[${requestId}] 🖼️ Image intent detected for search query`);
+  }
+
   try {
     // Search with retry tracking (using optimized query)
     const { response, retryCount } = await searchTavilyWithRetryTracking(searchQuery, {
@@ -452,21 +462,32 @@ async function executeSearchTool(
       isGuest,
       functionName,
       maxResults: 5, // Limit to 5 results for cost/context efficiency
-      searchDepth: 'basic', // Basic depth for faster response
-      includeAnswer: true // Include AI-generated summary
+      searchDepth: complexity.depth,
+      includeAnswer: true, // Include AI-generated summary
+      includeImages
     });
 
     const latencyMs = Date.now() - startTime;
 
+    const filteredResults = filterSearchResults(response.results, {
+      minScore: 0.3,
+      maxResults: 5
+    });
+
+    const optimizedResponse = {
+      ...response,
+      results: filteredResults
+    };
+
     // Format results for LLM injection
-    const formattedContext = formatSearchContext(response, {
+    const formattedContext = formatSearchContext(optimizedResponse, {
       includeUrls: true,
       includeScores: false, // Scores add noise for LLM
       maxResults: 5
     });
 
     // Log usage to database (fire-and-forget)
-    const estimatedCost = calculateTavilyCost('basic');
+    const estimatedCost = calculateTavilyCost(complexity.depth);
     logTavilyUsage({
       requestId,
       functionName,
@@ -474,8 +495,8 @@ async function executeSearchTool(
       isGuest,
       query: searchQuery, // The actual query sent to Tavily (possibly rewritten)
       originalQuery: searchQuery !== query ? query : undefined, // Include original if different
-      resultCount: response.results.length,
-      searchDepth: 'basic',
+      resultCount: optimizedResponse.results.length,
+      searchDepth: complexity.depth,
       latencyMs,
       statusCode: 200,
       estimatedCost,
@@ -493,9 +514,9 @@ async function executeSearchTool(
       success: true,
       toolName: 'browser.search',
       data: {
-        searchResults: response,
+        searchResults: optimizedResponse,
         formattedContext,
-        sourceCount: response.results.length
+        sourceCount: optimizedResponse.results.length
       },
       latencyMs,
       retryCount
@@ -518,7 +539,7 @@ async function executeSearchTool(
       query: searchQuery, // The actual query sent to Tavily (possibly rewritten)
       originalQuery: searchQuery !== query ? query : undefined, // Include original if different
       resultCount: 0,
-      searchDepth: 'basic',
+      searchDepth: complexity.depth,
       latencyMs,
       statusCode: 500,
       estimatedCost: 0,
@@ -642,7 +663,7 @@ async function executeImageTool(
           prompt,
           mode: "edit" as const,
           aspectRatio,
-          baseImage: baseImage, // Safe: validated above for edit mode
+          baseImage: baseImage!, // Safe: validated above for edit mode
           requestId,
           userId,
           supabaseClient
@@ -772,4 +793,3 @@ Note: This image was rendered directly (temporary). If the user wants to edit it
       return result.data?.formattedContext || 'Tool completed successfully';
   }
 }
-

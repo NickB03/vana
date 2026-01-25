@@ -5,6 +5,7 @@ import {
   MessageAction,
 } from '@/components/prompt-kit/message';
 import { MessageWithArtifacts } from '@/components/MessageWithArtifacts';
+import { MessageErrorBoundary } from '@/components/MessageErrorBoundary';
 import { ReasoningDisplay } from '@/components/ReasoningDisplay';
 import { ReasoningErrorBoundary } from '@/components/ReasoningErrorBoundary';
 import { MessageSkeleton } from '@/components/ui/message-skeleton';
@@ -208,14 +209,15 @@ export const ChatMessage = React.memo(function ChatMessage({
     !streamProgress?.artifactDetected;
 
   return (
-    <motion.div {...motionProps}>
-      <MessageComponent
-        className={cn(
-          "chat-message mx-auto flex w-full max-w-3xl flex-col items-start",
-          CHAT_SPACING.message.container
-        )}
-        data-testid="chat-message"
-      >
+    <MessageErrorBoundary messageContent={message.content}>
+      <motion.div {...motionProps}>
+        <MessageComponent
+          className={cn(
+            "chat-message mx-auto flex w-full max-w-3xl flex-col items-start",
+            CHAT_SPACING.message.container
+          )}
+          data-testid="chat-message"
+        >
       {isAssistant ? (
         <div className="group flex w-full flex-col gap-1.5">
           {/* Assistant header with icon and name */}
@@ -366,7 +368,8 @@ export const ChatMessage = React.memo(function ChatMessage({
         </div>
       )}
     </MessageComponent>
-    </motion.div>
+      </motion.div>
+    </MessageErrorBoundary>
   );
 }, (prevProps, nextProps) => {
   try {

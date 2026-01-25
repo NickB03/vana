@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: 'f3c7dc97ee2441076c5d3ef2db218ce022338b4c',
-    short: 'f3c7dc9',
-    branch: 'fix/typewriter-streaming-completion',
-    message: 'feat: implement smooth streaming scroll with typewriter effect and spring physics (#566)',
+    hash: '356432674b6cc12aab61a73f4ba6d51f4b98a29e',
+    short: '3564326',
+    branch: 'fix/message-error-boundary-hierarchy',
+    message: 'feat: add Sandpack dark theme, artifact loading improvements, and search quality enhancements',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-25 04:57:24 UTC',
-    date: new Date('2026-01-25T04:57:24.481Z'),
+    timestamp: '2026-01-25 17:01:07 UTC',
+    date: new Date('2026-01-25T17:01:07.962Z'),
   },
 
   // Environment detection

@@ -5,7 +5,6 @@ import { InlineImage } from "@/components/InlineImage";
 import { ArtifactCard } from "@/components/ArtifactCard";
 import { ArtifactData, ArtifactType } from "@/components/ArtifactContainer";
 import { WebSearchResults as WebSearchResultsType } from "@/types/webSearch";
-import { MessageErrorBoundary } from "@/components/MessageErrorBoundary";
 import { CitationSource, stripCitationMarkers } from "@/utils/citationParser";
 import { InlineCitation } from "@/components/ui/inline-citation";
 import { supabase } from "@/integrations/supabase/client";
@@ -323,7 +322,7 @@ export const MessageWithArtifacts = memo(({
   const otherArtifacts = mergedArtifacts.filter(a => a.type !== 'image');
 
   return (
-    <MessageErrorBoundary messageContent={content}>
+    <>
       {/* Render message text without artifact tags or citation markers */}
       {/* Citations are processed at MESSAGE level - one unified badge at the end */}
       {/* The transition helps smooth out rapid content updates during streaming */}
@@ -366,7 +365,7 @@ export const MessageWithArtifacts = memo(({
           className="mt-3"
         />
       ))}
-    </MessageErrorBoundary>
+    </>
   );
 });
 

@@ -313,19 +313,33 @@ export class PromptInjectionDefense {
     const MODE_INSTRUCTIONS: Record<ModeHint, string> = {
       artifact: `
 [MODE: ARTIFACT CREATION]
-The user has selected artifact mode. You SHOULD use the generate_artifact tool for this request, unless it is clearly just a question that doesn't require creating anything.`,
+The user has selected artifact mode, indicating interest in creating something.
+However, VERIFY their specific message before using tools:
+- "Build/Create/Make X" → Use generate_artifact
+- "How do I/Explain X" → Respond with explanation first, offer to create afterward
+- Ambiguous (no clear verb) → Ask: "Would you like me to build this, or explain how?"
+Only create artifacts for EXPLICIT creation requests.`,
 
       image: `
 [MODE: IMAGE GENERATION]
-The user has selected image mode. You SHOULD use the generate_image tool for this request, unless it is clearly just a question that doesn't require creating anything.`,
+The user has selected image mode, indicating interest in generating images.
+However, VERIFY their specific message before using tools:
+- "Generate/Create/Draw an image of X" → Use generate_image
+- "How do I create images?" → Explain the process
+- Ambiguous → Ask: "Would you like me to generate this image?"
+Only generate images for EXPLICIT creation requests.`,
 
       auto: `
-[MODE: AUTO]
-Analyze the user's request and use appropriate tools when needed:
-- Use generate_artifact for creating visual/interactive content (apps, components, diagrams)
-- Use generate_image for creating images, photos, or artwork
-- Use browser.search for finding current information
-- Respond directly for questions that don't require tools`,
+[MODE: AUTO - CONSERVATIVE DEFAULT]
+Analyze the user's request using this priority:
+1. QUESTIONS ("How do I...", "What is...", "Explain...") → Respond directly, NO tools
+2. CREATION REQUESTS ("Build me...", "Create a...", "Make a...") → Use appropriate tool
+3. AMBIGUOUS (short phrases, unclear intent) → Ask for clarification first
+
+DEFAULT: Respond conversationally. Only use tools for CLEAR creation requests.
+- generate_artifact: Interactive components, visualizations, code files
+- generate_image: Photos, illustrations, artwork
+- browser.search: Current events, real-time data`,
     };
 
     return `${basePrompt}\n${MODE_INSTRUCTIONS[safeHint]}`;

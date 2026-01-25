@@ -70,6 +70,7 @@ export const ArtifactRenderer = memo(({
   previewContentRef,
 }: ArtifactRendererProps) => {
   const mermaidRef = useRef<HTMLDivElement>(null);
+  const htmlLoadTimeoutRef = useRef<number | null>(null);
 
   // Track loading start time for elapsed logging
   const loadingStartTimeRef = useRef<number>(Date.now());
@@ -337,16 +338,51 @@ ${artifact.content}
     // Listen for iframe messages
     useEffect(() => {
       const handleMessage = (e: MessageEvent) => {
-        if (e.data?.type === 'artifact-error') {
-          onPreviewErrorChange(e.data.message);
+        if (typeof e.data !== 'object' || e.data === null) {
+          return;
+        }
+
+        const data = e.data as { type?: string; message?: string };
+
+        if (data.type === 'artifact-error') {
+          const message = data.message ?? 'The artifact failed to render.';
+          onPreviewErrorChange(message);
           onLoadingChange(false);
-        } else if (e.data?.type === 'artifact-ready') {
+          if (htmlLoadTimeoutRef.current) {
+            window.clearTimeout(htmlLoadTimeoutRef.current);
+            htmlLoadTimeoutRef.current = null;
+          }
+          window.postMessage({ type: 'artifact-rendered-complete', success: false, error: message }, '*');
+        } else if (data.type === 'artifact-ready') {
           onLoadingChange(false);
+          if (htmlLoadTimeoutRef.current) {
+            window.clearTimeout(htmlLoadTimeoutRef.current);
+            htmlLoadTimeoutRef.current = null;
+          }
+          window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
         }
       };
       window.addEventListener('message', handleMessage);
       return () => window.removeEventListener('message', handleMessage);
     }, [onLoadingChange, onPreviewErrorChange]);
+
+    useEffect(() => {
+      if (htmlLoadTimeoutRef.current) {
+        window.clearTimeout(htmlLoadTimeoutRef.current);
+      }
+      htmlLoadTimeoutRef.current = window.setTimeout(() => {
+        onLoadingChange(false);
+        window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
+        htmlLoadTimeoutRef.current = null;
+      }, 3000);
+
+      return () => {
+        if (htmlLoadTimeoutRef.current) {
+          window.clearTimeout(htmlLoadTimeoutRef.current);
+          htmlLoadTimeoutRef.current = null;
+        }
+      };
+    }, [artifact.id, refreshTimestamp, onLoadingChange]);
 
     return (
       <div className="w-full h-full relative flex flex-col">
@@ -376,6 +412,14 @@ ${artifact.content}
             className="w-full h-full border-0 bg-background"
             title={artifact.title}
             sandbox="allow-scripts allow-downloads allow-popups"
+            onLoad={() => {
+              if (htmlLoadTimeoutRef.current) {
+                window.clearTimeout(htmlLoadTimeoutRef.current);
+                htmlLoadTimeoutRef.current = null;
+              }
+              onLoadingChange(false);
+              window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
+            }}
           />
         </div>
       </div>

@@ -575,6 +575,8 @@ export async function rewriteQuery(
   requestId?: string
 ): Promise<string> {
   const rid = requestId || crypto.randomUUID();
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().toLocaleString('en-US', { month: 'long' });
 
   const systemPrompt = `You are a search query optimizer for web search.
 
@@ -583,7 +585,9 @@ Your task: Transform conversational questions into effective search queries.
 Optimization rules:
 - Remove conversational filler ("can you", "please", "I want to know")
 - Extract core keywords and entities
-- Add current year (${new Date().getFullYear()}) for time-sensitive topics
+- Add temporal context for time-sensitive topics (${currentMonth} ${currentYear})
+- Expand abbreviations (JS -> JavaScript, AI -> artificial intelligence)
+- Add domain-specific keywords when helpful (programming: code, api, implementation, tutorial; research: study, paper, analysis; news: latest, recent, update; technical: documentation, specification, architecture)
 - Keep technical terms intact (API names, library versions)
 - Output: Just the optimized query, nothing else`;
 

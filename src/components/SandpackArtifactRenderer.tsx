@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { useSandpackBundle } from '@/hooks/useSandpackBundle';
 import { generateStandaloneReactHTML } from '@/utils/generateStandaloneReactHTML';
+import { sandpackDarkTheme } from '@/utils/sandpackTheme';
 
 interface SandpackArtifactRendererProps {
   code: string;
@@ -215,6 +216,7 @@ export const SandpackArtifactRenderer = ({
         files={files}
         customSetup={customSetup}
         options={options}
+        theme={sandpackDarkTheme}
       >
         {/* Extract bundle for pop-out windows (invisible component) */}
         <BundleExtractor
@@ -235,7 +237,7 @@ export const SandpackArtifactRenderer = ({
           ) : (
             <SandboxPreview
               showOpenInCodeSandbox={false}
-              showRefreshButton
+              showRefreshButton={false}
               showNavigator={false}
             />
           )}

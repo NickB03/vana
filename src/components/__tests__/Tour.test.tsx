@@ -52,6 +52,28 @@ function TourConsumerOutsideProvider() {
   return <button onClick={startTour}>Start</button>;
 }
 
+class TourErrorBoundary extends React.Component<
+  {
+    onError: (error: Error) => void;
+    children: React.ReactNode;
+  },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    this.props.onError(error);
+  }
+
+  render() {
+    return this.state.hasError ? null : this.props.children;
+  }
+}
+
 // ============================================================================
 // Tests
 // ============================================================================
@@ -79,14 +101,26 @@ describe('TourProvider Context Functionality', () => {
   });
 
   it('should throw error when useTour called outside provider', () => {
-    // Suppress error output for this test
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => { });
+    const onError = vi.fn();
+    const onWindowError = (event: ErrorEvent) => {
+      if (event.message?.includes('useTour must be used within a TourProvider')) {
+        event.preventDefault();
+      }
+    };
 
-    expect(() => {
-      render(<TourConsumerOutsideProvider />);
-    }).toThrow('useTour must be used within a TourProvider');
+    window.addEventListener('error', onWindowError);
 
-    consoleError.mockRestore();
+    render(
+      <TourErrorBoundary onError={onError}>
+        <TourConsumerOutsideProvider />
+      </TourErrorBoundary>
+    );
+
+    window.removeEventListener('error', onWindowError);
+
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'useTour must be used within a TourProvider' })
+    );
   });
 
   it('should initialize with empty steps and populate from effect', async () => {

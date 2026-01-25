@@ -85,7 +85,26 @@ export interface GeminiToolDefinition {
 export const TOOL_CATALOG = {
   generate_artifact: {
     name: 'generate_artifact',
-    description: 'Create interactive React components, HTML, SVG, Mermaid diagrams, or code snippets. Use this tool when the user requests visual content, UI components, diagrams, or executable code.',
+    description: `Create interactive React components, HTML, SVG, Mermaid diagrams, or code snippets.
+
+USE THIS TOOL ONLY when the user has EXPLICITLY requested a specific deliverable to be built.
+
+✅ GOOD triggers (use this tool):
+- "Build me a calculator"
+- "Create a sales dashboard"
+- "Make a todo app"
+- "Generate a React component for..."
+- "I need a chart showing..."
+
+❌ BAD triggers (respond conversationally instead):
+- "How do I build a calculator?" (question - explain, don't build)
+- "Explain React hooks" (education request)
+- "What's a good dashboard design?" (seeking advice)
+- "Show me how to use useState" (wants explanation with examples)
+
+⚠️ AMBIGUOUS (ask for clarification):
+- "todo app" (no verb - ask if they want you to build it or explain)
+- "calculator" (unclear intent - clarify first)`,
     parameters: {
       type: {
         type: 'string',

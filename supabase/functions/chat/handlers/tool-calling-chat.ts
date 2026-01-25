@@ -183,45 +183,67 @@ function buildModeHintPrompt(modeHint: ModeHint): string {
   const noToolGuidance = `
 DO NOT use any tools for:
 - Very short messages (1-3 words) like "test", "skip", "hi", "thanks", "ok"
-- Simple questions that can be answered directly
+- Questions asking "how", "what", "why", "can you explain" (these need explanations, not artifacts)
 - Feedback or acknowledgments from the user
 - Messages asking for clarification or more information
-- Greetings or casual conversation`;
+- Greetings or casual conversation
+- Requests to "show me how" or "help me understand" (explanation requests)`;
 
   switch (modeHint) {
     case 'artifact':
       return `
 
-ARTIFACT MODE: The user wants to create something visual or interactive.
-Use generate_artifact when their message describes something to BUILD or CREATE.
+ARTIFACT MODE: The user has indicated interest in creating something.
+However, STILL verify their specific message:
+
+- "Build/Create/Make X" → Use generate_artifact
+- "How do I build X?" or "Explain X" → Respond with explanation, then offer to create
+- Ambiguous (just "X" with no verb) → Ask: "Would you like me to build this, or explain the approach?"
 ${noToolGuidance}
 
-If the message is a clear creation request (e.g., "make a calculator", "create a chart"), use generate_artifact.
-If unsure whether they want an artifact, ask for clarification instead of generating.`;
+Only create artifacts for EXPLICIT creation requests. Questions still need explanations.`;
 
     case 'image':
       return `
 
-IMAGE MODE: The user wants to generate an image.
-Use generate_image when their message describes an image to CREATE.
+IMAGE MODE: The user has indicated interest in generating an image.
+However, STILL verify their specific message:
+
+- "Generate/Create/Draw/Make an image of X" → Use generate_image
+- "How do I create images?" → Explain the process
+- Ambiguous → Ask: "Would you like me to generate this image?"
 ${noToolGuidance}
 
-If the message is a clear image request (e.g., "draw a cat", "create a logo"), use generate_image.
-If unsure whether they want an image, ask for clarification instead of generating.`;
+Only generate images for EXPLICIT creation requests.`;
 
     case 'auto':
     default:
       return `
 
-Analyze the user's request carefully before using tools:
+## AUTO MODE - CONSERVATIVE DEFAULT
+
+Apply this decision tree to the user's message:
+
+**Step 1: Is this a QUESTION?**
+Look for: "How do I", "What is", "Why does", "Can you explain", "Tell me about", "Help me understand"
+→ YES: Respond with explanation. DO NOT create artifacts. Optionally offer to build something afterward.
+
+**Step 2: Is this a CREATION REQUEST?**
+Look for: "Build", "Create", "Make", "Generate", "Design", "Implement" + a specific deliverable
+→ YES: Use the appropriate tool (generate_artifact or generate_image)
+
+**Step 3: Is this AMBIGUOUS?**
+Short phrase with no clear intent (e.g., "todo app", "calculator", "chart")
+→ ASK: "Would you like me to create a [X], or would you prefer an explanation of how to build one?"
 ${noToolGuidance}
 
-Only use tools when there's a CLEAR request:
-- generate_artifact: User explicitly wants to CREATE something visual/interactive/code-based
-- generate_image: User explicitly wants an image, photo, illustration, or artwork
-- browser.search: User needs current information, news, or real-time data
+**CRITICAL: The default action is to respond conversationally.**
+Only use tools when there is a CLEAR, EXPLICIT request to CREATE something specific.
 
-When in doubt, respond conversationally and ask what they'd like to create.`;
+Tool selection guide (when creation IS confirmed):
+- generate_artifact: Interactive components, visualizations, code files, diagrams
+- generate_image: Photos, illustrations, artwork, visual designs
+- browser.search: Current events, real-time data, recent information`;
   }
 }
 

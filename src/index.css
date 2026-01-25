@@ -343,6 +343,20 @@ All colors MUST be HSL.
     max-height: none !important;
   }
 
+  /* Hide Sandpack bundler loading indicator and stats */
+  .sp-loading,
+  .sp-bundler-stats,
+  [class*="sp-c-"][class*="loading"],
+  [class*="sp-c-"][class*="stats"] {
+    display: none !important;
+  }
+
+  /* Hide bottom-left overlay elements in Sandpack preview */
+  .sp-preview-container > div[style*="position: absolute"][style*="bottom"],
+  [class*="sp-c-"][class*="preview"] > div[style*="position: absolute"][style*="bottom"] {
+    display: none !important;
+  }
+
   /* ChatLayout flow-based positioning */
   [data-chat-layout] {
     display: flex;

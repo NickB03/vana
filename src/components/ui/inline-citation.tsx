@@ -167,7 +167,7 @@ const NavigationControls = memo(function NavigationControls({
   canScrollNext: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between mb-3">
+    <div className="flex items-center justify-between pb-3 mb-3 border-b border-border/50">
       <div className="flex items-center gap-0.5">
         <Button
           variant="ghost"
@@ -244,7 +244,6 @@ export const InlineCitation = memo(function InlineCitation({
     return null;
   }
 
-  const showNavigation = sources.length > 1;
   const currentSource = sources[currentIndex];
 
   return (
@@ -261,20 +260,18 @@ export const InlineCitation = memo(function InlineCitation({
       </HoverCardTrigger>
 
       <HoverCardContent
-        className="w-80 p-4"
+        className="w-80 px-4 pt-1.5 pb-4"
         align="start"
         sideOffset={8}
       >
-        {showNavigation && (
-          <NavigationControls
-            currentIndex={currentIndex}
-            totalCount={sources.length}
-            onPrev={scrollPrev}
-            onNext={scrollNext}
-            canScrollPrev={currentIndex > 0}
-            canScrollNext={currentIndex < sources.length - 1}
-          />
-        )}
+        <NavigationControls
+          currentIndex={currentIndex}
+          totalCount={sources.length}
+          onPrev={scrollPrev}
+          onNext={scrollNext}
+          canScrollPrev={currentIndex > 0}
+          canScrollNext={currentIndex < sources.length - 1}
+        />
         <CitationCard source={currentSource} />
       </HoverCardContent>
     </HoverCard>
