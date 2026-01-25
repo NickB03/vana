@@ -41,6 +41,11 @@ export interface StreamProgress {
   searchResults?: WebSearchResults; // Web search results for streaming
   toolExecution?: ToolExecution; // Tool execution status for real-time display
   elapsedSeconds?: number; // Time elapsed since stream started (for time-based fallback status)
+  intentConfirmation?: {
+    message: string;
+    toolName: string;
+    timestamp: number;
+  }; // Intent confirmation before tool execution
   // Artifact data collected during streaming for immediate display
   streamingArtifacts?: Array<{
     id: string;
@@ -570,6 +575,7 @@ export function useChatMessages(
       let lastSequence = 0; // Track SSE event sequence
       let lastReasoningStatus: string | undefined; // Track last reasoning status for preservation
       let currentToolExecution: ToolExecution | undefined; // Track current tool execution state
+      let intentConfirmation: { message: string; toolName: string; timestamp: number } | undefined; // Track intent confirmation
 
       // Stream timeout protection
       const CHAT_STREAM_TIMEOUT_MS = 120000; // 2 minutes max for chat streaming
@@ -636,6 +642,7 @@ export function useChatMessages(
           streamingReasoningText: reasoningText, // Preserve raw text for fallback
           toolExecution: currentToolExecution, // Preserve tool execution state
           elapsedSeconds: lastEmittedElapsedSeconds, // Include elapsed time for time-based fallback status
+          intentConfirmation, // Include intent confirmation for pre-tool display
           streamingArtifacts: collectedArtifacts.length > 0 ? collectedArtifacts : undefined, // Include artifact data for streaming display
         };
       };
@@ -742,7 +749,7 @@ export function useChatMessages(
 
             // Handle reasoning_status event (GLM-4.5-Air summaries)
             if (parsed.type === 'reasoning_status') {
-              const status = parsed.content as string;
+              const status = parsed.status as string;
               console.log(`[StreamProgress] Reasoning status: "${status}"`);
 
               // Store for preservation in updateProgress()
@@ -806,6 +813,32 @@ export function useChatMessages(
 
               console.log('[StreamProgress] Received batch reasoning event with', reasoningSteps?.steps?.length || 0, 'steps');
               continue; // Skip to next event
+            }
+
+            // ========================================
+            // INTENT CONFIRMATION: Handle intent confirmation before tool execution
+            // ========================================
+            if (parsed.type === 'intent_confirmation') {
+              const message = parsed.message as string;
+              const toolName = parsed.toolName as string;
+              const timestamp = parsed.timestamp as number;
+
+              console.log(`💬 [StreamProgress] Intent confirmation: "${message}" for tool: ${toolName}`);
+
+              // Store intent confirmation for display
+              intentConfirmation = {
+                message,
+                toolName,
+                timestamp,
+              };
+
+              // Update lastReasoningStatus to show intent in the ticker
+              lastReasoningStatus = message;
+
+              const progress = updateProgress();
+              onDelta('', progress);
+
+              continue;
             }
 
             // ========================================
