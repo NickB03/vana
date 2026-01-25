@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: '356432674b6cc12aab61a73f4ba6d51f4b98a29e',
-    short: '3564326',
-    branch: 'fix/message-error-boundary-hierarchy',
-    message: 'feat: add Sandpack dark theme, artifact loading improvements, and search quality enhancements',
+    hash: '580c46b51244771253ee25c6bb63a94f0b1a67b9',
+    short: '580c46b',
+    branch: 'feat/intent-confirmation-events',
+    message: 'fix: relocate MessageErrorBoundary + add Sandpack theming and search quality improvements (#568)',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-25 17:01:07 UTC',
-    date: new Date('2026-01-25T17:01:07.962Z'),
+    timestamp: '2026-01-25 18:29:39 UTC',
+    date: new Date('2026-01-25T18:29:39.277Z'),
   },
 
   // Environment detection

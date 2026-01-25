@@ -48,6 +48,7 @@ import { FEATURE_FLAGS, DEFAULT_MODEL_PARAMS } from '../../_shared/config.ts';
 import { saveArtifact } from '../../_shared/artifact-saver.ts';
 import { saveMessageStub } from '../../_shared/message-stub-saver.ts';
 import { analyzeArtifactComplexity } from '../../_shared/artifact-complexity.ts';
+import { getIntentConfirmationMessage } from '../../_shared/intent-confirmation.ts';
 import { extractStatusFromReasoning } from '../../_shared/reasoning-status-extractor.ts';
 
 // Tool call types - define inline for tool call handling
@@ -678,6 +679,18 @@ export async function handleToolCallingChat(
                 sendEvent({
                   type: 'status_update',
                   status: toolStatusMessage,
+                });
+
+                // Send intent confirmation immediately
+                const intentMessage = getIntentConfirmationMessage(
+                  toolCalls[0].name,
+                  toolCalls[0].arguments || {}
+                );
+                sendEvent({
+                  type: 'intent_confirmation',
+                  message: intentMessage,
+                  toolName: toolCalls[0].name,
+                  timestamp: Date.now(),
                 });
 
                 // Notify client that tool call started
