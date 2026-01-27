@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: 'b353f9dc03382ef0b217257fc84953fc7f05b188',
-    short: 'b353f9d',
-    branch: 'feat/skills-system-v2',
-    message: 'fix: add synthetic reasoning phases for web search consistency',
+    hash: 'f6b4ad95cd587c5d8e55ad7e2188c47b6bc241a8',
+    short: 'f6b4ad9',
+    branch: 'fix/integration-tests-ci-credentials',
+    message: 'feat: implement Skills System v2 with dynamic context injection (#571)',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-27 20:43:58 UTC',
-    date: new Date('2026-01-27T20:43:58.667Z'),
+    timestamp: '2026-01-27 21:09:58 UTC',
+    date: new Date('2026-01-27T21:09:58.734Z'),
   },
 
   // Environment detection

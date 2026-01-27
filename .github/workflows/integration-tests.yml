@@ -64,7 +64,11 @@ jobs:
       - name: Start Supabase
         run: |
           npx supabase@2.67.1 start
-          echo "Supabase started on http://127.0.0.1:54321"
+          # Export Supabase credentials to GitHub environment for tests
+          echo "SUPABASE_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
+          echo "SUPABASE_ANON_KEY=$(npx supabase@2.67.1 status -o json | jq -r '.ANON_KEY')" >> $GITHUB_ENV
+          echo "SUPABASE_SERVICE_ROLE_KEY=$(npx supabase@2.67.1 status -o json | jq -r '.SERVICE_ROLE_KEY')" >> $GITHUB_ENV
+          echo "✅ Supabase started and credentials exported"
 
       - name: Wait for Supabase to be ready
         run: |

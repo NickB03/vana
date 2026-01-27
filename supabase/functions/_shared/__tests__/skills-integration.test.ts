@@ -3,6 +3,13 @@ import { assertEquals, assertStringIncludes } from 'https://deno.land/std@0.208.
 Deno.test({
   name: 'Skills Integration - web-search skill activates for search query',
   async fn() {
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY');
+
+    if (!supabaseKey) {
+      console.log('⚠️ SUPABASE_ANON_KEY not set - skipping integration test');
+      return;
+    }
+
     // Arrange: Mock chat request with search query
     const messages = [
       { role: 'user', content: 'What are the latest React 19 features?' }
@@ -13,7 +20,7 @@ Deno.test({
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+        'Authorization': `Bearer ${supabaseKey}`,
       },
       body: JSON.stringify({
         messages,

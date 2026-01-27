@@ -6,7 +6,12 @@ Deno.test({
   async fn() {
     // Arrange: Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'http://localhost:54321';
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY');
+
+    if (!supabaseKey) {
+      console.log('⚠️ SUPABASE_ANON_KEY not set - skipping integration test');
+      return;
+    }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
