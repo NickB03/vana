@@ -1,10 +1,9 @@
 import { assertEquals, assertExists } from 'https://deno.land/std@0.208.0/assert/mod.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 Deno.test({
   name: 'Database Integration - context provider handles timeout gracefully',
   async fn() {
-    // Arrange: Create Supabase client
+    // Check environment variables before trying to import Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'http://localhost:54321';
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY');
 
@@ -13,6 +12,8 @@ Deno.test({
       return;
     }
 
+    // Dynamic import to avoid module-level errors when env vars are missing
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.39.3');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Create a mock slow provider that queries database
@@ -36,7 +37,7 @@ Deno.test({
     let result: string;
     try {
       result = await providerWithTimeout();
-    } catch (error) {
+    } catch (_error) {
       result = ''; // Graceful degradation
     }
 

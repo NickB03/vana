@@ -3,6 +3,7 @@ import { assertEquals, assertStringIncludes } from 'https://deno.land/std@0.208.
 Deno.test({
   name: 'Skills Integration - web-search skill activates for search query',
   async fn() {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'http://localhost:54321';
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY');
 
     if (!supabaseKey) {
@@ -15,8 +16,8 @@ Deno.test({
       { role: 'user', content: 'What are the latest React 19 features?' }
     ];
 
-    // Act: Call chat endpoint (assumes local Supabase running)
-    const response = await fetch('http://localhost:54321/functions/v1/chat', {
+    // Act: Call chat endpoint using environment variable
+    const response = await fetch(`${supabaseUrl}/functions/v1/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -28,7 +29,7 @@ Deno.test({
       }),
     });
 
-    assertEquals(response.ok, true, 'Chat endpoint should respond successfully');
+    assertEquals(response.ok, true, `Chat endpoint should respond successfully, got ${response.status}`);
 
     // Read streaming response
     const reader = response.body?.getReader();

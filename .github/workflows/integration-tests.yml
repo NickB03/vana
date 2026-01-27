@@ -5,13 +5,12 @@ on:
   workflow_dispatch:
     inputs:
       provider:
-        description: 'Provider to test (all, glm, openrouter, tavily)'
+        description: 'Provider to test (all, openrouter, tavily)'
         required: false
         default: 'all'
         type: choice
         options:
           - all
-          - glm
           - openrouter
           - tavily
   schedule:
@@ -54,7 +53,6 @@ jobs:
       - name: Create .env for Edge Functions
         run: |
           cat > supabase/functions/.env <<EOF
-          GLM_API_KEY=${{ secrets.GLM_API_KEY }}
           OPENROUTER_GEMINI_FLASH_KEY=${{ secrets.OPENROUTER_GEMINI_FLASH_KEY }}
           OPENROUTER_GEMINI_IMAGE_KEY=${{ secrets.OPENROUTER_GEMINI_IMAGE_KEY }}
           TAVILY_API_KEY=${{ secrets.TAVILY_API_KEY }}
@@ -93,17 +91,9 @@ jobs:
         working-directory: supabase/functions
         run: deno task test:integration
         env:
-          GLM_API_KEY: ${{ secrets.GLM_API_KEY }}
           OPENROUTER_GEMINI_FLASH_KEY: ${{ secrets.OPENROUTER_GEMINI_FLASH_KEY }}
           OPENROUTER_GEMINI_IMAGE_KEY: ${{ secrets.OPENROUTER_GEMINI_IMAGE_KEY }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
-
-      - name: Run integration tests - GLM only
-        if: ${{ inputs.provider == 'glm' }}
-        working-directory: supabase/functions
-        run: deno task test:integration:glm
-        env:
-          GLM_API_KEY: ${{ secrets.GLM_API_KEY }}
 
       - name: Run integration tests - OpenRouter only
         if: ${{ inputs.provider == 'openrouter' }}
@@ -150,8 +140,8 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Provider | Cost |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|------|" >> $GITHUB_STEP_SUMMARY
-          echo "| GLM-4.5 Air | ~$0.01 per test |" >> $GITHUB_STEP_SUMMARY
-          echo "| Gemini Flash | ~$0.001 per test |" >> $GITHUB_STEP_SUMMARY
+          echo "| Gemini 3 Flash | ~$0.005 per test |" >> $GITHUB_STEP_SUMMARY
+          echo "| Gemini Flash Lite | ~$0.001 per test |" >> $GITHUB_STEP_SUMMARY
           echo "| Tavily | ~$0.001 per search |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "For manual runs, monitor API usage in respective dashboards." >> $GITHUB_STEP_SUMMARY

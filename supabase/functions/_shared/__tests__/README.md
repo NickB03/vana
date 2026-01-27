@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains the comprehensive test suite for Supabase Edge Functions shared modules, including **real API integration tests** that make actual API calls to external services (GLM/Z.ai, OpenRouter, Tavily).
+This directory contains the comprehensive test suite for Supabase Edge Functions shared modules, including **real API integration tests** that make actual API calls to external services (OpenRouter/Gemini, Tavily).
 
 Unlike unit tests that mock external dependencies, the integration tests validate:
 - API contracts and response formats
@@ -15,17 +15,17 @@ Unlike unit tests that mock external dependencies, the integration tests validat
 
 | File | Description | Cost/Run |
 |------|-------------|----------|
-| `glm-integration.test.ts` | GLM API (Z.ai) - tool calling, thinking mode | ~$0.02 |
-| `openrouter-integration.test.ts` | OpenRouter - image generation, chat | ~$0.05 |
+| `openrouter-integration.test.ts` | OpenRouter - Gemini chat, image generation | ~$0.05 |
 | `chat-endpoint-integration.test.ts` | /chat Edge Function - streaming, tools | ~$0.05 |
-| `circuit-breaker-integration.test.ts` | Resilience layer - fallback behavior | ~$0.03 |
+| `circuit-breaker-retry-integration.test.ts` | Resilience layer - fallback behavior | ~$0.03 |
 | `image-endpoint-integration.test.ts` | /generate-image Edge Function | ~$0.05 |
 | `title-endpoint-integration.test.ts` | /generate-title Edge Function | ~$0.005 |
-| `artifact-endpoint-integration.test.ts` | /generate-artifact Edge Function (DEPRECATED - endpoint not in use) | ~$0.02 |
 | `rate-limiting-integration.test.ts` | Rate limiting RPC functions (disabled) | ~$0.00 |
 | `tavily-integration.test.ts` | Tavily search API | ~$0.01 |
+| `skills-integration.test.ts` | Skills system activation tests | ~$0.01 |
+| `skills-database-integration.test.ts` | Database context provider tests | ~$0.00 |
 
-**Run locally:** `supabase start && deno task test:integration:endpoints`
+**Run locally:** `supabase start && deno task test:integration`
 
 ## Prerequisites
 
@@ -43,9 +43,8 @@ Set these in your environment or `.env` file:
 
 | Variable | Description | Required For |
 |----------|-------------|--------------|
-| `GLM_API_KEY` | Z.ai API key for GLM models | GLM tests, artifact generation |
-| `OPENROUTER_GEMINI_FLASH_KEY` | OpenRouter key for chat | Chat endpoint, circuit breaker |
-| `OPENROUTER_GEMINI_IMAGE_KEY` | OpenRouter key for images | Image generation |
+| `OPENROUTER_GEMINI_FLASH_KEY` | OpenRouter key for Gemini chat | Chat endpoint, circuit breaker |
+| `OPENROUTER_GEMINI_IMAGE_KEY` | OpenRouter key for Gemini images | Image generation |
 | `TAVILY_API_KEY` | Tavily search API key | Search/browser tools |
 | `SUPABASE_URL` | Local Supabase URL (http://127.0.0.1:54321) | All endpoint tests |
 | `SUPABASE_ANON_KEY` | Local Supabase anon key | All endpoint tests |
@@ -67,9 +66,6 @@ npm run test:integration -- --reporter=verbose
 ```bash
 cd supabase/functions
 
-# GLM API tests
-deno test --allow-net --allow-env _shared/__tests__/glm-integration.test.ts
-
 # OpenRouter tests
 deno test --allow-net --allow-env _shared/__tests__/openrouter-integration.test.ts
 
@@ -77,16 +73,13 @@ deno test --allow-net --allow-env _shared/__tests__/openrouter-integration.test.
 deno test --allow-net --allow-env _shared/__tests__/chat-endpoint-integration.test.ts
 
 # Circuit breaker tests
-deno test --allow-net --allow-env _shared/__tests__/circuit-breaker-integration.test.ts
+deno test --allow-net --allow-env _shared/__tests__/circuit-breaker-retry-integration.test.ts
 
 # Image endpoint tests
 deno test --allow-net --allow-env _shared/__tests__/image-endpoint-integration.test.ts
 
 # Title endpoint tests
 deno test --allow-net --allow-env _shared/__tests__/title-endpoint-integration.test.ts
-
-# Artifact endpoint tests (DEPRECATED - test file does not exist, endpoint not in use)
-# deno test --allow-net --allow-env _shared/__tests__/artifact-endpoint-integration.test.ts
 
 # Rate limiting tests
 deno test --allow-net --allow-env _shared/__tests__/rate-limiting-integration.test.ts
@@ -98,7 +91,7 @@ deno test --allow-net --allow-env _shared/__tests__/tavily-integration.test.ts
 ### Run Specific Test
 
 ```bash
-deno test --allow-net --allow-env --filter "should complete chat with tool call" _shared/__tests__/glm-integration.test.ts
+deno test --allow-net --allow-env --filter "should complete chat with tool call" _shared/__tests__/chat-endpoint-integration.test.ts
 ```
 
 ## Test Philosophy
@@ -181,11 +174,7 @@ Comprehensive unit test suite for the refactored Supabase Edge Functions shared 
 | context-selector.ts | context-selector.test.ts | 90% |
 | cors-config.ts | cors-config.test.ts | 95% |
 | error-handler.ts | error-handler.test.ts | 95% |
-| glm-chat-router.ts | glm-chat-router.test.ts | 90% |
-| glm-conversation-messages.ts | glm-conversation-messages.test.ts | 90% |
-| glm-openai-format.ts | glm-openai-format.validation.test.ts | 90% |
-| glm-stream-error-resilience.ts | glm-stream-error-resilience.test.ts | 90% |
-| glm-tool-continuation.ts | glm-tool-continuation.test.ts | 90% |
+| gemini-client.ts | gemini-client.test.ts | 90% |
 | immutability-validator.ts | immutability-validator.test.ts | 95% |
 | logger.ts | logger.test.ts | 90% |
 | model-config.ts | model-config.test.ts | 95% |
@@ -201,7 +190,7 @@ Comprehensive unit test suite for the refactored Supabase Edge Functions shared 
 | tool-result-content.ts | tool-result-content.test.ts | 90% |
 | validators.ts | validators.test.ts | 95% |
 | Cross-module | integration.test.ts | N/A |
-| **Total** | **28 unit test files** | **90%+** |
+| **Total** | **24 unit test files** | **90%+** |
 
 ## Quick Start
 
@@ -235,15 +224,15 @@ deno task test:detailed
 ```
 __tests__/
 ├── # Integration Tests (real API calls)
-├── glm-integration.test.ts               # GLM API tests
-├── openrouter-integration.test.ts        # OpenRouter API tests
+├── openrouter-integration.test.ts        # OpenRouter/Gemini API tests
 ├── tavily-integration.test.ts            # Tavily search API tests
 ├── chat-endpoint-integration.test.ts     # /chat endpoint tests
-├── artifact-endpoint-integration.test.ts # /generate-artifact endpoint tests (DEPRECATED - file does not exist)
 ├── image-endpoint-integration.test.ts    # /generate-image endpoint tests
 ├── title-endpoint-integration.test.ts    # /generate-title endpoint tests
-├── circuit-breaker-integration.test.ts   # Resilience/fallback tests
+├── circuit-breaker-retry-integration.test.ts # Resilience/fallback tests
 ├── rate-limiting-integration.test.ts     # Rate limiting tests
+├── skills-integration.test.ts            # Skills system tests
+├── skills-database-integration.test.ts   # Database context tests
 │
 ├── # Unit Tests
 ├── api-error-handler.test.ts             # API error handling tests
@@ -254,11 +243,7 @@ __tests__/
 ├── context-selector.test.ts              # Context selection tests
 ├── cors-config.test.ts                   # CORS configuration tests
 ├── error-handler.test.ts                 # Error response builder tests
-├── glm-chat-router.test.ts               # GLM chat routing tests
-├── glm-conversation-messages.test.ts     # GLM message format tests
-├── glm-openai-format.validation.test.ts  # GLM OpenAI format tests
-├── glm-stream-error-resilience.test.ts   # GLM stream error tests
-├── glm-tool-continuation.test.ts         # GLM tool continuation tests
+├── gemini-client.test.ts                 # Gemini API client tests
 ├── immutability-validator.test.ts        # Immutability tests
 ├── integration.test.ts                   # Cross-module integration tests
 ├── logger.test.ts                        # Logger tests
@@ -278,7 +263,6 @@ __tests__/
 ├── # Utilities & Examples
 ├── test-utils.ts                         # Shared test utilities
 ├── test-apis.ts                          # API test helpers
-├── test-glm-endpoints.ts                 # GLM endpoint helpers
 ├── tavily-client.example.ts              # Tavily client example
 └── README.md                             # This file
 ```
@@ -639,7 +623,7 @@ When adding new shared modules:
 
 ---
 
-**Last Updated**: 2025-12-31
-**Test Suite Version**: 2.0
-**Total Test Files**: 37 (28 unit + 9 integration)
+**Last Updated**: 2026-01-27
+**Test Suite Version**: 3.0
+**Total Test Files**: 33 (24 unit + 9 integration)
 **Coverage**: 90%+

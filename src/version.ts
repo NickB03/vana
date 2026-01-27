@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: '2f3f67207c58df879f6a1795ff4d9daf98bf9dc7',
-    short: '2f3f672',
-    branch: 'main',
-    message: 'fix: export Supabase credentials in CI and fix vitest config import (#572)',
+    hash: '98ec605095feabd7a14e025bec2f4bea60ff224c',
+    short: '98ec605',
+    branch: 'refactor/remove-glm-references',
+    message: 'refactor: remove all GLM references and fix skills integration tests',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-27 21:51:39 UTC',
-    date: new Date('2026-01-27T21:51:39.139Z'),
+    timestamp: '2026-01-27 22:05:54 UTC',
+    date: new Date('2026-01-27T22:05:54.626Z'),
   },
 
   // Environment detection
