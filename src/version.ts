@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: 'f6b4ad95cd587c5d8e55ad7e2188c47b6bc241a8',
-    short: 'f6b4ad9',
-    branch: 'fix/integration-tests-ci-credentials',
-    message: 'feat: implement Skills System v2 with dynamic context injection (#571)',
+    hash: '2f3f67207c58df879f6a1795ff4d9daf98bf9dc7',
+    short: '2f3f672',
+    branch: 'main',
+    message: 'fix: export Supabase credentials in CI and fix vitest config import (#572)',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-27 21:09:58 UTC',
-    date: new Date('2026-01-27T21:09:58.734Z'),
+    timestamp: '2026-01-27 21:51:39 UTC',
+    date: new Date('2026-01-27T21:51:39.139Z'),
   },
 
   // Environment detection
