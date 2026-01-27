@@ -296,7 +296,13 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   // 1. Currently streaming (always show during active thinking)
   // 2. Has any reasoning data to display (text, status, or timer)
   // 3. Has a timer value (means reasoning happened, even if text is missing)
-  const hasAnyReasoningData = reasoning || streamingReasoningText || reasoningStatus || finalElapsedTime || parentElapsedTime;
+  // FIX (2025-01-27): Include streaming state with elapsedTime to persist timer during continuation
+  const hasAnyReasoningData = reasoning ||
+    streamingReasoningText ||
+    reasoningStatus ||
+    finalElapsedTime ||
+    parentElapsedTime ||
+    (isStreaming && elapsedTime); // Keep visible during continuation streaming
   const hasTimer = Boolean(parentElapsedTime || (isStreaming ? elapsedTime : finalElapsedTime));
 
   // Show component if streaming OR has data OR has timer
@@ -309,12 +315,13 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
   // Show spinner when streaming OR when artifact hasn't rendered yet
   const showThinkingBar = isStreaming || (!isStreaming && !artifactRendered);
   const showShimmer = isStreaming || (!isStreaming && !artifactRendered);
-  const showExpandButton = hasContent || isStreaming;
 
   // Get timer display value (shows during streaming AND after completion)
   // Priority: parentElapsedTime > local timer values (handles component unmount/remount)
   const timerValue = parentElapsedTime || (isStreaming ? elapsedTime : finalElapsedTime);
   const showTimer = Boolean(timerValue);
+
+  const showExpandButton = hasContent || isStreaming || showTimer;
 
   return (
     <div className="w-full">
@@ -454,9 +461,17 @@ export const ReasoningDisplay = memo(function ReasoningDisplay({
               <p className="italic">{reasoningStatus}</p>
             </div>
           ) : (
-            /* No data fallback */
+            /* No data fallback - context-aware based on tool execution */
             <p className="text-sm text-muted-foreground italic">
-              Processing your request...
+              {isStreaming ? (
+                toolExecution?.toolName === 'browser.search'
+                  ? 'Analyzing search results...'
+                  : toolExecution?.toolName === 'generate_artifact'
+                  ? 'Building response...'
+                  : 'Processing your request...'
+              ) : (
+                'Expand to view thought process'
+              )}
             </p>
           )}
         </div>

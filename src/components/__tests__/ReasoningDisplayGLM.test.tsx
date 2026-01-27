@@ -14,7 +14,8 @@ describe("ReasoningDisplay GLM Integration", () => {
             />
         );
 
-        expect(screen.getByText("Analyzing database schema")).toBeInTheDocument();
+        // Use getAllByText since reasoningStatus appears in both ticker and expanded content fallback
+        expect(screen.getAllByText("Analyzing database schema")[0]).toBeInTheDocument();
     });
 
     it("prioritizes reasoningStatus over streamingReasoningText", () => {
@@ -26,9 +27,10 @@ describe("ReasoningDisplay GLM Integration", () => {
             />
         );
 
-        expect(screen.getByText("Refactoring API endpoints")).toBeInTheDocument();
+        // Use getAllByText since reasoningStatus appears in both ticker and expanded content
+        expect(screen.getAllByText("Refactoring API endpoints")[0]).toBeInTheDocument();
         // Detailed text should also be present (in expanded view)
-        expect(screen.getByText("I am currently refactoring the API endpoints to improve performance...")).toBeInTheDocument();
+        expect(screen.getAllByText("I am currently refactoring the API endpoints to improve performance...")[0]).toBeInTheDocument();
     });
 
     it("shows reasoningStatus in pill and streamingReasoningText in expanded view", () => {
@@ -40,9 +42,10 @@ describe("ReasoningDisplay GLM Integration", () => {
             />
         );
 
-        expect(screen.getByText("Validating user input")).toBeInTheDocument();
+        // Use getAllByText since reasoningStatus may appear in multiple places
+        expect(screen.getAllByText("Validating user input")[0]).toBeInTheDocument();
         // Raw reasoning text should be present (in expanded view)
-        expect(screen.getByText(/Step 1: Initial Analysis/)).toBeInTheDocument();
+        expect(screen.getAllByText(/Step 1: Initial Analysis/)[0]).toBeInTheDocument();
     });
 
     it("falls back to streamingReasoningText if reasoningStatus is missing", () => {
@@ -68,6 +71,7 @@ describe("ReasoningDisplay GLM Integration", () => {
                 reasoningStatus="Checking"
             />
         );
-        expect(screen.getByText("Checking")).toBeInTheDocument();
+        // Use getAllByText since reasoningStatus appears in both ticker and expanded content fallback
+        expect(screen.getAllByText("Checking")[0]).toBeInTheDocument();
     });
 });

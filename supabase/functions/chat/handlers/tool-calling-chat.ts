@@ -32,6 +32,7 @@ import {
   executeTool,
   getToolResultContent,
   type ToolContext,
+  type ToolExecutionResult,
 } from '../../_shared/tool-executor.ts';
 import {
   getGeminiToolDefinitions,
@@ -50,6 +51,12 @@ import { saveMessageStub } from '../../_shared/message-stub-saver.ts';
 import { analyzeArtifactComplexity } from '../../_shared/artifact-complexity.ts';
 import { getIntentConfirmationMessage } from '../../_shared/intent-confirmation.ts';
 import { extractStatusFromReasoning } from '../../_shared/reasoning-status-extractor.ts';
+import { createLogger } from '../../_shared/logger.ts';
+import { resolveSkill, detectSkill, createSkillContext } from '../../_shared/skills/index.ts';
+import type { SkillId } from '../../_shared/skills/types.ts';
+import { ERROR_IDS } from '../../../../src/constants/errorIds.ts';
+// Import definitions to trigger skill registration
+import '../../_shared/skills/definitions/index.ts';
 
 // Tool call types - define inline for tool call handling
 // Used for processing native tool calls from Gemini API
@@ -76,6 +83,45 @@ function logPremadeDebug(requestId: string, message: string, data?: Record<strin
   if (FEATURE_FLAGS.DEBUG_PREMADE_CARDS) {
     const logData = data ? ` ${JSON.stringify(data, null, 2)}` : '';
     console.log(`[PREMADE-DEBUG][${requestId}] ${message}${logData}`);
+  }
+}
+
+/**
+ * Generates a fallback response when Gemini fails to provide content after tool execution.
+ * This ensures users always receive feedback about what happened, even if the AI model fails.
+ *
+ * @param toolResult - The tool execution result containing tool name and data
+ * @returns A human-readable fallback message appropriate for the tool type
+ */
+function generateFallbackResponse(toolResult: ToolExecutionResult): string {
+  if (!toolResult.success) {
+    return 'The tool execution encountered an error. Please try again.';
+  }
+
+  switch (toolResult.toolName) {
+    case 'browser.search': {
+      const sourceCount = toolResult.data?.sourceCount || 0;
+      if (sourceCount === 0) {
+        return 'I completed the search, but no results were found. Please try rephrasing your query.';
+      }
+      const plural = sourceCount === 1 ? '' : 's';
+      return `I found ${sourceCount} relevant source${plural} for your query. Please review the search results above.`;
+    }
+
+    case 'generate_artifact': {
+      const type = toolResult.data?.artifactType || 'artifact';
+      const title = toolResult.data?.artifactTitle || 'Untitled';
+      return `I've created a ${type} titled "${title}" for you. Please review it in the artifact panel.`;
+    }
+
+    case 'generate_image': {
+      const stored = toolResult.data?.storageSucceeded;
+      const saveMessage = stored ? 'It has been saved and is now displayed.' : 'It is now displayed above.';
+      return `I've generated an image for you. ${saveMessage}`;
+    }
+
+    default:
+      return `I've completed the ${toolResult.toolName} operation successfully. Please see the results above.`;
   }
 }
 
@@ -272,6 +318,113 @@ export async function handleToolCallingChat(
 
   const logPrefix = `[${requestId}]`;
 
+  // ========================================
+  // SKILLS SYSTEM v2: Automatic Skill Detection & Context Injection
+  // ========================================
+  let resolvedSkillContent: string = '';
+  let resolvedSkillMeta: {
+    skillId: string;
+    displayName: string;
+    contentLength: number;
+    detectionConfidence: 'high' | 'medium' | 'low';
+    detectionLatencyMs: number;
+  } | null = null;
+  let skillSystemWarning: { message: string; errorId: string } | null = null; // Track skill detection errors for SSE warning
+
+  // Get the last user message for skill detection
+  const lastUserMessage = messages
+    .filter(m => m.role === 'user')
+    .pop()?.content || '';
+
+  if (FEATURE_FLAGS.SKILLS_ENABLED && lastUserMessage) {
+    const logger = createLogger({ requestId, functionName: 'chat-handler' });
+
+    try {
+      // Step 1: Detect which skill (if any) applies to this message
+      if (FEATURE_FLAGS.DEBUG_SKILLS) {
+        logger.debug('skill_detection_start', { messageLength: lastUserMessage.length });
+      }
+
+      const detection = await detectSkill(lastUserMessage, requestId);
+
+      if (FEATURE_FLAGS.DEBUG_SKILLS) {
+        logger.debug('skill_detection_result', {
+          skillId: detection.skillId,
+          confidence: detection.confidence,
+          reason: detection.reason,
+          latencyMs: detection.latencyMs,
+        });
+      }
+
+      // Track warning from circuit breaker (if any)
+      if (detection.warning) {
+        skillSystemWarning = detection.warning;
+        console.warn(`${logPrefix} ⚠️ [ERROR_ID: ${detection.warning.errorId}] ${detection.warning.message}`);
+      }
+
+      // Step 2: If a skill was detected with sufficient confidence, resolve it
+      const hasSufficientConfidence = detection.confidence === 'high' || detection.confidence === 'medium';
+      if (detection.skillId && hasSufficientConfidence) {
+        if (FEATURE_FLAGS.DEBUG_SKILLS) {
+          logger.debug('skill_resolution_start', { skillId: detection.skillId });
+        }
+
+        // Build skill context from current request using factory for validation
+        const skillContext = createSkillContext({
+          sessionId: sessionId || 'anonymous',
+          conversationHistory: messages.map(m => ({
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+          })),
+          requestId,
+          // Extract current artifact if available (from artifact context)
+          currentArtifact: undefined, // TODO: Parse from fullArtifactContext if needed
+        });
+
+        const resolved = await resolveSkill(detection.skillId, skillContext, requestId);
+
+        if (resolved) {
+          resolvedSkillContent = `\n\n# ACTIVE SKILL: ${resolved.skill.displayName}\n\n${resolved.content}`;
+          resolvedSkillMeta = {
+            skillId: detection.skillId,
+            displayName: resolved.skill.displayName,
+            contentLength: resolved.content.length,
+            detectionConfidence: detection.confidence,
+            detectionLatencyMs: detection.latencyMs,
+          };
+          console.log(`${logPrefix} 🎯 Skill auto-activated: ${resolved.skill.displayName} (${resolved.content.length} chars, confidence: ${detection.confidence}, detection: ${detection.latencyMs}ms)`);
+
+          if (FEATURE_FLAGS.DEBUG_SKILLS) {
+            logger.debug('skill_resolution_complete', {
+              skillId: detection.skillId,
+              displayName: resolved.skill.displayName,
+              contentLength: resolved.content.length,
+              detectionLatencyMs: detection.latencyMs,
+              providersExecuted: resolved.skill.contextProviders?.length || 0,
+              referencesLoaded: resolved.loadedReferences.length,
+            });
+          }
+        } else {
+          console.warn(`${logPrefix} ⚠️ Skill not found in registry: ${detection.skillId}`);
+        }
+      } else if (detection.skillId) {
+        // Skill detected but with low confidence - log but don't activate
+        console.log(`${logPrefix} ℹ️ Skill detected but skipped (low confidence): ${detection.skillId} - ${detection.reason}`);
+      }
+    } catch (error) {
+      // Skill detection/resolution should never block chat - log and continue without skill
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`${logPrefix} ❌ Skill detection/resolution failed:`, errorMessage);
+      console.warn(`${logPrefix} ⚠️ [ERROR_ID: SKILL_SYSTEM_ERROR] Chat will continue in degraded mode without skill context`);
+      // Track error for SSE warning event (sent after stream creation)
+      skillSystemWarning = {
+        message: 'Advanced features temporarily unavailable',
+        errorId: ERROR_IDS.SKILL_SYSTEM_ERROR,
+      };
+      // Don't throw - chat continues without skill context
+    }
+  }
+
   console.log(
     `${logPrefix} 🔧 Starting unified tool-calling chat with Gemini 3 Flash ` +
     `(modeHint=${modeHint}, toolChoice=${toolChoice})`
@@ -287,12 +440,8 @@ export async function handleToolCallingChat(
   const sanitizedModeHint = PromptInjectionDefense.sanitizeModeHint(modeHint);
   const sanitizedArtifactContext = PromptInjectionDefense.sanitizeArtifactContext(fullArtifactContext);
 
-  // Get the last user message for template matching
-  const lastUserMessage = messages
-    .filter(m => m.role === 'user')
-    .pop()?.content || '';
-
   // Match user request to artifact template for optimized guidance
+  // Note: lastUserMessage was already extracted above for skill detection
   const templateMatch = getMatchingTemplate(lastUserMessage);
 
   // Log template matching result for observability
@@ -333,19 +482,26 @@ export async function handleToolCallingChat(
     baseSystemPrompt += `\n\nURL CONTENT:\n${urlExtractContext}`;
   }
 
-  const resolveModeHint = (currentToolChoice: ToolChoice): ModeHint => {
-    if (currentToolChoice === 'generate_artifact') return 'artifact';
-    if (currentToolChoice === 'generate_image') return 'image';
-    return sanitizedModeHint;
-  };
+  function resolveModeHint(currentToolChoice: ToolChoice): ModeHint {
+    switch (currentToolChoice) {
+      case 'generate_artifact':
+        return 'artifact';
+      case 'generate_image':
+        return 'image';
+      case 'auto':
+        return sanitizedModeHint;
+    }
+  }
 
-  const convertToolChoice = (currentToolChoice: ToolChoice): "auto" | { type: "function"; function: { name: string } } => {
-    if (currentToolChoice === 'auto') return 'auto';
+  function convertToolChoice(currentToolChoice: ToolChoice): "auto" | { type: "function"; function: { name: string } } {
+    if (currentToolChoice === 'auto') {
+      return 'auto';
+    }
     return {
       type: 'function',
       function: { name: currentToolChoice }
     };
-  };
+  }
 
   const buildConversationMessages = (systemPrompt: string): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> => ([
     { role: 'system' as const, content: systemPrompt },
@@ -413,15 +569,84 @@ export async function handleToolCallingChat(
       }
 
       /**
+       * State tracker for first chunk detection
+       * Used to filter query-echo headings only from the very first content chunk
+       */
+      let isFirstChunk = true;
+
+      /**
+       * Filters specific reasoning markers that Gemini includes in responses.
+       *
+       * This removes bracket markers like [searching], [building] that leak from reasoning.
+       * These are unlikely to appear in legitimate content and won't cause false positives.
+       *
+       * Note: Bold header filter removed (was lines 591-595) per commit 25bc22b intent.
+       * Reason: It was stripping legitimate artifact explanation headers needed for
+       * frontend formatting (e.g., **Creating React Component** for pill styling).
+       * Bracket marker filtering is sufficient for reasoning status leaks.
+       */
+      function filterReasoningLeaks(content: string): string {
+        // Only filter very specific bracket markers that we explicitly use for reasoning status
+        // Examples: [searching], [building], [analyzing]
+        return content.replace(
+          /\s*\[\s*(building|searching|analyzing|planning|implementing|reviewing|designing|creating|generating|processing|synthesizing|evaluating)\s*\]\s*/gi,
+          ''
+        );
+      }
+
+      /**
+       * Filters unwanted markdown headings from the first line of response.
+       * Specifically targets query-echo headings like "# road conditions in Dallas"
+       * that Gemini sometimes generates after web searches.
+       *
+       * Only operates on the very first chunk to avoid removing legitimate headings
+       * from later content.
+       */
+      function filterFirstLineHeading(content: string): string {
+        if (!isFirstChunk) {
+          return content;
+        }
+
+        // Check if content starts with markdown heading (# or ##)
+        const startsWithHeading = /^#{1,2}\s+/.test(content.trim());
+
+        if (startsWithHeading) {
+          // Remove the first line (the heading)
+          const lines = content.split('\n');
+          const filtered = lines.slice(1).join('\n');
+
+          console.log('[tool-calling-chat] Filtered first-line heading from initial response chunk');
+          return filtered;
+        }
+
+        return content;
+      }
+
+      /**
        * Send OpenAI-compatible content chunk
        * Format: data: {"choices":[{"delta":{"content":"..."}}]}
        */
       function sendContentChunk(content: string) {
+        // Filter out any reasoning leaks before sending to client
+        let filteredContent = filterReasoningLeaks(content);
+
+        // Filter first-line heading only from the initial chunk
+        // This prevents query-echo headings like "# road conditions in Dallas"
+        // while preserving legitimate headings in the body of the response
+        filteredContent = filterFirstLineHeading(filteredContent);
+
+        // After processing first chunk, disable first-line filter
+        if (isFirstChunk && filteredContent) {
+          isFirstChunk = false;
+        }
+
+        if (!filteredContent) return; // Skip empty chunks after filtering
+
         sendEvent({
           choices: [
             {
               delta: {
-                content,
+                content: filteredContent,
               },
             },
           ],
@@ -438,7 +663,14 @@ export async function handleToolCallingChat(
 
       const buildSystemPrompt = (currentToolChoice: ToolChoice, fallbackNote?: string) => {
         const sessionModeHint = resolveModeHint(currentToolChoice);
-        let systemPrompt = baseSystemPrompt + buildModeHintPrompt(sessionModeHint);
+        let systemPrompt = baseSystemPrompt;
+
+        // SKILLS SYSTEM v2: Inject resolved skill content
+        if (resolvedSkillContent) {
+          systemPrompt += resolvedSkillContent;
+        }
+
+        systemPrompt += buildModeHintPrompt(sessionModeHint);
         if (fallbackNote) {
           systemPrompt += `\n\n${fallbackNote}`;
         }
@@ -550,11 +782,32 @@ export async function handleToolCallingChat(
         const FALLBACK_NOTE =
           'The requested tool failed. Respond directly and avoid calling tools unless absolutely necessary.';
 
+        // Maximum depth for recursive tool calling (prevents infinite loops)
+        // Deep research needs ~5 rounds (1 breadth + 4 depth searches)
+        const MAX_TOOL_CALL_DEPTH = 6;
+
         const runToolCallingPass = async (
           currentToolChoice: ToolChoice,
           allowAutoFallback: boolean,
-          fallbackNote?: string
+          fallbackNote?: string,
+          toolCallDepth: number = 0
         ): Promise<void> => {
+          // Prevent infinite tool-calling loops
+          if (toolCallDepth >= MAX_TOOL_CALL_DEPTH) {
+            console.warn(
+              `${logPrefix} ⚠️ Max tool call depth (${MAX_TOOL_CALL_DEPTH}) reached, stopping recursion`
+            );
+            sendEvent({
+              type: 'warning',
+              message: 'Reached maximum research depth. Completing response.',
+              timestamp: Date.now(),
+            });
+            return;
+          }
+
+          console.log(
+            `${logPrefix} 🔧 Tool calling pass (depth=${toolCallDepth}, choice=${currentToolChoice})`
+          );
           // NOTE: With native function calling, GLM returns tool_calls in the response
           // instead of XML in content. No content buffering/stripping needed.
           const systemPrompt = buildSystemPrompt(currentToolChoice, fallbackNote);
@@ -566,6 +819,29 @@ export async function handleToolCallingChat(
           let lastEmittedStatus: string | null = null;
           let lastStatusTime = Date.now();
           const STATUS_COOLDOWN_MS = 2000; // Prevent flickering
+
+          // Emit skill activation event (if skill was resolved)
+          if (resolvedSkillMeta) {
+            sendEvent({
+              type: 'skill_activated',
+              skillId: resolvedSkillMeta.skillId,
+              displayName: resolvedSkillMeta.displayName,
+              contentLength: resolvedSkillMeta.contentLength,
+              detectionConfidence: resolvedSkillMeta.detectionConfidence,
+              detectionLatencyMs: resolvedSkillMeta.detectionLatencyMs,
+              timestamp: Date.now(),
+            });
+          }
+
+          // Emit warning if skill detection/resolution failed
+          if (skillSystemWarning) {
+            sendEvent({
+              type: 'warning',
+              message: skillSystemWarning.message,
+              errorId: skillSystemWarning.errorId,
+              timestamp: Date.now(),
+            });
+          }
 
           // Emit initial status
           sendEvent({ type: 'status_update', status: 'Analyzing your request...' });
@@ -867,6 +1143,8 @@ export async function handleToolCallingChat(
                     // Save artifact to database if we have a message ID and valid session
                     // Guest sessions don't have DB records, so generate client-side ID for them
                     let savedArtifactId: string | undefined;
+                    let artifactPersisted = false; // Track actual persistence status
+                    let saveError: string | null = null;
 
                     if (isGuest) {
                       // GUEST MODE: Generate a content-based artifact ID for client-side rendering
@@ -880,6 +1158,7 @@ export async function handleToolCallingChat(
                         .map(b => b.toString(16).padStart(2, '0'))
                         .join('');
                       savedArtifactId = `guest-art-${hashHex.substring(0, 16)}`;
+                      artifactPersisted = false; // Guest artifacts are never persisted
                       console.log(`${logPrefix} 🎭 Generated guest artifact ID: ${savedArtifactId} (not persisted)`);
                     } else if (assistantMessageId && serviceClient && sessionId) {
                       // AUTHENTICATED MODE: Persist to database
@@ -918,10 +1197,16 @@ export async function handleToolCallingChat(
 
                       if (saveResult.success) {
                         savedArtifactId = saveResult.artifactId;
+                        artifactPersisted = true;
                         console.log(`${logPrefix} 💾 Artifact saved to DB: ${savedArtifactId}`);
                       } else {
-                        console.warn(`${logPrefix} ⚠️ Failed to save artifact to DB: ${saveResult.error}`);
-                        // Continue anyway - artifact will still be sent to client
+                        saveError = saveResult.error || 'Unknown error';
+                        console.error(`${logPrefix} ❌ Artifact save failed:`, saveError, {
+                          errorId: ERROR_IDS.ARTIFACT_SAVE_FAILED,
+                          artifactType: toolResult.data.artifactType,
+                          artifactTitle: toolResult.data.artifactTitle,
+                        });
+                        // Don't set savedArtifactId - artifact was not persisted
                       }
                     } else {
                       console.log(`${logPrefix} ℹ️ Skipping artifact DB save (no assistantMessageId, serviceClient, or sessionId)`);
@@ -932,13 +1217,24 @@ export async function handleToolCallingChat(
                       artifactCode: toolResult.data.artifactCode,
                       artifactType: toolResult.data.artifactType,
                       artifactTitle: toolResult.data.artifactTitle,
-                      artifactId: savedArtifactId, // Include the saved artifact ID
-                      persisted: !!savedArtifactId, // Indicates if artifact was durably stored in DB
+                      artifactId: savedArtifactId, // Only set if save succeeded
+                      persisted: artifactPersisted, // Accurate persistence status
                       reasoning: toolResult.data.artifactReasoning,
                       timestamp: Date.now(),
                       latencyMs: toolResult.latencyMs,
                     });
-                    console.log(`${logPrefix} 📤 Sent artifact_complete event (type=${toolResult.data.artifactType}, artifactId=${savedArtifactId || 'not-saved'}, persisted=${!!savedArtifactId})`);
+                    console.log(`${logPrefix} 📤 Sent artifact_complete event (type=${toolResult.data.artifactType}, artifactId=${savedArtifactId || 'not-saved'}, persisted=${artifactPersisted})`);
+
+                    // Warn user if authenticated save failed
+                    if (saveError && !isGuest) {
+                      sendEvent({
+                        type: 'warning',
+                        message: 'Failed to save artifact. Your changes may be lost. Please try the operation again or save your work elsewhere.',
+                        errorId: ERROR_IDS.ARTIFACT_SAVE_FAILED,
+                        timestamp: Date.now(),
+                      });
+                      console.warn(`${logPrefix} ⚠️ Sent artifact save failure warning to user`);
+                    }
                   }
                   break;
                 }
@@ -989,6 +1285,25 @@ export async function handleToolCallingChat(
               }
             }
 
+            // Append synthetic reasoning phases for browser.search before sending reasoning_complete
+            // This ensures all reasoning phases are included in the final reasoning display
+            if (toolResult.success && toolResult.toolName === 'browser.search') {
+              const searchQuery = toolCallForExecution.arguments.query || 'query';
+              const resultCount = toolResult.data?.sourceCount || 0;
+
+              // Phase 1: Searching the Web
+              const searchingPhase = `**Searching the Web**\n\nExecuting search query: "${searchQuery}"\n\nSearched across multiple authoritative sources and found ${resultCount} relevant result${resultCount === 1 ? '' : 's'}.\n\n`;
+
+              // Phase 2: Analyzing Search Results
+              const analyzingPhase = `**Analyzing Search Results**\n\nReviewing ${resultCount} search result${resultCount === 1 ? '' : 's'} to extract relevant, up-to-date information.\n\nEvaluating source authority and relevance to provide an accurate answer.\n\n`;
+
+              // Phase 3: Synthesizing Response
+              const synthesizingPhase = `**Synthesizing Response**\n\nCombining findings from authoritative sources.\n\nStructuring information into a clear, comprehensive answer based on current data.\n\n`;
+
+              // Append all phases to the accumulated reasoning
+              fullReasoningAccumulated += searchingPhase + analyzingPhase + synthesizingPhase;
+            }
+
             // Send accumulated reasoning to frontend for display (ALL response types)
             if (fullReasoningAccumulated) {
               sendEvent({
@@ -1030,6 +1345,11 @@ export async function handleToolCallingChat(
               // Send continuation status update
               sendEvent({ type: 'status_update', status: 'Analyzing results and formulating response...' });
 
+              // BUG FIX (2025-01-26): Allow continuation tool calls for multi-step web search
+              // Web search supports multiple sequential browser.search calls (initial + follow-up).
+              // For other skills, prevent tool-calling loops by forcing response generation.
+              const allowContinuationToolCalls = resolvedSkillMeta?.skillId === 'web-search';
+
               const continuationResponse = await callGeminiWithToolResult(
                 systemPrompt,
                 userPrompt,
@@ -1042,20 +1362,45 @@ export async function handleToolCallingChat(
                   isGuest,
                   functionName: 'chat',
                   stream: true,
-                  enableThinking: true,
+                  // BUG FIX (2025-01-26): Disable thinking mode for continuation
+                  // The thinking/planning was already done when selecting the tool.
+                  // After tool execution, we just need to synthesize results into a response.
+                  // Keeping thinking enabled causes Gemini to generate only reasoning without content.
+                  enableThinking: false,
                   tools: allTools,
-                  toolChoice: convertToolChoice(currentToolChoice),
+                  // Conditionally allow tool calls for multi-step research.
+                  // Deep research needs multiple sequential searches (breadth → depth).
+                  // Other tools should respond immediately to prevent infinite loops.
+                  toolChoice: allowContinuationToolCalls ? 'auto' : 'none',
                 }
               );
+
+              // FIX (2025-01-27): Send explicit status for continuation phase
+              // When thinking is disabled, provide semantic context to prevent
+              // "Processing your request..." fallback in ReasoningDisplay
+              const statusMessage = allowContinuationToolCalls
+                ? 'Analyzing search results...'
+                : 'Synthesizing response...';
+
+              sendEvent({
+                type: 'reasoning_status',
+                status: statusMessage,
+              });
 
               const timeoutPromise = new Promise<never>((_, reject) => {
                 setTimeout(() => reject(new Error('Gemini continuation timeout')), GEMINI_CONTINUATION_TIMEOUT_MS);
               });
 
+              // Track continuation state - declared in outer scope so accessible after Promise.race
+              let continuationContentReceived = false;
+              let continuationToolCallDetected = false;
+              let continuationToolCall: NativeToolCall | undefined;
+
               const continuationStreamPromise = (async () => {
                 // Process continuation stream
                 for await (const chunk of processGeminiStream(continuationResponse, requestId)) {
                   if (chunk.type === 'content') {
+                    continuationContentReceived = true;
                     sendContentChunk(chunk.data);
                   } else if (chunk.type === 'reasoning') {
                     continuationReasoningText += chunk.data;
@@ -1063,11 +1408,58 @@ export async function handleToolCallingChat(
                       type: 'reasoning_chunk',
                       chunk: chunk.data,
                     });
+                  } else if (chunk.type === 'tool_call') {
+                    // Handle additional tool calls from continuation (for multi-step research)
+                    const toolCalls = chunk.data;
+                    if (toolCalls && toolCalls.length > 0) {
+                      continuationToolCallDetected = true;
+                      continuationToolCall = {
+                        id: toolCalls[0].id,
+                        type: 'function',
+                        function: {
+                          name: toolCalls[0].name,
+                          arguments: JSON.stringify(toolCalls[0].arguments)
+                        }
+                      };
+                      console.log(
+                        `${logPrefix} 🔧 Continuation tool call detected: ${toolCalls[0].name}`
+                      );
+
+                      // Send intent confirmation for the new tool call
+                      const intentMessage = getIntentConfirmationMessage(
+                        toolCalls[0].name,
+                        toolCalls[0].arguments || {}
+                      );
+                      sendEvent({
+                        type: 'intent_confirmation',
+                        message: intentMessage,
+                        toolName: toolCalls[0].name,
+                        timestamp: Date.now(),
+                      });
+
+                      sendEvent({
+                        type: 'tool_call_start',
+                        toolName: toolCalls[0].name,
+                        arguments: toolCalls[0].arguments,
+                        timestamp: Date.now(),
+                      });
+                    }
                   } else if (chunk.type === 'error') {
                     console.error(`${logPrefix} ❌ Continuation stream error:`, chunk.data);
                     sendSafeError(chunk.data, { stage: 'gemini-continuation' });
                   }
                 }
+
+                // Safety net: If no content was received, send fallback response
+                if (!continuationContentReceived) {
+                  console.warn(`${logPrefix} ⚠️ [ERROR_ID: GEMINI_NO_CONTENT] No continuation content received - sending fallback`);
+                  console.warn(`${logPrefix} 📊 Tool context: name=${toolResult.toolName}, success=${toolResult.success}, depth=${toolCallDepth}`);
+                  // TODO: Send SSE event to warn user about unusual fallback
+                  // sendEvent({ type: 'warning', message: 'Generated fallback response due to missing content', errorId: ERROR_IDS.GEMINI_NO_CONTENT });
+                  const fallbackResponse = generateFallbackResponse(toolResult);
+                  sendContentChunk(fallbackResponse);
+                }
+
                 console.log(
                   `${logPrefix} ✅ Gemini continuation complete`
                 );
@@ -1075,14 +1467,149 @@ export async function handleToolCallingChat(
 
               try {
                 await Promise.race([continuationStreamPromise, timeoutPromise]);
+
+                // BUG FIX (2025-01-26): Handle continuation tool calls recursively for multi-step research
+                // If the continuation detected a tool call (e.g., deep research making additional searches),
+                // execute it and recursively continue the chain
+                if (continuationToolCallDetected && continuationToolCall) {
+                  console.log(
+                    `${logPrefix} 🔧 Executing continuation tool call: ${continuationToolCall.function.name} (depth=${toolCallDepth})`
+                  );
+
+                  // Parse and execute the continuation tool call
+                  const parsedArgs = parseToolArguments(
+                    continuationToolCall.function.arguments,
+                    logPrefix
+                  );
+
+                  const continuationToolForExecution: ToolCall = {
+                    id: continuationToolCall.id,
+                    name: continuationToolCall.function.name,
+                    arguments: parsedArgs,
+                  };
+
+                  // Send execution status update
+                  const executionStatusMessage = (() => {
+                    switch (continuationToolForExecution.name) {
+                      case 'browser.search':
+                        return 'Conducting additional research...';
+                      case 'generate_artifact':
+                        return `Building your ${(continuationToolForExecution.arguments as { artifactType?: string }).artifactType || 'component'}...`;
+                      case 'generate_image':
+                        return 'Creating your image with AI...';
+                      default:
+                        return `Executing ${continuationToolForExecution.name}...`;
+                    }
+                  })();
+                  sendEvent({
+                    type: 'status_update',
+                    status: executionStatusMessage,
+                  });
+
+                  const continuationToolResult = await executeToolWithSecurity(
+                    continuationToolForExecution,
+                    toolContext
+                  );
+
+                  console.log(
+                    `${logPrefix} 🔧 Continuation tool execution ${continuationToolResult.success ? 'succeeded' : 'failed'}: ${continuationToolResult.latencyMs}ms`
+                  );
+
+                  // Notify client of tool result
+                  sendEvent({
+                    type: 'tool_result',
+                    toolName: continuationToolResult.toolName,
+                    success: continuationToolResult.success,
+                    sourceCount: continuationToolResult.data?.sourceCount,
+                    latencyMs: continuationToolResult.latencyMs,
+                    timestamp: Date.now(),
+                  });
+
+                  // Send tool-specific results
+                  if (continuationToolResult.success && continuationToolResult.toolName === 'browser.search') {
+                    if (continuationToolResult.data?.searchResults) {
+                      const tavilyResults = continuationToolResult.data.searchResults;
+                      sendEvent({
+                        type: 'web_search',
+                        data: {
+                          query: tavilyResults.query,
+                          sources: tavilyResults.results.map((result: { title: string; url: string; content: string; score?: number }) => ({
+                            title: result.title,
+                            url: result.url,
+                            snippet: result.content,
+                            relevanceScore: result.score,
+                          })),
+                          timestamp: Date.now(),
+                          searchTime: continuationToolResult.latencyMs,
+                        },
+                      });
+                      sendEvent({
+                        type: 'status_update',
+                        status: `Found ${tavilyResults.results.length} additional sources`,
+                      });
+                    }
+                  }
+
+                  // Continue the conversation chain with the tool result
+                  // Use callGeminiWithToolResult which properly formats the conversation history
+                  console.log(
+                    `${logPrefix} 🔄 Continuing with nested tool result (depth=${toolCallDepth + 1})`
+                  );
+
+                  sendEvent({ type: 'status_update', status: 'Synthesizing additional research findings...' });
+
+                  const nestedContinuationResponse = await callGeminiWithToolResult(
+                    systemPrompt,
+                    userPrompt,
+                    continuationToolForExecution,
+                    getToolResultContent(continuationToolResult),
+                    [continuationToolForExecution],
+                    {
+                      requestId,
+                      userId: userId || undefined,
+                      isGuest,
+                      functionName: 'chat',
+                      stream: true,
+                      enableThinking: false,
+                      tools: allTools,
+                      // Force response generation for nested continuations to prevent deep recursion
+                      // Deep research is limited to 2 total searches (1 initial + 1 continuation)
+                      toolChoice: 'none',
+                    }
+                  );
+
+                  // Process the nested continuation stream
+                  for await (const chunk of processGeminiStream(nestedContinuationResponse, requestId)) {
+                    if (chunk.type === 'content') {
+                      sendContentChunk(chunk.data);
+                    } else if (chunk.type === 'reasoning') {
+                      sendEvent({
+                        type: 'reasoning_chunk',
+                        chunk: chunk.data,
+                      });
+                    } else if (chunk.type === 'error') {
+                      console.error(`${logPrefix} ❌ Nested continuation stream error:`, chunk.data);
+                      sendSafeError(chunk.data, { stage: 'nested-continuation' });
+                    }
+                  }
+
+                  console.log(
+                    `${logPrefix} ✅ Nested continuation complete (depth=${toolCallDepth + 1})`
+                  );
+                }
               } catch (continuationError) {
                 // Log the error but continue to [DONE] - don't let continuation issues block stream completion
-                console.error(`${logPrefix} ❌ Gemini continuation failed/timeout:`, continuationError);
+                const errorMessage = continuationError instanceof Error ? continuationError.message : String(continuationError);
+                const isTimeout = errorMessage.includes('timeout');
+                console.error(`${logPrefix} ❌ [ERROR_ID: GEMINI_CONTINUATION_ERROR] Gemini continuation ${isTimeout ? 'timeout' : 'failure'}:`, errorMessage);
+                console.error(`${logPrefix} 📊 Context: toolCallDepth=${toolCallDepth}, hadContent=${continuationContentReceived}`);
+                // TODO: Send SSE event to notify user about continuation issue
+                // sendEvent({ type: 'error', error: 'Response generation was interrupted', errorId: ERROR_IDS.GEMINI_CONTINUATION_ERROR, retryable: true });
                 sendContentChunk('\n\n(The response was interrupted. Please try again if incomplete.)');
               }
 
               console.log(
-                `${logPrefix} ✅ Tool-calling chat complete with continuation`
+                `${logPrefix} ✅ Tool-calling chat complete with continuation (depth=${toolCallDepth})`
               );
             } else {
               // Tool execution failed - inform user but continue

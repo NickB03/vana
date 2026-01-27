@@ -39,6 +39,29 @@ export const FEATURE_FLAGS = {
    * Enabled by default; set AUTO_FIX_ARTIFACTS=false to disable.
    */
   AUTO_FIX_ARTIFACTS: Deno.env.get('AUTO_FIX_ARTIFACTS') !== 'false',
+
+  /**
+   * Enable the skills system for dynamic context injection.
+   * When disabled, skills are not loaded and chat functions normally.
+   * Default: false (opt-in for gradual rollout)
+   */
+  SKILLS_ENABLED: Deno.env.get('SKILLS_ENABLED') === 'true',
+
+  /**
+   * Enable detailed skill resolution logging for debugging.
+   * Logs provider execution times, placeholder replacements, and errors.
+   * Should be disabled in production for performance.
+   * Default: false
+   */
+  DEBUG_SKILLS: Deno.env.get('DEBUG_SKILLS') === 'true',
+
+  /**
+   * Enable detailed Gemini API request/response logging for debugging.
+   * Logs request bodies, continuation configs, and chunk structures.
+   * Should be disabled in production for performance and security.
+   * Default: false
+   */
+  DEBUG_GEMINI_CLIENT: Deno.env.get('DEBUG_GEMINI_CLIENT') === 'true',
 } as const;
 
 // NOTE: USE_STRUCTURED_ARTIFACT_GENERATION flag removed in Phase 4 of LLM migration.

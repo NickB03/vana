@@ -20,7 +20,7 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
-import { MODELS, RETRY_CONFIG } from './config.ts';
+import { MODELS, RETRY_CONFIG, FEATURE_FLAGS } from './config.ts';
 import { CircuitBreaker, createGeminiCircuitBreaker } from './circuit-breaker.ts';
 import { LLMTimeoutError, LLMQuotaExceededError, isRetryableError } from './errors.ts';
 
@@ -37,12 +37,30 @@ if (!OPENROUTER_KEY) {
   );
 }
 
-// Module-level circuit breaker for Gemini API calls
-// NOTE: State may reset on cold starts in Deno Edge Functions.
-// This provides "soft" resilience within a function's lifetime.
+// ============================================================================
+// MODULE-LEVEL STATE (Per-Isolate Circuit Breaker)
+// ============================================================================
+// Module-level circuit breaker for Gemini API calls.
+//
+// ISOLATE BEHAVIOR: State persists within a Deno isolate but resets on:
+// - Cold starts (after ~10-15min inactivity)
+// - Deployments (new code = new isolates)
+// - Isolate recycling (automatic cleanup)
+//
+// This provides "soft" resilience within a function's lifetime. Each isolate
+// independently tracks API failures and protects itself from cascading issues.
+// For details on module-level state persistence, see detector.ts comments.
+// ============================================================================
 const geminiCircuitBreaker = createGeminiCircuitBreaker();
 
-// Usage logging failure tracking (for detecting persistent database issues)
+// ============================================================================
+// MODULE-LEVEL STATE (Usage Log Failure Tracking)
+// ============================================================================
+// Tracks consecutive failures when logging API usage to the database.
+//
+// ISOLATE BEHAVIOR: Same persistence rules as circuit breaker above.
+// Used to detect persistent database issues without failing every request.
+// ============================================================================
 let consecutiveUsageLogFailures = 0;
 const MAX_CONSECUTIVE_USAGE_LOG_FAILURES = 10;
 
@@ -234,6 +252,24 @@ export async function callGemini(
 
     if (toolChoice) {
       body.tool_choice = toolChoice;
+    }
+  }
+
+  // DEBUG: Log request body for continuation calls (only when DEBUG_GEMINI_CLIENT=true)
+  if (FEATURE_FLAGS.DEBUG_GEMINI_CLIENT) {
+    const isContinuation = messages.some(m => m.role === 'tool');
+    if (isContinuation) {
+      console.log(`[${requestId}] 🔍 DEBUG API Request body:`, {
+        model: body.model,
+        messagesCount: body.messages.length,
+        messagesRoles: body.messages.map((m: any) => m.role),
+        systemMessage: body.messages.find((m: any) => m.role === 'system')?.content.substring(0, 200),
+        enableThinking: body.reasoning !== undefined,
+        thinkingLevel: body.reasoning?.effort,
+        toolChoice: body.tool_choice,
+        toolsCount: body.tools?.length || 0,
+        stream: body.stream
+      });
     }
   }
 
@@ -923,10 +959,21 @@ export async function callGeminiWithToolResult(
     `(result: ${toolResult.length} chars)`
   );
 
+  // Enhance system prompt with explicit instructions to respond after tool execution
+  // This prevents the model from only streaming reasoning without actual content
+  const continuationSystemPrompt = `${systemPrompt}
+
+IMPORTANT: You have just executed the ${toolCall.name} tool and received results. Now you MUST:
+1. Synthesize the tool results into a coherent, user-friendly response
+2. Answer the user's original question using the information from the tool results
+3. Provide a complete response in natural language - do not just think, you must respond
+
+Do not call another tool unless absolutely necessary. Your primary task now is to respond to the user.`;
+
   // Build conversation history with tool context
   // Format: system → user → assistant (with tool_calls) → tool (with result)
   const messages: GeminiMessage[] = [
-    { role: "system", content: systemPrompt },
+    { role: "system", content: continuationSystemPrompt },
     { role: "user", content: userPrompt },
     {
       role: "assistant",
@@ -949,6 +996,23 @@ export async function callGeminiWithToolResult(
       name: toolCall.name
     }
   ];
+
+  // DEBUG: Log continuation configuration (only when DEBUG_GEMINI_CLIENT=true)
+  if (FEATURE_FLAGS.DEBUG_GEMINI_CLIENT) {
+    console.log(`[${requestId}] 🔍 DEBUG Continuation config:`, {
+      systemPromptLength: continuationSystemPrompt.length,
+      systemPromptStart: continuationSystemPrompt.substring(0, 150),
+      userPromptLength: userPrompt.length,
+      toolResultLength: toolResult.length,
+      toolCallsCount: previousAssistantToolCalls.length,
+      options: {
+        enableThinking: options?.enableThinking,
+        toolChoice: options?.toolChoice,
+        tools: options?.tools?.length || 0,
+        stream: true
+      }
+    });
+  }
 
   // Call Gemini with the enriched conversation history
   return await callGeminiWithRetry(messages, {
@@ -1007,13 +1071,15 @@ export async function* processGeminiStream(
           try {
             const parsed = JSON.parse(data);
 
-            // DEBUG: Log the parsed structure to understand the API response format
-            console.log(`[${requestId}] 📦 Chunk structure:`, JSON.stringify({
-              hasChoices: !!parsed?.choices,
-              hasCandidates: !!parsed?.candidates,
-              choicesDelta: parsed?.choices?.[0]?.delta,
-              candidatesContent: parsed?.candidates?.[0]?.content?.parts?.[0],
-            }));
+            // DEBUG: Log the parsed structure (only when DEBUG_GEMINI_CLIENT=true)
+            if (FEATURE_FLAGS.DEBUG_GEMINI_CLIENT) {
+              console.log(`[${requestId}] 📦 Chunk structure:`, JSON.stringify({
+                hasChoices: !!parsed?.choices,
+                hasCandidates: !!parsed?.candidates,
+                choicesDelta: parsed?.choices?.[0]?.delta,
+                candidatesContent: parsed?.candidates?.[0]?.content?.parts?.[0],
+              }));
+            }
 
             // Extract content chunks - support both Gemini and OpenAI formats
             // Gemini format: candidates[0].content.parts[0].text
@@ -1021,7 +1087,9 @@ export async function* processGeminiStream(
             const content = parsed?.candidates?.[0]?.content?.parts?.[0]?.text ||
                            parsed?.choices?.[0]?.delta?.content;
             if (content) {
-              console.log(`[${requestId}] ✅ Content extracted: ${content.substring(0, 50)}...`);
+              if (FEATURE_FLAGS.DEBUG_GEMINI_CLIENT) {
+                console.log(`[${requestId}] ✅ Content extracted: ${content.substring(0, 50)}...`);
+              }
               yield { type: 'content', data: content };
             }
 

@@ -28,6 +28,7 @@ import { VirtualizedMessageList } from "@/components/chat/VirtualizedMessageList
 import { ERROR_IDS } from "@/constants/errorIds";
 import { logError } from "@/utils/errorLogging";
 import { getToolChoice, getModeHint } from "@/utils/toolChoice";
+import { DevSkillIndicator } from "@/components/DevSkillIndicator";
 
 interface ChatInterfaceProps {
   sessionId?: string;
@@ -865,6 +866,8 @@ export function ChatInterface({
         onSignIn={() => navigate("/auth")}
         onDismiss={() => setRateLimitPopup({ isOpen: false, resetAt: undefined })}
       />
+      {/* Dev-only skill activation indicator */}
+      <DevSkillIndicator progress={streamProgress} />
       <div className="flex flex-1 flex-col min-h-0">
         {isMobile ? (
           // Mobile Layout: Fullscreen artifact overlay or chat

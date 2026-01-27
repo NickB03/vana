@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: '580c46b51244771253ee25c6bb63a94f0b1a67b9',
-    short: '580c46b',
-    branch: 'feat/intent-confirmation-events',
-    message: 'fix: relocate MessageErrorBoundary + add Sandpack theming and search quality improvements (#568)',
+    hash: 'b353f9dc03382ef0b217257fc84953fc7f05b188',
+    short: 'b353f9d',
+    branch: 'feat/skills-system-v2',
+    message: 'fix: add synthetic reasoning phases for web search consistency',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-25 18:29:39 UTC',
-    date: new Date('2026-01-25T18:29:39.277Z'),
+    timestamp: '2026-01-27 20:43:58 UTC',
+    date: new Date('2026-01-27T20:43:58.667Z'),
   },
 
   // Environment detection

@@ -89,7 +89,8 @@ function ActionButton({ tooltip, ariaLabel, icon, onClick, disabled }: ActionBut
 
 // Helper to check if message has valid reasoning content
 // FIX #329: Stricter check prevents blank ticker when reasoning_steps is empty or reasoning is whitespace
-function hasValidReasoning(reasoningSteps: unknown, reasoningText?: string): boolean {
+// FIX: Also return true if elapsedTime is provided (timer indicates reasoning happened even without text)
+function hasValidReasoning(reasoningSteps: unknown, reasoningText?: string, elapsedTime?: string): boolean {
   const hasSteps = Boolean(
     reasoningSteps &&
     typeof reasoningSteps === 'object' &&
@@ -98,7 +99,8 @@ function hasValidReasoning(reasoningSteps: unknown, reasoningText?: string): boo
     (reasoningSteps as { steps: unknown[] }).steps.length > 0
   );
   const hasText = Boolean(reasoningText && reasoningText.trim().length > 0);
-  return hasSteps || hasText;
+  const hasTime = Boolean(elapsedTime);
+  return hasSteps || hasText || hasTime;
 }
 
 interface ChatMessageProps {
@@ -156,7 +158,11 @@ export const ChatMessage = React.memo(function ChatMessage({
 }: ChatMessageProps) {
   const isAssistant = message.role === 'assistant';
   const isStreamingMessage = Boolean(streamProgress);
-  const hasReasoning = hasValidReasoning(message.reasoning_steps, message.reasoning);
+  const hasReasoning = hasValidReasoning(
+    message.reasoning_steps,
+    message.reasoning,
+    isLastMessage ? lastMessageElapsedTime : undefined
+  );
 
   // SIMPLIFIED: Only use typewriter effect while streamProgress is present
   // Once streaming ends, show full text immediately and let the typewriter finish in-place

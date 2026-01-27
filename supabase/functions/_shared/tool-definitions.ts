@@ -170,6 +170,19 @@ For EDIT mode: Set mode="edit" and include baseImage with the URL of the image t
         type: 'string',
         description: 'Search query. Be specific and include relevant keywords for best results.',
       },
+      // Optional: Number of results to return (1-10, default 5)
+      maxResults: {
+        type: 'number',
+        description: 'Number of search results to return (1-10). Use fewer for quick lookups, more for comprehensive research.',
+        default: 5,
+      },
+      // Optional: Search depth controls thoroughness vs speed tradeoff
+      searchDepth: {
+        type: 'string',
+        description: "Use 'basic' for quick factual lookups, 'advanced' for complex research requiring deeper analysis.",
+        enum: ['basic', 'advanced'],
+        default: 'basic',
+      },
     },
     required: ['query'],
     execution: {

@@ -46,6 +46,14 @@ export interface StreamProgress {
     toolName: string;
     timestamp: number;
   }; // Intent confirmation before tool execution
+  activeSkill?: {
+    skillId: string;
+    displayName: string;
+    contentLength: number;
+    detectionConfidence: 'high' | 'medium' | 'low';
+    detectionLatencyMs: number;
+    timestamp: number;
+  }; // Active skill info (Skills System v2, auto-detected)
   // Artifact data collected during streaming for immediate display
   streamingArtifacts?: Array<{
     id: string;
@@ -220,7 +228,7 @@ export function useChatMessages(
         console.warn('[useChatMessages] Artifact render timeout - assuming success');
         setArtifactRenderStatus('rendered');
       }
-    }, 10000); // 10 second timeout after loading completes
+    }, 60000); // 60 second timeout after loading completes (increased for complex artifacts)
 
     return () => clearTimeout(timeout);
   }, [isLoading, artifactRenderStatus]);
@@ -574,8 +582,10 @@ export function useChatMessages(
       let searchResults: WebSearchResults | undefined; // Store web search results
       let lastSequence = 0; // Track SSE event sequence
       let lastReasoningStatus: string | undefined; // Track last reasoning status for preservation
+      let reasoningStatusHistory: string[] = []; // Accumulate all status updates for fallback display
       let currentToolExecution: ToolExecution | undefined; // Track current tool execution state
       let intentConfirmation: { message: string; toolName: string; timestamp: number } | undefined; // Track intent confirmation
+      let activeSkill: { skillId: string; displayName: string; contentLength: number; timestamp: number } | undefined; // Track active skill (Skills System v2)
 
       // Stream timeout protection
       const CHAT_STREAM_TIMEOUT_MS = 120000; // 2 minutes max for chat streaming
@@ -643,6 +653,7 @@ export function useChatMessages(
           toolExecution: currentToolExecution, // Preserve tool execution state
           elapsedSeconds: lastEmittedElapsedSeconds, // Include elapsed time for time-based fallback status
           intentConfirmation, // Include intent confirmation for pre-tool display
+          activeSkill, // Include active skill info (Skills System v2)
           streamingArtifacts: collectedArtifacts.length > 0 ? collectedArtifacts : undefined, // Include artifact data for streaming display
         };
       };
@@ -755,6 +766,11 @@ export function useChatMessages(
               // Store for preservation in updateProgress()
               lastReasoningStatus = status;
 
+              // Accumulate unique status updates for fallback display
+              if (status && status !== 'Thinking...' && !reasoningStatusHistory.includes(status)) {
+                reasoningStatusHistory.push(status);
+              }
+
               const progress = updateProgress();
               onDelta('', progress);
 
@@ -769,6 +785,11 @@ export function useChatMessages(
               // Update the reasoning status to show completion
               lastReasoningStatus = finalMessage;
 
+              // Accumulate unique status updates for fallback display
+              if (finalMessage && finalMessage !== 'Thinking...' && !reasoningStatusHistory.includes(finalMessage)) {
+                reasoningStatusHistory.push(finalMessage);
+              }
+
               const progress = updateProgress();
               onDelta('', progress);
 
@@ -782,6 +803,11 @@ export function useChatMessages(
               console.log(`[StreamProgress] Status update: "${status}"${isFinal ? ' (final)' : ''}`);
 
               lastReasoningStatus = status;
+
+              // Accumulate unique status updates for fallback display
+              if (status && status !== 'Thinking...' && !reasoningStatusHistory.includes(status)) {
+                reasoningStatusHistory.push(status);
+              }
 
               const progress = updateProgress();
               onDelta('', progress);
@@ -835,6 +861,41 @@ export function useChatMessages(
               // Update lastReasoningStatus to show intent in the ticker
               lastReasoningStatus = message;
 
+              // Accumulate unique status updates for fallback display
+              if (message && message !== 'Thinking...' && !reasoningStatusHistory.includes(message)) {
+                reasoningStatusHistory.push(message);
+              }
+
+              const progress = updateProgress();
+              onDelta('', progress);
+
+              continue;
+            }
+
+            // ========================================
+            // SKILLS SYSTEM v2: Handle auto-detected skill activation
+            // ========================================
+            if (parsed.type === 'skill_activated') {
+              const skillId = parsed.skillId as string;
+              const displayName = parsed.displayName as string;
+              const contentLength = parsed.contentLength as number;
+              const detectionConfidence = parsed.detectionConfidence as 'high' | 'medium' | 'low';
+              const detectionLatencyMs = parsed.detectionLatencyMs as number;
+              const timestamp = parsed.timestamp as number;
+
+              if (import.meta.env.DEV) {
+                console.log(`🎯 [Skills] Auto-detected: ${displayName} (${contentLength} chars, confidence: ${detectionConfidence}, latency: ${detectionLatencyMs}ms)`);
+              }
+
+              activeSkill = {
+                skillId,
+                displayName,
+                contentLength,
+                detectionConfidence,
+                detectionLatencyMs,
+                timestamp,
+              };
+
               const progress = updateProgress();
               onDelta('', progress);
 
@@ -877,11 +938,23 @@ export function useChatMessages(
               const sourceCount = parsed.sourceCount as number | undefined;
               const latencyMs = parsed.latencyMs as number | undefined;
               const timestamp = parsed.timestamp as number;
+              const error = parsed.error as string | undefined;
 
-              console.log(`✅ [StreamProgress] Tool result: ${toolName} - ${success ? 'success' : 'failed'}`, {
-                sourceCount,
-                latencyMs
-              });
+              if (success) {
+                console.log(`✅ [StreamProgress] Tool result: ${toolName} - success`, {
+                  sourceCount,
+                  latencyMs,
+                });
+              } else {
+                console.error(`❌ [StreamProgress] Tool result: ${toolName} - failed`, {
+                  error,
+                  latencyMs,
+                });
+                // TODO: Track tool failures with Sentry
+                // Sentry.captureMessage('Tool execution failed', { level: 'warning', tags: { errorId: ERROR_IDS.TOOL_EXECUTION_FAILED, toolName }, extra: { error, latencyMs } });
+                // TODO: Add UI error display for tool failures
+                // Consider showing inline error card in chat UI with retry option
+              }
 
               // Update tracked tool execution state with result
               currentToolExecution = {
@@ -1208,9 +1281,17 @@ export function useChatMessages(
 
       didFinalizeMessage = true;
       const shouldStoreArtifactsLocally = !isAuthenticated;
+
+      // Generate fallback reasoning from status updates if reasoningText is empty
+      // This preserves the reasoning context users saw during streaming for web searches
+      const finalReasoningText = reasoningText ||
+        (reasoningStatusHistory.length > 0
+          ? reasoningStatusHistory.join('\n\n')
+          : null);
+
       updateMessagePartial(assistantMessageId, {
         content: fullResponse,
-        reasoning: reasoningText || null,
+        reasoning: finalReasoningText,
         reasoning_steps: reasoningSteps || null,
         search_results: searchResults || null,
         artifact_ids: collectedArtifactIds.length > 0 ? collectedArtifactIds : null,
@@ -1219,7 +1300,7 @@ export function useChatMessages(
 
       // Save assistant message first, then signal completion
       // This keeps the streamed message in place while the DB save completes
-      // FIX: Pass reasoningText for fallback display when no structured steps are available
+      // FIX: Pass finalReasoningText (includes fallback from status history) for proper display
       // BUG FIX (2025-12-21): Add timeout to prevent indefinite hang if Supabase is slow
       // Pass pre-generated ID and collected artifact IDs for proper DB linking
       // FIX: Include full artifact data for guest users (stored in localStorage, not DB)
@@ -1227,7 +1308,7 @@ export function useChatMessages(
       const savePromise = saveMessage(
         "assistant",
         fullResponse,
-        reasoningText,
+        finalReasoningText,
         reasoningSteps,
         searchResults,
         assistantMessageId,

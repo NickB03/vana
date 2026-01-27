@@ -44,6 +44,7 @@ import { generateArtifactStructured } from './artifact-generator-structured.ts';
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.75.1";
 import { FEATURE_FLAGS } from './config.ts';
 import { createLogger } from './logger.ts';
+import { validateMaxResults, validateSearchDepth } from './browser-search-params.ts';
 
 /**
  * Artifact type validation and type definition
@@ -239,7 +240,15 @@ export async function executeTool(
           };
         }
 
-        return await executeSearchTool(query, context);
+        // Extract and validate optional search parameters
+        const maxResultsArg = toolCall.arguments.maxResults as number | undefined;
+        const searchDepthArg = toolCall.arguments.searchDepth as string | undefined;
+
+        // Use extracted validation functions for testability
+        const maxResults = validateMaxResults(maxResultsArg);
+        const searchDepth = validateSearchDepth(searchDepthArg);
+
+        return await executeSearchTool(query, context, { maxResults, searchDepth });
       }
 
       case 'generate_artifact': {
@@ -394,6 +403,16 @@ export async function executeTool(
 }
 
 /**
+ * Search options passed from tool call parameters
+ */
+interface SearchToolOptions {
+  /** Number of results to return (1-10, default 5) */
+  maxResults?: number;
+  /** Search depth: 'basic' for quick lookups, 'advanced' for deep research */
+  searchDepth?: 'basic' | 'advanced';
+}
+
+/**
  * Execute browser.search tool using Tavily
  *
  * Searches the web using Tavily API and formats results for LLM consumption.
@@ -401,19 +420,22 @@ export async function executeTool(
  *
  * @param query - Search query string
  * @param context - Execution context
+ * @param searchOptions - Optional search parameters from tool call
  * @returns Tool execution result with search results
  *
  * @example
  * ```typescript
  * const result = await executeSearchTool(
  *   "React 19 features",
- *   { requestId: "req-123", isGuest: false }
+ *   { requestId: "req-123", isGuest: false },
+ *   { maxResults: 5, searchDepth: 'basic' }
  * );
  * ```
  */
 async function executeSearchTool(
   query: string,
-  context: ToolContext
+  context: ToolContext,
+  searchOptions?: SearchToolOptions
 ): Promise<ToolExecutionResult> {
   const startTime = Date.now();
   const { requestId, userId, isGuest, functionName = 'tool-executor' } = context;
@@ -445,24 +467,31 @@ async function executeSearchTool(
     searchQuery = query;
   }
 
+  // Determine search parameters: prefer model-provided values, fall back to auto-detection
   const complexity = detectQueryComplexity(query);
   const includeImages = detectImageIntent(query);
+
+  // Use model-provided searchDepth if specified, otherwise use auto-detected complexity
+  const effectiveSearchDepth = searchOptions?.searchDepth ?? complexity.depth;
+  // Use model-provided maxResults if specified, otherwise default to 5
+  const effectiveMaxResults = searchOptions?.maxResults ?? 5;
+
   console.log(
-    `[${requestId}] 🎯 Search complexity: ${complexity.depth} (${complexity.reason})`
+    `[${requestId}] 🎯 Search config: depth=${effectiveSearchDepth} (auto-detected: ${complexity.depth}, reason: ${complexity.reason}), maxResults=${effectiveMaxResults}`
   );
   if (includeImages) {
     console.log(`[${requestId}] 🖼️ Image intent detected for search query`);
   }
 
   try {
-    // Search with retry tracking (using optimized query)
+    // Search with retry tracking (using optimized query and model-provided parameters)
     const { response, retryCount } = await searchTavilyWithRetryTracking(searchQuery, {
       requestId,
       userId,
       isGuest,
       functionName,
-      maxResults: 5, // Limit to 5 results for cost/context efficiency
-      searchDepth: complexity.depth,
+      maxResults: effectiveMaxResults,
+      searchDepth: effectiveSearchDepth,
       includeAnswer: true, // Include AI-generated summary
       includeImages
     });
@@ -471,7 +500,7 @@ async function executeSearchTool(
 
     const filteredResults = filterSearchResults(response.results, {
       minScore: 0.3,
-      maxResults: 5
+      maxResults: effectiveMaxResults
     });
 
     const optimizedResponse = {
@@ -483,11 +512,11 @@ async function executeSearchTool(
     const formattedContext = formatSearchContext(optimizedResponse, {
       includeUrls: true,
       includeScores: false, // Scores add noise for LLM
-      maxResults: 5
+      maxResults: effectiveMaxResults
     });
 
     // Log usage to database (fire-and-forget)
-    const estimatedCost = calculateTavilyCost(complexity.depth);
+    const estimatedCost = calculateTavilyCost(effectiveSearchDepth);
     logTavilyUsage({
       requestId,
       functionName,
@@ -496,7 +525,7 @@ async function executeSearchTool(
       query: searchQuery, // The actual query sent to Tavily (possibly rewritten)
       originalQuery: searchQuery !== query ? query : undefined, // Include original if different
       resultCount: optimizedResponse.results.length,
-      searchDepth: complexity.depth,
+      searchDepth: effectiveSearchDepth,
       latencyMs,
       statusCode: 200,
       estimatedCost,
@@ -539,7 +568,7 @@ async function executeSearchTool(
       query: searchQuery, // The actual query sent to Tavily (possibly rewritten)
       originalQuery: searchQuery !== query ? query : undefined, // Include original if different
       resultCount: 0,
-      searchDepth: complexity.depth,
+      searchDepth: effectiveSearchDepth,
       latencyMs,
       statusCode: 500,
       estimatedCost: 0,

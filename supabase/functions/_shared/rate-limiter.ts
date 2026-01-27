@@ -250,10 +250,23 @@ export class RateLimiter {
   }
 }
 
-/**
- * Singleton instance for reuse across requests
- * (Deno Edge Functions can reuse instances across requests in the same isolate)
- */
+// ============================================================================
+// MODULE-LEVEL STATE (Per-Isolate Singleton)
+// ============================================================================
+// Singleton RateLimiter instance reused across requests within the same isolate.
+//
+// ISOLATE BEHAVIOR: Instance persists within a Deno isolate but resets on:
+// - Cold starts (after ~10-15min inactivity)
+// - Deployments (new code = new isolates)
+// - Isolate recycling (automatic cleanup)
+//
+// WHY SINGLETON:
+// - RateLimiter holds no mutable state (all rate limit data in Supabase DB)
+// - Reusing instance avoids repeated initialization overhead
+// - Safe to share across requests (no race conditions)
+//
+// For details on module-level state persistence, see detector.ts comments.
+// ============================================================================
 let rateLimiterInstance: RateLimiter | null = null;
 
 /**

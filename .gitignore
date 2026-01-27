@@ -153,5 +153,7 @@ backups/
 .auto-claude/
 supabase/functions/.env
 
+
 worktrees/
+.worktrees/
 supabase/functions/coverage_html/
