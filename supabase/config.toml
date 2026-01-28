@@ -1,4 +1,4 @@
-project_id = "vznhbocnuykdmjvujaka"
+project_id = "your-project-id"
 
 [edge_runtime]
 enabled = true

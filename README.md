@@ -18,6 +18,8 @@
 
 ---
 
+[![Release Notes](https://img.shields.io/badge/Release%20Notes-v2.0.0-blue)](RELEASE_NOTES.md)
+
 ## 📋 Table of Contents
 
 - [Overview](#-overview)
@@ -478,8 +480,8 @@ Before you begin, ensure you have the following installed:
 1. **Clone the repository**
 
 ```bash
-git clone https://github.com/NickB03/llm-chat-site.git
-cd llm-chat-site
+git clone https://github.com/[your-username]/vana-chat.git
+cd vana-chat
 ```
 
 2. **Install dependencies**
@@ -496,9 +498,9 @@ Create a `.env` file in the root directory:
 
 ```env
 # Supabase Configuration
-VITE_SUPABASE_URL=https://vznhbocnuykdmjvujaka.supabase.co
+VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
-VITE_SUPABASE_PROJECT_ID=vznhbocnuykdmjvujaka
+VITE_SUPABASE_PROJECT_ID=your-project-id
 
 # Optional: Analytics
 VITE_ENABLE_ANALYTICS=false
@@ -508,6 +510,7 @@ VITE_ENABLE_ANALYTICS=false
 
 - Create a [Supabase](https://supabase.com) account
 - Create a new project
+- Update `supabase/config.toml` with your project ID: `project_id = "your-project-id"`
 - Run the migrations from `supabase/migrations/` in your Supabase SQL editor
 - Configure authentication providers (Email, Google OAuth)
 - Set up Edge Functions (see [Deployment](#-deployment))

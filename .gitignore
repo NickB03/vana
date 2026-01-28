@@ -38,7 +38,7 @@ supabase/.branches/
 
 # Archive directories for temporary documentation and development artifacts
 /archive/
-.claude/archive/
+
 docs/issue-updates.md
 
 # Archive directory for temporary files
@@ -47,7 +47,7 @@ docs/artifact-prompt-dont-archive.md
 
 # Verification screenshots
 verification-*.png
-.claude/settings.local.json
+
 
 # Temporary testing files
 *.test.html
@@ -103,14 +103,10 @@ scripts/archive/
 .archive/
 
 # Large session logs (archive these instead of tracking)
-.claude/imagelog.md
-.claude/chatlog.md
-.claude/*log.md
+
 
 # Code review reports (temporary analysis artifacts)
-.claude/reports/
-*.coverage-report.txt
-.claude/assets/samples/
+
 
 # Test coverage and results
 coverage/
@@ -142,6 +138,7 @@ Demos/*.mp4
 
 # gemini-cli settings
 .gemini/
+GEMINI.md
 
 # GitHub App credentials
 gha-creds-*.json
@@ -150,7 +147,7 @@ gha-creds-*.json
 backups/
 
 # Auto Claude data directory
-.auto-claude/
+
 supabase/functions/.env
 
 

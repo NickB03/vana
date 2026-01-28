@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased] - 2026-01-28
+## [2.0.0] - 2026-01-28 Public Launch
+
+### Overview
+- **Initial Public Release**: Vana is now public! Information specific to the internal private repo has been cleaned up.
+- **Version Bump**: Major version bump to 2.0.0 to signify the public release milestone.
 
 ### Added
 - **Skills System v2** (#571): Dynamic context injection system for Claude Code commands

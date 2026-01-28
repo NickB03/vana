@@ -30,8 +30,8 @@ Before you begin, ensure you have the following installed:
 
 ```bash
 # Clone the repository
-git clone https://github.com/NickB03/llm-chat-site.git
-cd llm-chat-site
+git clone https://github.com/[your-username]/vana-chat.git
+cd vana-chat
 
 # Install dependencies
 npm install
