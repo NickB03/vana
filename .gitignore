@@ -1,0 +1,157 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment files
+.env
+.env.development
+.env.production
+.env.backup
+.env.local
+*.env.local.backup
+*.env.*.backup
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Supabase temp files
+supabase/.temp/
+supabase/.branches/
+
+# Archive directories for temporary documentation and development artifacts
+/archive/
+
+docs/issue-updates.md
+
+# Archive directory for temporary files
+.archive/
+docs/artifact-prompt-dont-archive.md
+
+# Verification screenshots
+verification-*.png
+
+
+# Temporary testing files
+*.test.html
+*.test.js
+verify-*.js
+verify-*.ts
+test-*.html
+test-*.js
+
+# Coverage reports
+coverage.json
+coverage/
+
+# Debug and development artifacts
+debug-*.txt
+snapshot-*.txt
+test-*.png
+
+# Debug screenshots and images (all debug-related images)
+*-error.png
+*-debug.png
+chat-interface-*.png
+guest-mode-*.png
+
+# Backup files from migrations
+*.bak
+.env.local.vana-dev-backup
+
+# Test scripts (temporary)
+scripts/test-*.sh
+scripts/test-*.js
+scripts/test-*.html
+scripts/test-*.mjs
+test-*.sh
+test-*.js
+test-*.html
+check-*.js
+verify-*.sh
+
+# SQL test/debug scripts (temporary)
+check-*.sql
+test-*.sql
+fix-*.sql
+diagnose-*.sql
+
+# Debug/development logs and notes (temporary)
+chatlog.md
+check-logs-*.md
+diagnose-*.md
+
+# Archived debug scripts
+scripts/archive/
+.archive/
+
+# Large session logs (archive these instead of tracking)
+
+
+# Code review reports (temporary analysis artifacts)
+
+
+# Test coverage and results
+coverage/
+.nyc_output/
+*.lcov
+test-results/
+junit.xml
+test-report.xml
+*.coverage
+.vitest/
+vitest.*.log
+
+# Playwright E2E testing
+playwright-report/
+playwright/.cache/
+.playwright/
+
+# Visual regression testing
+__image_snapshots__/
+__diff_output__/
+screenshots/
+.screenshots/
+docs/examples/
+supabase/.env.local
+supabase/functions/deno.lock
+deno.lock
+Demos/*.mp4
+.archive/
+
+# gemini-cli settings
+.gemini/
+GEMINI.md
+
+# GitHub App credentials
+gha-creds-*.json
+
+# Database backups (contain user data - never commit)
+backups/
+
+# Auto Claude data directory
+
+supabase/functions/.env
+
+
+worktrees/
+.worktrees/
+supabase/functions/coverage_html/
+docs/archive/

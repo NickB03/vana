@@ -1,0 +1,486 @@
+{
+  "pronounResolutionTests": [
+    {
+      "name": "Christmas Event Component",
+      "description": "Tests 'it' reference to React component",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Create a React component for a Christmas event",
+          "expectedResponse": "Creates a Christmas event component"
+        },
+        {
+          "role": "assistant",
+          "content": "<artifact type=\"application/vnd.ant.react\" title=\"ChristmasEvent\">\nexport function ChristmasEvent() {\n  return (\n    <div className=\"christmas-event\">\n      <h1>Christmas Event</h1>\n      <p>Join us for festive celebrations!</p>\n    </div>\n  );\n}\n</artifact>"
+        },
+        {
+          "role": "user",
+          "content": "Add decorations to it",
+          "expectedResponse": "Adds decorations to the Christmas event component"
+        },
+        {
+          "role": "assistant",
+          "expectedContent": ["decorations", "Christmas", "component", "style"]
+        }
+      ]
+    },
+    {
+      "name": "Garland Christmas Event Activities",
+      "description": "Tests 'there' reference to event location",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Tell me about the Garland Christmas event",
+          "expectedResponse": "Describes the Garland Christmas event"
+        },
+        {
+          "role": "assistant",
+          "content": "The Garland Christmas event is an annual celebration held in Garland, featuring various festive activities for the whole family."
+        },
+        {
+          "role": "user",
+          "content": "What activities are there?",
+          "expectedResponse": "Lists activities specific to the Garland Christmas event"
+        },
+        {
+          "role": "assistant",
+          "expectedContent": ["Garland", "Christmas", "activities", "event", "festive"]
+        }
+      ]
+    },
+    {
+      "name": "Volunteer and Vendor Coordination",
+      "description": "Tests 'they' reference to multiple groups",
+      "messages": [
+        {
+          "role": "user",
+          "content": "I need to organize volunteers and vendors for the event",
+          "expectedResponse": "Acknowledges coordination of volunteers and vendors"
+        },
+        {
+          "role": "assistant",
+          "content": "Organizing both volunteers and vendors is a great approach for a successful event. Volunteers can help with activities while vendors provide services and products."
+        },
+        {
+          "role": "user",
+          "content": "How do I contact them?",
+          "expectedResponse": "Provides contact methods for both volunteers and vendors"
+        },
+        {
+          "role": "assistant",
+          "expectedContent": ["volunteers", "vendors", "contact", "coordinate", "reach"]
+        }
+      ]
+    }
+  ],
+  "locationEventTests": [
+    {
+      "name": "Garland Community Center Event",
+      "description": "Tests location references and directions",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Describe the Garland Community Center event",
+          "expectedResponse": "Describes event at Garland Community Center"
+        },
+        {
+          "role": "assistant",
+          "content": "The Garland Community Center hosts annual Christmas events with activities for all ages. It's located at 250 N Main St, Garland, TX."
+        },
+        {
+          "role": "user",
+          "content": "How do I get there?",
+          "expectedResponse": "Provides directions to Garland Community Center"
+        },
+        {
+          "role": "assistant",
+          "expectedContent": ["Garland", "Community", "Center", "directions", "250 N Main St", "Garland, TX"]
+        }
+      ]
+    },
+    {
+      "name": "Multiple Event References",
+      "description": "Tests distinguishing between multiple events",
+      "messages": [
+        {
+          "role": "user",
+          "content": "I'm organizing both the Garland Christmas event and the New Year's party",
+          "expectedResponse": "Acknowledges both events"
+        },
+        {
+          "role": "assistant",
+          "content": "Great! Two wonderful events to organize. The Christmas event will be festive and family-friendly, while the New Year's party can be more celebratory and adult-oriented."
+        },
+        {
+          "role": "user",
+          "content": "Which one has more space?",
+          "expectedResponse": "Compares space for both events"
+        },
+        {
+          "role": "assistant",
+          "expectedContent": ["Christmas", "New Year's", "space", "capacity", "venue", "size"]
+        }
+      ]
+    }
+  ],
+  "multiTurnTests": [
+    {
+      "name": "Topic Switch and Return",
+      "description": "Tests context maintenance across topic switches",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Let's talk about React components",
+          "expectedResponse": "Discusses React components"
+        },
+        {
+          "role": "assistant",
+          "content": "React components are the building blocks of React applications. They can be functional or class-based components."
+        },
+        {
+          "role": "user",
+          "content": "Show me a button example",
+          "expectedResponse": "Shows React button component"
+        },
+        {
+          "role": "assistant",
+          "content": "Here's a simple button example:\n<artifact type=\"application/vnd.ant.react\" title=\"ButtonExample\">\nexport function ButtonExample() {\n  return <button className=\"btn\">Click me</button>;\n}\n</artifact>"
+        },
+        {
+          "role": "user",
+          "content": "Now back to the Christmas event",
+          "expectedResponse": "Returns to Christmas event topic"
+        },
+        {
+          "role": "assistant",
+          "content": "Glad you brought that up! Back to the Christmas event planning. What aspect would you like to focus on now?"
+        },
+        {
+          "role": "user",
+          "content": "What about parking?",
+          "expectedResponse": "Discusses parking for Christmas event"
+        },
+        {
+          "role": "assistant",
+          "expectedContent": ["Christmas", "event", "parking", "arrangements", "visitors", "venue"]
+        }
+      ]
+    },
+    {
+      "name": "Deep Context Chain",
+      "description": "Tests context maintenance across many turns",
+      "messages": [
+        {
+          "role": "user",
+          "content": "I'm planning a Christmas event",
+          "expectedResponse": "Acknowledges Christmas event planning"
+        },
+        {
+          "role": "user",
+          "content": "It will be at Garland Community Center",
+          "expectedResponse": "Notes venue location"
+        },
+        {
+          "role": "user",
+          "content": "We need Santa for the kids",
+          "expectedResponse": "Acknowledges Santa appearance"
+        },
+        {
+          "role": "user",
+          "content": "Hot chocolate will be served",
+          "expectedResponse": "Notes food/beverage arrangement"
+        },
+        {
+          "role": "user",
+          "content": "Ornament making stations are planned",
+          "expectedResponse": "Notes activity planning"
+        },
+        {
+          "role": "user",
+          "content": "Volunteers should arrive by 9 AM",
+          "expectedResponse": "Notes volunteer scheduling"
+        },
+        {
+          "role": "user",
+          "content": "What about parking for visitors?",
+          "expectedResponse": "Responds to parking question with full context"
+        },
+        {
+          "role": "assistant",
+          "expectedContent": ["Christmas", "Garland", "Community", "Center", "Santa", "hot chocolate", "ornament", "volunteers", "parking", "visitors"]
+        }
+      ]
+    }
+  ],
+  "artifactContextTests": [
+    {
+      "name": "Todo List Artifact Updates",
+      "description": "Tests artifact context preservation and updates",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Create a todo list for the Christmas event",
+          "expectedResponse": "Creates Christmas event todo list artifact"
+        },
+        {
+          "role": "assistant",
+          "content": "<artifact type=\"application/vnd.ant.react\" title=\"EventTodoList\">\nexport function EventTodoList() {\n  const [todos, setTodos] = useState([\n    { id: 1, text: 'Book venue', completed: true },\n    { id: 2, text: 'Order Santa costume', completed: false },\n    { id: 3, text: 'Arrange hot chocolate', completed: false },\n  ]);\n  \n  return (\n    <div className=\"todo-list\">\n      {todos.map(todo => (\n        <div key={todo.id}>{todo.text}</div>\n      ))}\n    </div>\n  );\n}\n</artifact>"
+        },
+        {
+          "role": "user",
+          "content": "Add more items to it",
+          "expectedResponse": "Adds items to the existing todo list artifact"
+        },
+        {
+          "role": "assistant",
+          "expectedContent": ["todo", "list", "add", "items", "Santa", "hot chocolate", "ornament", "volunteers"]
+        }
+      ]
+    },
+    {
+      "name": "Artifact + Conversation Mixing",
+      "description": "Tests integration of artifact context with conversation",
+      "messages": [
+        {
+          "role": "user",
+          "content": "I need a countdown timer for the event",
+          "expectedResponse": "Creates countdown timer artifact"
+        },
+        {
+          "role": "assistant",
+          "content": "<artifact type=\"application/vnd.ant.react\" title=\"EventCountdown\">\nexport function EventCountdown() {\n  const [days, setDays] = useState(0);\n  \n  useEffect(() => {\n    // Calculate days until Christmas\n    const christmas = new Date('December 25, 2024');\n    const today = new Date();\n    const diffTime = christmas.getTime() - today.getTime();\n    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));\n    setDays(diffDays);\n  }, []);\n  \n  return (\n    <div className=\"countdown\">\n      <h2>Days Until Christmas Event</h2>\n      <div className=\"timer\">{days} days</div>\n    </div>\n  );\n}\n</artifact>"
+        },
+        {
+          "role": "user",
+          "content": "What about the decorations we discussed?",
+          "expectedResponse": "References both timer artifact and previous conversation"
+        },
+        {
+          "role": "assistant",
+          "expectedContent": ["decorations", "countdown", "timer", "Christmas", "event", "discussed"]
+        }
+      ]
+    }
+  ],
+  "edgeCaseTests": [
+    {
+      "name": "Ambiguous References",
+      "description": "Tests handling of ambiguous pronoun references",
+      "messages": [
+        {
+          "role": "user",
+          "content": "I have two events: Christmas and New Year's",
+          "expectedResponse": "Acknowledges both events"
+        },
+        {
+          "role": "assistant",
+          "content": "Great! You have two wonderful events to plan. The Christmas event will be festive and family-oriented, while the New Year's party can be more celebratory."
+        },
+        {
+          "role": "user",
+          "content": "Which one is better?",
+          "expectedResponse": "Asks for clarification about which event"
+        },
+        {
+          "role": "assistant",
+          "expectedContent": ["which", "Christmas", "New Year's", "clarify", "specify", "which one"]
+        }
+      ]
+    },
+    {
+      "name": "Contradictory Information",
+      "description": "Tests handling of updated information",
+      "messages": [
+        {
+          "role": "user",
+          "content": "The event is on December 25th",
+          "expectedResponse": "Notes December 25th date"
+        },
+        {
+          "role": "assistant",
+          "content": "Great choice! December 25th is perfect for a Christmas celebration."
+        },
+        {
+          "role": "user",
+          "content": "No, I meant December 31st",
+          "expectedResponse": "Updates to December 31st date"
+        },
+        {
+          "role": "assistant",
+          "content": "Got it! December 31st works well for a New Year's celebration."
+        },
+        {
+          "role": "user",
+          "content": "What about the venue for it?",
+          "expectedResponse": "Asks about venue for December 31st event"
+        },
+        {
+          "role": "assistant",
+          "expectedContent": ["December", "31st", "venue", "location", "New Year's"]
+        }
+      ]
+    },
+    {
+      "name": "Code vs Natural Language",
+      "description": "Tests handling of code entity references",
+      "messages": [
+        {
+          "role": "user",
+          "content": "I created a function called calculateTotal",
+          "expectedResponse": "Acknowledges calculateTotal function"
+        },
+        {
+          "role": "assistant",
+          "content": "Great! The calculateTotal function will be useful for tracking your event budget and expenses."
+        },
+        {
+          "role": "user",
+          "content": "Can you explain it?",
+          "expectedResponse": "Explains the calculateTotal function"
+        },
+        {
+          "role": "assistant",
+          "expectedContent": ["calculateTotal", "function", "budget", "expenses", "track", "calculate"]
+        }
+      ]
+    }
+  ],
+  "performanceTestScenarios": [
+    {
+      "name": "Long Context (1000 messages)",
+      "description": "Tests performance with long conversation history",
+      "messageCount": 1000,
+      "expectedTokenCount": 8000,
+      "trackedEntities": ["Christmas", "Garland", "Event", "Volunteer"],
+      "performanceTarget": {
+        "selectionTimeMs": 100,
+        "memoryUsageMB": 50,
+        "entityExtractionTimeMs": 200
+      }
+    },
+    {
+      "name": "High Entity Density",
+      "description": "Tests performance with many tracked entities",
+      "messageCount": 100,
+      "entityCount": 50,
+      "expectedTokenCount": 5000,
+      "performanceTarget": {
+        "selectionTimeMs": 50,
+        "memoryUsageMB": 20,
+        "entityExtractionTimeMs": 100
+      }
+    },
+    {
+      "name": "Mixed Content Types",
+      "description": "Tests performance with mixed code and natural language",
+      "messageCount": 200,
+      "codeRatio": 0.3,
+      "expectedTokenCount": 10000,
+      "performanceTarget": {
+        "selectionTimeMs": 150,
+        "memoryUsageMB": 75,
+        "entityExtractionTimeMs": 150
+      }
+    }
+  ],
+  "regressionTestCases": [
+    {
+      "name": "Flattened History Bug",
+      "description": "Regression test for conversation history flattening",
+      "messages": [
+        {
+          "role": "user",
+          "content": "I need help planning an event",
+          "expectedResponse": "Maintains user/assistant roles"
+        },
+        {
+          "role": "assistant",
+          "content": "I'd be happy to help plan your event!"
+        },
+        {
+          "role": "user",
+          "content": "Create a React component for it",
+          "expectedResponse": "Resolves 'it' to event"
+        },
+        {
+          "role": "assistant",
+          "expectedContent": ["React", "component", "event", "planning"]
+        }
+      ],
+      "validation": {
+        "rolesPreserved": true,
+        "conversationFlow": true,
+        "pronounResolution": true
+      }
+    },
+    {
+      "name": "Artifact Context Bug",
+      "description": "Regression test for missing artifact context",
+      "messages": [
+        {
+          "role": "user",
+          "content": "I'm organizing a Christmas event",
+          "expectedResponse": "Acknowledges event planning"
+        },
+        {
+          "role": "user",
+          "content": "Create a todo list for it",
+          "expectedResponse": "Creates todo list with event context"
+        },
+        {
+          "role": "assistant",
+          "content": "<artifact type=\"application/vnd.ant.react\" title=\"ChristmasEventTodo\">\nexport function ChristmasEventTodo() {\n  return (\n    <div>\n      <h2>Christmas Event Tasks</h2>\n    </div>\n  );\n}\n</artifact>"
+        },
+        {
+          "role": "user",
+          "content": "Add decorations to it",
+          "expectedResponse": "Adds decorations to the todo list"
+        },
+        {
+          "role": "assistant",
+          "expectedContent": ["decorations", "todo", "list", "Christmas", "event"]
+        }
+      ],
+      "validation": {
+        "artifactContextIncluded": true,
+        "pronounResolution": true,
+        "contextPreservation": true
+      }
+    },
+    {
+      "name": "Entity Extraction Bug",
+      "description": "Regression test for limited entity extraction",
+      "messages": [
+        {
+          "role": "user",
+          "content": "I'm organizing the Garland Christmas celebration event",
+          "expectedResponse": "Extracts multiple entities"
+        },
+        {
+          "role": "user",
+          "content": "It will be at the Community Center venue",
+          "expectedResponse": "Resolves 'it' and extracts location entities"
+        },
+        {
+          "role": "user",
+          "content": "Santa Claus will visit there",
+          "expectedResponse": "Resolves 'there' and extracts person entity"
+        },
+        {
+          "role": "user",
+          "content": "Volunteers need to coordinate them",
+          "expectedResponse": "Extracts volunteer entity and resolves pronoun"
+        },
+        {
+          "role": "assistant",
+          "expectedContent": ["Garland", "Christmas", "celebration", "event", "Community", "Center", "Santa", "Claus", "volunteers"]
+        }
+      ],
+      "validation": {
+        "naturalLanguageEntities": true,
+        "multiWordEntities": true,
+        "pronounResolution": true
+      }
+    }
+  ]
+}

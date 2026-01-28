@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en" class="dark" data-build-hash="__BUILD_HASH__">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
+
+    <!-- Cache Control - Forces browser to check for updates on every visit -->
+    <!-- index.html should NEVER be cached to ensure users get latest version -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
+    <!-- Content Security Policy -->
+    <!-- Note: upgrade-insecure-requests removed (breaks localhost in Safari) -->
+    <!-- Note: frame-ancestors removed (only works via HTTP header, not meta tag) -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://d3js.org https://unpkg.com https://cdnjs.cloudflare.com https://esm.sh blob: data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://fonts.bunny.net https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://use.typekit.net https://r2cdn.perplexity.ai data:; img-src 'self' data: blob: https: http:; connect-src 'self' https://*.supabase.co http://127.0.0.1:54321 http://localhost:54321 https://openrouter.ai https://api.tavily.com https://esm.sh https://*.esm.sh https://cdn.jsdelivr.net https://unpkg.com https://*.unpkg.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io; frame-src 'self' blob: data: https://*.codesandbox.io https://codesandbox.io; worker-src 'self' blob:; child-src 'self' blob: data:; object-src 'none'; base-uri 'self'; form-action 'self';" />
+
+    <meta name="theme-color" content="#000000" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Vana - Your Virtual Autonomous Network Agent</title>
+    <meta name="description" content="AI-Powered Chat Assistant for search, content creation, image generation, code generation and in app website builder.">
+    <meta name="author" content="Azure Ember" />
+
+    
+    
+    <meta property="og:type" content="website" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    
+
+
+
+
+
+
+
+  <!-- Favicons with cache busting and multiple sizes for better browser compatibility -->
+  <link rel="icon" type="image/png" sizes="192x192" href="/vana-icon-192.png?v=2">
+  <link rel="icon" type="image/png" sizes="512x512" href="/vana-icon-512.png?v=2">
+  <link rel="icon" type="image/png" href="/vana-icon-192.png?v=2">
+  <link rel="apple-touch-icon" href="/vana-icon-512.png?v=2">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="preconnect" href="https://vznhbocnuykdmjvujaka.supabase.co" crossorigin="anonymous">
+  <!-- Inter font for improved chat readability -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <meta property="og:title" content="Vana - Your Virtual Autonomous Network Agent">
+  <meta name="twitter:title" content="Vana - Your Virtual Autonomous Network Agent">
+  <meta property="og:description" content="AI-Powered Chat Assistant for search, content creation, image generation, code generation and in app website builder.">
+  <meta name="twitter:description" content="AI-Powered Chat Assistant for search, content creation, image generation, code generation and in app website builder.">
+  
+  <style>
+    /* Critical CSS for fast initial render */
+    /* Using dvh (dynamic viewport height) for iOS Safari compatibility */
+    /* dvh accounts for browser chrome and keyboard, preventing layout issues */
+    html {
+      /* Prevent pull-to-refresh and overscroll on mobile */
+      overscroll-behavior: none;
+      /* Ensure proper height calculation */
+      height: 100%;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      /* Use dvh for dynamic viewport height (iOS 15.4+) with vh fallback */
+      min-height: 100vh;
+      min-height: 100dvh;
+      /* Account for safe areas on iOS (notch, home indicator) */
+      padding-bottom: env(safe-area-inset-bottom);
+      font-family: system-ui, -apple-system, sans-serif;
+      /* Prevent pull-to-refresh on iOS Safari */
+      overscroll-behavior-y: none;
+    }
+    #root {
+      /* Use dvh for dynamic viewport height with vh fallback */
+      min-height: 100vh;
+      min-height: 100dvh;
+      width: 100%;
+      /* Ensure proper display */
+      display: flex;
+      flex-direction: column;
+    }
+  </style>
+</head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

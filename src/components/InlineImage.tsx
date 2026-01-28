@@ -1,0 +1,111 @@
+import { useState } from "react";
+import { ImagePreviewDialog } from "./ImagePreviewDialog";
+import { ArtifactData } from "./ArtifactContainer";
+import { Download } from "lucide-react";
+import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface InlineImageProps {
+  artifact: ArtifactData;
+}
+
+export function InlineImage({ artifact }: InlineImageProps) {
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    try {
+      // If it's a base64 data URL (AI generated)
+      if (artifact.content.startsWith('data:')) {
+        const link = document.createElement('a');
+        link.href = artifact.content;
+        link.download = `${artifact.title.replace(/\s+/g, '_')}.png`;
+        link.click();
+        toast.success("Image downloaded");
+        return;
+      }
+
+      // If it's a storage bucket URL
+      const response = await fetch(artifact.content);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${artifact.title.replace(/\s+/g, '_')}.png`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success("Image downloaded");
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error("Failed to download image");
+    }
+  };
+
+  // Show skeleton during image generation (when content is empty)
+  if (!artifact.content) {
+    return (
+      <div className="my-4 max-w-md">
+        <div
+          className="relative rounded-xl overflow-hidden border-2 border-border"
+          role="status"
+          aria-label="Generating image"
+        >
+          <Skeleton className="h-96 w-full" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-sm text-muted-foreground bg-background/80 backdrop-blur-sm px-4 py-2 rounded-lg">
+              Generating image...
+            </div>
+          </div>
+          <span className="sr-only">Generating image</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="my-4">
+      <div
+        className="relative group cursor-pointer rounded-xl overflow-hidden border-2 border-border hover:border-primary transition-all duration-200 max-w-[240px] shadow-sm hover:shadow-md"
+        onClick={() => setPreviewOpen(true)}
+      >
+        <img
+          src={artifact.content}
+          alt={artifact.title}
+          className="w-full h-auto bg-muted block"
+          loading="lazy"
+          decoding="async"
+          onLoad={() => {
+            // Signal to parent that image has finished loading
+            window.postMessage({ type: 'artifact-rendered-complete', success: true }, '*');
+          }}
+          onError={(e) => {
+            console.error('Image failed to load:', artifact.content);
+            e.currentTarget.style.display = 'none';
+            // Signal render failure to parent
+            window.postMessage({ type: 'artifact-rendered-complete', success: false, error: 'Failed to load image' }, '*');
+          }}
+        />
+
+        {/* Subtle hover darkening only */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors pointer-events-none" />
+
+        {/* Semi-transparent download icon in top-right corner */}
+        <button
+          onClick={handleDownload}
+          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 hover:bg-black/80 backdrop-blur-sm p-2 rounded-full"
+          aria-label="Download image"
+        >
+          <Download className="h-4 w-4 text-white" />
+        </button>
+      </div>
+
+      <ImagePreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        imageData={artifact.content}
+        title={artifact.title}
+      />
+    </div>
+  );
+}

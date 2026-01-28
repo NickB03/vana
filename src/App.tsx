@@ -1,0 +1,191 @@
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { lazy, Suspense, useEffect } from "react";
+import { logVersionInfo } from "@/version";
+import { AnimatePresence } from "motion/react";
+import { AnimatedRoute } from "@/components/AnimatedRoute";
+import { AnimationErrorBoundary } from "@/components/AnimationErrorBoundary";
+import { UpdateNotification } from "@/components/UpdateNotification";
+import { storeVersionInfo, logCacheBustingInfo, verifyDeployment, clearAllCaches } from "@/utils/cacheBusting";
+import { validateLocalStorage } from "@/utils/safeStorage";
+import { usePreventOverscroll } from "@/hooks/usePreventOverscroll";
+import { useIOSViewportHeight } from "@/hooks/useIOSViewportHeight";
+import { logError } from "@/utils/errorLogging";
+import { ERROR_IDS } from "@/constants/errorIds";
+
+// Lazy load pages for code splitting
+const Home = lazy(() => import("./pages/Home"));
+const Auth = lazy(() => import("./pages/Auth"));
+const Signup = lazy(() => import("./pages/Signup"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const DemoModeV2 = lazy(() => import("./pages/DemoModeV2"));
+const DemoModeDashboard = lazy(() => import("./pages/DemoModeDashboard"));
+const DemoModeImageGeneration = lazy(() => import("./pages/DemoModeImageGeneration"));
+const UIShowcase = lazy(() => import("./pages/UIShowcase"));
+const ShadcnTourDemo = lazy(() => import("./pages/ShadcnTourDemo"));
+const DeepResearchComparison = lazy(() => import("./pages/DeepResearchComparison"));
+const DeepResearchDemoA = lazy(() => import("./pages/DeepResearchDemoA"));
+const DeepResearchDemoB = lazy(() => import("./pages/DeepResearchDemoB"));
+const DeepResearchDemoB2 = lazy(() => import("./pages/DeepResearchDemoB2"));
+const DeepResearchDemoC = lazy(() => import("./pages/DeepResearchDemoC"));
+const CanvasDemo = lazy(() => import("./pages/CanvasDemo"));
+const CanvasLiveDemo = lazy(() => import("./pages/CanvasLiveDemo"));
+const LoadingStatesDemo = lazy(() => import("./pages/LoadingStatesDemo"));
+const SparklesDemo = lazy(() => import("./pages/SparklesDemo"));
+const TypographyTest = lazy(() => import("./pages/TypographyTest"));
+
+// Optimized React Query configuration for mobile
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      retry: 1,
+      networkMode: "online",
+    },
+    mutations: {
+      retry: 1,
+    },
+  },
+});
+
+/**
+ * RootRoute: Renders Home which shows the main app interface
+ *
+ * Landing page removed (January 2026):
+ * - Previous: Scroll-triggered transition from landing → app interface
+ * - Current: Direct app render with onboarding tour for new users
+ *
+ * Rationale:
+ * - Simplified user flow (one less step to reach core functionality)
+ * - Better mobile UX (mobile tour now optimized for touch)
+ * - Reduced complexity (no scroll tracking or phase management)
+ *
+ * Note: Landing page files archived in src/pages/_archived/ and src/components/_archived/landing/
+ */
+const RootRoute = () => {
+  return <AnimatedRoute><Home /></AnimatedRoute>;
+};
+
+/**
+ * AnimatedRoutes: Wraps all routes with motion animations and AnimatePresence
+ * - Manages page transition animations with fade + vertical slide effects
+ * - Uses "wait" mode so the exiting page fully unmounts before the entering page renders
+ * - Wrapped in AnimationErrorBoundary to gracefully handle animation failures
+ */
+const AnimatedRoutes = () => {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<RootRoute />} />
+        {/* Main chat interface routes */}
+        <Route path="/main" element={<AnimatedRoute><Home /></AnimatedRoute>} />
+        <Route path="/chat" element={<AnimatedRoute><Home /></AnimatedRoute>} />
+        <Route path="/chat/:sessionId" element={<AnimatedRoute><Home /></AnimatedRoute>} />
+        {/* Redirect old /app route to new home page */}
+        <Route path="/app" element={<Navigate to="/" replace />} />
+        <Route path="/auth" element={<AnimatedRoute><Auth /></AnimatedRoute>} />
+        <Route path="/signup" element={<AnimatedRoute><Signup /></AnimatedRoute>} />
+        <Route path="/admin" element={<AnimatedRoute><AdminDashboard /></AnimatedRoute>} />
+        <Route path="/demo-frogger-v2" element={<DemoModeV2 />} />
+        <Route path="/demo-dashboard" element={<DemoModeDashboard />} />
+        <Route path="/demo-image-gen" element={<DemoModeImageGeneration />} />
+        <Route path="/ui-showcase" element={<AnimatedRoute><UIShowcase /></AnimatedRoute>} />
+        <Route path="/demo-shadcn-tour" element={<AnimatedRoute><ShadcnTourDemo /></AnimatedRoute>} />
+        <Route path="/deep-research" element={<AnimatedRoute><DeepResearchComparison /></AnimatedRoute>} />
+        <Route path="/deep-research-demo-a" element={<AnimatedRoute><DeepResearchDemoA /></AnimatedRoute>} />
+        <Route path="/deep-research-demo-b" element={<AnimatedRoute><DeepResearchDemoB /></AnimatedRoute>} />
+        <Route path="/deep-research-demo-b2" element={<AnimatedRoute><DeepResearchDemoB2 /></AnimatedRoute>} />
+        <Route path="/deep-research-demo-c" element={<AnimatedRoute><DeepResearchDemoC /></AnimatedRoute>} />
+        <Route path="/canvas-demo" element={<AnimatedRoute><CanvasDemo /></AnimatedRoute>} />
+        <Route path="/canvas-live-demo" element={<AnimatedRoute><CanvasLiveDemo /></AnimatedRoute>} />
+        <Route path="/loading-states-demo" element={<AnimatedRoute><LoadingStatesDemo /></AnimatedRoute>} />
+        <Route path="/sparkles-demo" element={<AnimatedRoute><SparklesDemo /></AnimatedRoute>} />
+        <Route path="/typography-test" element={<AnimatedRoute><TypographyTest /></AnimatedRoute>} />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<AnimatedRoute><NotFound /></AnimatedRoute>} />
+      </Routes>
+    </AnimatePresence>
+  );
+};
+
+const App = () => {
+  // Prevent iOS Safari rubber-banding/bounce/drag behavior
+  usePreventOverscroll();
+  useIOSViewportHeight();
+
+  // Initialize version tracking and cache busting on app startup
+  useEffect(() => {
+    const checkVersion = async () => {
+      try {
+        // Validate localStorage first to catch and fix corrupted data
+        // This prevents white screen crashes in Safari
+        const storageValidation = validateLocalStorage();
+        if (storageValidation.corruptedKeys.length > 0) {
+          console.warn('⚠️ Fixed corrupted localStorage entries:', storageValidation.fixedKeys);
+        }
+
+        logVersionInfo();
+        storeVersionInfo();
+        logCacheBustingInfo();
+
+        // Fetch fresh index.html from server to detect new deployments
+        // This works even if the JS bundle is cached because it bypasses cache
+        const hasNewVersion = await verifyDeployment();
+        if (hasNewVersion) {
+          console.log('🚀 New deployment detected, clearing cache and reloading...');
+          await clearAllCaches();
+          window.location.reload();
+        } else {
+          console.log('✅ Version verified - running latest build');
+        }
+      } catch (error) {
+        logError(error instanceof Error ? error : new Error(String(error)), {
+          errorId: ERROR_IDS.VERSION_CHECK_ERROR,
+        });
+        // Continue with current version rather than breaking the app
+      }
+    };
+
+    checkVersion().catch(error => {
+      logError(error instanceof Error ? error : new Error(String(error)), {
+        errorId: ERROR_IDS.VERSION_CHECK_UNHANDLED,
+      });
+    });
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <Suspense fallback={
+              <div className="flex min-h-screen items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            }>
+              <AnimationErrorBoundary>
+                <AnimatedRoutes />
+              </AnimationErrorBoundary>
+            </Suspense>
+          </BrowserRouter>
+          {/* Update notification for service worker updates */}
+          <UpdateNotification />
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+};
+
+export default App;

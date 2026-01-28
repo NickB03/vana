@@ -1,0 +1,69 @@
+{
+  "lock": false,
+  "tasks": {
+    "test": "deno test --allow-env --allow-net --allow-read --coverage=coverage _shared/__tests__/",
+    "test:integration": "deno test --allow-env --allow-net --allow-read _shared/__tests__/*-integration.test.ts",
+    "test:integration:openrouter": "deno test --allow-env --allow-net --allow-read _shared/__tests__/openrouter-integration.test.ts",
+    "test:integration:tavily": "deno test --allow-env --allow-net --allow-read _shared/__tests__/tavily-integration.test.ts",
+    "test:integration:chat": "deno test --allow-env --allow-net --allow-read _shared/__tests__/chat-endpoint-integration.test.ts",
+    "test:integration:artifact": "deno test --allow-env --allow-net --allow-read _shared/__tests__/artifact-endpoint-integration.test.ts",
+    "test:integration:title": "deno test --allow-env --allow-net --allow-read _shared/__tests__/title-endpoint-integration.test.ts",
+    "test:watch": "deno test --allow-env --allow-net --allow-read --watch _shared/__tests__/",
+    "test:coverage": "deno test --allow-env --allow-net --allow-read --coverage=coverage _shared/__tests__/ && deno coverage coverage --lcov > coverage.lcov",
+    "test:detailed": "deno test --allow-env --allow-net --allow-read --coverage=coverage _shared/__tests__/ && deno coverage coverage --detailed",
+    "lint": "deno lint _shared/",
+    "fmt": "deno fmt _shared/",
+    "fmt:check": "deno fmt --check _shared/",
+    "check": "deno check _shared/*.ts _shared/__tests__/*.ts"
+  },
+  "fmt": {
+    "useTabs": false,
+    "lineWidth": 100,
+    "indentWidth": 2,
+    "semiColons": true,
+    "singleQuote": false,
+    "proseWrap": "preserve",
+    "include": [
+      "_shared/"
+    ],
+    "exclude": [
+      "coverage/"
+    ]
+  },
+  "lint": {
+    "include": [
+      "_shared/"
+    ],
+    "exclude": [
+      "coverage/"
+    ],
+    "rules": {
+      "tags": [
+        "recommended"
+      ],
+      "include": [
+        "ban-untagged-todo"
+      ],
+      "exclude": [
+        "no-unused-vars"
+      ]
+    }
+  },
+  "test": {
+    "include": [
+      "_shared/__tests__/"
+    ],
+    "exclude": [
+      "coverage/"
+    ]
+  },
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  },
+  "imports": {
+    "@std/assert": "https://deno.land/std@0.208.0/assert/mod.ts"
+  }
+}

@@ -1,0 +1,33 @@
+project_id = "your-project-id"
+
+[edge_runtime]
+enabled = true
+policy = "per_worker"
+
+[functions.chat]
+verify_jwt = false
+
+
+[functions.generate-artifact]
+verify_jwt = false
+
+[functions.generate-title]
+verify_jwt = false
+
+[functions.cache-manager]
+verify_jwt = true
+
+[functions.summarize-conversation]
+verify_jwt = true
+
+[functions.generate-image]
+verify_jwt = false
+
+[functions.health]
+verify_jwt = false
+
+[functions.health-ready]
+verify_jwt = false
+
+[functions.admin-analytics]
+verify_jwt = true

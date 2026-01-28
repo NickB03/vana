@@ -1,0 +1,431 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root,
+  .light {
+    /* Monochrome Premium (light) - True neutral palette with no color accents */
+    /* Optimized for readability based on typography research */
+    --background: 0 0% 98%;
+    --foreground: 0 0% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 12%;
+    --primary: 0 0% 20%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 93%;
+    --secondary-foreground: 0 0% 12%;
+    --muted: 0 0% 93%;
+    --muted-foreground: 0 0% 42%;              /* Optimized: 42% gray (5.2:1 contrast) - was 48% */
+    --muted-foreground-accessible: 0 0% 35%;  /* WCAG AA: 4.5:1 contrast ratio */
+    --accent: 0 0% 93%;
+    --accent-foreground: 0 0% 12%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 87%;
+    --input: 0 0% 87%;
+    --ring: 0 0% 20%;
+    --radius: 1.25rem;
+    --gradient-start: 0 0% 30%;
+    --gradient-end: 0 0% 40%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 12%;
+    --sidebar-primary: 0 0% 20%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 93%;
+    --sidebar-accent-foreground: 0 0% 12%;
+    --sidebar-border: 0 0% 87%;
+    --sidebar-ring: 0 0% 20%;
+
+    /* Accent colors - Purposeful highlights for UI elements (not text) */
+    --accent-primary: 215 85% 58%;
+    --accent-primary-bright: 215 88% 65%;
+    --accent-user: 210 25% 65%;         /* Soft slate blue for user messages */
+    --accent-user-bright: 210 30% 72%; /* Brighter slate for hover */
+    --accent-ai: 190 85% 52%;
+    --accent-ai-bright: 190 88% 60%;
+    --accent-hover: 215 85% 58%;
+    --accent-focus: 215 85% 58%;
+
+    /* Sidebar-specific accent colors for navigation */
+    --sidebar-accent-active: 215 15% 92%;  /* Very light blue-gray */
+    --sidebar-border-active: 215 25% 65%;  /* Medium blue-gray */
+  }
+
+  .dark {
+    /* Monochrome Premium (dark) - True neutral palette with no color accents */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 13%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 13%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 0 0% 65%;
+    --primary-foreground: 0 0% 10%;
+    --secondary: 0 0% 25%;
+    --secondary-foreground: 0 0% 95%;
+    --muted: 0 0% 25%;
+    --muted-foreground: 0 0% 62%;
+    --muted-foreground-accessible: 0 0% 75%; /* WCAG AA: 4.5:1 contrast ratio */
+    --accent: 0 0% 30%;
+    --accent-foreground: 0 0% 95%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 95%;
+    --border: 0 0% 25%;
+    --input: 0 0% 25%;
+    --ring: 0 0% 65%;
+    --gradient-start: 0 0% 50%;
+    --gradient-end: 0 0% 65%;
+    --sidebar-background: 0 0% 13%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 0 0% 65%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 0 0% 25%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 25%;
+    --sidebar-ring: 0 0% 65%;
+
+    /* Accent colors - Brighter for dark mode contrast */
+    --accent-primary: 215 88% 68%;
+    --accent-primary-bright: 215 90% 75%;
+    --accent-user: 210 28% 68%;         /* Soft slate blue for user messages */
+    --accent-user-bright: 210 32% 75%; /* Brighter slate for hover */
+    --accent-ai: 190 88% 62%;
+    --accent-ai-bright: 190 90% 70%;
+    --accent-hover: 215 88% 68%;
+    --accent-focus: 215 88% 68%;
+
+    /* Sidebar-specific accent colors for navigation */
+    --sidebar-accent-active: 215 12% 22%;  /* Dark blue-gray */
+    --sidebar-border-active: 215 30% 50%;  /* Muted blue */  --success: oklch(0.65 0.18 150);  --success-foreground: oklch(0.98 0 0);  --warning: oklch(0.80 0.15 90);  --warning-foreground: oklch(0.15 0 0);
+  }
+
+  /* Legacy themes removed - only light and dark modes supported */
+
+  :root {
+    --success: oklch(0.70 0.15 145);
+    --success-foreground: oklch(0.98 0 0);
+    --warning: oklch(0.75 0.12 85);
+    --warning-foreground: oklch(0.15 0 0);
+  }
+}
+
+@layer base {
+  :root {
+    /* Safe area support for iOS notches and home indicators */
+    --safe-area-inset-top: env(safe-area-inset-top, 0px);
+    --safe-area-inset-right: env(safe-area-inset-right, 0px);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-inset-left: env(safe-area-inset-left, 0px);
+    --app-height: 100dvh;
+    --keyboard-inset: 0px;
+  }
+
+  html {
+    /* Prevent horizontal scrolling - fix mobile viewport overflow */
+    overflow-x: hidden;
+    /* Prevent overscroll bounce/rubber-banding on mobile */
+    overscroll-behavior-y: none;
+    /* Use dynamic viewport height for proper mobile sizing */
+    height: 100%;
+    width: 100%;
+    /* Ensure no default margins/padding that cause black bars */
+    margin: 0;
+    padding: 0;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  .svg-container svg {
+    max-width: 100%;
+    max-height: 100%;
+    height: auto;
+    display: block;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    /* Performance optimizations */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    /* Prevent horizontal scrolling on all viewports */
+    overflow-x: hidden;
+    /* Prevent overscroll bounce/rubber-banding on mobile */
+    overscroll-behavior-y: none;
+    /* Full viewport sizing without position:fixed issues */
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
+    min-height: var(--app-height, 100dvh);
+    width: 100%;
+    /* Remove any default margins that cause black bars */
+    margin: 0;
+    padding: 0;
+  }
+
+  #root {
+    min-height: var(--app-height, 100dvh);
+    width: 100%;
+  }
+
+  /* Ensure headings use theme foreground color */
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-foreground;
+  }
+  
+  /* CSS Containment for isolated components */
+  .chat-message {
+    contain: layout style paint;
+  }
+  
+  .artifact-preview {
+    contain: layout style;
+  }
+  
+  /* Touch action optimization for mobile */
+  button, a, [role="button"] {
+    touch-action: manipulation;
+  }
+  
+  /* Mobile-specific layout fixes for iOS Safari rubber-banding prevention */
+  @media (max-width: 640px) {
+    body {
+      overflow-x: hidden;
+      overscroll-behavior: none;
+      touch-action: pan-y pinch-zoom;
+    }
+
+    #root {
+      width: 100%;
+      overflow-x: hidden;
+      overscroll-behavior: none;
+      touch-action: pan-y pinch-zoom;
+    }
+  }
+
+  /* Mobile chat scroll optimization - prevents scroll lag on touch devices */
+  [data-stick-to-bottom] {
+    /* Enable hardware-accelerated momentum scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
+    /* Prevent smooth scroll interference during touch gestures */
+    scroll-behavior: auto;
+  }
+
+  /* Optimize rendering for off-screen chat messages on mobile */
+  @media (max-width: 768px) {
+    .chat-message {
+      /* Skip rendering content until it's near the viewport */
+      content-visibility: auto;
+      /* Estimated message height for layout calculations */
+      contain-intrinsic-size: 0 120px;
+    }
+  }
+
+  /* Safe area input container for mobile keyboard */
+  .safe-mobile-input {
+    position: relative;
+    margin-bottom: var(--safe-area-inset-bottom);
+  }
+
+  @supports (-webkit-touch-callout: none) {
+    /* iOS Safari specific */
+    .safe-mobile-input {
+      padding-bottom: max(12px, var(--safe-area-inset-bottom));
+    }
+  }
+  
+  /* Reasoning fade animations - word-by-word reveal */
+  @keyframes fadeInWord {
+    from {
+      opacity: 0;
+      filter: blur(2px);
+    }
+    to {
+      opacity: 1;
+      filter: blur(0px);
+    }
+  }
+
+  @keyframes fadeInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes fadeOutRight {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(8px);
+    }
+  }
+
+  .animate-fade-in-left {
+    animation: fadeInLeft 400ms ease-out forwards;
+  }
+
+  .animate-fade-out-right {
+    animation: fadeOutRight 400ms ease-out forwards;
+  }
+
+  .fade-word {
+    display: inline-block;
+    opacity: 0;
+    animation: fadeInWord 600ms ease-out forwards;
+  }
+
+  .fade-word-space {
+    white-space: pre;
+  }
+
+  /* Synchronized pulse animation for skeleton loaders
+   * Uses a negative animation-delay to sync all elements to the same "beat"
+   * The delay is calculated as: -(currentTime % duration) to align with a global clock
+   */
+  @keyframes pulse-sync {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  .animate-pulse-sync {
+    animation: pulse-sync 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    /* The --pulse-sync-delay variable is set via JavaScript to sync all elements */
+    animation-delay: var(--pulse-sync-delay, 0ms);
+  }
+
+  /* Reduce motion for users who prefer it */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Sandpack iframe height fix - ensure iframe fills full container height */
+  /* Target both the semantic class names and the generated CSS-in-JS classes */
+  .sp-layout,
+  .sp-stack,
+  .sp-preview,
+  .sp-preview-container,
+  [class*="sp-c-"][class*="sp-stack"],
+  [class*="sp-c-"][class*="sp-preview"] {
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: none !important;
+  }
+
+  .sp-preview-iframe,
+  [class*="sp-c-"][class*="sp-preview-iframe"] {
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: none !important;
+  }
+
+  /* Hide Sandpack bundler loading indicator and stats */
+  .sp-loading,
+  .sp-bundler-stats,
+  [class*="sp-c-"][class*="loading"],
+  [class*="sp-c-"][class*="stats"] {
+    display: none !important;
+  }
+
+  /* Hide bottom-left overlay elements in Sandpack preview */
+  .sp-preview-container > div[style*="position: absolute"][style*="bottom"],
+  [class*="sp-c-"][class*="preview"] > div[style*="position: absolute"][style*="bottom"] {
+    display: none !important;
+  }
+
+  /* ChatLayout flow-based positioning */
+  [data-chat-layout] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  [data-chat-heading] {
+    /* Flexbox centering now handled by Tailwind classes */
+    /* flex-1 + items-center + justify-center in component */
+  }
+
+  [data-chat-content] {
+    /* No margin-top: auto needed - heading flex-1 handles space distribution */
+    width: 100%;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden; /* Only hide horizontal overflow */
+    overflow-y: visible; /* Allow vertical overflow for carousel */
+  }
+
+  /* Hide desktop carousel on short viewports */
+  @media (max-height: 599px) {
+    .desktop-carousel {
+      display: none !important;
+    }
+    .mobile-carousel {
+      display: block !important;
+    }
+  }
+}
+
+@layer utilities {
+  .pt-safe {
+    padding-top: max(1rem, var(--safe-area-inset-top));
+  }
+
+  .pb-safe {
+    padding-bottom: max(1rem, var(--safe-area-inset-bottom));
+  }
+
+  /* Smooth scroll utilities for chat */
+  .overscroll-contain {
+    overscroll-behavior: contain;
+  }
+
+  /* Mobile momentum scrolling */
+  @supports (-webkit-overflow-scrolling: touch) {
+    .overflow-y-auto,
+    .overflow-x-auto,
+    .overflow-auto {
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  /* Prevent scroll chaining to parent on mobile */
+  .prevent-scroll-chain {
+    overscroll-behavior-y: contain;
+    overscroll-behavior-x: none;
+  }
+
+  /* Hide scrollbar while maintaining scroll functionality */
+  .hide-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
+}
