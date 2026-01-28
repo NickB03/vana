@@ -293,17 +293,17 @@ supabase secrets set GEMINI_STREAM_TIMEOUT_MS=300000
 All rate limits are configurable via environment variables (overrides defaults):
 
 ```bash
-# Guest Limits (IP-based)
-RATE_LIMIT_GUEST_MAX=20                    # requests per 5 hours
-RATE_LIMIT_ARTIFACT_GUEST_MAX=5            # artifacts per 5 hours
-RATE_LIMIT_IMAGE_GUEST_MAX=10              # images per 5 hours
-RATE_LIMIT_SEARCH_GUEST_MAX=20             # searches per 5 hours
+# Guest Limits (IP-based) - defaults from config.ts
+RATE_LIMIT_GUEST_MAX=60                    # requests per 5 hours (default: 60)
+RATE_LIMIT_ARTIFACT_GUEST_MAX=15           # artifacts per 5 hours (default: 15)
+RATE_LIMIT_IMAGE_GUEST_MAX=60              # images per 5 hours (default: 60)
+RATE_LIMIT_SEARCH_GUEST_MAX=30             # searches per 5 hours (default: 30)
 
 # Authenticated User Limits
-RATE_LIMIT_AUTH_MAX=100                    # requests per 5 hours
-RATE_LIMIT_ARTIFACT_AUTH_MAX=50            # artifacts per 5 hours
-RATE_LIMIT_IMAGE_AUTH_MAX=100              # images per 5 hours
-RATE_LIMIT_SEARCH_AUTH_MAX=200             # searches per 5 hours
+RATE_LIMIT_AUTH_MAX=100                    # requests per 5 hours (default: 100)
+RATE_LIMIT_ARTIFACT_AUTH_MAX=50            # artifacts per 5 hours (default: 50)
+RATE_LIMIT_IMAGE_AUTH_MAX=50               # images per 5 hours (default: 50)
+RATE_LIMIT_SEARCH_AUTH_MAX=50              # searches per 5 hours (default: 50)
 
 # Window Configuration
 RATE_LIMIT_WINDOW_HOURS=5                  # rolling window size

@@ -1,6 +1,6 @@
 # Design System Overview
 
-**Last Updated:** 2025-11-04
+**Last Updated:** 2026-01-28
 
 ## Introduction
 
@@ -74,11 +74,14 @@ Standardized hover, focus, and active states:
 
 [View Interactions Documentation →](./INTERACTIONS.md)
 
-### 4. Animations (`animationConstants.ts`)
+### 4. Animations (`animationSystem.ts`)
 Consistent animation timing and patterns:
-- **ANIMATION_DURATIONS** - Fast, normal, moderate, slow
-- **ANIMATION_EASINGS** - easeIn, easeOut, easeInOut
-- **Common Variants** - fadeInUp, scaleIn, staggerContainer, hoverLift
+- **DURATION** - Fast, normal, moderate, slow
+- **EASING** - easeIn, easeOut, easeInOut
+- **MOTION_VARIANTS** - fadeInUp, scaleIn, staggerContainer, hoverLift
+- **ANIMATION_CLASSES** - Tailwind class composition utilities
+
+> ⚠️ Note: `animationConstants.ts` is deprecated and re-exports from `animationSystem.ts`
 
 [View Animations Documentation →](./ANIMATIONS.md)
 
@@ -94,9 +97,9 @@ Reusable UI components built with the design system:
 All design system constants are in `src/utils/`:
 - `src/utils/typographyConstants.ts` - Font sizes, line heights, weights
 - `src/utils/spacingConstants.ts` - Spacing scale values
-- `src/utils/animationConstants.ts` - Animation durations and easings
+- `src/utils/animationSystem.ts` - Animation durations and easings (source of truth)
 - `src/utils/interactionConstants.ts` - Hover, focus, and active states
-- `src/utils/colorConstants.ts` - Color palette definitions
+- `src/utils/colorConstants.ts` - Color palette and gradients
 
 ## Quick Start Guide
 
@@ -150,7 +153,9 @@ src/
 │   ├── typographyConstants.ts    # Typography scale and utilities
 │   ├── spacingConstants.ts        # Spacing system
 │   ├── interactionConstants.ts    # Hover/focus/active states
-│   └── animationConstants.ts      # Animation timing and variants
+│   ├── colorConstants.ts          # Gradients and color utilities
+│   ├── animationSystem.ts         # Animation timing and variants (source of truth)
+│   └── animationConstants.ts      # Deprecated shim (re-exports from animationSystem)
 ├── components/
 │   └── ui/
 │       ├── skeleton.tsx           # Base Skeleton component

@@ -7,43 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased] - 2026-01-12
+## [Unreleased] - 2026-01-28
 
 ### Added
+- **Skills System v2** (#571): Dynamic context injection system for Claude Code commands
+  - Skills loaded on-demand into conversation context
+  - Integrates with Claude Code slash commands and hooks
+  - Enables modular, extensible AI assistant behaviors
+- **Intent Confirmation Events** (#569): Immediate user feedback during LLM intent classification
+  - New SSE event type for confirming AI understood the request
+  - Reduces perceived latency by showing early intent detection
+- **Smooth Streaming Scroll** (#566): Spring physics-based auto-scrolling during streaming
+  - Typewriter effect for incoming text
+  - Natural scroll acceleration/deceleration
+  - Maintains reading position during fast streaming
+
+### Changed
+- **Integration Test Timeout** (#573): Increased from 5 to 10 minutes for complex API tests
+- **LLM Integration Modernization** (#563): Comprehensive update to LLM system
+  - Structured outputs with Zod schemas
+  - Enhanced resilience patterns (circuit breaker, fallback)
+  - Reasoning status system for transparency
 - Comprehensive Gemini 3 Flash developer guide (`docs/GEMINI_3_FLASH_GUIDE.md`)
 - Implementation analysis document (`docs/GEMINI_3_FLASH_IMPLEMENTATION_ANALYSIS.md`)
 - Thought signature support in tool calling for Gemini 3 extended thinking
 - Media resolution parameter for multimodal input quality control
-- GitHub Issue #522 for tracking cost optimization features
-
-### Changed
 - Standardized temperature to 1.0 for all Gemini 3 Flash operations (titles, summaries, queries)
 - Updated token limits from 32K to 65K max output (matching Gemini 3 Flash spec)
-- Updated documentation across CLAUDE.md, CONFIGURATION.md, API_REFERENCE.md, ARCHITECTURE.md
 
 ### Fixed
+- **Message Ordering** (#576): Resolved issue while preserving skeleton race condition fix
+- **Safari Streaming** (#575): Fixed skeleton race condition in Safari production builds
+- **Typewriter Animation** (#567): Smooth completion when streaming ends
+- **Three LLM Response Issues** (#565): Fixed reasoning ticker, sources display, artifact hallucination
+- **Sandpack Theming** (#568): Improved theme consistency and search quality
 - Bundle artifact streaming test (moved streaming param from URL to request body)
 
-### Removed
-- **BREAKING**: Legacy `[STATUS:]` marker system
-  - Removed `parseStatusMarker()` function from glm-client.ts
-  - Removed `status_update` SSE events from chat endpoints
-  - Removed AI instructions for marker emission from system prompt
-  - Deleted 178 lines of marker-related tests
-
-### Changed
-- **Status Updates**: Now exclusively via ReasoningProvider (`reasoning_status` events)
-- **Feature Flag Behavior**: `USE_REASONING_PROVIDER=false` now disables all status updates (no marker fallback)
-
-### Migration Guide
-- If you set `USE_REASONING_PROVIDER=false`, remove this setting to re-enable status updates
-- Update any custom clients listening for `status_update` events to use `reasoning_status` instead
-
-### Performance
-- Improved CPU usage by ~2% per artifact generation (eliminated regex parsing)
-- Reduced SSE event overhead (single status stream instead of dual)
-
 ### Refactored
+- **Remove GLM References** (#574): Complete removal of GLM/Kimi integration
+  - Deleted legacy GLM client code
+  - Fixed skills integration tests
+  - Cleaned up unused model references
 - **Phase 4 Cleanup**: Extracted types with validation from deprecated `reasoning-generator.ts` (886 line reduction, 70%)
   - Created `reasoning-types.ts` with XSS/DoS protection
   - Added readonly modifiers for immutability
@@ -54,6 +58,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Token Counter Cleanup**: Removed 3 deprecated backward compatibility functions
   - `countMessageTokens()`, `countTotalTokens()`, `countTextTokens()`
   - Zero production usage confirmed via codebase analysis
+
+### Removed
+- **BREAKING**: Legacy `[STATUS:]` marker system
+  - Removed `parseStatusMarker()` function from glm-client.ts
+  - Removed `status_update` SSE events from chat endpoints
+  - Removed AI instructions for marker emission from system prompt
+  - Deleted 178 lines of marker-related tests
+- **BREAKING**: All GLM/Kimi model references and integration code
+
+### Migration Guide
+- If you set `USE_REASONING_PROVIDER=false`, remove this setting to re-enable status updates
+- Update any custom clients listening for `status_update` events to use `reasoning_status` instead
+- GLM-specific code paths have been removed; all operations now use Gemini via OpenRouter
+
+### Performance
+- Improved CPU usage by ~2% per artifact generation (eliminated regex parsing)
+- Reduced SSE event overhead (single status stream instead of dual)
+- Spring physics scrolling provides smoother UX with less jank
 
 ### Breaking Changes (Minor)
 - **Icon Validation** (Issue #402): Documented that frontend strictly validates reasoning icons without normalization. Invalid icons cause `parseReasoningSteps()` to return `null`. This is intentional - forces GLM API to send valid icons rather than silently accepting bad data. Icon field is optional; if omitted, UI renders without an icon.
@@ -262,5 +284,5 @@ This project follows [Semantic Versioning](https://semver.org/):
 ---
 
 **Maintained by**: Vana Development Team
-**Last Updated**: 2026-01-12
+**Last Updated**: 2026-01-28
 **Status**: Active Development

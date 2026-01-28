@@ -1,6 +1,6 @@
 # Vana - Product Roadmap
 
-**Last Updated**: 2025-12-23
+**Last Updated**: 2026-01-28
 **Project**: Vana AI Development Assistant
 
 ---
@@ -9,13 +9,56 @@
 
 | Status | Count | Features |
 |--------|-------|----------|
-| ✅ Recently Completed | 1 | Claude-Style Reasoning UI |
+| ✅ Recently Completed | 3 | Claude-Style Reasoning UI, Skills System v2, LLM Modernization |
 | 🟡 Code Complete | 2 | Export Menu, Multi-Artifact Context |
 | 📋 Planned | 4 | Canvas UI, Deep Research, MCP UI Integration, 2-Way Voice Chat |
 
 ---
 
 ## ✅ Recently Completed
+
+### Skills System v2
+**Priority**: P1 • **Implemented**: Jan 2026 • **User Impact**: Modular, extensible AI assistant behaviors
+
+**Status**: ✅ Fully implemented and deployed to production (PR #571)
+
+**What it does**: Dynamic context injection system for Claude Code commands. Skills are loaded on-demand into conversation context, enabling modular AI assistant behaviors.
+
+**Implementation**:
+- ✅ Skills loaded dynamically when slash commands are invoked
+- ✅ Integrates with Claude Code hooks system
+- ✅ Context injection preserves conversation flow
+- ✅ Complete test coverage for skills integration
+
+**Technical Details**:
+- Skills stored in `.claude/skills/` directory
+- On-demand loading reduces context overhead
+- Seamless integration with existing command system
+- All GLM references removed in associated cleanup (PR #574)
+
+---
+
+### LLM Integration Modernization
+**Priority**: P1 • **Implemented**: Jan 2026 • **User Impact**: More reliable, faster AI responses
+
+**Status**: ✅ Fully implemented and deployed to production (PR #563)
+
+**What it does**: Comprehensive modernization of the LLM system with structured outputs, enhanced resilience, and reasoning transparency.
+
+**Implementation**:
+- ✅ Structured outputs with Zod schema validation
+- ✅ Circuit breaker pattern for graceful degradation
+- ✅ Intent confirmation events for immediate feedback (PR #569)
+- ✅ Smooth streaming scroll with spring physics (PR #566)
+
+**Key Improvements**:
+- Reduced perceived latency via early intent detection
+- Natural scroll behavior during fast streaming
+- Typewriter effect for incoming text
+- Fixed Safari streaming issues (PR #575)
+- Resolved message ordering bugs (PR #576)
+
+---
 
 ### Claude-Style Reasoning UI
 **Priority**: P1 • **Implemented**: Nov 2025 • **User Impact**: Transparent AI thinking process

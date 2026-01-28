@@ -17,7 +17,7 @@
   - [Generate Title](#post-generate-title)
   - [Summarize Conversation](#post-summarize-conversation)
   - [Admin Analytics](#get-admin-analytics)
-- [Removed Endpoints](#removed-endpoints)
+- [Deprecated & Removed Endpoints](#deprecated--removed-endpoints)
 - [Code Examples](#code-examples)
 - [Best Practices](#best-practices)
 - [Changelog](#changelog)
@@ -722,34 +722,35 @@ if (remaining && parseInt(remaining) < 5) {
 
 ---
 
-## Removed Endpoints
+## Deprecated & Removed Endpoints
 
-The following endpoints have been removed as part of the Vanilla Sandpack refactor (January 2026):
+The following endpoints have been deprecated or removed as part of the Vanilla Sandpack refactor (January 2026):
 
-### ~~POST /generate-artifact~~ (REMOVED)
+### POST /generate-artifact (DEPRECATED)
 
-**Removed in**: `refactor/vanilla-sandpack-artifacts` branch (January 2026)
+**Status**: ⚠️ DEPRECATED - DO NOT USE
+**Removal Target**: Q2 2026
 
-**Reason**: Artifact generation is now handled entirely through the `/chat` endpoint's tool calling system. The standalone endpoint added unnecessary complexity.
+**Reason**: This endpoint still exists in the codebase but is NO LONGER CALLED by the frontend. All artifact generation now goes through the `/chat` endpoint's tool calling system.
 
 **Migration**:
-- Use `/chat` with `toolChoice: "generate_artifact"` to force artifact generation
+- Use `/chat` endpoint - the AI will call the `generate_artifact` tool when appropriate
 - Artifacts are now persisted in the `artifact_versions` database table
 - Listen for `artifact_complete` SSE events to receive generated artifacts
 
 ### ~~POST /generate-artifact-fix~~ (REMOVED)
 
-**Removed in**: `refactor/vanilla-sandpack-artifacts` branch (January 2026)
+**Removed in**: January 2026
 
 **Reason**: Error fixing is now handled client-side via the "Ask AI to Fix" button, which sends the error back through the standard chat flow.
 
 **Migration**:
-- When a Sandpack error occurs, send the error message as a chat message
+- When a Sandpack error occurs, click the "Ask AI to Fix" button
 - The AI will generate corrected code through the standard artifact generation flow
 
 ### ~~POST /bundle-artifact~~ (REMOVED)
 
-**Removed in**: `refactor/vanilla-sandpack-artifacts` branch (January 2026)
+**Removed in**: January 2026
 
 **Reason**: Server-side bundling has been replaced by vanilla Sandpack client-side rendering.
 

@@ -258,8 +258,8 @@ try {
 - Pro tier: Custom limits
 
 **Application Limits** (per-tool rate limiting):
-- Guest users: 20 searches per 5 hours
-- Authenticated users: 200 searches per 5 hours
+- Guest users: 30 searches per 5 hours (default: 30)
+- Authenticated users: 50 searches per 5 hours (default: 50)
 
 **See**: `.claude/TOOL_CALLING_SYSTEM.md` for rate limit details
 

@@ -299,7 +299,7 @@ Only whitelisted packages are available. To add a package:
 
 1. Test in isolated Sandpack environment
 2. Verify size (<1MB recommended)
-3. Add to whitelist in `SimpleArtifactRenderer.tsx`
+3. Add to whitelist in `SandpackArtifactRenderer.tsx`
 
 ## Troubleshooting
 

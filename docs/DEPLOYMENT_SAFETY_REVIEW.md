@@ -383,7 +383,7 @@ supabase/functions/_shared/__tests__/
 └── error-handling.test.ts (NEW - REQUIRED)
 
 src/components/__tests__/
-├── SimpleArtifactRenderer.test.tsx (NEW - REQUIRED)
+├── SandpackArtifactRenderer.test.tsx (NEW - REQUIRED)
 └── ArtifactErrorBoundary.test.tsx (NEW - REQUIRED)
 ```
 

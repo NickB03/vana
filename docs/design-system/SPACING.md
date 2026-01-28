@@ -1,6 +1,6 @@
 # Spacing System
 
-**Last Updated:** 2025-11-04
+**Last Updated:** 2026-01-28
 
 ## Overview
 
@@ -208,10 +208,11 @@ Tight spacing for interactive elements like buttons and inputs.
 
 ## CHAT_SPACING
 
-Specialized spacing optimized for chat/messaging interfaces.
+Specialized spacing optimized for chat/messaging interfaces. Mobile-first with larger desktop padding.
 
 ### Message Container
-**Value:** 24px horizontal / 12px vertical
+**Value:** 8px horizontal / 6px vertical (mobile) → 16px horizontal (desktop)
+**Classes:** `px-2 py-1.5 md:px-4`
 **Use When:** Outer container for individual messages
 
 ```tsx
@@ -220,18 +221,20 @@ Specialized spacing optimized for chat/messaging interfaces.
 </div>
 ```
 
-### Message Bubble
-**Value:** 20px horizontal / 10px vertical
-**Use When:** Inner padding for message bubbles
+### Message Gap
+**Value:** 8px (mobile) → 16px (desktop)
+**Classes:** `gap-2 md:gap-4`
+**Use When:** Spacing between messages in a list
 
 ```tsx
-<div className={`${CHAT_SPACING.message.bubble} bg-primary text-primary-foreground rounded-2xl`}>
-  <p>Message text</p>
+<div className={`flex flex-col ${CHAT_SPACING.message.gap}`}>
+  {messages.map(msg => <Message key={msg.id} {...msg} />)}
 </div>
 ```
 
 ### Input Container
-**Value:** 12px/20px horizontal / 12px/20px bottom (responsive)
+**Value:** 8px horizontal / 4px bottom (mobile) → 16px/16px (desktop)
+**Classes:** `px-2 pb-1 md:px-4 md:pb-4`
 **Use When:** Chat input area container
 
 ```tsx
@@ -241,7 +244,8 @@ Specialized spacing optimized for chat/messaging interfaces.
 ```
 
 ### Input Textarea
-**Value:** 16px left / 12px top
+**Value:** 12px left / 10px top (mobile) → 16px/12px (desktop)
+**Classes:** `pl-3 pt-2.5 md:pl-4 md:pt-3`
 **Use When:** Internal padding for textarea
 
 ```tsx
@@ -249,7 +253,8 @@ Specialized spacing optimized for chat/messaging interfaces.
 ```
 
 ### Message List
-**Value:** 20px horizontal / 48px vertical
+**Value:** 4px horizontal / 8px vertical (mobile) → 16px/24px (desktop)
+**Classes:** `px-1 py-2 md:px-4 md:py-6`
 **Use When:** Container for scrollable message list
 
 ```tsx
@@ -266,9 +271,9 @@ function ChatInterface() {
     <div className="flex flex-col h-screen">
       {/* Message List */}
       <div className={`${CHAT_SPACING.messageList} flex-1 overflow-y-auto`}>
-        <div className={CHAT_SPACING.message.container}>
-          <div className={CHAT_SPACING.message.bubble}>
-            <p>Hello! How can I help you?</p>
+        <div className={`flex flex-col ${CHAT_SPACING.message.gap}`}>
+          <div className={CHAT_SPACING.message.container}>
+            <p className="bg-muted rounded-2xl px-4 py-2">Hello! How can I help you?</p>
           </div>
         </div>
       </div>

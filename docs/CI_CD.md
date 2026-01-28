@@ -23,8 +23,16 @@ gh secret list --repo NickB03/llm-chat-site
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
-| `deploy-migrations.yml` | Push to `main` with `supabase/migrations/**` changes | Apply database migrations to production |
-| `deploy-edge-functions.yml` | Push to `main` with `supabase/functions/**` changes | Deploy Edge Functions to production |
+| `frontend-quality.yml` | PR + push to `main` | Lint, test, build verification |
+| `edge-functions-tests.yml` | PR + push (functions changed) | Test Edge Functions with 90% coverage |
+| `deploy-migrations.yml` | Push to `main` (migrations changed) | Apply database migrations to production |
+| `deploy-edge-functions.yml` | Push to `main` (functions changed) | Deploy Edge Functions to production |
+| `e2e-tests.yml` | Push to `main` | E2E tests with mocked APIs (post-merge) |
+| `e2e-manual.yml` | Manual trigger | Run E2E tests with filters (@critical) |
+| `integration-tests.yml` | Manual + daily schedule | Real API tests (Gemini, Tavily) |
+| `model-config-guard.yml` | PR + push to `main` | Validate model names match snapshot |
+| `ai-guardrails.yml` | PR + push to `main` | Validate critical files not corrupted |
+| `gemini-dispatch.yml` | Manual trigger | Gemini-powered PR triage |
 
 ### Migration Deployment Flow
 

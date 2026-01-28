@@ -1,6 +1,6 @@
 # Unified Tool-Calling Architecture (Issue #340)
 
-> **Last Updated**: 2025-12-19
+> **Last Updated**: 2026-01-28
 > **Status**: Production
 > **Version**: Phase 0 Complete
 
@@ -63,8 +63,8 @@ graph TB
     end
 
     subgraph "AI Providers"
-        GLM[GLM-4.6<br/>Z.ai API]
-        GEM[Gemini Flash<br/>OpenRouter]
+        G3F[Gemini 3 Flash<br/>OpenRouter]
+        GIMG[Gemini Flash Image<br/>OpenRouter]
         TAV[Tavily API]
     end
 
@@ -89,8 +89,8 @@ graph TB
     TE --> IE
     TE --> SE
 
-    AE --> GLM
-    IE --> GEM
+    AE --> G3F
+    IE --> GIMG
     SE --> TAV
 
     AE -->|artifact_complete| UI
@@ -109,8 +109,8 @@ graph TB
     style TRL fill:#ffebee
     style TET fill:#ffebee
     style PID fill:#ffebee
-    style GLM fill:#e8f5e9
-    style GEM fill:#e8f5e9
+    style G3F fill:#e8f5e9
+    style GIMG fill:#e8f5e9
     style TAV fill:#e8f5e9
 ```
 
@@ -126,7 +126,7 @@ sequenceDiagram
     participant CH as chat/index.ts
     participant MW as Middleware
     participant TC as tool-calling-chat.ts
-    participant GLM as GLM-4.6
+    participant G3F as Gemini 3 Flash
     participant TE as tool-executor.ts
     participant EX as Specialized Executor
     participant API as External API
@@ -147,18 +147,18 @@ sequenceDiagram
     CH->>TC: handleToolCallingChat()
 
     rect rgb(232, 245, 233)
-        Note over TC,GLM: Initial GLM Call
-        TC->>GLM: callGLMWithRetry()<br/>+ tools: TOOL_CATALOG
-        GLM-->>TC: SSE Stream starts
+        Note over TC,G3F: Initial AI Call
+        TC->>G3F: callAIWithRetry()<br/>+ tools: TOOL_CATALOG
+        G3F-->>TC: SSE Stream starts
 
         loop Stream Processing
-            GLM-->>TC: reasoning_content chunks
+            G3F-->>TC: reasoning_content chunks
             TC-->>FE: reasoning_step events
-            GLM-->>TC: content chunks
+            G3F-->>TC: content chunks
             TC-->>FE: content delta events
         end
 
-        GLM-->>TC: tool_calls detected
+        G3F-->>TC: tool_calls detected
     end
 
     rect rgb(227, 242, 253)
@@ -178,15 +178,15 @@ sequenceDiagram
     end
 
     rect rgb(243, 229, 245)
-        Note over TC,GLM: GLM Continuation
-        TC->>GLM: callGLMWithToolResult()<br/>+ tool message (OpenAI format)
+        Note over TC,G3F: AI Continuation
+        TC->>G3F: callAIWithToolResult()<br/>+ tool message (OpenAI format)
 
         loop Continuation Stream
-            GLM-->>TC: content chunks
+            G3F-->>TC: content chunks
             TC-->>FE: content delta events
         end
 
-        GLM-->>TC: [DONE]
+        G3F-->>TC: [DONE]
     end
 
     TC->>DB: Save message + artifacts
@@ -341,7 +341,7 @@ sequenceDiagram
     end
 
     rect rgb(243, 229, 245)
-        Note right of BE: GLM Continuation
+        Note right of BE: AI Continuation
         loop Content Streaming
             BE->>FE: {choices: [{delta: {content}}]}
         end
@@ -421,7 +421,7 @@ flowchart TB
     subgraph "Artifact Executor"
         AE --> AE1[validateParams]
         AE1 --> AE2[buildPrompt]
-        AE2 --> AE3[callGLM-4.6]
+        AE2 --> AE3[callGemini3Flash]
         AE3 --> AE4[stripHTML]
         AE4 --> AE5[preValidate]
         AE5 --> AE6[validateCode]
@@ -446,12 +446,12 @@ flowchart TB
         SE4 --> SER[SearchResult]
     end
 
-    AER --> FORMAT[formatResultForGLM]
+    AER --> FORMAT[formatResultForAI]
     IER --> FORMAT
     SER --> FORMAT
 
     FORMAT --> INJECT[Inject as tool message]
-    INJECT --> CONTINUE[callGLMWithToolResult]
+    INJECT --> CONTINUE[callAIWithToolResult]
 
     style DENY fill:#f44336,color:#fff
     style AE fill:#bbdefb
@@ -467,7 +467,7 @@ graph TB
         GA_TYPE["type: react|html|svg|code|mermaid|markdown"]
         GA_PROMPT["prompt: string (max 10,000 chars)"]
         GA_RATE["Rate: 5/5h guest, 50/5h auth"]
-        GA_MODEL["Model: GLM-4.6 (Z.ai)"]
+        GA_MODEL["Model: Gemini 3 Flash (OpenRouter)"]
     end
 
     subgraph "generate_image"
@@ -545,12 +545,12 @@ classDiagram
     ToolContext --> ToolExecutionResult
 ```
 
-### GLM Tool Call Format
+### AI Tool Call Format
 
 ```mermaid
 flowchart LR
-    subgraph "Request to GLM"
-        REQ["tools: GLMToolDefinition[]"]
+    subgraph "Request to AI"
+        REQ["tools: ToolDefinition[]"]
         REQ --> GDEF["
         {
           type: 'function',
@@ -567,7 +567,7 @@ flowchart LR
         "]
     end
 
-    subgraph "Response from GLM"
+    subgraph "Response from AI"
         RESP["tool_calls array"]
         RESP --> TCALL["
         {
@@ -602,7 +602,7 @@ flowchart LR
 
 | File | Purpose |
 |------|---------|
-| `_shared/tool-definitions.ts` | TOOL_CATALOG, getGLMToolDefinitions() |
+| `_shared/tool-definitions.ts` | TOOL_CATALOG, getToolDefinitions() |
 | `_shared/tool-executor.ts` | Central router, executeTool() |
 | `_shared/artifact-executor.ts` | Artifact generation pipeline |
 | `_shared/image-executor.ts` | Image generation + storage |
@@ -619,7 +619,7 @@ flowchart LR
 
 | Tool | Typical Latency | Model | Notes |
 |------|----------------|-------|-------|
-| generate_artifact | 2-5s | GLM-4.6 | Thinking mode enabled |
+| generate_artifact | 2-5s | Gemini 3 Flash | Thinking mode enabled |
 | generate_image | 3-8s | Gemini Flash | +storage upload |
 | browser.search | 1-3s | Tavily | +optional query rewrite |
 

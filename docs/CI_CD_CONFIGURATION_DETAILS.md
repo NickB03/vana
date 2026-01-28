@@ -35,7 +35,7 @@ on:
 **Why This Matters for Refactor**:
 - Validates no artifact code was accidentally referenced
 - Ensures build succeeds (no import errors)
-- Catches TypeScript errors in SimpleArtifactRenderer
+- Catches TypeScript errors in SandpackArtifactRenderer
 - Verifies CLAUDE.md compliance (MUST Rules)
 
 **Blocking**:
@@ -367,7 +367,7 @@ src/                    ← Components, utilities, hooks
 
 **For Vanilla Sandpack**:
 ```
-SimpleArtifactRenderer.tsx       ← Should be ≥80% (new)
+SandpackArtifactRenderer.tsx       ← Should be ≥80% (new)
 ArtifactErrorBoundary.tsx        ← Should be ≥70% (new)
 artifact-generator-structured.ts ← Should be ≥80% (new)
 artifact-complexity.ts           ← Should be ≥80% (new)
@@ -450,8 +450,7 @@ fi
 | `SUPABASE_ACCESS_TOKEN` | deploy-*.yml | Authenticate with Supabase |
 | `SUPABASE_PROJECT_ID` | deploy-*.yml | Identify production project |
 | `SUPABASE_DB_PASSWORD` | deploy-migrations.yml | Database authentication |
-| `GLM_API_KEY` | integration-tests.yml | Google's Gemini API |
-| `OPENROUTER_GEMINI_FLASH_KEY` | integration-tests.yml | OpenRouter Gemini access |
+| `OPENROUTER_GEMINI_FLASH_KEY` | integration-tests.yml | Gemini 3 Flash via OpenRouter |
 | `OPENROUTER_GEMINI_IMAGE_KEY` | integration-tests.yml | Image generation access |
 | `TAVILY_API_KEY` | integration-tests.yml | Web search API |
 | `CODECOV_TOKEN` | edge-functions-tests.yml | Coverage reporting (optional) |
@@ -832,7 +831,7 @@ Set up 24-hour monitoring window
    - Automatically picked up by edge-functions-tests.yml
    - Must reach 90% coverage
 
-✅ SimpleArtifactRenderer.test.tsx  (Phase 5.1)
+✅ SandpackArtifactRenderer.test.tsx  (Phase 5.1)
    - Added to src/components/__tests__/
    - Automatically picked up by frontend-quality.yml
    - Contributes to overall 55% coverage

@@ -45,13 +45,13 @@ flowchart TB
 
 ---
 
-## 2. GLM Native Tool Calling Flow
+## 2. Native Tool Calling Flow (Gemini 3 Flash)
 
 ```mermaid
 stateDiagram-v2
     [*] --> Idle
 
-    Idle --> StreamingReasoning: callGLMWithRetry()
+    Idle --> StreamingReasoning: callAIWithRetry()
     StreamingReasoning --> StreamingReasoning: reasoning_content chunk
 
     StreamingReasoning --> StreamingContent: content begins
@@ -64,7 +64,7 @@ stateDiagram-v2
     ExecutingTool --> ToolSuccess: success=true
     ExecutingTool --> ToolFailure: success=false
 
-    ToolSuccess --> ContinuationStream: callGLMWithToolResult()
+    ToolSuccess --> ContinuationStream: callAIWithToolResult()
     ToolFailure --> ErrorHandling: safe error message
 
     ContinuationStream --> ContinuationStream: content chunk
@@ -98,14 +98,14 @@ flowchart TB
         PTYPE -->|markdown| MD_P["Markdown formatting prompt"]
     end
 
-    REACT_P --> CALL_GLM
-    HTML_P --> CALL_GLM
-    SVG_P --> CALL_GLM
-    CODE_P --> CALL_GLM
-    MERM_P --> CALL_GLM
-    MD_P --> CALL_GLM
+    REACT_P --> CALL_AI
+    HTML_P --> CALL_AI
+    SVG_P --> CALL_AI
+    CODE_P --> CALL_AI
+    MERM_P --> CALL_AI
+    MD_P --> CALL_AI
 
-    CALL_GLM[callGLMWithRetryTracking<br/>thinking: true] --> STREAM[Process Stream]
+    CALL_AI[callAIWithRetryTracking<br/>thinking: true] --> STREAM[Process Stream]
 
     STREAM --> EXTRACT[Extract code + reasoning]
 
@@ -116,7 +116,7 @@ flowchart TB
         VALIDATE_CODE --> AUTOFIX[autoFixArtifactCode<br/>Immutability transforms]
     end
 
-    AUTOFIX --> TOKENS[extractGLMTokenUsage]
+    AUTOFIX --> TOKENS[extractTokenUsage]
     TOKENS --> RESULT[Return ArtifactExecutorResult]
 
     style FAIL1 fill:#ffcdd2
@@ -212,7 +212,7 @@ stateDiagram-v2
 flowchart TB
     START[executeSearchTool] --> REWRITE{Query Rewrite<br/>Enabled?}
 
-    REWRITE -->|Yes| OPTIMIZE[rewriteSearchQuery<br/>GLM optimization]
+    REWRITE -->|Yes| OPTIMIZE[rewriteSearchQuery<br/>AI optimization]
     REWRITE -->|No| SEARCH
 
     OPTIMIZE -->|Success| SEARCH[searchTavilyWithRetryTracking]
@@ -253,8 +253,8 @@ flowchart LR
         TE[executeTool] --> TER[ToolExecutionResult]
     end
 
-    subgraph "Format for GLM"
-        TER --> FMT[formatResultForGLM]
+    subgraph "Format for AI"
+        TER --> FMT[formatResultForAI]
         FMT --> XML["
         <tool_result>
           <tool_call_id>call_xxx</tool_call_id>
@@ -267,9 +267,9 @@ flowchart LR
         "]
     end
 
-    subgraph "GLM Continuation"
+    subgraph "AI Continuation"
         XML --> INJECT[Inject into messages]
-        INJECT --> CALL[callGLMWithToolResult]
+        INJECT --> CALL[callAIWithToolResult]
         CALL --> STREAM[Continue streaming]
     end
 ```
@@ -396,7 +396,7 @@ flowchart LR
     Input[User Input] --> API
     Input --> Display
 
-    API -->|"To GLM"| GLM[AI Model]
+    API -->|"To AI"| AI_MODEL[Gemini 3 Flash]
     Display -->|"To Browser"| Chat[Chat UI]
 
     style A1 fill:#4caf50,color:#fff

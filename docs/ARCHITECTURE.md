@@ -41,7 +41,7 @@ All AI operations use Gemini 3 Flash via OpenRouter for unified, high-performanc
 - `system-prompt-inline.ts` — Artifact generation guidance with package whitelist (~305 lines)
 
 **Frontend** (`src/components/`):
-- `SimpleArtifactRenderer.tsx` — Vanilla Sandpack renderer with fixed dependency list (~150 lines)
+- `SandpackArtifactRenderer.tsx` — Vanilla Sandpack renderer with fixed dependency list (~150 lines)
 - `ArtifactErrorBoundary.tsx` — React error boundary for graceful degradation
 
 **Tool Calling** (`chat/handlers/tool-calling-chat.ts`):
@@ -62,7 +62,7 @@ artifact-generator-structured.ts validates with Zod schema
     ↓
 artifact-saver.ts persists to artifact_versions table
     ↓
-SimpleArtifactRenderer displays via Sandpack
+SandpackArtifactRenderer displays via Sandpack
     ↓
 Errors? → Show in Sandpack console + "Ask AI to Fix" button
 ```

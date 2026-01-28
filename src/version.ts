@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: 'e6af92daf573f9623c14386ade71636150efc079',
-    short: 'e6af92d',
-    branch: 'fix/message-ordering-race-condition',
-    message: 'fix: resolve message ordering issue while preserving skeleton race condition fix',
+    hash: '8d6941542b4180ac390dde371bf8935d0b8e5d34',
+    short: '8d69415',
+    branch: 'docs/update-documentation-jan-2026',
+    message: 'docs: synchronize documentation with Jan 2026 features and fixes',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-28 06:15:30 UTC',
-    date: new Date('2026-01-28T06:15:30.379Z'),
+    timestamp: '2026-01-28 16:01:54 UTC',
+    date: new Date('2026-01-28T16:01:54.731Z'),
   },
 
   // Environment detection

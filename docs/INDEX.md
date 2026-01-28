@@ -1,6 +1,6 @@
 # Documentation Map
 
-**Last Updated**: 2026-01-18
+**Last Updated**: 2026-01-28
 **Purpose**: Quick reference for finding documentation across the project
 
 ---
@@ -49,18 +49,13 @@
 | `UNIFIED_TOOL_ARCHITECTURE.md` | Unified tool system reference |
 | `CIRCUIT_BREAKER.md` | Circuit breaker implementation |
 
-### API References
-| File | Purpose | Status |
-|------|---------|--------|
-| `GEMINI_3_FLASH_GUIDE.md` | Current Gemini 3 Flash API reference | Active |
-| `GLM-4.6-API-REFERENCE.md` | GLM-4.6 API details | Archived (migrated to Gemini) |
-| `GLM-4.7-MIGRATION-GUIDE.md` | GLM-4.7 migration guide | Archived (migrated to Gemini) |
-
-### Historical/Reference
-| File | Purpose | Status |
-|------|---------|--------|
-| `BUG-FIX-TOOL-CALL-FAILURE.md` | Dec 28 bug fix documentation | Fixed |
-| `RFC-001-TOOL-RESULT-FORMAT-REFACTOR.md` | Tool result format refactor | Implemented |
+### Feature Documentation
+| File | Purpose |
+|------|---------|
+| `ARTIFACT_PROMPTS.md` | Artifact prompt library (45 types) |
+| `CAROUSEL_PROMPTS.md` | Carousel card prompt specifications |
+| `STATUS_TICKER_*.md` | Status ticker feature documentation |
+| `STANDALONE_REACT_HTML*.md` | Standalone HTML artifact rendering |
 
 ### Subdirectories
 
@@ -73,13 +68,16 @@ Design system documentation for UI components:
 - `SPACING.md` - Spacing system
 - `TYPOGRAPHY.md` - Typography system
 
-#### `docs/plans/roadmap/`
-Detailed technical specifications for planned features:
-- `ARTIFACT_EXPORT_SYSTEM.md` - Export system (Production Ready)
-- `ARTIFACT_VERSIONING.md` - Version control (Backend Only)
-- `SENTRY_INTEGRATION.md` - Sentry setup plan
-- `SENTRY-SOURCE-MAPS.md` - Source maps configuration
-- `claude_reasoning_research.md` - Reasoning research notes
+#### `docs/archive/`
+Historical documentation preserved for reference. Subdirectories are created as needed:
+- `fixes/` - Completed bug fix documentation
+- `reviews/` - Code and implementation reviews
+- `analysis/` - One-time diagnostic analyses
+- `deployment/` - Deployment-specific monitoring plans
+- `plans/` - Completed implementation plans
+- `test-reports/` - Historical test execution reports
+
+**Note**: The archive directory is currently empty. Documents will be moved here as features are completed and their temporary documentation becomes historical reference.
 
 #### `docs/examples/`
 Example code and reference screenshots:
@@ -116,7 +114,6 @@ Example code and reference screenshots:
 | `validate-critical-files.cjs` | Critical file validation |
 | `update-version.cjs` | Version management |
 | `verify-deployment.cjs` | Deployment verification |
-| `validate-critical-files.cjs` | Critical file validation |
 | `sync-agents-md.cjs` | AGENTS.md synchronization |
 
 ---
@@ -130,24 +127,35 @@ Example code and reference screenshots:
 
 ### Vanilla Sandpack Refactor (Jan 2026)
 The artifact system was simplified with vanilla Sandpack rendering:
-- **Tracking Branch**: `refactor/vanilla-sandpack-artifacts`
+- **Status**: Complete and in production
 - **Key Changes**: Database persistence, ~15K lines deleted, no server bundling
-- **Plan**: `docs/vanilla-sandpack-refactor-plan.md` (implementation tracker)
 - **Architecture**: `docs/ARTIFACT_SYSTEM.md` (updated for vanilla Sandpack)
 
 ### Gemini 3 Flash Migration (Jan 2026)
 The project completed migration from GLM to Gemini 3 Flash via OpenRouter:
 - **Primary Docs**: `docs/GEMINI_3_FLASH_GUIDE.md` (comprehensive developer guide)
-- **Migration Status**: 100% complete
+- **Migration Status**: 100% complete (GLM references fully removed in PR #574)
 - **Tracking**: GitHub Issue #522
 
-### Historical Documents
-These documents are kept for reference but describe completed work:
-- `docs/BUG-FIX-TOOL-CALL-FAILURE.md` - Fixed bug documentation
-- `docs/RFC-001-TOOL-RESULT-FORMAT-REFACTOR.md` - Implemented RFC
-- `docs/archive/GLM-*.md` - Archived GLM documentation (superseded by Gemini)
+### Skills System v2 (Jan 2026)
+Dynamic context injection for Claude Code commands:
+- **Status**: Complete and in production (PR #571)
+- **Key Feature**: On-demand skill loading reduces context overhead
+- **Integration**: Works with Claude Code hooks and slash commands
 
-### Future Considerations
-1. Consider creating `docs/archive/` for historical bug fixes and RFCs
-2. Review `.screenshots/` periodically (75 files, ~74MB) - archive older screenshots
-3. Keep `.claude/reports/` clean - archive reports after they serve their purpose
+### LLM Modernization (Jan 2026)
+Comprehensive update to LLM integration:
+- **Status**: Complete (PR #563)
+- **Key Features**: Structured outputs, circuit breaker, intent confirmation events
+- **UX Improvements**: Smooth streaming scroll, typewriter effect, Safari fixes
+
+### Archive Policy
+Historical documents (completed fixes, plans, reviews) are moved to `docs/archive/` rather than deleted:
+- Preserves context for future debugging
+- Maintains audit trail
+- Provides pattern reference
+
+### Maintenance Reminders
+1. Review `.screenshots/` periodically - archive older screenshots
+2. Keep `.claude/reports/` clean - archive reports after they serve their purpose
+3. Move completed documentation to `docs/archive/` after features are merged and stable (create subdirectories as needed: `plans/`, `fixes/`, `reviews/`, etc.)

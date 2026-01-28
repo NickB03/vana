@@ -1,6 +1,10 @@
 # Animation System
 
-**Last Updated:** 2025-11-04
+**Last Updated:** 2026-01-28
+
+> ⚠️ **Note:** The source of truth is now `@/utils/animationSystem.ts` (440 lines).
+> The old `animationConstants.ts` is deprecated and re-exports from the new system.
+> New code should import from `animationSystem.ts` directly.
 
 ## Overview
 
@@ -15,6 +19,20 @@ Our animation system provides consistent timing and motion patterns using **moti
 
 ## Import
 
+**New API (recommended):**
+```tsx
+import {
+  DURATION,
+  EASING,
+  MOTION_VARIANTS,
+  MOTION_TRANSITIONS,
+  ANIMATION_CLASSES,
+  prefersReducedMotion,
+  getAccessibleAnimation
+} from '@/utils/animationSystem';
+```
+
+**Legacy API (deprecated, re-exports from animationSystem):**
 ```tsx
 import {
   ANIMATION_DURATIONS,
@@ -24,8 +42,6 @@ import {
   staggerContainer,
   staggerItem,
   hoverLift,
-  landingTransition,
-  landingTransitionReduced,
   TAILWIND_DURATIONS
 } from '@/utils/animationConstants';
 ```
@@ -791,9 +807,49 @@ Visual guide for choosing the right duration:
 
 ---
 
+## Streaming Animations (Jan 2026)
+
+### Smooth Streaming Scroll
+
+Added in PR #566, the streaming scroll system uses spring physics for natural-feeling auto-scroll during LLM response streaming.
+
+**Key Features:**
+- Spring physics for smooth acceleration/deceleration
+- Maintains reading position during fast streaming
+- Typewriter effect for incoming text
+- Configurable spring tension and friction
+
+**Usage:**
+```tsx
+// The MessageList component handles this automatically
+// No manual implementation needed - just use the chat interface
+```
+
+**Technical Details:**
+- Uses motion/react spring animations
+- Respects user scroll position (stops auto-scroll if user scrolls up)
+- Safari-compatible (PR #575 fixed race conditions)
+- Typewriter effect smoothly completes when streaming ends (PR #567)
+
+### Typewriter Effect
+
+Character-by-character text reveal during streaming responses.
+
+**Implementation:**
+- Characters appear with slight delay
+- Animation completes smoothly when streaming ends
+- Falls back to instant display if user has `prefers-reduced-motion`
+
+**Safari Compatibility:**
+The Safari streaming skeleton race condition was fixed in PR #575, ensuring consistent animation behavior across all browsers.
+
+---
+
 ## Technical Details
 
-**File Location:** `/src/utils/animationConstants.ts`
+**File Locations:**
+- `/src/utils/animationSystem.ts` (440 lines, source of truth)
+- `/src/utils/animationConstants.ts` (deprecated, re-exports from animationSystem)
 
 **Dependencies:**
 - motion/react (Framer Motion)

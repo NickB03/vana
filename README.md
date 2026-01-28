@@ -154,7 +154,7 @@
 
 ### Core Capabilities
 
-- **🤖 AI-Powered Chat**: Real-time conversations with Google Gemini 2.5
+- **🤖 AI-Powered Chat**: Real-time conversations with Google Gemini 3 Flash
 - **📦 Artifact System**: Generate and render interactive content
   - React components with shadcn/ui support
   - HTML pages with live preview
@@ -275,7 +275,7 @@ graph TB
     subgraph "Client Layer"
         A[React App<br/>Vite + TypeScript]
         B[Chat Interface]
-        C[Artifact Canvas]
+        C[Sandpack Renderer<br/>Client-side Artifacts]
         D[Session Sidebar]
     end
 
@@ -293,10 +293,8 @@ graph TB
     end
 
     subgraph "Edge Functions"
-        L[chat - Gemini 3 Flash]
-        LA[generate-artifact - Gemini 3 Flash]
-        LB[bundle-artifact]
-        LC[generate-artifact-fix - Gemini 3 Flash]
+        L[chat - Unified Endpoint<br/>Tool Calling + Streaming]
+        LT[Tool Executors<br/>generate_artifact, generate_image, browser.search]
         M[generate-title - Gemini 3 Flash]
         N[generate-image - Gemini Flash Image]
         O[summarize-conversation - Gemini 3 Flash]
@@ -305,6 +303,7 @@ graph TB
 
     subgraph "External Services"
         Q[OpenRouter<br/>Gemini 3 Flash, Flash Lite, Flash Image]
+        R[Tavily<br/>Web Search]
     end
 
     A --> B
@@ -321,17 +320,15 @@ graph TB
     B --> J
 
     J --> L
-    J --> LA
-    J --> LB
-    J --> LC
+    L --> LT
     J --> M
     J --> N
     J --> O
     J --> P
 
     L --> Q
-    LA --> Q
-    LC --> Q
+    LT --> Q
+    LT --> R
     M --> Q
     N --> Q
     O --> Q
@@ -346,6 +343,7 @@ graph TB
     style H fill:#3ecf8e
     style Q fill:#8B7BF7
     style I fill:#3ecf8e
+    style C fill:#FFD700
 ```
 
 ### Component Hierarchy
@@ -593,14 +591,13 @@ llm-chat-site/
 │   └── main.tsx            # Entry point
 ├── supabase/
 │   ├── functions/          # Edge Functions
-│   │   ├── chat/           # Main chat streaming (Gemini 3 Flash via OpenRouter)
-│   │   ├── generate-artifact/ # Artifact generation (Gemini 3 Flash via OpenRouter)
-│   │   ├── generate-artifact-fix/ # Artifact error fixing (Gemini 3 Flash via OpenRouter)
-│   │   ├── generate-title/ # Auto-generate session titles (Gemini 3 Flash via OpenRouter)
-│   │   ├── generate-image/ # AI image generation (Gemini Flash Image via OpenRouter)
-│   │   ├── summarize-conversation/ # Context summarization (Gemini 3 Flash via OpenRouter)
+│   │   ├── chat/           # Unified chat endpoint with tool calling (Gemini 3 Flash)
+│   │   ├── generate-title/ # Auto-generate session titles (Gemini 3 Flash)
+│   │   ├── generate-image/ # AI image generation (Gemini Flash Image)
+│   │   ├── summarize-conversation/ # Context summarization (Gemini 3 Flash)
 │   │   ├── cache-manager/  # Redis cache management
 │   │   ├── admin-analytics/ # Usage analytics dashboard
+│   │   └── _shared/        # Shared utilities (tool executors, artifact generation)
 │   ├── migrations/         # Database migrations
 │   └── config.toml         # Supabase configuration
 ├── public/                 # Static assets
@@ -1091,9 +1088,6 @@ supabase link --project-ref your-project-ref
 
 # Deploy all functions
 supabase functions deploy chat
-supabase functions deploy generate-artifact
-supabase functions deploy generate-artifact-fix
-supabase functions deploy bundle-artifact
 supabase functions deploy generate-title
 supabase functions deploy generate-image
 supabase functions deploy summarize-conversation

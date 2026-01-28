@@ -1,6 +1,6 @@
 # Testing Guide
 
-> **Last Updated**: 2025-12-31
+> **Last Updated**: 2026-01-28
 
 This guide covers the complete testing strategy for Vana, optimized for solo development with AI-assisted workflows.
 
@@ -15,7 +15,7 @@ We use a **three-tier testing strategy** to balance speed, coverage, and confide
 │  ├─ Fast, isolated, mocked external dependencies           │
 │  └─ Run on: Every PR                                        │
 ├─────────────────────────────────────────────────────────────┤
-│  TIER 2: Integration Tests (Real APIs)          ~5 min     │
+│  TIER 2: Integration Tests (Real APIs)          ~10 min    │
 │  ├─ Database: Hooks with real local Supabase               │
 │  ├─ API: Real calls to OpenRouter, Gemini, Tavily          │
 │  ├─ Endpoints: /chat, /generate-image, /generate-title     │
@@ -28,6 +28,8 @@ We use a **three-tier testing strategy** to balance speed, coverage, and confide
 │  └─ Run on: Manual trigger, main merge                      │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+> **Note**: Integration test timeout was increased to 10 minutes in PR #573 to accommodate complex API interactions.
 
 ## Quick Reference
 

@@ -140,7 +140,7 @@ done event (SSE)
 - `tavily-client.ts` — Web search (Tavily API)
 
 **Rendering** (Frontend):
-- `SimpleArtifactRenderer.tsx` — Vanilla Sandpack rendering (~150 lines)
+- `SandpackArtifactRenderer.tsx` — Vanilla Sandpack rendering (~150 lines)
 - Sandpack provides instant, zero-config React runtime with natural error surfacing
 - Errors appear in Sandpack console + "Ask AI to Fix" button for recovery
 
@@ -168,7 +168,7 @@ Artifacts use vanilla Sandpack for React rendering with natural error surfacing:
 3. `artifact-generator-structured.ts` generates and validates artifact with Zod schema
 4. `artifact-saver.ts` persists to `artifact_versions` database table
 5. Frontend receives code via SSE `artifact_complete` event
-6. `SimpleArtifactRenderer.tsx` passes code directly to Sandpack
+6. `SandpackArtifactRenderer.tsx` passes code directly to Sandpack
 7. Sandpack bundles and executes in isolated iframe
 8. Errors surface naturally in Sandpack console
 9. "Ask AI to Fix" button captures error for AI-powered fixes
@@ -255,9 +255,9 @@ This separation ensures npm paths like `@radix-ui/react-select` are not corrupte
 **Configuration**:
 ```typescript
 const TOOL_RATE_LIMITS = {
-  generate_artifact: { guest: 5, auth: 50, window: 5 }, // per 5 hours
-  generate_image: { guest: 10, auth: 100, window: 5 },
-  'browser.search': { guest: 20, auth: 200, window: 5 }
+  generate_artifact: { guest: 15, auth: 50, window: 5 }, // per 5 hours
+  generate_image: { guest: 60, auth: 50, window: 5 },
+  'browser.search': { guest: 30, auth: 50, window: 5 }
 };
 ```
 
@@ -422,6 +422,6 @@ data: {"type":"done"}
 - **Artifact Complexity**: `supabase/functions/_shared/artifact-complexity.ts`
 - **Artifact Schema**: `supabase/functions/_shared/schemas/artifact-schema.ts`
 - **Image Executor**: `supabase/functions/_shared/image-executor.ts`
-- **Artifact Renderer**: `src/components/SimpleArtifactRenderer.tsx`
+- **Artifact Renderer**: `src/components/SandpackArtifactRenderer.tsx`
 - **Security Infrastructure**: `supabase/functions/_shared/tool-*.ts`
 - **Artifact System**: See [ARTIFACT_SYSTEM.md](./ARTIFACT_SYSTEM.md) for Sandpack rendering details

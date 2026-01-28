@@ -6,7 +6,7 @@
 
 **Pattern**:
 ```typescript
-import { ensureValidSession } from '@/utils/sessionUtils';
+import { ensureValidSession } from '@/utils/authHelpers';
 import { useNavigate } from 'react-router-dom';
 
 const navigate = useNavigate();
@@ -541,7 +541,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 
 ## References
 
-- **Session Utils**: `src/utils/sessionUtils.ts`
+- **Session Utils**: `src/utils/authHelpers.ts`
 - **Artifact Parser**: `src/utils/artifactParser.ts`
 - **Artifact Renderer**: `src/components/ArtifactRenderer.tsx`
 - **Sandpack Docs**: https://sandpack.codesandbox.io/docs

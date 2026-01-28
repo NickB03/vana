@@ -11,7 +11,7 @@
 ### 1.1 Current Fallback Chain (getStreamingStatus)
 
 **Priority Order** (lines 140-193 in ReasoningDisplay.tsx):
-1. **P1**: `reasoningStatus` - Semantic status from ReasoningProvider (GLM-4.5-Air)
+1. **P1**: `reasoningStatus` - Semantic status from ReasoningProvider (Gemini 3 Flash)
 2. **P2**: `toolExecution` - Tool execution status (browser.search, generate_artifact, generate_image)
 3. **P3**: `streamingReasoningText` - Parse headers/first sentence from raw reasoning
 4. **P4**: Fallback - "Thinking..."

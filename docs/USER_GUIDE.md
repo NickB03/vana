@@ -35,8 +35,8 @@ Vana AI is an intelligent development assistant that transforms natural language
 - **Collaborate**: Share artifacts and version history with your team
 
 **AI Models in Use**:
-- **Chat**: Gemini 2.5 Flash Lite (OpenRouter) - Fast, conversational responses
-- **Artifacts**: GLM-4.6 (Z.ai) - Deep reasoning with thinking mode for code generation
+- **Chat**: Gemini 3 Flash (OpenRouter) - Fast, conversational responses with 1M context
+- **Artifacts**: Gemini 3 Flash (OpenRouter) - Deep reasoning with thinking mode for code generation
 - **Images**: Gemini 2.5 Flash Image (OpenRouter) - AI image generation
 - **Web Search**: Tavily API - Real-time web information retrieval
 
@@ -706,7 +706,7 @@ A: All data is encrypted in transit and at rest. We don't share your conversatio
 ### Technical Questions
 
 **Q: What AI models does Vana use?**
-A: Vana uses multiple models including GLM-4.6 (Z.ai) for artifact generation with thinking mode and Gemini 2.5 Flash for fast chat responses.
+A: Vana uses Gemini 3 Flash for chat and artifact generation with reasoning mode, and Gemini 2.5 Flash Lite for titles and summaries.
 
 **Q: Can I integrate Vana AI with my existing tools?**
 A: Yes, Vana offers API access and integrations with popular development tools.
