@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: '8d6941542b4180ac390dde371bf8935d0b8e5d34',
-    short: '8d69415',
-    branch: 'docs/update-documentation-jan-2026',
-    message: 'docs: synchronize documentation with Jan 2026 features and fixes',
+    hash: 'e74dff682286c06398550c0326ece6d10fd5d31c',
+    short: 'e74dff6',
+    branch: 'fix/promise-race-unhandled-rejection',
+    message: 'docs: January 2026 documentation update and cleanup (#577)',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-28 16:01:54 UTC',
-    date: new Date('2026-01-28T16:01:54.731Z'),
+    timestamp: '2026-01-28 16:29:51 UTC',
+    date: new Date('2026-01-28T16:29:51.587Z'),
   },
 
   // Environment detection

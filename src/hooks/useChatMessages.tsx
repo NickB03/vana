@@ -1443,6 +1443,16 @@ export function useChatMessages(
         collectedArtifactIds.length > 0 ? collectedArtifactIds : undefined,
         collectedArtifacts.length > 0 ? collectedArtifacts : undefined
       );
+
+      // FIX: Attach catch handler to savePromise to prevent unhandled rejection
+      // when timeout wins the race but savePromise later rejects
+      savePromise.catch((err) => {
+        // This handler ensures the promise rejection is always caught,
+        // even if the timeout wins the race. The actual error is already
+        // logged in the race catch block if timeout hasn't fired yet.
+        console.debug("[useChatMessages] Background save completed with error (already handled):", err);
+      });
+
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Message save timeout')), SAVE_MESSAGE_TIMEOUT_MS)
       );
