@@ -383,14 +383,97 @@ export function useChatMessages(
   };
 
   /**
-   * Add a placeholder assistant message immediately (synchronously) to prevent race conditions.
-   * This ensures the message exists in the array before any async operations start.
-   * Used by ChatInterface to set up the message before calling streamChat.
+   * Add placeholder messages for BOTH user and assistant SYNCHRONOUSLY to prevent race conditions.
+   * This ensures:
+   * 1. Messages appear in correct order (user first, then assistant)
+   * 2. Both messages exist before any async operations start
+   * 3. Skeleton/loading UI can render immediately on Safari
    *
-   * FIX (2025-01-27): Safari + production race condition where streamingMessageId is set
+   * FIX (2026-01-27): Safari + production race condition where streamingMessageId is set
    * but the message doesn't exist in the array yet, causing blank screen.
+   *
+   * FIX (2026-01-28): Messages appearing out of order because assistant placeholder
+   * was added before user message was saved. Now both are added together in correct order.
+   *
+   * @param userMessageId - Pre-generated ID for the user message (for upsert tracking)
+   * @param userContent - The user's message content
+   * @param assistantMessageId - Pre-generated ID for the assistant message (for streaming)
+   * @param currentSessionId - Session ID for both messages
+   * @returns Object containing both placeholder messages
    */
-  const addPlaceholderAssistantMessage = useCallback((
+  const addPlaceholderMessages = useCallback((
+    userMessageId: string,
+    userContent: string,
+    assistantMessageId: string,
+    currentSessionId: string
+  ): { userMessage: ChatMessage; assistantMessage: ChatMessage } => {
+    const now = new Date();
+
+    // Create user message with slightly earlier timestamp
+    const userPlaceholder: ChatMessage = {
+      id: userMessageId,
+      session_id: currentSessionId,
+      role: "user",
+      content: userContent,
+      reasoning: null,
+      reasoning_steps: null,
+      search_results: null,
+      artifact_ids: null,
+      artifacts: null,
+      created_at: now.toISOString(),
+    };
+
+    // Create assistant placeholder with slightly later timestamp (1ms later)
+    const assistantPlaceholder: ChatMessage = {
+      id: assistantMessageId,
+      session_id: currentSessionId,
+      role: "assistant",
+      content: "",
+      reasoning: null,
+      reasoning_steps: null,
+      search_results: null,
+      artifact_ids: null,
+      artifacts: null,
+      created_at: new Date(now.getTime() + 1).toISOString(),
+    };
+
+    // Synchronously add BOTH messages to the array in correct order
+    setMessages((prev) => {
+      // Check if messages already exist to prevent duplicates
+      const userExists = prev.some((msg) => msg.id === userMessageId);
+      const assistantExists = prev.some((msg) => msg.id === assistantMessageId);
+
+      if (userExists && assistantExists) {
+        console.warn('[addPlaceholderMessages] Both messages already exist');
+        return prev;
+      }
+
+      // Build new array with both messages in correct order
+      let result = [...prev];
+
+      if (!userExists) {
+        result = [...result, userPlaceholder];
+      }
+
+      if (!assistantExists) {
+        result = [...result, assistantPlaceholder];
+      }
+
+      return result;
+    });
+
+    return { userMessage: userPlaceholder, assistantMessage: assistantPlaceholder };
+  }, []);
+
+  /**
+   * Add ONLY an assistant placeholder message (for retry/regenerate flows).
+   * Use this when the user message already exists and only the assistant needs to be added.
+   *
+   * @param assistantMessageId - Pre-generated ID for the assistant message
+   * @param currentSessionId - Session ID for the message
+   * @returns The placeholder assistant message
+   */
+  const addPlaceholderAssistantMessageOnly = useCallback((
     assistantMessageId: string,
     currentSessionId: string
   ): ChatMessage => {
@@ -407,12 +490,10 @@ export function useChatMessages(
       created_at: new Date().toISOString(),
     };
 
-    // Synchronously add the placeholder message to the messages array
     setMessages((prev) => {
-      // Check if message already exists to prevent duplicates
-      const exists = prev.some((message) => message.id === assistantMessageId);
+      const exists = prev.some((msg) => msg.id === assistantMessageId);
       if (exists) {
-        console.warn('[addPlaceholderAssistantMessage] Message already exists:', assistantMessageId);
+        console.warn('[addPlaceholderAssistantMessageOnly] Message already exists:', assistantMessageId);
         return prev;
       }
       return [...prev, placeholderMessage];
@@ -430,7 +511,9 @@ export function useChatMessages(
     modeHint: "auto" | "artifact" | "image" = "auto",
     retryCount = 0,
     abortSignal?: AbortSignal,
-    assistantMessageIdOverride?: string
+    assistantMessageIdOverride?: string,
+    /** Pre-generated user message ID - when provided, skips user message save (already in local state) */
+    userMessageIdOverride?: string
   ) => {
     const MAX_RETRIES = 3;
     const RETRY_DELAYS = [2000, 5000, 10000]; // Exponential backoff: 2s, 5s, 10s
@@ -490,12 +573,18 @@ export function useChatMessages(
       }
 
       // Save user message ONLY on first attempt (not on retries to avoid duplicates)
+      // When userMessageIdOverride is provided, message is already in local state (from addPlaceholderMessages)
+      // - For guests: Skip entirely (already in local state, nothing to save to DB)
+      // - For authenticated users: Still save to DB with pre-generated ID (upsert handles it)
       if (retryCount === 0) {
-        if (isAuthenticated && sessionId) {
-          // Authenticated user: save to database
-          await saveMessage("user", userMessage);
-        } else if (isGuest) {
-          // Guest user: save to local state only (sessionId may exist for artifact bundling)
+        if (userMessageIdOverride && isGuest) {
+          // User message already in local state from placeholder, nothing more to do
+          console.log('[streamChat] Skipping user message save - already in local state');
+        } else if (isAuthenticated && sessionId) {
+          // Authenticated user: save to database (upsert handles pre-existing local message)
+          await saveMessage("user", userMessage, undefined, undefined, undefined, userMessageIdOverride);
+        } else if (isGuest && !userMessageIdOverride) {
+          // Guest user without placeholder: save to local state only
           await saveMessage("user", userMessage);
         }
       }
@@ -1515,7 +1604,8 @@ export function useChatMessages(
     saveMessage,
     deleteMessage,
     updateMessage,
-    addPlaceholderAssistantMessage,
+    addPlaceholderMessages,
+    addPlaceholderAssistantMessageOnly,
     artifactRenderStatus,
     rateLimitPopup,
     setRateLimitPopup,

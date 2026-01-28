@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { SidebarSkeleton } from "@/components/ui/sidebar-skeleton";
 import { cn } from "@/lib/utils";
 import { ChatSession } from "@/hooks/useChatSessions";
-import { ViggleLogo } from "@/components/ViggleLogo";
 import { TOUR_STEP_IDS } from "@/components/tour";
 import { useIsMobile } from "@/hooks/use-mobile";
 interface ChatSidebarProps {
@@ -82,10 +81,14 @@ export function ChatSidebar({
             onMouseEnter={() => setIsLogoHovered(true)}
             onMouseLeave={() => setIsLogoHovered(false)}
           >
-            {isLogoHovered ? (
-              <PanelLeft className="h-5 w-5 shrink-0 text-white/80 transition-all duration-200" strokeWidth={1.5} />
+            {!isLogoHovered ? (
+              <img
+                src="/v-collapsed.png"
+                alt="V"
+                className="h-6 w-auto shrink-0 object-contain transition-all duration-200"
+              />
             ) : (
-              <ViggleLogo className="h-6 w-auto shrink-0 transition-all duration-200" />
+              <PanelLeft className="h-5 w-5 shrink-0 text-white/80 transition-all duration-200" strokeWidth={1.5} />
             )}
           </Button>
         ) : (
@@ -96,7 +99,11 @@ export function ChatSidebar({
               onClick={onNewChat}
               aria-label="Return to home"
             >
-              <ViggleLogo className="h-6 w-auto shrink-0 transition-all duration-200" />
+              <img
+                src="/v-expanded.png"
+                alt="Vana"
+                className="h-6 w-auto shrink-0 object-contain transition-all duration-200"
+              />
             </Button>
 
             <div className="flex items-center gap-1">

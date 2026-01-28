@@ -26,11 +26,7 @@ export default defineConfig({
     include: ['src/**/*.integration.test.ts'],
     testTimeout: 15000, // Longer timeout for real DB operations
     hookTimeout: 10000,
-    pool: 'threads',
-    poolOptions: {
-      threads: {
-        singleThread: true, // Run sequentially to avoid DB conflicts
-      },
-    },
+    // Vitest 4.x: Use fileParallelism instead of deprecated poolOptions
+    fileParallelism: false, // Run test files sequentially to avoid DB conflicts
   },
 });

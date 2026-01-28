@@ -88,7 +88,13 @@ npm run test -- --watch # Watch mode
 npm run test:integration # Integration tests (requires `supabase start`)
 npm run test:coverage # Coverage (55% min)
 ```
-Integration tests location: `supabase/functions/_shared/__tests__/`
+Integration tests location: `supabase/functions/_shared/__tests__/` and `src/hooks/__tests__/*.integration.test.ts`
+
+**Integration Test Setup**:
+- Start local Supabase: `supabase start`
+- Credentials are automatically fetched from `supabase status`
+- No manual JWT/key configuration needed for local development
+- CI uses environment variables which take precedence over defaults
 
 **Deployment**:
 - **Production**: Automatic deployment via CI/CD when PR is merged to `main`

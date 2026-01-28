@@ -99,9 +99,24 @@ supabase start
 ```
 
 #### Running Database Integration Tests
+
+**Automatic Credential Setup** (default):
 ```bash
 npm run test:integration         # Run all integration tests
 npm run test:integration:watch   # Watch mode
+```
+
+**How It Works**:
+- Tests automatically detect local Supabase from `VITE_SUPABASE_URL` (defaults to `http://127.0.0.1:54321`)
+- Service role key is loaded from `SUPABASE_SERVICE_ROLE_KEY` environment variable
+- Fallback to hardcoded default key if no environment variable is set (safe for local-only testing)
+- No manual JWT or token configuration needed
+
+**Custom Credentials** (if needed):
+```bash
+VITE_SUPABASE_URL=http://127.0.0.1:54321 \
+SUPABASE_SERVICE_ROLE_KEY=your_key \
+npm run test:integration
 ```
 
 #### File Naming
@@ -205,15 +220,30 @@ TAVILY_API_KEY=xxx deno test --allow-net --allow-env --allow-read _shared/__test
 
 #### Prerequisites for Endpoint Tests
 
+**For Local Development** (credentials auto-detected):
 ```bash
-# 1. Start local Supabase
+# 1. Start local Supabase (credentials fetched automatically)
 supabase start
 
 # 2. Serve Edge Functions locally
 supabase functions serve
 
-# 3. Run endpoint tests against local instance
-SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_ANON_KEY=<your-local-anon-key> \
+# 3. Run endpoint tests (credentials auto-detected from `supabase status`)
+npm run test:integration
+```
+
+**For CI/CD** (uses explicit environment variables):
+Credentials are fetched dynamically from `supabase status` and exported as environment variables before running tests. No manual credential configuration needed.
+
+**Manual Credential Setup** (if needed):
+```bash
+# Get credentials from local Supabase
+SUPABASE_URL=$(npx supabase@2.67.1 status -o json | jq -r '.API_URL')
+SUPABASE_ANON_KEY=$(npx supabase@2.67.1 status -o json | jq -r '.ANON_KEY')
+SUPABASE_SERVICE_ROLE_KEY=$(npx supabase@2.67.1 status -o json | jq -r '.SERVICE_ROLE_KEY')
+
+# Run tests with explicit environment variables
+SUPABASE_URL=$SUPABASE_URL SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
   deno test --allow-net --allow-env _shared/__tests__/chat-endpoint-integration.test.ts
 ```
 
@@ -367,6 +397,25 @@ test('message history persists @chat', async ({ page }) => {
 
 ## CI/CD Integration
 
+### Integration Test Credentials in CI
+
+Integration tests in CI automatically fetch Supabase credentials using `supabase status`:
+
+```bash
+# CI automatically runs this before tests
+echo "SUPABASE_ANON_KEY=$(npx supabase status -o json | jq -r '.ANON_KEY')" >> $GITHUB_ENV
+echo "SUPABASE_SERVICE_ROLE_KEY=$(npx supabase status -o json | jq -r '.SERVICE_ROLE_KEY')" >> $GITHUB_ENV
+
+# Tests then run with these credentials available
+npm run test:integration
+```
+
+**Key Points**:
+- No hardcoded tokens in CI configuration
+- Credentials are dynamically sourced from the running Supabase instance
+- Environment variables take precedence over defaults
+- Safe because Supabase instance is destroyed after workflow completes
+
 ### Workflows
 
 | Workflow | Trigger | Purpose |
@@ -374,6 +423,7 @@ test('message history persists @chat', async ({ page }) => {
 | `e2e-manual.yml` | Manual dispatch | On-demand E2E testing |
 | `e2e-tests.yml` | Push to main | Safety net for merged code |
 | `frontend-quality.yml` | Every PR | Lint, types, unit tests, build |
+| `integration-tests.yml` | Every PR | Database and API integration tests |
 
 ### Minutes Budget
 

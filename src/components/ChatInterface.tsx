@@ -71,7 +71,7 @@ export function ChatInterface({
 }: ChatInterfaceProps) {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const { messages, isLoading, streamChat, deleteMessage, updateMessage, addPlaceholderAssistantMessage, artifactRenderStatus, rateLimitPopup, setRateLimitPopup } = useChatMessages(sessionId, { isGuest, guestSession });
+  const { messages, isLoading, streamChat, deleteMessage, updateMessage, addPlaceholderMessages, addPlaceholderAssistantMessageOnly, artifactRenderStatus, rateLimitPopup, setRateLimitPopup } = useChatMessages(sessionId, { isGuest, guestSession });
   const { cancelStream, startStream, completeStream } = useStreamCancellation();
   const [localInput, setLocalInput] = useState("");
   const input = typeof parentInput === 'string' ? parentInput : localInput;
@@ -161,12 +161,14 @@ export function ChatInterface({
     // This ensures the reasoning ticker appears instantly, not after throttle wait
     setInput("");
     setIsStreaming(true);
+    const userMessageId = crypto.randomUUID();
     const assistantMessageId = crypto.randomUUID();
     setStreamingMessageId(assistantMessageId);
-    // FIX (2025-01-27): Add placeholder message IMMEDIATELY so skeleton can render
-    // This fixes Safari + production race condition where VirtualizedMessageList
-    // couldn't find the message because it was added after async operations in streamChat
-    addPlaceholderAssistantMessage(assistantMessageId, sessionId || "guest");
+    // FIX (2026-01-28): Add BOTH user and assistant placeholder messages TOGETHER in correct order
+    // This fixes two issues:
+    // 1. Safari + production race condition where skeleton couldn't render (fixed 2026-01-27)
+    // 2. Messages appearing out of order because assistant was added before user (fixed 2026-01-28)
+    addPlaceholderMessages(userMessageId, messageToSend.trim(), assistantMessageId, sessionId || "guest");
     // Respect explicit modes: nudge the model towards tools when user opts in
     // If the user is editing an existing artifact, FORCE artifact tool (only exception)
     const isArtifactEdit = !!(currentArtifact && isEditingArtifact);
@@ -231,7 +233,8 @@ export function ChatInterface({
         modeHint,  // NEW: Pass mode hint to backend for prompt nudging
         0, // retryCount
         abortController.signal,
-        assistantMessageId
+        assistantMessageId,
+        userMessageId  // Pass pre-generated user message ID
       );
     } catch (streamError) {
       logError(streamError instanceof Error ? streamError : new Error(String(streamError)), {
@@ -259,7 +262,7 @@ export function ChatInterface({
         variant: "destructive",
       });
     }
-  }, [input, isLoading, isStreaming, setInput, streamChat, currentArtifact, isEditingArtifact, imageMode, artifactMode, startStream, completeStream, sessionId, addPlaceholderAssistantMessage]);
+  }, [input, isLoading, isStreaming, setInput, streamChat, currentArtifact, isEditingArtifact, imageMode, artifactMode, startStream, completeStream, sessionId, addPlaceholderMessages]);
 
   // Keep ref updated with latest handleSend (for stable access in effects)
   handleSendRef.current = handleSend;
@@ -671,6 +674,9 @@ export function ChatInterface({
       setIsStreaming(true);
       const assistantMessageId = crypto.randomUUID();
       setStreamingMessageId(assistantMessageId);
+      // Add assistant placeholder SYNCHRONOUSLY for immediate skeleton rendering
+      // (User message already exists - this is a retry flow)
+      addPlaceholderAssistantMessageOnly(assistantMessageId, sessionId || "guest");
 
       // Start stream with cancellation support
       const abortController = startStream();

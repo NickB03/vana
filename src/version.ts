@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: '1b97579ed352502e8450fabb8f3b35c768e97844',
-    short: '1b97579',
-    branch: 'fix/safari-streaming-skeleton-race-condition',
-    message: 'refactor: remove all GLM references and fix skills integration tests (#574)',
+    hash: 'e6af92daf573f9623c14386ade71636150efc079',
+    short: 'e6af92d',
+    branch: 'fix/message-ordering-race-condition',
+    message: 'fix: resolve message ordering issue while preserving skeleton race condition fix',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-28 03:24:45 UTC',
-    date: new Date('2026-01-28T03:24:45.897Z'),
+    timestamp: '2026-01-28 06:15:30 UTC',
+    date: new Date('2026-01-28T06:15:30.379Z'),
   },
 
   // Environment detection

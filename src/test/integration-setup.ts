@@ -10,6 +10,7 @@
 import '@testing-library/jest-dom';
 import { vi, beforeAll, afterAll, afterEach } from 'vitest';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { execSync } from 'child_process';
 
 // ============================================================================
 // localStorage Mock for Supabase Auth
@@ -54,18 +55,74 @@ Object.defineProperty(window, 'localStorage', {
   writable: true,
 });
 
-// Real Supabase client for integration tests
-// These are the default local Supabase credentials from `supabase start`
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'http://127.0.0.1:54321';
+// ============================================================================
+// Dynamic Supabase Credentials
+// ============================================================================
 
-// Use service_role key for integration tests to bypass RLS
-// This is safe because we're testing against LOCAL Supabase only
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
+/**
+ * Credentials fetched from Supabase CLI
+ */
+interface SupabaseCredentials {
+  url: string;
+  serviceRoleKey: string;
+  anonKey: string;
+}
+
+/**
+ * Fetch Supabase credentials dynamically from `supabase status --output json`
+ *
+ * This replaces hardcoded JWT tokens which fail with Supabase CLI 2.72+
+ * (ES256 vs HS256 algorithm mismatch).
+ *
+ * Falls back to environment variables for CI/CD compatibility.
+ */
+function getSupabaseCredentials(): SupabaseCredentials {
+  // Check for environment variables first (CI/CD compatibility)
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.VITE_SUPABASE_URL) {
+    return {
+      url: process.env.VITE_SUPABASE_URL,
+      serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      anonKey: process.env.VITE_SUPABASE_ANON_KEY || '', // Optional for tests
+    };
+  }
+
+  // Fetch from Supabase CLI
+  try {
+    const status = JSON.parse(
+      execSync('supabase status --output json', {
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe']
+      })
+    );
+
+    if (!status.API_URL || !status.SERVICE_ROLE_KEY) {
+      throw new Error('Missing required credentials in supabase status output');
+    }
+
+    return {
+      url: status.API_URL,
+      serviceRoleKey: status.SERVICE_ROLE_KEY,
+      anonKey: status.ANON_KEY || '',
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(
+      '❌ Failed to get Supabase credentials.\n' +
+      '   Make sure local Supabase is running: supabase start\n' +
+      '   Error: ' + errorMessage
+    );
+  }
+}
+
+// Fetch credentials once at module load time
+const credentials = getSupabaseCredentials();
 
 // Export real client for tests to use
-// Using service_role to bypass RLS for test data creation
-export const testSupabase: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+// Using service_role to bypass RLS for test data creation (local testing only)
+export const testSupabase: SupabaseClient = createClient(
+  credentials.url,
+  credentials.serviceRoleKey
+);
 
 // Test user credentials
 export const TEST_USER = {

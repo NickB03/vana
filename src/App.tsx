@@ -11,6 +11,7 @@ import { AnimatedRoute } from "@/components/AnimatedRoute";
 import { AnimationErrorBoundary } from "@/components/AnimationErrorBoundary";
 import { UpdateNotification } from "@/components/UpdateNotification";
 import { storeVersionInfo, logCacheBustingInfo, verifyDeployment, clearAllCaches } from "@/utils/cacheBusting";
+import { validateLocalStorage } from "@/utils/safeStorage";
 import { usePreventOverscroll } from "@/hooks/usePreventOverscroll";
 import { useIOSViewportHeight } from "@/hooks/useIOSViewportHeight";
 import { logError } from "@/utils/errorLogging";
@@ -126,6 +127,13 @@ const App = () => {
   useEffect(() => {
     const checkVersion = async () => {
       try {
+        // Validate localStorage first to catch and fix corrupted data
+        // This prevents white screen crashes in Safari
+        const storageValidation = validateLocalStorage();
+        if (storageValidation.corruptedKeys.length > 0) {
+          console.warn('⚠️ Fixed corrupted localStorage entries:', storageValidation.fixedKeys);
+        }
+
         logVersionInfo();
         storeVersionInfo();
         logCacheBustingInfo();
