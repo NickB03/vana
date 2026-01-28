@@ -382,6 +382,45 @@ export function useChatMessages(
     }
   };
 
+  /**
+   * Add a placeholder assistant message immediately (synchronously) to prevent race conditions.
+   * This ensures the message exists in the array before any async operations start.
+   * Used by ChatInterface to set up the message before calling streamChat.
+   *
+   * FIX (2025-01-27): Safari + production race condition where streamingMessageId is set
+   * but the message doesn't exist in the array yet, causing blank screen.
+   */
+  const addPlaceholderAssistantMessage = useCallback((
+    assistantMessageId: string,
+    currentSessionId: string
+  ): ChatMessage => {
+    const placeholderMessage: ChatMessage = {
+      id: assistantMessageId,
+      session_id: currentSessionId,
+      role: "assistant",
+      content: "",
+      reasoning: null,
+      reasoning_steps: null,
+      search_results: null,
+      artifact_ids: null,
+      artifacts: null,
+      created_at: new Date().toISOString(),
+    };
+
+    // Synchronously add the placeholder message to the messages array
+    setMessages((prev) => {
+      // Check if message already exists to prevent duplicates
+      const exists = prev.some((message) => message.id === assistantMessageId);
+      if (exists) {
+        console.warn('[addPlaceholderAssistantMessage] Message already exists:', assistantMessageId);
+        return prev;
+      }
+      return [...prev, placeholderMessage];
+    });
+
+    return placeholderMessage;
+  }, []);
+
   const streamChat = async (
     userMessage: string,
     onDelta: (chunk: string, progress: StreamProgress) => void,
@@ -1476,6 +1515,7 @@ export function useChatMessages(
     saveMessage,
     deleteMessage,
     updateMessage,
+    addPlaceholderAssistantMessage,
     artifactRenderStatus,
     rateLimitPopup,
     setRateLimitPopup,

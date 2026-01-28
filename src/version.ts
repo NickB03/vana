@@ -11,16 +11,16 @@ export const APP_VERSION = {
 
   // Git commit information - auto-updated by pre-commit hook
   commit: {
-    hash: '98ec605095feabd7a14e025bec2f4bea60ff224c',
-    short: '98ec605',
-    branch: 'refactor/remove-glm-references',
-    message: 'refactor: remove all GLM references and fix skills integration tests',
+    hash: '1b97579ed352502e8450fabb8f3b35c768e97844',
+    short: '1b97579',
+    branch: 'fix/safari-streaming-skeleton-race-condition',
+    message: 'refactor: remove all GLM references and fix skills integration tests (#574)',
   },
 
   // Build timestamp - auto-updated by pre-commit hook
   build: {
-    timestamp: '2026-01-27 22:05:54 UTC',
-    date: new Date('2026-01-27T22:05:54.626Z'),
+    timestamp: '2026-01-28 03:24:45 UTC',
+    date: new Date('2026-01-28T03:24:45.897Z'),
   },
 
   // Environment detection

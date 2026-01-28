@@ -71,7 +71,7 @@ export function ChatInterface({
 }: ChatInterfaceProps) {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const { messages, isLoading, streamChat, deleteMessage, updateMessage, artifactRenderStatus, rateLimitPopup, setRateLimitPopup } = useChatMessages(sessionId, { isGuest, guestSession });
+  const { messages, isLoading, streamChat, deleteMessage, updateMessage, addPlaceholderAssistantMessage, artifactRenderStatus, rateLimitPopup, setRateLimitPopup } = useChatMessages(sessionId, { isGuest, guestSession });
   const { cancelStream, startStream, completeStream } = useStreamCancellation();
   const [localInput, setLocalInput] = useState("");
   const input = typeof parentInput === 'string' ? parentInput : localInput;
@@ -163,6 +163,10 @@ export function ChatInterface({
     setIsStreaming(true);
     const assistantMessageId = crypto.randomUUID();
     setStreamingMessageId(assistantMessageId);
+    // FIX (2025-01-27): Add placeholder message IMMEDIATELY so skeleton can render
+    // This fixes Safari + production race condition where VirtualizedMessageList
+    // couldn't find the message because it was added after async operations in streamChat
+    addPlaceholderAssistantMessage(assistantMessageId, sessionId || "guest");
     // Respect explicit modes: nudge the model towards tools when user opts in
     // If the user is editing an existing artifact, FORCE artifact tool (only exception)
     const isArtifactEdit = !!(currentArtifact && isEditingArtifact);
@@ -255,7 +259,7 @@ export function ChatInterface({
         variant: "destructive",
       });
     }
-  }, [input, isLoading, isStreaming, setInput, streamChat, currentArtifact, isEditingArtifact, imageMode, artifactMode, startStream, completeStream, sessionId]);
+  }, [input, isLoading, isStreaming, setInput, streamChat, currentArtifact, isEditingArtifact, imageMode, artifactMode, startStream, completeStream, sessionId, addPlaceholderAssistantMessage]);
 
   // Keep ref updated with latest handleSend (for stable access in effects)
   handleSendRef.current = handleSend;
