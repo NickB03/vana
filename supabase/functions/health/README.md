@@ -69,18 +69,18 @@ Provides system-wide health status monitoring for the Edge Functions infrastruct
 
 ### Basic Health Check
 ```bash
-curl https://vznhbocnuykdmjvujaka.supabase.co/functions/v1/health
+curl https://your-project.supabase.co/functions/v1/health
 ```
 
 ### With Status Code Check
 ```bash
-curl -f https://vznhbocnuykdmjvujaka.supabase.co/functions/v1/health || echo "Health check failed"
+curl -f https://your-project.supabase.co/functions/v1/health || echo "Health check failed"
 ```
 
 ### Monitoring Script
 ```bash
 #!/bin/bash
-HEALTH_URL="https://vznhbocnuykdmjvujaka.supabase.co/functions/v1/health"
+HEALTH_URL="https://your-project.supabase.co/functions/v1/health"
 
 response=$(curl -s -w "\n%{http_code}" "$HEALTH_URL")
 http_code=$(echo "$response" | tail -n1)
@@ -99,7 +99,7 @@ fi
 ## Integration with Monitoring Tools
 
 ### Uptime Robot
-- Monitor URL: `https://vznhbocnuykdmjvujaka.supabase.co/functions/v1/health`
+- Monitor URL: `https://your-project.supabase.co/functions/v1/health`
 - Monitor Type: HTTP(S)
 - Expected Status: 200
 - Alert when status code ≠ 200
@@ -110,7 +110,7 @@ init_config:
 
 instances:
   - name: vana-health-check
-    url: https://vznhbocnuykdmjvujaka.supabase.co/functions/v1/health
+    url: https://your-project.supabase.co/functions/v1/health
     method: GET
     timeout: 10
     http_response_status_code: 200
@@ -122,7 +122,7 @@ instances:
   metrics_path: /functions/v1/health
   scheme: https
   static_configs:
-    - targets: ['vznhbocnuykdmjvujaka.supabase.co']
+    - targets: ['<project-ref>.supabase.co']
 ```
 
 ## Performance Characteristics

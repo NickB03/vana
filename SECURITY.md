@@ -106,15 +106,12 @@ Additional defenses:
 
 ### Monitoring Gaps
 
-The following monitoring capabilities are NOT currently implemented for Edge Functions:
+The following monitoring capabilities may not be fully implemented for Edge Functions:
 
-| Issue | Description |
-|-------|-------------|
-| [#380](https://github.com/NickB03/llm-chat-site/issues/380) | Sentry not integrated with Edge Functions |
-| [#381](https://github.com/NickB03/llm-chat-site/issues/381) | ReasoningProvider errors not tracked |
-| [#382](https://github.com/NickB03/llm-chat-site/issues/382) | Prompt injection detection not logged to Sentry |
+- Edge Function error reporting may be limited to console logs.
+- Client-side error reporting is typically more complete than serverless logging.
 
-**Current state**: Edge Functions only log to console. Frontend has full Sentry integration.
+Track open items in your issue tracker (e.g., `https://github.com/<org>/<repo>/issues`) so fixes are visible to contributors.
 
 ### Rate Limit Considerations
 

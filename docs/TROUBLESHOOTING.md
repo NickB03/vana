@@ -44,7 +44,7 @@ Open Developer Tools and check for errors:
 
 ### 3. Verify Network Connection
 Check that you have a stable internet connection and can access:
-- `https://vznhbocnuykdmjvujaka.supabase.co`
+- `https://your-project.supabase.co`
 
 ### 4. Clear Local Storage
 Sometimes cached data causes issues:
@@ -106,7 +106,7 @@ Sometimes cached data causes issues:
    - Try signing in again
 
 3. **Check redirect URI**:
-   - Should be: `https://vznhbocnuykdmjvujaka.supabase.co/auth/v1/callback`
+   - Should be: `https://your-project.supabase.co/auth/v1/callback`
 
 ---
 
@@ -303,7 +303,7 @@ const [data, setData] = useState(initialValue);
 
 1. **Check image URL**:
    - Should be from Supabase Storage
-   - Starts with: `https://vznhbocnuykdmjvujaka.supabase.co/storage/`
+   - Starts with: `https://your-project.supabase.co/storage/`
 
 2. **Wait for image to load**:
    - Large images may take time to load
@@ -757,12 +757,12 @@ Before reporting, gather:
 
 ### 2. Check Existing Issues
 
-Search GitHub issues: https://github.com/NickB03/llm-chat-site/issues
+Search GitHub issues: https://github.com/<org>/<repo>/issues
 
 ### 3. Create New Issue
 
 If no existing issue matches:
-1. Go to: https://github.com/NickB03/llm-chat-site/issues/new
+1. Go to: https://github.com/<org>/<repo>/issues/new
 2. Use clear, descriptive title
 3. Include:
    - What you were trying to do
@@ -786,7 +786,7 @@ If requested, provide console logs:
 
 ## Emergency Contacts
 
-- **GitHub Issues**: https://github.com/NickB03/llm-chat-site/issues
+- **GitHub Issues**: https://github.com/<org>/<repo>/issues
 - **Status Page**: Check Supabase status at https://status.supabase.com
 
 ---
@@ -820,4 +820,4 @@ navigator.serviceWorker.getRegistrations()
 
 **Last Updated**: 2026-01-18
 
-Found a bug? Please report it at: https://github.com/NickB03/llm-chat-site/issues
+Found a bug? Please report it at: https://github.com/<org>/<repo>/issues
