@@ -1,7 +1,7 @@
 # API Reference - Vana Edge Functions
 
 **Last Updated**: 2026-01-12
-**Base URL**: `https://vznhbocnuykdmjvujaka.supabase.co/functions/v1`
+**Base URL**: `https://your-project.supabase.co/functions/v1`
 
 ---
 
@@ -434,7 +434,7 @@ Generate AI images using Google's Gemini Flash Image model.
 
 ```json
 {
-  "imageUrl": "https://vznhbocnuykdmjvujaka.supabase.co/storage/v1/object/public/generated-images/...",
+  "imageUrl": "https://your-project.supabase.co/storage/v1/object/public/generated-images/...",
   "prompt": "A futuristic cityscape at sunset",
   "title": "Futuristic cityscape at sunset"
 }
@@ -586,7 +586,7 @@ Retrieve usage analytics and metrics (admin-only).
 
 ```typescript
 async function sendChatMessage(message: string, sessionId: string) {
-  const response = await fetch('https://vznhbocnuykdmjvujaka.supabase.co/functions/v1/chat', {
+  const response = await fetch('https://your-project.supabase.co/functions/v1/chat', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${supabaseToken}`,
@@ -627,7 +627,7 @@ Artifacts are now generated through the `/chat` endpoint's tool calling system:
 
 ```typescript
 async function generateArtifact(prompt: string) {
-  const response = await fetch('https://vznhbocnuykdmjvujaka.supabase.co/functions/v1/chat', {
+  const response = await fetch('https://your-project.supabase.co/functions/v1/chat', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${supabaseToken}`,
@@ -650,7 +650,7 @@ async function generateArtifact(prompt: string) {
 
 ```typescript
 async function generateImage(prompt: string) {
-  const response = await fetch('https://vznhbocnuykdmjvujaka.supabase.co/functions/v1/generate-image', {
+  const response = await fetch('https://your-project.supabase.co/functions/v1/generate-image', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${supabaseToken}`,
@@ -841,7 +841,7 @@ The following endpoints have been deprecated or removed as part of the Vanilla S
 ## Support
 
 For issues or questions:
-- **GitHub Issues**: [https://github.com/NickB03/llm-chat-site/issues](https://github.com/NickB03/llm-chat-site/issues)
+- **GitHub Issues**: [https://github.com/<org>/<repo>/issues](https://github.com/<org>/<repo>/issues)
 - **Documentation**: See README.md and other docs in `/docs`
 
 ---

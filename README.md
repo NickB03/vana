@@ -1,19 +1,18 @@
-# Vana - AI-Powered Development Assistant
+# Vana — AI Chat & Artifact Workspace
 
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Vana is an AI-powered development assistant that transforms natural language into production-ready code, interactive React components, diagrams, and more. It leverages advanced language models to provide a seamless chat interface for generating interactive artifacts.
+Vana is a web-based AI chat and artifact workspace built with React, Vite, and Supabase. It focuses on interactive, runnable artifacts (React components, HTML, Mermaid diagrams, SVGs), with a chat-first UI and a modular design system to support rapid iteration and demos.
 
-## Key Features
+## Key Features (High Level)
 
--   **Real-time Generation**: Streaming AI responses for immediate feedback.
--   **Interactive Artifacts**: Supports React components, HTML pages, Mermaid diagrams, and SVG graphics.
--   **Secure Architecture**: Built on Supabase with Row-Level Security (RLS) and strict authentication.
--   **Responsive Design**: Desktop and mobile capability.
--   **Smart Context**: Maintains conversation history with intelligent summarization.
--   **Developer-Friendly**: Full TypeScript support with modern tooling.
+- **Real-time chat UI** with streaming responses.
+- **Interactive artifacts** rendered in Sandpack (React/HTML/SVG/Mermaid).
+- **Supabase-backed** auth, storage, and Edge Functions.
+- **Responsive layout** with a reusable design system.
+- **TypeScript-first** codebase with Vite and Vitest.
 
-## Getting Started
+## Quick Start
 
 ### Prerequisites
 
@@ -25,8 +24,8 @@ Vana is an AI-powered development assistant that transforms natural language int
 
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/NickB03/llm-chat-site.git
-    cd llm-chat-site
+    git clone <repo-url>
+    cd <repo-directory>
     ```
 
 2.  Install dependencies:
@@ -47,16 +46,23 @@ npm run dev
 
 The application will be available at `http://localhost:8080`.
 
-## Documentation
+## Documentation Index
 
-Comprehensive documentation is available in the `docs/` directory:
+Start with the documentation index for a map of the available guides:
 
--   [User Guide](docs/USER_GUIDE.md)
--   [Architecture](docs/ARCHITECTURE.md)
--   [API Reference](docs/API_REFERENCE.md)
--   [Configuration](docs/CONFIGURATION.md)
--   [Contributing Guide](CONTRIBUTING.md)
--   [Changelog](CHANGELOG.md)
+- [Documentation Index](docs/INDEX.md)
+
+### Core Guides
+- [User Guide](docs/USER_GUIDE.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Configuration](docs/CONFIGURATION.md)
+- [API Reference](docs/API_REFERENCE.md)
+
+### Engineering Guides
+- [Development Patterns](docs/DEVELOPMENT_PATTERNS.md)
+- [Testing Strategy](docs/TESTING_STRATEGY.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [CI/CD Overview](docs/CI_CD.md)
 
 ## License
 

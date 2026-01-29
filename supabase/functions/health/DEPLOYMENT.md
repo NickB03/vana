@@ -19,7 +19,7 @@
 The health endpoint uses existing environment variables:
 
 ```bash
-SUPABASE_URL=https://vznhbocnuykdmjvujaka.supabase.co
+SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<service_role_key>
 OPENROUTER_GEMINI_FLASH_KEY=<openrouter_key>
 ALLOWED_ORIGINS=https://yourdomain.com
@@ -72,7 +72,7 @@ curl -v https://<staging-ref>.supabase.co/functions/v1/health
 
 **Production:**
 ```bash
-curl -v https://vznhbocnuykdmjvujaka.supabase.co/functions/v1/health
+curl -v https://your-project.supabase.co/functions/v1/health
 ```
 
 Expected response:
@@ -93,7 +93,7 @@ Expected response:
 ### 2. Verify HTTP Status Code
 
 ```bash
-curl -I https://vznhbocnuykdmjvujaka.supabase.co/functions/v1/health
+curl -I https://your-project.supabase.co/functions/v1/health
 
 # Expected: HTTP/2 200 (if healthy)
 # Expected: HTTP/2 503 (if degraded/unhealthy)
@@ -103,7 +103,7 @@ curl -I https://vznhbocnuykdmjvujaka.supabase.co/functions/v1/health
 
 ```bash
 curl -v -H "Origin: https://yourdomain.com" \
-  https://vznhbocnuykdmjvujaka.supabase.co/functions/v1/health
+  https://your-project.supabase.co/functions/v1/health
 
 # Expected headers:
 # Access-Control-Allow-Origin: https://yourdomain.com
@@ -141,7 +141,7 @@ If latency > 500ms, investigate individual service performance.
 3. Settings:
    - Monitor Type: HTTP(S)
    - Friendly Name: Vana Health Check
-   - URL: `https://vznhbocnuykdmjvujaka.supabase.co/functions/v1/health`
+   - URL: `https://your-project.supabase.co/functions/v1/health`
    - Monitoring Interval: 5 minutes
    - Monitor Timeout: 10 seconds
 4. Alert Contacts: Set up email/SMS alerts
@@ -156,7 +156,7 @@ init_config:
 
 instances:
   - name: vana-health-check
-    url: https://vznhbocnuykdmjvujaka.supabase.co/functions/v1/health
+    url: https://your-project.supabase.co/functions/v1/health
     method: GET
     timeout: 10
     http_response_status_code: 200
@@ -173,7 +173,7 @@ instances:
 Create `/scripts/health-check-monitor.sh`:
 ```bash
 #!/bin/bash
-HEALTH_URL="https://vznhbocnuykdmjvujaka.supabase.co/functions/v1/health"
+HEALTH_URL="https://your-project.supabase.co/functions/v1/health"
 ALERT_EMAIL="devops@example.com"
 
 response=$(curl -s -w "\n%{http_code}" "$HEALTH_URL")
@@ -221,7 +221,7 @@ crontab -e
 ```
 
 **Resolution:**
-1. Check Supabase logs: `supabase functions logs health --project-ref vznhbocnuykdmjvujaka`
+1. Check Supabase logs: `supabase functions logs health --project-ref <project-ref>`
 2. Verify database connectivity from Edge Function
 3. Check RLS policies on `chat_sessions` table
 4. Verify `SUPABASE_SERVICE_ROLE_KEY` is correct
@@ -251,7 +251,7 @@ Access to fetch at '...' from origin '...' has been blocked by CORS policy
 
 **Resolution:**
 1. Verify `ALLOWED_ORIGINS` environment variable includes your domain
-2. Check origin is in allowed list: `supabase secrets list --project-ref vznhbocnuykdmjvujaka`
+2. Check origin is in allowed list: `supabase secrets list --project-ref <project-ref>`
 3. Update origins: `supabase secrets set ALLOWED_ORIGINS=https://yourdomain.com`
 4. Redeploy: `supabase functions deploy health`
 
@@ -261,26 +261,26 @@ If health endpoint causes issues:
 
 1. **List deployments:**
 ```bash
-supabase functions list --project-ref vznhbocnuykdmjvujaka
+supabase functions list --project-ref <project-ref>
 ```
 
 2. **Get previous version ID:**
 ```bash
-supabase functions get health --project-ref vznhbocnuykdmjvujaka
+supabase functions get health --project-ref <project-ref>
 ```
 
 3. **Deploy previous version:**
 ```bash
 # Not directly supported - redeploy from git history
 git checkout <previous-commit>
-supabase functions deploy health --project-ref vznhbocnuykdmjvujaka
+supabase functions deploy health --project-ref <project-ref>
 git checkout main
 ```
 
 4. **Emergency disable:**
 ```bash
 # Remove function (stops all health checks)
-supabase functions delete health --project-ref vznhbocnuykdmjvujaka
+supabase functions delete health --project-ref <project-ref>
 ```
 
 ## Performance Monitoring
